@@ -313,6 +313,7 @@ export type Database = {
       chart_of_accounts: {
         Row: {
           account_code: string
+          account_level: number | null
           account_name: string
           account_name_ar: string | null
           account_subtype: string | null
@@ -324,12 +325,16 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          is_default: boolean | null
+          is_header: boolean | null
           is_system: boolean | null
           parent_account_id: string | null
+          sort_order: number | null
           updated_at: string
         }
         Insert: {
           account_code: string
+          account_level?: number | null
           account_name: string
           account_name_ar?: string | null
           account_subtype?: string | null
@@ -341,12 +346,16 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_default?: boolean | null
+          is_header?: boolean | null
           is_system?: boolean | null
           parent_account_id?: string | null
+          sort_order?: number | null
           updated_at?: string
         }
         Update: {
           account_code?: string
+          account_level?: number | null
           account_name?: string
           account_name_ar?: string | null
           account_subtype?: string | null
@@ -358,8 +367,11 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_default?: boolean | null
+          is_header?: boolean | null
           is_system?: boolean | null
           parent_account_id?: string | null
+          sort_order?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -595,6 +607,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      default_chart_of_accounts: {
+        Row: {
+          account_code: string
+          account_level: number | null
+          account_name: string
+          account_name_ar: string | null
+          account_subtype: string | null
+          account_type: string
+          balance_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_header: boolean | null
+          is_system: boolean | null
+          parent_account_code: string | null
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          account_level?: number | null
+          account_name: string
+          account_name_ar?: string | null
+          account_subtype?: string | null
+          account_type: string
+          balance_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_header?: boolean | null
+          is_system?: boolean | null
+          parent_account_code?: string | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          account_level?: number | null
+          account_name?: string
+          account_name_ar?: string | null
+          account_subtype?: string | null
+          account_type?: string
+          balance_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_header?: boolean | null
+          is_system?: boolean | null
+          parent_account_code?: string | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       depreciation_records: {
         Row: {
@@ -1546,6 +1612,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_account_level: {
+        Args: { account_id: string }
+        Returns: number
+      }
+      copy_default_accounts_to_company: {
+        Args: { target_company_id: string }
+        Returns: undefined
+      }
       get_user_company: {
         Args: { _user_id: string }
         Returns: string
