@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const Budgets = () => {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState<string>("")
+  const [filterStatus, setFilterStatus] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   const { data: budgets, isLoading, error } = useBudgets()
@@ -53,7 +54,7 @@ const Budgets = () => {
   const filteredBudgets = budgets?.filter(budget => {
     const matchesSearch = budget.budget_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          budget.budget_year.toString().includes(searchTerm)
-    const matchesStatus = !filterStatus || budget.status === filterStatus
+    const matchesStatus = filterStatus === "all" || budget.status === filterStatus
     return matchesSearch && matchesStatus
   })
 
@@ -258,7 +259,7 @@ const Budgets = () => {
                   <SelectValue placeholder="جميع الحالات" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع الحالات</SelectItem>
+                  <SelectItem value="all">جميع الحالات</SelectItem>
                   <SelectItem value="draft">مسودة</SelectItem>
                   <SelectItem value="approved">معتمدة</SelectItem>
                   <SelectItem value="active">نشطة</SelectItem>
