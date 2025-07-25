@@ -83,25 +83,13 @@ const Dashboard: React.FC = () => {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
-            </h1>
-            <p className="text-primary-foreground/80">
-              نظرة سريعة على أداء شركتك اليوم
-            </p>
-          </div>
-          <div className="hidden md:flex items-center gap-4">
-            <Button variant="secondary" className="gap-2">
-              <Plus className="h-4 w-4" />
-              عقد جديد
-            </Button>
-            <Button variant="outline" className="gap-2 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
-              <Calendar className="h-4 w-4" />
-              التقويم
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold mb-2">
+            مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
+          </h1>
+          <p className="text-primary-foreground/80">
+            نظرة سريعة على أداء شركتك اليوم
+          </p>
         </div>
       </div>
 
