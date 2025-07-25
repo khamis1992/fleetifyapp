@@ -19,6 +19,8 @@ import Attendance from "./pages/hr/Attendance";
 import Payroll from "./pages/hr/Payroll";
 import HRReports from "./pages/hr/Reports";
 import HRSettings from "./pages/hr/Settings";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,8 @@ const App = () => (
             </Route>
             <Route path="/*" element={<DashboardLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="settings" element={<Settings />} />
               <Route path="fleet" element={<div className="p-8 text-center text-muted-foreground">صفحة الأسطول - قيد التطوير</div>} />
               <Route path="contracts" element={<div className="p-8 text-center text-muted-foreground">صفحة العقود - قيد التطوير</div>} />
               <Route path="customers" element={<div className="p-8 text-center text-muted-foreground">صفحة العملاء - قيد التطوير</div>} />
@@ -55,7 +59,6 @@ const App = () => (
               <Route path="hr/settings" element={<HRSettings />} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">صفحة التقارير - قيد التطوير</div>} />
               <Route path="legal" element={<div className="p-8 text-center text-muted-foreground">الشؤون القانونية - قيد التطوير</div>} />
-              <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">الإعدادات - قيد التطوير</div>} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
