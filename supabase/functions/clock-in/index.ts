@@ -34,26 +34,42 @@ serve(async (req) => {
     }
 
     // Verify location first
-    const locationResponse = await fetch(`${supabaseUrl}/functions/v1/verify-location`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
+    const locationResponse = await supabase.functions.invoke('verify-location', {
+      body: {
         companyId: employee.company_id,
         latitude,
         longitude,
-      }),
+      },
     });
 
-    const locationData = await locationResponse.json();
+    if (locationResponse.error) {
+      console.error('Location verification error:', locationResponse.error);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to verify location',
+        success: false
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const locationData = locationResponse.data;
     
     if (!locationData.withinRange) {
+      let errorMessage = 'You are outside the allowed work area';
+      
+      if (locationData.needsConfiguration) {
+        errorMessage = 'Office location is not configured. Please contact your administrator.';
+      } else if (locationData.distance && locationData.allowedRadius) {
+        errorMessage = `You are ${locationData.distance}m away from the office. Maximum allowed distance is ${locationData.allowedRadius}m.`;
+      }
+      
       return new Response(JSON.stringify({ 
-        error: 'You are outside the allowed work area',
+        error: errorMessage,
+        success: false,
         distance: locationData.distance,
-        allowedRadius: locationData.allowedRadius
+        allowedRadius: locationData.allowedRadius,
+        needsConfiguration: locationData.needsConfiguration
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

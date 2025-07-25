@@ -72,7 +72,12 @@ export const useAttendance = () => {
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ['attendance'] });
       } else {
-        toast.error(data.error);
+        // Handle specific error cases
+        if (data.needsConfiguration) {
+          toast.error('Office location not configured. Please contact your administrator.');
+        } else {
+          toast.error(data.error || 'Failed to clock in');
+        }
       }
     },
     onError: (error: any) => {
@@ -95,7 +100,12 @@ export const useAttendance = () => {
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ['attendance'] });
       } else {
-        toast.error(data.error);
+        // Handle specific error cases
+        if (data.needsConfiguration) {
+          toast.error('Office location not configured. Please contact your administrator.');
+        } else {
+          toast.error(data.error || 'Failed to clock out');
+        }
       }
     },
     onError: (error: any) => {

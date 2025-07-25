@@ -15,6 +15,25 @@ serve(async (req) => {
   try {
     const { companyId, latitude, longitude } = await req.json();
     
+    console.log(`Verifying location for company ${companyId} at coordinates (${latitude}, ${longitude})`);
+
+    // Validate input parameters
+    if (!companyId || typeof latitude !== 'number' || typeof longitude !== 'number') {
+      console.error('Invalid input parameters:', { companyId, latitude, longitude });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          withinRange: false,
+          distance: null,
+          allowedRadius: null
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -26,19 +45,48 @@ serve(async (req) => {
       .eq('id', companyId)
       .single();
 
-    if (error || !company) {
-      return new Response(JSON.stringify({ error: 'Company not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (error) {
+      console.error('Company fetch error:', error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to fetch company data',
+          withinRange: false,
+          distance: null,
+          allowedRadius: null
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    if (!company) {
+      console.error('Company not found:', companyId);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Company not found',
+          withinRange: false,
+          distance: null,
+          allowedRadius: null
+        }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     if (!company.office_latitude || !company.office_longitude) {
+      console.error('Company location not configured for company:', companyId);
       return new Response(JSON.stringify({ 
-        error: 'Company location not configured',
-        withinRange: false 
+        error: 'Company office location is not configured. Please contact your administrator to set up the office location.',
+        withinRange: false,
+        distance: null,
+        allowedRadius: company.allowed_radius || 100,
+        needsConfiguration: true
       }), {
-        status: 400,
+        status: 422,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -51,19 +99,28 @@ serve(async (req) => {
       company.office_longitude
     );
 
-    const withinRange = distance <= (company.allowed_radius || 100);
+    const allowedRadius = company.allowed_radius || 100;
+    const withinRange = distance <= allowedRadius;
+
+    console.log(`Distance: ${Math.round(distance)}m, Allowed: ${allowedRadius}m, Within range: ${withinRange}`);
 
     return new Response(JSON.stringify({ 
       withinRange,
       distance: Math.round(distance),
-      allowedRadius: company.allowed_radius || 100
+      allowedRadius,
+      needsConfiguration: false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in verify-location function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      withinRange: false,
+      distance: null,
+      allowedRadius: null
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

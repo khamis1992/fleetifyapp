@@ -3,18 +3,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MapPin, Clock, CheckCircle, XCircle, Loader2, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 export default function EmployeeAttendance() {
   const { user } = useAuth();
   const { getCurrentLocation, verifyLocation, clockIn, clockOut, getTodayAttendance } = useAttendance();
-  const [locationStatus, setLocationStatus] = useState<'checking' | 'verified' | 'outside' | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'checking' | 'verified' | 'outside' | 'not_configured' | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Get employee info
   const { data: employee, isLoading: employeeLoading, error: employeeError } = useQuery({
@@ -53,13 +56,31 @@ export default function EmployeeAttendance() {
         ...location,
       });
 
-      setLocationStatus(result.withinRange ? 'verified' : 'outside');
-      
-      if (!result.withinRange) {
-        toast.error(`You are ${result.distance}m away from the office. Maximum allowed distance is ${result.allowedRadius}m.`);
+      if (result.withinRange) {
+        setLocationStatus('verified');
+        setLocationError(null);
+      } else {
+        if (result.needsConfiguration) {
+          setLocationStatus('not_configured');
+          setLocationError('Office location is not configured. Please contact your administrator to set up the office location.');
+          toast.error('Office location is not configured. Please contact your administrator to set up the office location.');
+        } else {
+          setLocationStatus('outside');
+          if (result.distance && result.allowedRadius) {
+            const errorMsg = `You are ${result.distance}m away from the office. Maximum allowed distance is ${result.allowedRadius}m.`;
+            setLocationError(errorMsg);
+            toast.error(errorMsg);
+          } else {
+            setLocationError('You are outside the allowed work area.');
+            toast.error('You are outside the allowed work area.');
+          }
+        }
       }
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Location check error:', error);
+      const errorMsg = error.message || 'Failed to verify location. Please try again.';
+      setLocationError(errorMsg);
+      toast.error(errorMsg);
       setLocationStatus('outside');
     }
   };
@@ -160,6 +181,25 @@ export default function EmployeeAttendance() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Configuration Alert */}
+          {locationStatus === 'not_configured' && (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <Settings className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                <div className="space-y-2">
+                  <p><strong>Office location is not configured.</strong></p>
+                  <p>Administrators can configure the office location in the settings to enable employee clock-in/out functionality.</p>
+                  <Link to="/hr/location-settings">
+                    <Button variant="outline" size="sm" className="mt-2">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configure Location Settings
+                    </Button>
+                  </Link>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Location Status */}
           <div className="flex items-center justify-between p-4 rounded-lg border">
             <div className="flex items-center gap-2">
@@ -185,6 +225,14 @@ export default function EmployeeAttendance() {
                 <>
                   <XCircle className="h-4 w-4 text-red-500" />
                   <Badge variant="destructive">Outside Office Area</Badge>
+                </>
+              )}
+              {locationStatus === 'not_configured' && (
+                <>
+                  <Settings className="h-4 w-4 text-yellow-500" />
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    Not Configured
+                  </Badge>
                 </>
               )}
               <Button
@@ -279,8 +327,22 @@ export default function EmployeeAttendance() {
               <li>You must be within the office area to clock in/out</li>
               <li>You can only clock in once per day</li>
               <li>If you forget to clock out, the system will automatically clock you out after work hours</li>
+              <li>If you experience location issues, contact your administrator</li>
             </ul>
           </div>
+          
+          {/* Troubleshooting */}
+          {locationStatus === 'outside' && (
+            <div className="text-sm p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+              <h4 className="font-medium mb-2 text-yellow-800">Location Issues?</h4>
+              <ul className="space-y-1 list-disc list-inside text-yellow-700">
+                <li>Make sure location services are enabled in your browser</li>
+                <li>Try refreshing your location using the "Refresh" button above</li>
+                <li>If the office location is not configured, contact your administrator</li>
+                <li>Ensure you are physically at the office location</li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
