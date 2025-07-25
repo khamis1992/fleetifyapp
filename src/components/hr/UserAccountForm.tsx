@@ -59,7 +59,9 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
             employee_email: data.email,
             roles: data.selectedRoles,
             requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
-            notes: data.notes
+            notes: data.notes,
+            user_id: user?.id,
+            company_id: employee.company_id
           }
         });
 

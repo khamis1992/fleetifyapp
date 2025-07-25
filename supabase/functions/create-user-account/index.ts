@@ -13,6 +13,8 @@ interface CreateUserAccountRequest {
   roles: string[];
   requester_name: string;
   notes?: string;
+  user_id: string;
+  company_id: string;
 }
 
 const generateTemporaryPassword = (): string => {
@@ -22,6 +24,60 @@ const generateTemporaryPassword = (): string => {
     password += charset.charAt(Math.floor(Math.random() * charset.length));
   }
   return password;
+};
+
+const assignRolesAndCreateRecord = async (
+  supabaseClient: any,
+  userId: string | undefined,
+  roles: string[],
+  employeeId: string,
+  companyId: string,
+  requestedBy: string,
+  notes?: string,
+  temporaryPassword?: string,
+  passwordExpiresAt?: string
+) => {
+  // Assign roles to user
+  if (roles && roles.length > 0 && userId) {
+    const roleInserts = roles.map(role => ({
+      user_id: userId,
+      role: role
+    }));
+
+    const { error: rolesError } = await supabaseClient
+      .from('user_roles')
+      .insert(roleInserts);
+
+    if (rolesError) {
+      console.error('Error assigning roles:', rolesError);
+      throw new Error(`Failed to assign roles: ${rolesError.message}`);
+    }
+  }
+
+  // Create account creation request record
+  const { data: requestData, error: requestError } = await supabaseClient
+    .from('account_creation_requests')
+    .insert({
+      employee_id: employeeId,
+      company_id: companyId,
+      requested_by: requestedBy,
+      requested_roles: roles,
+      notes,
+      status: 'approved',
+      direct_creation: true,
+      temporary_password: temporaryPassword,
+      password_expires_at: passwordExpiresAt,
+      processed_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (requestError) {
+    console.error('Error creating request record:', requestError);
+    throw new Error(`Failed to create request record: ${requestError.message}`);
+  }
+
+  return requestData;
 };
 
 serve(async (req) => {
@@ -41,10 +97,85 @@ serve(async (req) => {
       employee_email,
       roles,
       requester_name,
-      notes
+      notes,
+      user_id,
+      company_id
     }: CreateUserAccountRequest = await req.json();
 
     console.log('Creating user account for:', employee_email);
+
+    // Validate required fields
+    if (!user_id || !company_id) {
+      throw new Error('Missing required fields: user_id and company_id');
+    }
+
+    // Verify the company exists
+    const { data: companyData, error: companyError } = await supabaseClient
+      .from('companies')
+      .select('id')
+      .eq('id', company_id)
+      .single();
+
+    if (companyError || !companyData) {
+      throw new Error('Invalid company_id');
+    }
+
+    // Check if user already exists in auth
+    const { data: existingUsers, error: checkError } = await supabaseClient.auth.admin.listUsers();
+    
+    if (checkError) {
+      console.error('Error checking existing users:', checkError);
+      throw new Error(`Failed to check existing users: ${checkError.message}`);
+    }
+
+    const existingUser = existingUsers.users.find(u => u.email === employee_email);
+    
+    if (existingUser) {
+      // User already exists, check if they're linked to this employee
+      const { data: employeeData, error: employeeCheckError } = await supabaseClient
+        .from('employees')
+        .select('user_id, has_system_access')
+        .eq('id', employee_id)
+        .single();
+
+      if (employeeCheckError) {
+        throw new Error(`Failed to check employee data: ${employeeCheckError.message}`);
+      }
+
+      if (employeeData.user_id && employeeData.has_system_access) {
+        throw new Error('Employee already has a system account');
+      }
+
+      // Link existing user to employee
+      const { error: linkError } = await supabaseClient
+        .from('employees')
+        .update({
+          user_id: existingUser.id,
+          has_system_access: true,
+          account_status: 'active'
+        })
+        .eq('id', employee_id);
+
+      if (linkError) {
+        throw new Error(`Failed to link existing user to employee: ${linkError.message}`);
+      }
+
+      // Assign roles and create request record
+      await assignRolesAndCreateRecord(supabaseClient, existingUser.id, roles, employee_id, company_id, user_id, notes);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user_id: existingUser.id,
+          message: 'Existing user linked to employee account',
+          linked_existing_user: true
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
 
     // Generate temporary password
     const temporaryPassword = generateTemporaryPassword();
@@ -100,43 +231,8 @@ serve(async (req) => {
       // Don't fail here, profile might already exist from trigger
     }
 
-    // Assign roles to user
-    if (roles && roles.length > 0) {
-      const roleInserts = roles.map(role => ({
-        user_id: userData.user?.id,
-        role: role
-      }));
-
-      const { error: rolesError } = await supabaseClient
-        .from('user_roles')
-        .insert(roleInserts);
-
-      if (rolesError) {
-        console.error('Error assigning roles:', rolesError);
-        throw new Error(`Failed to assign roles: ${rolesError.message}`);
-      }
-    }
-
-    // Create account creation request record
-    const { data: requestData, error: requestError } = await supabaseClient
-      .from('account_creation_requests')
-      .insert({
-        employee_id,
-        requested_roles: roles,
-        notes,
-        status: 'approved',
-        direct_creation: true,
-        temporary_password: temporaryPassword,
-        password_expires_at: passwordExpiresAt.toISOString(),
-        processed_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (requestError) {
-      console.error('Error creating request record:', requestError);
-      throw new Error(`Failed to create request record: ${requestError.message}`);
-    }
+    // Assign roles and create request record
+    await assignRolesAndCreateRecord(supabaseClient, userData.user?.id, roles, employee_id, company_id, user_id, notes, temporaryPassword, passwordExpiresAt.toISOString());
 
     console.log('Account creation completed successfully');
 
@@ -145,8 +241,7 @@ serve(async (req) => {
         success: true,
         user_id: userData.user?.id,
         temporary_password: temporaryPassword,
-        password_expires_at: passwordExpiresAt.toISOString(),
-        request_id: requestData.id
+        password_expires_at: passwordExpiresAt.toISOString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
