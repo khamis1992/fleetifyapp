@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
+import { startOfYear, endOfYear, subYears, format } from "date-fns"
 
 export interface FinancialRatio {
   name: string
@@ -38,6 +39,33 @@ export interface IncomeStatementData {
   netIncome: number
 }
 
+export interface BudgetComparison {
+  budgetedRevenue: number
+  actualRevenue: number
+  budgetedExpenses: number
+  actualExpenses: number
+  revenueVariance: number
+  expenseVariance: number
+  revenueVariancePercentage: number
+  expenseVariancePercentage: number
+}
+
+export interface ForecastData {
+  period: string
+  revenue: number
+  expenses: number
+  netIncome: number
+  confidence: number
+}
+
+export interface HistoricalComparison {
+  currentYear: number
+  previousYear: number
+  change: number
+  changePercentage: number
+  metric: string
+}
+
 export const useFinancialAnalysis = () => {
   const { user } = useAuth()
   
@@ -45,6 +73,70 @@ export const useFinancialAnalysis = () => {
     queryKey: ["financialAnalysis", user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) throw new Error("Company ID required")
+
+      const currentYear = new Date().getFullYear()
+      const previousYear = currentYear - 1
+      
+      // Get current year journal entries for historical comparison
+      const { data: currentJournalEntries } = await supabase
+        .from("journal_entries")
+        .select(`
+          *,
+          journal_entry_lines (
+            *,
+            account_id,
+            debit_amount,
+            credit_amount,
+            chart_of_accounts (
+              account_type,
+              account_subtype,
+              account_name
+            )
+          )
+        `)
+        .eq("company_id", user.profile.company_id)
+        .gte("entry_date", `${currentYear}-01-01`)
+        .lte("entry_date", `${currentYear}-12-31`)
+        .eq("status", "posted")
+
+      // Get previous year journal entries for comparison
+      const { data: previousJournalEntries } = await supabase
+        .from("journal_entries")
+        .select(`
+          *,
+          journal_entry_lines (
+            *,
+            account_id,
+            debit_amount,
+            credit_amount,
+            chart_of_accounts (
+              account_type,
+              account_subtype,
+              account_name
+            )
+          )
+        `)
+        .eq("company_id", user.profile.company_id)
+        .gte("entry_date", `${previousYear}-01-01`)
+        .lte("entry_date", `${previousYear}-12-31`)
+        .eq("status", "posted")
+
+      // Get budget data for comparison
+      const { data: budgets } = await supabase
+        .from("budgets")
+        .select(`
+          *,
+          budget_items (
+            *,
+            chart_of_accounts (
+              account_type,
+              account_name
+            )
+          )
+        `)
+        .eq("company_id", user.profile.company_id)
+        .eq("budget_year", currentYear)
+        .eq("status", "approved")
 
       // Get all accounts with current balances
       const { data: accounts, error: accountsError } = await supabase
@@ -83,9 +175,68 @@ export const useFinancialAnalysis = () => {
       const totalLiabilities = liabilities.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
       const totalEquity = equity.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
 
-      const totalRevenue = revenue.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-      const totalExpenses = expenses.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
+      // Calculate current year totals from journal entries
+      const currentYearRevenue = currentJournalEntries?.reduce((total, entry) => {
+        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
+          if (line.chart_of_accounts?.account_type === 'revenue') {
+            return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
+          }
+          return lineTotal
+        }, 0) || 0)
+      }, 0) || 0
+
+      const currentYearExpenses = currentJournalEntries?.reduce((total, entry) => {
+        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
+          if (line.chart_of_accounts?.account_type === 'expenses') {
+            return lineTotal + Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
+          }
+          return lineTotal
+        }, 0) || 0)
+      }, 0) || 0
+
+      // Calculate previous year totals for comparison
+      const previousYearRevenue = previousJournalEntries?.reduce((total, entry) => {
+        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
+          if (line.chart_of_accounts?.account_type === 'revenue') {
+            return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
+          }
+          return lineTotal
+        }, 0) || 0)
+      }, 0) || 0
+
+      const previousYearExpenses = previousJournalEntries?.reduce((total, entry) => {
+        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
+          if (line.chart_of_accounts?.account_type === 'expenses') {
+            return lineTotal + Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
+          }
+          return lineTotal
+        }, 0) || 0)
+      }, 0) || 0
+
+      const totalRevenue = currentYearRevenue
+      const totalExpenses = currentYearExpenses
       const netIncome = totalRevenue - totalExpenses
+      const previousNetIncome = previousYearRevenue - previousYearExpenses
+
+      // Calculate budget comparison
+      const budgetedRevenue = budgets?.[0]?.budget_items?.filter(item => 
+        item.chart_of_accounts?.account_type === 'revenue'
+      ).reduce((sum, item) => sum + Number(item.budgeted_amount || 0), 0) || 0
+
+      const budgetedExpenses = budgets?.[0]?.budget_items?.filter(item => 
+        item.chart_of_accounts?.account_type === 'expenses'
+      ).reduce((sum, item) => sum + Number(item.budgeted_amount || 0), 0) || 0
+
+      const budgetComparison: BudgetComparison = {
+        budgetedRevenue,
+        actualRevenue: totalRevenue,
+        budgetedExpenses,
+        actualExpenses: totalExpenses,
+        revenueVariance: totalRevenue - budgetedRevenue,
+        expenseVariance: totalExpenses - budgetedExpenses,
+        revenueVariancePercentage: budgetedRevenue ? ((totalRevenue - budgetedRevenue) / budgetedRevenue) * 100 : 0,
+        expenseVariancePercentage: budgetedExpenses ? ((totalExpenses - budgetedExpenses) / budgetedExpenses) * 100 : 0
+      }
 
       // Calculate financial ratios
       const ratios: FinancialRatio[] = [
@@ -153,28 +304,85 @@ export const useFinancialAnalysis = () => {
           {
             name: "الإيرادات",
             current: totalRevenue,
-            previous: 0, // TODO: Get previous period data
-            change: 0,
-            trend: 'stable' as const
+            previous: previousYearRevenue,
+            change: previousYearRevenue ? ((totalRevenue - previousYearRevenue) / previousYearRevenue) * 100 : 0,
+            trend: totalRevenue > previousYearRevenue ? 'up' as const : 
+                   totalRevenue < previousYearRevenue ? 'down' as const : 'stable' as const
           },
           {
             name: "المصروفات", 
             current: totalExpenses,
-            previous: 0,
-            change: 0,
-            trend: 'stable' as const
+            previous: previousYearExpenses,
+            change: previousYearExpenses ? ((totalExpenses - previousYearExpenses) / previousYearExpenses) * 100 : 0,
+            trend: totalExpenses > previousYearExpenses ? 'up' as const : 
+                   totalExpenses < previousYearExpenses ? 'down' as const : 'stable' as const
           },
           {
             name: "الربح الصافي",
             current: netIncome,
-            previous: 0,
-            change: 0,
-            trend: 'stable' as const
+            previous: previousNetIncome,
+            change: previousNetIncome ? ((netIncome - previousNetIncome) / previousNetIncome) * 100 : 0,
+            trend: netIncome > previousNetIncome ? 'up' as const : 
+                   netIncome < previousNetIncome ? 'down' as const : 'stable' as const
           }
-        ]
+        ],
+        budgetComparison,
+        historicalComparison: [
+          {
+            currentYear: totalRevenue,
+            previousYear: previousYearRevenue,
+            change: totalRevenue - previousYearRevenue,
+            changePercentage: previousYearRevenue ? ((totalRevenue - previousYearRevenue) / previousYearRevenue) * 100 : 0,
+            metric: "الإيرادات"
+          },
+          {
+            currentYear: totalExpenses,
+            previousYear: previousYearExpenses,
+            change: totalExpenses - previousYearExpenses,
+            changePercentage: previousYearExpenses ? ((totalExpenses - previousYearExpenses) / previousYearExpenses) * 100 : 0,
+            metric: "المصروفات"
+          },
+          {
+            currentYear: netIncome,
+            previousYear: previousNetIncome,
+            change: netIncome - previousNetIncome,
+            changePercentage: previousNetIncome ? ((netIncome - previousNetIncome) / previousNetIncome) * 100 : 0,
+            metric: "الربح الصافي"
+          }
+        ],
+        forecast: generateForecast(totalRevenue, totalExpenses, netIncome, previousYearRevenue, previousYearExpenses)
       }
     },
     enabled: !!user?.profile?.company_id
+  })
+}
+
+// Generate simple forecast based on historical trends
+function generateForecast(
+  currentRevenue: number,
+  currentExpenses: number,
+  currentNetIncome: number,
+  previousRevenue: number,
+  previousExpenses: number
+): ForecastData[] {
+  const revenueGrowthRate = previousRevenue ? (currentRevenue - previousRevenue) / previousRevenue : 0.05
+  const expenseGrowthRate = previousExpenses ? (currentExpenses - previousExpenses) / previousExpenses : 0.03
+  
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+  const nextYear = new Date().getFullYear() + 1
+  
+  return quarters.map((quarter, index) => {
+    const quarterRevenue = (currentRevenue * (1 + revenueGrowthRate)) / 4
+    const quarterExpenses = (currentExpenses * (1 + expenseGrowthRate)) / 4
+    const quarterNetIncome = quarterRevenue - quarterExpenses
+    
+    return {
+      period: `${nextYear} ${quarter}`,
+      revenue: quarterRevenue,
+      expenses: quarterExpenses,
+      netIncome: quarterNetIncome,
+      confidence: Math.max(0.6, 0.9 - (index * 0.1)) // Decreasing confidence over time
+    }
   })
 }
 
