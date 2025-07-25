@@ -1926,9 +1926,74 @@ export type Database = {
         Args: { penalty_id_param: string }
         Returns: string
       }
+      export_ledger_data: {
+        Args: {
+          company_id_param: string
+          export_format?: string
+          filters?: Json
+        }
+        Returns: string
+      }
       generate_journal_entry_number: {
         Args: { company_id_param: string }
         Returns: string
+      }
+      get_account_balances: {
+        Args: {
+          company_id_param: string
+          as_of_date?: string
+          account_type_filter?: string
+        }
+        Returns: {
+          account_id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          account_type: string
+          balance_type: string
+          opening_balance: number
+          total_debits: number
+          total_credits: number
+          closing_balance: number
+        }[]
+      }
+      get_cost_center_analysis: {
+        Args: { company_id_param: string; date_from?: string; date_to?: string }
+        Returns: {
+          cost_center_id: string
+          center_code: string
+          center_name: string
+          center_name_ar: string
+          total_debits: number
+          total_credits: number
+          net_amount: number
+          entry_count: number
+        }[]
+      }
+      get_financial_summary: {
+        Args: { company_id_param: string; date_from?: string; date_to?: string }
+        Returns: {
+          total_assets: number
+          total_liabilities: number
+          total_equity: number
+          total_revenue: number
+          total_expenses: number
+          net_income: number
+          unbalanced_entries_count: number
+        }[]
+      }
+      get_trial_balance: {
+        Args: { company_id_param: string; as_of_date?: string }
+        Returns: {
+          account_id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          account_type: string
+          account_level: number
+          debit_balance: number
+          credit_balance: number
+        }[]
       }
       get_user_company: {
         Args: { _user_id: string }
@@ -1944,6 +2009,14 @@ export type Database = {
       process_monthly_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
+      }
+      reverse_journal_entry: {
+        Args: {
+          entry_id: string
+          reversal_reason: string
+          reversed_by_user: string
+        }
+        Returns: string
       }
       update_account_levels_manually: {
         Args: { company_id_param: string }

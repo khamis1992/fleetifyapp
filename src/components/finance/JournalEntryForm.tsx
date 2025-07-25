@@ -24,11 +24,12 @@ interface JournalEntryLine {
 }
 
 interface JournalEntryFormProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpenChange }) => {
+export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpenChange, onSuccess }) => {
   const [entryData, setEntryData] = useState({
     entry_number: '',
     entry_date: new Date().toISOString().slice(0, 10),
@@ -152,7 +153,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         { id: '1', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', description: '', debit_amount: 0, credit_amount: 0 },
         { id: '2', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', description: '', debit_amount: 0, credit_amount: 0 }
       ])
-      onOpenChange(false)
+      onOpenChange?.(false)
+      onSuccess?.()
       
     } catch (error) {
       console.error('Error creating journal entry:', error)
@@ -354,7 +356,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)}>
               إلغاء
             </Button>
             <Button 
