@@ -73,16 +73,17 @@ export default function Employees() {
 
       if (!profile?.company_id) throw new Error('Company not found');
 
-      // Check for duplicate employee number
+      // Check for duplicate employee number among active employees
       const { data: existingEmployee } = await supabase
         .from('employees')
         .select('id')
         .eq('company_id', profile.company_id)
         .eq('employee_number', employeeData.employee_number)
+        .eq('is_active', true)
         .single();
 
       if (existingEmployee) {
-        throw new Error('رقم الموظف موجود مسبقاً');
+        throw new Error('رقم الموظف موجود مسبقاً لدى موظف نشط');
       }
 
       // Use account email or regular email for employee
@@ -227,6 +228,32 @@ export default function Employees() {
   const updateEmployeeMutation = useMutation({
     mutationFn: async (employeeData: EmployeeFormData) => {
       if (!selectedEmployee) throw new Error('No employee selected');
+
+      // Get current user company_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('Company not found');
+
+      // Check for duplicate employee number among active employees (excluding current employee)
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('company_id', profile.company_id)
+        .eq('employee_number', employeeData.employee_number)
+        .eq('is_active', true)
+        .neq('id', selectedEmployee.id)
+        .single();
+
+      if (existingEmployee) {
+        throw new Error('رقم الموظف موجود مسبقاً لدى موظف نشط آخر');
+      }
 
       const { data, error } = await supabase
         .from('employees')
