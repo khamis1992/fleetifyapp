@@ -177,16 +177,40 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title}</title>
         <style>
+            @page {
+                size: A4;
+                margin: 2cm;
+            }
+            
             @media print {
-                body { margin: 0; }
+                body { 
+                    margin: 0; 
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
                 .no-print { display: none; }
+                .page-break { page-break-before: always; }
+                table { 
+                    page-break-inside: avoid;
+                    font-size: 12px;
+                }
+                th, td { 
+                    padding: 8px;
+                    border: 1px solid #000 !important;
+                }
+                th {
+                    background-color: #f5f5f5 !important;
+                }
             }
             
             body {
-                font-family: 'Arial', sans-serif;
+                font-family: 'Arial', 'Tahoma', sans-serif;
                 margin: 20px;
                 direction: rtl;
                 text-align: right;
+                line-height: 1.4;
+                color: #333;
+                background: white;
             }
             
             .header {
@@ -197,50 +221,61 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
             }
             
             .company-name {
-                font-size: 24px;
+                font-size: 28px;
                 font-weight: bold;
                 margin-bottom: 10px;
+                color: #1a1a1a;
             }
             
             .report-title {
-                font-size: 20px;
-                color: #666;
+                font-size: 22px;
+                color: #444;
                 margin-bottom: 10px;
+                font-weight: 600;
             }
             
             .report-date {
-                color: #888;
+                color: #666;
                 font-size: 14px;
+                font-weight: normal;
             }
             
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin: 20px 0;
+                background: white;
+                border: 1px solid #ddd;
             }
             
             th, td {
                 border: 1px solid #ddd;
                 padding: 12px;
                 text-align: right;
+                vertical-align: top;
             }
             
             th {
-                background-color: #f5f5f5;
+                background-color: #f8f9fa;
                 font-weight: bold;
+                color: #2c3e50;
+                border-bottom: 2px solid #dee2e6;
             }
             
             .total-row {
-                background-color: #f9f9f9;
+                background-color: #f1f3f4;
                 font-weight: bold;
+                border-top: 2px solid #dee2e6;
             }
             
             .positive {
                 color: #22c55e;
+                font-weight: 600;
             }
             
             .negative {
                 color: #ef4444;
+                font-weight: 600;
             }
             
             .footer {
@@ -252,20 +287,72 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
                 padding-top: 20px;
             }
             
-            .print-button {
+            .action-buttons {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 1000;
+                display: flex;
+                gap: 10px;
+            }
+            
+            .btn {
                 background-color: #007bff;
                 color: white;
                 border: none;
-                padding: 10px 20px;
+                padding: 12px 20px;
                 cursor: pointer;
-                margin-bottom: 20px;
-                border-radius: 5px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                transition: background-color 0.2s;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .btn:hover {
+                background-color: #0056b3;
+            }
+            
+            .btn-secondary {
+                background-color: #6c757d;
+            }
+            
+            .btn-secondary:hover {
+                background-color: #545b62;
+            }
+            
+            .content {
+                min-height: 400px;
+            }
+            
+            /* RTL specific adjustments */
+            .text-left {
+                text-align: left;
+            }
+            
+            .text-center {
+                text-align: center;
             }
         </style>
+        <script>
+            function printReport() {
+                window.print();
+            }
+            
+            function closeWindow() {
+                window.close();
+            }
+            
+            // Auto-focus for better PDF generation
+            window.onload = function() {
+                document.body.focus();
+            }
+        </script>
     </head>
     <body>
-        <div class="no-print">
-            <button class="print-button" onclick="window.print()">طباعة التقرير</button>
+        <div class="action-buttons no-print">
+            <button class="btn" onclick="printReport()">🖨️ طباعة التقرير</button>
+            <button class="btn btn-secondary" onclick="closeWindow()">✕ إغلاق</button>
         </div>
         
         <div class="header">
@@ -285,14 +372,15 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
     </html>
   `
 
-  // Create and download the HTML file
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${title.replace(/\s+/g, '_')}.html`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  // Open HTML content in new tab instead of downloading
+  const newWindow = window.open('', '_blank')
+  if (newWindow) {
+    newWindow.document.write(htmlContent)
+    newWindow.document.close()
+    // Focus the new window for better user experience
+    newWindow.focus()
+  } else {
+    // Fallback if popup is blocked - show user instruction
+    alert('يرجى السماح للنوافذ المنبثقة لعرض التقرير')
+  }
 }
