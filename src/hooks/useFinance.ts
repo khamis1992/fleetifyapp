@@ -962,6 +962,87 @@ export const useCreateFixedAsset = () => {
   })
 }
 
+export const useUpdateFixedAsset = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, ...assetData }: {
+      id: string
+      asset_code?: string
+      asset_name?: string
+      asset_name_ar?: string
+      category?: string
+      serial_number?: string
+      location?: string
+      purchase_date?: string
+      purchase_cost?: number
+      salvage_value?: number
+      useful_life_years?: number
+      depreciation_method?: 'straight_line' | 'declining_balance' | 'units_of_production'
+      condition_status?: 'excellent' | 'good' | 'fair' | 'poor'
+      asset_account_id?: string
+      depreciation_account_id?: string
+      notes?: string
+    }) => {
+      const updateData: any = { ...assetData }
+      
+      // Recalculate book value if purchase cost or salvage value changed
+      if (assetData.purchase_cost !== undefined || assetData.salvage_value !== undefined) {
+        const { data: currentAsset } = await supabase
+          .from("fixed_assets")
+          .select("purchase_cost, salvage_value, accumulated_depreciation")
+          .eq("id", id)
+          .single()
+        
+        const newPurchaseCost = assetData.purchase_cost ?? currentAsset?.purchase_cost ?? 0
+        const newSalvageValue = assetData.salvage_value ?? currentAsset?.salvage_value ?? 0
+        const accumulatedDepreciation = currentAsset?.accumulated_depreciation ?? 0
+        
+        updateData.book_value = newPurchaseCost - accumulatedDepreciation
+      }
+      
+      const { data, error } = await supabase
+        .from("fixed_assets")
+        .update(updateData)
+        .eq("id", id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fixedAssets"] })
+      toast.success("تم تحديث الأصل الثابت بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في تحديث الأصل الثابت: " + error.message)
+    }
+  })
+}
+
+export const useDeleteFixedAsset = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("fixed_assets")
+        .update({ is_active: false })
+        .eq("id", id)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fixedAssets"] })
+      toast.success("تم حذف الأصل الثابت بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في حذف الأصل الثابت: " + error.message)
+    }
+  })
+}
+
 // Budgets Hooks
 export const useBudgets = () => {
   const { user } = useAuth()

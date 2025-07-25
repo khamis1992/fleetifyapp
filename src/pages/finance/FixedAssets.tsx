@@ -9,18 +9,25 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Building, Plus, Calculator, TrendingDown, Settings, Search, Package } from "lucide-react"
-import { useFixedAssets, useCreateFixedAsset, useChartOfAccounts, FixedAsset } from "@/hooks/useFinance"
+import { Building, Plus, Calculator, TrendingDown, Settings, Search, Package, Eye, Edit, Trash2 } from "lucide-react"
+import { useFixedAssets, useCreateFixedAsset, useUpdateFixedAsset, useDeleteFixedAsset, useChartOfAccounts, FixedAsset } from "@/hooks/useFinance"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const FixedAssets = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedAsset, setSelectedAsset] = useState<FixedAsset | null>(null)
 
   const { data: fixedAssets, isLoading, error } = useFixedAssets()
   const { data: accounts } = useChartOfAccounts()
   const createFixedAsset = useCreateFixedAsset()
+  const updateFixedAsset = useUpdateFixedAsset()
+  const deleteFixedAsset = useDeleteFixedAsset()
 
   const [newAsset, setNewAsset] = useState<Partial<FixedAsset>>({
     asset_code: '',
@@ -75,6 +82,59 @@ const FixedAssets = () => {
     setIsCreateDialogOpen(false)
   }
 
+  const handleEditAsset = async () => {
+    if (!selectedAsset || !newAsset.asset_code || !newAsset.asset_name || !newAsset.purchase_date) return
+
+    await updateFixedAsset.mutateAsync({
+      id: selectedAsset.id,
+      asset_code: newAsset.asset_code!,
+      asset_name: newAsset.asset_name!,
+      asset_name_ar: newAsset.asset_name_ar,
+      category: newAsset.category!,
+      serial_number: newAsset.serial_number,
+      location: newAsset.location,
+      purchase_date: newAsset.purchase_date!,
+      purchase_cost: newAsset.purchase_cost!,
+      salvage_value: newAsset.salvage_value,
+      useful_life_years: newAsset.useful_life_years!,
+      depreciation_method: newAsset.depreciation_method,
+      condition_status: newAsset.condition_status,
+      notes: newAsset.notes
+    })
+
+    setIsEditDialogOpen(false)
+    setSelectedAsset(null)
+  }
+
+  const handleViewAsset = (asset: FixedAsset) => {
+    setSelectedAsset(asset)
+    setIsViewDialogOpen(true)
+  }
+
+  const handleEditClick = (asset: FixedAsset) => {
+    setSelectedAsset(asset)
+    setNewAsset({
+      asset_code: asset.asset_code,
+      asset_name: asset.asset_name,
+      asset_name_ar: asset.asset_name_ar || '',
+      category: asset.category,
+      serial_number: asset.serial_number || '',
+      location: asset.location || '',
+      purchase_date: asset.purchase_date,
+      purchase_cost: asset.purchase_cost,
+      salvage_value: asset.salvage_value || 0,
+      useful_life_years: asset.useful_life_years,
+      depreciation_method: asset.depreciation_method,
+      condition_status: asset.condition_status,
+      notes: asset.notes || ''
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteAsset = async (assetId: string) => {
+    await deleteFixedAsset.mutateAsync(assetId)
+  }
+
   const filteredAssets = fixedAssets?.filter(asset => {
     const matchesSearch = asset.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          asset.asset_code.includes(searchTerm)
@@ -116,7 +176,8 @@ const FixedAssets = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -420,8 +481,67 @@ const FixedAssets = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm">عرض</Button>
-                    <Button variant="ghost" size="sm">تعديل</Button>
+                    <div className="flex items-center gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleViewAsset(asset)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>عرض التفاصيل</TooltipContent>
+                      </Tooltip>
+                      
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEditClick(asset)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>تعديل</TooltipContent>
+                      </Tooltip>
+                      
+                      <AlertDialog>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>حذف</TooltipContent>
+                        </Tooltip>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هل أنت متأكد من حذف الأصل "{asset.asset_name}"؟ لن يمكن التراجع عن هذا الإجراء.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteAsset(asset.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              حذف
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -434,7 +554,254 @@ const FixedAssets = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      {/* View Asset Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الأصل الثابت</DialogTitle>
+            <DialogDescription>معلومات تفصيلية عن الأصل</DialogDescription>
+          </DialogHeader>
+          {selectedAsset && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>رمز الأصل</Label>
+                <p className="text-sm font-medium">{selectedAsset.asset_code}</p>
+              </div>
+              <div>
+                <Label>اسم الأصل</Label>
+                <p className="text-sm font-medium">{selectedAsset.asset_name}</p>
+              </div>
+              {selectedAsset.asset_name_ar && (
+                <div>
+                  <Label>الاسم بالعربية</Label>
+                  <p className="text-sm font-medium">{selectedAsset.asset_name_ar}</p>
+                </div>
+              )}
+              <div>
+                <Label>الفئة</Label>
+                <p className="text-sm font-medium">{selectedAsset.category}</p>
+              </div>
+              {selectedAsset.serial_number && (
+                <div>
+                  <Label>الرقم التسلسلي</Label>
+                  <p className="text-sm font-medium">{selectedAsset.serial_number}</p>
+                </div>
+              )}
+              {selectedAsset.location && (
+                <div>
+                  <Label>الموقع</Label>
+                  <p className="text-sm font-medium">{selectedAsset.location}</p>
+                </div>
+              )}
+              <div>
+                <Label>تاريخ الشراء</Label>
+                <p className="text-sm font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('ar-KW')}</p>
+              </div>
+              <div>
+                <Label>تكلفة الشراء</Label>
+                <p className="text-sm font-medium">{selectedAsset.purchase_cost.toFixed(3)} د.ك</p>
+              </div>
+              <div>
+                <Label>القيمة التخريدية</Label>
+                <p className="text-sm font-medium">{(selectedAsset.salvage_value || 0).toFixed(3)} د.ك</p>
+              </div>
+              <div>
+                <Label>العمر الإنتاجي</Label>
+                <p className="text-sm font-medium">{selectedAsset.useful_life_years} سنوات</p>
+              </div>
+              <div>
+                <Label>طريقة الإهلاك</Label>
+                <p className="text-sm font-medium">
+                  {selectedAsset.depreciation_method === 'straight_line' ? 'القسط الثابت' :
+                   selectedAsset.depreciation_method === 'declining_balance' ? 'الرصيد المتناقص' : 'وحدات الإنتاج'}
+                </p>
+              </div>
+              <div>
+                <Label>حالة الأصل</Label>
+                <Badge variant={
+                  selectedAsset.condition_status === 'excellent' ? 'default' :
+                  selectedAsset.condition_status === 'good' ? 'secondary' :
+                  selectedAsset.condition_status === 'fair' ? 'outline' : 'destructive'
+                }>
+                  {selectedAsset.condition_status === 'excellent' ? 'ممتازة' :
+                   selectedAsset.condition_status === 'good' ? 'جيدة' :
+                   selectedAsset.condition_status === 'fair' ? 'متوسطة' : 'ضعيفة'}
+                </Badge>
+              </div>
+              <div>
+                <Label>الإهلاك المتراكم</Label>
+                <p className="text-sm font-medium text-orange-600">{(selectedAsset.accumulated_depreciation || 0).toFixed(3)} د.ك</p>
+              </div>
+              <div>
+                <Label>القيمة الدفترية</Label>
+                <p className="text-sm font-medium text-green-600">{selectedAsset.book_value.toFixed(3)} د.ك</p>
+              </div>
+              {selectedAsset.notes && (
+                <div className="col-span-2">
+                  <Label>ملاحظات</Label>
+                  <p className="text-sm">{selectedAsset.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تعديل الأصل الثابت</DialogTitle>
+            <DialogDescription>تحديث معلومات الأصل الثابت</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="editAssetCode">رمز الأصل *</Label>
+              <Input
+                id="editAssetCode"
+                value={newAsset.asset_code}
+                onChange={(e) => setNewAsset({ ...newAsset, asset_code: e.target.value })}
+                placeholder="FA001"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editAssetName">اسم الأصل *</Label>
+              <Input
+                id="editAssetName"
+                value={newAsset.asset_name}
+                onChange={(e) => setNewAsset({ ...newAsset, asset_name: e.target.value })}
+                placeholder="اسم الأصل"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editAssetNameAr">الاسم بالعربية</Label>
+              <Input
+                id="editAssetNameAr"
+                value={newAsset.asset_name_ar}
+                onChange={(e) => setNewAsset({ ...newAsset, asset_name_ar: e.target.value })}
+                placeholder="الاسم بالعربية"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editCategory">الفئة *</Label>
+              <Select value={newAsset.category} onValueChange={(value) => setNewAsset({ ...newAsset, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الفئة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="buildings">المباني والإنشاءات</SelectItem>
+                  <SelectItem value="equipment">المعدات والآلات</SelectItem>
+                  <SelectItem value="furniture">الأثاث والتجهيزات</SelectItem>
+                  <SelectItem value="vehicles">المركبات والنقل</SelectItem>
+                  <SelectItem value="software">البرمجيات</SelectItem>
+                  <SelectItem value="other">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editSerialNumber">الرقم التسلسلي</Label>
+              <Input
+                id="editSerialNumber"
+                value={newAsset.serial_number}
+                onChange={(e) => setNewAsset({ ...newAsset, serial_number: e.target.value })}
+                placeholder="الرقم التسلسلي"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editLocation">الموقع</Label>
+              <Input
+                id="editLocation"
+                value={newAsset.location}
+                onChange={(e) => setNewAsset({ ...newAsset, location: e.target.value })}
+                placeholder="موقع الأصل"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editPurchaseDate">تاريخ الشراء *</Label>
+              <Input
+                id="editPurchaseDate"
+                type="date"
+                value={newAsset.purchase_date}
+                onChange={(e) => setNewAsset({ ...newAsset, purchase_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editPurchaseCost">تكلفة الشراء *</Label>
+              <Input
+                id="editPurchaseCost"
+                type="number"
+                value={newAsset.purchase_cost}
+                onChange={(e) => setNewAsset({ ...newAsset, purchase_cost: Number(e.target.value) })}
+                placeholder="0.000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editSalvageValue">القيمة التخريدية</Label>
+              <Input
+                id="editSalvageValue"
+                type="number"
+                value={newAsset.salvage_value}
+                onChange={(e) => setNewAsset({ ...newAsset, salvage_value: Number(e.target.value) })}
+                placeholder="0.000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editUsefulLife">العمر الإنتاجي (سنوات) *</Label>
+              <Input
+                id="editUsefulLife"
+                type="number"
+                value={newAsset.useful_life_years}
+                onChange={(e) => setNewAsset({ ...newAsset, useful_life_years: Number(e.target.value) })}
+                placeholder="5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDepreciationMethod">طريقة الإهلاك</Label>
+              <Select value={newAsset.depreciation_method} onValueChange={(value: any) => setNewAsset({ ...newAsset, depreciation_method: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الطريقة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="straight_line">القسط الثابت</SelectItem>
+                  <SelectItem value="declining_balance">الرصيد المتناقص</SelectItem>
+                  <SelectItem value="units_of_production">وحدات الإنتاج</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editCondition">حالة الأصل</Label>
+              <Select value={newAsset.condition_status} onValueChange={(value: any) => setNewAsset({ ...newAsset, condition_status: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excellent">ممتازة</SelectItem>
+                  <SelectItem value="good">جيدة</SelectItem>
+                  <SelectItem value="fair">متوسطة</SelectItem>
+                  <SelectItem value="poor">ضعيفة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="editNotes">ملاحظات</Label>
+              <Textarea
+                id="editNotes"
+                value={newAsset.notes}
+                onChange={(e) => setNewAsset({ ...newAsset, notes: e.target.value })}
+                placeholder="ملاحظات إضافية"
+              />
+            </div>
+            <div className="col-span-2">
+              <Button onClick={handleEditAsset} className="w-full" disabled={updateFixedAsset.isPending}>
+                {updateFixedAsset.isPending ? "جاري التحديث..." : "تحديث الأصل"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      </div>
+    </TooltipProvider>
   )
 }
 
