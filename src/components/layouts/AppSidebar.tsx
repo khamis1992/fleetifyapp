@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +28,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const navigationItems = [
   { 
@@ -75,7 +75,7 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
@@ -104,32 +104,6 @@ export function AppSidebar() {
           )}
         </div>
       </SidebarHeader>
-
-      {/* User Info */}
-      {!collapsed && (
-        <div className="px-6 py-4 border-b border-border/50">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                {(user?.profile?.first_name_ar || user?.profile?.first_name || 'م')[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-foreground truncate">
-                {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
-              </div>
-              <div className="text-xs text-muted-foreground truncate">
-                {user?.profile?.position || 'موظف'}
-              </div>
-              {user?.company && (
-                <div className="text-xs text-primary truncate">
-                  {user.company.name_ar || user.company.name}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Navigation */}
       <SidebarContent className="px-3 py-4">
