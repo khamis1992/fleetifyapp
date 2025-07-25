@@ -6,9 +6,19 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from './AppSidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { User, Settings, LogOut } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -36,26 +46,43 @@ export const DashboardLayout: React.FC = () => {
             </div>
             
             {/* User Info in Header */}
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {(user?.profile?.first_name_ar || user?.profile?.first_name || 'م')[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-foreground truncate">
-                  {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
-                </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {user?.profile?.position || 'موظف'}
-                </div>
-                {user?.company && (
-                  <div className="text-xs text-primary truncate">
-                    {user.company.name_ar || user.company.name}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-accent/50 rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    {(user?.profile?.first_name_ar || user?.profile?.first_name || 'م')[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0 text-right">
+                  <div className="text-sm font-medium text-foreground truncate">
+                    {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
                   </div>
-                )}
-              </div>
-            </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {user?.profile?.position || 'موظف'}
+                  </div>
+                  {user?.company && (
+                    <div className="text-xs text-primary truncate">
+                      {user.company.name_ar || user.company.name}
+                    </div>
+                  )}
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>الملف الشخصي</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>الإعدادات</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>تسجيل الخروج</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </header>
 
           {/* Main Content */}
