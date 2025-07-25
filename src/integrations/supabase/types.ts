@@ -194,6 +194,60 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          amount_exceeded: number
+          budget_id: string
+          budget_item_id: string | null
+          company_id: string
+          created_at: string
+          current_percentage: number
+          id: string
+          is_acknowledged: boolean | null
+          message: string
+          message_ar: string | null
+          threshold_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          amount_exceeded?: number
+          budget_id: string
+          budget_item_id?: string | null
+          company_id: string
+          created_at?: string
+          current_percentage?: number
+          id?: string
+          is_acknowledged?: boolean | null
+          message: string
+          message_ar?: string | null
+          threshold_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          amount_exceeded?: number
+          budget_id?: string
+          budget_item_id?: string | null
+          company_id?: string
+          created_at?: string
+          current_percentage?: number
+          id?: string
+          is_acknowledged?: boolean | null
+          message?: string
+          message_ar?: string | null
+          threshold_percentage?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       budget_items: {
         Row: {
           account_id: string
@@ -1953,6 +2007,10 @@ export type Database = {
         Args: { account_id: string }
         Returns: number
       }
+      check_budget_overruns: {
+        Args: { budget_id_param: string }
+        Returns: number
+      }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -2131,6 +2189,14 @@ export type Database = {
       }
       update_account_levels_manually: {
         Args: { company_id_param: string }
+        Returns: undefined
+      }
+      update_all_company_budgets: {
+        Args: { company_id_param: string }
+        Returns: number
+      }
+      update_budget_actual_amounts: {
+        Args: { budget_id_param: string }
         Returns: undefined
       }
       user_belongs_to_company: {
