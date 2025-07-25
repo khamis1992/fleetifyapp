@@ -1620,6 +1620,26 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: undefined
       }
+      create_depreciation_journal_entry: {
+        Args: {
+          asset_id_param: string
+          depreciation_amount_param: number
+          depreciation_date_param: string
+        }
+        Returns: string
+      }
+      create_invoice_journal_entry: {
+        Args: { invoice_id_param: string }
+        Returns: string
+      }
+      create_payment_journal_entry: {
+        Args: { payment_id_param: string }
+        Returns: string
+      }
+      generate_journal_entry_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       get_user_company: {
         Args: { _user_id: string }
         Returns: string
@@ -1630,6 +1650,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
         }
         Returns: boolean
+      }
+      process_monthly_depreciation: {
+        Args: { company_id_param: string; depreciation_date_param?: string }
+        Returns: number
       }
       update_account_levels_manually: {
         Args: { company_id_param: string }
