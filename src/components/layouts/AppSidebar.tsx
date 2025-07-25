@@ -24,7 +24,8 @@ import {
   Landmark,
   MapPin,
   Clock,
-  UserCheck
+  UserCheck,
+  UserCog
 } from 'lucide-react';
 import {
   Sidebar,
@@ -148,6 +149,11 @@ const hrSubItems = [
     name: 'إدارة الموظفين',
     href: '/hr/employees',
     icon: Users
+  },
+  {
+    name: 'إدارة المستخدمين',
+    href: '/hr/user-management',
+    icon: UserCog
   },
   {
     name: 'الحضور والانصراف',
