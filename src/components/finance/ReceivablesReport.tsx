@@ -89,7 +89,7 @@ export const ReceivablesReport = ({ companyName }: ReceivablesReportProps) => {
           </div>
           <Button onClick={handleExportHTML} size="sm">
             <Download className="h-4 w-4 mr-2" />
-            تصدير HTML
+            تحميل التقرير
           </Button>
         </div>
       </CardHeader>

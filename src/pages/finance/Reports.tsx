@@ -307,7 +307,7 @@ const Reports = () => {
                     }}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    تصدير HTML
+                    تحميل التقرير
                   </Button>
                 </CardContent>
               </Card>
@@ -330,7 +330,7 @@ const Reports = () => {
                 </div>
                 <Button onClick={handleExportBalanceSheet} size="sm">
                   <Download className="h-4 w-4 mr-2" />
-                  تصدير HTML
+                  تحميل التقرير
                 </Button>
               </div>
             </CardHeader>
@@ -418,7 +418,7 @@ const Reports = () => {
                 </div>
                 <Button onClick={handleExportIncomeStatement} size="sm">
                   <Download className="h-4 w-4 mr-2" />
-                  تصدير HTML
+                  تحميل التقرير
                 </Button>
               </div>
             </CardHeader>
