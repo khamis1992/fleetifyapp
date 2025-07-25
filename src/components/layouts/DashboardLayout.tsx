@@ -22,7 +22,9 @@ export const DashboardLayout: React.FC = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex flex-row-reverse w-full bg-background">
+        <AppSidebar />
+        
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <header className="h-14 flex items-center border-b border-border bg-card/50 backdrop-blur-sm px-4">
@@ -35,8 +37,6 @@ export const DashboardLayout: React.FC = () => {
             <Outlet />
           </main>
         </div>
-        
-        <AppSidebar />
       </div>
     </SidebarProvider>
   );
