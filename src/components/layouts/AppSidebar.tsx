@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,7 +84,7 @@ const navigationItems = [
 
 const financeSubItems = [
   {
-    name: 'دفتر الأستاذ العام',
+    name: 'دليل الحسابات',
     href: '/finance/chart-of-accounts',
     icon: BookOpen
   },
