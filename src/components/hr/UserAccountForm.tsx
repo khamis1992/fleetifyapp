@@ -61,11 +61,11 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
 
       if (requestError) throw requestError;
 
-      // Step 2: Update employee status to pending_account
+      // Step 2: Update employee status to pending
       const { error: employeeError } = await supabase
         .from('employees')
         .update({
-          account_status: 'pending_account'
+          account_status: 'pending'
         })
         .eq('id', employee.id);
 
