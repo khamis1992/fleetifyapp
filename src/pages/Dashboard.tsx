@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
       <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
         <div>
           <h1 className="text-3xl font-bold mb-2">
-            مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
+            مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}
           </h1>
           <p className="text-primary-foreground/80">
             نظرة سريعة على أداء شركتك اليوم
