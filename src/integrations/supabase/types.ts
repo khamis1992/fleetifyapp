@@ -1818,6 +1818,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: undefined
       }
+      create_bank_transaction_journal_entry: {
+        Args: { transaction_id_param: string }
+        Returns: string
+      }
       create_contract_journal_entry: {
         Args: { contract_id_param: string }
         Returns: string
