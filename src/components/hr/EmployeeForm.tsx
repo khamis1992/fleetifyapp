@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, User, UserPlus, Shield, Lock, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 const employeeSchema = z.object({
@@ -37,6 +42,12 @@ const employeeSchema = z.object({
   bank_account: z.string().optional(),
   iban: z.string().optional(),
   notes: z.string().optional(),
+  // Account creation fields
+  createAccount: z.boolean().optional(),
+  accountEmail: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
+  accountRoles: z.array(z.string()).optional(),
+  creationMethod: z.enum(['direct', 'email']).optional(),
+  accountNotes: z.string().optional(),
 });
 
 export type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -46,6 +57,13 @@ interface EmployeeFormProps {
   isLoading?: boolean;
 }
 
+const availableRoles = [
+  { value: 'company_admin', label: 'مدير الشركة', description: 'صلاحيات كاملة لإدارة الشركة' },
+  { value: 'manager', label: 'مدير', description: 'صلاحيات إدارية محدودة' },
+  { value: 'sales_agent', label: 'مندوب مبيعات', description: 'إدارة العملاء والمبيعات' },
+  { value: 'employee', label: 'موظف', description: 'صلاحيات محدودة للاستعلام' },
+];
+
 export default function EmployeeForm({ onSubmit, isLoading }: EmployeeFormProps) {
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -53,8 +71,15 @@ export default function EmployeeForm({ onSubmit, isLoading }: EmployeeFormProps)
       basic_salary: 0,
       allowances: 0,
       hire_date: new Date(),
+      createAccount: false,
+      accountRoles: ['employee'],
+      creationMethod: 'direct',
     },
   });
+
+  const createAccount = form.watch('createAccount');
+  const creationMethod = form.watch('creationMethod');
+  const accountRoles = form.watch('accountRoles') || [];
 
   return (
     <Form {...form}>
@@ -313,9 +338,189 @@ export default function EmployeeForm({ onSubmit, isLoading }: EmployeeFormProps)
           />
         </div>
 
+        <Separator className="my-6" />
+
+        {/* Account Creation Section */}
+        <Card className="border-2 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <User className="h-5 w-5" />
+              إنشاء حساب في النظام
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <FormField
+                control={form.control}
+                name="createAccount"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2 space-x-reverse">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm font-medium">
+                      إنشاء حساب مستخدم للموظف
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {createAccount && (
+              <div className="space-y-4 bg-background/50 p-4 rounded-lg border">
+                {/* Account Email */}
+                <FormField
+                  control={form.control}
+                  name="accountEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>البريد الإلكتروني للحساب *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email" 
+                          placeholder="user@company.com" 
+                          {...field}
+                          dir="ltr"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Creation Method */}
+                <FormField
+                  control={form.control}
+                  name="creationMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>طريقة إنشاء الحساب</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="space-y-3"
+                        >
+                          <div className="flex items-start space-x-3 space-x-reverse">
+                            <RadioGroupItem value="direct" id="direct" className="mt-1" />
+                            <div className="grid gap-1.5 leading-none">
+                              <label htmlFor="direct" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                                <UserPlus className="w-4 h-4" />
+                                إنشاء حساب مباشر (موصى به)
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                إنشاء الحساب فوراً مع كلمة مرور مؤقتة
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start space-x-3 space-x-reverse">
+                            <RadioGroupItem value="email" id="email" className="mt-1" />
+                            <div className="grid gap-1.5 leading-none">
+                              <label htmlFor="email" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                                <Send className="w-4 h-4" />
+                                إرسال دعوة بالإيميل
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                إرسال دعوة للموظف لإنشاء حسابه
+                              </p>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {creationMethod === 'direct' && (
+                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+                    <p className="text-sm text-blue-700">
+                      <Lock className="w-4 h-4 inline mr-1" />
+                      سيتم إنشاء كلمة مرور مؤقتة وعرضها لك بعد إضافة الموظف
+                    </p>
+                  </div>
+                )}
+
+                {/* Roles */}
+                <div className="space-y-3">
+                  <FormLabel className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    الأدوار والصلاحيات
+                  </FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="accountRoles"
+                    render={() => (
+                      <div className="grid gap-3">
+                        {availableRoles.map((role) => (
+                          <FormField
+                            key={role.value}
+                            control={form.control}
+                            name="accountRoles"
+                            render={({ field }) => (
+                              <FormItem
+                                key={role.value}
+                                className="flex flex-row items-start space-x-3 space-x-reverse space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(role.value)}
+                                    onCheckedChange={(checked) => {
+                                      const currentRoles = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentRoles, role.value]);
+                                      } else {
+                                        field.onChange(currentRoles.filter((r) => r !== role.value));
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel className="text-sm font-medium">
+                                    {role.label}
+                                  </FormLabel>
+                                  <p className="text-xs text-muted-foreground">
+                                    {role.description}
+                                  </p>
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Account Notes */}
+                <FormField
+                  control={form.control}
+                  name="accountNotes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ملاحظات الحساب (اختياري)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="أي ملاحظات إضافية حول إنشاء الحساب..." 
+                          {...field}
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end gap-4 pt-6">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'جاري الحفظ...' : 'حفظ الموظف'}
+            {isLoading ? 'جاري الحفظ...' : createAccount ? 'حفظ الموظف وإنشاء الحساب' : 'حفظ الموظف'}
           </Button>
         </div>
       </form>

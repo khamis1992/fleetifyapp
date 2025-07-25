@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import EmployeeDialog from '@/components/hr/EmployeeDialog';
 import { EmployeeFormData } from '@/components/hr/EmployeeForm';
+import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
 
 interface Employee {
   id: string;
@@ -33,6 +34,9 @@ interface Employee {
 export default function Employees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [accountData, setAccountData] = useState<any>(null);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -75,8 +79,11 @@ export default function Employees() {
         throw new Error('رقم الموظف موجود مسبقاً');
       }
 
+      // Use account email or regular email for employee
+      const employeeEmail = employeeData.createAccount ? employeeData.accountEmail : employeeData.email;
+
       // Insert new employee
-      const { data, error } = await supabase
+      const { data: employee, error } = await supabase
         .from('employees')
         .insert({
           employee_number: employeeData.employee_number,
@@ -84,7 +91,7 @@ export default function Employees() {
           last_name: employeeData.last_name,
           first_name_ar: employeeData.first_name_ar,
           last_name_ar: employeeData.last_name_ar,
-          email: employeeData.email,
+          email: employeeEmail,
           phone: employeeData.phone,
           position: employeeData.position,
           position_ar: employeeData.position_ar,
@@ -108,15 +115,23 @@ export default function Employees() {
         .single();
 
       if (error) throw error;
-      return data;
+
+      return { employee, employeeData };
     },
-    onSuccess: () => {
+    onSuccess: async ({ employee, employeeData }) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
-      setIsDialogOpen(false);
-      toast({
-        title: 'تم إضافة الموظف بنجاح',
-        description: 'تم حفظ بيانات الموظف الجديد في النظام',
-      });
+      
+      // If account creation is requested, create account after employee is added
+      if (employeeData.createAccount && employeeData.accountEmail && employeeData.accountRoles) {
+        setIsCreatingAccount(true);
+        await createUserAccount(employee, employeeData);
+      } else {
+        setIsDialogOpen(false);
+        toast({
+          title: 'تم إضافة الموظف بنجاح',
+          description: 'تم حفظ بيانات الموظف الجديد في النظام',
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -126,6 +141,81 @@ export default function Employees() {
       });
     },
   });
+
+  const createUserAccount = async (employee: any, employeeData: EmployeeFormData) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      if (employeeData.creationMethod === 'direct') {
+        // Direct account creation
+        const { data: result, error } = await supabase.functions.invoke('create-user-account', {
+          body: {
+            employee_id: employee.id,
+            employee_name: `${employee.first_name} ${employee.last_name}`,
+            employee_email: employeeData.accountEmail,
+            roles: employeeData.accountRoles,
+            requester_name: user.email || 'مدير النظام',
+            notes: employeeData.accountNotes,
+            user_id: user.id,
+            company_id: employee.company_id
+          }
+        });
+
+        if (error) throw error;
+        if (!result?.success) throw new Error(result?.error || 'فشل في إنشاء الحساب');
+
+        // Show account details dialog
+        setAccountData({
+          employee_name: `${employee.first_name} ${employee.last_name}`,
+          employee_email: employeeData.accountEmail,
+          temporary_password: result.temporary_password,
+          password_expires_at: result.password_expires_at
+        });
+        setShowAccountDialog(true);
+        setIsDialogOpen(false);
+
+        toast({
+          title: 'تم إضافة الموظف وإنشاء الحساب بنجاح',
+          description: 'تم إنشاء حساب النظام بكلمة مرور مؤقتة',
+        });
+      } else {
+        // Email invitation method
+        const { error: requestError } = await supabase
+          .from('account_creation_requests')
+          .insert({
+            employee_id: employee.id,
+            company_id: employee.company_id,
+            requested_by: user.id,
+            requested_roles: employeeData.accountRoles,
+            notes: employeeData.accountNotes,
+            direct_creation: false
+          });
+
+        if (requestError) throw requestError;
+
+        // Update employee account status
+        await supabase
+          .from('employees')
+          .update({ account_status: 'pending' })
+          .eq('id', employee.id);
+
+        setIsDialogOpen(false);
+        toast({
+          title: 'تم إضافة الموظف وطلب إنشاء الحساب',
+          description: 'تم إنشاء طلب حساب مستخدم للموظف',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'تم إضافة الموظف لكن فشل إنشاء الحساب',
+        description: error.message || 'حدث خطأ أثناء إنشاء حساب المستخدم',
+      });
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
 
   const handleAddEmployee = (employeeData: EmployeeFormData) => {
     addEmployeeMutation.mutate(employeeData);
@@ -255,7 +345,13 @@ export default function Employees() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleAddEmployee}
-        isLoading={addEmployeeMutation.isPending}
+        isLoading={addEmployeeMutation.isPending || isCreatingAccount}
+      />
+
+      <AccountCreatedDialog
+        open={showAccountDialog}
+        onOpenChange={setShowAccountDialog}
+        accountData={accountData}
       />
     </div>
   );
