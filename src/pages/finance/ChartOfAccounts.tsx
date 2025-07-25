@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount, useCopyDefaultAccounts, ChartOfAccount } from '@/hooks/useFinance';
 import { HierarchicalAccountsList } from '@/components/finance/HierarchicalAccountsList';
+import { AccountDetailsDialog } from '@/components/finance/AccountDetailsDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -40,6 +41,7 @@ const ChartOfAccounts = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -158,6 +160,11 @@ const ChartOfAccounts = () => {
     } catch (error) {
       console.error('Error updating account:', error);
     }
+  };
+
+  const handleViewAccount = (account: ChartOfAccount) => {
+    setSelectedAccount(account);
+    setIsViewDialogOpen(true);
   };
 
   const handleDeleteAccount = (account: ChartOfAccount) => {
@@ -371,6 +378,7 @@ const ChartOfAccounts = () => {
           ) : (
             <HierarchicalAccountsList
               accounts={filteredAccounts}
+              onViewAccount={handleViewAccount}
               onEditAccount={handleEditAccount}
               onDeleteAccount={handleDeleteAccount}
               expandedAccounts={expandedAccounts}
@@ -506,6 +514,13 @@ const ChartOfAccounts = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Account Details Dialog */}
+      <AccountDetailsDialog
+        account={selectedAccount}
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+      />
     </div>
   );
 };

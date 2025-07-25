@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, FileText, Edit2, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, FileText, Edit2, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ interface HierarchicalAccountsListProps {
   onAddSubAccount?: (parentAccount: ChartOfAccount) => void;
   onEditAccount?: (account: ChartOfAccount) => void;
   onDeleteAccount?: (account: ChartOfAccount) => void;
+  onViewAccount?: (account: ChartOfAccount) => void;
   expandedAccounts?: Set<string>;
   onToggleExpanded?: (accountId: string) => void;
 }
@@ -27,6 +28,7 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   onAddSubAccount,
   onEditAccount,
   onDeleteAccount,
+  onViewAccount,
   expandedAccounts = new Set(),
   onToggleExpanded,
 }) => {
@@ -221,6 +223,17 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
           
           <TableCell>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onViewAccount && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onViewAccount(account)}
+                  className="h-8 w-8 p-0"
+                  title="عرض تفاصيل الحساب"
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
+              )}
               {onEditAccount && (
                 <Button
                   variant="ghost"
