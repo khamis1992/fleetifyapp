@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { usePayments } from "@/hooks/useFinance";
+import { usePayments } from "@/hooks/usePayments";
 import { PaymentForm } from "@/components/finance/PaymentForm";
 import { PaymentAnalyticsCard } from "@/components/finance/PaymentAnalyticsCard";
+import { PaymentChartsCard } from "@/components/finance/PaymentChartsCard";
+import { PaymentExportCard } from "@/components/finance/PaymentExportCard";
+import { PaymentSummaryCards } from "@/components/finance/PaymentSummaryCards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, Download, TrendingUp, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
@@ -116,12 +119,19 @@ const Payments = () => {
           </Button>
         </div>
 
+        {/* بطاقات الملخص */}
+        <PaymentSummaryCards />
+
         <Tabs defaultValue="list" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="list">قائمة المدفوعات</TabsTrigger>
             <TabsTrigger value="analytics">
               <BarChart3 className="h-4 w-4 mr-2" />
               التحليلات والتقارير
+            </TabsTrigger>
+            <TabsTrigger value="charts">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              الرسوم البيانية
             </TabsTrigger>
           </TabsList>
 
@@ -129,10 +139,13 @@ const Payments = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>فلترة التقارير</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    فلترة التقارير
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">من تاريخ</label>
                       <Input
@@ -149,11 +162,73 @@ const Payments = () => {
                         onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                       />
                     </div>
+                    <div className="flex items-end">
+                      <Button variant="outline" onClick={() => {
+                        setDateRange({ start: "", end: "" });
+                      }}>
+                        مسح التواريخ
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <PaymentAnalyticsCard 
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <PaymentAnalyticsCard 
+                    startDate={dateRange.start || undefined} 
+                    endDate={dateRange.end || undefined} 
+                  />
+                </div>
+                <div>
+                  <PaymentExportCard 
+                    startDate={dateRange.start || undefined} 
+                    endDate={dateRange.end || undefined} 
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="charts" className="mt-6">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    فلترة الرسوم البيانية
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">من تاريخ</label>
+                      <Input
+                        type="date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">إلى تاريخ</label>
+                      <Input
+                        type="date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button variant="outline" onClick={() => {
+                        setDateRange({ start: "", end: "" });
+                      }}>
+                        مسح التواريخ
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <PaymentChartsCard 
                 startDate={dateRange.start || undefined} 
                 endDate={dateRange.end || undefined} 
               />
