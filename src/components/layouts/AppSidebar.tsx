@@ -19,7 +19,10 @@ import {
   Building,
   Target,
   PieChart,
-  ChevronDown
+  ChevronDown,
+  BookOpen,
+  Landmark,
+  MapPin
 } from 'lucide-react';
 import {
   Sidebar,
@@ -81,9 +84,19 @@ const navigationItems = [
 
 const financeSubItems = [
   {
+    name: 'دليل الحسابات',
+    href: '/finance/chart-of-accounts',
+    icon: BookOpen
+  },
+  {
     name: 'الحسابات العامة',
     href: '/finance/ledger',
     icon: Calculator
+  },
+  {
+    name: 'الخزينة والبنوك',
+    href: '/finance/treasury',
+    icon: Landmark
   },
   {
     name: 'الفواتير',
@@ -96,19 +109,19 @@ const financeSubItems = [
     icon: CreditCard
   },
   {
-    name: 'التقارير المالية',
-    href: '/finance/reports',
-    icon: FileText
+    name: 'الموازنات',
+    href: '/finance/budgets',
+    icon: Target
+  },
+  {
+    name: 'مراكز التكلفة',
+    href: '/finance/cost-centers',
+    icon: MapPin
   },
   {
     name: 'الأصول الثابتة',
     href: '/finance/assets',
     icon: Building
-  },
-  {
-    name: 'الموازنات',
-    href: '/finance/budgets',
-    icon: Target
   },
   {
     name: 'الموردين',
@@ -119,6 +132,11 @@ const financeSubItems = [
     name: 'التحليل المالي',
     href: '/finance/analysis',
     icon: PieChart
+  },
+  {
+    name: 'التقارير المالية',
+    href: '/finance/reports',
+    icon: FileText
   }
 ];
 
