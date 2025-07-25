@@ -178,11 +178,11 @@ export const VendorDetailsDialog = ({ vendor, open, onOpenChange }: VendorDetail
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
                 <div>
                   <label>تاريخ الإنشاء</label>
-                  <p>{new Date(vendor.created_at).toLocaleDateString('ar-KW')}</p>
+                  <p>{new Date(vendor.created_at).toLocaleDateString('en-GB')}</p>
                 </div>
                 <div>
                   <label>آخر تحديث</label>
-                  <p>{new Date(vendor.updated_at).toLocaleDateString('ar-KW')}</p>
+                  <p>{new Date(vendor.updated_at).toLocaleDateString('en-GB')}</p>
                 </div>
               </div>
             </CardContent>

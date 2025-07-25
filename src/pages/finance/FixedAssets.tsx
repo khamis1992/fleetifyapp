@@ -461,7 +461,7 @@ const FixedAssets = () => {
                     </div>
                   </TableCell>
                   <TableCell>{asset.category}</TableCell>
-                  <TableCell>{new Date(asset.purchase_date).toLocaleDateString('ar-KW')}</TableCell>
+                  <TableCell>{new Date(asset.purchase_date).toLocaleDateString('en-GB')}</TableCell>
                   <TableCell>{asset.purchase_cost.toFixed(3)} د.ك</TableCell>
                   <TableCell className="text-orange-600">
                     {(asset.accumulated_depreciation || 0).toFixed(3)} د.ك
@@ -596,7 +596,7 @@ const FixedAssets = () => {
               )}
               <div>
                 <Label>تاريخ الشراء</Label>
-                <p className="text-sm font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('ar-KW')}</p>
+                <p className="text-sm font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('en-GB')}</p>
               </div>
               <div>
                 <Label>تكلفة الشراء</Label>

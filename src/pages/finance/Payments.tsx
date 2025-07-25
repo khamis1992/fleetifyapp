@@ -274,7 +274,7 @@ const Payments = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {new Date(payment.payment_date).toLocaleDateString('ar-KW')}
+                              {new Date(payment.payment_date).toLocaleDateString('en-GB')}
                             </TableCell>
                             <TableCell className="font-mono">
                               {new Intl.NumberFormat('ar-KW', {

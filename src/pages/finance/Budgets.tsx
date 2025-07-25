@@ -305,7 +305,7 @@ const Budgets = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(budget.created_at).toLocaleDateString('ar-KW')}
+                      {new Date(budget.created_at).toLocaleDateString('en-GB')}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm">عرض</Button>

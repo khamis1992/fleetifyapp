@@ -122,7 +122,7 @@ export const AccountBalanceHistory: React.FC<AccountBalanceHistoryProps> = ({
                           {getChangeTypeLabel(entry.change_type)}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(entry.date).toLocaleDateString('ar-KW')}
+                          {new Date(entry.date).toLocaleDateString('en-GB')}
                         </span>
                       </div>
                       
@@ -188,7 +188,7 @@ export const AccountBalanceHistory: React.FC<AccountBalanceHistoryProps> = ({
             <div className="font-medium">آخر تحديث</div>
             <div className="text-sm text-muted-foreground">
               {balanceHistory.length > 0 
-                ? new Date(balanceHistory[0].date).toLocaleDateString('ar-KW')
+                ? new Date(balanceHistory[0].date).toLocaleDateString('en-GB')
                 : 'لم يتم التحديث'
               }
             </div>

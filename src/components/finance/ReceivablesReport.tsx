@@ -33,7 +33,7 @@ export const ReceivablesReport = ({ companyName }: ReceivablesReportProps) => {
             <tr>
               <td>${item.customer_name}</td>
               <td>${formatCurrency(item.amount)}</td>
-              <td>${new Date(item.due_date).toLocaleDateString('ar-SA')}</td>
+              <td>${new Date(item.due_date).toLocaleDateString('en-GB')}</td>
               <td>${item.overdue_days}</td>
               <td style="color: ${item.status === 'متأخر' ? '#ef4444' : '#22c55e'}">${item.status}</td>
             </tr>
@@ -84,7 +84,7 @@ export const ReceivablesReport = ({ companyName }: ReceivablesReportProps) => {
               تقرير الحسابات المدينة
             </CardTitle>
             <CardDescription>
-              المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('ar-SA')}
+              المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('en-GB')}
             </CardDescription>
           </div>
           <Button onClick={handleExportHTML} size="sm">
@@ -132,7 +132,7 @@ export const ReceivablesReport = ({ companyName }: ReceivablesReportProps) => {
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.customer_name}</TableCell>
                 <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                <TableCell>{new Date(item.due_date).toLocaleDateString('ar-SA')}</TableCell>
+                <TableCell>{new Date(item.due_date).toLocaleDateString('en-GB')}</TableCell>
                 <TableCell>{item.overdue_days}</TableCell>
                 <TableCell>
                   <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>

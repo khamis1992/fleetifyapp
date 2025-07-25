@@ -211,11 +211,11 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
             <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
               <div>
                 <label>تاريخ الإنشاء</label>
-                <p>{new Date(account.created_at).toLocaleDateString('ar-KW')}</p>
+                <p>{new Date(account.created_at).toLocaleDateString('en-GB')}</p>
               </div>
               <div>
                 <label>آخر تحديث</label>
-                <p>{new Date(account.updated_at).toLocaleDateString('ar-KW')}</p>
+                <p>{new Date(account.updated_at).toLocaleDateString('en-GB')}</p>
               </div>
             </div>
           </TabsContent>

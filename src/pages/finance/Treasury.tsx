@@ -375,7 +375,7 @@ export default function Treasury() {
                     {transactions?.slice(0, 10).map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell className="font-medium">{transaction.transaction_number}</TableCell>
-                        <TableCell>{new Date(transaction.transaction_date).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{new Date(transaction.transaction_date).toLocaleDateString('en-GB')}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             {getTransactionIcon(transaction.transaction_type)}

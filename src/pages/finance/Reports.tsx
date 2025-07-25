@@ -237,7 +237,7 @@ const Reports = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">اليوم</div>
-            <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('ar-KW')}</p>
+            <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('en-GB')}</p>
           </CardContent>
         </Card>
         
@@ -325,7 +325,7 @@ const Reports = () => {
                     الميزانية العمومية
                   </CardTitle>
                   <CardDescription>
-                    عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('ar-SA')}
+                    عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('en-GB')}
                   </CardDescription>
                 </div>
                 <Button onClick={handleExportBalanceSheet} size="sm">
@@ -413,7 +413,7 @@ const Reports = () => {
                     قائمة الدخل
                   </CardTitle>
                   <CardDescription>
-                    عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('ar-SA')}
+                    عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('en-GB')}
                   </CardDescription>
                 </div>
                 <Button onClick={handleExportIncomeStatement} size="sm">

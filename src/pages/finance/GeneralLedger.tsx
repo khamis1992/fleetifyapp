@@ -284,7 +284,7 @@ export default function Ledger() {
                         className={selectedEntryId === entry.id ? "bg-muted/50" : ""}
                       >
                         <TableCell className="font-medium">{entry.entry_number}</TableCell>
-                        <TableCell>{new Date(entry.entry_date).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{new Date(entry.entry_date).toLocaleDateString('en-GB')}</TableCell>
                         <TableCell>{entry.description}</TableCell>
                         <TableCell>
                           {entry.reference_type && (

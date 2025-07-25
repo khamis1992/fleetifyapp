@@ -358,7 +358,7 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
         <div class="header">
             <div class="company-name">${companyName || 'اسم الشركة'}</div>
             <div class="report-title">${title}</div>
-            <div class="report-date">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</div>
+            <div class="report-date">تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</div>
         </div>
         
         <div class="content">
@@ -366,7 +366,7 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
         </div>
         
         <div class="footer">
-            <p>تم إنشاء هذا التقرير بواسطة النظام المالي - ${new Date().toLocaleString('ar-SA')}</p>
+            <p>تم إنشاء هذا التقرير بواسطة النظام المالي - ${new Date().toLocaleString('en-GB')}</p>
         </div>
     </body>
     </html>

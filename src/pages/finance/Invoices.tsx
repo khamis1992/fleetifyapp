@@ -234,7 +234,7 @@ const Invoices = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {new Date(invoice.invoice_date).toLocaleDateString('ar-KW')}
+                      {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
                     </TableCell>
                     <TableCell>
                       {invoice.total_amount.toFixed(3)} د.ك
