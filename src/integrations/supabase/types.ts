@@ -120,15 +120,21 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           attendance_date: string
+          auto_checkout: boolean | null
           break_end_time: string | null
           break_start_time: string | null
+          check_in_latitude: number | null
+          check_in_longitude: number | null
           check_in_time: string | null
+          check_out_latitude: number | null
+          check_out_longitude: number | null
           check_out_time: string | null
           created_at: string
           employee_id: string
           id: string
           is_approved: boolean | null
           late_hours: number | null
+          location_verified: boolean | null
           notes: string | null
           overtime_hours: number | null
           status: string
@@ -139,15 +145,21 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           attendance_date: string
+          auto_checkout?: boolean | null
           break_end_time?: string | null
           break_start_time?: string | null
+          check_in_latitude?: number | null
+          check_in_longitude?: number | null
           check_in_time?: string | null
+          check_out_latitude?: number | null
+          check_out_longitude?: number | null
           check_out_time?: string | null
           created_at?: string
           employee_id: string
           id?: string
           is_approved?: boolean | null
           late_hours?: number | null
+          location_verified?: boolean | null
           notes?: string | null
           overtime_hours?: number | null
           status?: string
@@ -158,15 +170,21 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           attendance_date?: string
+          auto_checkout?: boolean | null
           break_end_time?: string | null
           break_start_time?: string | null
+          check_in_latitude?: number | null
+          check_in_longitude?: number | null
           check_in_time?: string | null
+          check_out_latitude?: number | null
+          check_out_longitude?: number | null
           check_out_time?: string | null
           created_at?: string
           employee_id?: string
           id?: string
           is_approved?: boolean | null
           late_hours?: number | null
+          location_verified?: boolean | null
           notes?: string | null
           overtime_hours?: number | null
           status?: string
@@ -567,6 +585,8 @@ export type Database = {
         Row: {
           address: string | null
           address_ar: string | null
+          allowed_radius: number | null
+          auto_checkout_enabled: boolean | null
           city: string | null
           commercial_register: string | null
           country: string | null
@@ -578,16 +598,22 @@ export type Database = {
           logo_url: string | null
           name: string
           name_ar: string | null
+          office_latitude: number | null
+          office_longitude: number | null
           phone: string | null
           settings: Json | null
           subscription_expires_at: string | null
           subscription_plan: string | null
           subscription_status: string | null
           updated_at: string
+          work_end_time: string | null
+          work_start_time: string | null
         }
         Insert: {
           address?: string | null
           address_ar?: string | null
+          allowed_radius?: number | null
+          auto_checkout_enabled?: boolean | null
           city?: string | null
           commercial_register?: string | null
           country?: string | null
@@ -599,16 +625,22 @@ export type Database = {
           logo_url?: string | null
           name: string
           name_ar?: string | null
+          office_latitude?: number | null
+          office_longitude?: number | null
           phone?: string | null
           settings?: Json | null
           subscription_expires_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
           updated_at?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
         }
         Update: {
           address?: string | null
           address_ar?: string | null
+          allowed_radius?: number | null
+          auto_checkout_enabled?: boolean | null
           city?: string | null
           commercial_register?: string | null
           country?: string | null
@@ -620,12 +652,16 @@ export type Database = {
           logo_url?: string | null
           name?: string
           name_ar?: string | null
+          office_latitude?: number | null
+          office_longitude?: number | null
           phone?: string | null
           settings?: Json | null
           subscription_expires_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
           updated_at?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
         }
         Relationships: []
       }

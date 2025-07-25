@@ -16,6 +16,8 @@ import NotFound from "./pages/NotFound";
 import Employees from "./pages/hr/Employees";
 import UserManagement from "./pages/hr/UserManagement";
 import Attendance from "./pages/hr/Attendance";
+import EmployeeAttendance from "./pages/hr/EmployeeAttendance";
+import LocationSettings from "./pages/hr/LocationSettings";
 import Payroll from "./pages/hr/Payroll";
 import HRReports from "./pages/hr/Reports";
 import HRSettings from "./pages/hr/Settings";
@@ -54,6 +56,8 @@ const App = () => (
               <Route path="hr/employees" element={<Employees />} />
               <Route path="hr/user-management" element={<UserManagement />} />
               <Route path="hr/attendance" element={<Attendance />} />
+              <Route path="hr/employee-attendance" element={<EmployeeAttendance />} />
+              <Route path="hr/location-settings" element={<LocationSettings />} />
               <Route path="hr/payroll" element={<Payroll />} />
               <Route path="hr/reports" element={<HRReports />} />
               <Route path="hr/settings" element={<HRSettings />} />
