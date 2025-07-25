@@ -18,6 +18,7 @@ import {
 import { Link } from "react-router-dom"
 import { useFinancialSummary } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { PayrollIntegrationCard } from "@/components/finance/PayrollIntegrationCard"
 import ChartOfAccounts from "./finance/ChartOfAccounts"
 import Ledger from "./finance/Ledger"
 import Treasury from "./finance/Treasury"
@@ -222,6 +223,9 @@ const FinanceModules = () => {
           </Card>
         </div>
       )}
+
+      {/* Payroll Integration Section */}
+      <PayrollIntegrationCard />
     </div>
   )
 }

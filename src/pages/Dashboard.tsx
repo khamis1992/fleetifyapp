@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePayrollSummary } from '@/hooks/usePayrollFinancialAnalysis';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -78,6 +79,7 @@ const RecentActivities = [
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { data: payrollSummary } = usePayrollSummary();
 
   return (
     <div className="space-y-8">
@@ -215,6 +217,45 @@ const Dashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Payroll Summary */}
+          {payrollSummary && (
+            <Card className="border-0 shadow-card mt-6">
+              <CardHeader>
+                <CardTitle>ملخص الرواتب</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">إجمالي الرواتب</span>
+                  <Badge variant="default">{payrollSummary.totalPayrolls}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">التكامل المحاسبي</span>
+                  <Badge 
+                    variant={payrollSummary.integrationRate > 80 ? "default" : "secondary"}
+                    className={payrollSummary.integrationRate > 80 ? "bg-green-600" : ""}
+                  >
+                    {payrollSummary.integrationRate.toFixed(0)}%
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">المبلغ الإجمالي</span>
+                  <span className="text-sm font-medium">
+                    {(payrollSummary.totalNetAmount / 1000).toFixed(1)}ك د.ك
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">معلقة التكامل</span>
+                  <Badge 
+                    variant={payrollSummary.pendingIntegration > 0 ? "secondary" : "default"}
+                    className={payrollSummary.pendingIntegration > 0 ? "bg-yellow-500" : "bg-green-600"}
+                  >
+                    {payrollSummary.pendingIntegration}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

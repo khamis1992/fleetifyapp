@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DollarSign, Search, Plus, FileText, Check, Clock, Users, Calculator } from 'lucide-react';
+import { DollarSign, Search, Plus, FileText, Check, Clock, Users, Calculator, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
@@ -165,6 +165,33 @@ export default function Payroll() {
                             <p className="font-semibold text-green-600 text-lg">
                               {formatCurrency(record.net_amount)}
                             </p>
+                          </div>
+                          
+                          <div className="text-center">
+                            <p className="text-sm text-muted-foreground">حالة التكامل</p>
+                            <div className="flex items-center gap-1 justify-center">
+                              {record.journal_entry_id ? (
+                                <>
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <span className="text-sm text-green-600">مدمج</span>
+                                </>
+                              ) : record.status === 'paid' ? (
+                                <>
+                                  <AlertCircle className="h-4 w-4 text-red-600" />
+                                  <span className="text-sm text-red-600">خطأ</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="h-4 w-4 text-yellow-600" />
+                                  <span className="text-sm text-yellow-600">معلق</span>
+                                </>
+                              )}
+                            </div>
+                            {record.journal_entry_id && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                قيد رقم: {record.journal_entry_id.substring(0, 8)}...
+                              </p>
+                            )}
                           </div>
                           
                           <div className="flex items-center gap-2">

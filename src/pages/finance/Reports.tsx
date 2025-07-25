@@ -8,6 +8,7 @@ import { CostCenterReports } from "@/components/finance/CostCenterReports"
 import { CashFlowReport } from "@/components/finance/CashFlowReport"
 import { PayablesReport } from "@/components/finance/PayablesReport"
 import { ReceivablesReport } from "@/components/finance/ReceivablesReport"
+import { PayrollReportsPanel } from "@/components/finance/PayrollReportsPanel"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -254,13 +255,14 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
           <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
           <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
           <TabsTrigger value="payables">الدائنة</TabsTrigger>
           <TabsTrigger value="receivables">المدينة</TabsTrigger>
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
+          <TabsTrigger value="payroll">الرواتب</TabsTrigger>
         </TabsList>
 
 
@@ -443,6 +445,10 @@ const Reports = () => {
 
         <TabsContent value="cost-centers" className="space-y-6">
           <CostCenterReports />
+        </TabsContent>
+
+        <TabsContent value="payroll" className="space-y-6">
+          <PayrollReportsPanel />
         </TabsContent>
       </Tabs>
     </div>

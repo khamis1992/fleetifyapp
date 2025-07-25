@@ -2594,6 +2594,7 @@ export type Database = {
         Row: {
           allowances: number | null
           basic_salary: number | null
+          company_id: string | null
           cost_center_name: string | null
           cost_center_name_ar: string | null
           deductions: number | null
