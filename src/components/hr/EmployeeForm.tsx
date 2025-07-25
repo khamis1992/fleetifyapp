@@ -433,18 +433,6 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-start space-x-3 space-x-reverse">
-                            <RadioGroupItem value="email" id="email" className="mt-1" />
-                            <div className="grid gap-1.5 leading-none">
-                              <label htmlFor="email" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                                <Send className="w-4 h-4" />
-                                إرسال دعوة بالإيميل
-                              </label>
-                              <p className="text-xs text-muted-foreground">
-                                إرسال دعوة للموظف لإنشاء حسابه
-                              </p>
-                            </div>
-                          </div>
                         </RadioGroup>
                       </FormControl>
                       <FormMessage />
