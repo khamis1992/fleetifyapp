@@ -736,6 +736,42 @@ export type Database = {
         }
         Relationships: []
       }
+      default_cost_centers: {
+        Row: {
+          center_code: string
+          center_name: string
+          center_name_ar: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          center_code: string
+          center_name: string
+          center_name_ar?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          center_code?: string
+          center_name?: string
+          center_name_ar?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       depreciation_records: {
         Row: {
           accumulated_depreciation: number
