@@ -193,6 +193,91 @@ export const useCreateAccount = () => {
   })
 }
 
+export const useUpdateAccount = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, accountData }: {
+      id: string
+      accountData: {
+        account_code?: string
+        account_name?: string
+        account_name_ar?: string
+        account_type?: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses'
+        balance_type?: 'debit' | 'credit'
+        account_subtype?: string
+        parent_account_id?: string
+        description?: string
+        is_active?: boolean
+      }
+    }) => {
+      const { data, error } = await supabase
+        .from("chart_of_accounts")
+        .update(accountData)
+        .eq("id", id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] })
+      toast.success("تم تحديث الحساب بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في تحديث الحساب: " + error.message)
+    }
+  })
+}
+
+export const useDeleteAccount = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (accountId: string) => {
+      // First check if account has any transactions or child accounts
+      const { data: childAccounts } = await supabase
+        .from("chart_of_accounts")
+        .select("id")
+        .eq("parent_account_id", accountId)
+        .eq("is_active", true)
+      
+      if (childAccounts && childAccounts.length > 0) {
+        throw new Error("لا يمكن حذف الحساب لأنه يحتوي على حسابات فرعية")
+      }
+      
+      const { data: journalLines } = await supabase
+        .from("journal_entry_lines")
+        .select("id")
+        .eq("account_id", accountId)
+        .limit(1)
+      
+      if (journalLines && journalLines.length > 0) {
+        throw new Error("لا يمكن حذف الحساب لأنه يحتوي على حركات محاسبية")
+      }
+      
+      // If no dependencies, mark as inactive instead of hard delete
+      const { data, error } = await supabase
+        .from("chart_of_accounts")
+        .update({ is_active: false })
+        .eq("id", accountId)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] })
+      toast.success("تم حذف الحساب بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في حذف الحساب: " + error.message)
+    }
+  })
+}
+
 // Journal Entries Hooks
 export const useJournalEntries = (filters?: { status?: string; dateFrom?: string; dateTo?: string }) => {
   const { user } = useAuth()

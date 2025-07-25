@@ -12,6 +12,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,12 +32,15 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useChartOfAccounts, useCreateAccount, useCopyDefaultAccounts, ChartOfAccount } from '@/hooks/useFinance';
+import { useChartOfAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount, useCopyDefaultAccounts, ChartOfAccount } from '@/hooks/useFinance';
 import { HierarchicalAccountsList } from '@/components/finance/HierarchicalAccountsList';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ChartOfAccounts = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'hierarchical' | 'flat'>('hierarchical');
@@ -34,10 +48,32 @@ const ChartOfAccounts = () => {
   
   const { data: accounts, isLoading, error } = useChartOfAccounts();
   const createAccountMutation = useCreateAccount();
+  const updateAccountMutation = useUpdateAccount();
+  const deleteAccountMutation = useDeleteAccount();
   const copyDefaultAccountsMutation = useCopyDefaultAccounts();
   const { user } = useAuth();
 
   const [newAccount, setNewAccount] = useState<{
+    account_code: string;
+    account_name: string;
+    account_name_ar: string;
+    account_type: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses';
+    account_subtype: string;
+    balance_type: 'debit' | 'credit';
+    parent_account_id?: string;
+    description: string;
+  }>({
+    account_code: '',
+    account_name: '',
+    account_name_ar: '',
+    account_type: 'assets',
+    account_subtype: '',
+    balance_type: 'debit',
+    parent_account_id: undefined,
+    description: '',
+  });
+
+  const [editAccount, setEditAccount] = useState<{
     account_code: string;
     account_name: string;
     account_name_ar: string;
@@ -82,6 +118,51 @@ const ChartOfAccounts = () => {
       await copyDefaultAccountsMutation.mutateAsync(user.profile.company_id);
     } catch (error) {
       console.error('Error copying default accounts:', error);
+    }
+  };
+
+  const handleEditAccount = (account: ChartOfAccount) => {
+    setSelectedAccount(account);
+    setEditAccount({
+      account_code: account.account_code,
+      account_name: account.account_name,
+      account_name_ar: account.account_name_ar || '',
+      account_type: account.account_type,
+      account_subtype: account.account_subtype || '',
+      balance_type: account.balance_type,
+      parent_account_id: account.parent_account_id,
+      description: account.description || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateAccount = async () => {
+    if (!selectedAccount) return;
+    try {
+      await updateAccountMutation.mutateAsync({
+        id: selectedAccount.id,
+        accountData: editAccount
+      });
+      setIsEditDialogOpen(false);
+      setSelectedAccount(null);
+    } catch (error) {
+      console.error('Error updating account:', error);
+    }
+  };
+
+  const handleDeleteAccount = (account: ChartOfAccount) => {
+    setSelectedAccount(account);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!selectedAccount) return;
+    try {
+      await deleteAccountMutation.mutateAsync(selectedAccount.id);
+      setIsDeleteDialogOpen(false);
+      setSelectedAccount(null);
+    } catch (error) {
+      console.error('Error deleting account:', error);
     }
   };
 
@@ -277,6 +358,8 @@ const ChartOfAccounts = () => {
             <HierarchicalAccountsList
               accounts={filteredAccounts}
               expandedAccounts={expandedAccounts}
+              onEditAccount={handleEditAccount}
+              onDeleteAccount={handleDeleteAccount}
               onToggleExpanded={(accountId) => {
                 const newExpanded = new Set(expandedAccounts);
                 if (newExpanded.has(accountId)) {
@@ -290,6 +373,127 @@ const ChartOfAccounts = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Account Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>تعديل الحساب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>كود الحساب</Label>
+                <Input
+                  value={editAccount.account_code}
+                  onChange={(e) => setEditAccount({...editAccount, account_code: e.target.value})}
+                  placeholder="1001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>نوع الحساب</Label>
+                <Select 
+                  value={editAccount.account_type} 
+                  onValueChange={(value: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses') => 
+                    setEditAccount({...editAccount, account_type: value})
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="assets">أصول</SelectItem>
+                    <SelectItem value="liabilities">خصوم</SelectItem>
+                    <SelectItem value="equity">حقوق ملكية</SelectItem>
+                    <SelectItem value="revenue">إيرادات</SelectItem>
+                    <SelectItem value="expenses">مصروفات</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>اسم الحساب</Label>
+              <Input
+                value={editAccount.account_name}
+                onChange={(e) => setEditAccount({...editAccount, account_name: e.target.value})}
+                placeholder="اسم الحساب"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>اسم الحساب بالعربية</Label>
+              <Input
+                value={editAccount.account_name_ar}
+                onChange={(e) => setEditAccount({...editAccount, account_name_ar: e.target.value})}
+                placeholder="اسم الحساب بالعربية"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>طبيعة الرصيد</Label>
+              <Select 
+                value={editAccount.balance_type} 
+                onValueChange={(value: 'debit' | 'credit') => 
+                  setEditAccount({...editAccount, balance_type: value})
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="debit">مدين</SelectItem>
+                  <SelectItem value="credit">دائن</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>الوصف</Label>
+              <Textarea
+                value={editAccount.description}
+                onChange={(e) => setEditAccount({...editAccount, description: e.target.value})}
+                placeholder="وصف الحساب"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleUpdateAccount} disabled={updateAccountMutation.isPending}>
+                حفظ التعديلات
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف الحساب</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من رغبتك في حذف الحساب "{selectedAccount?.account_name}"؟
+              <br />
+              <span className="text-destructive font-medium">
+                لن يتم حذف الحساب فعلياً، بل سيتم إلغاء تفعيله فقط.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteAccount}
+              disabled={deleteAccountMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteAccountMutation.isPending ? 'جارٍ الحذف...' : 'حذف الحساب'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
