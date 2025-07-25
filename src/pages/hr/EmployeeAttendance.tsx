@@ -17,14 +17,14 @@ export default function EmployeeAttendance() {
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // Get employee info
-  const { data: employee } = useQuery({
+  const { data: employee, isLoading: employeeLoading, error: employeeError } = useQuery({
     queryKey: ['employee', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('employees')
         .select('id, company_id, first_name, last_name, employee_number')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -118,10 +118,30 @@ export default function EmployeeAttendance() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!employee) {
+  if (employeeLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <div className="container mx-auto p-6 max-w-2xl">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardDescription>
+              You are not registered as an employee in the system. Please contact your administrator to set up your employee account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <div className="p-4 rounded-lg bg-muted/30 text-muted-foreground">
+              <p>This page is only accessible to registered employees.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
