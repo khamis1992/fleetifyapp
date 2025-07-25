@@ -50,6 +50,150 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          bank_id: string
+          check_number: string | null
+          company_id: string
+          counterpart_bank_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          journal_entry_id: string | null
+          reconciled: boolean | null
+          reconciled_at: string | null
+          reference_number: string | null
+          status: string
+          transaction_date: string
+          transaction_number: string
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          bank_id: string
+          check_number?: string | null
+          company_id: string
+          counterpart_bank_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          journal_entry_id?: string | null
+          reconciled?: boolean | null
+          reconciled_at?: string | null
+          reference_number?: string | null
+          status?: string
+          transaction_date?: string
+          transaction_number: string
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          bank_id?: string
+          check_number?: string | null
+          company_id?: string
+          counterpart_bank_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          journal_entry_id?: string | null
+          reconciled?: boolean | null
+          reconciled_at?: string | null
+          reference_number?: string | null
+          status?: string
+          transaction_date?: string
+          transaction_number?: string
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      banks: {
+        Row: {
+          account_number: string
+          account_type: string
+          address: string | null
+          bank_name: string
+          bank_name_ar: string | null
+          branch_name: string | null
+          branch_name_ar: string | null
+          company_id: string
+          contact_person: string | null
+          created_at: string
+          currency: string
+          current_balance: number | null
+          email: string | null
+          iban: string | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          notes: string | null
+          opening_balance: number | null
+          opening_date: string | null
+          phone: string | null
+          swift_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          account_type?: string
+          address?: string | null
+          bank_name: string
+          bank_name_ar?: string | null
+          branch_name?: string | null
+          branch_name_ar?: string | null
+          company_id: string
+          contact_person?: string | null
+          created_at?: string
+          currency?: string
+          current_balance?: number | null
+          email?: string | null
+          iban?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          notes?: string | null
+          opening_balance?: number | null
+          opening_date?: string | null
+          phone?: string | null
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          account_type?: string
+          address?: string | null
+          bank_name?: string
+          bank_name_ar?: string | null
+          branch_name?: string | null
+          branch_name_ar?: string | null
+          company_id?: string
+          contact_person?: string | null
+          created_at?: string
+          currency?: string
+          current_balance?: number | null
+          email?: string | null
+          iban?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          notes?: string | null
+          opening_balance?: number | null
+          opening_date?: string | null
+          phone?: string | null
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       budget_items: {
         Row: {
           account_id: string
@@ -290,6 +434,54 @@ export type Database = {
           subscription_expires_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cost_centers: {
+        Row: {
+          actual_amount: number | null
+          budget_amount: number | null
+          center_code: string
+          center_name: string
+          center_name_ar: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          manager_id: string | null
+          parent_center_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_amount?: number | null
+          budget_amount?: number | null
+          center_code: string
+          center_name: string
+          center_name_ar?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          manager_id?: string | null
+          parent_center_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_amount?: number | null
+          budget_amount?: number | null
+          center_code?: string
+          center_name?: string
+          center_name_ar?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          manager_id?: string | null
+          parent_center_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -798,6 +990,7 @@ export type Database = {
       journal_entry_lines: {
         Row: {
           account_id: string
+          cost_center_id: string | null
           created_at: string
           credit_amount: number | null
           debit_amount: number | null
@@ -808,6 +1001,7 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          cost_center_id?: string | null
           created_at?: string
           credit_amount?: number | null
           debit_amount?: number | null
@@ -818,6 +1012,7 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          cost_center_id?: string | null
           created_at?: string
           credit_amount?: number | null
           debit_amount?: number | null

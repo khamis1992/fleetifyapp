@@ -11,12 +11,17 @@ import {
   FileText,
   PieChart,
   Target,
+  Banknote,
+  BookOpen,
   Settings
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useFinancialSummary } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import ChartOfAccounts from "./finance/ChartOfAccounts"
+import Ledger from "./finance/Ledger"
+import Treasury from "./finance/Treasury"
+import CostCenters from "./finance/CostCenters"
 import Invoices from "./finance/Invoices"
 import Payments from "./finance/Payments"
 import Reports from "./finance/Reports"
@@ -30,12 +35,36 @@ const FinanceModules = () => {
   
   const modules = [
     {
-      title: "الحسابات العامة",
-      titleEn: "General Ledger",
-      description: "إدارة دليل الحسابات والقيود المحاسبية",
+      title: "دليل الحسابات",
+      titleEn: "Chart of Accounts",
+      description: "إدارة شجرة الحسابات المحاسبية",
       icon: Calculator,
-      path: "/finance/ledger",
+      path: "/finance/chart-of-accounts",
       color: "bg-gradient-to-br from-blue-500 to-blue-600"
+    },
+    {
+      title: "دفتر الأستاذ العام",
+      titleEn: "General Ledger",
+      description: "عرض وإدارة القيود المحاسبية",
+      icon: BookOpen,
+      path: "/finance/ledger",
+      color: "bg-gradient-to-br from-emerald-500 to-emerald-600"
+    },
+    {
+      title: "الخزينة والبنوك",
+      titleEn: "Treasury & Banks",
+      description: "إدارة الحسابات المصرفية والمعاملات النقدية",
+      icon: Banknote,
+      path: "/finance/treasury",
+      color: "bg-gradient-to-br from-violet-500 to-violet-600"
+    },
+    {
+      title: "مراكز التكلفة",
+      titleEn: "Cost Centers",
+      description: "إدارة وتتبع مراكز التكلفة والموازنات",
+      icon: Target,
+      path: "/finance/cost-centers",
+      color: "bg-gradient-to-br from-amber-500 to-amber-600"
     },
     {
       title: "الفواتير",
@@ -201,7 +230,10 @@ const Finance = () => {
   return (
     <Routes>
       <Route index element={<FinanceModules />} />
-      <Route path="ledger" element={<ChartOfAccounts />} />
+      <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
+      <Route path="ledger" element={<Ledger />} />
+      <Route path="treasury" element={<Treasury />} />
+      <Route path="cost-centers" element={<CostCenters />} />
       <Route path="invoices" element={<Invoices />} />
       <Route path="payments" element={<Payments />} />
       <Route path="reports" element={<Reports />} />
