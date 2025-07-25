@@ -14,10 +14,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Mail, Lock, Shield, User } from 'lucide-react';
+import { AlertCircle, Mail, Lock, Shield, User, UserPlus, Send } from 'lucide-react';
+import AccountCreatedDialog from './AccountCreatedDialog';
 
 interface UserAccountFormProps {
   employee: any;
@@ -36,9 +38,11 @@ const availableRoles = [
 export default function UserAccountForm({ employee, open, onOpenChange, onSuccess }: UserAccountFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [creationMethod, setCreationMethod] = useState<'email' | 'direct'>('direct');
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [accountData, setAccountData] = useState<any>(null);
   const [formData, setFormData] = useState({
     email: employee.email || '',
-    temporaryPassword: '',
     selectedRoles: ['employee'],
     sendWelcomeEmail: true,
     notes: ''
@@ -46,93 +50,120 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
 
   const createAccountMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // Step 1: Create account creation request
-      const { data: requestData, error: requestError } = await supabase
-        .from('account_creation_requests')
-        .insert({
-          employee_id: employee.id,
-          company_id: employee.company_id,
-          requested_by: user?.id,
-          requested_roles: data.selectedRoles,
-          notes: data.notes
-        })
-        .select()
-        .single();
-
-      if (requestError) throw requestError;
-
-      // Step 2: Update employee status to pending
-      const { error: employeeError } = await supabase
-        .from('employees')
-        .update({
-          account_status: 'pending'
-        })
-        .eq('id', employee.id);
-
-      if (employeeError) throw employeeError;
-
-      // Step 3: Send invitation email if requested
-      let emailSent = false;
-      let emailError = null;
-      
-      if (data.sendWelcomeEmail) {
-        try {
-          const { data: emailData, error: emailErr } = await supabase.functions.invoke('send-account-invitation', {
-            body: {
-              employee_id: employee.id,
-              employee_name: `${employee.first_name} ${employee.last_name}`,
-              employee_email: data.email,
-              requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
-              roles: data.selectedRoles,
-              invitation_url: `${window.location.origin}/auth?invitation=true&email=${encodeURIComponent(data.email)}`
-            }
-          });
-
-          if (emailErr) {
-            console.error('Email function error:', emailErr);
-            emailError = emailErr;
-          } else {
-            console.log('Email sent successfully:', emailData);
-            emailSent = true;
+      if (creationMethod === 'direct') {
+        // Direct account creation
+        const { data: result, error } = await supabase.functions.invoke('create-user-account', {
+          body: {
+            employee_id: employee.id,
+            employee_name: `${employee.first_name} ${employee.last_name}`,
+            employee_email: data.email,
+            roles: data.selectedRoles,
+            requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
+            notes: data.notes
           }
-        } catch (err) {
-          console.error('Email sending failed:', err);
-          emailError = err;
-        }
-      }
+        });
 
-      return { 
-        request: requestData, 
-        employee_email: data.email, 
-        emailSent, 
-        emailError,
-        sendWelcomeEmail: data.sendWelcomeEmail 
-      };
+        if (error) throw error;
+        if (!result?.success) throw new Error(result?.error || 'فشل في إنشاء الحساب');
+
+        return {
+          method: 'direct',
+          success: true,
+          accountData: {
+            employee_name: `${employee.first_name} ${employee.last_name}`,
+            employee_email: data.email,
+            temporary_password: result.temporary_password,
+            password_expires_at: result.password_expires_at
+          }
+        };
+      } else {
+        // Email invitation method (existing logic)
+        const { data: requestData, error: requestError } = await supabase
+          .from('account_creation_requests')
+          .insert({
+            employee_id: employee.id,
+            company_id: employee.company_id,
+            requested_by: user?.id,
+            requested_roles: data.selectedRoles,
+            notes: data.notes,
+            direct_creation: false
+          })
+          .select()
+          .single();
+
+        if (requestError) throw requestError;
+
+        const { error: employeeError } = await supabase
+          .from('employees')
+          .update({ account_status: 'pending' })
+          .eq('id', employee.id);
+
+        if (employeeError) throw employeeError;
+
+        let emailSent = false;
+        let emailError = null;
+        
+        if (data.sendWelcomeEmail) {
+          try {
+            const { data: emailData, error: emailErr } = await supabase.functions.invoke('send-account-invitation', {
+              body: {
+                employee_id: employee.id,
+                employee_name: `${employee.first_name} ${employee.last_name}`,
+                employee_email: data.email,
+                requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
+                roles: data.selectedRoles,
+                invitation_url: `${window.location.origin}/auth?invitation=true&email=${encodeURIComponent(data.email)}`
+              }
+            });
+
+            if (emailErr) {
+              emailError = emailErr;
+            } else {
+              emailSent = true;
+            }
+          } catch (err) {
+            emailError = err;
+          }
+        }
+
+        return { 
+          method: 'email',
+          request: requestData, 
+          employee_email: data.email, 
+          emailSent, 
+          emailError,
+          sendWelcomeEmail: data.sendWelcomeEmail 
+        };
+      }
     },
     onSuccess: (result) => {
       const employeeName = `${employee.first_name} ${employee.last_name}`;
       
-      if (result.sendWelcomeEmail) {
-        if (result.emailSent) {
-          // Email sent successfully
-          toast({
-            title: "تم إرسال دعوة الحساب بنجاح",
-            description: `تم إرسال دعوة لإنشاء حساب للموظف ${employeeName} على البريد الإلكتروني ${result.employee_email}`
-          });
+      if (result.method === 'direct') {
+        setAccountData(result.accountData);
+        setShowAccountDialog(true);
+        onOpenChange(false);
+      } else {
+        if (result.sendWelcomeEmail) {
+          if (result.emailSent) {
+            toast({
+              title: "تم إرسال دعوة الحساب بنجاح",
+              description: `تم إرسال دعوة لإنشاء حساب للموظف ${employeeName} على البريد الإلكتروني ${result.employee_email}`
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "تم إنشاء طلب الحساب مع خطأ في الإيميل",
+              description: `تم إنشاء طلب حساب للموظف ${employeeName} ولكن فشل إرسال دعوة الإيميل. يرجى إرسال الدعوة يدوياً أو المحاولة مرة أخرى.`
+            });
+          }
         } else {
-          // Email failed to send
           toast({
-            variant: "destructive",
-            title: "تم إنشاء طلب الحساب مع خطأ في الإيميل",
-            description: `تم إنشاء طلب حساب للموظف ${employeeName} ولكن فشل إرسال دعوة الإيميل. يرجى إرسال الدعوة يدوياً أو المحاولة مرة أخرى.`
+            title: "تم إنشاء طلب الحساب بنجاح",
+            description: `تم إنشاء طلب حساب للموظف ${employeeName} بدون إرسال دعوة إيميل`
           });
         }
-      } else {
-        // No email was requested
-        toast({
-          title: "تم إنشاء طلب الحساب بنجاح",
-          description: `تم إنشاء طلب حساب للموظف ${employeeName} بدون إرسال دعوة إيميل`
-        });
+        onOpenChange(false);
       }
       
       onSuccess();
@@ -140,8 +171,8 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "خطأ في إرسال الدعوة",
-        description: error.message || "حدث خطأ أثناء إرسال دعوة الحساب"
+        title: "خطأ في إنشاء الحساب",
+        description: error.message || "حدث خطأ أثناء إنشاء الحساب"
       });
     }
   });
@@ -170,11 +201,6 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
     createAccountMutation.mutate(formData);
   };
 
-  const generateTemporaryPassword = () => {
-    const password = Math.random().toString(36).slice(-12);
-    setFormData(prev => ({ ...prev, temporaryPassword: password }));
-  };
-
   const handleRoleToggle = (roleValue: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -185,165 +211,241 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <User className="w-5 h-5 mr-2" />
-            إرسال دعوة حساب مستخدم
-          </DialogTitle>
-          <DialogDescription>
-            إرسال دعوة لإنشاء حساب نظام للموظف {employee.first_name} {employee.last_name}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <User className="w-5 h-5 mr-2" />
+              إنشاء حساب مستخدم
+            </DialogTitle>
+            <DialogDescription>
+              إنشاء حساب نظام للموظف {employee.first_name} {employee.last_name}
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Employee Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">معلومات الموظف</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label>الاسم</Label>
-                  <p className="font-medium">{employee.first_name} {employee.last_name}</p>
-                </div>
-                <div>
-                  <Label>رقم الموظف</Label>
-                  <p className="font-medium">{employee.employee_number}</p>
-                </div>
-                <div>
-                  <Label>المنصب</Label>
-                  <p className="font-medium">{employee.position || 'غير محدد'}</p>
-                </div>
-                <div>
-                  <Label>القسم</Label>
-                  <p className="font-medium">{employee.department || 'غير محدد'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <Mail className="w-4 h-4 mr-2" />
-                تفاصيل الحساب
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="employee@company.com"
-                  required
-                  dir="ltr"
-                />
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  ملاحظة: سيتم إرسال دعوة للموظف لإنشاء كلمة المرور الخاصة به عند أول تسجيل دخول
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Roles & Permissions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <Shield className="w-4 h-4 mr-2" />
-                الأدوار والصلاحيات
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {availableRoles.map((role) => (
-                <div key={role.value} className="flex items-start space-x-3 space-x-reverse">
-                  <Checkbox
-                    id={role.value}
-                    checked={formData.selectedRoles.includes(role.value)}
-                    onCheckedChange={(checked) => handleRoleToggle(role.value, checked as boolean)}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label
-                      htmlFor={role.value}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {role.label}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {role.description}
-                    </p>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Employee Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">معلومات الموظف</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <Label>الاسم</Label>
+                    <p className="font-medium">{employee.first_name} {employee.last_name}</p>
+                  </div>
+                  <div>
+                    <Label>رقم الموظف</Label>
+                    <p className="font-medium">{employee.employee_number}</p>
+                  </div>
+                  <div>
+                    <Label>المنصب</Label>
+                    <p className="font-medium">{employee.position || 'غير محدد'}</p>
+                  </div>
+                  <div>
+                    <Label>القسم</Label>
+                    <p className="font-medium">{employee.department || 'غير محدد'}</p>
                   </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Options */}
-          <Card>
-            <CardContent className="space-y-4 pt-6">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <Checkbox
-                  id="sendWelcome"
-                  checked={formData.sendWelcomeEmail}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, sendWelcomeEmail: checked as boolean }))}
-                />
-                <Label htmlFor="sendWelcome">
-                  إرسال دعوة بالبريد الإلكتروني لإنشاء الحساب
-                </Label>
+            {/* Creation Method */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">طريقة إنشاء الحساب</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={creationMethod}
+                  onValueChange={(value: 'email' | 'direct') => setCreationMethod(value)}
+                  className="space-y-4"
+                >
+                  <div className="flex items-start space-x-3 space-x-reverse">
+                    <RadioGroupItem value="direct" id="direct" className="mt-1" />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label htmlFor="direct" className="flex items-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        إنشاء حساب مباشر (موصى به)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        إنشاء الحساب فوراً مع كلمة مرور مؤقتة. سيتم عرض بيانات الحساب لنسخها وإرسالها للموظف.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 space-x-reverse">
+                    <RadioGroupItem value="email" id="email" className="mt-1" />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label htmlFor="email" className="flex items-center gap-2">
+                        <Send className="w-4 h-4" />
+                        إرسال دعوة بالإيميل
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        إرسال دعوة عبر البريد الإلكتروني للموظف لإنشاء حسابه بنفسه. (قد لا يعمل بسبب قيود الإيميل)
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            {/* Account Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center">
+                  <Mail className="w-4 h-4 mr-2" />
+                  تفاصيل الحساب
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="email">البريد الإلكتروني *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="employee@company.com"
+                    required
+                    dir="ltr"
+                  />
+                </div>
+
+                {creationMethod === 'direct' && (
+                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+                    <p className="text-sm text-blue-700">
+                      <Lock className="w-4 h-4 inline mr-1" />
+                      سيتم إنشاء كلمة مرور مؤقتة تلقائياً وعرضها لك لنسخها وإرسالها للموظف.
+                    </p>
+                  </div>
+                )}
+
+                {creationMethod === 'email' && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      ملاحظة: سيتم إرسال دعوة للموظف لإنشاء كلمة المرور الخاصة به عند أول تسجيل دخول
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Roles & Permissions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center">
+                  <Shield className="w-4 h-4 mr-2" />
+                  الأدوار والصلاحيات
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {availableRoles.map((role) => (
+                  <div key={role.value} className="flex items-start space-x-3 space-x-reverse">
+                    <Checkbox
+                      id={role.value}
+                      checked={formData.selectedRoles.includes(role.value)}
+                      onCheckedChange={(checked) => handleRoleToggle(role.value, checked as boolean)}
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label
+                        htmlFor={role.value}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {role.label}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {role.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Email Options - Only show for email method */}
+            {creationMethod === 'email' && (
+              <Card>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox
+                      id="sendWelcome"
+                      checked={formData.sendWelcomeEmail}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, sendWelcomeEmail: checked as boolean }))}
+                    />
+                    <Label htmlFor="sendWelcome">
+                      إرسال دعوة بالبريد الإلكتروني لإنشاء الحساب
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Notes */}
+            <Card>
+              <CardContent className="space-y-4 pt-6">
+                <div>
+                  <Label htmlFor="notes">ملاحظات (اختياري)</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="أي ملاحظات إضافية حول إنشاء الحساب..."
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Warning */}
+            <div className="flex items-start space-x-2 space-x-reverse p-4 rounded-lg bg-amber-50 border border-amber-200">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800">تنبيه مهم:</p>
+                <p className="text-amber-700 mt-1">
+                  {creationMethod === 'direct' 
+                    ? 'سيتم إنشاء الحساب مباشرة وعرض كلمة مرور مؤقتة. تأكد من إرسال البيانات للموظف بطريقة آمنة.'
+                    : 'سيتم إرسال دعوة للموظف لإنشاء حساب في النظام. سيتمكن من الوصول فقط بعد قبول الدعوة وإنشاء كلمة المرور.'
+                  }
+                </p>
               </div>
-
-              <div>
-                <Label htmlFor="notes">ملاحظات (اختياري)</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="أي ملاحظات إضافية حول إنشاء الحساب..."
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Warning */}
-          <div className="flex items-start space-x-2 space-x-reverse p-4 rounded-lg bg-warning/10 border border-warning/20">
-            <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium text-warning">تنبيه مهم:</p>
-              <p className="text-muted-foreground mt-1">
-                سيتم إرسال دعوة للموظف لإنشاء حساب في النظام. سيتمكن من الوصول فقط بعد قبول الدعوة وإنشاء كلمة المرور.
-              </p>
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-2 space-x-reverse pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={createAccountMutation.isPending}
-            >
-              إلغاء
-            </Button>
-            <Button
-              type="submit"
-              disabled={createAccountMutation.isPending}
-            >
-              {createAccountMutation.isPending ? 'جاري الإرسال...' : 'إرسال الدعوة'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {/* Actions */}
+            <div className="flex justify-end space-x-2 space-x-reverse pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={createAccountMutation.isPending}
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="submit"
+                disabled={createAccountMutation.isPending}
+              >
+                {createAccountMutation.isPending 
+                  ? 'جاري الإنشاء...' 
+                  : creationMethod === 'direct' 
+                    ? 'إنشاء الحساب' 
+                    : 'إرسال الدعوة'
+                }
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Account Created Dialog */}
+      {accountData && (
+        <AccountCreatedDialog
+          open={showAccountDialog}
+          onOpenChange={setShowAccountDialog}
+          accountData={accountData}
+        />
+      )}
+    </>
   );
 }
