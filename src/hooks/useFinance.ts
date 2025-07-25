@@ -130,6 +130,89 @@ export interface Vendor {
   updated_at: string
 }
 
+export interface CostCenter {
+  id: string
+  company_id: string
+  center_code: string
+  center_name: string
+  center_name_ar?: string
+  description?: string
+  parent_center_id?: string
+  manager_id?: string
+  budget_amount?: number
+  actual_amount?: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FixedAsset {
+  id: string
+  company_id: string
+  asset_code: string
+  asset_name: string
+  asset_name_ar?: string
+  category: string
+  serial_number?: string
+  location?: string
+  purchase_date: string
+  purchase_cost: number
+  salvage_value?: number
+  useful_life_years: number
+  depreciation_method: 'straight_line' | 'declining_balance' | 'units_of_production'
+  accumulated_depreciation?: number
+  book_value: number
+  condition_status?: 'excellent' | 'good' | 'fair' | 'poor'
+  disposal_date?: string
+  disposal_amount?: number
+  asset_account_id?: string
+  depreciation_account_id?: string
+  is_active: boolean
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Budget {
+  id: string
+  company_id: string
+  budget_name: string
+  budget_year: number
+  accounting_period_id?: string
+  total_revenue?: number
+  total_expenses?: number
+  net_income?: number
+  status: 'draft' | 'approved' | 'active' | 'closed'
+  created_by?: string
+  approved_by?: string
+  approved_at?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface BankTransaction {
+  id: string
+  company_id: string
+  bank_id: string
+  transaction_number: string
+  transaction_date: string
+  transaction_type: 'deposit' | 'withdrawal' | 'transfer'
+  amount: number
+  balance_after: number
+  description: string
+  reference_number?: string
+  check_number?: string
+  counterpart_bank_id?: string
+  status: 'pending' | 'completed' | 'cancelled'
+  reconciled?: boolean
+  reconciled_at?: string
+  journal_entry_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
 // Chart of Accounts Hooks
 export const useChartOfAccounts = () => {
   const { user } = useAuth()
@@ -662,3 +745,263 @@ export const useCopyDefaultAccounts = () => {
     },
   });
 };
+
+// Cost Centers Hooks
+export const useCostCenters = () => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["costCenters", user?.profile?.company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cost_centers")
+        .select("*")
+        .eq("is_active", true)
+        .order("center_code")
+      
+      if (error) throw error
+      return data as CostCenter[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateCostCenter = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (centerData: {
+      center_code: string
+      center_name: string
+      center_name_ar?: string
+      description?: string
+      parent_center_id?: string
+      manager_id?: string
+      budget_amount?: number
+      actual_amount?: number
+    }) => {
+      if (!user?.profile?.company_id) throw new Error("Company ID is required")
+      
+      const { data, error } = await supabase
+        .from("cost_centers")
+        .insert({
+          ...centerData,
+          company_id: user.profile.company_id,
+          is_active: true
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["costCenters"] })
+      toast.success("تم إنشاء مركز التكلفة بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في إنشاء مركز التكلفة: " + error.message)
+    }
+  })
+}
+
+// Fixed Assets Hooks
+export const useFixedAssets = () => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["fixedAssets", user?.profile?.company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fixed_assets")
+        .select("*")
+        .eq("is_active", true)
+        .order("asset_code")
+      
+      if (error) throw error
+      return data as FixedAsset[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateFixedAsset = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (assetData: {
+      asset_code: string
+      asset_name: string
+      asset_name_ar?: string
+      category: string
+      serial_number?: string
+      location?: string
+      purchase_date: string
+      purchase_cost: number
+      salvage_value?: number
+      useful_life_years: number
+      depreciation_method?: 'straight_line' | 'declining_balance' | 'units_of_production'
+      condition_status?: 'excellent' | 'good' | 'fair' | 'poor'
+      asset_account_id?: string
+      depreciation_account_id?: string
+      notes?: string
+    }) => {
+      if (!user?.profile?.company_id) throw new Error("Company ID is required")
+      
+      const bookValue = assetData.purchase_cost - (assetData.salvage_value || 0)
+      
+      const { data, error } = await supabase
+        .from("fixed_assets")
+        .insert({
+          ...assetData,
+          company_id: user.profile.company_id,
+          book_value: bookValue,
+          accumulated_depreciation: 0,
+          depreciation_method: assetData.depreciation_method || 'straight_line',
+          condition_status: assetData.condition_status || 'good',
+          is_active: true
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fixedAssets"] })
+      toast.success("تم إنشاء الأصل الثابت بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في إنشاء الأصل الثابت: " + error.message)
+    }
+  })
+}
+
+// Budgets Hooks
+export const useBudgets = () => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["budgets", user?.profile?.company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("budgets")
+        .select("*")
+        .order("budget_year", { ascending: false })
+      
+      if (error) throw error
+      return data as Budget[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateBudget = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (budgetData: {
+      budget_name: string
+      budget_year: number
+      accounting_period_id?: string
+      total_revenue?: number
+      total_expenses?: number
+      notes?: string
+    }) => {
+      if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
+      
+      const netIncome = (budgetData.total_revenue || 0) - (budgetData.total_expenses || 0)
+      
+      const { data, error } = await supabase
+        .from("budgets")
+        .insert({
+          ...budgetData,
+          company_id: user.profile.company_id,
+          net_income: netIncome,
+          status: 'draft',
+          created_by: user.id
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgets"] })
+      toast.success("تم إنشاء الموازنة بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في إنشاء الموازنة: " + error.message)
+    }
+  })
+}
+
+// Bank Transactions Hooks
+export const useBankTransactions = () => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["bankTransactions", user?.profile?.company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bank_transactions")
+        .select(`
+          *,
+          bank:banks(bank_name, account_number)
+        `)
+        .order("transaction_date", { ascending: false })
+      
+      if (error) throw error
+      return data as any[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateBankTransaction = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (transactionData: {
+      bank_id: string
+      transaction_number: string
+      transaction_date: string
+      transaction_type: 'deposit' | 'withdrawal' | 'transfer'
+      amount: number
+      balance_after: number
+      description: string
+      reference_number?: string
+      check_number?: string
+      counterpart_bank_id?: string
+      status?: 'pending' | 'completed' | 'cancelled'
+    }) => {
+      if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
+      
+      const { data, error } = await supabase
+        .from("bank_transactions")
+        .insert({
+          ...transactionData,
+          company_id: user.profile.company_id,
+          status: transactionData.status || 'completed',
+          created_by: user.id
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bankTransactions"] })
+      toast.success("تم إنشاء الحركة البنكية بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في إنشاء الحركة البنكية: " + error.message)
+    }
+  })
+}

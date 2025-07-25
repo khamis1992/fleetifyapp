@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Target, TrendingUp, DollarSign, Plus, Search, Building } from "lucide-react";
-import { useCostCenters, useCreateCostCenter, CostCenter } from "@/hooks/useTreasury";
+import { useCostCenters, useCreateCostCenter, CostCenter } from "@/hooks/useFinance";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function CostCenters() {
@@ -33,9 +33,13 @@ export default function CostCenters() {
     if (!newCostCenter.center_code || !newCostCenter.center_name) return;
 
     await createCostCenter.mutateAsync({
-      ...newCostCenter,
-      company_id: '1', // This would come from auth context
-    } as Omit<CostCenter, 'id' | 'created_at' | 'updated_at'>);
+      center_code: newCostCenter.center_code!,
+      center_name: newCostCenter.center_name!,
+      center_name_ar: newCostCenter.center_name_ar,
+      description: newCostCenter.description,
+      budget_amount: newCostCenter.budget_amount,
+      actual_amount: newCostCenter.actual_amount
+    });
 
     setNewCostCenter({
       center_code: '',
