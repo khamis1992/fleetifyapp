@@ -64,6 +64,7 @@ const ChartOfAccounts = () => {
     balance_type: 'debit' | 'credit';
     parent_account_id?: string;
     description: string;
+    current_balance: number;
   }>({
     account_code: '',
     account_name: '',
@@ -73,6 +74,7 @@ const ChartOfAccounts = () => {
     balance_type: 'debit',
     parent_account_id: undefined,
     description: '',
+    current_balance: 0,
   });
 
   const handleCreateAccount = async () => {
@@ -83,6 +85,17 @@ const ChartOfAccounts = () => {
     }
     if (!newAccount.account_name.trim()) {
       toast.error("اسم الحساب مطلوب");
+      return;
+    }
+    
+    // Validate balance for certain account types
+    if (newAccount.current_balance < 0 && ['assets', 'expenses'].includes(newAccount.account_type)) {
+      toast.error("الأصول والمصروفات لا يمكن أن تحتوي على رصيد سالب");
+      return;
+    }
+    
+    if (newAccount.current_balance > 0 && ['liabilities', 'equity', 'revenue'].includes(newAccount.account_type)) {
+      toast.error("الخصوم وحقوق الملكية والإيرادات يجب أن تحتوي على رصيد سالب أو صفر");
       return;
     }
 
@@ -105,6 +118,7 @@ const ChartOfAccounts = () => {
         balance_type: 'debit',
         parent_account_id: undefined,
         description: '',
+        current_balance: 0,
       });
       setIsCreateDialogOpen(false);
     } catch (error) {
@@ -133,6 +147,7 @@ const ChartOfAccounts = () => {
       balance_type: account.balance_type,
       parent_account_id: account.parent_account_id,
       description: account.description || '',
+      current_balance: account.current_balance || 0,
     });
     setIsEditDialogOpen(true);
   };
@@ -140,7 +155,27 @@ const ChartOfAccounts = () => {
   const handleUpdateAccount = async () => {
     if (!selectedAccount) return;
 
+    // Validate balance for certain account types
+    if (newAccount.current_balance < 0 && ['assets', 'expenses'].includes(newAccount.account_type)) {
+      toast.error("الأصول والمصروفات لا يمكن أن تحتوي على رصيد سالب");
+      return;
+    }
+    
+    if (newAccount.current_balance > 0 && ['liabilities', 'equity', 'revenue'].includes(newAccount.account_type)) {
+      toast.error("الخصوم وحقوق الملكية والإيرادات يجب أن تحتوي على رصيد سالب أو صفر");
+      return;
+    }
+
     try {
+      // Show confirmation for significant balance changes
+      const balanceChange = Math.abs(newAccount.current_balance - (selectedAccount.current_balance || 0));
+      if (balanceChange > 1000) {
+        const confirmed = window.confirm(
+          `هل أنت متأكد من تغيير الرصيد بمبلغ ${balanceChange.toFixed(3)} د.ك؟`
+        );
+        if (!confirmed) return;
+      }
+
       await updateAccountMutation.mutateAsync({
         id: selectedAccount.id,
         ...newAccount
@@ -154,6 +189,7 @@ const ChartOfAccounts = () => {
         balance_type: 'debit',
         parent_account_id: undefined,
         description: '',
+        current_balance: 0,
       });
       setSelectedAccount(null);
       setIsEditDialogOpen(false);
@@ -339,6 +375,33 @@ const ChartOfAccounts = () => {
                       </Select>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        الرصيد الحالي
+                        <Badge variant="outline" className="text-xs">
+                          {newAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}
+                        </Badge>
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        value={newAccount.current_balance}
+                        onChange={(e) => setNewAccount({...newAccount, current_balance: parseFloat(e.target.value) || 0})}
+                        placeholder="0.000"
+                        className="text-left font-mono"
+                      />
+                      <div className="text-xs space-y-1">
+                        <p className="text-muted-foreground">
+                          الرصيد بالدينار الكويتي (د.ك)
+                        </p>
+                        {newAccount.current_balance !== 0 && (
+                          <div className="flex items-center gap-1 text-amber-600">
+                            ⚠️ سيتم إنشاء قيد يومية لتسجيل الرصيد الافتتاحي
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex justify-end gap-2 pt-4">
                       <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                         إلغاء
@@ -468,6 +531,33 @@ const ChartOfAccounts = () => {
                   <SelectItem value="credit">دائن</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                الرصيد الحالي
+                <Badge variant="outline" className="text-xs">
+                  {newAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}
+                </Badge>
+              </Label>
+              <Input
+                type="number"
+                step="0.001"
+                value={newAccount.current_balance}
+                onChange={(e) => setNewAccount({...newAccount, current_balance: parseFloat(e.target.value) || 0})}
+                placeholder="0.000"
+                className="text-left font-mono"
+              />
+              <div className="text-xs space-y-1">
+                <p className="text-muted-foreground">
+                  الرصيد بالدينار الكويتي (د.ك)
+                </p>
+                {selectedAccount && newAccount.current_balance !== (selectedAccount.current_balance || 0) && (
+                  <div className="flex items-center gap-1 text-amber-600">
+                    ⚠️ سيتم إنشاء قيد تعديل لتسجيل فرق الرصيد
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">

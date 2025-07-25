@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, FileText, Edit2, Trash2, Eye } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, FileText, Edit2, Trash2, Eye, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface HierarchicalAccountsListProps {
   accounts: ChartOfAccount[];
@@ -117,22 +123,57 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   };
 
   const formatBalance = (balance: number, balanceType: string) => {
-    const formattedBalance = Math.abs(balance).toLocaleString('ar-KW', {
+    const formattedBalance = new Intl.NumberFormat('ar-KW', {
+      style: 'currency',
+      currency: 'KWD',
       minimumFractionDigits: 3,
       maximumFractionDigits: 3,
-    });
+    }).format(Math.abs(balance));
     
     const isNormalBalance = 
       (['assets', 'expenses'].includes(balanceType) && balance >= 0) ||
       (['liabilities', 'equity', 'revenue'].includes(balanceType) && balance < 0);
     
+    const balanceIcon = balance > 0 ? TrendingUp : balance < 0 ? TrendingDown : null;
+    
     return (
-      <span className={cn(
-        "font-mono",
-        isNormalBalance ? "text-green-600" : "text-red-600"
-      )}>
-        {formattedBalance} د.ك
-      </span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="text-left cursor-help">
+              <div className="flex items-center gap-1">
+                {balanceIcon && React.createElement(balanceIcon, { 
+                  className: cn(
+                    "h-3 w-3",
+                    isNormalBalance ? "text-success" : "text-destructive"
+                  )
+                })}
+                <span className={cn(
+                  "font-mono text-sm font-medium",
+                  isNormalBalance ? "text-success" : "text-destructive"
+                )}>
+                  {formattedBalance}
+                </span>
+              </div>
+              {Math.abs(balance) > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  {balance >= 0 ? 'مدين' : 'دائن'}
+                </div>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <div className="space-y-2">
+              <p className="font-medium">تفاصيل الرصيد</p>
+              <div className="text-sm space-y-1">
+                <p>المبلغ: {formattedBalance}</p>
+                <p>طبيعة الرصيد: {balance >= 0 ? 'مدين' : 'دائن'}</p>
+                <p>الحالة: {isNormalBalance ? 'رصيد طبيعي' : 'رصيد غير طبيعي'}</p>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 
@@ -211,8 +252,8 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
             </Badge>
           </TableCell>
           
-          <TableCell className="text-left font-mono">
-            {!account.is_header && formatBalance(account.current_balance, account.account_type)}
+          <TableCell className="text-left">
+            {!account.is_header && formatBalance(account.current_balance || 0, account.account_type)}
           </TableCell>
           
           <TableCell>

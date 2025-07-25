@@ -2,8 +2,10 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ChartOfAccount } from '@/hooks/useFinance';
+import { AccountBalanceHistory } from './AccountBalanceHistory';
 
 interface AccountDetailsDialogProps {
   account: ChartOfAccount | null;
@@ -53,28 +55,35 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   };
 
   const formatBalance = (balance: number, balanceType: string) => {
-    const formattedBalance = Math.abs(balance).toLocaleString('ar-KW', {
+    const formattedBalance = new Intl.NumberFormat('ar-KW', {
+      style: 'currency',
+      currency: 'KWD',
       minimumFractionDigits: 3,
       maximumFractionDigits: 3,
-    });
+    }).format(Math.abs(balance));
     
     const isNormalBalance = 
       (['assets', 'expenses'].includes(balanceType) && balance >= 0) ||
       (['liabilities', 'equity', 'revenue'].includes(balanceType) && balance < 0);
     
     return (
-      <span className={cn(
-        "font-mono text-lg",
-        isNormalBalance ? "text-success" : "text-destructive"
-      )}>
-        {formattedBalance} د.ك
-      </span>
+      <div className="space-y-1">
+        <span className={cn(
+          "font-mono text-lg font-semibold",
+          isNormalBalance ? "text-success" : "text-destructive"
+        )}>
+          {formattedBalance}
+        </span>
+        <div className="text-xs text-muted-foreground">
+          {balance >= 0 ? 'رصيد مدين' : 'رصيد دائن'}
+        </div>
+      </div>
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>تفاصيل الحساب</span>
@@ -84,7 +93,13 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6">
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">معلومات الحساب</TabsTrigger>
+            <TabsTrigger value="balance">تاريخ الرصيد</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="space-y-6 mt-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -148,11 +163,16 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
           <div className="space-y-4">
             <h3 className="font-medium">المعلومات المالية</h3>
             {!account.is_header && (
-              <div>
+              <div className="p-4 rounded-lg bg-muted/30 border">
                 <label className="text-sm font-medium text-muted-foreground">الرصيد الحالي</label>
-                <div className="mt-1">
-                  {formatBalance(account.current_balance, account.account_type)}
+                <div className="mt-2">
+                  {formatBalance(account.current_balance || 0, account.account_type)}
                 </div>
+                {account.current_balance === 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    هذا الحساب لا يحتوي على رصيد حاليًا
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -186,19 +206,29 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
             </>
           )}
 
-          {/* Timestamps */}
-          <Separator />
-          <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-            <div>
-              <label>تاريخ الإنشاء</label>
-              <p>{new Date(account.created_at).toLocaleDateString('ar-KW')}</p>
+            {/* Timestamps */}
+            <Separator />
+            <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+              <div>
+                <label>تاريخ الإنشاء</label>
+                <p>{new Date(account.created_at).toLocaleDateString('ar-KW')}</p>
+              </div>
+              <div>
+                <label>آخر تحديث</label>
+                <p>{new Date(account.updated_at).toLocaleDateString('ar-KW')}</p>
+              </div>
             </div>
-            <div>
-              <label>آخر تحديث</label>
-              <p>{new Date(account.updated_at).toLocaleDateString('ar-KW')}</p>
-            </div>
-          </div>
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="balance" className="mt-6">
+            <AccountBalanceHistory
+              accountId={account.id}
+              currentBalance={account.current_balance || 0}
+              accountType={account.account_type}
+              // balanceHistory will be fetched from a future hook
+            />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
