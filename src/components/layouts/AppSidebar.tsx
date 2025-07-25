@@ -89,7 +89,7 @@ const financeSubItems = [
     icon: BookOpen
   },
   {
-    name: 'الحسابات العامة',
+    name: 'دفتر الأستاذ',
     href: '/finance/ledger',
     icon: Calculator
   },
