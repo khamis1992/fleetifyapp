@@ -36,8 +36,8 @@ const Payments = () => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !filterStatus || payment.status === filterStatus;
-    const matchesMethod = !filterMethod || payment.payment_method === filterMethod;
+    const matchesStatus = !filterStatus || filterStatus === "all" || payment.status === filterStatus;
+    const matchesMethod = !filterMethod || filterMethod === "all" || payment.payment_method === filterMethod;
     return matchesSearch && matchesStatus && matchesMethod;
   }) || [];
 
@@ -186,7 +186,7 @@ const Payments = () => {
                       <SelectValue placeholder="حالة الدفع" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">جميع الحالات</SelectItem>
+                      <SelectItem value="all">جميع الحالات</SelectItem>
                       <SelectItem value="completed">مكتملة</SelectItem>
                       <SelectItem value="pending">معلقة</SelectItem>
                       <SelectItem value="cancelled">ملغاة</SelectItem>
@@ -198,7 +198,7 @@ const Payments = () => {
                       <SelectValue placeholder="طريقة الدفع" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">جميع الطرق</SelectItem>
+                      <SelectItem value="all">جميع الطرق</SelectItem>
                       <SelectItem value="cash">نقدي</SelectItem>
                       <SelectItem value="check">شيك</SelectItem>
                       <SelectItem value="bank_transfer">حوالة بنكية</SelectItem>
