@@ -1,8 +1,9 @@
 import React from 'react';
-import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Car, 
   FileText, 
@@ -10,18 +11,37 @@ import {
   DollarSign, 
   Settings,
   LogOut,
-  Menu,
   Home,
   Shield,
-  BarChart3
+  BarChart3,
+  ChevronDown,
+  Building2
 } from 'lucide-react';
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const navigationItems = [
+const coreNavigationItems = [
   { 
     name: 'لوحة التحكم', 
     name_en: 'Dashboard',
@@ -46,6 +66,9 @@ const navigationItems = [
     href: '/customers', 
     icon: Users 
   },
+];
+
+const managementNavigationItems = [
   { 
     name: 'المالية', 
     name_en: 'Finance',
@@ -66,80 +89,188 @@ const navigationItems = [
   },
 ];
 
-const Sidebar = ({ className = "" }: { className?: string }) => {
-  const location = useLocation();
+const AppSidebar = () => {
   const { user, signOut } = useAuth();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  return (
-    <div className={`h-screen bg-gradient-to-br from-primary via-primary-light to-accent p-6 text-primary-foreground ${className}`}>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-center bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent">
-          KW RentFlow
-        </h1>
-        <p className="text-sm text-center text-primary-foreground/80 mt-1">
-          نظام إدارة تأجير السيارات
-        </p>
-      </div>
+  const getNavClassName = ({ isActive }: { isActive: boolean }) =>
+    isActive 
+      ? "bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm" 
+      : "text-muted-foreground hover:bg-muted hover:text-foreground";
 
-      {/* User Info */}
-      <div className="mb-6 p-4 bg-primary-foreground/10 rounded-lg backdrop-blur-sm">
-        <div className="text-sm font-medium">
-          {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
+  const getUserDisplayName = () => {
+    const firstName = user?.profile?.first_name_ar || user?.profile?.first_name || '';
+    const lastName = user?.profile?.last_name_ar || user?.profile?.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'مستخدم';
+  };
+
+  const getUserInitials = () => {
+    const name = getUserDisplayName();
+    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  };
+
+  return (
+    <Sidebar className="border-l shadow-lg" collapsible="icon">
+      <SidebarHeader className="border-b bg-card/50">
+        <div className="flex items-center gap-3 px-3 py-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
+            KW
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold text-foreground">RentFlow</h1>
+              <p className="text-xs text-muted-foreground">نظام إدارة تأجير السيارات</p>
+            </div>
+          )}
         </div>
-        <div className="text-xs text-primary-foreground/70">
-          {user?.profile?.position || 'موظف'}
-        </div>
-        {user?.company && (
-          <div className="text-xs text-accent-light mt-1">
-            {user.company.name_ar || user.company.name}
+      </SidebarHeader>
+
+      <SidebarContent className="gap-6 p-4">
+        {/* Core Operations */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+            العمليات الأساسية
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {coreNavigationItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild className="transition-all duration-200">
+                    <NavLink to={item.href} end className={getNavClassName}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span className="font-medium">{item.name}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Management */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+            الإدارة والتحليل
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {managementNavigationItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild className="transition-all duration-200">
+                    <NavLink to={item.href} end className={getNavClassName}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span className="font-medium">{item.name}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t bg-card/50 p-4">
+        {!collapsed ? (
+          <div className="space-y-3">
+            {/* User Info Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start h-auto p-3 hover:bg-muted/50">
+                  <div className="flex items-center gap-3 w-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.profile?.avatar_url} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-right min-w-0">
+                      <div className="text-sm font-medium text-foreground truncate">
+                        {getUserDisplayName()}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {user?.profile?.position || 'موظف'}
+                      </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="text-right">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{getUserDisplayName()}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.profile?.position || 'موظف'}
+                    </p>
+                    {user?.company && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Building2 className="h-3 w-3" />
+                        {user.company.name_ar || user.company.name}
+                      </div>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <NavLink to="/settings" className="w-full cursor-pointer">
+                    <Settings className="ml-2 h-4 w-4" />
+                    الإعدادات
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                  <LogOut className="ml-2 h-4 w-4" />
+                  تسجيل الخروج
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={user?.profile?.avatar_url} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="text-right">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{getUserDisplayName()}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.profile?.position || 'موظف'}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <NavLink to="/settings" className="w-full cursor-pointer">
+                    <Settings className="ml-2 h-4 w-4" />
+                    الإعدادات
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                  <LogOut className="ml-2 h-4 w-4" />
+                  تسجيل الخروج
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2">
-        {navigationItems.map((item) => {
-          const isActive = location.pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                isActive
-                  ? 'bg-primary-foreground/20 text-accent shadow-accent/20 shadow-lg'
-                  : 'hover:bg-primary-foreground/10'
-              }`}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.name}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer Actions */}
-      <div className="space-y-2 mt-8">
-        <Link
-          to="/settings"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-primary-foreground/10 transition-all"
-        >
-          <Settings className="h-5 w-5" />
-          <span>الإعدادات</span>
-        </Link>
-        <Button
-          variant="ghost"
-          onClick={handleSignOut}
-          className="w-full justify-start gap-3 text-primary-foreground hover:bg-destructive/20 hover:text-destructive-foreground"
-        >
-          <LogOut className="h-5 w-5" />
-          تسجيل الخروج
-        </Button>
-      </div>
-    </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 };
 
@@ -148,7 +279,7 @@ export const DashboardLayout: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-soft">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -159,33 +290,22 @@ export const DashboardLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background-soft" dir="rtl">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block lg:w-80 lg:fixed lg:inset-y-0 lg:right-0 lg:z-50">
-        <Sidebar />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background" dir="rtl">
+        <AppSidebar />
+        
+        <div className="flex-1 flex flex-col">
+          {/* Header with Sidebar Trigger */}
+          <header className="flex h-14 items-center border-b bg-card/50 px-4 lg:px-6">
+            <SidebarTrigger className="ml-auto" />
+          </header>
+          
+          {/* Main Content */}
+          <main className="flex-1 overflow-auto p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-primary text-primary-foreground p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">KW RentFlow</h1>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="p-0 w-80">
-            <Sidebar />
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {/* Main Content */}
-      <div className="lg:mr-80">
-        <main className="min-h-screen p-6">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+    </SidebarProvider>
   );
 };
