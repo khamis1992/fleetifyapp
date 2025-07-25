@@ -80,7 +80,6 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Dark mode with clean professional look */
     --background: 222.2 84% 4.9%;
     --background-secondary: 217.2 32.6% 17.5%;
     --background-muted: 215 28% 17%;
