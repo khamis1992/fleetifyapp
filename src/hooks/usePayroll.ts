@@ -269,12 +269,90 @@ export function useCreatePayroll() {
 
 export function useUpdatePayrollStatus() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ payrollId, status }: { payrollId: string; status: string }) => {
+      const updateData: any = { status };
+      
+      // Add updated timestamp and user info
+      if (user) {
+        updateData.updated_at = new Date().toISOString();
+      }
+
       const { data, error } = await supabase
         .from('payroll')
-        .update({ status })
+        .update(updateData)
+        .eq('id', payrollId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-records'] });
+      
+      const statusMessages = {
+        approved: 'تم اعتماد الراتب بنجاح',
+        paid: 'تم تأكيد دفع الراتب بنجاح',
+      };
+      
+      const message = statusMessages[variables.status as keyof typeof statusMessages] || 'تم تحديث حالة الراتب بنجاح';
+      toast.success(message);
+    },
+    onError: (error: Error) => {
+      toast.error(`خطأ في تحديث حالة الراتب: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdatePayroll() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ payrollId, updates }: { payrollId: string; updates: Partial<CreatePayrollData> }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      // Calculate updated amounts if needed
+      let updateData: any = { ...updates };
+      
+      if (updates.basic_salary !== undefined || updates.allowances !== undefined || 
+          updates.overtime_hours !== undefined || updates.overtime_rate !== undefined ||
+          updates.deductions !== undefined || updates.tax_amount !== undefined) {
+        
+        // Get current payroll data
+        const { data: currentPayroll } = await supabase
+          .from('payroll')
+          .select('*')
+          .eq('id', payrollId)
+          .single();
+
+        if (currentPayroll) {
+          const basic_salary = updates.basic_salary ?? currentPayroll.basic_salary;
+          const allowances = updates.allowances ?? currentPayroll.allowances;
+          const overtime_hours = updates.overtime_hours ?? (currentPayroll.overtime_amount / (currentPayroll.overtime_amount > 0 ? (currentPayroll.overtime_amount / 10) : 1));
+          const overtime_rate = updates.overtime_rate ?? (currentPayroll.overtime_amount > 0 ? (currentPayroll.overtime_amount / overtime_hours) : 0);
+          const deductions = updates.deductions ?? currentPayroll.deductions;
+          const tax_amount = updates.tax_amount ?? currentPayroll.tax_amount;
+
+          const overtime_amount = (overtime_hours || 0) * (overtime_rate || 0);
+          const gross_amount = basic_salary + (allowances || 0) + overtime_amount;
+          const total_deductions = (deductions || 0) + (tax_amount || 0);
+          const net_amount = gross_amount - total_deductions;
+
+          updateData = {
+            ...updateData,
+            overtime_amount,
+            net_amount,
+          };
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('payroll')
+        .update(updateData)
         .eq('id', payrollId)
         .select()
         .single();
@@ -284,10 +362,10 @@ export function useUpdatePayrollStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payroll-records'] });
-      toast.success('تم تحديث حالة الراتب بنجاح');
+      toast.success('تم تحديث الراتب بنجاح');
     },
     onError: (error: Error) => {
-      toast.error(`خطأ في تحديث حالة الراتب: ${error.message}`);
+      toast.error(`خطأ في تحديث الراتب: ${error.message}`);
     },
   });
 }

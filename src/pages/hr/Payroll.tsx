@@ -8,8 +8,20 @@ import { DollarSign, Search, Plus, FileText, Check, Clock, Users, Calculator, Ch
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
-import { usePayrollRecords, usePayrollReviews, useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
+import { 
+  usePayrollRecords, 
+  usePayrollReviews, 
+  useCreatePayroll, 
+  useUpdatePayrollStatus,
+  useUpdatePayroll,
+  useDeletePayroll,
+  CreatePayrollData,
+  PayrollRecord 
+} from '@/hooks/usePayroll';
 import PayrollDialog from '@/components/hr/PayrollDialog';
+import PayrollDetailsModal from '@/components/hr/PayrollDetailsModal';
+import EditPayrollDialog from '@/components/hr/EditPayrollDialog';
+import PayrollActionButtons from '@/components/hr/PayrollActionButtons';
 
 interface PayrollReview {
   id: string;
@@ -26,11 +38,17 @@ interface PayrollReview {
 export default function Payroll() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreatePayroll, setShowCreatePayroll] = useState(false);
+  const [showPayrollDetails, setShowPayrollDetails] = useState(false);
+  const [showEditPayroll, setShowEditPayroll] = useState(false);
+  const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
 
   // Fetch data
   const { data: payrollRecords, isLoading: recordsLoading } = usePayrollRecords();
   const { data: payrollReviews, isLoading: reviewsLoading } = usePayrollReviews();
   const createPayrollMutation = useCreatePayroll();
+  const updatePayrollStatusMutation = useUpdatePayrollStatus();
+  const updatePayrollMutation = useUpdatePayroll();
+  const deletePayrollMutation = useDeletePayroll();
 
   // Fetch employees for payroll creation
   const { data: employees } = useQuery({
@@ -61,6 +79,43 @@ export default function Payroll() {
   const handleCreatePayroll = (data: CreatePayrollData) => {
     createPayrollMutation.mutate(data);
     setShowCreatePayroll(false);
+  };
+
+  const handleViewPayroll = (payroll: PayrollRecord) => {
+    setSelectedPayroll(payroll);
+    setShowPayrollDetails(true);
+  };
+
+  const handleEditPayroll = (payroll: PayrollRecord) => {
+    setSelectedPayroll(payroll);
+    setShowEditPayroll(true);
+  };
+
+  const handleUpdatePayroll = (data: CreatePayrollData) => {
+    if (selectedPayroll) {
+      updatePayrollMutation.mutate({
+        payrollId: selectedPayroll.id,
+        updates: data
+      });
+    }
+  };
+
+  const handleApprovePayroll = (payrollId: string) => {
+    updatePayrollStatusMutation.mutate({
+      payrollId,
+      status: 'approved'
+    });
+  };
+
+  const handlePayPayroll = (payrollId: string) => {
+    updatePayrollStatusMutation.mutate({
+      payrollId,
+      status: 'paid'
+    });
+  };
+
+  const handleDeletePayroll = (payrollId: string) => {
+    deletePayrollMutation.mutate(payrollId);
   };
 
   const filteredReviews = payrollReviews?.filter(review =>
@@ -159,46 +214,59 @@ export default function Payroll() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-6">
-                          <div className="text-center">
-                            <p className="text-sm text-muted-foreground">صافي الراتب</p>
-                            <p className="font-semibold text-green-600 text-lg">
-                              {formatCurrency(record.net_amount)}
-                            </p>
-                          </div>
-                          
-                          <div className="text-center">
-                            <p className="text-sm text-muted-foreground">حالة التكامل</p>
-                            <div className="flex items-center gap-1 justify-center">
-                              {record.journal_entry_id ? (
-                                <>
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                  <span className="text-sm text-green-600">مدمج</span>
-                                </>
-                              ) : record.status === 'paid' ? (
-                                <>
-                                  <AlertCircle className="h-4 w-4 text-red-600" />
-                                  <span className="text-sm text-red-600">خطأ</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Clock className="h-4 w-4 text-yellow-600" />
-                                  <span className="text-sm text-yellow-600">معلق</span>
-                                </>
+                        <div className="flex items-center justify-between flex-1">
+                          <div className="flex items-center gap-6">
+                            <div className="text-center">
+                              <p className="text-sm text-muted-foreground">صافي الراتب</p>
+                              <p className="font-semibold text-green-600 text-lg">
+                                {formatCurrency(record.net_amount)}
+                              </p>
+                            </div>
+                            
+                            <div className="text-center">
+                              <p className="text-sm text-muted-foreground">حالة التكامل</p>
+                              <div className="flex items-center gap-1 justify-center">
+                                {record.journal_entry_id ? (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <span className="text-sm text-green-600">مدمج</span>
+                                  </>
+                                ) : record.status === 'paid' ? (
+                                  <>
+                                    <AlertCircle className="h-4 w-4 text-red-600" />
+                                    <span className="text-sm text-red-600">خطأ</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="h-4 w-4 text-yellow-600" />
+                                    <span className="text-sm text-yellow-600">معلق</span>
+                                  </>
+                                )}
+                              </div>
+                              {record.journal_entry_id && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  قيد رقم: {record.journal_entry_id.substring(0, 8)}...
+                                </p>
                               )}
                             </div>
-                            {record.journal_entry_id && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                قيد رقم: {record.journal_entry_id.substring(0, 8)}...
-                              </p>
-                            )}
+                            
+                            <div className="flex items-center gap-2">
+                              <Badge variant={statusInfo.variant}>
+                                {statusInfo.label}
+                              </Badge>
+                            </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <Badge variant={statusInfo.variant}>
-                              {statusInfo.label}
-                            </Badge>
-                          </div>
+                          <PayrollActionButtons
+                            payroll={record}
+                            onView={handleViewPayroll}
+                            onEdit={handleEditPayroll}
+                            onApprove={handleApprovePayroll}
+                            onPay={handlePayPayroll}
+                            onDelete={handleDeletePayroll}
+                            isUpdating={updatePayrollStatusMutation.isPending || updatePayrollMutation.isPending}
+                            isDeleting={deletePayrollMutation.isPending}
+                          />
                         </div>
                       </div>
                     </CardContent>
@@ -269,6 +337,21 @@ export default function Payroll() {
         onSubmit={handleCreatePayroll}
         employees={employees || []}
         isLoading={createPayrollMutation.isPending}
+      />
+
+      <PayrollDetailsModal
+        open={showPayrollDetails}
+        onOpenChange={setShowPayrollDetails}
+        payroll={selectedPayroll}
+      />
+
+      <EditPayrollDialog
+        open={showEditPayroll}
+        onOpenChange={setShowEditPayroll}
+        onSubmit={handleUpdatePayroll}
+        payroll={selectedPayroll}
+        employees={employees || []}
+        isLoading={updatePayrollMutation.isPending}
       />
     </div>
   );

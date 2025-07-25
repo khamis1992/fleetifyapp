@@ -27,28 +27,32 @@ interface PayrollFormProps {
   onSubmit: (data: CreatePayrollData) => void;
   isLoading?: boolean;
   selectedEmployeeId?: string;
+  initialData?: CreatePayrollData;
 }
 
 export default function PayrollForm({ 
   employees, 
   onSubmit, 
   isLoading, 
-  selectedEmployeeId 
+  selectedEmployeeId,
+  initialData 
 }: PayrollFormProps) {
-  const [formData, setFormData] = useState<CreatePayrollData>({
-    employee_id: selectedEmployeeId || '',
-    pay_period_start: '',
-    pay_period_end: '',
-    basic_salary: 0,
-    allowances: 0,
-    overtime_hours: 0,
-    overtime_rate: 0,
-    deductions: 0,
-    tax_amount: 0,
-    payment_method: 'bank_transfer',
-    bank_account: '',
-    notes: '',
-  });
+  const [formData, setFormData] = useState<CreatePayrollData>(
+    initialData || {
+      employee_id: selectedEmployeeId || '',
+      pay_period_start: '',
+      pay_period_end: '',
+      basic_salary: 0,
+      allowances: 0,
+      overtime_hours: 0,
+      overtime_rate: 0,
+      deductions: 0,
+      tax_amount: 0,
+      payment_method: 'bank_transfer',
+      bank_account: '',
+      notes: '',
+    }
+  );
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
