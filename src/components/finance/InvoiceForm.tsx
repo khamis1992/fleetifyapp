@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
-import { useCreateInvoice, useChartOfAccounts } from "@/hooks/useFinance";
+import { useCreateInvoice, useChartOfAccounts, useCostCenters, useFixedAssets } from "@/hooks/useFinance";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -20,6 +20,7 @@ interface InvoiceItem {
   unit_price: number;
   tax_rate: number;
   account_id?: string;
+  cost_center_id?: string;
 }
 
 interface InvoiceFormProps {
@@ -33,6 +34,8 @@ interface InvoiceFormProps {
 export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: InvoiceFormProps) {
   const { user } = useAuth();
   const { data: accounts, isLoading: accountsLoading } = useChartOfAccounts();
+  const { data: costCenters, isLoading: costCentersLoading } = useCostCenters();
+  const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const createInvoice = useCreateInvoice();
 
   const [invoiceData, setInvoiceData] = useState({
@@ -43,6 +46,8 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
     notes: '',
     currency: 'KWD',
     discount_amount: 0,
+    cost_center_id: '',
+    fixed_asset_id: '',
   });
 
   const [items, setItems] = useState<InvoiceItem[]>([
@@ -140,6 +145,8 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
         notes: '',
         currency: 'KWD',
         discount_amount: 0,
+        cost_center_id: '',
+        fixed_asset_id: '',
       });
       setItems([{
         id: '1',
@@ -255,6 +262,38 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
                   placeholder="شروط الدفع..."
                   rows={2}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_center_id">مركز التكلفة</Label>
+                <Select value={invoiceData.cost_center_id} onValueChange={(value) => setInvoiceData({...invoiceData, cost_center_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر مركز التكلفة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {costCenters?.map(center => (
+                      <SelectItem key={center.id} value={center.id}>
+                        {center.center_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fixed_asset_id">الأصل الثابت (اختياري)</Label>
+                <Select value={invoiceData.fixed_asset_id} onValueChange={(value) => setInvoiceData({...invoiceData, fixed_asset_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الأصل الثابت" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fixedAssets?.map(asset => (
+                      <SelectItem key={asset.id} value={asset.id}>
+                        {asset.asset_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2 md:col-span-3">

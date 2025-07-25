@@ -922,9 +922,66 @@ export type Database = {
           },
         ]
       }
+      invoice_cost_center_analysis: {
+        Row: {
+          budget_amount: number | null
+          company_id: string
+          cost_center_id: string
+          created_at: string
+          id: string
+          invoice_type: string
+          period_end: string
+          period_start: string
+          total_amount: number
+          total_invoices: number
+          updated_at: string
+          variance_amount: number | null
+          variance_percentage: number | null
+        }
+        Insert: {
+          budget_amount?: number | null
+          company_id: string
+          cost_center_id: string
+          created_at?: string
+          id?: string
+          invoice_type: string
+          period_end: string
+          period_start: string
+          total_amount?: number
+          total_invoices?: number
+          updated_at?: string
+          variance_amount?: number | null
+          variance_percentage?: number | null
+        }
+        Update: {
+          budget_amount?: number | null
+          company_id?: string
+          cost_center_id?: string
+          created_at?: string
+          id?: string
+          invoice_type?: string
+          period_end?: string
+          period_start?: string
+          total_amount?: number
+          total_invoices?: number
+          updated_at?: string
+          variance_amount?: number | null
+          variance_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_cost_center_analysis_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           account_id: string | null
+          cost_center_id: string | null
           created_at: string
           id: string
           invoice_id: string
@@ -939,6 +996,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          cost_center_id?: string | null
           created_at?: string
           id?: string
           invoice_id: string
@@ -953,6 +1011,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          cost_center_id?: string | null
           created_at?: string
           id?: string
           invoice_id?: string
@@ -974,6 +1033,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoice_items_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoice_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
@@ -986,12 +1052,14 @@ export type Database = {
         Row: {
           balance_due: number | null
           company_id: string
+          cost_center_id: string | null
           created_at: string
           created_by: string | null
           currency: string | null
           customer_id: string | null
           discount_amount: number | null
           due_date: string | null
+          fixed_asset_id: string | null
           id: string
           invoice_date: string
           invoice_number: string
@@ -1011,12 +1079,14 @@ export type Database = {
         Insert: {
           balance_due?: number | null
           company_id: string
+          cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
           customer_id?: string | null
           discount_amount?: number | null
           due_date?: string | null
+          fixed_asset_id?: string | null
           id?: string
           invoice_date: string
           invoice_number: string
@@ -1036,12 +1106,14 @@ export type Database = {
         Update: {
           balance_due?: number | null
           company_id?: string
+          cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
           customer_id?: string | null
           discount_amount?: number | null
           due_date?: string | null
+          fixed_asset_id?: string | null
           id?: string
           invoice_date?: string
           invoice_number?: string
@@ -1060,10 +1132,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "invoices_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoices_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_fixed_asset_id_fkey"
+            columns: ["fixed_asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
             referencedColumns: ["id"]
           },
           {

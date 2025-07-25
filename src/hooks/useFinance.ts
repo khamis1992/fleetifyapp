@@ -68,6 +68,8 @@ export interface Invoice {
   due_date?: string
   customer_id?: string
   vendor_id?: string
+  cost_center_id?: string
+  fixed_asset_id?: string
   invoice_type: 'sales' | 'purchase' | 'service'
   subtotal: number
   tax_amount: number

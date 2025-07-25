@@ -6,24 +6,32 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { useInvoices } from "@/hooks/useFinance"
+import { useInvoices, useCostCenters, useFixedAssets } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react"
+import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3 } from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { InvoiceForm } from "@/components/finance/InvoiceForm"
+import { InvoiceIntegrationPanel } from "@/components/finance/InvoiceIntegrationPanel"
 
 const Invoices = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterType, setFilterType] = useState("all")
+  const [filterCostCenter, setFilterCostCenter] = useState("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
 
   const { data: invoices, isLoading, error } = useInvoices()
+  const { data: costCenters } = useCostCenters()
+  const { data: fixedAssets } = useFixedAssets()
 
   const filteredInvoices = invoices?.filter(invoice => {
     const matchesSearch = invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === "all" || invoice.status === filterStatus
     const matchesType = filterType === "all" || invoice.invoice_type === filterType
-    return matchesSearch && matchesStatus && matchesType
+    const matchesCostCenter = filterCostCenter === "all" || invoice.cost_center_id === filterCostCenter
+    return matchesSearch && matchesStatus && matchesType && matchesCostCenter
   }) || []
 
   const getStatusColor = (status: string) => {
@@ -81,25 +89,11 @@ const Invoices = () => {
             <p className="text-muted-foreground">إدارة فواتير المبيعات والمشتريات</p>
           </div>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              فاتورة جديدة
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
-              <DialogDescription>
-                قم بإدخال بيانات الفاتورة الجديدة
-              </DialogDescription>
-            </DialogHeader>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">نموذج إنشاء الفاتورة - قيد التطوير</p>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <InvoiceForm 
+          open={isCreateDialogOpen} 
+          onOpenChange={setIsCreateDialogOpen}
+          type="sales"
+        />
       </div>
 
       {/* Filters */}
@@ -108,8 +102,8 @@ const Invoices = () => {
           <CardTitle className="text-lg">البحث والفلتر</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex-1 min-w-64">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -143,9 +137,38 @@ const Invoices = () => {
                 <SelectItem value="service">خدمات</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterCostCenter} onValueChange={setFilterCostCenter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="مركز التكلفة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع المراكز</SelectItem>
+                {costCenters?.map(center => (
+                  <SelectItem key={center.id} value={center.id}>
+                    {center.center_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowIntegrationPanel(!showIntegrationPanel)}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              لوحة التكامل
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* لوحة التكامل */}
+      {showIntegrationPanel && (
+        <InvoiceIntegrationPanel 
+          invoiceId={selectedInvoice?.id}
+          costCenterId={selectedInvoice?.cost_center_id}
+          fixedAssetId={selectedInvoice?.fixed_asset_id}
+        />
+      )}
 
       {/* Invoices Table */}
       <Card>
@@ -176,6 +199,7 @@ const Invoices = () => {
                   <TableHead>رقم الفاتورة</TableHead>
                   <TableHead>العميل/المورد</TableHead>
                   <TableHead>النوع</TableHead>
+                  <TableHead>مركز التكلفة</TableHead>
                   <TableHead>التاريخ</TableHead>
                   <TableHead>المبلغ</TableHead>
                   <TableHead>الحالة</TableHead>
@@ -184,7 +208,10 @@ const Invoices = () => {
               </TableHeader>
               <TableBody>
                 {filteredInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
+                  <TableRow 
+                    key={invoice.id}
+                    className={selectedInvoice?.id === invoice.id ? "bg-muted" : ""}
+                  >
                     <TableCell className="font-medium">
                       {invoice.invoice_number}
                     </TableCell>
@@ -193,6 +220,18 @@ const Invoices = () => {
                       <Badge variant="outline">
                         {getTypeLabel(invoice.invoice_type)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {invoice.cost_center_id ? (
+                        <div className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          <span className="text-sm">
+                            {costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">غير محدد</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {new Date(invoice.invoice_date).toLocaleDateString('ar-KW')}
@@ -207,7 +246,11 @@ const Invoices = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setSelectedInvoice(invoice)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm">
@@ -216,6 +259,11 @@ const Invoices = () => {
                         <Button variant="ghost" size="sm">
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        {invoice.fixed_asset_id && (
+                          <Button variant="ghost" size="sm" title="مرتبطة بأصل ثابت">
+                            <Package className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
