@@ -79,7 +79,9 @@ export const useBanks = () => {
         .order('bank_name');
 
       if (error) throw error;
-      return data as Bank[];
+      
+      // Filter out any records with empty or null IDs
+      return (data as Bank[]).filter(bank => bank.id && bank.id.trim() !== '');
     },
   });
 };
@@ -126,7 +128,9 @@ export const useBankTransactions = (bankId?: string) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as BankTransaction[];
+      
+      // Filter out any records with empty or null IDs
+      return (data as BankTransaction[]).filter(transaction => transaction.id && transaction.id.trim() !== '');
     },
   });
 };
@@ -169,7 +173,9 @@ export const useCostCenters = () => {
         .order('center_name');
 
       if (error) throw error;
-      return data as CostCenter[];
+      
+      // Filter out any records with empty or null IDs
+      return (data as CostCenter[]).filter(center => center.id && center.id.trim() !== '');
     },
   });
 };
