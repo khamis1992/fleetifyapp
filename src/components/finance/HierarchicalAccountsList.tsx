@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, FileText, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,8 @@ import {
 interface HierarchicalAccountsListProps {
   accounts: ChartOfAccount[];
   onAddSubAccount?: (parentAccount: ChartOfAccount) => void;
+  onEditAccount?: (account: ChartOfAccount) => void;
+  onDeleteAccount?: (account: ChartOfAccount) => void;
   expandedAccounts?: Set<string>;
   onToggleExpanded?: (accountId: string) => void;
 }
@@ -23,6 +25,8 @@ interface HierarchicalAccountsListProps {
 export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> = ({
   accounts,
   onAddSubAccount,
+  onEditAccount,
+  onDeleteAccount,
   expandedAccounts = new Set(),
   onToggleExpanded,
 }) => {
@@ -217,12 +221,35 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
           
           <TableCell>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onEditAccount && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEditAccount(account)}
+                  className="h-8 w-8 p-0"
+                  title="تعديل الحساب"
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+              )}
+              {onDeleteAccount && !account.is_system && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDeleteAccount(account)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  title="حذف الحساب"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
               {onAddSubAccount && !account.is_header && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onAddSubAccount(account)}
                   className="h-8 w-8 p-0"
+                  title="إضافة حساب فرعي"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
