@@ -12,7 +12,14 @@ import {
   Home,
   Shield,
   BarChart3,
-  Building2
+  Building2,
+  Calculator,
+  Receipt,
+  CreditCard,
+  Building,
+  Target,
+  PieChart,
+  ChevronDown
 } from 'lucide-react';
 import {
   Sidebar,
@@ -25,8 +32,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from '@/components/ui/button';
 
 const navigationItems = [
@@ -55,12 +66,6 @@ const navigationItems = [
     icon: Users 
   },
   { 
-    name: 'المالية', 
-    name_en: 'Finance',
-    href: '/finance', 
-    icon: DollarSign 
-  },
-  { 
     name: 'التقارير', 
     name_en: 'Reports',
     href: '/reports', 
@@ -74,11 +79,57 @@ const navigationItems = [
   },
 ];
 
+const financeSubItems = [
+  {
+    name: 'الحسابات العامة',
+    href: '/finance/ledger',
+    icon: Calculator
+  },
+  {
+    name: 'الفواتير',
+    href: '/finance/invoices',
+    icon: Receipt
+  },
+  {
+    name: 'المدفوعات',
+    href: '/finance/payments',
+    icon: CreditCard
+  },
+  {
+    name: 'التقارير المالية',
+    href: '/finance/reports',
+    icon: FileText
+  },
+  {
+    name: 'الأصول الثابتة',
+    href: '/finance/assets',
+    icon: Building
+  },
+  {
+    name: 'الموازنات',
+    href: '/finance/budgets',
+    icon: Target
+  },
+  {
+    name: 'الموردين',
+    href: '/finance/vendors',
+    icon: Building
+  },
+  {
+    name: 'التحليل المالي',
+    href: '/finance/analysis',
+    icon: PieChart
+  }
+];
+
 export function AppSidebar() {
   const { signOut } = useAuth();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
+  
+  // Check if finance section should be open
+  const isFinanceActive = location.pathname.startsWith('/finance');
 
   const handleSignOut = async () => {
     await signOut();
@@ -123,6 +174,37 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Finance Section with Submenu */}
+              <SidebarMenuItem>
+                <Collapsible defaultOpen={isFinanceActive}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton className="h-10">
+                      <DollarSign className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span className="font-medium">المالية</span>
+                          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {financeSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.href}>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to={subItem.href} className={getNavClassName}>
+                              <subItem.icon className="h-4 w-4" />
+                              {!collapsed && <span>{subItem.name}</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
