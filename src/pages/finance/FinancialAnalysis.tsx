@@ -79,16 +79,13 @@ const FinancialAnalysis = () => {
       </div>
 
       {/* Analysis Tabs */}
-      <Tabs defaultValue="ratios" className="space-y-6" orientation="vertical">
-        <div className="flex gap-6">
-          <TabsList className="flex flex-col h-fit w-48 space-y-1">
-            <TabsTrigger value="ratios" className="w-full justify-start">النسب المالية</TabsTrigger>
-            <TabsTrigger value="trends" className="w-full justify-start">الاتجاهات</TabsTrigger>
-            <TabsTrigger value="performance" className="w-full justify-start">الأداء</TabsTrigger>
-            <TabsTrigger value="forecast" className="w-full justify-start">التنبؤات</TabsTrigger>
-          </TabsList>
-          
-          <div className="flex-1">
+      <Tabs defaultValue="ratios" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="ratios">النسب المالية</TabsTrigger>
+          <TabsTrigger value="trends">الاتجاهات</TabsTrigger>
+          <TabsTrigger value="performance">الأداء</TabsTrigger>
+          <TabsTrigger value="forecast">التنبؤات</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="ratios" className="space-y-6">
           <div className="grid gap-6">
@@ -235,8 +232,6 @@ const FinancialAnalysis = () => {
             </CardContent>
           </Card>
         </TabsContent>
-          </div>
-        </div>
       </Tabs>
 
       {/* Under Development Notice */}
