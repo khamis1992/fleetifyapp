@@ -1,100 +1,116 @@
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { useChartOfAccounts, useCreateAccount } from "@/hooks/useFinance"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Search, Calculator } from "lucide-react"
-import { toast } from "sonner"
+import React, { useState } from 'react';
+import { Plus, Search, Filter, TreePine, Copy, FolderTree } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useChartOfAccounts, useCreateAccount, useCopyDefaultAccounts, ChartOfAccount } from '@/hooks/useFinance';
+import { HierarchicalAccountsList } from '@/components/finance/HierarchicalAccountsList';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ChartOfAccounts = () => {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState<string>("all")
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'hierarchical' | 'flat'>('hierarchical');
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   
-  const { data: accounts, isLoading, error } = useChartOfAccounts()
-  const createAccount = useCreateAccount()
-  
-  const [newAccount, setNewAccount] = useState({
-    account_code: "",
-    account_name: "",
-    account_name_ar: "",
-    account_type: "" as "asset" | "liability" | "equity" | "revenue" | "expense",
-    balance_type: "" as "debit" | "credit",
-    account_subtype: "",
-    description: "",
-    current_balance: 0
-  })
+  const { data: accounts, isLoading, error } = useChartOfAccounts();
+  const createAccountMutation = useCreateAccount();
+  const copyDefaultAccountsMutation = useCopyDefaultAccounts();
+  const { user } = useAuth();
 
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!newAccount.account_code || !newAccount.account_name || !newAccount.account_type || !newAccount.balance_type) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة")
-      return
-    }
+  const [newAccount, setNewAccount] = useState<{
+    account_code: string;
+    account_name: string;
+    account_name_ar: string;
+    account_type: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses';
+    account_subtype: string;
+    balance_type: 'debit' | 'credit';
+    parent_account_id?: string;
+    description: string;
+  }>({
+    account_code: '',
+    account_name: '',
+    account_name_ar: '',
+    account_type: 'assets',
+    account_subtype: '',
+    balance_type: 'debit',
+    parent_account_id: undefined,
+    description: '',
+  });
 
+  const handleCreateAccount = async () => {
     try {
-      await createAccount.mutateAsync(newAccount)
-      setIsCreateDialogOpen(false)
+      await createAccountMutation.mutateAsync(newAccount);
       setNewAccount({
-        account_code: "",
-        account_name: "",
-        account_name_ar: "",
-        account_type: "" as "asset" | "liability" | "equity" | "revenue" | "expense",
-        balance_type: "" as "debit" | "credit",
-        account_subtype: "",
-        description: "",
-        current_balance: 0
-      })
+        account_code: '',
+        account_name: '',
+        account_name_ar: '',
+        account_type: 'assets',
+        account_subtype: '',
+        balance_type: 'debit',
+        parent_account_id: undefined,
+        description: '',
+      });
+      setIsCreateDialogOpen(false);
     } catch (error) {
-      console.error("Error creating account:", error)
+      console.error('Error creating account:', error);
     }
-  }
+  };
 
+  const handleCopyDefaultAccounts = async () => {
+    if (!user?.profile?.company_id) return;
+    try {
+      await copyDefaultAccountsMutation.mutateAsync(user.profile.company_id);
+    } catch (error) {
+      console.error('Error copying default accounts:', error);
+    }
+  };
+
+  // Filter accounts
   const filteredAccounts = accounts?.filter(account => {
-    const matchesSearch = account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         account.account_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (account.account_name_ar && account.account_name_ar.includes(searchTerm))
+    const matchesSearch = searchTerm === '' || 
+      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.account_name_ar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.account_code.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = filterType === "all" || account.account_type === filterType
+    const matchesType = filterType === 'all' || account.account_type === filterType;
     
-    return matchesSearch && matchesType
-  })
+    return matchesSearch && matchesType;
+  }) || [];
 
-  const getAccountTypeLabel = (type: string) => {
-    const types = {
-      asset: "أصول",
-      liability: "خصوم",
-      equity: "حقوق الملكية",
-      revenue: "إيرادات",
-      expense: "مصروفات"
-    }
-    return types[type as keyof typeof types] || type
-  }
-
-  const getAccountTypeColor = (type: string) => {
-    const colors = {
-      asset: "bg-blue-100 text-blue-800",
-      liability: "bg-red-100 text-red-800",
-      equity: "bg-green-100 text-green-800",
-      revenue: "bg-purple-100 text-purple-800",
-      expense: "bg-orange-100 text-orange-800"
-    }
-    return colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800"
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-red-600">خطأ في تحميل دليل الحسابات: {error.message}</p>
+      <div className="text-center py-8 text-red-600">
+        حدث خطأ في تحميل البيانات
       </div>
-    )
+    );
   }
 
   return (
@@ -102,226 +118,180 @@ const ChartOfAccounts = () => {
       <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-white/20 rounded-xl">
-            <Calculator className="h-8 w-8" />
+            <Search className="h-8 w-8" />
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">دليل الحسابات</h1>
             <p className="text-primary-foreground/80">
-              إدارة جميع حسابات النظام المحاسبي
+              إدارة الهيكل المحاسبي الهرمي للشركة
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="البحث في الحسابات..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full sm:w-80"
-            />
-          </div>
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="نوع الحساب" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">جميع الأنواع</SelectItem>
-              <SelectItem value="asset">أصول</SelectItem>
-              <SelectItem value="liability">خصوم</SelectItem>
-              <SelectItem value="equity">حقوق الملكية</SelectItem>
-              <SelectItem value="revenue">إيرادات</SelectItem>
-              <SelectItem value="expense">مصروفات</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              إضافة حساب جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>إنشاء حساب جديد</DialogTitle>
-              <DialogDescription>
-                أدخل تفاصيل الحساب الجديد في النظام المحاسبي
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateAccount} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="account_code">رمز الحساب *</Label>
-                  <Input
-                    id="account_code"
-                    value={newAccount.account_code}
-                    onChange={(e) => setNewAccount({...newAccount, account_code: e.target.value})}
-                    placeholder="1001"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="account_type">نوع الحساب *</Label>
-                  <Select 
-                    value={newAccount.account_type} 
-                    onValueChange={(value: "asset" | "liability" | "equity" | "revenue" | "expense") => 
-                      setNewAccount({...newAccount, account_type: value})
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر النوع" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="asset">أصول</SelectItem>
-                      <SelectItem value="liability">خصوم</SelectItem>
-                      <SelectItem value="equity">حقوق الملكية</SelectItem>
-                      <SelectItem value="revenue">إيرادات</SelectItem>
-                      <SelectItem value="expense">مصروفات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="account_name">اسم الحساب *</Label>
-                <Input
-                  id="account_name"
-                  value={newAccount.account_name}
-                  onChange={(e) => setNewAccount({...newAccount, account_name: e.target.value})}
-                  placeholder="النقدية"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="account_name_ar">اسم الحساب بالعربية</Label>
-                <Input
-                  id="account_name_ar"
-                  value={newAccount.account_name_ar}
-                  onChange={(e) => setNewAccount({...newAccount, account_name_ar: e.target.value})}
-                  placeholder="النقدية"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="balance_type">طبيعة الرصيد *</Label>
-                <Select 
-                  value={newAccount.balance_type} 
-                  onValueChange={(value: "debit" | "credit") => 
-                    setNewAccount({...newAccount, balance_type: value})
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر الطبيعة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="debit">مدين</SelectItem>
-                    <SelectItem value="credit">دائن</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">الوصف</Label>
-                <Input
-                  id="description"
-                  value={newAccount.description}
-                  onChange={(e) => setNewAccount({...newAccount, description: e.target.value})}
-                  placeholder="وصف الحساب..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  إلغاء
-                </Button>
-                <Button type="submit" disabled={createAccount.isPending}>
-                  {createAccount.isPending ? <LoadingSpinner size="sm" /> : "إنشاء الحساب"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>دليل الحسابات</CardTitle>
-          <CardDescription>
-            جميع الحسابات المسجلة في النظام المحاسبي
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="البحث في الحسابات..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="نوع الحساب" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الأنواع</SelectItem>
+                  <SelectItem value="assets">الأصول</SelectItem>
+                  <SelectItem value="liabilities">الخصوم</SelectItem>
+                  <SelectItem value="equity">حقوق الملكية</SelectItem>
+                  <SelectItem value="revenue">الإيرادات</SelectItem>
+                  <SelectItem value="expenses">المصروفات</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(!accounts || accounts.length === 0) && (
+                <Button
+                  variant="outline"
+                  onClick={handleCopyDefaultAccounts}
+                  disabled={copyDefaultAccountsMutation.isPending}
+                >
+                  <Copy className="h-4 w-4 ml-2" />
+                  نسخ دليل الحسابات الافتراضي
+                </Button>
+              )}
+              
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 ml-2" />
+                    إضافة حساب جديد
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>إنشاء حساب جديد</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>كود الحساب</Label>
+                        <Input
+                          value={newAccount.account_code}
+                          onChange={(e) => setNewAccount({...newAccount, account_code: e.target.value})}
+                          placeholder="1001"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>نوع الحساب</Label>
+                        <Select 
+                          value={newAccount.account_type} 
+                          onValueChange={(value: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses') => 
+                            setNewAccount({...newAccount, account_type: value})
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="assets">أصول</SelectItem>
+                            <SelectItem value="liabilities">خصوم</SelectItem>
+                            <SelectItem value="equity">حقوق ملكية</SelectItem>
+                            <SelectItem value="revenue">إيرادات</SelectItem>
+                            <SelectItem value="expenses">مصروفات</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>اسم الحساب</Label>
+                      <Input
+                        value={newAccount.account_name}
+                        onChange={(e) => setNewAccount({...newAccount, account_name: e.target.value})}
+                        placeholder="اسم الحساب"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>طبيعة الرصيد</Label>
+                      <Select 
+                        value={newAccount.balance_type} 
+                        onValueChange={(value: 'debit' | 'credit') => 
+                          setNewAccount({...newAccount, balance_type: value})
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="debit">مدين</SelectItem>
+                          <SelectItem value="credit">دائن</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                        إلغاء
+                      </Button>
+                      <Button onClick={handleCreateAccount} disabled={createAccountMutation.isPending}>
+                        إنشاء الحساب
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
         </CardHeader>
+        
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner size="lg" />
+          {filteredAccounts.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              {!accounts || accounts.length === 0 ? (
+                <div className="space-y-4">
+                  <p>لا توجد حسابات في دليل الحسابات</p>
+                  <Button
+                    onClick={handleCopyDefaultAccounts}
+                    disabled={copyDefaultAccountsMutation.isPending}
+                  >
+                    <Copy className="h-4 w-4 ml-2" />
+                    نسخ دليل الحسابات الافتراضي
+                  </Button>
+                </div>
+              ) : (
+                'لا توجد حسابات تطابق معايير البحث'
+              )}
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>رمز الحساب</TableHead>
-                    <TableHead>اسم الحساب</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>طبيعة الرصيد</TableHead>
-                    <TableHead>الرصيد الحالي</TableHead>
-                    <TableHead>الحالة</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAccounts?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        لا توجد حسابات متاحة
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredAccounts?.map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-mono">{account.account_code}</TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{account.account_name}</div>
-                            {account.account_name_ar && (
-                              <div className="text-sm text-muted-foreground">{account.account_name_ar}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getAccountTypeColor(account.account_type)}>
-                            {getAccountTypeLabel(account.account_type)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={account.balance_type === 'debit' ? 'default' : 'secondary'}>
-                            {account.balance_type === 'debit' ? 'مدين' : 'دائن'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono">
-                          {account.current_balance?.toFixed(3)} د.ك
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={account.is_active ? 'default' : 'secondary'}>
-                            {account.is_active ? 'نشط' : 'غير نشط'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <HierarchicalAccountsList
+              accounts={filteredAccounts}
+              expandedAccounts={expandedAccounts}
+              onToggleExpanded={(accountId) => {
+                const newExpanded = new Set(expandedAccounts);
+                if (newExpanded.has(accountId)) {
+                  newExpanded.delete(accountId);
+                } else {
+                  newExpanded.add(accountId);
+                }
+                setExpandedAccounts(newExpanded);
+              }}
+            />
           )}
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default ChartOfAccounts
+export default ChartOfAccounts;

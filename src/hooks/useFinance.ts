@@ -10,9 +10,13 @@ export interface ChartOfAccount {
   account_code: string
   account_name: string
   account_name_ar?: string
-  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+  account_type: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses'
   account_subtype?: string
   parent_account_id?: string
+  account_level?: number
+  sort_order?: number
+  is_header?: boolean
+  is_default?: boolean
   is_active: boolean
   is_system: boolean
   balance_type: 'debit' | 'credit'
@@ -137,7 +141,7 @@ export const useChartOfAccounts = () => {
         .from("chart_of_accounts")
         .select("*")
         .eq("is_active", true)
-        .order("account_code")
+        .order("account_level, sort_order, account_code")
       
       if (error) throw error
       return data as ChartOfAccount[]
@@ -155,7 +159,7 @@ export const useCreateAccount = () => {
       account_code: string
       account_name: string
       account_name_ar?: string
-      account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+      account_type: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses'
       balance_type: 'debit' | 'credit'
       account_subtype?: string
       parent_account_id?: string
@@ -532,7 +536,7 @@ export const useFinancialSummary = () => {
       const { data: expenseAccounts } = await supabase
         .from("chart_of_accounts")
         .select("current_balance")
-        .eq("account_type", "expense")
+        .eq("account_type", "expenses")
         .eq("company_id", user?.profile?.company_id)
       
       // Get pending transactions count
@@ -556,3 +560,42 @@ export const useFinancialSummary = () => {
     enabled: !!user?.profile?.company_id
   })
 }
+
+// Hook to get default chart of accounts
+export const useDefaultChartOfAccounts = () => {
+  return useQuery({
+    queryKey: ['default-chart-of-accounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_chart_of_accounts')
+        .select('*')
+        .order('account_level, sort_order, account_code');
+
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+// Hook to copy default accounts to company
+export const useCopyDefaultAccounts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (companyId: string) => {
+      const { error } = await supabase.rpc('copy_default_accounts_to_company', {
+        target_company_id: companyId
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
+      toast.success('تم نسخ دليل الحسابات الافتراضي بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error copying default accounts:', error);
+      toast.error('حدث خطأ في نسخ دليل الحسابات الافتراضي');
+    },
+  });
+};
