@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -179,7 +180,8 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectValue placeholder="اختر مركز التكلفة" />
                   </SelectTrigger>
                   <SelectContent>
-                    {costCenters?.map((center) => (
+                    <SelectItem value="none">بدون مركز تكلفة</SelectItem>
+                    {costCenters?.filter(center => center.id && center.id.trim() !== '').map((center) => (
                       <SelectItem key={center.id} value={center.id}>
                         {center.center_name_ar || center.center_name}
                       </SelectItem>
@@ -195,7 +197,8 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectValue placeholder="اختر البنك" />
                   </SelectTrigger>
                   <SelectContent>
-                    {banks?.map((bank) => (
+                    <SelectItem value="none">بدون بنك</SelectItem>
+                    {banks?.filter(bank => bank.id && bank.id.trim() !== '').map((bank) => (
                       <SelectItem key={bank.id} value={bank.id}>
                         {bank.bank_name_ar || bank.bank_name}
                       </SelectItem>
