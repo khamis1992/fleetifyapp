@@ -22,7 +22,7 @@ export const DashboardLayout: React.FC = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-background" dir="ltr">
+      <div className="min-h-screen flex w-full bg-background" dir="rtl">
         <AppSidebar />
         
         <div className="flex-1 flex flex-col">
