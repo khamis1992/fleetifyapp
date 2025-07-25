@@ -1865,6 +1865,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: undefined
       }
+      copy_default_cost_centers_to_company: {
+        Args: { target_company_id: string }
+        Returns: undefined
+      }
       create_bank_transaction_journal_entry: {
         Args: { transaction_id_param: string }
         Returns: string
