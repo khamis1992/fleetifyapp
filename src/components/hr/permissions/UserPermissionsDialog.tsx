@@ -299,10 +299,10 @@ export default function UserPermissionsDialog({
         {/* Permissions Matrix */}
         <PermissionsMatrix
           selectedUser={{
-            id: employee.user_id || '',
-            name: `${employee.first_name} ${employee.last_name}`,
-            roles: selectedRoles,
-            customPermissions
+            user_id: employee.user_id || '',
+            first_name: employee.first_name,
+            last_name: employee.last_name,
+            roles: selectedRoles
           }}
           onRoleChange={handleRoleChange}
           onPermissionChange={handlePermissionChange}

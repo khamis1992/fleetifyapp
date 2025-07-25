@@ -2282,6 +2282,42 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          created_at: string
+          granted: boolean
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          permission_id: string
+          revoked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted?: boolean
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission_id: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted?: boolean
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission_id?: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           company_id: string | null

@@ -18,6 +18,8 @@ import UserAuditLog from '@/components/hr/UserAuditLog';
 import PermissionsDashboard from '@/components/hr/permissions/PermissionsDashboard';
 import UserPermissionsDialog from '@/components/hr/permissions/UserPermissionsDialog';
 import PermissionsMatrix from '@/components/hr/permissions/PermissionsMatrix';
+import { useUpdateUserPermissions, useUpdateUserRoles } from '@/hooks/useUserPermissions';
+import { UserRole } from '@/types/permissions';
 
 // Type definitions
 interface EmployeeWithAccess {
@@ -47,6 +49,12 @@ export default function UserManagement() {
   const [selectedEmployeeForPermissions, setSelectedEmployeeForPermissions] = useState<any>(null);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{permissionId: string; granted: boolean}[]>([]);
+  const [pendingRoleChanges, setPendingRoleChanges] = useState<UserRole[]>([]);
+
+  // Mutation hooks for saving changes
+  const updatePermissionsMutation = useUpdateUserPermissions();
+  const updateRolesMutation = useUpdateUserRoles();
 
   // Fetch employees without system access
   const { data: employeesWithoutAccess, isLoading: loadingEmployees } = useQuery({
@@ -214,10 +222,10 @@ export default function UserManagement() {
       }
 
       const user = {
-        id: employee.user_id,
-        name: `${employee.first_name} ${employee.last_name}`,
-        roles: Array.isArray(employee.user_roles) ? employee.user_roles : [],
-        customPermissions: []
+        user_id: employee.user_id,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        roles: Array.isArray(employee.user_roles) ? employee.user_roles : []
       };
 
       console.log('Selected user for matrix:', user);
@@ -226,7 +234,7 @@ export default function UserManagement() {
       
       toast({
         title: "تم اختيار المستخدم",
-        description: `تم اختيار ${user.name} بنجاح`,
+        description: `تم اختيار ${user.first_name} ${user.last_name} بنجاح`,
       });
     } catch (error) {
       console.error('Error in handleUserSelection:', error);
@@ -240,29 +248,80 @@ export default function UserManagement() {
 
   const handlePermissionChange = (permission: string, granted: boolean) => {
     setHasUnsavedChanges(true);
-    // This will be handled by the PermissionsMatrix component internally
-  };
-
-  const handleRoleChange = (role: any, assigned: boolean) => {
-    setHasUnsavedChanges(true);
-    // This will be handled by the PermissionsMatrix component internally
-  };
-
-  const handleSaveChanges = () => {
-    // The actual save will be handled by the UserPermissionsDialog
-    // For now, we just show the dialog
-    if (selectedUserForMatrix) {
-      const employee = employeesWithAccess?.find(emp => emp.user_id === selectedUserForMatrix.id);
-      if (employee) {
-        setSelectedEmployeeForPermissions(employee);
-        setShowPermissionsDialog(true);
+    setPendingPermissionChanges(prev => {
+      const existing = prev.find(p => p.permissionId === permission);
+      if (existing) {
+        return prev.map(p => p.permissionId === permission ? { ...p, granted } : p);
       }
+      return [...prev, { permissionId: permission, granted }];
+    });
+  };
+
+  const handleRoleChange = (role: UserRole, assigned: boolean) => {
+    setHasUnsavedChanges(true);
+    setPendingRoleChanges(prev => {
+      if (assigned) {
+        return prev.includes(role) ? prev : [...prev, role];
+      } else {
+        return prev.filter(r => r !== role);
+      }
+    });
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedUserForMatrix) return;
+
+    try {
+      // Save permission changes
+      if (pendingPermissionChanges.length > 0) {
+        await updatePermissionsMutation.mutateAsync({
+          userId: selectedUserForMatrix.user_id,
+          permissions: pendingPermissionChanges
+        });
+      }
+
+      // Save role changes
+      await updateRolesMutation.mutateAsync({
+        userId: selectedUserForMatrix.user_id,
+        roles: pendingRoleChanges
+      });
+
+      // Reset state
+      setHasUnsavedChanges(false);
+      setPendingPermissionChanges([]);
+      setPendingRoleChanges([]);
+      
+      // Refresh the selected user data
+      const updatedEmployee = employeesWithAccess?.find(emp => emp.user_id === selectedUserForMatrix.user_id);
+      if (updatedEmployee) {
+        setSelectedUserForMatrix({
+          user_id: updatedEmployee.user_id,
+          first_name: updatedEmployee.first_name,
+          last_name: updatedEmployee.last_name,
+          roles: pendingRoleChanges
+        });
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error);
     }
   };
 
   const handleCancelChanges = () => {
     setHasUnsavedChanges(false);
-    setSelectedUserForMatrix(null);
+    setPendingPermissionChanges([]);
+    setPendingRoleChanges([]);
+    // Reset user selection
+    if (selectedUserForMatrix) {
+      const originalEmployee = employeesWithAccess?.find(emp => emp.user_id === selectedUserForMatrix.user_id);
+      if (originalEmployee) {
+        setSelectedUserForMatrix({
+          user_id: originalEmployee.user_id,
+          first_name: originalEmployee.first_name,
+          last_name: originalEmployee.last_name,
+          roles: originalEmployee.user_roles || []
+        });
+      }
+    }
   };
 
   const filteredEmployeesWithoutAccess = employeesWithoutAccess?.filter(emp =>
@@ -433,7 +492,7 @@ export default function UserManagement() {
               {/* User Selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">اختيار المستخدم لتعديل صلاحياته:</label>
-                <Select value={selectedUserForMatrix?.id || ""} onValueChange={handleUserSelection}>
+                <Select value={selectedUserForMatrix?.user_id || ""} onValueChange={handleUserSelection}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="اختر مستخدماً..." />
                   </SelectTrigger>
@@ -468,6 +527,40 @@ export default function UserManagement() {
                 showRoleComparison={true} 
                 readOnly={!selectedUserForMatrix}
               />
+
+              {/* Save/Cancel Actions */}
+              {hasUnsavedChanges && selectedUserForMatrix && (
+                <Card className="border-orange-200 bg-orange-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                        <span className="text-orange-800 font-medium">
+                          لديك تغييرات غير محفوظة
+                        </span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          onClick={handleCancelChanges}
+                          className="flex items-center"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          إلغاء
+                        </Button>
+                        <Button
+                          onClick={handleSaveChanges}
+                          disabled={updatePermissionsMutation.isPending || updateRolesMutation.isPending}
+                          className="flex items-center"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          حفظ التغييرات
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {!selectedUserForMatrix && (
                 <Alert>

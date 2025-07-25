@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { 
   Shield, 
   Users, 
@@ -24,13 +25,14 @@ import {
   Permission,
   PermissionCategory 
 } from '@/types/permissions';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 interface PermissionsMatrixProps {
   selectedUser?: {
-    id: string;
-    name: string;
+    user_id: string;
+    first_name: string;
+    last_name: string;
     roles: UserRole[];
-    customPermissions?: string[];
   };
   onPermissionChange?: (permission: string, granted: boolean) => void;
   onRoleChange?: (role: UserRole, assigned: boolean) => void;
@@ -85,7 +87,10 @@ export default function PermissionsMatrix({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
-  const getUserPermissions = () => {
+  // Fetch user custom permissions from database
+  const { data: customPermissions, isLoading: loadingPermissions } = useUserPermissions(selectedUser?.user_id);
+
+  const getUserPermissions = useMemo(() => {
     if (!selectedUser) return new Set<string>();
     
     const rolePermissions = new Set<string>();
@@ -95,13 +100,15 @@ export default function PermissionsMatrix({
       });
     });
     
-    // Add custom permissions
-    selectedUser.customPermissions?.forEach(permission => {
-      rolePermissions.add(permission);
+    // Add custom permissions from database
+    customPermissions?.forEach(permission => {
+      if (permission.granted) {
+        rolePermissions.add(permission.permission_id);
+      }
     });
     
     return rolePermissions;
-  };
+  }, [selectedUser, customPermissions]);
 
   const getFilteredPermissions = () => {
     let filtered = PERMISSIONS;
@@ -119,12 +126,22 @@ export default function PermissionsMatrix({
     return new Set(ROLE_PERMISSIONS[role]?.permissions || []);
   };
 
-  const userPermissions = getUserPermissions();
+  const userPermissions = getUserPermissions;
   const filteredPermissions = getFilteredPermissions();
 
   const hasPermission = (permissionId: string): boolean => {
     return userPermissions.has(permissionId);
   };
+
+  // Show loading state when fetching permissions
+  if (selectedUser && loadingPermissions) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <LoadingSpinner size="lg" />
+        <span className="mr-4 text-muted-foreground">جاري تحميل الصلاحيات...</span>
+      </div>
+    );
+  }
 
   const isPermissionInRole = (permissionId: string, role: UserRole): boolean => {
     return getRolePermissions(role).has(permissionId);
@@ -169,7 +186,7 @@ export default function PermissionsMatrix({
                 };
                 
                 return (
-                  <Card key={role} className={`cursor-pointer transition-all ${
+                  <Card key={`role-${roleKey}-${selectedUser?.user_id}`} className={`cursor-pointer transition-all ${
                     isAssigned ? 'ring-2 ring-primary' : ''
                   }`}>
                     <CardContent className="p-4">
