@@ -89,7 +89,7 @@ export function AppSidebar() {
     active ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
 
   return (
-    <Sidebar className="border-r border-border bg-card/50 backdrop-blur-sm">
+    <Sidebar side="right" className="border-l border-border bg-card/50 backdrop-blur-sm">
       {/* Header */}
       <SidebarHeader className="border-b border-border/50 p-6">
         <div className="flex items-center gap-3">
