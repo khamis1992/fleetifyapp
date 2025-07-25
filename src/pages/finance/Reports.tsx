@@ -32,7 +32,7 @@ const Reports = () => {
             <tbody>
               ${balanceSheetData.assets?.map((account: any) => `
                 <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${account.account_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${account.account_name_translated || account.account_name}</td>
                   <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
                 </tr>
               `).join('') || ''}
@@ -55,7 +55,7 @@ const Reports = () => {
               </tr>
               ${balanceSheetData.liabilities?.map((account: any) => `
                 <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
                   <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
                 </tr>
               `).join('') || ''}
@@ -64,7 +64,7 @@ const Reports = () => {
               </tr>
               ${balanceSheetData.equity?.map((account: any) => `
                 <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
                   <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
                 </tr>
               `).join('') || ''}
@@ -97,7 +97,7 @@ const Reports = () => {
           </tr>
           ${incomeStatementData.revenue?.map((account: any) => `
             <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
               <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: #22c55e;">${formatCurrency(Number(account.current_balance))}</td>
             </tr>
           `).join('') || ''}
@@ -113,7 +113,7 @@ const Reports = () => {
           </tr>
           ${incomeStatementData.expenses?.map((account: any) => `
             <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
               <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: #ef4444;">${formatCurrency(Number(account.current_balance))}</td>
             </tr>
           `).join('') || ''}
@@ -297,7 +297,7 @@ const Reports = () => {
                       <TableBody>
                         {balanceSheetData?.assets?.map((account: any) => (
                           <TableRow key={account.id}>
-                            <TableCell className="font-medium">{account.account_name}</TableCell>
+                            <TableCell className="font-medium">{account.account_name_translated || account.account_name}</TableCell>
                             <TableCell className="text-right">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
                           </TableRow>
                         ))}
@@ -321,7 +321,7 @@ const Reports = () => {
                         </TableRow>
                         {balanceSheetData?.liabilities?.map((account: any) => (
                           <TableRow key={account.id}>
-                            <TableCell className="pl-4">{account.account_name}</TableCell>
+                            <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
                             <TableCell className="text-right">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
                           </TableRow>
                         ))}
@@ -330,7 +330,7 @@ const Reports = () => {
                         </TableRow>
                         {balanceSheetData?.equity?.map((account: any) => (
                           <TableRow key={account.id}>
-                            <TableCell className="pl-4">{account.account_name}</TableCell>
+                            <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
                             <TableCell className="text-right">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
                           </TableRow>
                         ))}
@@ -385,7 +385,7 @@ const Reports = () => {
                       </TableRow>
                       {incomeStatementData?.revenue?.map((account: any) => (
                         <TableRow key={account.id}>
-                          <TableCell className="pl-4">{account.account_name}</TableCell>
+                          <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
                           <TableCell className="text-right text-green-600">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
                         </TableRow>
                       ))}
@@ -401,7 +401,7 @@ const Reports = () => {
                       </TableRow>
                       {incomeStatementData?.expenses?.map((account: any) => (
                         <TableRow key={account.id}>
-                          <TableCell className="pl-4">{account.account_name}</TableCell>
+                          <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
                           <TableCell className="text-right text-red-600">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
                         </TableRow>
                       ))}

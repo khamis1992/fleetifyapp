@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { startOfYear, endOfYear, subYears, format } from "date-fns"
+import { getAccountNameTranslation } from "@/lib/accountNamesTranslation"
 
 export interface FinancialRatio {
   name: string
@@ -408,7 +409,12 @@ export const useBalanceSheet = () => {
         if (!acc[account.account_type]) {
           acc[account.account_type] = []
         }
-        acc[account.account_type].push(account)
+        // Add translated account name to the account object
+        const translatedAccount = {
+          ...account,
+          account_name_translated: getAccountNameTranslation(account.account_name)
+        }
+        acc[account.account_type].push(translatedAccount)
         return acc
       }, {} as Record<string, any[]>)
     },
@@ -438,7 +444,12 @@ export const useIncomeStatement = () => {
         if (!acc[account.account_type]) {
           acc[account.account_type] = []
         }
-        acc[account.account_type].push(account)
+        // Add translated account name to the account object
+        const translatedAccount = {
+          ...account,
+          account_name_translated: getAccountNameTranslation(account.account_name)
+        }
+        acc[account.account_type].push(translatedAccount)
         return acc
       }, {} as Record<string, any[]>)
     },
