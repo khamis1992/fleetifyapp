@@ -1631,6 +1631,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_account_levels_manually: {
+        Args: { company_id_param: string }
+        Returns: undefined
+      }
       user_belongs_to_company: {
         Args: { _user_id: string; _company_id: string }
         Returns: boolean
