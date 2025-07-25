@@ -15,7 +15,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const FixedAssets = () => {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterCategory, setFilterCategory] = useState<string>("")
+  const [filterCategory, setFilterCategory] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   const { data: fixedAssets, isLoading, error } = useFixedAssets()
@@ -78,7 +78,7 @@ const FixedAssets = () => {
   const filteredAssets = fixedAssets?.filter(asset => {
     const matchesSearch = asset.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          asset.asset_code.includes(searchTerm)
-    const matchesCategory = !filterCategory || asset.category === filterCategory
+    const matchesCategory = filterCategory === "all" || asset.category === filterCategory
     return matchesSearch && matchesCategory
   })
 
@@ -363,7 +363,7 @@ const FixedAssets = () => {
                   <SelectValue placeholder="جميع الفئات" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع الفئات</SelectItem>
+                  <SelectItem value="all">جميع الفئات</SelectItem>
                   {assetCategories.map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
