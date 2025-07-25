@@ -55,6 +55,7 @@ export type EmployeeFormData = z.infer<typeof employeeSchema>;
 interface EmployeeFormProps {
   onSubmit: (data: EmployeeFormData) => void;
   isLoading?: boolean;
+  initialData?: Partial<EmployeeFormData>;
 }
 
 const availableRoles = [
@@ -64,7 +65,7 @@ const availableRoles = [
   { value: 'employee', label: 'موظف', description: 'صلاحيات محدودة للاستعلام' },
 ];
 
-export default function EmployeeForm({ onSubmit, isLoading }: EmployeeFormProps) {
+export default function EmployeeForm({ onSubmit, isLoading, initialData }: EmployeeFormProps) {
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
@@ -74,8 +75,24 @@ export default function EmployeeForm({ onSubmit, isLoading }: EmployeeFormProps)
       createAccount: false,
       accountRoles: ['employee'],
       creationMethod: 'direct',
+      ...initialData,
     },
   });
+
+  // Reset form when initialData changes
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        basic_salary: 0,
+        allowances: 0,
+        hire_date: new Date(),
+        createAccount: false,
+        accountRoles: ['employee'],
+        creationMethod: 'direct',
+        ...initialData,
+      });
+    }
+  }, [initialData, form]);
 
   const createAccount = form.watch('createAccount');
   const creationMethod = form.watch('creationMethod');

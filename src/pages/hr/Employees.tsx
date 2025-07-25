@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import EmployeeDialog from '@/components/hr/EmployeeDialog';
+import EditEmployeeDialog from '@/components/hr/EditEmployeeDialog';
+import DeleteEmployeeConfirmDialog from '@/components/hr/DeleteEmployeeConfirmDialog';
 import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
 
@@ -34,6 +36,9 @@ interface Employee {
 export default function Employees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [accountData, setAccountData] = useState<any>(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -46,6 +51,7 @@ export default function Employees() {
       const { data, error } = await supabase
         .from('employees')
         .select('*')
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -217,8 +223,115 @@ export default function Employees() {
     }
   };
 
+  // Update employee mutation
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async (employeeData: EmployeeFormData) => {
+      if (!selectedEmployee) throw new Error('No employee selected');
+
+      const { data, error } = await supabase
+        .from('employees')
+        .update({
+          employee_number: employeeData.employee_number,
+          first_name: employeeData.first_name,
+          last_name: employeeData.last_name,
+          first_name_ar: employeeData.first_name_ar,
+          last_name_ar: employeeData.last_name_ar,
+          email: employeeData.email,
+          phone: employeeData.phone,
+          position: employeeData.position,
+          position_ar: employeeData.position_ar,
+          department: employeeData.department,
+          department_ar: employeeData.department_ar,
+          hire_date: employeeData.hire_date.toISOString().split('T')[0],
+          basic_salary: employeeData.basic_salary,
+          allowances: employeeData.allowances || 0,
+          national_id: employeeData.national_id,
+          address: employeeData.address,
+          address_ar: employeeData.address_ar,
+          emergency_contact_name: employeeData.emergency_contact_name,
+          emergency_contact_phone: employeeData.emergency_contact_phone,
+          bank_account: employeeData.bank_account,
+          iban: employeeData.iban,
+          notes: employeeData.notes,
+        })
+        .eq('id', selectedEmployee.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setIsEditDialogOpen(false);
+      setSelectedEmployee(null);
+      toast({
+        title: 'تم تحديث بيانات الموظف بنجاح',
+        description: 'تم حفظ التغييرات في النظام',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'خطأ في تحديث بيانات الموظف',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete employee mutation (soft delete)
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async (employeeId: string) => {
+      const { data, error } = await supabase
+        .from('employees')
+        .update({ is_active: false })
+        .eq('id', employeeId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setIsDeleteDialogOpen(false);
+      setSelectedEmployee(null);
+      toast({
+        title: 'تم حذف الموظف بنجاح',
+        description: 'تم إلغاء تفعيل الموظف من النظام',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'خطأ في حذف الموظف',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddEmployee = (employeeData: EmployeeFormData) => {
     addEmployeeMutation.mutate(employeeData);
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateEmployee = (employeeData: EmployeeFormData) => {
+    updateEmployeeMutation.mutate(employeeData);
+  };
+
+  const handleDeleteEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedEmployee) {
+      deleteEmployeeMutation.mutate(selectedEmployee.id);
+    }
   };
 
   const filteredEmployees = employees?.filter(employee =>
@@ -326,10 +439,20 @@ export default function Employees() {
                       {employee.is_active ? "نشط" : "غير نشط"}
                     </Badge>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditEmployee(employee)}
+                        disabled={updateEmployeeMutation.isPending}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteEmployee(employee)}
+                        disabled={deleteEmployeeMutation.isPending}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -346,6 +469,22 @@ export default function Employees() {
         onOpenChange={setIsDialogOpen}
         onSubmit={handleAddEmployee}
         isLoading={addEmployeeMutation.isPending || isCreatingAccount}
+      />
+
+      <EditEmployeeDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSubmit={handleUpdateEmployee}
+        isLoading={updateEmployeeMutation.isPending}
+        employee={selectedEmployee}
+      />
+
+      <DeleteEmployeeConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteEmployeeMutation.isPending}
+        employeeName={selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : ''}
       />
 
       <AccountCreatedDialog
