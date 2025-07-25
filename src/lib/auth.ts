@@ -64,10 +64,15 @@ export const authService = {
   async getCurrentUser() {
     const { data: { user } } = await supabase.auth.getUser();
     
-    if (!user) return null;
+    if (!user) {
+      console.log('📝 [AUTH] No user found');
+      return null;
+    }
+
+    console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
     // Get user profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select(`
         *,
@@ -80,11 +85,21 @@ export const authService = {
       .eq('user_id', user.id)
       .single();
 
+    if (profileError) {
+      console.error('📝 [AUTH] Profile fetch error:', profileError);
+    }
+
+    console.log('📝 [AUTH] Profile data:', profile);
+
     // Get user roles
-    const { data: roles } = await supabase
+    const { data: roles, error: rolesError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
+
+    if (rolesError) {
+      console.error('📝 [AUTH] Roles fetch error:', rolesError);
+    }
 
     const authUser: AuthUser = {
       ...user,
@@ -92,6 +107,13 @@ export const authService = {
       company: profile?.companies || undefined,
       roles: roles?.map(r => r.role) || []
     };
+
+    console.log('📝 [AUTH] Final authUser:', {
+      id: authUser.id,
+      email: authUser.email,
+      company_id: authUser.profile?.company_id,
+      company: authUser.company
+    });
 
     return authUser;
   },

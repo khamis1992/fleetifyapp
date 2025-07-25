@@ -19,6 +19,13 @@ export default function CostCenters() {
   const { data: costCenters, isLoading, error } = useCostCenters();
   const createCostCenter = useCreateCostCenter();
 
+  console.log('📝 [COST_CENTERS_PAGE] Component state:', {
+    costCenters,
+    costCentersCount: costCenters?.length,
+    isLoading,
+    error
+  });
+
   const [newCostCenter, setNewCostCenter] = useState<Partial<CostCenter>>({
     center_code: '',
     center_name: '',

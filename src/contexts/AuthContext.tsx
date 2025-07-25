@@ -29,17 +29,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         
         if (session?.user) {
+          console.log('📝 [AUTH_CONTEXT] User session found, fetching profile...');
           // Defer the profile fetch to avoid blocking the auth state change
           setTimeout(async () => {
             try {
               const authUser = await authService.getCurrentUser();
+              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
               setUser(authUser);
             } catch (error) {
-              console.error('Error fetching user profile:', error);
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
               setUser(session.user as AuthUser);
             }
           }, 0);
         } else {
+          console.log('📝 [AUTH_CONTEXT] No user session');
           setUser(null);
         }
         

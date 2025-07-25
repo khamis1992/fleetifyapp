@@ -752,19 +752,41 @@ export const useCopyDefaultAccounts = () => {
 export const useCostCenters = () => {
   const { user } = useAuth()
   
+  console.log('📝 [COST_CENTERS] Hook called with user:', {
+    userId: user?.id,
+    companyId: user?.profile?.company_id,
+    hasProfile: !!user?.profile
+  });
+  
   return useQuery({
     queryKey: ["costCenters", user?.profile?.company_id],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id;
+      console.log('📝 [COST_CENTERS] Fetching cost centers for company:', companyId);
+      
+      if (!companyId) {
+        console.error('📝 [COST_CENTERS] No company ID found');
+        throw new Error('No company ID found');
+      }
+      
       const { data, error } = await supabase
         .from("cost_centers")
         .select("*")
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("center_code")
       
-      if (error) throw error
+      console.log('📝 [COST_CENTERS] Query result:', { data, error, count: data?.length });
+      
+      if (error) {
+        console.error('📝 [COST_CENTERS] Query error:', error);
+        throw error;
+      }
+      
       return data as CostCenter[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!user?.profile?.company_id,
+    retry: 1
   })
 }
 
