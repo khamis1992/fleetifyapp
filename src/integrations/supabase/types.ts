@@ -1873,8 +1873,25 @@ export type Database = {
         Args: { transaction_id_param: string }
         Returns: string
       }
+      create_contract_cancellation_journal_entry: {
+        Args: {
+          contract_id_param: string
+          cancellation_date_param: string
+          cancellation_reason?: string
+        }
+        Returns: string
+      }
       create_contract_journal_entry: {
         Args: { contract_id_param: string }
+        Returns: string
+      }
+      create_deferred_revenue_journal_entry: {
+        Args: {
+          contract_id_param: string
+          period_start_date: string
+          period_end_date: string
+          monthly_amount_param: number
+        }
         Returns: string
       }
       create_depreciation_journal_entry: {
@@ -1882,6 +1899,14 @@ export type Database = {
           asset_id_param: string
           depreciation_amount_param: number
           depreciation_date_param: string
+        }
+        Returns: string
+      }
+      create_invoice_discount_journal_entry: {
+        Args: {
+          invoice_id_param: string
+          discount_amount_param: number
+          discount_reason?: string
         }
         Returns: string
       }
