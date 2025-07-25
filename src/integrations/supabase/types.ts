@@ -14,16 +14,489 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          city: string | null
+          commercial_register: string | null
+          country: string | null
+          created_at: string
+          currency: string | null
+          email: string | null
+          id: string
+          license_number: string | null
+          logo_url: string | null
+          name: string
+          name_ar: string | null
+          phone: string | null
+          settings: Json | null
+          subscription_expires_at: string | null
+          subscription_plan: string | null
+          subscription_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          city?: string | null
+          commercial_register?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          id?: string
+          license_number?: string | null
+          logo_url?: string | null
+          name: string
+          name_ar?: string | null
+          phone?: string | null
+          settings?: Json | null
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          city?: string | null
+          commercial_register?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          id?: string
+          license_number?: string | null
+          logo_url?: string | null
+          name?: string
+          name_ar?: string | null
+          phone?: string | null
+          settings?: Json | null
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          alternative_phone: string | null
+          blacklist_reason: string | null
+          city: string | null
+          company_id: string
+          company_name: string | null
+          company_name_ar: string | null
+          country: string | null
+          created_at: string
+          credit_limit: number | null
+          customer_type: Database["public"]["Enums"]["customer_type"] | null
+          date_of_birth: string | null
+          documents: Json | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          first_name: string | null
+          first_name_ar: string | null
+          id: string
+          is_active: boolean | null
+          is_blacklisted: boolean | null
+          last_name: string | null
+          last_name_ar: string | null
+          license_expiry: string | null
+          license_number: string | null
+          national_id: string | null
+          notes: string | null
+          passport_number: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          alternative_phone?: string | null
+          blacklist_reason?: string | null
+          city?: string | null
+          company_id: string
+          company_name?: string | null
+          company_name_ar?: string | null
+          country?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          customer_type?: Database["public"]["Enums"]["customer_type"] | null
+          date_of_birth?: string | null
+          documents?: Json | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string | null
+          first_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blacklisted?: boolean | null
+          last_name?: string | null
+          last_name_ar?: string | null
+          license_expiry?: string | null
+          license_number?: string | null
+          national_id?: string | null
+          notes?: string | null
+          passport_number?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          alternative_phone?: string | null
+          blacklist_reason?: string | null
+          city?: string | null
+          company_id?: string
+          company_name?: string | null
+          company_name_ar?: string | null
+          country?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          customer_type?: Database["public"]["Enums"]["customer_type"] | null
+          date_of_birth?: string | null
+          documents?: Json | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string | null
+          first_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blacklisted?: boolean | null
+          last_name?: string | null
+          last_name_ar?: string | null
+          license_expiry?: string | null
+          license_number?: string | null
+          national_id?: string | null
+          notes?: string | null
+          passport_number?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          company_id: string | null
+          created_at: string
+          email: string
+          first_name: string
+          first_name_ar: string | null
+          id: string
+          is_active: boolean | null
+          language_preference: string | null
+          last_name: string
+          last_name_ar: string | null
+          national_id: string | null
+          phone: string | null
+          position: string | null
+          position_ar: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string
+          email: string
+          first_name: string
+          first_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          language_preference?: string | null
+          last_name: string
+          last_name_ar?: string | null
+          national_id?: string | null
+          phone?: string | null
+          position?: string | null
+          position_ar?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string
+          first_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          language_preference?: string | null
+          last_name?: string
+          last_name_ar?: string | null
+          national_id?: string | null
+          phone?: string | null
+          position?: string | null
+          position_ar?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          company_id: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          permissions: Json | null
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permissions?: Json | null
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permissions?: Json | null
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_categories: {
+        Row: {
+          company_id: string
+          created_at: string
+          daily_rate: number | null
+          deposit_amount: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          monthly_rate: number | null
+          name: string
+          name_ar: string | null
+          updated_at: string
+          weekly_rate: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          daily_rate?: number | null
+          deposit_amount?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_rate?: number | null
+          name: string
+          name_ar?: string | null
+          updated_at?: string
+          weekly_rate?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          daily_rate?: number | null
+          deposit_amount?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_rate?: number | null
+          name?: string
+          name_ar?: string | null
+          updated_at?: string
+          weekly_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          category_id: string | null
+          color: string | null
+          color_ar: string | null
+          company_id: string
+          created_at: string
+          daily_rate: number | null
+          deposit_amount: number | null
+          features: Json | null
+          fuel_level: number | null
+          id: string
+          images: Json | null
+          insurance_expiry: string | null
+          insurance_policy: string | null
+          is_active: boolean | null
+          license_expiry: string | null
+          location: string | null
+          make: string
+          model: string
+          monthly_rate: number | null
+          notes: string | null
+          odometer_reading: number | null
+          plate_number: string
+          registration_number: string | null
+          status: Database["public"]["Enums"]["vehicle_status"] | null
+          updated_at: string
+          vin_number: string | null
+          weekly_rate: number | null
+          year: number
+        }
+        Insert: {
+          category_id?: string | null
+          color?: string | null
+          color_ar?: string | null
+          company_id: string
+          created_at?: string
+          daily_rate?: number | null
+          deposit_amount?: number | null
+          features?: Json | null
+          fuel_level?: number | null
+          id?: string
+          images?: Json | null
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
+          is_active?: boolean | null
+          license_expiry?: string | null
+          location?: string | null
+          make: string
+          model: string
+          monthly_rate?: number | null
+          notes?: string | null
+          odometer_reading?: number | null
+          plate_number: string
+          registration_number?: string | null
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
+          updated_at?: string
+          vin_number?: string | null
+          weekly_rate?: number | null
+          year: number
+        }
+        Update: {
+          category_id?: string | null
+          color?: string | null
+          color_ar?: string | null
+          company_id?: string
+          created_at?: string
+          daily_rate?: number | null
+          deposit_amount?: number | null
+          features?: Json | null
+          fuel_level?: number | null
+          id?: string
+          images?: Json | null
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
+          is_active?: boolean | null
+          license_expiry?: string | null
+          location?: string | null
+          make?: string
+          model?: string
+          monthly_rate?: number | null
+          notes?: string | null
+          odometer_reading?: number | null
+          plate_number?: string
+          registration_number?: string | null
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
+          updated_at?: string
+          vin_number?: string | null
+          weekly_rate?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_company: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
+      user_belongs_to_company: {
+        Args: { _user_id: string; _company_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      customer_type: "individual" | "corporate"
+      user_role:
+        | "super_admin"
+        | "company_admin"
+        | "manager"
+        | "accountant"
+        | "fleet_manager"
+        | "sales_agent"
+        | "employee"
+      vehicle_status:
+        | "available"
+        | "rented"
+        | "maintenance"
+        | "out_of_service"
+        | "reserved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +623,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      customer_type: ["individual", "corporate"],
+      user_role: [
+        "super_admin",
+        "company_admin",
+        "manager",
+        "accountant",
+        "fleet_manager",
+        "sales_agent",
+        "employee",
+      ],
+      vehicle_status: [
+        "available",
+        "rented",
+        "maintenance",
+        "out_of_service",
+        "reserved",
+      ],
+    },
   },
 } as const
