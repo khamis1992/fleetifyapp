@@ -75,7 +75,7 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
   };
 
   return (
-    <div className={`h-screen bg-gradient-to-br from-primary via-primary-light to-accent p-6 text-primary-foreground ${className}`}>
+    <div className={`h-screen bg-gradient-to-br from-secondary via-secondary/90 to-muted p-6 text-secondary-foreground ${className}`}>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-center bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent">
           KW RentFlow
