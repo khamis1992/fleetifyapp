@@ -5,8 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import EmployeeDialog from '@/components/hr/EmployeeDialog';
+import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 
 interface Employee {
   id: string;
@@ -29,6 +32,9 @@ interface Employee {
 
 export default function Employees() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: employees, isLoading } = useQuery({
     queryKey: ['employees'],
@@ -42,6 +48,88 @@ export default function Employees() {
       return data as Employee[];
     },
   });
+
+  const addEmployeeMutation = useMutation({
+    mutationFn: async (employeeData: EmployeeFormData) => {
+      // Get current user company_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('Company not found');
+
+      // Check for duplicate employee number
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('company_id', profile.company_id)
+        .eq('employee_number', employeeData.employee_number)
+        .single();
+
+      if (existingEmployee) {
+        throw new Error('رقم الموظف موجود مسبقاً');
+      }
+
+      // Insert new employee
+      const { data, error } = await supabase
+        .from('employees')
+        .insert({
+          employee_number: employeeData.employee_number,
+          first_name: employeeData.first_name,
+          last_name: employeeData.last_name,
+          first_name_ar: employeeData.first_name_ar,
+          last_name_ar: employeeData.last_name_ar,
+          email: employeeData.email,
+          phone: employeeData.phone,
+          position: employeeData.position,
+          position_ar: employeeData.position_ar,
+          department: employeeData.department,
+          department_ar: employeeData.department_ar,
+          hire_date: employeeData.hire_date.toISOString().split('T')[0],
+          basic_salary: employeeData.basic_salary,
+          allowances: employeeData.allowances || 0,
+          national_id: employeeData.national_id,
+          address: employeeData.address,
+          address_ar: employeeData.address_ar,
+          emergency_contact_name: employeeData.emergency_contact_name,
+          emergency_contact_phone: employeeData.emergency_contact_phone,
+          bank_account: employeeData.bank_account,
+          iban: employeeData.iban,
+          notes: employeeData.notes,
+          company_id: profile.company_id,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setIsDialogOpen(false);
+      toast({
+        title: 'تم إضافة الموظف بنجاح',
+        description: 'تم حفظ بيانات الموظف الجديد في النظام',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'خطأ في إضافة الموظف',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleAddEmployee = (employeeData: EmployeeFormData) => {
+    addEmployeeMutation.mutate(employeeData);
+  };
 
   const filteredEmployees = employees?.filter(employee =>
     employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,7 +161,7 @@ export default function Employees() {
             <p className="text-muted-foreground">إدارة بيانات الموظفين والمناصب</p>
           </div>
         </div>
-        <Button>
+        <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 ml-2" />
           إضافة موظف جديد
         </Button>
@@ -98,7 +186,7 @@ export default function Employees() {
               <div className="text-center">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">لا توجد موظفين مسجلين</p>
-                <Button className="mt-4">
+                <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
                   <Plus className="h-4 w-4 ml-2" />
                   إضافة أول موظف
                 </Button>
@@ -162,6 +250,13 @@ export default function Employees() {
           ))
         )}
       </div>
+
+      <EmployeeDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={handleAddEmployee}
+        isLoading={addEmployeeMutation.isPending}
+      />
     </div>
   );
 }
