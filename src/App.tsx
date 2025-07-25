@@ -13,6 +13,11 @@ import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/super-admin/Dashboard";
 import Finance from "./pages/Finance";
 import NotFound from "./pages/NotFound";
+import Employees from "./pages/hr/Employees";
+import Attendance from "./pages/hr/Attendance";
+import Payroll from "./pages/hr/Payroll";
+import HRReports from "./pages/hr/Reports";
+import HRSettings from "./pages/hr/Settings";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +46,11 @@ const App = () => (
               <Route path="contracts" element={<div className="p-8 text-center text-muted-foreground">صفحة العقود - قيد التطوير</div>} />
               <Route path="customers" element={<div className="p-8 text-center text-muted-foreground">صفحة العملاء - قيد التطوير</div>} />
               <Route path="finance/*" element={<Finance />} />
+              <Route path="hr/employees" element={<Employees />} />
+              <Route path="hr/attendance" element={<Attendance />} />
+              <Route path="hr/payroll" element={<Payroll />} />
+              <Route path="hr/reports" element={<HRReports />} />
+              <Route path="hr/settings" element={<HRSettings />} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">صفحة التقارير - قيد التطوير</div>} />
               <Route path="legal" element={<div className="p-8 text-center text-muted-foreground">الشؤون القانونية - قيد التطوير</div>} />
               <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">الإعدادات - قيد التطوير</div>} />

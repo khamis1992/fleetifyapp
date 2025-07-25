@@ -22,7 +22,9 @@ import {
   ChevronDown,
   BookOpen,
   Landmark,
-  MapPin
+  MapPin,
+  Clock,
+  UserCheck
 } from 'lucide-react';
 import {
   Sidebar,
@@ -140,6 +142,35 @@ const financeSubItems = [
   }
 ];
 
+// HR sub-items with Arabic names
+const hrSubItems = [
+  {
+    name: 'إدارة الموظفين',
+    href: '/hr/employees',
+    icon: Users
+  },
+  {
+    name: 'الحضور والانصراف',
+    href: '/hr/attendance',
+    icon: Clock
+  },
+  {
+    name: 'الرواتب',
+    href: '/hr/payroll',
+    icon: DollarSign
+  },
+  {
+    name: 'تقارير الموارد البشرية',
+    href: '/hr/reports',
+    icon: BarChart3
+  },
+  {
+    name: 'إعدادات الموارد البشرية',
+    href: '/hr/settings',
+    icon: Settings
+  }
+];
+
 export function AppSidebar() {
   const { signOut } = useAuth();
   const { state } = useSidebar();
@@ -148,6 +179,8 @@ export function AppSidebar() {
   
   // Check if finance section should be open
   const isFinanceActive = location.pathname.startsWith('/finance');
+  // Check if HR section should be open
+  const isHRActive = location.pathname.startsWith('/hr');
 
   const handleSignOut = async () => {
     await signOut();
@@ -210,6 +243,37 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {financeSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.href}>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to={subItem.href} className={getNavClassName}>
+                              <subItem.icon className="h-4 w-4" />
+                              {!collapsed && <span>{subItem.name}</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              </SidebarMenuItem>
+
+              {/* HR Section with Submenu */}
+              <SidebarMenuItem>
+                <Collapsible defaultOpen={isHRActive}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton className="h-10">
+                      <UserCheck className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span className="font-medium">الموارد البشرية</span>
+                          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {hrSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.href}>
                           <SidebarMenuSubButton asChild>
                             <NavLink to={subItem.href} className={getNavClassName}>
