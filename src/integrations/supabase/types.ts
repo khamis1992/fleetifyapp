@@ -1304,8 +1304,10 @@ export type Database = {
         Row: {
           amount: number
           bank_account: string | null
+          bank_id: string | null
           check_number: string | null
           company_id: string
+          cost_center_id: string | null
           created_at: string
           created_by: string | null
           currency: string | null
@@ -1326,8 +1328,10 @@ export type Database = {
         Insert: {
           amount: number
           bank_account?: string | null
+          bank_id?: string | null
           check_number?: string | null
           company_id: string
+          cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
@@ -1348,8 +1352,10 @@ export type Database = {
         Update: {
           amount?: number
           bank_account?: string | null
+          bank_id?: string | null
           check_number?: string | null
           company_id?: string
+          cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
@@ -2000,6 +2006,10 @@ export type Database = {
         Args: { invoice_id_param: string }
         Returns: string
       }
+      create_payment_bank_transaction: {
+        Args: { payment_id_param: string }
+        Returns: string
+      }
       create_payment_journal_entry: {
         Args: { payment_id_param: string }
         Returns: string
@@ -2066,6 +2076,21 @@ export type Database = {
           total_expenses: number
           net_income: number
           unbalanced_entries_count: number
+        }[]
+      }
+      get_payment_analytics: {
+        Args: {
+          company_id_param: string
+          start_date_param?: string
+          end_date_param?: string
+        }
+        Returns: {
+          total_receipts: number
+          total_payments: number
+          net_cash_flow: number
+          by_cost_center: Json
+          by_payment_method: Json
+          by_bank: Json
         }[]
       }
       get_trial_balance: {

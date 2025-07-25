@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useCostCenters, useBanks } from "@/hooks/useTreasury";
 
 interface PaymentFormProps {
   open: boolean;
@@ -22,6 +23,8 @@ interface PaymentFormProps {
 export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceId, type }: PaymentFormProps) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const { data: costCenters } = useCostCenters();
+  const { data: banks } = useBanks();
 
   const [paymentData, setPaymentData] = useState({
     payment_number: '',
@@ -31,6 +34,8 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     reference_number: '',
     check_number: '',
     bank_account: '',
+    cost_center_id: '',
+    bank_id: '',
     currency: 'KWD',
     notes: '',
   });
@@ -63,6 +68,8 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         customer_id: type === 'receipt' ? customerId : null,
         vendor_id: type === 'payment' ? vendorId : null,
         invoice_id: invoiceId,
+        cost_center_id: paymentData.cost_center_id || null,
+        bank_id: paymentData.bank_id || null,
         status: 'completed',
         created_by: user.id,
       });
@@ -81,6 +88,8 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         reference_number: '',
         check_number: '',
         bank_account: '',
+        cost_center_id: '',
+        bank_id: '',
         currency: 'KWD',
         notes: '',
       });
@@ -159,6 +168,38 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectItem value="KWD">دينار كويتي (KWD)</SelectItem>
                     <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                     <SelectItem value="EUR">يورو (EUR)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_center_id">مركز التكلفة</Label>
+                <Select value={paymentData.cost_center_id} onValueChange={(value) => setPaymentData({...paymentData, cost_center_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر مركز التكلفة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {costCenters?.map((center) => (
+                      <SelectItem key={center.id} value={center.id}>
+                        {center.center_name_ar || center.center_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bank_id">البنك</Label>
+                <Select value={paymentData.bank_id} onValueChange={(value) => setPaymentData({...paymentData, bank_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر البنك" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks?.map((bank) => (
+                      <SelectItem key={bank.id} value={bank.id}>
+                        {bank.bank_name_ar || bank.bank_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
