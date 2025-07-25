@@ -71,6 +71,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
         return {
           method: 'direct',
           success: true,
+          linked_existing_user: result.linked_existing_user,
           accountData: {
             employee_name: `${employee.first_name} ${employee.last_name}`,
             employee_email: data.email,
@@ -145,6 +146,16 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
         setAccountData(result.accountData);
         setShowAccountDialog(true);
         onOpenChange(false);
+        
+        // Show success toast with appropriate message
+        const message = result.linked_existing_user 
+          ? 'تم ربط المستخدم الموجود بحساب الموظف وتحديث كلمة المرور'
+          : 'تم إنشاء حساب المستخدم بنجاح';
+          
+        toast({
+          title: 'تم إنجاز العملية بنجاح',
+          description: message,
+        });
       } else {
         if (result.sendWelcomeEmail) {
           if (result.emailSent) {

@@ -18,12 +18,27 @@ interface CreateUserAccountRequest {
 }
 
 const generateTemporaryPassword = (): string => {
-  const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  // Enhanced password generation with better complexity
+  const lowercase = "abcdefghijkmnpqrstuvwxyz";
+  const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const numbers = "23456789";
+  const symbols = "!@#$%&*";
+  
+  // Ensure at least one character from each category
   let password = "";
-  for (let i = 0; i < 12; i++) {
-    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+  password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+  password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  password += symbols.charAt(Math.floor(Math.random() * symbols.length));
+  
+  // Fill the rest with random characters from all sets
+  const allChars = lowercase + uppercase + numbers + symbols;
+  for (let i = 4; i < 14; i++) {
+    password += allChars.charAt(Math.floor(Math.random() * allChars.length));
   }
-  return password;
+  
+  // Shuffle the password to randomize character positions
+  return password.split('').sort(() => Math.random() - 0.5).join('');
 };
 
 const assignRolesAndCreateRecord = async (
@@ -146,6 +161,28 @@ serve(async (req) => {
         throw new Error('Employee already has a system account');
       }
 
+      // Generate temporary password for existing user linking
+      const temporaryPassword = generateTemporaryPassword();
+      const passwordExpiresAt = new Date();
+      passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7); // Expires in 7 days
+
+      // Update existing user's password
+      const { error: passwordError } = await supabaseClient.auth.admin.updateUserById(
+        existingUser.id,
+        {
+          password: temporaryPassword,
+          user_metadata: {
+            ...existingUser.user_metadata,
+            requires_password_change: true
+          }
+        }
+      );
+
+      if (passwordError) {
+        console.error('Error updating user password:', passwordError);
+        throw new Error(`Failed to update user password: ${passwordError.message}`);
+      }
+
       // Link existing user to employee
       const { error: linkError } = await supabaseClient
         .from('employees')
@@ -160,15 +197,27 @@ serve(async (req) => {
         throw new Error(`Failed to link existing user to employee: ${linkError.message}`);
       }
 
-      // Assign roles and create request record
-      await assignRolesAndCreateRecord(supabaseClient, existingUser.id, roles, employee_id, company_id, user_id, notes);
+      // Assign roles and create request record with password info
+      await assignRolesAndCreateRecord(
+        supabaseClient, 
+        existingUser.id, 
+        roles, 
+        employee_id, 
+        company_id, 
+        user_id, 
+        notes, 
+        temporaryPassword, 
+        passwordExpiresAt.toISOString()
+      );
 
       return new Response(
         JSON.stringify({
           success: true,
           user_id: existingUser.id,
           message: 'Existing user linked to employee account',
-          linked_existing_user: true
+          linked_existing_user: true,
+          temporary_password: temporaryPassword,
+          password_expires_at: passwordExpiresAt.toISOString()
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
