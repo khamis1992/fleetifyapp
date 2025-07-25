@@ -72,31 +72,69 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
       if (employeeError) throw employeeError;
 
       // Step 3: Send invitation email if requested
+      let emailSent = false;
+      let emailError = null;
+      
       if (data.sendWelcomeEmail) {
-        const { error: emailError } = await supabase.functions.invoke('send-account-invitation', {
-          body: {
-            employee_id: employee.id,
-            employee_name: `${employee.first_name} ${employee.last_name}`,
-            employee_email: data.email,
-            requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
-            roles: data.selectedRoles,
-            invitation_url: `${window.location.origin}/auth?invitation=true&email=${encodeURIComponent(data.email)}`
-          }
-        });
+        try {
+          const { data: emailData, error: emailErr } = await supabase.functions.invoke('send-account-invitation', {
+            body: {
+              employee_id: employee.id,
+              employee_name: `${employee.first_name} ${employee.last_name}`,
+              employee_email: data.email,
+              requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
+              roles: data.selectedRoles,
+              invitation_url: `${window.location.origin}/auth?invitation=true&email=${encodeURIComponent(data.email)}`
+            }
+          });
 
-        if (emailError) {
-          console.warn('Failed to send invitation email:', emailError);
-          // Don't fail the whole process if email fails
+          if (emailErr) {
+            console.error('Email function error:', emailErr);
+            emailError = emailErr;
+          } else {
+            console.log('Email sent successfully:', emailData);
+            emailSent = true;
+          }
+        } catch (err) {
+          console.error('Email sending failed:', err);
+          emailError = err;
         }
       }
 
-      return { request: requestData, employee_email: data.email };
+      return { 
+        request: requestData, 
+        employee_email: data.email, 
+        emailSent, 
+        emailError,
+        sendWelcomeEmail: data.sendWelcomeEmail 
+      };
     },
     onSuccess: (result) => {
-      toast({
-        title: "تم إرسال دعوة الحساب بنجاح",
-        description: `تم إرسال دعوة لإنشاء حساب للموظف ${employee.first_name} ${employee.last_name} على البريد الإلكتروني ${result.employee_email}`
-      });
+      const employeeName = `${employee.first_name} ${employee.last_name}`;
+      
+      if (result.sendWelcomeEmail) {
+        if (result.emailSent) {
+          // Email sent successfully
+          toast({
+            title: "تم إرسال دعوة الحساب بنجاح",
+            description: `تم إرسال دعوة لإنشاء حساب للموظف ${employeeName} على البريد الإلكتروني ${result.employee_email}`
+          });
+        } else {
+          // Email failed to send
+          toast({
+            variant: "destructive",
+            title: "تم إنشاء طلب الحساب مع خطأ في الإيميل",
+            description: `تم إنشاء طلب حساب للموظف ${employeeName} ولكن فشل إرسال دعوة الإيميل. يرجى إرسال الدعوة يدوياً أو المحاولة مرة أخرى.`
+          });
+        }
+      } else {
+        // No email was requested
+        toast({
+          title: "تم إنشاء طلب الحساب بنجاح",
+          description: `تم إنشاء طلب حساب للموظف ${employeeName} بدون إرسال دعوة إيميل`
+        });
+      }
+      
       onSuccess();
     },
     onError: (error: any) => {
