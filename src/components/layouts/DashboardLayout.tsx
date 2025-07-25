@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from './AppSidebar';
+import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User, Settings, LogOut } from 'lucide-react';
@@ -47,7 +48,11 @@ export const DashboardLayout: React.FC = () => {
               <h2 className="text-lg font-semibold text-foreground">KW RentFlow</h2>
             </div>
             
-            {/* User Info in Header */}
+            <div className="flex items-center gap-4">
+              {/* Attendance Button */}
+              <HeaderAttendanceButton />
+              
+              {/* User Info in Header */}
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-accent/50 rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                 <Avatar className="h-8 w-8">
@@ -85,6 +90,7 @@ export const DashboardLayout: React.FC = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </header>
 
           {/* Main Content */}
