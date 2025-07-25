@@ -5,6 +5,7 @@ import { PieChart, TrendingUp, BarChart3, Calculator, DollarSign, Percent } from
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useFinancialAnalysis, useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
+import { CostCenterReports } from "@/components/finance/CostCenterReports"
 
 const FinancialAnalysis = () => {
   const { data: analysisData, isLoading, error } = useFinancialAnalysis()
@@ -89,10 +90,11 @@ const FinancialAnalysis = () => {
 
       {/* Analysis Tabs */}
       <Tabs defaultValue="ratios" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="ratios">النسب المالية</TabsTrigger>
           <TabsTrigger value="trends">الاتجاهات</TabsTrigger>
           <TabsTrigger value="performance">الأداء</TabsTrigger>
+          <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
           <TabsTrigger value="forecast">التنبؤات</TabsTrigger>
         </TabsList>
 
@@ -226,6 +228,10 @@ const FinancialAnalysis = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="cost-centers" className="space-y-6">
+          <CostCenterReports />
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-6">

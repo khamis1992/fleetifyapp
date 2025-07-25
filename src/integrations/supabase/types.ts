@@ -457,6 +457,7 @@ export type Database = {
           contract_date: string
           contract_number: string
           contract_type: string
+          cost_center_id: string | null
           created_at: string
           created_by: string | null
           customer_id: string
@@ -477,6 +478,7 @@ export type Database = {
           contract_date: string
           contract_number: string
           contract_type?: string
+          cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
@@ -497,6 +499,7 @@ export type Database = {
           contract_date?: string
           contract_number?: string
           contract_type?: string
+          cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
@@ -511,7 +514,15 @@ export type Database = {
           updated_at?: string
           vehicle_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contracts_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cost_centers: {
         Row: {

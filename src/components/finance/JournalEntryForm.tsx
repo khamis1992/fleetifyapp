@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, Trash2, Calculator } from 'lucide-react'
-import { useChartOfAccounts, useCreateJournalEntry } from '@/hooks/useFinance'
+import { useChartOfAccounts, useCreateJournalEntry, useCostCenters } from '@/hooks/useFinance'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 
@@ -16,6 +16,8 @@ interface JournalEntryLine {
   id: string
   account_id: string
   account_name?: string
+  cost_center_id?: string
+  cost_center_name?: string
   description: string
   debit_amount: number
   credit_amount: number
@@ -40,6 +42,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       id: '1', 
       account_id: '', 
       account_name: '',
+      cost_center_id: '',
+      cost_center_name: '',
       description: '', 
       debit_amount: 0, 
       credit_amount: 0 
@@ -48,6 +52,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       id: '2', 
       account_id: '', 
       account_name: '',
+      cost_center_id: '',
+      cost_center_name: '',
       description: '', 
       debit_amount: 0, 
       credit_amount: 0 
@@ -55,6 +61,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
   ])
 
   const { data: accounts, isLoading: accountsLoading } = useChartOfAccounts()
+  const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createJournalEntry = useCreateJournalEntry()
 
   const addLine = () => {
@@ -62,6 +69,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       id: Date.now().toString(),
       account_id: '',
       account_name: '',
+      cost_center_id: '',
+      cost_center_name: '',
       description: '',
       debit_amount: 0,
       credit_amount: 0
@@ -84,6 +93,12 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         if (field === 'account_id') {
           const selectedAccount = accounts?.find(acc => acc.id === value)
           updatedLine.account_name = selectedAccount?.account_name || ''
+        }
+        
+        // If cost_center_id changes, update cost_center_name
+        if (field === 'cost_center_id') {
+          const selectedCostCenter = costCenters?.find(cc => cc.id === value)
+          updatedLine.cost_center_name = selectedCostCenter?.center_name || ''
         }
         
         return updatedLine
@@ -118,6 +133,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         },
         lines: lines.map(line => ({
           account_id: line.account_id,
+          cost_center_id: line.cost_center_id || null,
           line_description: line.description,
           debit_amount: line.debit_amount || 0,
           credit_amount: line.credit_amount || 0
@@ -133,8 +149,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         reference_id: ''
       })
       setLines([
-        { id: '1', account_id: '', account_name: '', description: '', debit_amount: 0, credit_amount: 0 },
-        { id: '2', account_id: '', account_name: '', description: '', debit_amount: 0, credit_amount: 0 }
+        { id: '1', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', description: '', debit_amount: 0, credit_amount: 0 },
+        { id: '2', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', description: '', debit_amount: 0, credit_amount: 0 }
       ])
       onOpenChange(false)
       
@@ -143,7 +159,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     }
   }
 
-  if (accountsLoading) {
+  if (accountsLoading || costCentersLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl">
@@ -223,6 +239,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                 <TableHeader>
                   <TableRow>
                     <TableHead>الحساب</TableHead>
+                    <TableHead>مركز التكلفة</TableHead>
                     <TableHead>الوصف</TableHead>
                     <TableHead>مدين</TableHead>
                     <TableHead>دائن</TableHead>
@@ -232,7 +249,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                 <TableBody>
                   {lines.map((line) => (
                     <TableRow key={line.id}>
-                      <TableCell className="w-80">
+                      <TableCell className="w-64">
                         <Select
                           value={line.account_id}
                           onValueChange={(value) => updateLine(line.id, 'account_id', value)}
@@ -244,6 +261,24 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                             {accounts?.map((account) => (
                               <SelectItem key={account.id} value={account.id}>
                                 {account.account_code} - {account.account_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="w-64">
+                        <Select
+                          value={line.cost_center_id || ''}
+                          onValueChange={(value) => updateLine(line.id, 'cost_center_id', value || '')}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر مركز التكلفة (اختياري)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">لا يوجد</SelectItem>
+                            {costCenters?.map((costCenter) => (
+                              <SelectItem key={costCenter.id} value={costCenter.id}>
+                                {costCenter.center_code} - {costCenter.center_name}
                               </SelectItem>
                             ))}
                           </SelectContent>

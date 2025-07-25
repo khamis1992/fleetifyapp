@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { FileText, Download, Calendar, TrendingUp, DollarSign, PieChart, Eye, BarChart3 } from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
+import { CostCenterReports } from "@/components/finance/CostCenterReports"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -126,10 +127,11 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
           <TabsTrigger value="balance-sheet">الميزانية العمومية</TabsTrigger>
           <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
+          <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -312,6 +314,10 @@ const Reports = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="cost-centers" className="space-y-6">
+          <CostCenterReports />
         </TabsContent>
       </Tabs>
     </div>

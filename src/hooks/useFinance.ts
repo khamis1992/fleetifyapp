@@ -409,6 +409,7 @@ export const useCreateJournalEntry = () => {
       }
       lines: {
         account_id: string
+        cost_center_id?: string | null
         line_description?: string
         debit_amount?: number
         credit_amount?: number
@@ -441,6 +442,7 @@ export const useCreateJournalEntry = () => {
       const lines = entryData.lines.map((line, index) => ({
         journal_entry_id: entry.id,
         account_id: line.account_id,
+        cost_center_id: line.cost_center_id || null,
         line_description: line.line_description,
         debit_amount: line.debit_amount || 0,
         credit_amount: line.credit_amount || 0,
