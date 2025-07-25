@@ -5,13 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Clock, Search, Calendar as CalendarIcon, Check, X, AlertCircle, Info } from 'lucide-react';
+import { Clock, Search, Calendar as CalendarIcon, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { useAuth } from '@/contexts/AuthContext';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AttendanceRecord {
   id: string;
@@ -34,88 +32,32 @@ interface AttendanceRecord {
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
-  const { user } = useAuth();
 
-  // Debug query to check data access
-  const { data: debugInfo } = useQuery({
-    queryKey: ['attendance-debug', selectedDate],
-    queryFn: async () => {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      
-      // Check if user can access attendance_records
-      const { data: attendanceTest, error: attendanceError } = await supabase
-        .from('attendance_records')
-        .select('id, attendance_date, employee_id')
-        .limit(1);
-      
-      // Check if user can access employees
-      const { data: employeesTest, error: employeesError } = await supabase
-        .from('employees')
-        .select('id, first_name, last_name')
-        .limit(1);
-
-      // Check for specific date data
-      const { data: dateSpecificData, error: dateError } = await supabase
-        .from('attendance_records')
-        .select('id')
-        .eq('attendance_date', dateStr);
-
-      return {
-        userId: user?.id,
-        selectedDate: dateStr,
-        canAccessAttendance: !attendanceError,
-        attendanceError: attendanceError?.message,
-        canAccessEmployees: !employeesError,
-        employeesError: employeesError?.message,
-        dateSpecificCount: dateSpecificData?.length || 0,
-        dateError: dateError?.message,
-        totalAttendanceRecords: attendanceTest?.length || 0,
-        totalEmployees: employeesTest?.length || 0
-      };
-    },
-    enabled: !!user
-  });
-
-  const { data: attendanceRecords, isLoading, error } = useQuery({
+  const { data: attendanceRecords, isLoading } = useQuery({
     queryKey: ['attendance', selectedDate],
     queryFn: async () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      console.log('Fetching attendance for date:', dateStr);
-      
-      // First, fetch attendance records
+      // جلب سجلات الحضور أولاً
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('attendance_records')
         .select('*')
         .eq('attendance_date', dateStr)
         .order('created_at', { ascending: false });
       
-      if (attendanceError) {
-        console.error('Attendance query error:', attendanceError);
-        throw attendanceError;
-      }
+      if (attendanceError) throw attendanceError;
+      if (!attendanceData) return [];
 
-      console.log('Attendance data fetched:', attendanceData?.length || 0, 'records');
-      
-      if (!attendanceData || attendanceData.length === 0) {
-        return [];
-      }
-
-      // Fetch employee data for the attendance records
+      // جلب بيانات الموظفين
       const employeeIds = attendanceData.map(record => record.employee_id);
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
         .select('id, first_name, last_name, employee_number')
         .in('id', employeeIds);
       
-      if (employeesError) {
-        console.error('Employees query error:', employeesError);
-        throw employeesError;
-      }
+      if (employeesError) throw employeesError;
 
-      console.log('Employee data fetched for', employeesData?.length || 0, 'employees');
-
-      // Merge the data
+      // دمج البيانات
       const recordsWithEmployees = attendanceData.map(record => {
         const employee = employeesData?.find(emp => emp.id === record.employee_id);
         return {
@@ -126,7 +68,6 @@ export default function Attendance() {
 
       return recordsWithEmployees;
     },
-    enabled: !!user
   });
 
   const getStatusBadge = (status: string) => {
@@ -200,43 +141,6 @@ export default function Attendance() {
           </PopoverContent>
         </Popover>
       </div>
-
-      {/* Debug Information Panel */}
-      {debugInfo && (
-        <Alert className="bg-muted/50">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-1 text-sm">
-              <div>المستخدم: {debugInfo.userId}</div>
-              <div>التاريخ المحدد: {debugInfo.selectedDate}</div>
-              <div>إمكانية الوصول للحضور: {debugInfo.canAccessAttendance ? '✅' : '❌'}</div>
-              <div>إمكانية الوصول للموظفين: {debugInfo.canAccessEmployees ? '✅' : '❌'}</div>
-              <div>عدد سجلات التاريخ المحدد: {debugInfo.dateSpecificCount}</div>
-              <div>إجمالي سجلات الحضور: {debugInfo.totalAttendanceRecords}</div>
-              <div>إجمالي الموظفين: {debugInfo.totalEmployees}</div>
-              {debugInfo.attendanceError && (
-                <div className="text-destructive">خطأ الحضور: {debugInfo.attendanceError}</div>
-              )}
-              {debugInfo.employeesError && (
-                <div className="text-destructive">خطأ الموظفين: {debugInfo.employeesError}</div>
-              )}
-              {debugInfo.dateError && (
-                <div className="text-destructive">خطأ التاريخ: {debugInfo.dateError}</div>
-              )}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            خطأ في تحميل بيانات الحضور: {error.message}
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid gap-4">
         {filteredRecords.length === 0 ? (
