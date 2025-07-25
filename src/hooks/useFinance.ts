@@ -721,6 +721,68 @@ export const useCreateVendor = () => {
   })
 }
 
+export const useUpdateVendor = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, ...vendorData }: {
+      id: string
+      vendor_code?: string
+      vendor_name?: string
+      vendor_name_ar?: string
+      contact_person?: string
+      email?: string
+      phone?: string
+      address?: string
+      address_ar?: string
+      tax_number?: string
+      payment_terms?: number
+      credit_limit?: number
+      notes?: string
+      is_active?: boolean
+    }) => {
+      const { data, error } = await supabase
+        .from("vendors")
+        .update(vendorData)
+        .eq("id", id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] })
+      toast.success("تم تحديث المورد بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في تحديث المورد: " + error.message)
+    }
+  })
+}
+
+export const useDeleteVendor = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("vendors")
+        .update({ is_active: false })
+        .eq("id", id)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] })
+      toast.success("تم حذف المورد بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في حذف المورد: " + error.message)
+    }
+  })
+}
+
 // Financial Summary Hook
 export const useFinancialSummary = () => {
   const { user } = useAuth()

@@ -5,22 +5,57 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { useVendors } from "@/hooks/useFinance"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useVendors, useDeleteVendor, type Vendor } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Building, Plus, Search, Eye, Edit, Trash2, Phone, Mail } from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { VendorForm } from "@/components/finance/VendorForm"
+import { VendorDetailsDialog } from "@/components/finance/VendorDetailsDialog"
 
 const Vendors = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
 
   const { data: vendors, isLoading, error } = useVendors()
+  const deleteVendor = useDeleteVendor()
 
   const filteredVendors = vendors?.filter(vendor => 
     vendor.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vendor.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vendor.email?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
+
+  const handleViewVendor = (vendor: Vendor) => {
+    setSelectedVendor(vendor)
+    setIsDetailsDialogOpen(true)
+  }
+
+  const handleEditVendor = (vendor: Vendor) => {
+    setSelectedVendor(vendor)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteVendor = async (vendor: Vendor) => {
+    try {
+      await deleteVendor.mutateAsync(vendor.id)
+    } catch (error) {
+      console.error("Error deleting vendor:", error)
+    }
+  }
+
+  const handleCreateSuccess = () => {
+    setIsCreateDialogOpen(false)
+  }
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false)
+    setSelectedVendor(null)
+  }
 
   return (
     <div className="space-y-6">
@@ -55,16 +90,14 @@ const Vendors = () => {
               مورد جديد
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>إضافة مورد جديد</DialogTitle>
               <DialogDescription>
                 قم بإدخال بيانات المورد الجديد
               </DialogDescription>
             </DialogHeader>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">نموذج إضافة المورد - قيد التطوير</p>
-            </div>
+            <VendorForm onSuccess={handleCreateSuccess} />
           </DialogContent>
         </Dialog>
       </div>
@@ -206,17 +239,66 @@ const Vendors = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleViewVendor(vendor)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>عرض التفاصيل</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEditVendor(vendor)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>تعديل</TooltipContent>
+                          </Tooltip>
+
+                          <AlertDialog>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>حذف</TooltipContent>
+                            </Tooltip>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف المورد "{vendor.vendor_name}"؟ 
+                                  هذا الإجراء سيؤدي إلى إلغاء تفعيل المورد ولا يمكن التراجع عنه.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteVendor(vendor)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  حذف
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -225,6 +307,28 @@ const Vendors = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تعديل المورد</DialogTitle>
+            <DialogDescription>
+              قم بتعديل بيانات المورد
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVendor && (
+            <VendorForm vendor={selectedVendor} onSuccess={handleEditSuccess} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Details Dialog */}
+      <VendorDetailsDialog
+        vendor={selectedVendor}
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+      />
     </div>
   )
 }
