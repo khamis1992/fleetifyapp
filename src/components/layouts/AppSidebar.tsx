@@ -89,15 +89,15 @@ export function AppSidebar() {
     active ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
 
   return (
-    <Sidebar side="right" className="border-l border-border bg-card/50 backdrop-blur-sm">
+    <Sidebar side="right" className="border-l border-border bg-card/50 backdrop-blur-sm" dir="rtl">
       {/* Header */}
       <SidebarHeader className="border-b border-border/50 p-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-row-reverse">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Building2 className="h-5 w-5" />
           </div>
           {!collapsed && (
-            <div>
+            <div className="text-right">
               <h1 className="text-lg font-bold text-foreground">KW RentFlow</h1>
               <p className="text-xs text-muted-foreground">نظام إدارة تأجير السيارات</p>
             </div>
@@ -108,13 +108,13 @@ export function AppSidebar() {
       {/* User Info */}
       {!collapsed && (
         <div className="px-6 py-4 border-b border-border/50">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-row-reverse">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                 {(user?.profile?.first_name_ar || user?.profile?.first_name || 'م')[0]}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-right">
               <div className="text-sm font-medium text-foreground truncate">
                 {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
               </div>
@@ -134,7 +134,7 @@ export function AppSidebar() {
       {/* Navigation */}
       <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground mb-2">
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground mb-2 text-right">
             القائمة الرئيسية
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -142,9 +142,9 @@ export function AppSidebar() {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild className="h-10">
-                    <NavLink to={item.href} className={getNavClassName}>
+                    <NavLink to={item.href} className={`${getNavClassName} flex-row-reverse justify-start`}>
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span className="font-medium">{item.name}</span>}
+                      {!collapsed && <span className="font-medium text-right flex-1">{item.name}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -159,9 +159,9 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="h-10">
-              <NavLink to="/settings" className={getNavClassName}>
+              <NavLink to="/settings" className={`${getNavClassName} flex-row-reverse justify-start`}>
                 <Settings className="h-4 w-4" />
-                {!collapsed && <span>الإعدادات</span>}
+                {!collapsed && <span className="text-right flex-1">الإعدادات</span>}
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -169,10 +169,10 @@ export function AppSidebar() {
             <Button
               variant="ghost"
               onClick={handleSignOut}
-              className="w-full justify-start h-10 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              className="w-full justify-start h-10 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-row-reverse"
             >
               <LogOut className="h-4 w-4" />
-              {!collapsed && <span>تسجيل الخروج</span>}
+              {!collapsed && <span className="text-right flex-1">تسجيل الخروج</span>}
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>
