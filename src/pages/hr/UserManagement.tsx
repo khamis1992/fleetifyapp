@@ -212,7 +212,7 @@ export default function UserManagement() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="dashboard">
             <BarChart3 className="w-4 h-4 mr-2" />
             لوحة التحكم
@@ -220,22 +220,6 @@ export default function UserManagement() {
           <TabsTrigger value="permissions">
             <Settings className="w-4 h-4 mr-2" />
             مصفوفة الصلاحيات
-          </TabsTrigger>
-          <TabsTrigger value="without-access">
-            <Users className="w-4 h-4 mr-2" />
-            بدون حساب ({employeesWithoutAccess?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="with-access">
-            <Shield className="w-4 h-4 mr-2" />
-            لديهم حساب ({employeesWithAccess?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="requests">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            الطلبات المعلقة ({accountRequests?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="audit">
-            <History className="w-4 h-4 mr-2" />
-            سجل التدقيق
           </TabsTrigger>
         </TabsList>
 
@@ -255,71 +239,6 @@ export default function UserManagement() {
               <PermissionsMatrix showRoleComparison={true} readOnly={true} />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="without-access">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                الموظفون بدون حساب نظام
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {filteredEmployeesWithoutAccess?.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    جميع الموظفين النشطين لديهم حسابات في النظام
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredEmployeesWithoutAccess?.map((employee) => (
-                    <Card key={employee.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          <h3 className="font-semibold">{employee.first_name} {employee.last_name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            رقم الموظف: {employee.employee_number}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            المنصب: {employee.position || 'غير محدد'}
-                          </p>
-                          <Badge variant="outline" className="mt-2">
-                            بدون حساب
-                          </Badge>
-                          <Button
-                            onClick={() => handleCreateAccount(employee)}
-                            className="w-full mt-2"
-                            size="sm"
-                          >
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            إنشاء حساب
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="with-access">
-          <UserAccountsList 
-            employees={filteredEmployeesWithAccess} 
-            onEditRoles={handleEditRoles}
-          />
-        </TabsContent>
-
-        <TabsContent value="requests">
-          <AccountRequestsList requests={accountRequests} />
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <UserAuditLog />
         </TabsContent>
       </Tabs>
 
