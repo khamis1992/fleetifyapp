@@ -86,6 +86,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return authService.updateProfile(user.id, updates);
   };
 
+  const changePassword = async (newPassword: string) => {
+    return authService.changePassword(newPassword);
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -93,7 +97,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signIn,
     signOut,
-    updateProfile
+    updateProfile,
+    changePassword
   };
 
   return (

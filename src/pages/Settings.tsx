@@ -38,8 +38,8 @@ const Settings: React.FC = () => {
       title: "الأمان والخصوصية",
       description: "إعدادات كلمة المرور والأمان",
       icon: Shield,
-      action: () => {},
-      available: false
+      action: () => navigate('/profile#password-section'),
+      available: true
     },
     {
       title: "المظهر",

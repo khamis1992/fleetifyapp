@@ -29,6 +29,7 @@ export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   updateProfile: (updates: any) => Promise<{ error: any }>;
+  changePassword: (newPassword: string) => Promise<{ error: any }>;
 }
 
 export const authService = {
@@ -123,6 +124,14 @@ export const authService = {
       .from('profiles')
       .update(updates)
       .eq('user_id', userId);
+    
+    return { error };
+  },
+
+  async changePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
     
     return { error };
   }
