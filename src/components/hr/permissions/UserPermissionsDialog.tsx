@@ -141,14 +141,24 @@ export default function UserPermissionsDialog({
       requestedRoles: UserRole[];
       reason: string;
     }) => {
+      // Get company_id first
+      const { data: employeeData } = await supabase
+        .from('employees')
+        .select('company_id')
+        .eq('id', employeeId)
+        .single();
+        
+      if (!employeeData) throw new Error('Employee not found');
+      
       const { error } = await supabase
         .from('permission_change_requests')
         .insert({
+          company_id: employeeData.company_id,
           employee_id: employeeId,
           requested_by: user?.id,
           request_type: 'role_change',
-          current_roles: currentRoles,
-          requested_roles: requestedRoles,
+          current_roles: currentRoles as string[],
+          requested_roles: requestedRoles as string[],
           current_permissions: [],
           requested_permissions: [],
           reason: reason,
@@ -334,9 +344,9 @@ export default function UserPermissionsDialog({
                   <span className="text-sm">الأدوار الحالية:</span>
                   <div className="flex gap-1">
                     {employee.user_roles?.map(ur => (
-                      <Badge key={ur.role} variant="outline" size="sm">
-                        {roleLabels[ur.role]}
-                      </Badge>
+                  <Badge key={ur.role} variant="outline">
+                    {roleLabels[ur.role]}
+                  </Badge>
                     ))}
                   </div>
                 </div>
@@ -344,7 +354,7 @@ export default function UserPermissionsDialog({
                   <span className="text-sm">الأدوار الجديدة:</span>
                   <div className="flex gap-1">
                     {selectedRoles.map(role => (
-                      <Badge key={role} variant="default" size="sm">
+                      <Badge key={role} variant="default">
                         {roleLabels[role]}
                       </Badge>
                     ))}

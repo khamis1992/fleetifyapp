@@ -29,13 +29,33 @@ export default function PermissionsDashboard() {
           last_name,
           account_status,
           has_system_access,
-          user_roles (role)
+          user_id
         `)
         .eq('has_system_access', true)
         .eq('is_active', true);
       
       if (error) throw error;
-      return data;
+      
+      // Fetch roles separately
+      const employeeIds = data?.map(emp => emp.user_id).filter(Boolean) || [];
+      let rolesData: any[] = [];
+      
+      if (employeeIds.length > 0) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', employeeIds);
+        
+        rolesData = roles || [];
+      }
+      
+      // Combine data
+      const enhancedData = data?.map(emp => ({
+        ...emp,
+        user_roles: rolesData.filter(role => role.user_id === emp.user_id)
+      }));
+      
+      return enhancedData;
     }
   });
 
@@ -46,14 +66,50 @@ export default function PermissionsDashboard() {
       const { data, error } = await supabase
         .from('permission_change_requests')
         .select(`
-          *,
-          employees (first_name, last_name),
-          profiles!permission_change_requests_requested_by_fkey (first_name, last_name)
+          id,
+          employee_id,
+          requested_by,
+          request_type,
+          reason,
+          status,
+          created_at,
+          expires_at
         `)
         .eq('status', 'pending');
       
       if (error) throw error;
-      return data;
+      
+      // Fetch employee and requester data separately
+      const employeeIds = data?.map(req => req.employee_id).filter(Boolean) || [];
+      const requesterIds = data?.map(req => req.requested_by).filter(Boolean) || [];
+      
+      let employeesData: any[] = [];
+      let requestersData: any[] = [];
+      
+      if (employeeIds.length > 0) {
+        const { data: employees } = await supabase
+          .from('employees')
+          .select('id, first_name, last_name')
+          .in('id', employeeIds);
+        employeesData = employees || [];
+      }
+      
+      if (requesterIds.length > 0) {
+        const { data: requesters } = await supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name')
+          .in('user_id', requesterIds);
+        requestersData = requesters || [];
+      }
+      
+      // Combine data
+      const enhancedData = data?.map(req => ({
+        ...req,
+        employees: employeesData.find(emp => emp.id === req.employee_id),
+        requester: requestersData.find(reqer => reqer.user_id === req.requested_by)
+      }));
+      
+      return enhancedData;
     }
   });
 

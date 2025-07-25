@@ -2027,6 +2027,74 @@ export type Database = {
         }
         Relationships: []
       }
+      permission_change_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_permissions: string[] | null
+          current_roles: string[] | null
+          employee_id: string
+          expires_at: string
+          id: string
+          reason: string
+          rejection_reason: string | null
+          request_type: string
+          requested_by: string
+          requested_permissions: string[] | null
+          requested_roles: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_permissions?: string[] | null
+          current_roles?: string[] | null
+          employee_id: string
+          expires_at: string
+          id?: string
+          reason: string
+          rejection_reason?: string | null
+          request_type: string
+          requested_by: string
+          requested_permissions?: string[] | null
+          requested_roles?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_permissions?: string[] | null
+          current_roles?: string[] | null
+          employee_id?: string
+          expires_at?: string
+          id?: string
+          reason?: string
+          rejection_reason?: string | null
+          request_type?: string
+          requested_by?: string
+          requested_permissions?: string[] | null
+          requested_roles?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_change_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -29,6 +29,7 @@ import {
 
 interface UserAccountsListProps {
   employees: any[];
+  onEditRoles?: (employee: any) => void;
 }
 
 const getStatusBadge = (status: string) => {
@@ -59,7 +60,7 @@ const getRolesBadges = (roles: any[]) => {
   ));
 };
 
-export default function UserAccountsList({ employees }: UserAccountsListProps) {
+export default function UserAccountsList({ employees, onEditRoles }: UserAccountsListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -191,7 +192,7 @@ export default function UserAccountsList({ employees }: UserAccountsListProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => {}}>
+                        <DropdownMenuItem onClick={() => onEditRoles?.(employee)}>
                           <Edit className="w-4 h-4 mr-2" />
                           تعديل الأدوار
                         </DropdownMenuItem>

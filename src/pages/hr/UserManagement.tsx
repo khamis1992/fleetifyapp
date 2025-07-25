@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Users, UserPlus, Shield, History, Search } from 'lucide-react';
+import { AlertCircle, Users, UserPlus, Shield, History, Search, Settings, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import UserAccountForm from '@/components/hr/UserAccountForm';
 import UserAccountsList from '@/components/hr/UserAccountsList';
 import AccountRequestsList from '@/components/hr/AccountRequestsList';
 import UserAuditLog from '@/components/hr/UserAuditLog';
+import PermissionsDashboard from '@/components/hr/permissions/PermissionsDashboard';
+import UserPermissionsDialog from '@/components/hr/permissions/UserPermissionsDialog';
+import PermissionsMatrix from '@/components/hr/permissions/PermissionsMatrix';
 
 export default function UserManagement() {
   const { user } = useAuth();
@@ -22,6 +25,8 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showAccountForm, setShowAccountForm] = useState(false);
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
+  const [selectedEmployeeForPermissions, setSelectedEmployeeForPermissions] = useState<any>(null);
 
   // Fetch employees without system access
   const { data: employeesWithoutAccess, isLoading: loadingEmployees } = useQuery({
@@ -96,6 +101,11 @@ export default function UserManagement() {
     setShowAccountForm(true);
   };
 
+  const handleEditRoles = (employee: any) => {
+    setSelectedEmployeeForPermissions(employee);
+    setShowPermissionsDialog(true);
+  };
+
   const filteredEmployeesWithoutAccess = employeesWithoutAccess?.filter(emp =>
     `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.employee_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -124,9 +134,9 @@ export default function UserManagement() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">إدارة حسابات المستخدمين</h1>
+          <h1 className="text-3xl font-bold">إدارة المستخدمين والصلاحيات</h1>
           <p className="text-muted-foreground">
-            إدارة حسابات النظام والأذونات للموظفين
+            إدارة حسابات المستخدمين، الأدوار، والصلاحيات بشكل شامل
           </p>
         </div>
       </div>
@@ -201,8 +211,16 @@ export default function UserManagement() {
       </Card>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="without-access" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="dashboard">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            لوحة التحكم
+          </TabsTrigger>
+          <TabsTrigger value="permissions">
+            <Settings className="w-4 h-4 mr-2" />
+            مصفوفة الصلاحيات
+          </TabsTrigger>
           <TabsTrigger value="without-access">
             <Users className="w-4 h-4 mr-2" />
             بدون حساب ({employeesWithoutAccess?.length || 0})
@@ -220,6 +238,24 @@ export default function UserManagement() {
             سجل التدقيق
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <PermissionsDashboard />
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="w-5 h-5 mr-2" />
+                مصفوفة الصلاحيات والأدوار
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PermissionsMatrix showRoleComparison={true} readOnly={true} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="without-access">
           <Card>
@@ -272,7 +308,10 @@ export default function UserManagement() {
         </TabsContent>
 
         <TabsContent value="with-access">
-          <UserAccountsList employees={filteredEmployeesWithAccess} />
+          <UserAccountsList 
+            employees={filteredEmployeesWithAccess} 
+            onEditRoles={handleEditRoles}
+          />
         </TabsContent>
 
         <TabsContent value="requests">
@@ -296,6 +335,15 @@ export default function UserManagement() {
             setShowAccountForm(false);
             setSelectedEmployee(null);
           }}
+        />
+      )}
+
+      {/* User Permissions Dialog */}
+      {showPermissionsDialog && selectedEmployeeForPermissions && (
+        <UserPermissionsDialog
+          employee={selectedEmployeeForPermissions}
+          open={showPermissionsDialog}
+          onOpenChange={setShowPermissionsDialog}
         />
       )}
     </div>

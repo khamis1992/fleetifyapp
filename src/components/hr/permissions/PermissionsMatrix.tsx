@@ -190,7 +190,7 @@ export default function PermissionsMatrix({
                           </div>
                         </div>
                         {isAssigned && (
-                          <Badge variant="default" size="sm">نشط</Badge>
+                          <Badge variant="default">نشط</Badge>
                         )}
                       </div>
                     </CardContent>
@@ -286,7 +286,7 @@ export default function PermissionsMatrix({
                                         </div>
                                       </div>
                                       {isSystemLevel && (
-                                        <Badge variant="destructive" size="sm">
+                                        <Badge variant="destructive">
                                           <AlertTriangle className="w-3 h-3 mr-1" />
                                           صلاحية نظام
                                         </Badge>
@@ -297,7 +297,6 @@ export default function PermissionsMatrix({
                                       <Badge
                                         variant={permission.level === 'read' ? 'secondary' : 
                                                permission.level === 'write' ? 'default' : 'destructive'}
-                                        size="sm"
                                       >
                                         {permission.level === 'read' ? 'قراءة' : 
                                          permission.level === 'write' ? 'كتابة' : 'إدارة'}
@@ -316,12 +315,11 @@ export default function PermissionsMatrix({
                                             };
                                             
                                             return (
-                                              <Badge
-                                                key={role}
-                                                variant="outline"
-                                                size="sm"
-                                                className="text-xs px-1"
-                                              >
+                                            <Badge
+                                              key={role}
+                                              variant="outline"
+                                              className="text-xs px-1"
+                                            >
                                                 {roleLabels[role as UserRole]}
                                               </Badge>
                                             );
@@ -385,7 +383,7 @@ export default function PermissionsMatrix({
                                 <span className="text-xs text-muted-foreground">
                                   {category.nameAr}
                                 </span>
-                                <Badge variant="outline" size="sm">
+                                <Badge variant="outline">
                                   {categoryPerms.length}
                                 </Badge>
                               </div>
