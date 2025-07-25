@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Users, UserPlus, Shield, History, Search, Settings, BarChart3 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertCircle, Users, UserPlus, Shield, History, Search, Settings, BarChart3, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import UserAccountForm from '@/components/hr/UserAccountForm';
@@ -27,6 +28,8 @@ export default function UserManagement() {
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [selectedEmployeeForPermissions, setSelectedEmployeeForPermissions] = useState<any>(null);
+  const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Fetch employees without system access
   const { data: employeesWithoutAccess, isLoading: loadingEmployees } = useQuery({
@@ -57,7 +60,7 @@ export default function UserManagement() {
             last_name,
             email
           ),
-          user_roles!inner (
+          user_roles (
             role
           )
         `)
@@ -104,6 +107,47 @@ export default function UserManagement() {
   const handleEditRoles = (employee: any) => {
     setSelectedEmployeeForPermissions(employee);
     setShowPermissionsDialog(true);
+  };
+
+  const handleUserSelection = (userId: string) => {
+    const employee = employeesWithAccess?.find(emp => emp.user_id === userId);
+    if (employee) {
+      const user = {
+        id: employee.user_id,
+        name: `${employee.first_name} ${employee.last_name}`,
+        roles: Array.isArray(employee.user_roles) ? employee.user_roles.map((ur: any) => ur.role) : [],
+        customPermissions: []
+      };
+      setSelectedUserForMatrix(user);
+      setHasUnsavedChanges(false);
+    }
+  };
+
+  const handlePermissionChange = (permission: string, granted: boolean) => {
+    setHasUnsavedChanges(true);
+    // This will be handled by the PermissionsMatrix component internally
+  };
+
+  const handleRoleChange = (role: any, assigned: boolean) => {
+    setHasUnsavedChanges(true);
+    // This will be handled by the PermissionsMatrix component internally
+  };
+
+  const handleSaveChanges = () => {
+    // The actual save will be handled by the UserPermissionsDialog
+    // For now, we just show the dialog
+    if (selectedUserForMatrix) {
+      const employee = employeesWithAccess?.find(emp => emp.user_id === selectedUserForMatrix.id);
+      if (employee) {
+        setSelectedEmployeeForPermissions(employee);
+        setShowPermissionsDialog(true);
+      }
+    }
+  };
+
+  const handleCancelChanges = () => {
+    setHasUnsavedChanges(false);
+    setSelectedUserForMatrix(null);
   };
 
   const filteredEmployeesWithoutAccess = employeesWithoutAccess?.filter(emp =>
@@ -230,13 +274,67 @@ export default function UserManagement() {
         <TabsContent value="permissions">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Settings className="w-5 h-5 mr-2" />
-                مصفوفة الصلاحيات والأدوار
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Settings className="w-5 h-5 mr-2" />
+                  مصفوفة الصلاحيات والأدوار
+                </div>
+                {hasUnsavedChanges && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelChanges}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      إلغاء
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveChanges}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      حفظ التغييرات
+                    </Button>
+                  </div>
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <PermissionsMatrix showRoleComparison={true} readOnly={true} />
+            <CardContent className="space-y-4">
+              {/* User Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">اختيار المستخدم لتعديل صلاحياته:</label>
+                <Select value={selectedUserForMatrix?.id || ""} onValueChange={handleUserSelection}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="اختر مستخدماً..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employeesWithAccess?.map((employee) => (
+                      <SelectItem key={employee.user_id} value={employee.user_id}>
+                        {employee.first_name} {employee.last_name} - {employee.position || 'غير محدد'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Permissions Matrix */}
+              <PermissionsMatrix 
+                selectedUser={selectedUserForMatrix}
+                onPermissionChange={handlePermissionChange}
+                onRoleChange={handleRoleChange}
+                showRoleComparison={true} 
+                readOnly={!selectedUserForMatrix}
+              />
+
+              {!selectedUserForMatrix && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    يرجى اختيار مستخدم من القائمة أعلاه لعرض وتعديل صلاحياته
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
