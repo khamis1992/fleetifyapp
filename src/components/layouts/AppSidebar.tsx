@@ -176,6 +176,11 @@ const hrSubItems = [
     icon: BarChart3
   },
   {
+    name: 'إعدادات الموقع',
+    href: '/hr/location-settings',
+    icon: MapPin
+  },
+  {
     name: 'إعدادات الموارد البشرية',
     href: '/hr/settings',
     icon: Settings
