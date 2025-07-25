@@ -50,6 +50,66 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance_records: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          attendance_date: string
+          break_end_time: string | null
+          break_start_time: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          is_approved: boolean | null
+          late_hours: number | null
+          notes: string | null
+          overtime_hours: number | null
+          status: string
+          total_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attendance_date: string
+          break_end_time?: string | null
+          break_start_time?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_approved?: boolean | null
+          late_hours?: number | null
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attendance_date?: string
+          break_end_time?: string | null
+          break_start_time?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_approved?: boolean | null
+          late_hours?: number | null
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bank_transactions: {
         Row: {
           amount: number
@@ -880,6 +940,102 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          allowances: number | null
+          bank_account: string | null
+          basic_salary: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          department: string | null
+          department_ar: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employee_number: string
+          first_name: string
+          first_name_ar: string | null
+          hire_date: string
+          iban: string | null
+          id: string
+          is_active: boolean | null
+          last_name: string
+          last_name_ar: string | null
+          national_id: string | null
+          notes: string | null
+          phone: string | null
+          position: string | null
+          position_ar: string | null
+          termination_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          allowances?: number | null
+          bank_account?: string | null
+          basic_salary?: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          department_ar?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_number: string
+          first_name: string
+          first_name_ar?: string | null
+          hire_date: string
+          iban?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_name: string
+          last_name_ar?: string | null
+          national_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          position_ar?: string | null
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          allowances?: number | null
+          bank_account?: string | null
+          basic_salary?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          department_ar?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_number?: string
+          first_name?: string
+          first_name_ar?: string | null
+          hire_date?: string
+          iban?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_name?: string
+          last_name_ar?: string | null
+          national_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          position_ar?: string | null
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fixed_assets: {
         Row: {
           accumulated_depreciation: number | null
@@ -1530,6 +1686,210 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_reviews: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          journal_entry_id: string | null
+          net_amount: number | null
+          notes: string | null
+          period_end: string
+          period_start: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          total_amount: number | null
+          total_deductions: number | null
+          total_employees: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          net_amount?: number | null
+          notes?: string | null
+          period_end: string
+          period_start: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          total_amount?: number | null
+          total_deductions?: number | null
+          total_employees?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          net_amount?: number | null
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          total_amount?: number | null
+          total_deductions?: number | null
+          total_employees?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payroll_settings: {
+        Row: {
+          allow_negative_balance: boolean | null
+          auto_calculate_overtime: boolean | null
+          company_id: string
+          created_at: string
+          id: string
+          late_penalty_per_hour: number | null
+          overtime_rate: number | null
+          pay_date: number | null
+          payroll_frequency: string | null
+          social_security_rate: number | null
+          tax_rate: number | null
+          updated_at: string
+          working_days_per_month: number | null
+          working_hours_per_day: number | null
+        }
+        Insert: {
+          allow_negative_balance?: boolean | null
+          auto_calculate_overtime?: boolean | null
+          company_id: string
+          created_at?: string
+          id?: string
+          late_penalty_per_hour?: number | null
+          overtime_rate?: number | null
+          pay_date?: number | null
+          payroll_frequency?: string | null
+          social_security_rate?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+          working_days_per_month?: number | null
+          working_hours_per_day?: number | null
+        }
+        Update: {
+          allow_negative_balance?: boolean | null
+          auto_calculate_overtime?: boolean | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          late_penalty_per_hour?: number | null
+          overtime_rate?: number | null
+          pay_date?: number | null
+          payroll_frequency?: string | null
+          social_security_rate?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+          working_days_per_month?: number | null
+          working_hours_per_day?: number | null
+        }
+        Relationships: []
+      }
+      payroll_slips: {
+        Row: {
+          absent_days: number | null
+          allowances: number | null
+          bank_reference: string | null
+          basic_salary: number
+          created_at: string
+          employee_id: string
+          id: string
+          late_days: number | null
+          late_penalty: number | null
+          net_salary: number | null
+          notes: string | null
+          other_deductions: number | null
+          overtime_amount: number | null
+          overtime_hours: number | null
+          paid_at: string | null
+          payment_method: string | null
+          payroll_review_id: string
+          period_end: string
+          period_start: string
+          present_days: number | null
+          social_security_deduction: number | null
+          status: string
+          tax_deduction: number | null
+          total_deductions: number | null
+          total_earnings: number | null
+          updated_at: string
+          working_days: number | null
+        }
+        Insert: {
+          absent_days?: number | null
+          allowances?: number | null
+          bank_reference?: string | null
+          basic_salary?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          late_days?: number | null
+          late_penalty?: number | null
+          net_salary?: number | null
+          notes?: string | null
+          other_deductions?: number | null
+          overtime_amount?: number | null
+          overtime_hours?: number | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payroll_review_id: string
+          period_end: string
+          period_start: string
+          present_days?: number | null
+          social_security_deduction?: number | null
+          status?: string
+          tax_deduction?: number | null
+          total_deductions?: number | null
+          total_earnings?: number | null
+          updated_at?: string
+          working_days?: number | null
+        }
+        Update: {
+          absent_days?: number | null
+          allowances?: number | null
+          bank_reference?: string | null
+          basic_salary?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          late_days?: number | null
+          late_penalty?: number | null
+          net_salary?: number | null
+          notes?: string | null
+          other_deductions?: number | null
+          overtime_amount?: number | null
+          overtime_hours?: number | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payroll_review_id?: string
+          period_end?: string
+          period_start?: string
+          present_days?: number | null
+          social_security_deduction?: number | null
+          status?: string
+          tax_deduction?: number | null
+          total_deductions?: number | null
+          total_earnings?: number | null
+          updated_at?: string
+          working_days?: number | null
+        }
+        Relationships: []
+      }
       penalties: {
         Row: {
           amount: number
@@ -2006,6 +2366,27 @@ export type Database = {
       calculate_account_level: {
         Args: { account_id: string }
         Returns: number
+      }
+      calculate_employee_salary: {
+        Args: {
+          employee_id_param: string
+          period_start_param: string
+          period_end_param: string
+        }
+        Returns: {
+          basic_salary: number
+          allowances: number
+          overtime_amount: number
+          total_earnings: number
+          late_penalty: number
+          total_deductions: number
+          net_salary: number
+          working_days: number
+          present_days: number
+          late_days: number
+          absent_days: number
+          overtime_hours: number
+        }[]
       }
       check_budget_overruns: {
         Args: { budget_id_param: string }
