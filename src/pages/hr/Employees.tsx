@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
@@ -13,6 +13,8 @@ import EditEmployeeDialog from '@/components/hr/EditEmployeeDialog';
 import DeleteEmployeeConfirmDialog from '@/components/hr/DeleteEmployeeConfirmDialog';
 import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
+import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
+import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 
 interface Employee {
   id: string;
@@ -42,8 +44,13 @@ export default function Employees() {
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [accountData, setAccountData] = useState<any>(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [showPayrollDialog, setShowPayrollDialog] = useState(false);
+  const [selectedEmployeeForPayroll, setSelectedEmployeeForPayroll] = useState<Employee | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Payroll mutations
+  const createPayrollMutation = useCreatePayroll();
 
   const { data: employees, isLoading } = useQuery({
     queryKey: ['employees'],
@@ -392,6 +399,15 @@ export default function Employees() {
     }
   };
 
+  const handleViewPayroll = (employee: Employee) => {
+    setSelectedEmployeeForPayroll(employee);
+    setShowPayrollDialog(true);
+  };
+
+  const handleCreatePayroll = (data: CreatePayrollData) => {
+    createPayrollMutation.mutate(data);
+  };
+
   const filteredEmployees = employees?.filter(employee =>
     employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -500,6 +516,14 @@ export default function Employees() {
                       <Button 
                         variant="outline" 
                         size="sm"
+                        onClick={() => handleViewPayroll(employee)}
+                        title="عرض الرواتب"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
                         onClick={() => handleEditEmployee(employee)}
                         disabled={updateEmployeeMutation.isPending}
                       >
@@ -550,6 +574,16 @@ export default function Employees() {
         onOpenChange={setShowAccountDialog}
         accountData={accountData}
       />
+
+      {selectedEmployeeForPayroll && (
+        <EmployeePayrollDetails
+          employee={selectedEmployeeForPayroll}
+          open={showPayrollDialog}
+          onOpenChange={setShowPayrollDialog}
+          onCreatePayroll={handleCreatePayroll}
+          isCreatingPayroll={createPayrollMutation.isPending}
+        />
+      )}
     </div>
   );
 }
