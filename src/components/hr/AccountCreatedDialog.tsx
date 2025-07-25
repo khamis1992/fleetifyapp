@@ -20,7 +20,7 @@ interface AccountCreatedDialogProps {
     employee_email: string;
     temporary_password: string;
     password_expires_at: string;
-  };
+  } | null;
 }
 
 export default function AccountCreatedDialog({
@@ -57,6 +57,11 @@ export default function AccountCreatedDialog({
       minute: '2-digit'
     });
   };
+
+  // Add null check to prevent errors
+  if (!accountData) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
