@@ -889,6 +889,73 @@ export const useCreateCostCenter = () => {
   })
 }
 
+export const useUpdateCostCenter = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async ({ id, ...centerData }: {
+      id: string
+      center_code?: string
+      center_name?: string
+      center_name_ar?: string
+      description?: string
+      budget_amount?: number
+      actual_amount?: number
+      is_active?: boolean
+    }) => {
+      if (!user?.profile?.company_id) throw new Error("Company ID is required")
+      
+      const { data, error } = await supabase
+        .from("cost_centers")
+        .update(centerData)
+        .eq("id", id)
+        .eq("company_id", user.profile.company_id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["costCenters"] })
+      toast.success("تم تحديث مركز التكلفة بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في تحديث مركز التكلفة: " + error.message)
+    }
+  })
+}
+
+export const useDeleteCostCenter = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!user?.profile?.company_id) throw new Error("Company ID is required")
+      
+      const { data, error } = await supabase
+        .from("cost_centers")
+        .update({ is_active: false })
+        .eq("id", id)
+        .eq("company_id", user.profile.company_id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["costCenters"] })
+      toast.success("تم حذف مركز التكلفة بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في حذف مركز التكلفة: " + error.message)
+    }
+  })
+}
+
 // Fixed Assets Hooks
 export const useFixedAssets = () => {
   const { user } = useAuth()

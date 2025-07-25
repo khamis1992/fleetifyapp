@@ -8,16 +8,23 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Target, TrendingUp, DollarSign, Plus, Search, Building } from "lucide-react";
-import { useCostCenters, useCreateCostCenter, CostCenter } from "@/hooks/useFinance";
+import { Target, TrendingUp, DollarSign, Plus, Search, Building, Eye, Edit, Trash2 } from "lucide-react";
+import { useCostCenters, useCreateCostCenter, useUpdateCostCenter, useDeleteCostCenter, CostCenter } from "@/hooks/useFinance";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function CostCenters() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedCostCenter, setSelectedCostCenter] = useState<CostCenter | null>(null);
   
   const { data: costCenters, isLoading, error } = useCostCenters();
   const createCostCenter = useCreateCostCenter();
+  const updateCostCenter = useUpdateCostCenter();
+  const deleteCostCenter = useDeleteCostCenter();
 
   console.log('📝 [COST_CENTERS_PAGE] Component state:', {
     costCenters,
@@ -58,6 +65,37 @@ export default function CostCenters() {
       is_active: true
     });
     setIsCreateDialogOpen(false);
+  };
+
+  const handleViewCostCenter = (center: CostCenter) => {
+    setSelectedCostCenter(center);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditCostCenter = (center: CostCenter) => {
+    setSelectedCostCenter(center);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateCostCenter = async () => {
+    if (!selectedCostCenter) return;
+
+    await updateCostCenter.mutateAsync({
+      id: selectedCostCenter.id,
+      center_code: selectedCostCenter.center_code,
+      center_name: selectedCostCenter.center_name,
+      center_name_ar: selectedCostCenter.center_name_ar,
+      description: selectedCostCenter.description,
+      budget_amount: selectedCostCenter.budget_amount,
+      actual_amount: selectedCostCenter.actual_amount
+    });
+
+    setIsEditDialogOpen(false);
+    setSelectedCostCenter(null);
+  };
+
+  const handleDeleteCostCenter = async (centerId: string) => {
+    await deleteCostCenter.mutateAsync(centerId);
   };
 
   const filteredCostCenters = costCenters?.filter(center =>
@@ -307,8 +345,77 @@ export default function CostCenters() {
                     </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">عرض</Button>
-                      <Button variant="ghost" size="sm">تعديل</Button>
+                      <TooltipProvider>
+                        <div className="flex items-center space-x-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleViewCostCenter(center)}
+                                className="h-8 w-8"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>عرض التفاصيل</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleEditCostCenter(center)}
+                                className="h-8 w-8"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>تعديل</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          
+                          <AlertDialog>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>حذف</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف مركز التكلفة "{center.center_name}"؟ هذا الإجراء لا يمكن التراجع عنه.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteCostCenter(center.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  حذف
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 );
@@ -322,6 +429,115 @@ export default function CostCenters() {
           )}
         </CardContent>
       </Card>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تفاصيل مركز التكلفة</DialogTitle>
+            <DialogDescription>
+              عرض تفاصيل مركز التكلفة
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCostCenter && (
+            <div className="space-y-4">
+              <div>
+                <Label>رمز المركز</Label>
+                <p className="mt-1 font-medium">{selectedCostCenter.center_code}</p>
+              </div>
+              <div>
+                <Label>اسم المركز</Label>
+                <p className="mt-1 font-medium">{selectedCostCenter.center_name}</p>
+              </div>
+              {selectedCostCenter.center_name_ar && (
+                <div>
+                  <Label>الاسم بالعربية</Label>
+                  <p className="mt-1 font-medium">{selectedCostCenter.center_name_ar}</p>
+                </div>
+              )}
+              <div>
+                <Label>المبلغ المخصص</Label>
+                <p className="mt-1 font-medium">{selectedCostCenter.budget_amount?.toFixed(3)} د.ك</p>
+              </div>
+              <div>
+                <Label>المصروف الفعلي</Label>
+                <p className="mt-1 font-medium">{selectedCostCenter.actual_amount?.toFixed(3)} د.ك</p>
+              </div>
+              {selectedCostCenter.description && (
+                <div>
+                  <Label>الوصف</Label>
+                  <p className="mt-1">{selectedCostCenter.description}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل مركز التكلفة</DialogTitle>
+            <DialogDescription>
+              تعديل تفاصيل مركز التكلفة
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCostCenter && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editCenterCode">رمز المركز</Label>
+                <Input
+                  id="editCenterCode"
+                  value={selectedCostCenter.center_code}
+                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, center_code: e.target.value })}
+                  placeholder="CC001"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editCenterName">اسم المركز</Label>
+                <Input
+                  id="editCenterName"
+                  value={selectedCostCenter.center_name}
+                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, center_name: e.target.value })}
+                  placeholder="اسم مركز التكلفة"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editCenterNameAr">الاسم بالعربية</Label>
+                <Input
+                  id="editCenterNameAr"
+                  value={selectedCostCenter.center_name_ar || ''}
+                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, center_name_ar: e.target.value })}
+                  placeholder="الاسم بالعربية"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editBudgetAmount">المبلغ المخصص</Label>
+                <Input
+                  id="editBudgetAmount"
+                  type="number"
+                  value={selectedCostCenter.budget_amount || 0}
+                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, budget_amount: Number(e.target.value) })}
+                  placeholder="0.000"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editDescription">الوصف</Label>
+                <Textarea
+                  id="editDescription"
+                  value={selectedCostCenter.description || ''}
+                  onChange={(e) => setSelectedCostCenter({ ...selectedCostCenter, description: e.target.value })}
+                  placeholder="وصف مركز التكلفة"
+                />
+              </div>
+              <Button onClick={handleUpdateCostCenter} className="w-full" disabled={updateCostCenter.isPending}>
+                {updateCostCenter.isPending ? "جاري التحديث..." : "تحديث المركز"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
