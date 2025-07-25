@@ -6,14 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown } from "lucide-react";
+import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus } from "lucide-react";
 import { useJournalEntries, useJournalEntryLines } from "@/hooks/useFinance";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
 
 export default function Ledger() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
   const { data: journalEntries, isLoading: entriesLoading, error: entriesError } = useJournalEntries({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: entryLines, isLoading: linesLoading } = useJournalEntryLines(selectedEntryId || undefined);
@@ -89,6 +91,10 @@ export default function Ledger() {
           </p>
         </div>
         <div className="flex space-x-2">
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            قيد جديد
+          </Button>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             تصدير

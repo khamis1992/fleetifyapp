@@ -3,40 +3,49 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PieChart, TrendingUp, BarChart3, Calculator, DollarSign, Percent } from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { useFinancialAnalysis, useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
 
 const FinancialAnalysis = () => {
-  const ratios = [
+  const { data: analysisData, isLoading, error } = useFinancialAnalysis()
+  const { data: balanceSheetData } = useBalanceSheet()
+  const { data: incomeStatementData } = useIncomeStatement()
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-destructive">
+        حدث خطأ في تحميل البيانات
+      </div>
+    )
+  }
+
+  const ratioCategories = [
     {
       category: "نسب السيولة",
-      ratios: [
-        { name: "نسبة التداول", value: "0.00", description: "الأصول المتداولة / الخصوم المتداولة" },
-        { name: "النسبة السريعة", value: "0.00", description: "الأصول السريعة / الخصوم المتداولة" },
-        { name: "النسبة النقدية", value: "0.00", description: "النقد / الخصوم المتداولة" }
-      ]
+      ratios: analysisData?.ratios.filter(r => 
+        r.name === "نسبة التداول" || r.name === "النسبة السريعة"
+      ) || []
     },
     {
-      category: "نسب الربحية",
-      ratios: [
-        { name: "هامش الربح الإجمالي", value: "0.00%", description: "الربح الإجمالي / المبيعات" },
-        { name: "هامش الربح الصافي", value: "0.00%", description: "الربح الصافي / المبيعات" },
-        { name: "العائد على الأصول", value: "0.00%", description: "الربح الصافي / إجمالي الأصول" }
-      ]
+      category: "نسب الربحية", 
+      ratios: analysisData?.ratios.filter(r => 
+        r.name.includes("الربح") || r.name.includes("العائد")
+      ) || []
     },
     {
-      category: "نسب النشاط",
-      ratios: [
-        { name: "معدل دوران المخزون", value: "0.00", description: "تكلفة البضاعة المباعة / متوسط المخزون" },
-        { name: "معدل دوران الحسابات المدينة", value: "0.00", description: "المبيعات الآجلة / متوسط الحسابات المدينة" },
-        { name: "معدل دوران الأصول", value: "0.00", description: "المبيعات / متوسط الأصول" }
-      ]
+      category: "نسب المديونية",
+      ratios: analysisData?.ratios.filter(r => 
+        r.name.includes("الدين")
+      ) || []
     }
-  ]
-
-  const trends = [
-    { metric: "الإيرادات", current: "0.000", previous: "0.000", change: 0, trend: "stable" },
-    { metric: "المصروفات", current: "0.000", previous: "0.000", change: 0, trend: "stable" },
-    { metric: "الربح الصافي", current: "0.000", previous: "0.000", change: 0, trend: "stable" },
-    { metric: "التدفق النقدي", current: "0.000", previous: "0.000", change: 0, trend: "stable" }
   ]
 
   const getTrendIcon = (trend: string) => {
@@ -89,7 +98,7 @@ const FinancialAnalysis = () => {
 
         <TabsContent value="ratios" className="space-y-6">
           <div className="grid gap-6">
-            {ratios.map((category, index) => (
+            {ratioCategories.map((category, index) => (
               <Card key={index}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -105,7 +114,12 @@ const FinancialAnalysis = () => {
                     {category.ratios.map((ratio, ratioIndex) => (
                       <div key={ratioIndex} className="p-4 border rounded-lg">
                         <div className="font-semibold text-sm mb-1">{ratio.name}</div>
-                        <div className="text-2xl font-bold text-primary mb-2">{ratio.value}</div>
+                        <div className="text-2xl font-bold text-primary mb-2">
+                          {ratio.percentage 
+                            ? `${ratio.value.toFixed(2)}%` 
+                            : ratio.value.toFixed(2)
+                          }
+                        </div>
                         <div className="text-xs text-muted-foreground">{ratio.description}</div>
                       </div>
                     ))}
@@ -129,15 +143,15 @@ const FinancialAnalysis = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {trends.map((trend, index) => (
+                {analysisData?.trends.map((trend, index) => (
                   <div key={index} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-sm">{trend.metric}</span>
+                      <span className="font-semibold text-sm">{trend.name}</span>
                       {getTrendIcon(trend.trend)}
                     </div>
-                    <div className="text-lg font-bold">{trend.current} د.ك</div>
+                    <div className="text-lg font-bold">{trend.current.toFixed(3)} د.ك</div>
                     <div className="text-xs text-muted-foreground">
-                      السابق: {trend.previous} د.ك
+                      السابق: {trend.previous.toFixed(3)} د.ك
                     </div>
                     <div className={`text-xs mt-1 ${
                       trend.change > 0 ? 'text-green-600' : 
@@ -166,41 +180,49 @@ const FinancialAnalysis = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold">الأداء المالي</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">إجمالي الإيرادات</span>
-                      <span className="font-bold">0.000 د.ك</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">إجمالي المصروفات</span>
-                      <span className="font-bold">0.000 د.ك</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">الربح الصافي</span>
-                      <span className="font-bold text-green-600">0.000 د.ك</span>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">الأداء المالي</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">إجمالي الإيرادات</span>
+                        <span className="font-bold">{analysisData?.incomeStatement.revenue.toFixed(3) || '0.000'} د.ك</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">إجمالي المصروفات</span>
+                        <span className="font-bold">{analysisData?.incomeStatement.expenses.toFixed(3) || '0.000'} د.ك</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">الربح الصافي</span>
+                        <span className={`font-bold ${(analysisData?.incomeStatement.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {analysisData?.incomeStatement.netIncome.toFixed(3) || '0.000'} د.ك
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
                 
-                <div className="space-y-4">
-                  <h3 className="font-semibold">المؤشرات الرئيسية</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">هامش الربح</span>
-                      <span className="font-bold">0.00%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">معدل النمو</span>
-                      <span className="font-bold">0.00%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">العائد على الاستثمار</span>
-                      <span className="font-bold">0.00%</span>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">المؤشرات الرئيسية</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">هامش الربح الصافي</span>
+                        <span className="font-bold">
+                          {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value.toFixed(2) || '0.00'}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">العائد على الأصول</span>
+                        <span className="font-bold">
+                          {analysisData?.ratios.find(r => r.name === "العائد على الأصول")?.value.toFixed(2) || '0.00'}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">العائد على حقوق الملكية</span>
+                        <span className="font-bold">
+                          {analysisData?.ratios.find(r => r.name === "العائد على حقوق الملكية")?.value.toFixed(2) || '0.00'}%
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
               </div>
             </CardContent>
           </Card>
