@@ -2590,7 +2590,34 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      payroll_financial_analysis: {
+        Row: {
+          allowances: number | null
+          basic_salary: number | null
+          cost_center_name: string | null
+          cost_center_name_ar: string | null
+          deductions: number | null
+          department: string | null
+          employee_number: string | null
+          first_name: string | null
+          first_name_ar: string | null
+          id: string | null
+          integration_status: string | null
+          journal_entry_id: string | null
+          journal_entry_number: string | null
+          journal_entry_status: string | null
+          last_name: string | null
+          last_name_ar: string | null
+          net_amount: number | null
+          overtime_amount: number | null
+          payroll_date: string | null
+          payroll_number: string | null
+          position: string | null
+          status: string | null
+          tax_amount: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_account_level: {
