@@ -19,6 +19,23 @@ import PermissionsDashboard from '@/components/hr/permissions/PermissionsDashboa
 import UserPermissionsDialog from '@/components/hr/permissions/UserPermissionsDialog';
 import PermissionsMatrix from '@/components/hr/permissions/PermissionsMatrix';
 
+// Type definitions
+interface EmployeeWithAccess {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  employee_number: string;
+  position: string;
+  has_system_access: boolean;
+  user_roles: string[];
+  profiles?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
+}
+
 export default function UserManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -48,28 +65,95 @@ export default function UserManagement() {
   });
 
   // Fetch employees with system access
-  const { data: employeesWithAccess, isLoading: loadingAccounts } = useQuery({
+  const { data: employeesWithAccess, isLoading: loadingAccounts, error: accountsError } = useQuery<EmployeeWithAccess[]>({
     queryKey: ['employees-with-access'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('employees')
-        .select(`
-          *,
-          profiles!employees_user_id_fkey (
+      try {
+        // First, get employees with system access
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select(`
+            id,
+            user_id,
             first_name,
             last_name,
-            email
-          ),
-          user_roles (
-            role
-          )
-        `)
-        .eq('has_system_access', true)
-        .order('first_name');
-      
-      if (error) throw error;
-      return data;
-    }
+            employee_number,
+            position,
+            has_system_access
+          `)
+          .eq('has_system_access', true)
+          .not('user_id', 'is', null)
+          .order('first_name');
+        
+        if (employeeError) throw employeeError;
+
+        if (!employeeData || employeeData.length === 0) {
+          return [];
+        }
+
+        // Get user IDs for fetching roles
+        const employeeIds = employeeData.map(emp => emp.user_id).filter(Boolean);
+        
+        // Fetch roles separately to avoid duplicates
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', employeeIds);
+
+        if (rolesError) {
+          console.warn('Error fetching roles:', rolesError);
+        }
+
+        // Aggregate roles by user_id
+        const rolesByUser = (rolesData || []).reduce((acc, roleRecord) => {
+          if (!acc[roleRecord.user_id]) {
+            acc[roleRecord.user_id] = [];
+          }
+          acc[roleRecord.user_id].push(roleRecord.role);
+          return acc;
+        }, {} as Record<string, string[]>);
+
+        // Fetch profiles separately
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name, email')
+          .in('user_id', employeeIds);
+
+        if (profilesError) {
+          console.warn('Error fetching profiles:', profilesError);
+        }
+
+        // Create profiles map
+        const profilesByUser = (profilesData || []).reduce((acc, profile) => {
+          acc[profile.user_id] = {
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            email: profile.email
+          };
+          return acc;
+        }, {} as Record<string, { first_name: string; last_name: string; email: string }>);
+
+        // Combine all data
+        const enrichedData: EmployeeWithAccess[] = employeeData.map(employee => ({
+          id: employee.id,
+          user_id: employee.user_id,
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          employee_number: employee.employee_number,
+          position: employee.position,
+          has_system_access: employee.has_system_access,
+          user_roles: rolesByUser[employee.user_id] || [],
+          profiles: profilesByUser[employee.user_id] || null
+        }));
+
+        return enrichedData;
+      } catch (error) {
+        console.error('Error fetching employees with access:', error);
+        throw error;
+      }
+    },
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch pending account requests
@@ -110,16 +194,47 @@ export default function UserManagement() {
   };
 
   const handleUserSelection = (userId: string) => {
-    const employee = employeesWithAccess?.find(emp => emp.user_id === userId);
-    if (employee) {
+    try {
+      if (!userId) {
+        setSelectedUserForMatrix(null);
+        setHasUnsavedChanges(false);
+        return;
+      }
+
+      const employee = employeesWithAccess?.find(emp => emp.user_id === userId);
+      
+      if (!employee) {
+        console.warn(`Employee not found for user_id: ${userId}`);
+        toast({
+          title: "خطأ",
+          description: "لم يتم العثور على بيانات المستخدم المحدد",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const user = {
         id: employee.user_id,
         name: `${employee.first_name} ${employee.last_name}`,
-        roles: Array.isArray(employee.user_roles) ? employee.user_roles.map((ur: any) => ur.role) : [],
+        roles: Array.isArray(employee.user_roles) ? employee.user_roles : [],
         customPermissions: []
       };
+
+      console.log('Selected user for matrix:', user);
       setSelectedUserForMatrix(user);
       setHasUnsavedChanges(false);
+      
+      toast({
+        title: "تم اختيار المستخدم",
+        description: `تم اختيار ${user.name} بنجاح`,
+      });
+    } catch (error) {
+      console.error('Error in handleUserSelection:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء اختيار المستخدم",
+        variant: "destructive",
+      });
     }
   };
 
@@ -170,6 +285,20 @@ export default function UserManagement() {
           <div className="h-32 bg-muted rounded"></div>
           <div className="h-64 bg-muted rounded"></div>
         </div>
+      </div>
+    );
+  }
+
+  // Show error states
+  if (accountsError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            خطأ في تحميل بيانات المستخدمين: {accountsError.message}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -309,11 +438,24 @@ export default function UserManagement() {
                     <SelectValue placeholder="اختر مستخدماً..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {employeesWithAccess?.map((employee) => (
-                      <SelectItem key={employee.user_id} value={employee.user_id}>
-                        {employee.first_name} {employee.last_name} - {employee.position || 'غير محدد'}
+                    {employeesWithAccess && employeesWithAccess.length > 0 ? (
+                      employeesWithAccess
+                        .filter(employee => employee.user_id) // Only show employees with valid user_id
+                        .map((employee) => (
+                          <SelectItem key={employee.user_id} value={employee.user_id}>
+                            {employee.first_name} {employee.last_name} - {employee.position || 'غير محدد'}
+                            {employee.user_roles && employee.user_roles.length > 0 && (
+                              <span className="text-muted-foreground ml-2">
+                                ({employee.user_roles.join(', ')})
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        لا توجد حسابات مستخدمين متاحة
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -331,9 +473,19 @@ export default function UserManagement() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    يرجى اختيار مستخدم من القائمة أعلاه لعرض وتعديل صلاحياته
+                    {employeesWithAccess && employeesWithAccess.length > 0 
+                      ? "يرجى اختيار مستخدم من القائمة أعلاه لعرض وتعديل صلاحياته"
+                      : "لا توجد حسابات مستخدمين متاحة للتعديل"
+                    }
                   </AlertDescription>
                 </Alert>
+              )}
+
+              {loadingAccounts && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="mr-2 text-muted-foreground">جاري تحميل بيانات المستخدمين...</span>
+                </div>
               )}
             </CardContent>
           </Card>
