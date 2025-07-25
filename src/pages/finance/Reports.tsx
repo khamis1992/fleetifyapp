@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Download, Calendar, TrendingUp, DollarSign, PieChart, Eye, BarChart3 } from "lucide-react"
@@ -15,6 +16,7 @@ import { exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { formatCurrency } from "@/lib/utils"
 
 const Reports = () => {
+  const [activeTab, setActiveTab] = useState("overview")
   const { data: balanceSheetData, isLoading: balanceLoading } = useBalanceSheet()
   const { data: incomeStatementData, isLoading: incomeLoading } = useIncomeStatement()
 
@@ -251,7 +253,7 @@ const Reports = () => {
       </div>
 
       {/* Financial Reports Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
           <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
@@ -285,12 +287,8 @@ const Reports = () => {
                     className="w-full" 
                     disabled={!report.available}
                     onClick={() => {
-                      // Navigate to the specific tab
-                      const tabsElement = document.querySelector('[role="tablist"]')
-                      const targetTab = document.querySelector(`[value="${report.key}"]`) as HTMLElement
-                      if (targetTab) {
-                        targetTab.click()
-                      }
+                      console.log(`Navigating to ${report.key} tab`)
+                      setActiveTab(report.key)
                     }}
                   >
                     <Eye className="h-4 w-4 mr-2" />
