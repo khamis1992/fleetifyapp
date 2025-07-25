@@ -112,25 +112,39 @@ export const useUpdateUserRoles = () => {
       userId: string; 
       roles: UserRole[] 
     }) => {
-      // Delete existing roles
-      await supabase
+      console.log('Updating roles for user:', userId, 'New roles:', roles);
+      
+      // Delete existing roles for this user
+      const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
-      // Insert new roles
+      if (deleteError) {
+        console.error('Error deleting existing roles:', deleteError);
+        throw deleteError;
+      }
+
+      // Insert new roles if any
       if (roles.length > 0) {
         const rolesToInsert = roles.map(role => ({
           user_id: userId,
           role,
         }));
 
-        const { error } = await supabase
+        console.log('Inserting roles:', rolesToInsert);
+
+        const { error: insertError } = await supabase
           .from('user_roles')
           .insert(rolesToInsert);
         
-        if (error) throw error;
+        if (insertError) {
+          console.error('Error inserting new roles:', insertError);
+          throw insertError;
+        }
       }
+
+      console.log('Roles updated successfully');
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions', variables.userId] });

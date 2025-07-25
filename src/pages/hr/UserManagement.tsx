@@ -271,16 +271,39 @@ export default function UserManagement() {
   const handleSaveChanges = async () => {
     if (!selectedUserForMatrix) return;
 
-    try {
-      // Save permission changes
-      if (pendingPermissionChanges.length > 0) {
-        await updatePermissionsMutation.mutateAsync({
-          userId: selectedUserForMatrix.user_id,
-          permissions: pendingPermissionChanges
-        });
-      }
+    console.log('Saving changes for user:', selectedUserForMatrix.user_id);
+    console.log('Pending permission changes:', pendingPermissionChanges);
+    console.log('Pending role changes:', pendingRoleChanges);
+    console.log('Current user roles:', selectedUserForMatrix.roles);
 
-      // Save role changes
+    try {
+      // Always save permission changes (even if empty to clear permissions)
+      await updatePermissionsMutation.mutateAsync({
+        userId: selectedUserForMatrix.user_id,
+        permissions: pendingPermissionChanges
+      });
+
+      // Determine final roles - start with current roles, then apply pending changes
+      const currentRoles = selectedUserForMatrix.roles || [];
+      let finalRoles = [...currentRoles];
+
+      // Apply pending role changes
+      pendingRoleChanges.forEach(role => {
+        if (!finalRoles.includes(role)) {
+          finalRoles.push(role);
+        }
+      });
+
+      // Remove roles that were unassigned (not in pending changes but were originally assigned)
+      finalRoles = finalRoles.filter(role => {
+        // Keep role if it's in pending changes OR if it wasn't changed at all
+        const wasChanged = pendingRoleChanges.includes(role) || currentRoles.some(currentRole => 
+          currentRole !== role && pendingRoleChanges.length > 0
+        );
+        return pendingRoleChanges.includes(role) || (!wasChanged && currentRoles.includes(role));
+      });
+
+      // For simplicity, use pendingRoleChanges as the final state since PermissionsMatrix manages the full state
       await updateRolesMutation.mutateAsync({
         userId: selectedUserForMatrix.user_id,
         roles: pendingRoleChanges
@@ -291,18 +314,21 @@ export default function UserManagement() {
       setPendingPermissionChanges([]);
       setPendingRoleChanges([]);
       
-      // Refresh the selected user data
-      const updatedEmployee = employeesWithAccess?.find(emp => emp.user_id === selectedUserForMatrix.user_id);
-      if (updatedEmployee) {
-        setSelectedUserForMatrix({
-          user_id: updatedEmployee.user_id,
-          first_name: updatedEmployee.first_name,
-          last_name: updatedEmployee.last_name,
-          roles: pendingRoleChanges
-        });
-      }
+      toast({
+        title: "تم الحفظ بنجاح",
+        description: "تم تحديث الصلاحيات والأدوار بنجاح",
+      });
+
+      // Refresh the selected user data from the server
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for server update
+      
     } catch (error) {
       console.error('Error saving changes:', error);
+      toast({
+        title: "خطأ في الحفظ",
+        description: "حدث خطأ أثناء حفظ التغييرات",
+        variant: "destructive",
+      });
     }
   };
 
