@@ -500,8 +500,8 @@ export default function UserManagement() {
                     {employeesWithAccess && employeesWithAccess.length > 0 ? (
                       employeesWithAccess
                         .filter(employee => employee.user_id) // Only show employees with valid user_id
-                        .map((employee) => (
-                          <SelectItem key={employee.user_id} value={employee.user_id}>
+                        .map((employee, index) => (
+                          <SelectItem key={`employee-${employee.user_id}-${index}`} value={employee.user_id}>
                             {employee.first_name} {employee.last_name} - {employee.position || 'غير محدد'}
                             {employee.user_roles && employee.user_roles.length > 0 && (
                               <span className="text-muted-foreground ml-2">
@@ -526,6 +526,8 @@ export default function UserManagement() {
                 onRoleChange={handleRoleChange}
                 showRoleComparison={true} 
                 readOnly={!selectedUserForMatrix}
+                pendingPermissions={pendingPermissionChanges}
+                pendingRoles={pendingRoleChanges}
               />
 
               {/* Save/Cancel Actions */}

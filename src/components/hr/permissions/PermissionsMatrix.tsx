@@ -38,6 +38,8 @@ interface PermissionsMatrixProps {
   onRoleChange?: (role: UserRole, assigned: boolean) => void;
   readOnly?: boolean;
   showRoleComparison?: boolean;
+  pendingPermissions?: Array<{ permissionId: string; granted: boolean }>;
+  pendingRoles?: UserRole[];
 }
 
 const getIconForCategory = (iconName: string) => {
@@ -82,7 +84,9 @@ export default function PermissionsMatrix({
   onPermissionChange, 
   onRoleChange,
   readOnly = false,
-  showRoleComparison = false 
+  showRoleComparison = false,
+  pendingPermissions = [],
+  pendingRoles = []
 }: PermissionsMatrixProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -94,7 +98,11 @@ export default function PermissionsMatrix({
     if (!selectedUser) return new Set<string>();
     
     const rolePermissions = new Set<string>();
-    selectedUser.roles.forEach(role => {
+    
+    // Use pending roles if available, otherwise use current roles
+    const effectiveRoles = pendingRoles.length > 0 ? pendingRoles : selectedUser.roles;
+    
+    effectiveRoles.forEach(role => {
       ROLE_PERMISSIONS[role]?.permissions.forEach(permission => {
         rolePermissions.add(permission);
       });
@@ -107,8 +115,17 @@ export default function PermissionsMatrix({
       }
     });
     
+    // Apply pending permission changes
+    pendingPermissions.forEach(pending => {
+      if (pending.granted) {
+        rolePermissions.add(pending.permissionId);
+      } else {
+        rolePermissions.delete(pending.permissionId);
+      }
+    });
+    
     return rolePermissions;
-  }, [selectedUser, customPermissions]);
+  }, [selectedUser, customPermissions, pendingPermissions, pendingRoles]);
 
   const getFilteredPermissions = () => {
     let filtered = PERMISSIONS;
@@ -148,6 +165,7 @@ export default function PermissionsMatrix({
   };
 
   const handlePermissionToggle = (permission: string, checked: boolean) => {
+    console.log('Permission toggle:', permission, 'checked:', checked, 'readOnly:', readOnly);
     if (!readOnly && onPermissionChange) {
       onPermissionChange(permission, checked);
     }
@@ -174,7 +192,9 @@ export default function PermissionsMatrix({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.keys(ROLE_PERMISSIONS).map(role => {
                 const roleKey = role as UserRole;
-                const isAssigned = selectedUser.roles.includes(roleKey);
+                // Use pending roles if available, otherwise use current roles
+                const effectiveRoles = pendingRoles.length > 0 ? pendingRoles : selectedUser.roles;
+                const isAssigned = effectiveRoles.includes(roleKey);
                 const roleData = ROLE_PERMISSIONS[roleKey];
                 
                 const roleLabels: Record<UserRole, string> = {
