@@ -16,7 +16,7 @@ import { exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { formatCurrency } from "@/lib/utils"
 
 const Reports = () => {
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("balance-sheet")
   const { data: balanceSheetData, isLoading: balanceLoading } = useBalanceSheet()
   const { data: incomeStatementData, isLoading: incomeLoading } = useIncomeStatement()
 
@@ -254,8 +254,7 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
           <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
           <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
@@ -264,56 +263,6 @@ const Reports = () => {
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reportTypes.map((report, index) => (
-              <Card key={index} className="group hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <CardHeader className="pb-3">
-                  <div className={`w-12 h-12 rounded-xl ${report.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                    <report.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{report.title}</CardTitle>
-                    <Badge variant={report.available ? "default" : "secondary"}>
-                      {report.available ? "متوفر" : "قيد التطوير"}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-sm">
-                    {report.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button 
-                    className="w-full" 
-                    disabled={!report.available}
-                    onClick={() => {
-                      console.log(`Navigating to ${report.key} tab`)
-                      setActiveTab(report.key)
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    عرض التقرير
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    disabled={!report.available}
-                    onClick={() => {
-                      if (report.key === 'balance-sheet') {
-                        handleExportBalanceSheet()
-                      } else if (report.key === 'income-statement') {
-                        handleExportIncomeStatement()
-                      }
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    تحميل التقرير
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
 
         <TabsContent value="balance-sheet" className="space-y-6">
           <Card>
