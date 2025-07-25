@@ -5,24 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus, Calculator, BarChart3 } from "lucide-react";
+import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus } from "lucide-react";
 import { useJournalEntries, useJournalEntryLines } from "@/hooks/useFinance";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
-import { AccountBalancesList } from "@/components/finance/AccountBalancesList";
-import { AccountTransactionsList } from "@/components/finance/AccountTransactionsList";
-import { TrialBalanceReport } from "@/components/finance/TrialBalanceReport";
 
 export default function Ledger() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [selectedAccountName, setSelectedAccountName] = useState<string>("");
-  const [activeTab, setActiveTab] = useState("journal-entries");
   
   const { data: journalEntries, isLoading: entriesLoading, error: entriesError } = useJournalEntries({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: entryLines, isLoading: linesLoading } = useJournalEntryLines(selectedEntryId || undefined);
@@ -174,218 +167,142 @@ export default function Ledger() {
         </Card>
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="journal-entries" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            القيود المحاسبية
-          </TabsTrigger>
-          <TabsTrigger value="account-balances" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            أرصدة الحسابات
-          </TabsTrigger>
-          <TabsTrigger value="account-transactions" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            معاملات الحساب
-          </TabsTrigger>
-          <TabsTrigger value="trial-balance" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            ميزان المراجعة
-          </TabsTrigger>
-        </TabsList>
+      {/* Filters and Search */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>القيود المحاسبية</CardTitle>
+              <CardDescription>قائمة جميع القيود المحاسبية في النظام</CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث في القيود..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64"
+              />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="تصفية بالحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الحالات</SelectItem>
+                  <SelectItem value="draft">مسودة</SelectItem>
+                  <SelectItem value="posted">مرحل</SelectItem>
+                  <SelectItem value="reversed">ملغي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>رقم القيد</TableHead>
+                <TableHead>التاريخ</TableHead>
+                <TableHead>الوصف</TableHead>
+                <TableHead>إجمالي المدين</TableHead>
+                <TableHead>إجمالي الدائن</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead>الإجراءات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEntries?.map((entry) => (
+                <TableRow 
+                  key={entry.id}
+                  className={selectedEntryId === entry.id ? "bg-muted/50" : ""}
+                >
+                  <TableCell className="font-medium">{entry.entry_number}</TableCell>
+                  <TableCell>{new Date(entry.entry_date).toLocaleDateString('ar-SA')}</TableCell>
+                  <TableCell>{entry.description}</TableCell>
+                  <TableCell className="text-green-600 font-medium">
+                    {entry.total_debit.toFixed(3)} د.ك
+                  </TableCell>
+                  <TableCell className="text-red-600 font-medium">
+                    {entry.total_credit.toFixed(3)} د.ك
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusColor(entry.status)}>
+                      {getStatusLabel(entry.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSelectedEntryId(entry.id)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      عرض
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {filteredEntries?.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              لا توجد قيود محاسبية
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <TabsContent value="journal-entries" className="space-y-6">
-          {/* Journal Entries */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>القيود المحاسبية</CardTitle>
-                  <CardDescription>قائمة جميع القيود المحاسبية في النظام</CardDescription>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="البحث في القيود..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64"
-                  />
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="تصفية بالحالة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع الحالات</SelectItem>
-                      <SelectItem value="draft">مسودة</SelectItem>
-                      <SelectItem value="posted">مرحل</SelectItem>
-                      <SelectItem value="reversed">ملغي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* Entry Details */}
+      {selectedEntryId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>تفاصيل القيد المحاسبي</CardTitle>
+            <CardDescription>
+              تفاصيل بنود القيد المحاسبي المحدد
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {linesLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <LoadingSpinner />
               </div>
-            </CardHeader>
-            <CardContent>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم القيد</TableHead>
-                    <TableHead>التاريخ</TableHead>
+                    <TableHead>رقم البند</TableHead>
+                    <TableHead>الحساب</TableHead>
                     <TableHead>الوصف</TableHead>
-                    <TableHead>إجمالي المدين</TableHead>
-                    <TableHead>إجمالي الدائن</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>مدين</TableHead>
+                    <TableHead>دائن</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEntries?.map((entry) => (
-                    <TableRow 
-                      key={entry.id}
-                      className={selectedEntryId === entry.id ? "bg-muted/50" : ""}
-                    >
-                      <TableCell className="font-medium">{entry.entry_number}</TableCell>
-                      <TableCell>{new Date(entry.entry_date).toLocaleDateString('ar-SA')}</TableCell>
-                      <TableCell>{entry.description}</TableCell>
+                  {entryLines?.map((line) => (
+                    <TableRow key={line.id}>
+                      <TableCell>{line.line_number}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{line.account?.account_name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {line.account?.account_code}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{line.line_description || '-'}</TableCell>
                       <TableCell className="text-green-600 font-medium">
-                        {entry.total_debit.toFixed(3)} د.ك
+                        {line.debit_amount > 0 ? `${line.debit_amount.toFixed(3)} د.ك` : '-'}
                       </TableCell>
                       <TableCell className="text-red-600 font-medium">
-                        {entry.total_credit.toFixed(3)} د.ك
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusColor(entry.status)}>
-                          {getStatusLabel(entry.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => setSelectedEntryId(entry.id)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          عرض
-                        </Button>
+                        {line.credit_amount > 0 ? `${line.credit_amount.toFixed(3)} د.ك` : '-'}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-              {filteredEntries?.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد قيود محاسبية
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Entry Details */}
-          {selectedEntryId && (
-            <Card>
-              <CardHeader>
-                <CardTitle>تفاصيل القيد المحاسبي</CardTitle>
-                <CardDescription>
-                  تفاصيل بنود القيد المحاسبي المحدد
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {linesLoading ? (
-                  <div className="flex items-center justify-center h-32">
-                    <LoadingSpinner />
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>رقم البند</TableHead>
-                        <TableHead>الحساب</TableHead>
-                        <TableHead>الوصف</TableHead>
-                        <TableHead>مدين</TableHead>
-                        <TableHead>دائن</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entryLines?.map((line) => (
-                        <TableRow key={line.id}>
-                          <TableCell>{line.line_number}</TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{line.account?.account_name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {line.account?.account_code}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{line.line_description || '-'}</TableCell>
-                          <TableCell className="text-green-600 font-medium">
-                            {line.debit_amount > 0 ? `${line.debit_amount.toFixed(3)} د.ك` : '-'}
-                          </TableCell>
-                          <TableCell className="text-red-600 font-medium">
-                            {line.credit_amount > 0 ? `${line.credit_amount.toFixed(3)} د.ك` : '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="account-balances">
-          <AccountBalancesList 
-            onAccountSelect={(accountId, accountName) => {
-              setSelectedAccountId(accountId)
-              setSelectedAccountName(accountName)
-              setActiveTab("account-transactions")
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="account-transactions">
-          {selectedAccountId ? (
-            <AccountTransactionsList 
-              accountId={selectedAccountId}
-              accountName={selectedAccountName}
-              onClose={() => {
-                setSelectedAccountId(null)
-                setSelectedAccountName("")
-                setActiveTab("account-balances")
-              }}
-            />
-          ) : (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Calculator className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">اختر حساباً لعرض معاملاته</h3>
-                <p className="text-muted-foreground mb-4">
-                  انتقل إلى تبويب "أرصدة الحسابات" واختر حساباً لعرض جميع معاملاته
-                </p>
-                <Button 
-                  variant="outline"
-                  onClick={() => setActiveTab("account-balances")}
-                >
-                  عرض أرصدة الحسابات
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="trial-balance">
-          <TrialBalanceReport />
-        </TabsContent>
-      </Tabs>
-
-      {/* Journal Entry Form Dialog */}
-      {isCreateDialogOpen && (
-        <JournalEntryForm
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-        />
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
