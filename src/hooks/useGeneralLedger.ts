@@ -30,6 +30,7 @@ export interface AccountMovement {
   id: string
   entry_number: string
   entry_date: string
+  description: string
   line_description?: string
   debit_amount: number
   credit_amount: number
@@ -37,6 +38,7 @@ export interface AccountMovement {
   reference_type?: string
   reference_id?: string
   journal_entry_id: string
+  status: string
   cost_center?: {
     id: string
     center_code: string
@@ -236,6 +238,7 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
           id: line.id,
           entry_number: line.journal_entry.entry_number,
           entry_date: line.journal_entry.entry_date,
+          description: line.journal_entry.description,
           line_description: line.line_description || '',
           debit_amount: line.debit_amount,
           credit_amount: line.credit_amount,
@@ -243,6 +246,7 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
           reference_type: line.journal_entry.reference_type || '',
           reference_id: line.journal_entry.reference_id || '',
           journal_entry_id: line.journal_entry_id,
+          status: line.journal_entry.status,
           cost_center: costCenter
         }
       })

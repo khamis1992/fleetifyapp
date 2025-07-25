@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AccountMovementsDialog } from "@/components/finance/AccountMovementsDialog";
 import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus, Calculator, BarChart3, Target, Users, Calendar, AlertCircle } from "lucide-react";
 import { 
   useEnhancedJournalEntries, 
@@ -33,6 +34,11 @@ export default function Ledger() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("entries");
+  const [selectedAccount, setSelectedAccount] = useState<{
+    id: string;
+    code: string;
+    name: string;
+  } | null>(null);
 
   // Enhanced hooks
   const { data: journalEntries, isLoading: entriesLoading, error: entriesError } = useEnhancedJournalEntries(filters);
@@ -377,7 +383,15 @@ export default function Ledger() {
                   </TableHeader>
                   <TableBody>
                     {accountBalances?.map((balance) => (
-                      <TableRow key={balance.account_id}>
+                      <TableRow 
+                        key={balance.account_id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedAccount({
+                          id: balance.account_id,
+                          code: balance.account_code,
+                          name: balance.account_name
+                        })}
+                      >
                         <TableCell className="font-medium">{balance.account_code}</TableCell>
                         <TableCell>
                           <div>
@@ -615,6 +629,15 @@ export default function Ledger() {
           <JournalEntryForm onSuccess={() => setIsCreateDialogOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      {/* Account Movements Dialog */}
+      <AccountMovementsDialog
+        open={!!selectedAccount}
+        onOpenChange={(open) => !open && setSelectedAccount(null)}
+        accountId={selectedAccount?.id || ''}
+        accountCode={selectedAccount?.code || ''}
+        accountName={selectedAccount?.name || ''}
+      />
     </div>
   );
 }
