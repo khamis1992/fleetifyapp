@@ -46,88 +46,64 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
 
   const createAccountMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // Step 1: Create user account in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: data.email,
-        password: data.temporaryPassword,
-        email_confirm: true,
-        user_metadata: {
-          first_name: employee.first_name,
-          last_name: employee.last_name,
+      // Step 1: Create account creation request
+      const { data: requestData, error: requestError } = await supabase
+        .from('account_creation_requests')
+        .insert({
           employee_id: employee.id,
-          employee_number: employee.employee_number
-        }
-      });
+          company_id: employee.company_id,
+          requested_by: user?.id,
+          requested_roles: data.selectedRoles,
+          notes: data.notes
+        })
+        .select()
+        .single();
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
+      if (requestError) throw requestError;
 
-      // Step 2: Update employee record with user_id and system access
+      // Step 2: Update employee status to pending_account
       const { error: employeeError } = await supabase
         .from('employees')
         .update({
-          user_id: authData.user.id,
-          has_system_access: true,
-          account_status: 'active'
+          account_status: 'pending_account'
         })
         .eq('id', employee.id);
 
       if (employeeError) throw employeeError;
 
-      // Step 3: Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          first_name: employee.first_name,
-          last_name: employee.last_name,
-          email: data.email,
-          company_id: employee.company_id
-        });
-
-      if (profileError) throw profileError;
-
-      // Step 4: Assign roles
-      const roleInserts = data.selectedRoles.map(role => ({
-        user_id: authData.user.id,
-        role: role as "super_admin" | "company_admin" | "manager" | "accountant" | "fleet_manager" | "sales_agent" | "employee"
-      }));
-
-      const { error: rolesError } = await supabase
-        .from('user_roles')
-        .insert(roleInserts);
-
-      if (rolesError) throw rolesError;
-
-      // Step 5: Log the action
-      const { error: logError } = await supabase
-        .rpc('log_user_account_action', {
-          employee_id_param: employee.id,
-          action_type_param: 'account_created',
-          performed_by_param: user?.id,
-          details_param: {
+      // Step 3: Send invitation email if requested
+      if (data.sendWelcomeEmail) {
+        const { error: emailError } = await supabase.functions.invoke('send-account-invitation', {
+          body: {
+            employee_id: employee.id,
+            employee_name: `${employee.first_name} ${employee.last_name}`,
+            employee_email: data.email,
+            requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
             roles: data.selectedRoles,
-            email: data.email,
-            notes: data.notes
+            invitation_url: `${window.location.origin}/auth?invitation=true&email=${encodeURIComponent(data.email)}`
           }
         });
 
-      if (logError) console.warn('Failed to log action:', logError);
+        if (emailError) {
+          console.warn('Failed to send invitation email:', emailError);
+          // Don't fail the whole process if email fails
+        }
+      }
 
-      return authData.user;
+      return { request: requestData, employee_email: data.email };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast({
-        title: "تم إنشاء الحساب بنجاح",
-        description: `تم إنشاء حساب للموظف ${employee.first_name} ${employee.last_name}`
+        title: "تم إرسال دعوة الحساب بنجاح",
+        description: `تم إرسال دعوة لإنشاء حساب للموظف ${employee.first_name} ${employee.last_name} على البريد الإلكتروني ${result.employee_email}`
       });
       onSuccess();
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "خطأ في إنشاء الحساب",
-        description: error.message || "حدث خطأ أثناء إنشاء الحساب"
+        title: "خطأ في إرسال الدعوة",
+        description: error.message || "حدث خطأ أثناء إرسال دعوة الحساب"
       });
     }
   });
@@ -135,11 +111,11 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.temporaryPassword) {
+    if (!formData.email) {
       toast({
         variant: "destructive",
         title: "بيانات ناقصة",
-        description: "يرجى ملء جميع الحقول المطلوبة"
+        description: "يرجى ملء البريد الإلكتروني"
       });
       return;
     }
@@ -176,10 +152,10 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <User className="w-5 h-5 mr-2" />
-            إنشاء حساب مستخدم جديد
+            إرسال دعوة حساب مستخدم
           </DialogTitle>
           <DialogDescription>
-            إنشاء حساب نظام للموظف {employee.first_name} {employee.last_name}
+            إرسال دعوة لإنشاء حساب نظام للموظف {employee.first_name} {employee.last_name}
           </DialogDescription>
         </DialogHeader>
 
@@ -234,28 +210,8 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
               </div>
 
               <div>
-                <Label htmlFor="password">كلمة المرور المؤقتة *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="password"
-                    type="text"
-                    value={formData.temporaryPassword}
-                    onChange={(e) => setFormData(prev => ({ ...prev, temporaryPassword: e.target.value }))}
-                    placeholder="كلمة مرور قوية"
-                    required
-                    dir="ltr"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={generateTemporaryPassword}
-                    className="shrink-0"
-                  >
-                    <Lock className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  سيتم إرسال كلمة المرور للموظف ويجب تغييرها عند أول تسجيل دخول
+                <p className="text-sm text-muted-foreground">
+                  ملاحظة: سيتم إرسال دعوة للموظف لإنشاء كلمة المرور الخاصة به عند أول تسجيل دخول
                 </p>
               </div>
             </CardContent>
@@ -303,7 +259,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, sendWelcomeEmail: checked as boolean }))}
                 />
                 <Label htmlFor="sendWelcome">
-                  إرسال بريد إلكتروني ترحيبي مع تفاصيل الحساب
+                  إرسال دعوة بالبريد الإلكتروني لإنشاء الحساب
                 </Label>
               </div>
 
@@ -326,7 +282,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
             <div className="text-sm">
               <p className="font-medium text-warning">تنبيه مهم:</p>
               <p className="text-muted-foreground mt-1">
-                سيتمكن الموظف من الوصول إلى النظام فور إنشاء الحساب. تأكد من مراجعة الصلاحيات المختارة.
+                سيتم إرسال دعوة للموظف لإنشاء حساب في النظام. سيتمكن من الوصول فقط بعد قبول الدعوة وإنشاء كلمة المرور.
               </p>
             </div>
           </div>
@@ -345,7 +301,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
               type="submit"
               disabled={createAccountMutation.isPending}
             >
-              {createAccountMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء الحساب'}
+              {createAccountMutation.isPending ? 'جاري الإرسال...' : 'إرسال الدعوة'}
             </Button>
           </div>
         </form>
