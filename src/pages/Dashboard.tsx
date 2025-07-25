@@ -11,68 +11,66 @@ import {
   TrendingUp,
   AlertTriangle,
   Calendar,
-  Plus
+  Plus,
+  MoreHorizontal
 } from 'lucide-react';
 
 const DashboardStats = [
   {
-    title: 'إجمالي الأسطول',
-    value: '24',
-    change: '+2',
-    changeType: 'positive' as const,
-    icon: Car,
-    color: 'from-blue-500 to-blue-600'
-  },
-  {
-    title: 'العقود النشطة',
-    value: '18',
-    change: '+3',
-    changeType: 'positive' as const,
+    title: 'المقررات الشهرية',
+    value: '0',
+    subtitle: 'لا توجد مقررات',
     icon: FileText,
-    color: 'from-green-500 to-green-600'
-  },
-  {
-    title: 'العملاء',
-    value: '157',
-    change: '+12',
-    changeType: 'positive' as const,
-    icon: Users,
-    color: 'from-purple-500 to-purple-600'
+    bgColor: 'bg-white',
+    iconColor: 'text-gray-600'
   },
   {
     title: 'الإيرادات الشهرية',
-    value: '12,450 د.ك',
-    change: '+8.2%',
-    changeType: 'positive' as const,
+    value: '0.000 د.ك',
+    subtitle: 'من 0 غير ميدة',
+    details: 'لا توجد إيرادات',
     icon: DollarSign,
-    color: 'from-amber-500 to-amber-600'
+    bgColor: 'bg-white',
+    iconColor: 'text-gray-600'
+  },
+  {
+    title: 'المطالبات الشهرية',
+    value: '0',
+    subtitle: 'عميل مدين',
+    details: '0 مدين',
+    icon: Users,
+    bgColor: 'bg-white',
+    iconColor: 'text-gray-600'
+  },
+  {
+    title: 'إجمالي المواقع',
+    value: '0',
+    subtitle: 'هذا الشهر',
+    details: '0 نشط',
+    icon: AlertTriangle,
+    bgColor: 'bg-white',
+    iconColor: 'text-gray-600'
   }
 ];
 
-const RecentActivities = [
+const QuickActions = [
   {
-    id: 1,
-    type: 'عقد جديد',
-    description: 'تم إنشاء عقد جديد للسيد أحمد المحمد',
-    time: 'منذ ساعتين',
-    icon: FileText,
-    color: 'text-green-600'
+    title: 'عرض جديد',
+    subtitle: 'إنشاء عرض سعر جديد',
+    bgColor: 'bg-blue-500',
+    textColor: 'text-white'
   },
   {
-    id: 2,
-    type: 'صيانة مطلوبة',
-    description: 'السيارة ABC-123 تحتاج صيانة دورية',
-    time: 'منذ 4 ساعات',
-    icon: AlertTriangle,
-    color: 'text-amber-600'
+    title: 'إدارة العملاء',
+    subtitle: 'عرض وإدارة العملاء',
+    bgColor: 'bg-green-500',
+    textColor: 'text-white'
   },
   {
-    id: 3,
-    type: 'عميل جديد',
-    description: 'تم تسجيل عميل جديد: سارة الكندري',
-    time: 'منذ يوم',
-    icon: Users,
-    color: 'text-blue-600'
+    title: 'الحجوزات والمبيعات',
+    subtitle: 'إدارة حجوز الموفقين',
+    bgColor: 'bg-orange-500',
+    textColor: 'text-white'
   }
 ];
 
@@ -80,51 +78,52 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-card border border-border p-8 rounded-xl mb-8 shadow-md">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground mb-2">
-              مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
-            </h1>
-            <p className="text-muted-foreground">
-              نظرة سريعة على أداء شركتك اليوم
-            </p>
-          </div>
-          <div className="hidden md:flex items-center gap-4">
-            <Button variant="default" className="gap-2">
-              <Plus className="h-4 w-4" />
-              عقد جديد
-            </Button>
-            <Button variant="outline" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              التقويم
-            </Button>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            مرحباً بك في البشائر الخليجية
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            نظرة شاملة على أعمالك وإدارة عمليات التاجر
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm">
+            <Calendar className="h-4 w-4 mr-2" />
+            اليوم
+          </Button>
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            إضافة جديد
+          </Button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {DashboardStats.map((stat, index) => (
-          <Card key={index} className="border border-border shadow-md hover:shadow-lg transition-smooth">
+          <Card key={index} className={`${stat.bgColor} border border-border shadow-sm hover:shadow-md transition-smooth`}>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">
-                    {stat.title}
-                  </p>
-                  <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
-                  <div className="flex items-center mt-2">
-                    <TrendingUp className="h-4 w-4 text-success mr-1" />
-                    <span className="text-sm text-success font-medium">
-                      {stat.change}
-                    </span>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+                    <p className="text-sm font-medium text-gray-600">
+                      {stat.title}
+                    </p>
                   </div>
-                </div>
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <stat.icon className="h-6 w-6 text-primary" />
+                  <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                  <p className="text-sm text-gray-500">{stat.subtitle}</p>
+                  {stat.details && (
+                    <p className="text-xs text-gray-400 mt-1">{stat.details}</p>
+                  )}
+                  <div className="mt-3">
+                    <Button variant="outline" size="sm" className="text-xs">
+                      تفاصيل
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -132,102 +131,114 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Activities */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Fleet Overview */}
         <div className="lg:col-span-2">
-          <Card className="border border-border shadow-md">
+          <Card className="bg-white border border-border shadow-sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Calendar className="h-5 w-5" />
-                الأنشطة الأخيرة
-              </CardTitle>
-              <CardDescription>
-                آخر التحديثات في نظامك
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-foreground">مهام اليوم</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    التقدم اليومي
+                  </CardDescription>
+                </div>
+                <MoreHorizontal className="h-5 w-5 text-gray-400" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {RecentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-4 p-4 bg-background-muted rounded-lg border border-border/50">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {activity.type}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {activity.time}
-                        </span>
-                      </div>
-                      <p className="text-sm">{activity.description}</p>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                    <span className="text-sm text-gray-600">لا توجد مهام اليوم</span>
                   </div>
-                ))}
+                  <span className="text-sm text-gray-400">0%</span>
+                </div>
+                
+                <div className="bg-gray-100 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full w-0"></div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">0</div>
+                    <div className="text-sm text-gray-500">مولي</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">2</div>
+                    <div className="text-sm text-gray-500">مكامل</div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-orange-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">2</div>
+                    <div className="text-sm text-gray-500">إجمالي</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">0</div>
+                    <div className="text-sm text-gray-500">مميلة</div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Quick Actions */}
-        <div>
-          <Card className="border border-border shadow-md">
+        <div className="space-y-4">
+          <Card className="bg-white border border-border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-foreground">إجراءات سريعة</CardTitle>
-              <CardDescription>
-                الإجراءات الأكثر استخداماً
-              </CardDescription>
+              <CardTitle className="text-lg font-semibold text-foreground">إجراءات سريعة</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start gap-3" variant="outline">
-                <FileText className="h-4 w-4" />
-                إنشاء عقد جديد
-              </Button>
-              <Button className="w-full justify-start gap-3" variant="outline">
-                <Car className="h-4 w-4" />
-                إضافة سيارة جديدة
-              </Button>
-              <Button className="w-full justify-start gap-3" variant="outline">
-                <Users className="h-4 w-4" />
-                تسجيل عميل جديد
-              </Button>
-              <Button className="w-full justify-start gap-3" variant="outline">
-                <DollarSign className="h-4 w-4" />
-                إدخال دفعة مالية
-              </Button>
-              <Button className="w-full justify-start gap-3" variant="outline">
-                <AlertTriangle className="h-4 w-4" />
-                تسجيل مخالفة
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Fleet Status */}
-          <Card className="border border-border shadow-md mt-6">
-            <CardHeader>
-              <CardTitle className="text-foreground">حالة الأسطول</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">متاحة</span>
-                <Badge className="bg-success">6</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">مؤجرة</span>
-                <Badge className="bg-primary">18</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">صيانة</span>
-                <Badge className="bg-warning">2</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">خارج الخدمة</span>
-                <Badge variant="destructive">1</Badge>
-              </div>
+              {QuickActions.map((action, index) => (
+                <Button
+                  key={index}
+                  className={`w-full h-auto p-4 ${action.bgColor} ${action.textColor} hover:opacity-90 transition-smooth`}
+                  variant="default"
+                >
+                  <div className="flex flex-col items-center text-center gap-1">
+                    <div className="font-medium">{action.title}</div>
+                    <div className="text-xs opacity-90">{action.subtitle}</div>
+                  </div>
+                </Button>
+              ))}
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Alerts */}
+        <Card className="bg-white border border-border shadow-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-lg font-semibold text-foreground">تنبيهات الميزانية</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">لا توجد تنبيهات حالياً - جميع مراكز التكلفة ضمن الميزانية</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Contracts */}
+        <Card className="bg-white border border-border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-foreground">العقود الحديثة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">لا توجد عقود جديدة هالة</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

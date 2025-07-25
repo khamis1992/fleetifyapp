@@ -2,128 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
-/* KW Rent Flow ERP - Professional Corporate Design System 
-Sophisticated, minimal design suitable for enterprise environments.
+/* KW Rent Flow ERP - Professional Clean Design System
+Modern, clean design matching professional dashboard layouts.
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    /* Corporate Professional Palette */
+    /* Clean Professional Palette - matching the reference design */
     --background: 0 0% 100%;
-    --background-secondary: 210 20% 98%;
-    --background-muted: 210 20% 96%;
-    --foreground: 215 25% 15%;
+    --background-secondary: 220 14% 96%;
+    --background-muted: 220 13% 91%;
+    --foreground: 222.2 84% 4.9%;
     
-    /* Primary - Professional Kuwait Blue */
-    --primary: 215 85% 25%;
+    /* Primary - Professional Blue matching the sidebar */
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 215 85% 20%;
-    --primary-light: 215 85% 35%;
+    --primary-hover: 221 83% 48%;
+    --primary-light: 221 83% 60%;
     
-    /* Secondary - Sophisticated Grays */
-    --secondary: 210 10% 92%;
-    --secondary-foreground: 215 25% 15%;
-    --secondary-hover: 210 10% 88%;
+    /* Secondary - Clean Grays */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --secondary-hover: 210 40% 92%;
     
-    /* Accent - Minimal Kuwait Gold Touch */
-    --accent: 210 10% 90%;
-    --accent-foreground: 215 25% 15%;
-    --accent-hover: 210 10% 85%;
+    /* Accent - Matching the reference design */
+    --accent: 210 40% 94%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --accent-hover: 210 40% 90%;
     
-    /* Corporate Status Colors */
-    --success: 142 72% 25%;
+    /* Status Colors - Clean and Professional */
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
-    --warning: 38 85% 45%;
+    --warning: 32 95% 44%;
     --warning-foreground: 0 0% 98%;
-    --destructive: 0 65% 45%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Card System */
+    /* Card System - Clean white cards with subtle shadows */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
-    --card-hover: 210 20% 98%;
+    --card-foreground: 222.2 84% 4.9%;
+    --card-hover: 220 14% 98%;
     
-    /* Borders and Inputs */
-    --border: 210 20% 90%;
-    --input: 210 20% 94%;
-    --ring: 215 85% 25%;
+    /* Borders and Inputs - Light and clean */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
     
     /* Muted Elements */
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
     
     /* Interactive Elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 222.2 84% 4.9%;
     
-    /* Professional Shadows - Subtle and Elegant */
+    /* Professional Shadows - Very subtle */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     
-    /* Corporate Transitions */
+    /* Transitions */
     --transition-base: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
     
     --radius: 0.5rem;
 
-    /* Sidebar Corporate Theme */
-    --sidebar-background: 215 25% 15%;
-    --sidebar-foreground: 215 15% 85%;
-    --sidebar-primary: 215 85% 25%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 215 20% 20%;
-    --sidebar-accent-foreground: 215 15% 85%;
-    --sidebar-border: 215 20% 25%;
-    --sidebar-ring: 215 85% 25%;
+    /* Sidebar - Professional Blue matching reference */
+    --sidebar-background: 221 83% 53%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 221 83% 53%;
+    --sidebar-accent: 221 83% 48%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 221 83% 48%;
+    --sidebar-ring: 0 0% 100%;
   }
 
   .dark {
-    /* Dark Mode - Professional Dark Theme */
-    --background: 215 25% 8%;
-    --background-secondary: 215 25% 10%;
-    --background-muted: 215 25% 12%;
-    --foreground: 215 15% 90%;
+    /* Dark mode with clean professional look */
+    --background: 222.2 84% 4.9%;
+    --background-secondary: 217.2 32.6% 17.5%;
+    --background-muted: 215 28% 17%;
+    --foreground: 210 40% 98%;
     
-    --primary: 215 85% 35%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 215 85% 40%;
-    --primary-light: 215 85% 45%;
+    --primary-hover: 221 83% 58%;
+    --primary-light: 221 83% 60%;
     
-    --secondary: 215 20% 15%;
-    --secondary-foreground: 215 15% 85%;
-    --secondary-hover: 215 20% 18%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 217.2 32.6% 20%;
     
-    --accent: 215 20% 18%;
-    --accent-foreground: 215 15% 85%;
-    --accent-hover: 215 20% 22%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --accent-hover: 217.2 32.6% 20%;
     
-    --card: 215 25% 10%;
-    --card-foreground: 215 15% 90%;
-    --card-hover: 215 25% 12%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --card-hover: 217.2 32.6% 17.5%;
     
-    --border: 215 20% 20%;
-    --input: 215 20% 18%;
-    --ring: 215 85% 35%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 221 83% 53%;
     
-    --muted: 215 20% 15%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
     
-    --popover: 215 25% 10%;
-    --popover-foreground: 215 15% 90%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
     
-    --sidebar-background: 215 25% 6%;
-    --sidebar-foreground: 215 15% 85%;
-    --sidebar-primary: 215 85% 35%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 215 20% 12%;
-    --sidebar-accent-foreground: 215 15% 85%;
-    --sidebar-border: 215 20% 15%;
-    --sidebar-ring: 215 85% 35%;
+    --sidebar-background: 221 83% 53%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 221 83% 53%;
+    --sidebar-accent: 221 83% 48%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 221 83% 48%;
+    --sidebar-ring: 0 0% 100%;
   }
 }
+
 @layer base {
   * {
     @apply border-border;
@@ -148,11 +148,7 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-lg);
   }
   
-  .shadow-xl {
-    box-shadow: var(--shadow-xl);
-  }
-  
-  /* Corporate Transitions */
+  /* Clean Transitions */
   .transition-base {
     transition: var(--transition-base);
   }
@@ -170,13 +166,13 @@ All colors MUST be HSL.
     --tw-space-x-reverse: 1;
   }
   
-  /* Corporate Form Styling */
-  .input-corporate {
-    @apply bg-input border-border focus:border-primary focus:ring-1 focus:ring-primary;
+  /* Professional Card Styling */
+  .card-clean {
+    @apply bg-card border border-border shadow-sm rounded-lg;
   }
   
-  /* Professional Button Base */
-  .btn-corporate {
-    @apply transition-base font-medium;
+  /* Clean Button Styling */
+  .btn-clean {
+    @apply transition-base font-medium rounded-md;
   }
 }
