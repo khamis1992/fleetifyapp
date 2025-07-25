@@ -21,25 +21,23 @@ export const DashboardLayout: React.FC = () => {
   }
 
   return (
-    <div dir="rtl">
-      <SidebarProvider defaultOpen={true}>
-        <div className="min-h-screen flex w-full bg-background">
-          <AppSidebar />
-          
-          <div className="flex-1 flex flex-col">
-            {/* Header */}
-            <header className="h-14 flex items-center border-b border-border bg-card/50 backdrop-blur-sm px-4">
-              <SidebarTrigger className="ml-auto" />
-              <h2 className="text-lg font-semibold text-foreground">KW RentFlow</h2>
-            </header>
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full bg-background" dir="rtl">
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="h-14 flex items-center border-b border-border bg-card/50 backdrop-blur-sm px-4">
+            <h2 className="text-lg font-semibold text-foreground">KW RentFlow</h2>
+            <SidebarTrigger className="mr-auto" />
+          </header>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-auto p-6">
-              <Outlet />
-            </main>
-          </div>
+          {/* Main Content */}
+          <main className="flex-1 overflow-auto p-6">
+            <Outlet />
+          </main>
         </div>
-      </SidebarProvider>
-    </div>
+        
+        <AppSidebar />
+      </div>
+    </SidebarProvider>
   );
 };
