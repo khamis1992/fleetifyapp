@@ -450,6 +450,69 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          company_id: string
+          contract_amount: number
+          contract_date: string
+          contract_number: string
+          contract_type: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          description: string | null
+          end_date: string
+          id: string
+          journal_entry_id: string | null
+          monthly_amount: number
+          start_date: string
+          status: string
+          terms: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          company_id: string
+          contract_amount?: number
+          contract_date: string
+          contract_number: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          description?: string | null
+          end_date: string
+          id?: string
+          journal_entry_id?: string | null
+          monthly_amount?: number
+          start_date: string
+          status?: string
+          terms?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          contract_amount?: number
+          contract_date?: string
+          contract_number?: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          journal_entry_id?: string | null
+          monthly_amount?: number
+          start_date?: string
+          status?: string
+          terms?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       cost_centers: {
         Row: {
           actual_amount: number | null
@@ -1202,6 +1265,141 @@ export type Database = {
           },
         ]
       }
+      payroll: {
+        Row: {
+          allowances: number | null
+          bank_account: string | null
+          basic_salary: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          deductions: number | null
+          employee_id: string
+          id: string
+          journal_entry_id: string | null
+          net_amount: number
+          notes: string | null
+          overtime_amount: number | null
+          pay_period_end: string
+          pay_period_start: string
+          payment_method: string | null
+          payroll_date: string
+          payroll_number: string
+          status: string
+          tax_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          allowances?: number | null
+          bank_account?: string | null
+          basic_salary?: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          deductions?: number | null
+          employee_id: string
+          id?: string
+          journal_entry_id?: string | null
+          net_amount?: number
+          notes?: string | null
+          overtime_amount?: number | null
+          pay_period_end: string
+          pay_period_start: string
+          payment_method?: string | null
+          payroll_date: string
+          payroll_number: string
+          status?: string
+          tax_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allowances?: number | null
+          bank_account?: string | null
+          basic_salary?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          deductions?: number | null
+          employee_id?: string
+          id?: string
+          journal_entry_id?: string | null
+          net_amount?: number
+          notes?: string | null
+          overtime_amount?: number | null
+          pay_period_end?: string
+          pay_period_start?: string
+          payment_method?: string | null
+          payroll_date?: string
+          payroll_number?: string
+          status?: string
+          tax_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      penalties: {
+        Row: {
+          amount: number
+          balance_due: number | null
+          company_id: string
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          due_date: string | null
+          id: string
+          journal_entry_id: string | null
+          paid_amount: number | null
+          penalty_date: string
+          penalty_number: string
+          penalty_type: string
+          reason: string
+          reason_ar: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          balance_due?: number | null
+          company_id: string
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          due_date?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          paid_amount?: number | null
+          penalty_date: string
+          penalty_number: string
+          penalty_type?: string
+          reason: string
+          reason_ar?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          balance_due?: number | null
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          due_date?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          paid_amount?: number | null
+          penalty_date?: string
+          penalty_number?: string
+          penalty_type?: string
+          reason?: string
+          reason_ar?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1620,6 +1818,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: undefined
       }
+      create_contract_journal_entry: {
+        Args: { contract_id_param: string }
+        Returns: string
+      }
       create_depreciation_journal_entry: {
         Args: {
           asset_id_param: string
@@ -1634,6 +1836,14 @@ export type Database = {
       }
       create_payment_journal_entry: {
         Args: { payment_id_param: string }
+        Returns: string
+      }
+      create_payroll_journal_entry: {
+        Args: { payroll_id_param: string }
+        Returns: string
+      }
+      create_penalty_journal_entry: {
+        Args: { penalty_id_param: string }
         Returns: string
       }
       generate_journal_entry_number: {
