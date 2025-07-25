@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -132,11 +133,9 @@ export default function Ledger() {
             قيد جديد
           </Button>
           <Select onValueChange={(value) => handleExport(value as any)}>
-            <SelectTrigger asChild>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                تصدير
-              </Button>
+            <SelectTrigger className="w-[180px]">
+              <Download className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="تصدير" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="csv">CSV</SelectItem>
