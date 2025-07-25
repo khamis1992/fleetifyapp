@@ -17,6 +17,13 @@ import { Link } from "react-router-dom"
 import { useFinancialSummary } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import ChartOfAccounts from "./finance/ChartOfAccounts"
+import Invoices from "./finance/Invoices"
+import Payments from "./finance/Payments"
+import Reports from "./finance/Reports"
+import FixedAssets from "./finance/FixedAssets"
+import Budgets from "./finance/Budgets"
+import Vendors from "./finance/Vendors"
+import FinancialAnalysis from "./finance/FinancialAnalysis"
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()
@@ -195,13 +202,13 @@ const Finance = () => {
     <Routes>
       <Route index element={<FinanceModules />} />
       <Route path="ledger" element={<ChartOfAccounts />} />
-      <Route path="invoices" element={<div className="p-8 text-center text-muted-foreground">الفواتير - قيد التطوير</div>} />
-      <Route path="payments" element={<div className="p-8 text-center text-muted-foreground">المدفوعات - قيد التطوير</div>} />
-      <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">التقارير المالية - قيد التطوير</div>} />
-      <Route path="assets" element={<div className="p-8 text-center text-muted-foreground">الأصول الثابتة - قيد التطوير</div>} />
-      <Route path="budgets" element={<div className="p-8 text-center text-muted-foreground">الموازنات - قيد التطوير</div>} />
-      <Route path="vendors" element={<div className="p-8 text-center text-muted-foreground">الموردين - قيد التطوير</div>} />
-      <Route path="analysis" element={<div className="p-8 text-center text-muted-foreground">التحليل المالي - قيد التطوير</div>} />
+      <Route path="invoices" element={<Invoices />} />
+      <Route path="payments" element={<Payments />} />
+      <Route path="reports" element={<Reports />} />
+      <Route path="assets" element={<FixedAssets />} />
+      <Route path="budgets" element={<Budgets />} />
+      <Route path="vendors" element={<Vendors />} />
+      <Route path="analysis" element={<FinancialAnalysis />} />
     </Routes>
   )
 }
