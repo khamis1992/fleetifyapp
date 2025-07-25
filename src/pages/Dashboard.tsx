@@ -82,22 +82,22 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
+      <div className="bg-card border border-border p-8 rounded-xl mb-8 shadow-md">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-2xl font-semibold text-foreground mb-2">
               مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
             </h1>
-            <p className="text-primary-foreground/80">
+            <p className="text-muted-foreground">
               نظرة سريعة على أداء شركتك اليوم
             </p>
           </div>
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="secondary" className="gap-2">
+            <Button variant="default" className="gap-2">
               <Plus className="h-4 w-4" />
               عقد جديد
             </Button>
-            <Button variant="outline" className="gap-2 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button variant="outline" className="gap-2">
               <Calendar className="h-4 w-4" />
               التقويم
             </Button>
@@ -106,16 +106,16 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {DashboardStats.map((stat, index) => (
-          <Card key={index} className="border-0 shadow-card hover:shadow-elevated transition-all duration-300">
+          <Card key={index} className="border border-border shadow-md hover:shadow-lg transition-smooth">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
                   <div className="flex items-center mt-2">
                     <TrendingUp className="h-4 w-4 text-success mr-1" />
                     <span className="text-sm text-success font-medium">
@@ -123,8 +123,8 @@ const Dashboard: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color}`}>
-                  <stat.icon className="h-6 w-6 text-white" />
+                <div className="p-3 bg-primary/10 rounded-xl">
+                  <stat.icon className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -135,9 +135,9 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activities */}
         <div className="lg:col-span-2">
-          <Card className="border-0 shadow-card">
+          <Card className="border border-border shadow-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-foreground">
                 <Calendar className="h-5 w-5" />
                 الأنشطة الأخيرة
               </CardTitle>
@@ -148,9 +148,9 @@ const Dashboard: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {RecentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-4 p-4 bg-background-soft rounded-lg">
-                    <div className={`p-2 rounded-lg bg-muted ${activity.color}`}>
-                      <activity.icon className="h-4 w-4" />
+                  <div key={activity.id} className="flex items-start gap-4 p-4 bg-background-muted rounded-lg border border-border/50">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <activity.icon className={`h-4 w-4 ${activity.color}`} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -172,9 +172,9 @@ const Dashboard: React.FC = () => {
 
         {/* Quick Actions */}
         <div>
-          <Card className="border-0 shadow-card">
+          <Card className="border border-border shadow-md">
             <CardHeader>
-              <CardTitle>إجراءات سريعة</CardTitle>
+              <CardTitle className="text-foreground">إجراءات سريعة</CardTitle>
               <CardDescription>
                 الإجراءات الأكثر استخداماً
               </CardDescription>
@@ -204,25 +204,25 @@ const Dashboard: React.FC = () => {
           </Card>
 
           {/* Fleet Status */}
-          <Card className="border-0 shadow-card mt-6">
+          <Card className="border border-border shadow-md mt-6">
             <CardHeader>
-              <CardTitle>حالة الأسطول</CardTitle>
+              <CardTitle className="text-foreground">حالة الأسطول</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm">متاحة</span>
-                <Badge variant="default" className="bg-success">6</Badge>
+                <span className="text-sm text-muted-foreground">متاحة</span>
+                <Badge className="bg-success">6</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">مؤجرة</span>
-                <Badge variant="default" className="bg-primary">18</Badge>
+                <span className="text-sm text-muted-foreground">مؤجرة</span>
+                <Badge className="bg-primary">18</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">صيانة</span>
-                <Badge variant="default" className="bg-warning">2</Badge>
+                <span className="text-sm text-muted-foreground">صيانة</span>
+                <Badge className="bg-warning">2</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">خارج الخدمة</span>
+                <span className="text-sm text-muted-foreground">خارج الخدمة</span>
                 <Badge variant="destructive">1</Badge>
               </div>
             </CardContent>

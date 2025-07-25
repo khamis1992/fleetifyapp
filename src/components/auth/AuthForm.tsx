@@ -127,12 +127,12 @@ export const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background-soft to-accent-muted p-6" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-background-secondary p-6" dir="rtl">
       <div className="w-full max-w-md">
         {/* Logo Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl mb-4 shadow-elevated">
-            <Car className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-xl mb-4 shadow-md">
+            <Car className="w-6 h-6 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             KW RentFlow
