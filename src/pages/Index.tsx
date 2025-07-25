@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Car, Users, FileText, Shield, BarChart3, ArrowLeft } from 'lucide-react';
+import { Car, Users, FileText, Shield, BarChart3, ArrowLeft, Crown } from 'lucide-react';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -84,6 +84,16 @@ const Index = () => {
               <Button asChild variant="outline" size="lg" className="text-lg px-8 py-4 h-auto">
                 <Link to="/auth">
                   تسجيل الدخول
+                </Link>
+              </Button>
+            </div>
+
+            {/* Super Admin Access */}
+            <div className="mt-8 pt-6 border-t border-muted/20">
+              <Button asChild variant="destructive" size="sm" className="gap-2">
+                <Link to="/super-admin">
+                  <Crown className="w-4 h-4" />
+                  دخول مزود الخدمة
                 </Link>
               </Button>
             </div>
