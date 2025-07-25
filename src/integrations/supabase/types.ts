@@ -18,9 +18,11 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          direct_creation: boolean | null
           employee_id: string
           id: string
           notes: string | null
+          password_expires_at: string | null
           processed_at: string | null
           processed_by: string | null
           rejection_reason: string | null
@@ -28,14 +30,17 @@ export type Database = {
           requested_by: string
           requested_roles: string[] | null
           status: string
+          temporary_password: string | null
           updated_at: string
         }
         Insert: {
           company_id: string
           created_at?: string
+          direct_creation?: boolean | null
           employee_id: string
           id?: string
           notes?: string | null
+          password_expires_at?: string | null
           processed_at?: string | null
           processed_by?: string | null
           rejection_reason?: string | null
@@ -43,14 +48,17 @@ export type Database = {
           requested_by: string
           requested_roles?: string[] | null
           status?: string
+          temporary_password?: string | null
           updated_at?: string
         }
         Update: {
           company_id?: string
           created_at?: string
+          direct_creation?: boolean | null
           employee_id?: string
           id?: string
           notes?: string | null
+          password_expires_at?: string | null
           processed_at?: string | null
           processed_by?: string | null
           rejection_reason?: string | null
@@ -58,6 +66,7 @@ export type Database = {
           requested_by?: string
           requested_roles?: string[] | null
           status?: string
+          temporary_password?: string | null
           updated_at?: string
         }
         Relationships: [
