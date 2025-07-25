@@ -22,12 +22,14 @@ export const DashboardLayout: React.FC = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background" dir="rtl">
+        <AppSidebar />
+        
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <header className="h-14 flex items-center border-b border-border bg-card/50 backdrop-blur-sm px-4">
+            <SidebarTrigger className="ml-auto" />
             <h2 className="text-lg font-semibold text-foreground">KW RentFlow</h2>
-            <SidebarTrigger className="mr-auto" />
           </header>
 
           {/* Main Content */}
@@ -35,8 +37,6 @@ export const DashboardLayout: React.FC = () => {
             <Outlet />
           </main>
         </div>
-        
-        <AppSidebar />
       </div>
     </SidebarProvider>
   );
