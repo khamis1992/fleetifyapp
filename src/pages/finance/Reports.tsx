@@ -4,14 +4,139 @@ import { FileText, Download, Calendar, TrendingUp, DollarSign, PieChart, Eye, Ba
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
 import { CostCenterReports } from "@/components/finance/CostCenterReports"
+import { CashFlowReport } from "@/components/finance/CashFlowReport"
+import { PayablesReport } from "@/components/finance/PayablesReport"
+import { ReceivablesReport } from "@/components/finance/ReceivablesReport"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { exportToHTML } from "@/hooks/useFinancialReportsExport"
+import { formatCurrency } from "@/lib/utils"
 
 const Reports = () => {
   const { data: balanceSheetData, isLoading: balanceLoading } = useBalanceSheet()
   const { data: incomeStatementData, isLoading: incomeLoading } = useIncomeStatement()
+
+  // Export functions for balance sheet and income statement
+  const handleExportBalanceSheet = () => {
+    if (!balanceSheetData) return
+
+    const tableContent = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div>
+          <h3 style="font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">الأصول</h3>
+          <table style="width: 100%;">
+            <tbody>
+              ${balanceSheetData.assets?.map((account: any) => `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${account.account_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
+                </tr>
+              `).join('') || ''}
+              <tr style="background-color: #f5f5f5; font-weight: bold;">
+                <td style="padding: 12px; border-top: 2px solid #333;">إجمالي الأصول</td>
+                <td style="padding: 12px; border-top: 2px solid #333; text-align: left;">
+                  ${formatCurrency(balanceSheetData.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div>
+          <h3 style="font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">الخصوم وحقوق الملكية</h3>
+          <table style="width: 100%;">
+            <tbody>
+              <tr style="background-color: #f8f9fa;">
+                <td colspan="2" style="padding: 8px; font-weight: bold;">الخصوم</td>
+              </tr>
+              ${balanceSheetData.liabilities?.map((account: any) => `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
+                </tr>
+              `).join('') || ''}
+              <tr style="background-color: #f8f9fa;">
+                <td colspan="2" style="padding: 8px; font-weight: bold;">حقوق الملكية</td>
+              </tr>
+              ${balanceSheetData.equity?.map((account: any) => `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
+                </tr>
+              `).join('') || ''}
+              <tr style="background-color: #f5f5f5; font-weight: bold;">
+                <td style="padding: 12px; border-top: 2px solid #333;">إجمالي الخصوم وحقوق الملكية</td>
+                <td style="padding: 12px; border-top: 2px solid #333; text-align: left;">
+                  ${formatCurrency(
+                    (balanceSheetData.liabilities?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) +
+                    (balanceSheetData.equity?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `
+
+    exportToHTML(tableContent, "الميزانية العمومية", "اسم الشركة")
+  }
+
+  const handleExportIncomeStatement = () => {
+    if (!incomeStatementData) return
+
+    const tableContent = `
+      <table style="max-width: 600px; margin: 0 auto;">
+        <tbody>
+          <tr style="background-color: #f8f9fa;">
+            <td colspan="2" style="padding: 12px; font-weight: bold; font-size: 16px;">الإيرادات</td>
+          </tr>
+          ${incomeStatementData.revenue?.map((account: any) => `
+            <tr>
+              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+              <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: #22c55e;">${formatCurrency(Number(account.current_balance))}</td>
+            </tr>
+          `).join('') || ''}
+          <tr style="border-bottom: 2px solid #333;">
+            <td style="padding: 12px; font-weight: bold;">إجمالي الإيرادات</td>
+            <td style="padding: 12px; font-weight: bold; text-align: left; color: #22c55e;">
+              ${formatCurrency(incomeStatementData.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
+            </td>
+          </tr>
+          
+          <tr style="background-color: #f8f9fa;">
+            <td colspan="2" style="padding: 12px; font-weight: bold; font-size: 16px;">المصروفات</td>
+          </tr>
+          ${incomeStatementData.expenses?.map((account: any) => `
+            <tr>
+              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name}</td>
+              <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: #ef4444;">${formatCurrency(Number(account.current_balance))}</td>
+            </tr>
+          `).join('') || ''}
+          <tr style="border-bottom: 2px solid #333;">
+            <td style="padding: 12px; font-weight: bold;">إجمالي المصروفات</td>
+            <td style="padding: 12px; font-weight: bold; text-align: left; color: #ef4444;">
+              ${formatCurrency(incomeStatementData.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
+            </td>
+          </tr>
+          
+          <tr style="border-top: 4px solid #333; background-color: #f0f9ff;">
+            <td style="padding: 15px; font-weight: bold; font-size: 18px;">صافي الربح (الخسارة)</td>
+            <td style="padding: 15px; font-weight: bold; font-size: 18px; text-align: left;">
+              ${formatCurrency(
+                (incomeStatementData.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) -
+                (incomeStatementData.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    `
+
+    exportToHTML(tableContent, "قائمة الدخل", "اسم الشركة")
+  }
 
   const reportTypes = [
     {
@@ -35,7 +160,7 @@ const Reports = () => {
       description: "تتبع التدفقات النقدية الداخلة والخارجة",
       icon: Calendar,
       color: "bg-gradient-to-br from-purple-500 to-purple-600",
-      available: false,
+      available: true,
       key: "cash-flow"
     },
     {
@@ -43,7 +168,7 @@ const Reports = () => {
       description: "تحليل تفصيلي للأرباح والخسائر",
       icon: PieChart,
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
-      available: false,
+      available: true,
       key: "profit-loss"
     },
     {
@@ -51,7 +176,7 @@ const Reports = () => {
       description: "عرض المبالغ المستحقة للموردين",
       icon: FileText,
       color: "bg-gradient-to-br from-red-500 to-red-600",
-      available: false,
+      available: true,
       key: "payables"
     },
     {
@@ -59,7 +184,7 @@ const Reports = () => {
       description: "عرض المبالغ المستحقة من العملاء",
       icon: FileText,
       color: "bg-gradient-to-br from-teal-500 to-teal-600",
-      available: false,
+      available: true,
       key: "receivables"
     }
   ]
@@ -127,10 +252,13 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-          <TabsTrigger value="balance-sheet">الميزانية العمومية</TabsTrigger>
+          <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
           <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
+          <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
+          <TabsTrigger value="payables">الدائنة</TabsTrigger>
+          <TabsTrigger value="receivables">المدينة</TabsTrigger>
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
         </TabsList>
 
@@ -153,13 +281,35 @@ const Reports = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full" disabled={!report.available}>
+                  <Button 
+                    className="w-full" 
+                    disabled={!report.available}
+                    onClick={() => {
+                      // Navigate to the specific tab
+                      const tabsElement = document.querySelector('[role="tablist"]')
+                      const targetTab = document.querySelector(`[value="${report.key}"]`) as HTMLElement
+                      if (targetTab) {
+                        targetTab.click()
+                      }
+                    }}
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     عرض التقرير
                   </Button>
-                  <Button variant="outline" className="w-full" disabled={!report.available}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    disabled={!report.available}
+                    onClick={() => {
+                      if (report.key === 'balance-sheet') {
+                        handleExportBalanceSheet()
+                      } else if (report.key === 'income-statement') {
+                        handleExportIncomeStatement()
+                      }
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
-                    تحميل PDF
+                    تصدير HTML
                   </Button>
                 </CardContent>
               </Card>
@@ -170,13 +320,21 @@ const Reports = () => {
         <TabsContent value="balance-sheet" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                الميزانية العمومية
-              </CardTitle>
-              <CardDescription>
-                عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('ar-SA')}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    الميزانية العمومية
+                  </CardTitle>
+                  <CardDescription>
+                    عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('ar-SA')}
+                  </CardDescription>
+                </div>
+                <Button onClick={handleExportBalanceSheet} size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  تصدير HTML
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {balanceLoading ? (
@@ -250,13 +408,21 @@ const Reports = () => {
         <TabsContent value="income-statement" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                قائمة الدخل
-              </CardTitle>
-              <CardDescription>
-                عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('ar-SA')}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    قائمة الدخل
+                  </CardTitle>
+                  <CardDescription>
+                    عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('ar-SA')}
+                  </CardDescription>
+                </div>
+                <Button onClick={handleExportIncomeStatement} size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  تصدير HTML
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {incomeLoading ? (
@@ -314,6 +480,18 @@ const Reports = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="cash-flow" className="space-y-6">
+          <CashFlowReport companyName="اسم الشركة" />
+        </TabsContent>
+
+        <TabsContent value="payables" className="space-y-6">
+          <PayablesReport companyName="اسم الشركة" />
+        </TabsContent>
+
+        <TabsContent value="receivables" className="space-y-6">
+          <ReceivablesReport companyName="اسم الشركة" />
         </TabsContent>
 
         <TabsContent value="cost-centers" className="space-y-6">
