@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_creation_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          processed_at: string | null
+          processed_by: string | null
+          rejection_reason: string | null
+          request_date: string
+          requested_by: string
+          requested_roles: string[] | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          request_date?: string
+          requested_by: string
+          requested_roles?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          request_date?: string
+          requested_by?: string
+          requested_roles?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_creation_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounting_periods: {
         Row: {
           company_id: string
@@ -942,6 +998,7 @@ export type Database = {
       }
       employees: {
         Row: {
+          account_status: string | null
           address: string | null
           address_ar: string | null
           allowances: number | null
@@ -958,6 +1015,7 @@ export type Database = {
           employee_number: string
           first_name: string
           first_name_ar: string | null
+          has_system_access: boolean | null
           hire_date: string
           iban: string | null
           id: string
@@ -971,8 +1029,10 @@ export type Database = {
           position_ar: string | null
           termination_date: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
+          account_status?: string | null
           address?: string | null
           address_ar?: string | null
           allowances?: number | null
@@ -989,6 +1049,7 @@ export type Database = {
           employee_number: string
           first_name: string
           first_name_ar?: string | null
+          has_system_access?: boolean | null
           hire_date: string
           iban?: string | null
           id?: string
@@ -1002,8 +1063,10 @@ export type Database = {
           position_ar?: string | null
           termination_date?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          account_status?: string | null
           address?: string | null
           address_ar?: string | null
           allowances?: number | null
@@ -1020,6 +1083,7 @@ export type Database = {
           employee_number?: string
           first_name?: string
           first_name_ar?: string | null
+          has_system_access?: boolean | null
           hire_date?: string
           iban?: string | null
           id?: string
@@ -1033,6 +1097,7 @@ export type Database = {
           position_ar?: string | null
           termination_date?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2096,6 +2161,50 @@ export type Database = {
           },
         ]
       }
+      user_account_audit: {
+        Row: {
+          action_type: string
+          company_id: string
+          details: Json | null
+          employee_id: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          performed_at: string
+          performed_by: string
+        }
+        Insert: {
+          action_type: string
+          company_id: string
+          details?: Json | null
+          employee_id: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_at?: string
+          performed_by: string
+        }
+        Update: {
+          action_type?: string
+          company_id?: string
+          details?: Json | null
+          employee_id?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_at?: string
+          performed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_account_audit_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           company_id: string | null
@@ -2469,6 +2578,10 @@ export type Database = {
         }
         Returns: string
       }
+      generate_employee_account_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       generate_journal_entry_number: {
         Args: { company_id_param: string }
         Returns: string
@@ -2555,6 +2668,17 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
         }
         Returns: boolean
+      }
+      log_user_account_action: {
+        Args: {
+          employee_id_param: string
+          action_type_param: string
+          performed_by_param: string
+          details_param?: Json
+          old_values_param?: Json
+          new_values_param?: Json
+        }
+        Returns: undefined
       }
       process_monthly_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }

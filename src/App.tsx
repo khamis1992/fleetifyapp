@@ -14,6 +14,7 @@ import SuperAdminDashboard from "./pages/super-admin/Dashboard";
 import Finance from "./pages/Finance";
 import NotFound from "./pages/NotFound";
 import Employees from "./pages/hr/Employees";
+import UserManagement from "./pages/hr/UserManagement";
 import Attendance from "./pages/hr/Attendance";
 import Payroll from "./pages/hr/Payroll";
 import HRReports from "./pages/hr/Reports";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="customers" element={<div className="p-8 text-center text-muted-foreground">صفحة العملاء - قيد التطوير</div>} />
               <Route path="finance/*" element={<Finance />} />
               <Route path="hr/employees" element={<Employees />} />
+              <Route path="hr/user-management" element={<UserManagement />} />
               <Route path="hr/attendance" element={<Attendance />} />
               <Route path="hr/payroll" element={<Payroll />} />
               <Route path="hr/reports" element={<HRReports />} />
