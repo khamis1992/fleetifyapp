@@ -18,27 +18,8 @@ interface CreateUserAccountRequest {
 }
 
 const generateTemporaryPassword = (): string => {
-  // Enhanced password generation with better complexity
-  const lowercase = "abcdefghijkmnpqrstuvwxyz";
-  const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const numbers = "23456789";
-  const symbols = "!@#$%&*";
-  
-  // Ensure at least one character from each category
-  let password = "";
-  password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
-  password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
-  password += numbers.charAt(Math.floor(Math.random() * numbers.length));
-  password += symbols.charAt(Math.floor(Math.random() * symbols.length));
-  
-  // Fill the rest with random characters from all sets
-  const allChars = lowercase + uppercase + numbers + symbols;
-  for (let i = 4; i < 14; i++) {
-    password += allChars.charAt(Math.floor(Math.random() * allChars.length));
-  }
-  
-  // Shuffle the password to randomize character positions
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  // Return simple default password for easier onboarding
+  return "123456";
 };
 
 const assignRolesAndCreateRecord = async (
