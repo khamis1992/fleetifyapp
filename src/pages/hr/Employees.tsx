@@ -89,6 +89,21 @@ export default function Employees() {
       // Use account email or regular email for employee
       const employeeEmail = employeeData.createAccount ? employeeData.accountEmail : employeeData.email;
 
+      // Check for duplicate email among active employees (if email is provided)
+      if (employeeEmail && employeeEmail.trim()) {
+        const { data: existingEmailEmployee } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('company_id', profile.company_id)
+          .eq('email', employeeEmail.trim())
+          .eq('is_active', true)
+          .single();
+
+        if (existingEmailEmployee) {
+          throw new Error('البريد الإلكتروني موجود مسبقاً لدى موظف نشط');
+        }
+      }
+
       // Insert new employee
       const { data: employee, error } = await supabase
         .from('employees')
@@ -253,6 +268,22 @@ export default function Employees() {
 
       if (existingEmployee) {
         throw new Error('رقم الموظف موجود مسبقاً لدى موظف نشط آخر');
+      }
+
+      // Check for duplicate email among active employees (if email is provided, excluding current employee)
+      if (employeeData.email && employeeData.email.trim()) {
+        const { data: existingEmailEmployee } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('company_id', profile.company_id)
+          .eq('email', employeeData.email.trim())
+          .eq('is_active', true)
+          .neq('id', selectedEmployee.id)
+          .single();
+
+        if (existingEmailEmployee) {
+          throw new Error('البريد الإلكتروني موجود مسبقاً لدى موظف نشط آخر');
+        }
       }
 
       const { data, error } = await supabase
