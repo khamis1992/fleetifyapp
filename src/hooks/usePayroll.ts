@@ -90,43 +90,68 @@ export function usePayrollRecords(filters?: {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      let query = supabase
+      // First, get payroll records
+      let payrollQuery = supabase
         .from('payroll')
-        .select(`
-          *,
-          employee:employees!inner(
-            id,
-            employee_number,
-            first_name,
-            last_name,
-            first_name_ar,
-            last_name_ar,
-            position,
-            department,
-            basic_salary,
-            allowances,
-            bank_account,
-            iban
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (filters?.employee_id) {
-        query = query.eq('employee_id', filters.employee_id);
+        payrollQuery = payrollQuery.eq('employee_id', filters.employee_id);
       }
       if (filters?.status) {
-        query = query.eq('status', filters.status);
+        payrollQuery = payrollQuery.eq('status', filters.status);
       }
       if (filters?.period_start) {
-        query = query.gte('pay_period_start', filters.period_start);
+        payrollQuery = payrollQuery.gte('pay_period_start', filters.period_start);
       }
       if (filters?.period_end) {
-        query = query.lte('pay_period_end', filters.period_end);
+        payrollQuery = payrollQuery.lte('pay_period_end', filters.period_end);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as any[];
+      const { data: payrollData, error: payrollError } = await payrollQuery;
+      if (payrollError) throw payrollError;
+
+      if (!payrollData || payrollData.length === 0) {
+        return [];
+      }
+
+      // Get unique employee IDs
+      const employeeIds = [...new Set(payrollData.map(p => p.employee_id))];
+
+      // Fetch employee details
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select(`
+          id,
+          employee_number,
+          first_name,
+          last_name,
+          first_name_ar,
+          last_name_ar,
+          position,
+          department,
+          basic_salary,
+          allowances,
+          bank_account,
+          iban
+        `)
+        .in('id', employeeIds);
+
+      if (employeesError) throw employeesError;
+
+      // Create a map for quick employee lookup
+      const employeeMap = new Map(
+        (employeesData || []).map(emp => [emp.id, emp])
+      );
+
+      // Combine payroll and employee data
+      const combinedData = payrollData.map(payroll => ({
+        ...payroll,
+        employee: employeeMap.get(payroll.employee_id) || null
+      }));
+
+      return combinedData as PayrollRecord[];
     },
     enabled: !!user,
   });
