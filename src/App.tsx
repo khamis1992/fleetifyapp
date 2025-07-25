@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
 import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/super-admin/Dashboard";
+import Finance from "./pages/Finance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +40,7 @@ const App = () => (
               <Route path="fleet" element={<div className="p-8 text-center text-muted-foreground">صفحة الأسطول - قيد التطوير</div>} />
               <Route path="contracts" element={<div className="p-8 text-center text-muted-foreground">صفحة العقود - قيد التطوير</div>} />
               <Route path="customers" element={<div className="p-8 text-center text-muted-foreground">صفحة العملاء - قيد التطوير</div>} />
-              <Route path="finance" element={<div className="p-8 text-center text-muted-foreground">النظام المالي - قيد التطوير</div>} />
+              <Route path="finance/*" element={<Finance />} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">صفحة التقارير - قيد التطوير</div>} />
               <Route path="legal" element={<div className="p-8 text-center text-muted-foreground">الشؤون القانونية - قيد التطوير</div>} />
               <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">الإعدادات - قيد التطوير</div>} />
