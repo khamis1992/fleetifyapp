@@ -34,6 +34,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount, useCopyDefaultAccounts, ChartOfAccount } from '@/hooks/useFinance';
 import { HierarchicalAccountsList } from '@/components/finance/HierarchicalAccountsList';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const ChartOfAccounts = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -73,8 +74,26 @@ const ChartOfAccounts = () => {
   });
 
   const handleCreateAccount = async () => {
+    // Validate required fields
+    if (!newAccount.account_code.trim()) {
+      toast.error("كود الحساب مطلوب");
+      return;
+    }
+    if (!newAccount.account_name.trim()) {
+      toast.error("اسم الحساب مطلوب");
+      return;
+    }
+
     try {
-      await createAccountMutation.mutateAsync(newAccount);
+      // Convert undefined parent_account_id to null
+      const accountData = {
+        ...newAccount,
+        parent_account_id: newAccount.parent_account_id || null
+      };
+      
+      await createAccountMutation.mutateAsync(accountData);
+      
+      // Reset form
       setNewAccount({
         account_code: '',
         account_name: '',
@@ -88,6 +107,7 @@ const ChartOfAccounts = () => {
       setIsCreateDialogOpen(false);
     } catch (error) {
       console.error('Error creating account:', error);
+      // Error is already handled by the mutation's onError callback
     }
   };
 
@@ -316,8 +336,11 @@ const ChartOfAccounts = () => {
                       <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                         إلغاء
                       </Button>
-                      <Button onClick={handleCreateAccount} disabled={createAccountMutation.isPending}>
-                        إنشاء الحساب
+                      <Button 
+                        onClick={handleCreateAccount} 
+                        disabled={createAccountMutation.isPending || !newAccount.account_code.trim() || !newAccount.account_name.trim()}
+                      >
+                        {createAccountMutation.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
                       </Button>
                     </div>
                   </div>

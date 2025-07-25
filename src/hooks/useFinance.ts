@@ -247,25 +247,80 @@ export const useCreateAccount = () => {
       account_type: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses'
       balance_type: 'debit' | 'credit'
       account_subtype?: string
-      parent_account_id?: string
+      parent_account_id?: string | null
       description?: string
       current_balance?: number
     }) => {
-      if (!user?.profile?.company_id) throw new Error("Company ID is required")
-      
+      // Validation
+      if (!accountData.account_code.trim()) {
+        throw new Error("كود الحساب مطلوب")
+      }
+      if (!accountData.account_name.trim()) {
+        throw new Error("اسم الحساب مطلوب")
+      }
+      if (!user?.profile?.company_id) {
+        throw new Error("معرف الشركة مطلوب")
+      }
+
+      // Check for duplicate account code
+      const { data: existingAccount } = await supabase
+        .from("chart_of_accounts")
+        .select("id")
+        .eq("company_id", user.profile.company_id)
+        .eq("account_code", accountData.account_code.trim())
+        .eq("is_active", true)
+        .maybeSingle()
+
+      if (existingAccount) {
+        throw new Error("كود الحساب موجود بالفعل")
+      }
+
+      // Calculate account level
+      let accountLevel = 1
+      if (accountData.parent_account_id) {
+        const { data: parentAccount } = await supabase
+          .from("chart_of_accounts")
+          .select("account_level")
+          .eq("id", accountData.parent_account_id)
+          .single()
+        
+        if (parentAccount) {
+          accountLevel = (parentAccount.account_level || 1) + 1
+        }
+      }
+
+      // Prepare data for insertion
+      const insertData = {
+        account_code: accountData.account_code.trim(),
+        account_name: accountData.account_name.trim(),
+        account_name_ar: accountData.account_name_ar?.trim() || null,
+        account_type: accountData.account_type,
+        balance_type: accountData.balance_type,
+        account_subtype: accountData.account_subtype?.trim() || null,
+        parent_account_id: accountData.parent_account_id || null,
+        description: accountData.description?.trim() || null,
+        current_balance: accountData.current_balance || 0,
+        company_id: user.profile.company_id,
+        account_level: accountLevel,
+        is_active: true,
+        is_system: false,
+        is_header: false,
+        sort_order: 0
+      }
+
+      console.log('Creating account with data:', insertData)
+
       const { data, error } = await supabase
         .from("chart_of_accounts")
-        .insert({
-          ...accountData,
-          company_id: user.profile.company_id,
-          is_active: true,
-          is_system: false,
-          current_balance: accountData.current_balance || 0
-        })
+        .insert(insertData)
         .select()
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Database error:', error)
+        throw new Error(`خطأ في قاعدة البيانات: ${error.message}`)
+      }
+      
       return data
     },
     onSuccess: () => {
@@ -273,7 +328,9 @@ export const useCreateAccount = () => {
       toast.success("تم إنشاء الحساب بنجاح")
     },
     onError: (error) => {
-      toast.error("خطأ في إنشاء الحساب: " + error.message)
+      console.error('Account creation error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف'
+      toast.error(`خطأ في إنشاء الحساب: ${errorMessage}`)
     }
   })
 }
