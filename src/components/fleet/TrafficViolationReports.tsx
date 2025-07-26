@@ -164,13 +164,13 @@ export const TrafficViolationReports = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Report Filters
+            مرشحات التقرير
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="startDate">Start Date</Label>
+              <Label htmlFor="startDate">تاريخ البداية</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -179,7 +179,7 @@ export const TrafficViolationReports = () => {
               />
             </div>
             <div>
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="endDate">تاريخ النهاية</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -196,22 +196,22 @@ export const TrafficViolationReports = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Traffic Violations Report
+            تقرير المخالفات المرورية
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Generate a comprehensive report of all traffic violations including status, amounts, and payment information.
+            إنشاء تقرير شامل عن جميع المخالفات المرورية بما في ذلك الحالة والمبالغ ومعلومات الدفع
           </p>
           
           {violationsData && (
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <div className="font-medium">Total Violations</div>
+                <div className="font-medium">إجمالي المخالفات</div>
                 <div className="text-lg text-primary">{violationsData.length}</div>
               </div>
               <div>
-                <div className="font-medium">Total Amount</div>
+                <div className="font-medium">إجمالي المبلغ</div>
                 <div className="text-lg text-primary">KWD {violationsData.reduce((sum, item) => sum + item.amount, 0).toFixed(3)}</div>
               </div>
             </div>
@@ -223,7 +223,7 @@ export const TrafficViolationReports = () => {
             className="w-full"
           >
             <Download className="h-4 w-4 mr-2" />
-            Export Violations Report
+            تصدير تقرير المخالفات
           </Button>
         </CardContent>
       </Card>
@@ -233,22 +233,22 @@ export const TrafficViolationReports = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Payments Report
+            تقرير المدفوعات
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Generate a detailed report of all traffic violation payments including payment methods and transaction details.
+            إنشاء تقرير مفصل عن جميع مدفوعات المخالفات المرورية بما في ذلك طرق الدفع وتفاصيل المعاملات
           </p>
           
           {paymentsData && (
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <div className="font-medium">Total Payments</div>
+                <div className="font-medium">إجمالي المدفوعات</div>
                 <div className="text-lg text-primary">{paymentsData.length}</div>
               </div>
               <div>
-                <div className="font-medium">Total Amount</div>
+                <div className="font-medium">إجمالي المبلغ</div>
                 <div className="text-lg text-primary">KWD {paymentsData.reduce((sum, item) => sum + item.amount, 0).toFixed(3)}</div>
               </div>
             </div>
@@ -260,7 +260,7 @@ export const TrafficViolationReports = () => {
             className="w-full"
           >
             <Download className="h-4 w-4 mr-2" />
-            Export Payments Report
+            تصدير تقرير المدفوعات
           </Button>
         </CardContent>
       </Card>
