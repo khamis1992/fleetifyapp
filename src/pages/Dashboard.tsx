@@ -7,7 +7,6 @@ import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import { EnhancedStatsGrid } from '@/components/dashboard/EnhancedStatsGrid';
 import { SmartAlertsPanel } from '@/components/dashboard/SmartAlertsPanel';
 import { FinancialOverviewCard } from '@/components/dashboard/FinancialOverviewCard';
-import { WelcomeScreen } from '@/components/ui/welcome-screen';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +19,9 @@ import {
   AlertTriangle,
   Calendar,
   Plus,
-  Activity
+  Activity,
+  ArrowRight,
+  Zap
 } from 'lucide-react';
 
 // Helper function to get icon component by name
@@ -47,38 +48,70 @@ const Dashboard: React.FC = () => {
     enhancedStats.totalCustomers === 0 && 
     enhancedStats.activeContracts === 0;
 
-  // Show welcome screen for new companies
-  if (isNewCompany) {
-    return (
-      <WelcomeScreen 
-        companyName={user?.company?.name || user?.company?.name_ar}
-        onGetStarted={() => {
-          // This could navigate to a specific setup flow
-          console.log('Getting started...');
-        }}
-      />
-    );
-  }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "صباح الخير";
+    if (hour < 18) return "مساء الخير";
+    return "مساء الخير";
+  };
 
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section - Enhanced with animation */}
-      <div className="bg-gradient-animated p-8 rounded-2xl text-primary-foreground shadow-elevated glow-on-hover animate-fade-in">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 animate-scale-in">
-              مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}
-            </h1>
-            <p className="text-primary-foreground/90 text-lg">
-              نظرة سريعة على أداء شركتك اليوم
-            </p>
-          </div>
-          <div className="hidden md:block">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary-foreground/10 rounded-full blur-xl animate-pulse"></div>
-              <div className="relative bg-primary-foreground/20 backdrop-blur-sm rounded-full p-6 animate-float">
-                <Activity className="h-8 w-8 text-primary-foreground" />
+    <div className="space-y-8 animate-fade-in">
+      {/* Enhanced Welcome Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10 opacity-50"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-radial from-primary/20 to-transparent rounded-full blur-3xl"></div>
+        <div className="relative p-8">
+          <div className="flex justify-between items-start">
+            <div className="space-y-4 flex-1">
+              <div className="animate-fade-in">
+                <p className="text-lg text-muted-foreground font-medium">
+                  {getGreeting()}، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}! 👋
+                </p>
+              </div>
+              <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent leading-tight">
+                  لوحة التحكم
+                </h1>
+              </div>
+              <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+                  نظرة شاملة على أداء شركتك وآخر التطورات في نظام إدارة الأسطول
+                </p>
+              </div>
+              {isNewCompany && (
+                <div className="animate-fade-in bg-primary/10 border border-primary/20 rounded-2xl p-6 mt-6" style={{ animationDelay: '0.3s' }}>
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-primary/20 rounded-xl">
+                      <Zap className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-2">مرحباً بك في نظام إدارة الأسطول!</h3>
+                      <p className="text-sm text-muted-foreground mb-4">ابدأ رحلتك بإضافة أول مركبة أو عميل لتفعيل جميع ميزات النظام</p>
+                      <div className="flex flex-wrap gap-3">
+                        <Button size="sm" className="gap-2">
+                          <Car className="h-4 w-4" />
+                          إضافة مركبة
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Users className="h-4 w-4" />
+                          إضافة عميل
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="hidden lg:block">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
+                <div className="relative bg-primary/20 backdrop-blur-sm rounded-full p-8 animate-float">
+                  <Activity className="h-10 w-10 text-primary" />
+                </div>
               </div>
             </div>
           </div>
@@ -86,17 +119,11 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Enhanced Stats Grid */}
-      {enhancedStats ? (
+      <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
         <EnhancedStatsGrid stats={enhancedStats} loading={statsLoading} />
-      ) : (
-        <div className="text-center py-12">
-          <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">مرحباً بك في نظام إدارة الأسطول</h3>
-          <p className="text-muted-foreground mb-6">ابدأ بإضافة المركبات والعملاء لتظهر الإحصائيات هنا</p>
-        </div>
-      )}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in" style={{ animationDelay: '0.5s' }}>
         {/* Recent Activities - Enhanced */}
         <div className="lg:col-span-2">
           <Card className="glass-card shadow-card card-hover animate-fade-in">
@@ -176,9 +203,7 @@ const Dashboard: React.FC = () => {
         {/* Smart Alerts & Financial Overview */}
         <div className="space-y-6">
           <SmartAlertsPanel alerts={smartAlerts || []} loading={alertsLoading} />
-          {financialOverview && (
-            <FinancialOverviewCard data={financialOverview} loading={financialLoading} />
-          )}
+          <FinancialOverviewCard data={financialOverview} loading={financialLoading} />
         </div>
       </div>
     </div>
