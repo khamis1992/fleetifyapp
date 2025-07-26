@@ -41,9 +41,9 @@ export default function Fleet() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fleet Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">إدارة الأسطول</h1>
           <p className="text-muted-foreground">
-            Manage your vehicle fleet, maintenance, and operations
+            إدارة أسطول المركبات والصيانة والعمليات
           </p>
         </div>
         <div className="flex gap-2">
