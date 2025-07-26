@@ -9,6 +9,9 @@ import { ContractForm } from "@/components/finance/ContractForm"
 import { ContractExpirationAlerts } from "@/components/contracts/ContractExpirationAlerts"
 import { ContractRenewalDialog } from "@/components/contracts/ContractRenewalDialog"
 import { ContractStatusManagement } from "@/components/contracts/ContractStatusManagement"
+import { ContractDetailsDialog } from "@/components/contracts/ContractDetailsDialog"
+import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilters"
+import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
@@ -19,6 +22,9 @@ export default function Contracts() {
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [showRenewalDialog, setShowRenewalDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false)
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
+  const [filters, setFilters] = useState<any>({})
   const { user } = useAuth()
   const autoRenewContracts = useAutoRenewContracts()
 
@@ -247,7 +253,7 @@ export default function Contracts() {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedContract(contract); setShowDetailsDialog(true); }}>
                     عرض
                   </Button>
                   {contract.status === 'active' && (
@@ -490,6 +496,21 @@ export default function Contracts() {
         open={showStatusDialog}
         onOpenChange={setShowStatusDialog}
         contract={selectedContract}
+      />
+      
+      <ContractDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        contract={selectedContract}
+        onEdit={(contract) => { setSelectedContract(contract); refetch(); }}
+        onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
+      />
+      
+      <ContractInvoiceDialog
+        open={showInvoiceDialog}
+        onOpenChange={setShowInvoiceDialog}
+        contract={selectedContract}
+        onSuccess={() => { refetch(); setShowInvoiceDialog(false); }}
       />
     </div>
   )
