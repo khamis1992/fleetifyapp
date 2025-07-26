@@ -452,3 +452,133 @@ export const useUpdateVehicleMaintenance = () => {
     }
   })
 }
+
+// Add new hooks for enhanced fleet management
+export const useProcessVehicleDepreciation = () => {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ companyId, date }: { companyId: string; date?: string }) => {
+      const { data, error } = await supabase.rpc('process_vehicle_depreciation', {
+        company_id_param: companyId,
+        depreciation_date_param: date || new Date().toISOString().split('T')[0]
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: (processedCount) => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: ["fixed-assets"] })
+      queryClient.invalidateQueries({ queryKey: ["depreciation-records"] })
+      toast({
+        title: "Success",
+        description: `Processed depreciation for ${processedCount} vehicles.`,
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to process vehicle depreciation: " + error.message,
+        variant: "destructive",
+      })
+    },
+  })
+}
+
+// Enhanced hook for available vehicles for contracts
+export const useAvailableVehiclesForContracts = (companyId?: string) => {
+  return useQuery({
+    queryKey: ["available-vehicles-contracts", companyId],
+    queryFn: async () => {
+      if (!companyId) throw new Error("Company ID is required")
+
+      const { data, error } = await supabase.rpc('get_available_vehicles_for_contracts', {
+        company_id_param: companyId
+      })
+
+      if (error) throw error
+      return data as Array<{
+        id: string
+        plate_number: string
+        make: string
+        model: string
+        year: number
+        status: string
+        daily_rate?: number
+        weekly_rate?: number
+        monthly_rate?: number
+      }>
+    },
+    enabled: !!companyId,
+  })
+}
+
+// Hook for fleet analytics and reports
+export const useFleetAnalytics = (companyId?: string) => {
+  return useQuery({
+    queryKey: ["fleet-analytics", companyId],
+    queryFn: async () => {
+      if (!companyId) throw new Error("Company ID is required")
+
+      // Get vehicle statistics with financial data
+      const { data: vehicles, error: vehiclesError } = await supabase
+        .from("vehicles")
+        .select(`
+          *,
+          vehicle_pricing(daily_rate, weekly_rate, monthly_rate),
+          fixed_assets(book_value, accumulated_depreciation, purchase_cost)
+        `)
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+
+      if (vehiclesError) throw vehiclesError
+
+      // Get maintenance statistics
+      const { data: maintenance, error: maintenanceError } = await supabase
+        .from("vehicle_maintenance")
+        .select("*, vehicles(plate_number)")
+        .in("vehicle_id", vehicles?.map(v => v.id) || [])
+
+      if (maintenanceError) throw maintenanceError
+
+      // Calculate analytics
+      const totalVehicles = vehicles?.length || 0
+      const availableVehicles = vehicles?.filter(v => v.status === 'available').length || 0
+      const maintenanceVehicles = vehicles?.filter(v => v.status === 'maintenance').length || 0
+      const rentedVehicles = vehicles?.filter(v => v.status === 'rented').length || 0
+
+      const totalBookValue = vehicles?.reduce((sum, v: any) => {
+        return sum + (v.fixed_assets?.[0]?.book_value || 0)
+      }, 0) || 0
+
+      const totalDepreciation = vehicles?.reduce((sum, v: any) => {
+        return sum + (v.fixed_assets?.[0]?.accumulated_depreciation || 0)
+      }, 0) || 0
+
+      const monthlyMaintenanceCost = maintenance
+        ?.filter(m => {
+          const date = new Date(m.scheduled_date)
+          const now = new Date()
+          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+        })
+        .reduce((sum, m) => sum + (m.estimated_cost || 0), 0) || 0
+
+      return {
+        totalVehicles,
+        availableVehicles,
+        maintenanceVehicles,
+        rentedVehicles,
+        totalBookValue,
+        totalDepreciation,
+        monthlyMaintenanceCost,
+        utilizationRate: totalVehicles > 0 ? ((rentedVehicles / totalVehicles) * 100) : 0,
+        maintenanceRate: totalVehicles > 0 ? ((maintenanceVehicles / totalVehicles) * 100) : 0,
+        vehicles: vehicles || [],
+        maintenance: maintenance || [],
+      }
+    },
+    enabled: !!companyId,
+  })
+}

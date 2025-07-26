@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Car, Wrench, AlertTriangle, TrendingUp } from "lucide-react"
+import { Plus, Car, Wrench, AlertTriangle, TrendingUp, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,7 @@ import { VehicleForm } from "@/components/fleet/VehicleForm"
 import { VehicleCard } from "@/components/fleet/VehicleCard"
 import { MaintenanceList } from "@/components/fleet/MaintenanceList"
 import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
+import { FleetAnalytics } from "@/components/fleet/FleetAnalytics"
 import { useVehicles, useVehicleMaintenance } from "@/hooks/useVehicles"
 
 export default function Fleet() {
@@ -127,6 +128,7 @@ export default function Fleet() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -193,18 +195,65 @@ export default function Fleet() {
           <MaintenanceList />
         </TabsContent>
 
+        <TabsContent value="analytics" className="space-y-4">
+          <FleetAnalytics />
+        </TabsContent>
+
         <TabsContent value="reports" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Fleet Reports</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <BarChart3 className="h-5 w-5" />
+                <span>Fleet Reports & Analytics</span>
+              </CardTitle>
               <CardDescription>
-                Analytics and reports for your fleet performance
+                Comprehensive fleet performance and financial reports
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Fleet reports and analytics coming soon...
-              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Vehicle Utilization Report</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Track vehicle usage and rental efficiency
+                    </p>
+                    <Button variant="outline" className="mt-3 w-full">
+                      Generate Report
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Maintenance Cost Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Analyze maintenance costs and patterns
+                    </p>
+                    <Button variant="outline" className="mt-3 w-full">
+                      Generate Report
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Financial Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Revenue, depreciation, and ROI analysis
+                    </p>
+                    <Button variant="outline" className="mt-3 w-full">
+                      Generate Report
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

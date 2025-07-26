@@ -3393,6 +3393,20 @@ export type Database = {
           closing_balance: number
         }[]
       }
+      get_available_vehicles_for_contracts: {
+        Args: { company_id_param: string }
+        Returns: {
+          id: string
+          plate_number: string
+          make: string
+          model: string
+          year: number
+          status: string
+          daily_rate: number
+          weekly_rate: number
+          monthly_rate: number
+        }[]
+      }
       get_cost_center_analysis: {
         Args: { company_id_param: string; date_from?: string; date_to?: string }
         Returns: {
@@ -3473,6 +3487,10 @@ export type Database = {
         Returns: undefined
       }
       process_monthly_depreciation: {
+        Args: { company_id_param: string; depreciation_date_param?: string }
+        Returns: number
+      }
+      process_vehicle_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
       }
