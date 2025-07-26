@@ -517,7 +517,7 @@ export function CustomerDetailsDialog({
                     <CardContent>
                       <p className="text-sm mb-2">{note.content}</p>
                        <div className="text-xs text-muted-foreground">
-                         بواسطة: {(note.profiles as any)?.first_name} {(note.profiles as any)?.last_name} - 
+                         بواسطة: مستخدم النظام - 
                          {new Date(note.created_at).toLocaleDateString('ar-SA')} {new Date(note.created_at).toLocaleTimeString('ar-SA')}
                        </div>
                     </CardContent>

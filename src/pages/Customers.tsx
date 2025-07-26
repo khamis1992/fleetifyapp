@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useCustomers, useToggleCustomerBlacklist } from "@/hooks/useCustomers"
+import { useCustomers, useToggleCustomerBlacklist, Customer } from "@/hooks/useCustomers"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
@@ -224,8 +224,8 @@ export default function Customers() {
       {/* Customers List */}
       <div className="grid gap-4">
         {customers?.map((customer) => {
-          const customerBalance = (customer.customer_accounts as any)?.[0]?.account?.current_balance || 0
-          const contractsCount = (customer.contracts as any)?.[0]?.count || 0
+          const customerBalance = (customer as any).customer_accounts?.[0]?.account?.current_balance || 0
+          const contractsCount = (customer as any).contracts_count || 0
           
           return (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">

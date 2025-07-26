@@ -30,11 +30,14 @@ export interface Customer {
   emergency_contact_phone?: string;
   is_blacklisted?: boolean;
   blacklist_reason?: string;
-  documents?: any[];
+  documents?: any;
   notes?: string;
   is_active?: boolean;
   created_at: string;
   updated_at: string;
+  contracts_count?: number;
+  contracts?: any[];
+  customer_accounts?: any[];
 }
 
 export interface CustomerNote {
@@ -104,7 +107,6 @@ export const useCustomers = (filters?: {
         .from('customers')
         .select(`
           *,
-          contracts:contracts(count),
           customer_accounts:customer_accounts(
             id,
             account:chart_of_accounts(
@@ -144,6 +146,26 @@ export const useCustomers = (filters?: {
         throw error;
       }
 
+      // Get contract counts separately to avoid relationship issues
+      if (data && data.length > 0) {
+        const customerIds = data.map(customer => customer.id);
+        const { data: contractCounts } = await supabase
+          .from('contracts')
+          .select('customer_id')
+          .in('customer_id', customerIds);
+        
+        // Add contract count to each customer
+        const contractCountMap = new Map();
+        contractCounts?.forEach(contract => {
+          const count = contractCountMap.get(contract.customer_id) || 0;
+          contractCountMap.set(contract.customer_id, count + 1);
+        });
+        
+        data.forEach((customer: any) => {
+          customer.contracts_count = contractCountMap.get(customer.id) || 0;
+        });
+      }
+
       return data || [];
     },
     enabled: !!user?.profile?.company_id || !!user?.company?.id
@@ -158,14 +180,12 @@ export const useCustomer = (customerId: string) => {
         .from('customers')
         .select(`
           *,
-          contracts:contracts(*),
           customer_accounts:customer_accounts(
             *,
             account:chart_of_accounts(*)
           ),
           customer_notes:customer_notes(
-            *,
-            profiles:profiles(first_name, last_name)
+            *
           )
         `)
         .eq('id', customerId)
@@ -176,7 +196,20 @@ export const useCustomer = (customerId: string) => {
         throw error;
       }
 
-      return data;
+      // Get contracts separately
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('customer_id', customerId);
+
+      if (contractsError) {
+        console.error('Error fetching contracts:', contractsError);
+      }
+
+      return {
+        ...data,
+        contracts: contracts || []
+      };
     },
     enabled: !!customerId
   });
@@ -272,10 +305,7 @@ export const useCustomerNotes = (customerId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customer_notes')
-        .select(`
-          *,
-          profiles:profiles(first_name, last_name)
-        `)
+        .select('*')
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false });
 
