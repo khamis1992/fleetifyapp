@@ -9,6 +9,11 @@ export interface Company {
   email?: string;
   phone?: string;
   subscription_status?: string;
+  subscription_plan?: string;
+  created_at?: string;
+  address?: string;
+  country?: string;
+  city?: string;
 }
 
 export const useCompanies = () => {
@@ -26,7 +31,7 @@ export const useCompanies = () => {
       
       const { data, error } = await supabase
         .from('companies')
-        .select('id, name, name_ar, email, phone, subscription_status')
+        .select('id, name, name_ar, email, phone, subscription_status, subscription_plan, created_at, address, country, city')
         .order('name');
       
       if (error) {
