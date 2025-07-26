@@ -87,6 +87,385 @@ export default function FleetReports() {
     processDepreciation.mutate(undefined);
   };
 
+  // Function to generate vehicle usage report
+  const generateVehicleUsageReport = () => {
+    if (!safeAnalytics.vehicles || safeAnalytics.vehicles.length === 0) {
+      alert("لا توجد بيانات مركبات لإنشاء التقرير");
+      return;
+    }
+
+    const content = `
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.totalVehicles}</div>
+          <div class="stat-label">إجمالي المركبات</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.availableVehicles}</div>
+          <div class="stat-label">المركبات المتاحة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.rentedVehicles}</div>
+          <div class="stat-label">المركبات المؤجرة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.utilizationRate.toFixed(1)}%</div>
+          <div class="stat-label">معدل الاستخدام</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>رقم اللوحة</th>
+            <th>الماركة</th>
+            <th>النموذج</th>
+            <th>السنة</th>
+            <th>الحالة</th>
+            <th>السعر اليومي</th>
+            <th>السعر الشهري</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${safeAnalytics.vehicles.map(vehicle => `
+            <tr>
+              <td>${vehicle.plate_number}</td>
+              <td>${vehicle.make}</td>
+              <td>${vehicle.model}</td>
+              <td>${vehicle.year}</td>
+              <td>${vehicle.status === 'available' ? 'متاحة' : vehicle.status === 'rented' ? 'مؤجرة' : 'في الصيانة'}</td>
+              <td>KWD ${(vehicle.daily_rate || 0).toFixed(3)}</td>
+              <td>KWD ${(vehicle.monthly_rate || 0).toFixed(3)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    createHTMLReport(content, "تقرير استخدام المركبات");
+  };
+
+  // Function to generate maintenance cost analysis report
+  const generateMaintenanceCostReport = () => {
+    if (!safeAnalytics.maintenance || safeAnalytics.maintenance.length === 0) {
+      alert("لا توجد بيانات صيانة لإنشاء التقرير");
+      return;
+    }
+
+    const totalCost = safeAnalytics.maintenance.reduce((sum, m) => sum + (m.estimated_cost || 0), 0);
+    const completedMaintenance = safeAnalytics.maintenance.filter(m => m.status === 'completed');
+    const pendingMaintenance = safeAnalytics.maintenance.filter(m => m.status === 'pending');
+
+    const content = `
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.maintenance.length}</div>
+          <div class="stat-label">إجمالي أعمال الصيانة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${completedMaintenance.length}</div>
+          <div class="stat-label">الصيانة المكتملة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${pendingMaintenance.length}</div>
+          <div class="stat-label">الصيانة المعلقة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${totalCost.toFixed(3)}</div>
+          <div class="stat-label">إجمالي التكلفة</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>رقم اللوحة</th>
+            <th>نوع الصيانة</th>
+            <th>التاريخ المجدول</th>
+            <th>الحالة</th>
+            <th>التكلفة المقدرة</th>
+            <th>الوصف</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${safeAnalytics.maintenance.map(maintenance => `
+            <tr>
+              <td>${maintenance.vehicles?.plate_number || 'غير محدد'}</td>
+              <td>${maintenance.maintenance_type === 'routine' ? 'صيانة دورية' : 
+                   maintenance.maintenance_type === 'repair' ? 'إصلاح' : 
+                   maintenance.maintenance_type === 'emergency' ? 'صيانة طارئة' : 
+                   maintenance.maintenance_type}</td>
+              <td>${new Date(maintenance.scheduled_date).toLocaleDateString('ar-SA')}</td>
+              <td>${maintenance.status === 'completed' ? 'مكتملة' : 
+                   maintenance.status === 'in_progress' ? 'قيد التنفيذ' : 
+                   maintenance.status === 'pending' ? 'معلقة' : maintenance.status}</td>
+              <td>KWD ${(maintenance.estimated_cost || 0).toFixed(3)}</td>
+              <td>${maintenance.description || 'لا يوجد وصف'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    createHTMLReport(content, "تحليل تكاليف الصيانة");
+  };
+
+  // Function to generate financial performance report
+  const generateFinancialPerformanceReport = () => {
+    const monthlyRevenue = safeAnalytics.vehicles.reduce((sum, v) => sum + (v.monthly_rate || 0), 0);
+    
+    const content = `
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-value">KWD ${safeAnalytics.totalBookValue.toFixed(3)}</div>
+          <div class="stat-label">قيمة الأسطول</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${monthlyRevenue.toFixed(3)}</div>
+          <div class="stat-label">الإيرادات الشهرية المحتملة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${safeAnalytics.totalDepreciation.toFixed(3)}</div>
+          <div class="stat-label">إجمالي الإهلاك</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${safeAnalytics.monthlyMaintenanceCost.toFixed(3)}</div>
+          <div class="stat-label">تكلفة الصيانة الشهرية</div>
+        </div>
+      </div>
+
+      <div class="analysis-section">
+        <h3>تحليل الأداء المالي</h3>
+        <p><strong>معدل الاستخدام:</strong> ${safeAnalytics.utilizationRate.toFixed(1)}%</p>
+        <p><strong>الإيرادات الفعلية:</strong> KWD ${(monthlyRevenue * safeAnalytics.utilizationRate / 100).toFixed(3)}</p>
+        <p><strong>صافي الإيرادات (بعد الصيانة):</strong> KWD ${((monthlyRevenue * safeAnalytics.utilizationRate / 100) - safeAnalytics.monthlyMaintenanceCost).toFixed(3)}</p>
+      </div>
+    `;
+
+    createHTMLReport(content, "تقرير الأداء المالي");
+  };
+
+  // Function to generate operational efficiency report
+  const generateOperationalEfficiencyReport = () => {
+    const content = `
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.utilizationRate.toFixed(1)}%</div>
+          <div class="stat-label">معدل الاستخدام</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.maintenanceRate.toFixed(1)}%</div>
+          <div class="stat-label">معدل الصيانة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${((safeAnalytics.availableVehicles / safeAnalytics.totalVehicles) * 100).toFixed(1)}%</div>
+          <div class="stat-label">معدل التوفر</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.totalVehicles}</div>
+          <div class="stat-label">حجم الأسطول</div>
+        </div>
+      </div>
+
+      <div class="analysis-section">
+        <h3>تحليل الكفاءة التشغيلية</h3>
+        <p><strong>المركبات المتاحة:</strong> ${safeAnalytics.availableVehicles} مركبة</p>
+        <p><strong>المركبات المؤجرة:</strong> ${safeAnalytics.rentedVehicles} مركبة</p>
+        <p><strong>المركبات في الصيانة:</strong> ${safeAnalytics.maintenanceVehicles} مركبة</p>
+        <p><strong>توصيات:</strong></p>
+        <ul>
+          ${safeAnalytics.utilizationRate < 70 ? '<li>معدل الاستخدام منخفض - يُنصح بتحسين استراتيجيات التسويق</li>' : ''}
+          ${safeAnalytics.maintenanceRate > 20 ? '<li>معدل الصيانة مرتفع - يُنصح بمراجعة خطة الصيانة الوقائية</li>' : ''}
+          ${safeAnalytics.availableVehicles > safeAnalytics.totalVehicles * 0.5 ? '<li>نسبة عالية من المركبات المتاحة - فرصة لزيادة الإيجارات</li>' : ''}
+        </ul>
+      </div>
+    `;
+
+    createHTMLReport(content, "تقرير الكفاءة التشغيلية");
+  };
+
+  // Function to generate profitability analysis report
+  const generateProfitabilityAnalysisReport = () => {
+    const monthlyRevenue = safeAnalytics.vehicles.reduce((sum, v) => sum + (v.monthly_rate || 0), 0);
+    const actualRevenue = monthlyRevenue * safeAnalytics.utilizationRate / 100;
+    const netProfit = actualRevenue - safeAnalytics.monthlyMaintenanceCost;
+    
+    const content = `
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-value">KWD ${actualRevenue.toFixed(3)}</div>
+          <div class="stat-label">الإيرادات الفعلية</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${safeAnalytics.monthlyMaintenanceCost.toFixed(3)}</div>
+          <div class="stat-label">تكاليف الصيانة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${netProfit.toFixed(3)}</div>
+          <div class="stat-label">صافي الربح</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${((netProfit / actualRevenue) * 100).toFixed(1)}%</div>
+          <div class="stat-label">هامش الربح</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>رقم اللوحة</th>
+            <th>السعر الشهري</th>
+            <th>معدل الاستخدام المقدر</th>
+            <th>الإيرادات المتوقعة</th>
+            <th>الربحية</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${safeAnalytics.vehicles.map(vehicle => {
+            const vehicleRevenue = (vehicle.monthly_rate || 0) * (safeAnalytics.utilizationRate / 100);
+            const profitability = vehicleRevenue > 0 ? 'مربحة' : 'غير مربحة';
+            return `
+              <tr>
+                <td>${vehicle.plate_number}</td>
+                <td>KWD ${(vehicle.monthly_rate || 0).toFixed(3)}</td>
+                <td>${safeAnalytics.utilizationRate.toFixed(1)}%</td>
+                <td>KWD ${vehicleRevenue.toFixed(3)}</td>
+                <td>${profitability}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+
+    createHTMLReport(content, "تحليل الربحية");
+  };
+
+  // Function to generate forecasting report
+  const generateForecastingReport = () => {
+    const monthlyRevenue = safeAnalytics.vehicles.reduce((sum, v) => sum + (v.monthly_rate || 0), 0);
+    const actualRevenue = monthlyRevenue * safeAnalytics.utilizationRate / 100;
+    const projectedRevenue3Months = actualRevenue * 3;
+    const projectedRevenue6Months = actualRevenue * 6;
+    const projectedRevenue12Months = actualRevenue * 12;
+    
+    const content = `
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-value">KWD ${projectedRevenue3Months.toFixed(3)}</div>
+          <div class="stat-label">توقعات 3 أشهر</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${projectedRevenue6Months.toFixed(3)}</div>
+          <div class="stat-label">توقعات 6 أشهر</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">KWD ${projectedRevenue12Months.toFixed(3)}</div>
+          <div class="stat-label">توقعات سنوية</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${safeAnalytics.utilizationRate.toFixed(1)}%</div>
+          <div class="stat-label">معدل الاستخدام الحالي</div>
+        </div>
+      </div>
+
+      <div class="analysis-section">
+        <h3>تحليل التوقعات</h3>
+        <p><strong>الإيرادات الشهرية الحالية:</strong> KWD ${actualRevenue.toFixed(3)}</p>
+        <p><strong>معدل النمو المتوقع:</strong> 5% شهرياً (افتراضي)</p>
+        <p><strong>توقعات محسنة بمعدل نمو 5%:</strong></p>
+        <ul>
+          <li>3 أشهر: KWD ${(projectedRevenue3Months * 1.05).toFixed(3)}</li>
+          <li>6 أشهر: KWD ${(projectedRevenue6Months * 1.10).toFixed(3)}</li>
+          <li>12 شهر: KWD ${(projectedRevenue12Months * 1.20).toFixed(3)}</li>
+        </ul>
+        <p><strong>توصيات لتحسين التوقعات:</strong></p>
+        <ul>
+          <li>زيادة معدل الاستخدام إلى 85%</li>
+          <li>تحسين استراتيجيات التسعير</li>
+          <li>تطوير خدمات إضافية</li>
+        </ul>
+      </div>
+    `;
+
+    createHTMLReport(content, "تقرير التوقعات");
+  };
+
+  // Helper function to create HTML reports
+  const createHTMLReport = (content: string, title: string) => {
+    const currentDate = new Date().toLocaleDateString('ar-SA');
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        @page { size: A4; margin: 2cm; }
+        @media print { 
+            body { margin: 0; -webkit-print-color-adjust: exact; }
+            .no-print { display: none; }
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; color: #333; background: white; padding: 20px; 
+        }
+        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e9ecef; }
+        .company-name { font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
+        .report-title { font-size: 20px; color: #34495e; margin-bottom: 5px; }
+        .report-date { font-size: 14px; color: #7f8c8d; }
+        .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0; }
+        .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .stat-label { font-size: 14px; color: #7f8c8d; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: right; border: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .analysis-section { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+        .analysis-section h3 { color: #2c3e50; margin-bottom: 15px; }
+        .analysis-section p { margin-bottom: 10px; }
+        .analysis-section ul { margin: 10px 0; padding-right: 20px; }
+        .controls { margin: 20px 0; text-align: center; }
+        .btn { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 0 10px; }
+        .btn:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">نظام إدارة الأسطول</div>
+        <div class="report-title">${title}</div>
+        <div class="report-date">تاريخ التقرير: ${currentDate}</div>
+    </div>
+    
+    ${content}
+    
+    <div class="controls no-print">
+        <button class="btn" onclick="window.print()">طباعة التقرير</button>
+        <button class="btn" onclick="window.close()">إغلاق</button>
+    </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const newWindow = window.open(url, '_blank');
+    
+    if (newWindow) {
+      newWindow.focus();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } else {
+      // Fallback for blocked popups
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -281,7 +660,7 @@ export default function FleetReports() {
                 <p className="text-sm text-muted-foreground mb-3">
                   تتبع استخدام المركبات وكفاءة الإيجار والإيرادات المحققة
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={generateVehicleUsageReport}>
                   <FileText className="h-4 w-4 mr-2" />
                   إنشاء التقرير
                 </Button>
@@ -296,7 +675,7 @@ export default function FleetReports() {
                 <p className="text-sm text-muted-foreground mb-3">
                   تحليل شامل لتكاليف الصيانة والأنماط والتوقعات المستقبلية
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={generateMaintenanceCostReport}>
                   <FileText className="h-4 w-4 mr-2" />
                   إنشاء التقرير
                 </Button>
@@ -311,7 +690,7 @@ export default function FleetReports() {
                 <p className="text-sm text-muted-foreground mb-3">
                   تحليل الإيرادات والإهلاك والعائد على الاستثمار
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={generateFinancialPerformanceReport}>
                   <FileText className="h-4 w-4 mr-2" />
                   إنشاء التقرير
                 </Button>
@@ -326,7 +705,7 @@ export default function FleetReports() {
                 <p className="text-sm text-muted-foreground mb-3">
                   قياس كفاءة العمليات ومعدلات استخدام الأسطول
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={generateOperationalEfficiencyReport}>
                   <FileText className="h-4 w-4 mr-2" />
                   إنشاء التقرير
                 </Button>
@@ -341,7 +720,7 @@ export default function FleetReports() {
                 <p className="text-sm text-muted-foreground mb-3">
                   تحليل ربحية كل مركبة والأسطول ككل على مدار الزمن
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={generateProfitabilityAnalysisReport}>
                   <FileText className="h-4 w-4 mr-2" />
                   إنشاء التقرير
                 </Button>
@@ -356,7 +735,7 @@ export default function FleetReports() {
                 <p className="text-sm text-muted-foreground mb-3">
                   توقعات الإيرادات والتكاليف للأشهر القادمة
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={generateForecastingReport}>
                   <FileText className="h-4 w-4 mr-2" />
                   إنشاء التقرير
                 </Button>
