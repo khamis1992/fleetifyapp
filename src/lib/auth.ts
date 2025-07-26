@@ -73,7 +73,7 @@ export const authService = {
     console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
     // Get user profile
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select(`
         *,
@@ -88,6 +88,40 @@ export const authService = {
 
     if (profileError) {
       console.error('📝 [AUTH] Profile fetch error:', profileError);
+      
+      // If profile doesn't exist, try to create it
+      if (profileError.code === 'PGRST116') {
+        console.log('📝 [AUTH] No profile found, attempting to create one...');
+        try {
+          const { data, error } = await supabase.functions.invoke('create-super-admin-profile');
+          if (error) {
+            console.error('📝 [AUTH] Failed to create profile via edge function:', error);
+          } else {
+            console.log('📝 [AUTH] Profile created successfully:', data);
+            // Retry fetching the profile
+            const { data: newProfile, error: retryError } = await supabase
+              .from('profiles')
+              .select(`
+                *,
+                companies:company_id (
+                  id,
+                  name,
+                  name_ar
+                )
+              `)
+              .eq('user_id', user.id)
+              .single();
+            
+            if (!retryError && newProfile) {
+              console.log('📝 [AUTH] Successfully fetched newly created profile');
+              // Continue with the new profile
+              profile = newProfile;
+            }
+          }
+        } catch (edgeFunctionError) {
+          console.error('📝 [AUTH] Edge function call failed:', edgeFunctionError);
+        }
+      }
     }
 
     console.log('📝 [AUTH] Profile data:', profile);
@@ -113,7 +147,8 @@ export const authService = {
       id: authUser.id,
       email: authUser.email,
       company_id: authUser.profile?.company_id,
-      company: authUser.company
+      company: authUser.company,
+      roles: authUser.roles
     });
 
     return authUser;
