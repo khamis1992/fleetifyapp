@@ -40,24 +40,26 @@ export const FinancialOverviewCard: React.FC<FinancialOverviewCardProps> = ({ da
   const profitTrendColor = data.profitMargin >= 0 ? 'text-success' : 'text-destructive';
 
   return (
-    <Card className="border-0 shadow-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
+    <Card className="glass-card shadow-card card-hover animate-fade-in">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 bg-success/10 rounded-lg">
+            <DollarSign className="h-5 w-5 text-success" />
+          </div>
           النظرة المالية
         </CardTitle>
-        <CardDescription>ملخص الأداء المالي</CardDescription>
+        <CardDescription className="text-base">ملخص الأداء المالي</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Key Financial Metrics */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
+          <div className="space-y-2 p-3 bg-success/5 rounded-lg border border-success/10">
             <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
-            <p className="text-lg font-bold text-success">{formatCurrency(data.totalRevenue)}</p>
+            <p className="text-lg font-bold text-success animate-scale-in">{formatCurrency(data.totalRevenue)}</p>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2 p-3 bg-destructive/5 rounded-lg border border-destructive/10">
             <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
-            <p className="text-lg font-bold text-destructive">{formatCurrency(data.totalExpenses)}</p>
+            <p className="text-lg font-bold text-destructive animate-scale-in">{formatCurrency(data.totalExpenses)}</p>
           </div>
         </div>
 

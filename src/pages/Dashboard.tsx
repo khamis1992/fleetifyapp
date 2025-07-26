@@ -63,15 +63,25 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">
-            مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}
-          </h1>
-          <p className="text-primary-foreground/80">
-            نظرة سريعة على أداء شركتك اليوم
-          </p>
+      {/* Welcome Section - Enhanced with animation */}
+      <div className="bg-gradient-animated p-8 rounded-2xl text-primary-foreground shadow-elevated glow-on-hover animate-fade-in">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 animate-scale-in">
+              مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}
+            </h1>
+            <p className="text-primary-foreground/90 text-lg">
+              نظرة سريعة على أداء شركتك اليوم
+            </p>
+          </div>
+          <div className="hidden md:block">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary-foreground/10 rounded-full blur-xl animate-pulse"></div>
+              <div className="relative bg-primary-foreground/20 backdrop-blur-sm rounded-full p-6 animate-float">
+                <Activity className="h-8 w-8 text-primary-foreground" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -87,15 +97,17 @@ const Dashboard: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Activities */}
+        {/* Recent Activities - Enhanced */}
         <div className="lg:col-span-2">
-          <Card className="border-0 shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+          <Card className="glass-card shadow-card card-hover animate-fade-in">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
                 الأنشطة الأخيرة
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 آخر التحديثات في نظامك
               </CardDescription>
             </CardHeader>
@@ -121,24 +133,36 @@ const Dashboard: React.FC = () => {
                   <p className="text-xs text-muted-foreground mt-1">ستظهر الأنشطة هنا عند بدء استخدام النظام</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => {
+                <div className="space-y-3">
+                  {recentActivities.map((activity, index) => {
                     const IconComponent = getIconComponent(activity.icon);
                     return (
-                      <div key={activity.id} className="flex items-start gap-4 p-4 bg-background-soft rounded-lg">
-                        <div className={`p-2 rounded-lg bg-muted ${activity.color}`}>
-                          <IconComponent className="h-4 w-4" />
+                      <div 
+                        key={activity.id} 
+                        className="group flex items-start gap-4 p-4 bg-gradient-card rounded-xl border border-border/50 hover:border-primary/20 transition-smooth hover:shadow-card hover:scale-[1.01]"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <div className={`p-2.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-smooth ${activity.color}`}>
+                          <IconComponent className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-xs">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Badge variant="secondary" className="text-xs font-medium px-2 py-1">
                               {activity.type}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                               {activity.time}
                             </span>
+                            {activity.priority === 'high' && (
+                              <div className="h-2 w-2 bg-destructive rounded-full pulse-glow"></div>
+                            )}
                           </div>
-                          <p className="text-sm">{activity.description}</p>
+                          <p className="text-sm text-foreground/90 leading-relaxed">{activity.description}</p>
+                          {activity.amount && (
+                            <p className="text-xs text-primary font-semibold mt-1">
+                              {activity.amount}
+                            </p>
+                          )}
                         </div>
                       </div>
                     );

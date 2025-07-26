@@ -65,18 +65,20 @@ export const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ alerts, load
   }
 
   return (
-    <Card className="border-0 shadow-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
+    <Card className="glass-card shadow-card card-hover animate-fade-in">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 bg-warning/10 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+          </div>
           التنبيهات الذكية
           {alerts.length > 0 && (
-            <Badge variant="secondary" className="mr-auto">
+            <Badge variant="secondary" className="mr-auto animate-pulse">
               {alerts.length}
             </Badge>
           )}
         </CardTitle>
-        <CardDescription>نظام التنبيهات المتقدم</CardDescription>
+        <CardDescription className="text-base">نظام التنبيهات المتقدم</CardDescription>
       </CardHeader>
       <CardContent>
         {alerts.length === 0 ? (
@@ -87,31 +89,37 @@ export const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ alerts, load
           </div>
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {alerts.map((alert) => {
+            {alerts.map((alert, index) => {
               const IconComponent = getAlertIcon(alert.type);
               const alertColor = getAlertColor(alert.type);
               
               return (
                 <div 
                   key={alert.id} 
-                  className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-sm ${alertColor}`}
+                  className={`group p-4 rounded-xl border border-border/50 hover:border-warning/30 transition-smooth hover:shadow-card hover:scale-[1.01] bg-gradient-card animate-fade-in ${alertColor}`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start gap-3">
-                    <IconComponent className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                    <div className="p-2 rounded-lg bg-background/50 group-hover:scale-110 transition-transform duration-300">
+                      <IconComponent className="h-4 w-4 flex-shrink-0" />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-2">
                         <h4 className="text-sm font-semibold truncate">{alert.title}</h4>
                         {getPriorityBadge(alert.priority)}
+                        {alert.priority === 'high' && (
+                          <div className="h-2 w-2 bg-destructive rounded-full pulse-glow"></div>
+                        )}
                       </div>
-                      <p className="text-xs leading-relaxed mb-2">{alert.message}</p>
+                      <p className="text-sm leading-relaxed mb-3 text-foreground/80">{alert.message}</p>
                       
                       {(alert.count || alert.amount) && (
-                        <div className="flex gap-2 text-xs mb-2">
+                        <div className="flex gap-3 text-xs mb-3">
                           {alert.count && (
-                            <span className="text-muted-foreground">العدد: {alert.count}</span>
+                            <span className="bg-muted px-2 py-1 rounded-full text-foreground">العدد: {alert.count}</span>
                           )}
                           {alert.amount && (
-                            <span className="text-muted-foreground">
+                            <span className="bg-muted px-2 py-1 rounded-full text-foreground">
                               المبلغ: {alert.amount.toFixed(0)} د.ك
                             </span>
                           )}
@@ -119,7 +127,7 @@ export const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ alerts, load
                       )}
                       
                       {alert.action && alert.actionUrl && (
-                        <Button size="sm" variant="outline" className="text-xs h-7">
+                        <Button size="sm" variant="outline" className="text-xs h-8 hover:bg-primary hover:text-primary-foreground transition-colors duration-300">
                           {alert.action}
                           <ExternalLink className="h-3 w-3 mr-1" />
                         </Button>
