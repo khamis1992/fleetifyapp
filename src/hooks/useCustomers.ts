@@ -101,23 +101,16 @@ export const useCustomers = (filters?: {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['customers', filters],
+    queryKey: ['customers', user?.profile?.company_id || user?.company?.id, filters],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      if (!companyId) return [];
+
+      // Optimized query without unnecessary JOINs for initial performance
       let query = supabase
         .from('customers')
-        .select(`
-          *,
-          customer_accounts:customer_accounts(
-            id,
-            account:chart_of_accounts(
-              id,
-              account_code,
-              account_name,
-              current_balance
-            )
-          )
-        `)
-        .eq('company_id', user?.profile?.company_id || user?.company?.id)
+        .select('*')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (filters?.customer_type) {
@@ -129,46 +122,74 @@ export const useCustomers = (filters?: {
       }
 
       if (filters?.search) {
-        query = query.or(
-          `first_name.ilike.%${filters.search}%,` +
-          `last_name.ilike.%${filters.search}%,` +
-          `company_name.ilike.%${filters.search}%,` +
-          `phone.ilike.%${filters.search}%,` +
-          `email.ilike.%${filters.search}%,` +
-          `national_id.ilike.%${filters.search}%`
-        );
+        const searchTerm = filters.search.trim();
+        if (searchTerm) {
+          query = query.or(
+            `first_name.ilike.%${searchTerm}%,` +
+            `last_name.ilike.%${searchTerm}%,` +
+            `company_name.ilike.%${searchTerm}%,` +
+            `phone.ilike.%${searchTerm}%,` +
+            `email.ilike.%${searchTerm}%,` +
+            `national_id.ilike.%${searchTerm}%`
+          );
+        }
       }
 
-      const { data, error } = await query;
+      const { data: customers, error } = await query;
 
       if (error) {
         console.error('Error fetching customers:', error);
         throw error;
       }
 
-      // Get contract counts separately to avoid relationship issues
-      if (data && data.length > 0) {
-        const customerIds = data.map(customer => customer.id);
-        const { data: contractCounts } = await supabase
-          .from('contracts')
-          .select('customer_id')
-          .in('customer_id', customerIds);
-        
-        // Add contract count to each customer
-        const contractCountMap = new Map();
-        contractCounts?.forEach(contract => {
-          const count = contractCountMap.get(contract.customer_id) || 0;
-          contractCountMap.set(contract.customer_id, count + 1);
-        });
-        
-        data.forEach((customer: any) => {
-          customer.contracts_count = contractCountMap.get(customer.id) || 0;
-        });
+      if (!customers || customers.length === 0) {
+        return [];
       }
 
-      return data || [];
+      // Only fetch contract counts if we have customers and it's not a search query
+      // This avoids unnecessary queries for empty results or during search
+      const shouldFetchContracts = customers.length > 0 && (!filters?.search || filters.search.trim() === '');
+      
+      if (shouldFetchContracts) {
+        const customerIds = customers.map(customer => customer.id);
+        
+        try {
+          const { data: contractCounts } = await supabase
+            .from('contracts')
+            .select('customer_id')
+            .in('customer_id', customerIds);
+
+          // Count contracts per customer
+          const contractCountMap = new Map();
+          contractCounts?.forEach(contract => {
+            const count = contractCountMap.get(contract.customer_id) || 0;
+            contractCountMap.set(contract.customer_id, count + 1);
+          });
+
+          // Add contract count to each customer
+          return customers.map(customer => ({
+            ...customer,
+            contracts_count: contractCountMap.get(customer.id) || 0
+          }));
+        } catch (contractError) {
+          console.warn('Failed to fetch contract counts, returning customers without counts:', contractError);
+          return customers.map(customer => ({
+            ...customer,
+            contracts_count: 0
+          }));
+        }
+      }
+
+      // For search results, return without contract counts for better performance
+      return customers.map(customer => ({
+        ...customer,
+        contracts_count: 0
+      }));
     },
-    enabled: !!user?.profile?.company_id || !!user?.company?.id
+    enabled: !!(user?.profile?.company_id || user?.company?.id),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false, // Avoid unnecessary refetches
   });
 };
 

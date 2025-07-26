@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCustomers, useToggleCustomerBlacklist, Customer } from "@/hooks/useCustomers"
+import { useDebounce } from "@/hooks/useDebounce"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
@@ -26,7 +28,11 @@ export default function Customers() {
   })
 
   const navigate = useNavigate()
-  const { data: customers, isLoading } = useCustomers(filters)
+  // Debounce search to avoid too many API calls
+  const debouncedSearch = useDebounce(filters.search, 300)
+  const debouncedFilters = { ...filters, search: debouncedSearch }
+  
+  const { data: customers, isLoading, isFetching } = useCustomers(debouncedFilters)
   const toggleBlacklistMutation = useToggleCustomerBlacklist()
 
   // Customer statistics
@@ -75,13 +81,35 @@ export default function Customers() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
+  // Show skeleton loading for initial load, but not for subsequent fetches
+  const showSkeletonLoading = isLoading && !customers
+  
+  // Customer skeleton component
+  const CustomerSkeleton = () => (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5" />
+              <Skeleton className="h-6 w-40" />
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <div className="space-y-6">
@@ -119,6 +147,9 @@ export default function Customers() {
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   className="pl-10"
                 />
+                {isFetching && filters.search && (
+                  <LoadingSpinner size="sm" className="absolute right-3 top-3" />
+                )}
               </div>
             </div>
             
@@ -223,116 +254,123 @@ export default function Customers() {
 
       {/* Customers List */}
       <div className="grid gap-4">
-        {customers?.map((customer) => {
-          const customerBalance = (customer as any).customer_accounts?.[0]?.account?.current_balance || 0
-          const contractsCount = (customer as any).contracts_count || 0
-          
-          return (
-            <Card key={customer.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      {customer.customer_type === 'corporate' ? (
-                        <Building className="h-5 w-5 text-purple-600" />
-                      ) : (
-                        <Users className="h-5 w-5 text-green-600" />
-                      )}
-                      <h3 className="font-semibold text-lg">
-                        {customer.customer_type === 'corporate' 
-                          ? customer.company_name 
-                          : `${customer.first_name} ${customer.last_name}`}
-                      </h3>
-                      {customer.is_blacklisted && (
-                        <Badge variant="destructive">
-                          <UserX className="h-3 w-3 mr-1" />
-                          محظور
-                        </Badge>
-                      )}
-                      {contractsCount > 0 && (
-                        <Badge variant="outline">
-                          {contractsCount} عقد
-                        </Badge>
+        {showSkeletonLoading ? (
+          // Show skeleton loading for initial load
+          Array.from({ length: 3 }).map((_, index) => (
+            <CustomerSkeleton key={index} />
+          ))
+        ) : (
+          customers?.map((customer) => {
+            const customerBalance = (customer as any).customer_accounts?.[0]?.account?.current_balance || 0
+            const contractsCount = (customer as any).contracts_count || 0
+            
+            return (
+              <Card key={customer.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        {customer.customer_type === 'corporate' ? (
+                          <Building className="h-5 w-5 text-purple-600" />
+                        ) : (
+                          <Users className="h-5 w-5 text-green-600" />
+                        )}
+                        <h3 className="font-semibold text-lg">
+                          {customer.customer_type === 'corporate' 
+                            ? customer.company_name 
+                            : `${customer.first_name} ${customer.last_name}`}
+                        </h3>
+                        {customer.is_blacklisted && (
+                          <Badge variant="destructive">
+                            <UserX className="h-3 w-3 mr-1" />
+                            محظور
+                          </Badge>
+                        )}
+                        {contractsCount > 0 && (
+                          <Badge variant="outline">
+                            {contractsCount} عقد
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{customer.phone}</span>
+                        </div>
+                        
+                        {customer.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{customer.email}</span>
+                          </div>
+                        )}
+                        
+                        {customer.city && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{customer.city}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2">
+                          <FileBarChart className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            الرصيد: {customerBalance.toFixed(3)} د.ك
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {customer.notes && (
+                        <p className="text-sm text-muted-foreground">{customer.notes}</p>
                       )}
                     </div>
                     
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{customer.phone}</span>
-                      </div>
-                      
-                      {customer.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.email}</span>
-                        </div>
-                      )}
-                      
-                      {customer.city && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.city}</span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center gap-2">
-                        <FileBarChart className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          الرصيد: {customerBalance.toFixed(3)} د.ك
-                        </span>
-                      </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewCustomer(customer.id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        عرض
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditCustomer(customer)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        تعديل
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleToggleBlacklist(customer.id, !customer.is_blacklisted)}
+                      >
+                        <ShieldX className="h-4 w-4 mr-1" />
+                        {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
+                      </Button>
                     </div>
-                    
-                    {customer.notes && (
-                      <p className="text-sm text-muted-foreground">{customer.notes}</p>
-                    )}
                   </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleViewCustomer(customer.id)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      عرض
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditCustomer(customer)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      تعديل
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleToggleBlacklist(customer.id, !customer.is_blacklisted)}
-                    >
-                      <ShieldX className="h-4 w-4 mr-1" />
-                      {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
         
-        {customers?.length === 0 && (
+        {!showSkeletonLoading && customers?.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">لا توجد عملاء</h3>
               <p className="text-muted-foreground text-center mb-4">
-                {Object.values(filters).some(v => v) 
+                {Object.values(debouncedFilters).some(v => v) 
                   ? 'لا توجد نتائج تطابق معايير البحث المحددة'
                   : 'ابدأ في إضافة أول عميل إلى قاعدة البيانات'
                 }
               </p>
-              {!Object.values(filters).some(v => v) && (
+              {!Object.values(debouncedFilters).some(v => v) && (
                 <Button onClick={() => setShowCustomerForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   إضافة عميل جديد
