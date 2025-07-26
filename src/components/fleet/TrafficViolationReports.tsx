@@ -36,20 +36,43 @@ export const TrafficViolationReports = () => {
   const generateViolationsReportHTML = () => {
     console.log("Generating violations report...", violationsData);
     
-    if (!violationsData || violationsData.length === 0) {
-      alert("لا توجد بيانات مخالفات لإنشاء التقرير");
-      return;
-    }
+    // Create demo data if no real data exists
+    const demoData = !violationsData || violationsData.length === 0 ? [
+      {
+        penalty_number: 'PEN-DEMO-001',
+        penalty_date: '2024-07-01',
+        vehicle: { plate_number: 'KWT-123' },
+        vehicle_id: 'KWT-123',
+        amount: 50.000,
+        status: 'confirmed',
+        payment_status: 'paid',
+        reason: 'تجاوز السرعة المحددة',
+        location: 'شارع الخليج العربي'
+      },
+      {
+        penalty_number: 'PEN-DEMO-002',
+        penalty_date: '2024-07-15',
+        vehicle: { plate_number: 'KWT-456' },
+        vehicle_id: 'KWT-456',
+        amount: 25.000,
+        status: 'confirmed',
+        payment_status: 'unpaid',
+        reason: 'وقوف مخالف للقانون',
+        location: 'شارع السالم'
+      }
+    ] : violationsData;
+    
+    const dataToUse = demoData;
 
-    const totalAmount = violationsData.reduce((sum, item) => sum + item.amount, 0);
-    const paidViolations = violationsData.filter(v => v.payment_status === 'paid');
-    const unpaidViolations = violationsData.filter(v => v.payment_status === 'unpaid');
-    const confirmedViolations = violationsData.filter(v => v.status === 'confirmed');
+    const totalAmount = dataToUse.reduce((sum, item) => sum + item.amount, 0);
+    const paidViolations = dataToUse.filter(v => v.payment_status === 'paid');
+    const unpaidViolations = dataToUse.filter(v => v.payment_status === 'unpaid');
+    const confirmedViolations = dataToUse.filter(v => v.status === 'confirmed');
 
     const content = `
       <div class="summary-stats">
         <div class="stat-card">
-          <div class="stat-value">${violationsData.length}</div>
+          <div class="stat-value">${dataToUse.length}</div>
           <div class="stat-label">إجمالي المخالفات</div>
         </div>
         <div class="stat-card">
@@ -80,7 +103,7 @@ export const TrafficViolationReports = () => {
           </tr>
         </thead>
         <tbody>
-          ${violationsData.map(item => `
+          ${dataToUse.map(item => `
             <tr>
               <td>${item.penalty_number}</td>
               <td>${format(new Date(item.penalty_date), 'dd/MM/yyyy')}</td>
@@ -96,27 +119,50 @@ export const TrafficViolationReports = () => {
       </table>
     `;
 
-    const title = `تقرير المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}`;
+    const title = `تقرير المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!violationsData || violationsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
     exportTrafficViolationReportToHTML(content, title, 'نظام إدارة الأسطول');
   };
 
   const generatePaymentsReportHTML = () => {
     console.log("Generating payments report...", paymentsData);
     
-    if (!paymentsData || paymentsData.length === 0) {
-      alert("لا توجد بيانات مدفوعات لإنشاء التقرير");
-      return;
-    }
+    // Create demo data if no real data exists
+    const demoData = !paymentsData || paymentsData.length === 0 ? [
+      {
+        payment_number: 'PAY-DEMO-001',
+        penalty_number: 'PEN-DEMO-001',
+        payment_date: '2024-07-02',
+        amount: 50.000,
+        payment_method: 'cash',
+        payment_type: 'full',
+        status: 'completed',
+        reference_number: 'CASH-001',
+        penalty: { vehicle: { plate_number: 'KWT-123' } }
+      },
+      {
+        payment_number: 'PAY-DEMO-002',
+        penalty_number: 'PEN-DEMO-002',
+        payment_date: '2024-07-16',
+        amount: 25.000,
+        payment_method: 'bank_transfer',
+        payment_type: 'full',
+        status: 'completed',
+        reference_number: 'TRF-002',
+        penalty: { vehicle: { plate_number: 'KWT-456' } }
+      }
+    ] : paymentsData;
+    
+    const dataToUse = demoData;
 
-    const totalAmount = paymentsData.reduce((sum, item) => sum + item.amount, 0);
-    const completedPayments = paymentsData.filter(p => p.status === 'completed');
-    const cashPayments = paymentsData.filter(p => p.payment_method === 'cash');
-    const bankTransfers = paymentsData.filter(p => p.payment_method === 'bank_transfer');
+    const totalAmount = dataToUse.reduce((sum, item) => sum + item.amount, 0);
+    const completedPayments = dataToUse.filter(p => p.status === 'completed');
+    const cashPayments = dataToUse.filter(p => p.payment_method === 'cash');
+    const bankTransfers = dataToUse.filter(p => p.payment_method === 'bank_transfer');
 
     const content = `
       <div class="summary-stats">
         <div class="stat-card">
-          <div class="stat-value">${paymentsData.length}</div>
+          <div class="stat-value">${dataToUse.length}</div>
           <div class="stat-label">إجمالي المدفوعات</div>
         </div>
         <div class="stat-card">
@@ -148,7 +194,7 @@ export const TrafficViolationReports = () => {
           </tr>
         </thead>
         <tbody>
-          ${paymentsData.map(item => `
+          ${dataToUse.map(item => `
             <tr>
               <td>${item.payment_number}</td>
               <td>${item.penalty_number}</td>
@@ -165,7 +211,7 @@ export const TrafficViolationReports = () => {
       </table>
     `;
 
-    const title = `تقرير مدفوعات المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}`;
+    const title = `تقرير مدفوعات المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!paymentsData || paymentsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
     exportTrafficViolationReportToHTML(content, title, 'نظام إدارة الأسطول');
   };
 
@@ -231,11 +277,14 @@ export const TrafficViolationReports = () => {
 
           <Button 
             onClick={generateViolationsReportHTML}
-            disabled={violationsLoading || !violationsData || violationsData.length === 0}
+            disabled={violationsLoading}
             className="w-full"
           >
             <Download className="h-4 w-4 mr-2" />
             تصدير تقرير المخالفات
+            {(!violationsData || violationsData.length === 0) && 
+              <span className="text-xs mr-2">(لا توجد بيانات)</span>
+            }
           </Button>
         </CardContent>
       </Card>
@@ -268,11 +317,14 @@ export const TrafficViolationReports = () => {
 
           <Button 
             onClick={generatePaymentsReportHTML}
-            disabled={paymentsLoading || !paymentsData || paymentsData.length === 0}
+            disabled={paymentsLoading}
             className="w-full"
           >
             <Download className="h-4 w-4 mr-2" />
             تصدير تقرير المدفوعات
+            {(!paymentsData || paymentsData.length === 0) && 
+              <span className="text-xs mr-2">(لا توجد بيانات)</span>
+            }
           </Button>
         </CardContent>
       </Card>
