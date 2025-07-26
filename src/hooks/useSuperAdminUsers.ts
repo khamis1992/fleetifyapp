@@ -43,6 +43,11 @@ export interface CreateUserData {
   temporary_password?: string;
 }
 
+export interface ResetPasswordData {
+  user_id: string;
+  new_password: string;
+}
+
 export const useSuperAdminUsers = () => {
   const [users, setUsers] = useState<SuperAdminUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -50,6 +55,7 @@ export const useSuperAdminUsers = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
 
   // Fetch all users with their profiles and roles
@@ -415,6 +421,55 @@ export const useSuperAdminUsers = () => {
     }
   };
 
+  // Reset user password
+  const resetUserPassword = async (userData: ResetPasswordData) => {
+    setIsResettingPassword(true);
+    try {
+      console.log('Resetting password for user:', userData.user_id);
+      
+      const { data: result, error: functionError } = await supabase.functions.invoke('reset-user-password', {
+        body: userData
+      });
+
+      if (functionError) {
+        console.error('Edge function error:', functionError);
+        throw new Error(functionError.message || 'Failed to reset password');
+      }
+
+      if (!result?.success) {
+        console.error('Password reset failed:', result);
+        throw new Error(result?.error || 'Failed to reset password');
+      }
+
+      toast({
+        title: 'تم بنجاح',
+        description: 'تم تغيير كلمة المرور بنجاح',
+      });
+
+      return result;
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      
+      let errorMessage = 'فشل في تغيير كلمة المرور';
+      if (error.message?.includes('6 characters')) {
+        errorMessage = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+      } else if (error.message?.includes('permissions')) {
+        errorMessage = 'ليس لديك صلاحية لتغيير كلمة المرور';
+      } else if (error.message?.includes('not found')) {
+        errorMessage = 'المستخدم غير موجود';
+      }
+      
+      toast({
+        title: 'خطأ',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      throw error;
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   // Initialize data
   useEffect(() => {
     const initializeData = async () => {
@@ -436,9 +491,11 @@ export const useSuperAdminUsers = () => {
     createUser,
     updateUserRoles,
     deleteUser,
+    resetUserPassword,
     isCreating,
     isUpdating,
     isDeleting,
+    isResettingPassword,
     refetch: () => Promise.all([fetchUsers(), fetchCompanies()])
   };
 };

@@ -30,9 +30,11 @@ const SuperAdminUsers: React.FC = () => {
     createUser,
     updateUserRoles,
     deleteUser,
+    resetUserPassword,
     isCreating,
     isUpdating,
-    isDeleting
+    isDeleting,
+    isResettingPassword
   } = useSuperAdminUsers();
 
   // Filter users based on search and filters
@@ -255,8 +257,10 @@ const SuperAdminUsers: React.FC = () => {
         companies={companies || []}
         onUpdateRoles={updateUserRoles}
         onDeleteUser={deleteUser}
+        onResetPassword={resetUserPassword}
         isUpdating={isUpdating}
         isDeleting={isDeleting}
+        isResettingPassword={isResettingPassword}
       />
     </div>
   );
