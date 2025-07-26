@@ -80,31 +80,6 @@ const Dashboard: React.FC = () => {
                   نظرة شاملة على أداء شركتك وآخر التطورات في نظام إدارة الأسطول
                 </p>
               </div>
-              {isNewCompany && (
-                <div className="animate-fade-in bg-primary/10 border border-primary/20 rounded-2xl p-6 mt-6" style={{ animationDelay: '0.3s' }}>
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-primary/20 rounded-xl">
-                      <Zap className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-2">مرحباً بك في نظام إدارة الأسطول!</h3>
-                      <p className="text-sm text-muted-foreground mb-4">ابدأ رحلتك بإضافة أول مركبة أو عميل لتفعيل جميع ميزات النظام</p>
-                      <div className="flex flex-wrap gap-3">
-                        <Button size="sm" className="gap-2">
-                          <Car className="h-4 w-4" />
-                          إضافة مركبة
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Users className="h-4 w-4" />
-                          إضافة عميل
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
             <div className="hidden lg:block">
               <div className="relative">
