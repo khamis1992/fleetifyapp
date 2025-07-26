@@ -252,8 +252,12 @@ export const useSuperAdminUsers = () => {
         const errorMessage = result?.error || 'Unknown error occurred while creating the user.';
         
         // Provide more user-friendly error messages
+        if (errorMessage.includes('already has a complete system account')) {
+          throw new Error('This employee already has a complete system account for this company.');
+        }
+        
         if (errorMessage.includes('already has a system account')) {
-          throw new Error('This employee already has a system account for this company.');
+          throw new Error('This employee has an incomplete account. The system will attempt to complete it automatically.');
         }
         
         if (errorMessage.includes('email is already linked')) {
@@ -280,10 +284,16 @@ export const useSuperAdminUsers = () => {
       // Refresh the users list to show the new user
       await fetchUsers();
       
-      // Show success message with temporary password if provided
-      const successMessage = result.temporary_password 
-        ? `User account created successfully. Temporary password: ${result.temporary_password}` 
-        : 'User account created successfully.';
+      // Show success message with appropriate details based on operation type
+      let successMessage = 'User account processed successfully.';
+      
+      if (result.account_completed) {
+        successMessage = `Incomplete account completed successfully. Temporary password: ${result.temporary_password}`;
+      } else if (result.linked_existing_user) {
+        successMessage = `Existing user linked to employee. Temporary password: ${result.temporary_password}`;
+      } else if (result.temporary_password) {
+        successMessage = `New user account created successfully. Temporary password: ${result.temporary_password}`;
+      }
       
       toast({
         title: "Success",

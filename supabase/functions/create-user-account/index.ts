@@ -195,9 +195,101 @@ serve(async (req) => {
       throw new Error(`Failed to check employee data: ${employeeCheckError.message}`);
     }
 
-    // Scenario 1: Employee already has system access for THIS company
-    if (employeeData.user_id && employeeData.has_system_access && employeeData.company_id === company_id) {
-      throw new Error('Employee already has a system account for this company');
+    // Enhanced Scenario 1: Check for incomplete accounts first
+    if (employeeData.user_id && employeeData.has_system_access) {
+      // Check if this is an incomplete account (user exists but missing roles/company)
+      const { data: userRoles, error: rolesCheckError } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', employeeData.user_id);
+
+      const { data: userProfile, error: profileCheckError } = await supabaseClient
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', employeeData.user_id)
+        .single();
+
+      const hasRoles = userRoles && userRoles.length > 0;
+      const hasValidProfile = userProfile && userProfile.company_id;
+
+      if (!hasRoles || !hasValidProfile) {
+        console.log('Detected incomplete account, attempting to complete it');
+        
+        // This is an incomplete account - let's complete it
+        const { data: completionResult, error: completionError } = await supabaseClient
+          .rpc('handle_incomplete_user_account', {
+            p_user_id: employeeData.user_id,
+            p_employee_id: employee_id,
+            p_company_id: company_id,
+            p_roles: roles
+          });
+
+        if (completionError) {
+          console.error('Error completing incomplete account:', completionError);
+          throw new Error(`Failed to complete existing account: ${completionError.message}`);
+        }
+
+        if (completionResult && completionResult.success) {
+          // Generate new temporary password for the completed account
+          const tempPassword = temporary_password || generateTemporaryPassword();
+          const passwordExpiresAt = new Date();
+          passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7);
+
+          // Update user's password
+          const { error: passwordError } = await supabaseClient.auth.admin.updateUserById(
+            employeeData.user_id,
+            {
+              password: tempPassword,
+              user_metadata: {
+                first_name,
+                last_name,
+                first_name_ar,
+                last_name_ar,
+                requires_password_change: true
+              }
+            }
+          );
+
+          if (passwordError) {
+            console.error('Error updating password for completed account:', passwordError);
+          }
+
+          // Create account creation request record
+          const roleResult = await assignRolesAndCreateRecord(
+            supabaseClient, 
+            employeeData.user_id, 
+            roles, 
+            employee_id, 
+            company_id, 
+            tokenData.user.id,
+            notes || 'Account completion', 
+            tempPassword, 
+            passwordExpiresAt.toISOString()
+          );
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              user_id: employeeData.user_id,
+              message: 'Incomplete account completed successfully',
+              account_completed: true,
+              temporary_password: tempPassword,
+              password_expires_at: passwordExpiresAt.toISOString()
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            }
+          );
+        } else {
+          throw new Error(completionResult?.error || 'Failed to complete account');
+        }
+      }
+
+      // If account is complete and for the same company, it's truly a duplicate
+      if (employeeData.company_id === company_id) {
+        throw new Error('Employee already has a complete system account for this company');
+      }
     }
 
     // Check if a user with this email already exists in auth
