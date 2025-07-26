@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CustomerFormProps {
   open: boolean;
@@ -19,6 +22,10 @@ interface CustomerFormProps {
 }
 
 export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
+  const { user } = useAuth();
+  const { data: companies } = useCompanies();
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<CustomerFormData>({
     defaultValues: {
       customer_type: customer?.customer_type || 'individual',
@@ -49,13 +56,20 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const customerType = watch('customer_type');
   const createCustomerMutation = useCreateCustomer();
   const updateCustomerMutation = useUpdateCustomer();
+  const isSuperAdmin = user?.roles?.includes('super_admin');
 
   const onSubmit = (data: CustomerFormData) => {
     if (mode === 'create') {
-      createCustomerMutation.mutate(data, {
+      const customerData = {
+        ...data,
+        ...(isSuperAdmin && selectedCompanyId ? { selectedCompanyId } : {})
+      };
+      
+      createCustomerMutation.mutate(customerData, {
         onSuccess: () => {
           onOpenChange(false);
           reset();
+          setSelectedCompanyId('');
         }
       });
     } else {
@@ -82,6 +96,38 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Company Selection for Super Admin */}
+          {isSuperAdmin && mode === 'create' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>اختيار الشركة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label>الشركة *</Label>
+                  <Select 
+                    value={selectedCompanyId} 
+                    onValueChange={setSelectedCompanyId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر الشركة..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies?.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name} {company.name_ar && `(${company.name_ar})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isSuperAdmin && mode === 'create' && !selectedCompanyId && (
+                    <p className="text-sm text-red-600">يجب اختيار شركة</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>

@@ -241,12 +241,29 @@ export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (customerData: CustomerFormData) => {
+    mutationFn: async (customerData: CustomerFormData & { selectedCompanyId?: string }) => {
+      const isSuperAdmin = user?.roles?.includes('super_admin');
+      let company_id;
+      
+      if (isSuperAdmin && customerData.selectedCompanyId) {
+        // Super Admin can select any company
+        company_id = customerData.selectedCompanyId;
+      } else {
+        // Regular users use their company
+        company_id = user?.profile?.company_id || user?.company?.id;
+      }
+
+      if (!company_id) {
+        throw new Error('لا يمكن تحديد الشركة. يرجى التأكد من اختيار شركة صحيحة.');
+      }
+
+      const { selectedCompanyId, ...customerDataWithoutCompany } = customerData;
+      
       const { data, error } = await supabase
         .from('customers')
         .insert([{
-          ...customerData,
-          company_id: user?.profile?.company_id || user?.company?.id
+          ...customerDataWithoutCompany,
+          company_id
         }])
         .select()
         .single();
