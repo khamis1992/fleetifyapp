@@ -620,15 +620,15 @@ export default function Ledger() {
         </Dialog>
       )}
 
-      {/* Create Journal Entry Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>إنشاء قيد محاسبي جديد</DialogTitle>
-          </DialogHeader>
-          <JournalEntryForm onSuccess={() => setIsCreateDialogOpen(false)} />
-        </DialogContent>
-      </Dialog>
+      {/* Journal Entry Form with built-in dialog */}
+      <JournalEntryForm 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={() => {
+          setIsCreateDialogOpen(false);
+          // The data will be refreshed automatically by the query hooks
+        }}
+      />
 
       {/* Account Movements Dialog */}
       <AccountMovementsDialog
