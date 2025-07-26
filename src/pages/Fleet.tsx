@@ -52,11 +52,11 @@ export default function Fleet() {
             onClick={() => setShowMaintenanceForm(true)}
           >
             <Wrench className="h-4 w-4 mr-2" />
-            Schedule Maintenance
+            جدولة الصيانة
           </Button>
           <Button onClick={() => setShowVehicleForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Vehicle
+            إضافة مركبة
           </Button>
         </div>
       </div>
@@ -65,39 +65,39 @@ export default function Fleet() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Vehicles</CardTitle>
+            <CardTitle className="text-sm font-medium">المركبات المتاحة</CardTitle>
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{availableVehicles.length}</div>
             <p className="text-xs text-muted-foreground">
-              Ready for rental
+              جاهزة للإيجار
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rented Vehicles</CardTitle>
+            <CardTitle className="text-sm font-medium">المركبات المؤجرة</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{rentedVehicles.length}</div>
             <p className="text-xs text-muted-foreground">
-              Currently on contract
+              حالياً تحت العقد
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Under Maintenance</CardTitle>
+            <CardTitle className="text-sm font-medium">قيد الصيانة</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{maintenanceVehicles.length}</div>
             <p className="text-xs text-muted-foreground">
-              Being serviced
+              يتم صيانتها
             </p>
           </CardContent>
         </Card>
@@ -110,7 +110,7 @@ export default function Fleet() {
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{outOfServiceVehicles.length}</div>
             <p className="text-xs text-muted-foreground">
-              Needs attention
+              تحتاج لإنتباه
             </p>
           </CardContent>
         </Card>
@@ -119,17 +119,17 @@ export default function Fleet() {
       {/* Main Content */}
       <Tabs defaultValue="vehicles" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+          <TabsTrigger value="vehicles">المركبات</TabsTrigger>
           <TabsTrigger value="maintenance">
-            Maintenance
+            الصيانة
             {(pendingMaintenance.length + inProgressMaintenance.length) > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {pendingMaintenance.length + inProgressMaintenance.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="analytics">التحليلات</TabsTrigger>
+          <TabsTrigger value="reports">التقارير</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vehicles" className="space-y-4">
@@ -140,28 +140,28 @@ export default function Fleet() {
               size="sm"
               onClick={() => setSelectedVehicle(null)}
             >
-              All ({vehicles?.length || 0})
+              الكل ({vehicles?.length || 0})
             </Button>
             <Button
               variant={selectedVehicle === "available" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedVehicle("available")}
             >
-              Available ({availableVehicles.length})
+              متاحة ({availableVehicles.length})
             </Button>
             <Button
               variant={selectedVehicle === "rented" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedVehicle("rented")}
             >
-              Rented ({rentedVehicles.length})
+              مؤجرة ({rentedVehicles.length})
             </Button>
             <Button
               variant={selectedVehicle === "maintenance" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedVehicle("maintenance")}
             >
-              Maintenance ({maintenanceVehicles.length})
+              قيد الصيانة ({maintenanceVehicles.length})
             </Button>
           </div>
 
@@ -178,13 +178,13 @@ export default function Fleet() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Car className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No vehicles yet</h3>
+                <h3 className="text-lg font-semibold mb-2">لا توجد مركبات بعد</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  Start building your fleet by adding your first vehicle
+                  ابدأ في بناء أسطولك عن طريق إضافة أول مركبة
                 </p>
                 <Button onClick={() => setShowVehicleForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Vehicle
+                  إضافة مركبة
                 </Button>
               </CardContent>
             </Card>
@@ -204,52 +204,52 @@ export default function Fleet() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <BarChart3 className="h-5 w-5" />
-                <span>Fleet Reports & Analytics</span>
+                <span>تقارير وتحليلات الأسطول</span>
               </CardTitle>
               <CardDescription>
-                Comprehensive fleet performance and financial reports
+                تقارير شاملة عن أداء الأسطول والتقارير المالية
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Vehicle Utilization Report</CardTitle>
+                    <CardTitle className="text-base">تقرير استخدام المركبات</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Track vehicle usage and rental efficiency
+                      تتبع استخدام المركبات وكفاءة الإيجار
                     </p>
                     <Button variant="outline" className="mt-3 w-full">
-                      Generate Report
+                      إنشاء التقرير
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Maintenance Cost Analysis</CardTitle>
+                    <CardTitle className="text-base">تحليل تكاليف الصيانة</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Analyze maintenance costs and patterns
+                      تحليل تكاليف الصيانة والأنماط
                     </p>
                     <Button variant="outline" className="mt-3 w-full">
-                      Generate Report
+                      إنشاء التقرير
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Financial Performance</CardTitle>
+                    <CardTitle className="text-base">الأداء المالي</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Revenue, depreciation, and ROI analysis
+                      تحليل الإيرادات والإهلاك والعائد على الاستثمار
                     </p>
                     <Button variant="outline" className="mt-3 w-full">
-                      Generate Report
+                      إنشاء التقرير
                     </Button>
                   </CardContent>
                 </Card>
