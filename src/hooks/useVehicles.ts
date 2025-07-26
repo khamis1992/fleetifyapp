@@ -186,31 +186,99 @@ export const useAvailableVehicles = () => {
 export const useCreateVehicle = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { user } = useAuth()
   
   return useMutation({
     mutationFn: async (vehicleData: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) => {
+      console.log("🚗 [USE_CREATE_VEHICLE] Starting vehicle creation");
+      console.log("📋 [USE_CREATE_VEHICLE] Input data:", vehicleData);
+      
+      // Additional validation
+      if (!vehicleData.company_id) {
+        console.error("❌ [USE_CREATE_VEHICLE] Missing company_id");
+        throw new Error("معرف الشركة مطلوب");
+      }
+      
+      if (!vehicleData.plate_number) {
+        console.error("❌ [USE_CREATE_VEHICLE] Missing plate_number");
+        throw new Error("رقم اللوحة مطلوب");
+      }
+      
+      if (!vehicleData.make) {
+        console.error("❌ [USE_CREATE_VEHICLE] Missing make");
+        throw new Error("الشركة المصنعة مطلوبة");
+      }
+      
+      if (!vehicleData.model) {
+        console.error("❌ [USE_CREATE_VEHICLE] Missing model");
+        throw new Error("الطراز مطلوب");
+      }
+      
+      // Check if user has permission to create vehicles for this company
+      const userCompanyId = user?.profile?.company_id || user?.company?.id;
+      if (vehicleData.company_id !== userCompanyId) {
+        console.error("❌ [USE_CREATE_VEHICLE] User company mismatch:", {
+          userCompanyId,
+          vehicleCompanyId: vehicleData.company_id
+        });
+        throw new Error("ليس لديك صلاحية لإنشاء مركبة لهذه الشركة");
+      }
+      
+      console.log("📤 [USE_CREATE_VEHICLE] Inserting vehicle into database");
+      
       const { data, error } = await supabase
         .from("vehicles")
         .insert([vehicleData])
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error("❌ [USE_CREATE_VEHICLE] Database error:", error);
+        console.error("❌ [USE_CREATE_VEHICLE] Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        // Provide more specific error messages based on error codes
+        if (error.code === '23505') {
+          throw new Error("رقم اللوحة موجود مسبقاً في النظام");
+        } else if (error.code === '23503') {
+          throw new Error("خطأ في البيانات المرجعية - تأكد من صحة معرف الشركة");
+        } else if (error.code === '23502') {
+          throw new Error("هناك حقول مطلوبة لم يتم تزويدها");
+        } else if (error.message.includes('permission denied') || error.message.includes('RLS')) {
+          throw new Error("ليس لديك صلاحية لإنشاء مركبة");
+        } else {
+          throw new Error(`خطأ في قاعدة البيانات: ${error.message}`);
+        }
+      }
+      
+      console.log("✅ [USE_CREATE_VEHICLE] Vehicle created successfully:", data);
       return data
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("🎉 [USE_CREATE_VEHICLE] Success callback triggered");
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
+      queryClient.invalidateQueries({ queryKey: ["fleet-analytics"] })
       toast({
-        title: "Success",
-        description: "Vehicle created successfully",
+        title: "نجح",
+        description: "تم إنشاء المركبة بنجاح",
       })
     },
     onError: (error) => {
-      console.error("Error creating vehicle:", error)
+      console.error("❌ [USE_CREATE_VEHICLE] Error callback triggered:", error)
+      
+      let errorMessage = "فشل في إنشاء المركبة";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to create vehicle",
+        title: "خطأ",
+        description: errorMessage,
         variant: "destructive",
       })
     }

@@ -93,49 +93,128 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
   const onSubmit = async (data: any) => {
     try {
+      console.log("🚗 [VEHICLE_FORM] Form submission started", data);
+      
+      // Validate required fields
+      if (!data.plate_number || !data.plate_number.trim()) {
+        throw new Error("رقم اللوحة مطلوب");
+      }
+      
+      if (!data.make || !data.make.trim()) {
+        throw new Error("الشركة المصنعة مطلوبة");
+      }
+      
+      if (!data.model || !data.model.trim()) {
+        throw new Error("الطراز مطلوب");
+      }
+      
+      if (!data.year || isNaN(parseInt(data.year))) {
+        throw new Error("السنة مطلوبة ويجب أن تكون رقماً صحيحاً");
+      }
+      
       // Check if user has valid company_id
       const companyId = user?.profile?.company_id || user?.company?.id;
+      console.log("🏢 [VEHICLE_FORM] Company ID:", companyId);
+      console.log("🧑 [VEHICLE_FORM] User data:", { 
+        userId: user?.id, 
+        profileCompanyId: user?.profile?.company_id,
+        companyId: user?.company?.id,
+        roles: user?.roles 
+      });
       
       if (!companyId) {
-        console.error("No company ID found for user");
+        console.error("❌ [VEHICLE_FORM] No company ID found for user");
         throw new Error("لا يمكن إنشاء المركبة. معرف الشركة غير موجود.");
       }
 
       // Check if user has permission to create vehicles
       if (!user) {
+        console.error("❌ [VEHICLE_FORM] No user found");
         throw new Error("يجب تسجيل الدخول لإنشاء مركبة.");
       }
 
+      // Prepare vehicle data with proper type conversions and defaults
       const vehicleData = {
-        ...data,
-        company_id: companyId,
+        // Required fields
+        plate_number: data.plate_number.trim(),
+        make: data.make.trim(),
+        model: data.model.trim(),
         year: parseInt(data.year),
-        seating_capacity: parseInt(data.seating_capacity),
-        useful_life_years: parseInt(data.useful_life_years),
-        purchase_cost: data.purchase_cost ? parseFloat(data.purchase_cost) : undefined,
-        residual_value: data.residual_value ? parseFloat(data.residual_value) : undefined,
-        current_mileage: data.current_mileage ? parseFloat(data.current_mileage) : undefined,
-        daily_rate: data.daily_rate ? parseFloat(data.daily_rate) : undefined,
-        weekly_rate: data.weekly_rate ? parseFloat(data.weekly_rate) : undefined,
-        monthly_rate: data.monthly_rate ? parseFloat(data.monthly_rate) : undefined,
-        deposit_amount: data.deposit_amount ? parseFloat(data.deposit_amount) : undefined,
+        company_id: companyId,
         is_active: true,
+        status: data.status || "available",
+        
+        // Optional fields with defaults
+        color: data.color?.trim() || null,
+        vin: data.vin?.trim() || null,
+        engine_number: data.engine_number?.trim() || null,
+        transmission: data.transmission || "automatic",
+        body_type: data.body_type?.trim() || null,
+        fuel_type: data.fuel_type || "gasoline",
+        seating_capacity: data.seating_capacity ? parseInt(data.seating_capacity) : 5,
+        
+        // Date fields
+        purchase_date: data.purchase_date || null,
+        
+        // Numeric fields (nullable)
+        purchase_cost: data.purchase_cost ? parseFloat(data.purchase_cost) : null,
+        useful_life_years: data.useful_life_years ? parseInt(data.useful_life_years) : 10,
+        residual_value: data.residual_value ? parseFloat(data.residual_value) : null,
+        current_mileage: data.current_mileage ? parseFloat(data.current_mileage) : null,
+        daily_rate: data.daily_rate ? parseFloat(data.daily_rate) : null,
+        weekly_rate: data.weekly_rate ? parseFloat(data.weekly_rate) : null,
+        monthly_rate: data.monthly_rate ? parseFloat(data.monthly_rate) : null,
+        deposit_amount: data.deposit_amount ? parseFloat(data.deposit_amount) : null,
+        
+        // Additional fields
+        notes: data.notes?.trim() || null,
+        cost_center_id: data.cost_center_id || null,
+        depreciation_method: data.depreciation_method || "straight_line",
       }
 
-      console.log("Creating/updating vehicle with data:", { ...vehicleData, company_id: companyId });
+      console.log("📤 [VEHICLE_FORM] Prepared vehicle data:", vehicleData);
+
+      // Validate numeric ranges
+      if (vehicleData.year < 1990 || vehicleData.year > new Date().getFullYear() + 1) {
+        throw new Error("السنة يجب أن تكون بين 1990 و " + (new Date().getFullYear() + 1));
+      }
+      
+      if (vehicleData.seating_capacity < 1 || vehicleData.seating_capacity > 50) {
+        throw new Error("عدد المقاعد يجب أن يكون بين 1 و 50");
+      }
 
       if (vehicle) {
+        console.log("✏️ [VEHICLE_FORM] Updating existing vehicle:", vehicle.id);
         await updateVehicle.mutateAsync({ id: vehicle.id, ...vehicleData })
       } else {
+        console.log("➕ [VEHICLE_FORM] Creating new vehicle");
         await createVehicle.mutateAsync(vehicleData)
       }
       
+      console.log("✅ [VEHICLE_FORM] Vehicle operation completed successfully");
       onOpenChange(false)
       form.reset()
     } catch (error) {
-      console.error("Error saving vehicle:", error);
-      // Better error message for user
-      const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء حفظ المركبة";
+      console.error("❌ [VEHICLE_FORM] Error saving vehicle:", error);
+      
+      // Provide specific error messages
+      let errorMessage = "حدث خطأ أثناء حفظ المركبة";
+      
+      if (error instanceof Error) {
+        // Check for specific database errors
+        if (error.message.includes("duplicate") || error.message.includes("unique")) {
+          errorMessage = "رقم اللوحة موجود مسبقاً. يرجى استخدام رقم لوحة مختلف.";
+        } else if (error.message.includes("foreign key") || error.message.includes("violates")) {
+          errorMessage = "خطأ في البيانات المرجعية. يرجى التحقق من صحة البيانات.";
+        } else if (error.message.includes("not null") || error.message.includes("required")) {
+          errorMessage = "هناك حقول مطلوبة لم يتم ملؤها. يرجى التحقق من جميع الحقول.";
+        } else if (error.message.includes("permission") || error.message.includes("denied")) {
+          errorMessage = "ليس لديك صلاحية لتنفيذ هذا الإجراء.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       alert(errorMessage);
     }
   }
