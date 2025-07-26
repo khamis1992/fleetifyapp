@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Calculator, TrendingUp, TrendingDown, Car, Wrench, DollarSign, BarChart3, FileText, Download } from "lucide-react";
+import { TrafficViolationReports } from "@/components/fleet/TrafficViolationReports";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
@@ -206,6 +207,22 @@ export default function FleetReports() {
               {processDepreciation.isPending ? "جاري المعالجة..." : "معالجة الإهلاك"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Traffic Violation Reports */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <span>تقارير المخالفات المرورية</span>
+          </CardTitle>
+          <CardDescription>
+            إنشاء وتصدير تقارير شاملة عن المخالفات المرورية ومدفوعاتها
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TrafficViolationReports />
         </CardContent>
       </Card>
 
