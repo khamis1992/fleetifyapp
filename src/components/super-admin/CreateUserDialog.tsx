@@ -42,19 +42,27 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     watch,
     setValue,
     reset,
-    formState: { errors }
-  } = useForm<CreateUserData>();
+    formState: { errors, isValid }
+  } = useForm<CreateUserData>({
+    defaultValues: {
+      roles: []
+    }
+  });
 
   const selectedRoles = watch('roles') || [];
+  const selectedCompany = watch('company_id');
 
   const handleRoleChange = (roleId: string, checked: boolean) => {
     const currentRoles = selectedRoles || [];
     if (checked) {
-      setValue('roles', [...currentRoles, roleId]);
+      setValue('roles', [...currentRoles, roleId], { shouldValidate: true });
     } else {
-      setValue('roles', currentRoles.filter(role => role !== roleId));
+      setValue('roles', currentRoles.filter(role => role !== roleId), { shouldValidate: true });
     }
   };
+
+  // Check if form is ready for submission
+  const canSubmit = selectedRoles.length > 0 && selectedCompany && !isLoading;
 
   const onSubmit = async (data: CreateUserData) => {
     try {
@@ -272,7 +280,8 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             </Button>
             <Button
               onClick={handleSubmit(onSubmit)}
-              disabled={isLoading || !selectedRoles?.length || !watch('company_id')}
+              disabled={!canSubmit}
+              className={!canSubmit ? 'opacity-50' : ''}
             >
               {isLoading ? (
                 <>
@@ -280,7 +289,14 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                   جاري الإنشاء...
                 </>
               ) : (
-                'إنشاء المستخدم'
+                <>
+                  إنشاء المستخدم
+                  {!canSubmit && (
+                    <span className="text-xs block opacity-70">
+                      (املأ جميع الحقول المطلوبة)
+                    </span>
+                  )}
+                </>
               )}
             </Button>
           </div>
