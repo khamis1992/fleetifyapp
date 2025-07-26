@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import EmployeeDialog from '@/components/hr/EmployeeDialog';
 import EditEmployeeDialog from '@/components/hr/EditEmployeeDialog';
 import DeleteEmployeeConfirmDialog from '@/components/hr/DeleteEmployeeConfirmDialog';
@@ -49,22 +50,29 @@ export default function Employees() {
   const [selectedEmployeeForPayroll, setSelectedEmployeeForPayroll] = useState<Employee | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Payroll mutations
   const createPayrollMutation = useCreatePayroll();
 
   const { data: employees, isLoading } = useQuery({
-    queryKey: ['employees'],
+    queryKey: ['employees', user?.profile?.company_id],
     queryFn: async () => {
+      if (!user?.profile?.company_id) {
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('employees')
         .select('*')
+        .eq('company_id', user.profile.company_id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as Employee[];
     },
+    enabled: !!user?.profile?.company_id,
   });
 
   const addEmployeeMutation = useMutation({
