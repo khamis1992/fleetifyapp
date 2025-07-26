@@ -25,7 +25,8 @@ import {
   MapPin,
   Clock,
   UserCheck,
-  UserCog
+  UserCog,
+  Calendar
 } from 'lucide-react';
 import {
   Sidebar,
@@ -159,6 +160,11 @@ const hrSubItems = [
     name: 'الحضور والانصراف',
     href: '/hr/attendance',
     icon: Clock
+  },
+  {
+    name: 'إدارة الإجازات',
+    href: '/hr/leave-management',
+    icon: Calendar
   },
   {
     name: 'الرواتب',
