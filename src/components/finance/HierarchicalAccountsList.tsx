@@ -42,8 +42,9 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   const { user } = useAuth();
   const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set());
   
-  // Check if user is super admin
+  // Check if user is super admin or company admin
   const isSuperAdmin = user?.roles?.includes('super_admin');
+  const isCompanyAdmin = user?.roles?.includes('company_admin');
   
   const isExpanded = (accountId: string) => {
     return onToggleExpanded ? expandedAccounts.has(accountId) : localExpanded.has(accountId);
@@ -291,16 +292,19 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
                   <Edit2 className="h-3 w-3" />
                 </Button>
               )}
-              {onDeleteAccount && (!account.is_system || isSuperAdmin) && (
+              {onDeleteAccount && (!account.is_system || isSuperAdmin || isCompanyAdmin) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onDeleteAccount(account)}
                   className={cn(
                     "h-8 w-8 p-0 text-destructive hover:text-destructive",
-                    account.is_system && isSuperAdmin && "ring-2 ring-destructive ring-opacity-50"
+                    account.is_system && (isSuperAdmin || isCompanyAdmin) && "ring-2 ring-destructive ring-opacity-50"
                   )}
-                  title={account.is_system ? "حذف حساب نظامي (مدير عام فقط)" : "حذف الحساب"}
+                  title={account.is_system 
+                    ? (isSuperAdmin ? "حذف حساب نظامي (مدير عام)" : "حذف حساب نظامي (مدير شركة) - تحذير: عملية خطيرة!")
+                    : "حذف الحساب"
+                  }
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
