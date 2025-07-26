@@ -392,7 +392,7 @@ export default function PermissionsDashboard() {
                   <div className="text-right">
                     <Badge variant="outline">معلق</Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(request.created_at).toLocaleDateString('ar-KW')}
+                      {new Date(request.created_at).toLocaleDateString('en-GB')}
                     </p>
                   </div>
                 </div>

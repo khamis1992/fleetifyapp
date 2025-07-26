@@ -106,7 +106,7 @@ export const PayrollReportsPanel = () => {
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${payroll.payroll_number}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${payroll.first_name} ${payroll.last_name}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${payroll.department || 'غير محدد'}</td>
-              <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${new Date(payroll.payroll_date).toLocaleDateString('ar-SA')}</td>
+              <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${new Date(payroll.payroll_date).toLocaleDateString('en-GB')}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${formatCurrency(payroll.basic_salary)}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${formatCurrency(payroll.allowances)}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${formatCurrency(payroll.deductions)}</td>
@@ -309,7 +309,7 @@ export const PayrollReportsPanel = () => {
                         </TableCell>
                         <TableCell>{payroll.department || 'غير محدد'}</TableCell>
                         <TableCell>
-                          {new Date(payroll.payroll_date).toLocaleDateString('ar-SA')}
+                          {new Date(payroll.payroll_date).toLocaleDateString('en-GB')}
                         </TableCell>
                         <TableCell className="font-medium text-green-600">
                           {formatCurrency(payroll.net_amount)}

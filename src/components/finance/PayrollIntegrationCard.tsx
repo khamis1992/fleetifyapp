@@ -148,7 +148,7 @@ export const PayrollIntegrationCard = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-yellow-500" />
                       <span className="text-sm">
-                        راتب {new Date(payroll.payroll_date).toLocaleDateString('ar-SA')}
+                        راتب {new Date(payroll.payroll_date).toLocaleDateString('en-GB')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

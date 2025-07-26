@@ -172,10 +172,10 @@ export const exportTrafficViolationReportToHTML = (
   title: string,
   companyName?: string
 ) => {
-  const currentDate = new Date().toLocaleDateString('en-US', {
+  const currentDate = new Date().toLocaleDateString('en-GB', {
     year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    month: '2-digit',
+    day: '2-digit'
   });
 
   const htmlContent = `

@@ -195,7 +195,7 @@ export default function FleetReports() {
                    maintenance.maintenance_type === 'repair' ? 'إصلاح' : 
                    maintenance.maintenance_type === 'emergency' ? 'صيانة طارئة' : 
                    maintenance.maintenance_type}</td>
-              <td>${new Date(maintenance.scheduled_date).toLocaleDateString('ar-SA')}</td>
+              <td>${new Date(maintenance.scheduled_date).toLocaleDateString('en-GB')}</td>
               <td>${maintenance.status === 'completed' ? 'مكتملة' : 
                    maintenance.status === 'in_progress' ? 'قيد التنفيذ' : 
                    maintenance.status === 'pending' ? 'معلقة' : maintenance.status}</td>
@@ -393,7 +393,7 @@ export default function FleetReports() {
 
   // Helper function to create HTML reports
   const createHTMLReport = (content: string, title: string) => {
-    const currentDate = new Date().toLocaleDateString('ar-SA');
+    const currentDate = new Date().toLocaleDateString('en-GB');
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">

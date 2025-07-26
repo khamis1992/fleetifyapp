@@ -170,7 +170,7 @@ export default function EmployeePayrollDetails({
                       <p className="text-sm text-muted-foreground">آخر دفع</p>
                       <p className="text-lg font-bold text-purple-600">
                         {stats.lastPayment ? 
-                          new Date(stats.lastPayment.payroll_date).toLocaleDateString('ar-SA') : 
+                          new Date(stats.lastPayment.payroll_date).toLocaleDateString('en-GB') : 
                           'لا يوجد'
                         }
                       </p>
@@ -227,8 +227,8 @@ export default function EmployeePayrollDetails({
                             <div>
                               <p className="font-medium">{payroll.payroll_number}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(payroll.pay_period_start).toLocaleDateString('ar-SA')} - {' '}
-                                {new Date(payroll.pay_period_end).toLocaleDateString('ar-SA')}
+                                {new Date(payroll.pay_period_start).toLocaleDateString('en-GB')} - {' '}
+                                {new Date(payroll.pay_period_end).toLocaleDateString('en-GB')}
                               </p>
                             </div>
                           </div>

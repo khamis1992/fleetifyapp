@@ -113,7 +113,7 @@ export default function Maintenance() {
             </TableCell>
             <TableCell>
               {maintenance.scheduled_date 
-                ? new Date(maintenance.scheduled_date).toLocaleDateString('ar-KW')
+                ? new Date(maintenance.scheduled_date).toLocaleDateString('en-GB')
                 : 'غير محدد'}
             </TableCell>
             <TableCell>

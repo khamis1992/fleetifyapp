@@ -200,7 +200,7 @@ const InvoiceReports = () => {
                     {budgetComparison?.map((item, index) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">
-                          {new Date(item.period + '-01').toLocaleDateString('ar-KW', {
+                          {new Date(item.period + '-01').toLocaleDateString('en-GB', {
                             year: 'numeric',
                             month: 'long'
                           })}

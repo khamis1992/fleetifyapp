@@ -92,14 +92,14 @@ export default function PayrollDetailsModal({
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">تاريخ الراتب</p>
                   <p className="font-medium">
-                    {new Date(payroll.payroll_date).toLocaleDateString('ar-SA')}
+                    {new Date(payroll.payroll_date).toLocaleDateString('en-GB')}
                   </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">فترة الراتب</p>
                   <p className="font-medium">
-                    {new Date(payroll.pay_period_start).toLocaleDateString('ar-SA')} - {' '}
-                    {new Date(payroll.pay_period_end).toLocaleDateString('ar-SA')}
+                    {new Date(payroll.pay_period_start).toLocaleDateString('en-GB')} - {' '}
+                    {new Date(payroll.pay_period_end).toLocaleDateString('en-GB')}
                   </p>
                 </div>
                 <div className="space-y-2">

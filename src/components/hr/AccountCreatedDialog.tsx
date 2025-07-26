@@ -49,7 +49,7 @@ export default function AccountCreatedDialog({
 
   const formatExpiryDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ar-KW', {
+    return date.toLocaleDateString('en-GB', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

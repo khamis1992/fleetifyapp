@@ -83,7 +83,7 @@ export function BudgetAlertsPanel() {
                     المبلغ المتجاوز: {formatCurrency(alert.amount_exceeded)}
                   </span>
                   <span className="text-muted-foreground">
-                    {new Date(alert.created_at).toLocaleDateString('ar')}
+                    {new Date(alert.created_at).toLocaleDateString('en-GB')}
                   </span>
                 </div>
               </div>
