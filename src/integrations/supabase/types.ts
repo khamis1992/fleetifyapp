@@ -797,6 +797,13 @@ export type Database = {
             foreignKeyName: "fk_contract_approval_steps_contract"
             columns: ["contract_id"]
             isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "fk_contract_approval_steps_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -850,6 +857,13 @@ export type Database = {
             foreignKeyName: "fk_contract_notifications_contract"
             columns: ["contract_id"]
             isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "fk_contract_notifications_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -857,6 +871,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          auto_renew_enabled: boolean | null
           company_id: string
           contract_amount: number
           contract_date: string
@@ -870,14 +885,18 @@ export type Database = {
           end_date: string
           id: string
           journal_entry_id: string | null
+          last_renewal_check: string | null
           monthly_amount: number
+          renewal_terms: Json | null
           start_date: string
           status: string
           terms: string | null
           updated_at: string
           vehicle_id: string | null
+          vehicle_returned: boolean | null
         }
         Insert: {
+          auto_renew_enabled?: boolean | null
           company_id: string
           contract_amount?: number
           contract_date: string
@@ -891,14 +910,18 @@ export type Database = {
           end_date: string
           id?: string
           journal_entry_id?: string | null
+          last_renewal_check?: string | null
           monthly_amount?: number
+          renewal_terms?: Json | null
           start_date: string
           status?: string
           terms?: string | null
           updated_at?: string
           vehicle_id?: string | null
+          vehicle_returned?: boolean | null
         }
         Update: {
+          auto_renew_enabled?: boolean | null
           company_id?: string
           contract_amount?: number
           contract_date?: string
@@ -912,12 +935,15 @@ export type Database = {
           end_date?: string
           id?: string
           journal_entry_id?: string | null
+          last_renewal_check?: string | null
           monthly_amount?: number
+          renewal_terms?: Json | null
           start_date?: string
           status?: string
           terms?: string | null
           updated_at?: string
           vehicle_id?: string | null
+          vehicle_returned?: boolean | null
         }
         Relationships: [
           {
@@ -1783,6 +1809,13 @@ export type Database = {
             foreignKeyName: "fk_invoices_contract_id"
             columns: ["contract_id"]
             isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "fk_invoices_contract_id"
+            columns: ["contract_id"]
+            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -2242,6 +2275,13 @@ export type Database = {
           vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payments_contract_id"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
           {
             foreignKeyName: "fk_payments_contract_id"
             columns: ["contract_id"]
@@ -3906,6 +3946,16 @@ export type Database = {
       }
     }
     Views: {
+      contract_payment_summary: {
+        Row: {
+          contract_amount: number | null
+          contract_id: string | null
+          has_outstanding_payments: boolean | null
+          outstanding_amount: number | null
+          total_paid: number | null
+        }
+        Relationships: []
+      }
       payroll_financial_analysis: {
         Row: {
           allowances: number | null
@@ -4119,6 +4169,20 @@ export type Database = {
           total_credits: number
           net_amount: number
           entry_count: number
+        }[]
+      }
+      get_eligible_contracts_for_renewal: {
+        Args: { company_id_param: string }
+        Returns: {
+          contract_id: string
+          contract_number: string
+          customer_name: string
+          vehicle_info: string
+          end_date: string
+          contract_amount: number
+          total_paid: number
+          outstanding_amount: number
+          days_since_expiry: number
         }[]
       }
       get_financial_summary: {
