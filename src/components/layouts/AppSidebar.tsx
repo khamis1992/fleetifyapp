@@ -26,7 +26,8 @@ import {
   Clock,
   UserCheck,
   UserCog,
-  Calendar
+  Calendar,
+  Wrench
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,12 +54,6 @@ const navigationItems = [
     name_en: 'Dashboard',
     href: '/dashboard', 
     icon: Home 
-  },
-  { 
-    name: 'الأسطول', 
-    name_en: 'Fleet',
-    href: '/fleet', 
-    icon: Car 
   },
   { 
     name: 'العقود', 
@@ -144,6 +139,25 @@ const financeSubItems = [
   }
 ];
 
+// Fleet sub-items with Arabic names
+const fleetSubItems = [
+  {
+    name: 'إدارة المركبات',
+    href: '/fleet',
+    icon: Car
+  },
+  {
+    name: 'الصيانة',
+    href: '/fleet/maintenance',
+    icon: Wrench
+  },
+  {
+    name: 'التقارير والتحليلات',
+    href: '/fleet/reports',
+    icon: BarChart3
+  }
+];
+
 // HR sub-items with Arabic names
 const hrSubItems = [
   {
@@ -198,6 +212,8 @@ export function AppSidebar() {
   const isFinanceActive = location.pathname.startsWith('/finance');
   // Check if HR section should be open
   const isHRActive = location.pathname.startsWith('/hr');
+  // Check if fleet section should be open
+  const isFleetActive = location.pathname.startsWith('/fleet');
 
   const handleSignOut = async () => {
     await signOut();
@@ -240,10 +256,41 @@ export function AppSidebar() {
                       {!collapsed && <span className="font-medium">{item.name}</span>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              
-              {/* Finance Section with Submenu */}
+                 </SidebarMenuItem>
+               ))}
+               
+               {/* Fleet Section with Submenu */}
+               <SidebarMenuItem>
+                 <Collapsible defaultOpen={isFleetActive}>
+                   <CollapsibleTrigger asChild>
+                     <SidebarMenuButton className="h-10">
+                       <Car className="h-4 w-4" />
+                       {!collapsed && (
+                         <>
+                           <span className="font-medium">الأسطول</span>
+                           <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                         </>
+                       )}
+                     </SidebarMenuButton>
+                   </CollapsibleTrigger>
+                   <CollapsibleContent>
+                     <SidebarMenuSub>
+                       {fleetSubItems.map((subItem) => (
+                         <SidebarMenuSubItem key={subItem.href}>
+                           <SidebarMenuSubButton asChild>
+                             <NavLink to={subItem.href} className={getNavClassName}>
+                               <subItem.icon className="h-4 w-4" />
+                               {!collapsed && <span>{subItem.name}</span>}
+                             </NavLink>
+                           </SidebarMenuSubButton>
+                         </SidebarMenuSubItem>
+                       ))}
+                     </SidebarMenuSub>
+                   </CollapsibleContent>
+                 </Collapsible>
+               </SidebarMenuItem>
+               
+               {/* Finance Section with Submenu */}
               <SidebarMenuItem>
                 <Collapsible defaultOpen={isFinanceActive}>
                   <CollapsibleTrigger asChild>
