@@ -63,18 +63,23 @@ All colors MUST be HSL.
     --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--accent)) 100%);
     --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
     --gradient-muted: linear-gradient(180deg, hsl(var(--muted)) 0%, hsl(var(--secondary)) 100%);
+    --gradient-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     
     /* Professional Shadows */
     --shadow-card: 0 4px 12px -2px hsl(var(--primary) / 0.08);
     --shadow-elevated: 0 8px 24px -4px hsl(var(--primary) / 0.12);
     --shadow-accent: 0 4px 16px -2px hsl(var(--accent) / 0.25);
     --shadow-glow: 0 0 32px hsl(var(--primary-glow) / 0.15);
+    --shadow-float: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.12);
     
 /* Animation System */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     --transition-fast: all 0.15s ease-out;
     --transition-glow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     
     --radius: 0.75rem;
 
@@ -264,6 +269,18 @@ All colors MUST be HSL.
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+  
+  @keyframes bounce-in {
+    0% { transform: scale(0.3) translateY(50px); opacity: 0; }
+    50% { transform: scale(1.05) translateY(-10px); }
+    70% { transform: scale(0.9) translateY(5px); }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
   }
   
   /* RTL support */

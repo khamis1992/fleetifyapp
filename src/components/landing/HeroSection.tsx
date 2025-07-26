@@ -1,0 +1,173 @@
+import { motion } from 'framer-motion';
+import { ArrowRight, Play, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { InteractiveCard } from './InteractiveCard';
+
+export function HeroSection() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-hero opacity-10" />
+      
+      {/* Floating Elements */}
+      <div className="absolute inset-0">
+        <motion.div
+          animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 left-20 w-64 h-64 bg-gradient-primary rounded-full opacity-10 blur-3xl"
+        />
+        <motion.div
+          animate={{ y: [0, 30, 0], rotate: [0, -5, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-accent rounded-full opacity-10 blur-3xl"
+        />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="inline-flex items-center space-x-2 bg-gradient-primary/10 px-4 py-2 rounded-full border border-primary/20"
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Enterprise Grade Platform</span>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
+            >
+              Transform Your
+              <span className="block bg-gradient-primary bg-clip-text text-transparent">
+                Business Operations
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl"
+            >
+              The most advanced fleet management and business automation platform. 
+              Streamline operations, boost efficiency, and scale with confidence.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <Button size="lg" className="text-lg px-8 py-6 group transition-all duration-300 hover:scale-105">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-lg px-8 py-6 group bg-background/80 backdrop-blur-sm hover:bg-background/90"
+              >
+                <Play className="mr-2 h-5 w-5" />
+                Watch Demo
+              </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="flex items-center space-x-8 text-sm text-muted-foreground"
+            >
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
+                <span>14-day free trial</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                <span>Setup in 5 minutes</span>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Interactive Dashboard Preview */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative"
+          >
+            <InteractiveCard className="p-0 overflow-hidden">
+              <div className="aspect-[4/3] bg-gradient-to-br from-background via-background/50 to-muted/30 p-8">
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold">Fleet Dashboard</h3>
+                    <div className="flex space-x-1">
+                      <div className="w-3 h-3 bg-destructive rounded-full" />
+                      <div className="w-3 h-3 bg-warning rounded-full" />
+                      <div className="w-3 h-3 bg-success rounded-full" />
+                    </div>
+                  </div>
+                  
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: 'Active Vehicles', value: '247', color: 'bg-primary' },
+                      { label: 'Revenue', value: '€52K', color: 'bg-success' },
+                      { label: 'Efficiency', value: '94%', color: 'bg-accent' },
+                      { label: 'Incidents', value: '3', color: 'bg-warning' },
+                    ].map((stat, i) => (
+                      <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.8 + i * 0.1 }}
+                        className="p-4 bg-card/50 rounded-lg border border-border/30"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 ${stat.color} rounded-full`} />
+                          <span className="text-xs text-muted-foreground">{stat.label}</span>
+                        </div>
+                        <p className="text-lg font-bold mt-1">{stat.value}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                  
+                  {/* Chart Area */}
+                  <div className="h-20 bg-muted/30 rounded-lg flex items-end space-x-1 p-2">
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${Math.random() * 100}%` }}
+                        transition={{ duration: 0.8, delay: 1 + i * 0.05 }}
+                        className="flex-1 bg-gradient-primary rounded-sm opacity-60"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </InteractiveCard>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
