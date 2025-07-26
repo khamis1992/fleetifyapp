@@ -4294,6 +4294,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      handle_incomplete_user_account: {
+        Args: {
+          p_user_id: string
+          p_employee_id: string
+          p_company_id: string
+          p_roles: string[]
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _user_id: string
