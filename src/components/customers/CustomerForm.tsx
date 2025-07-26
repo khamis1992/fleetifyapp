@@ -365,7 +365,13 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              disabled={
+                isLoading || 
+                (isSuperAdmin && mode === 'create' && !selectedCompanyId)
+              }
+            >
               {isLoading ? 'جاري الحفظ...' : (mode === 'create' ? 'إضافة العميل' : 'حفظ التغييرات')}
             </Button>
           </div>
