@@ -3334,6 +3334,10 @@ export type Database = {
         Args: { invoice_id_param: string }
         Returns: string
       }
+      create_maintenance_journal_entry: {
+        Args: { maintenance_id_param: string }
+        Returns: string
+      }
       create_payment_bank_transaction: {
         Args: { payment_id_param: string }
         Returns: string
