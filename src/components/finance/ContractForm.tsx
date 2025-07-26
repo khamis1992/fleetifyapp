@@ -208,7 +208,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                     <SelectValue placeholder="اختر مركز التكلفة (اختياري)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">لا يوجد</SelectItem>
+                    <SelectItem value="none">لا يوجد</SelectItem>
                     {costCenters?.map((costCenter) => (
                       <SelectItem key={costCenter.id} value={costCenter.id}>
                         {costCenter.center_code} - {costCenter.center_name}
@@ -264,7 +264,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                     } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">لا يوجد</SelectItem>
+                    <SelectItem value="none">لا يوجد</SelectItem>
                     {availableVehicles?.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
