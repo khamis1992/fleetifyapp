@@ -35,7 +35,7 @@ export interface TrafficViolation {
 }
 
 export interface CreateTrafficViolationData {
-  penalty_number: string;
+  penalty_number?: string; // اجعله اختيارياً لأنه سيتم توليده تلقائياً
   violation_type: string;
   penalty_date: string;
   amount: number;
@@ -67,14 +67,6 @@ export function useTrafficViolations() {
             last_name,
             company_name,
             phone
-          ),
-          contracts (
-            contract_number,
-            vehicles (
-              plate_number,
-              make,
-              model
-            )
           )
         `)
         .order('created_at', { ascending: false });
@@ -84,7 +76,7 @@ export function useTrafficViolations() {
         throw error;
       }
 
-      return data as TrafficViolation[];
+      return data as any[];
     }
   });
 }
@@ -103,14 +95,6 @@ export function useTrafficViolation(id: string) {
             last_name,
             company_name,
             phone
-          ),
-          contracts (
-            contract_number,
-            vehicles (
-              plate_number,
-              make,
-              model
-            )
           )
         `)
         .eq('id', id)
@@ -121,7 +105,7 @@ export function useTrafficViolation(id: string) {
         throw error;
       }
 
-      return data as TrafficViolation;
+      return data as any;
     },
     enabled: !!id
   });
@@ -133,19 +117,34 @@ export function useCreateTrafficViolation() {
 
   return useMutation({
     mutationFn: async (data: CreateTrafficViolationData) => {
+      // الحصول على company_id من المستخدم الحالي
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       // توليد رقم المخالفة إذا لم يتم توفيره
-      if (!data.penalty_number) {
+      let penaltyNumber = data.penalty_number;
+      if (!penaltyNumber) {
         const { count } = await supabase
           .from('penalties')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', profile.company_id);
         
-        data.penalty_number = `PEN-${String(((count || 0) + 1)).padStart(6, '0')}`;
+        penaltyNumber = `PEN-${String(((count || 0) + 1)).padStart(6, '0')}`;
       }
 
       const { data: violation, error } = await supabase
         .from('penalties')
         .insert([{
-          penalty_number: data.penalty_number,
+          company_id: profile.company_id,
+          penalty_number: penaltyNumber,
           violation_type: data.violation_type,
           penalty_date: data.penalty_date,
           amount: data.amount,
@@ -156,7 +155,8 @@ export function useCreateTrafficViolation() {
           reason: data.reason,
           notes: data.notes,
           status: data.status || 'pending',
-          payment_status: data.payment_status || 'unpaid'
+          payment_status: data.payment_status || 'unpaid',
+          created_by: user.user.id
         }])
         .select()
         .single();
@@ -313,7 +313,8 @@ export function useTrafficViolationsStats() {
     queryFn: async () => {
       const { data: violations, error } = await supabase
         .from('penalties')
-        .select('status, payment_status, amount');
+        .select('status, payment_status, amount')
+        .not('violation_type', 'is', null); // فقط المخالفات المرورية
 
       if (error) {
         console.error('Error fetching violations stats:', error);

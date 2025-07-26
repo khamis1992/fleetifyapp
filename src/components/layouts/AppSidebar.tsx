@@ -27,7 +27,8 @@ import {
   UserCheck,
   UserCog,
   Calendar,
-  Wrench
+  Wrench,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Sidebar,

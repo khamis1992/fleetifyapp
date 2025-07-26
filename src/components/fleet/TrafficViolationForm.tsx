@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const violationSchema = z.object({
-  penalty_number: z.string().min(1, 'رقم المخالفة مطلوب'),
+  penalty_number: z.string().optional(), // اجعله اختيارياً
   violation_type: z.string().min(1, 'نوع المخالفة مطلوب'),
   penalty_date: z.string().min(1, 'تاريخ المخالفة مطلوب'),
   amount: z.string().min(1, 'مبلغ المخالفة مطلوب'),
@@ -54,20 +54,13 @@ export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
     }
   });
 
-  // جلب قائمة العقود النشطة
+  // جلب قائمة العقود النشطة (مبسطة بدون join)
   const { data: contracts = [] } = useQuery({
     queryKey: ['active-contracts'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contracts')
-        .select(`
-          id, 
-          contract_number, 
-          start_date, 
-          end_date,
-          customers (first_name, last_name, company_name),
-          vehicles (plate_number, make, model)
-        `)
+        .select('id, contract_number, start_date, end_date, customer_id, vehicle_id')
         .eq('status', 'active')
         .order('contract_number');
       
@@ -86,10 +79,19 @@ export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
 
   const onSubmit = async (data: ViolationFormData) => {
     try {
-      const violationData = {
-        ...data,
+      const violationData: any = {
+        penalty_number: data.penalty_number,
+        violation_type: data.violation_type,
+        penalty_date: new Date(data.penalty_date).toISOString().split('T')[0],
         amount: parseFloat(data.amount),
-        penalty_date: new Date(data.penalty_date).toISOString().split('T')[0]
+        location: data.location,
+        vehicle_plate: data.vehicle_plate,
+        customer_id: data.customer_id,
+        contract_id: data.contract_id,
+        reason: data.reason,
+        notes: data.notes,
+        status: data.status,
+        payment_status: data.payment_status
       };
 
       await createViolationMutation.mutateAsync(violationData);
@@ -133,9 +135,9 @@ export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
                 name="penalty_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>رقم المخالفة *</FormLabel>
+                    <FormLabel>رقم المخالفة (اختياري)</FormLabel>
                     <FormControl>
-                      <Input placeholder="أدخل رقم المخالفة" {...field} />
+                      <Input placeholder="سيتم توليده تلقائياً إذا ترك فارغاً" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -279,7 +281,7 @@ export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
                       <SelectContent>
                         {contracts.map((contract) => (
                           <SelectItem key={contract.id} value={contract.id}>
-                            {contract.contract_number} - {contract.vehicles?.plate_number}
+                            {contract.contract_number}
                           </SelectItem>
                         ))}
                       </SelectContent>

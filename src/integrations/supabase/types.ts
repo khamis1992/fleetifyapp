@@ -2263,7 +2263,9 @@ export type Database = {
           due_date: string | null
           id: string
           journal_entry_id: string | null
+          location: string | null
           paid_amount: number | null
+          payment_status: string | null
           penalty_date: string
           penalty_number: string
           penalty_type: string
@@ -2271,6 +2273,8 @@ export type Database = {
           reason_ar: string | null
           status: string
           updated_at: string
+          vehicle_plate: string | null
+          violation_type: string | null
         }
         Insert: {
           amount?: number
@@ -2283,7 +2287,9 @@ export type Database = {
           due_date?: string | null
           id?: string
           journal_entry_id?: string | null
+          location?: string | null
           paid_amount?: number | null
+          payment_status?: string | null
           penalty_date: string
           penalty_number: string
           penalty_type?: string
@@ -2291,6 +2297,8 @@ export type Database = {
           reason_ar?: string | null
           status?: string
           updated_at?: string
+          vehicle_plate?: string | null
+          violation_type?: string | null
         }
         Update: {
           amount?: number
@@ -2303,7 +2311,9 @@ export type Database = {
           due_date?: string | null
           id?: string
           journal_entry_id?: string | null
+          location?: string | null
           paid_amount?: number | null
+          payment_status?: string | null
           penalty_date?: string
           penalty_number?: string
           penalty_type?: string
@@ -2311,6 +2321,8 @@ export type Database = {
           reason_ar?: string | null
           status?: string
           updated_at?: string
+          vehicle_plate?: string | null
+          violation_type?: string | null
         }
         Relationships: []
       }
