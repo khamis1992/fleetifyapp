@@ -134,7 +134,7 @@ export const AuthForm: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-4 shadow-accent">
             <Building2 className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-primary">
             Fleetify
           </h1>
           <p className="text-muted-foreground mt-2">
