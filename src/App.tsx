@@ -24,6 +24,7 @@ import HRSettings from "./pages/hr/Settings";
 import Fleet from "./pages/Fleet";
 import Maintenance from "./pages/fleet/Maintenance";
 import FleetReports from "./pages/fleet/FleetReports";
+import TrafficViolations from "./pages/fleet/TrafficViolations";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="settings" element={<Settings />} />
               <Route path="fleet" element={<Fleet />} />
               <Route path="fleet/maintenance" element={<Maintenance />} />
+              <Route path="fleet/traffic-violations" element={<TrafficViolations />} />
               <Route path="fleet/reports" element={<FleetReports />} />
               <Route path="contracts" element={<div className="p-8 text-center text-muted-foreground">صفحة العقود - قيد التطوير</div>} />
               <Route path="customers" element={<div className="p-8 text-center text-muted-foreground">صفحة العملاء - قيد التطوير</div>} />

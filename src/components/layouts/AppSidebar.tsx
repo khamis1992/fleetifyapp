@@ -152,6 +152,11 @@ const fleetSubItems = [
     icon: Wrench
   },
   {
+    name: 'المخالفات المرورية',
+    href: '/fleet/traffic-violations',
+    icon: AlertTriangle
+  },
+  {
     name: 'التقارير والتحليلات',
     href: '/fleet/reports',
     icon: BarChart3
