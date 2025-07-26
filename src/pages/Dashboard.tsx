@@ -60,41 +60,6 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // Prepare dashboard stats data
-  const statsData = dashboardStats ? [
-    {
-      title: 'إجمالي الأسطول',
-      value: dashboardStats.totalVehicles.toString(),
-      change: dashboardStats.vehiclesChange,
-      changeType: 'positive' as const,
-      icon: Car,
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      title: 'العقود النشطة',
-      value: dashboardStats.activeContracts.toString(),
-      change: dashboardStats.contractsChange,
-      changeType: 'positive' as const,
-      icon: FileText,
-      color: 'from-green-500 to-green-600'
-    },
-    {
-      title: 'العملاء',
-      value: dashboardStats.totalCustomers.toString(),
-      change: dashboardStats.customersChange,
-      changeType: 'positive' as const,
-      icon: Users,
-      color: 'from-purple-500 to-purple-600'
-    },
-    {
-      title: 'الإيرادات الشهرية',
-      value: `${dashboardStats.monthlyRevenue.toFixed(0)} د.ك`,
-      change: dashboardStats.revenueChange,
-      changeType: 'positive' as const,
-      icon: DollarSign,
-      color: 'from-amber-500 to-amber-600'
-    }
-  ] : [];
 
   return (
     <div className="space-y-8">
