@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon, User, UserPlus, Shield, Lock, Send } from 'lucide-react';
+import { CalendarIcon, User, UserPlus, Shield, Lock, Send, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -15,7 +15,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { useHRSettings } from '@/hooks/useHRSettings';
+import { cn, formatCurrency } from '@/lib/utils';
 
 const employeeSchema = z.object({
   employee_number: z.string().min(1, 'رقم الموظف مطلوب'),
@@ -66,10 +67,22 @@ const availableRoles = [
 ];
 
 export default function EmployeeForm({ onSubmit, isLoading, initialData }: EmployeeFormProps) {
+  const { settings: hrSettings } = useHRSettings();
+  
+  // Calculate suggested salary based on HR settings
+  const getDefaultSalary = () => {
+    if (hrSettings && hrSettings.daily_working_hours && hrSettings.working_days_per_week) {
+      // Example: minimum wage calculation based on working hours
+      const monthlyHours = hrSettings.daily_working_hours * hrSettings.working_days_per_week * 4.33;
+      return Math.round(monthlyHours * 3); // 3 KWD per hour as example minimum
+    }
+    return 300; // Default minimum salary
+  };
+
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
-      basic_salary: 0,
+      basic_salary: initialData?.basic_salary || getDefaultSalary(),
       allowances: 0,
       hire_date: new Date(),
       createAccount: false,
@@ -247,17 +260,29 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
             name="basic_salary"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>الراتب الأساسي *</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  الراتب الأساسي *
+                  {hrSettings && (
+                    <span className="text-xs text-muted-foreground">
+                      (مقترح: {formatCurrency(getDefaultSalary())})
+                    </span>
+                  )}
+                </FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
                     step="0.001"
-                    placeholder="أدخل الراتب الأساسي" 
+                    placeholder={`أدخل الراتب الأساسي (مقترح: ${getDefaultSalary()})`}
                     {...field}
                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
+                {hrSettings && (
+                  <p className="text-xs text-muted-foreground">
+                    بناءً على {hrSettings.daily_working_hours} ساعات يومياً × {hrSettings.working_days_per_week} أيام أسبوعياً
+                  </p>
+                )}
               </FormItem>
             )}
           />

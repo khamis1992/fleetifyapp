@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, DollarSign, Calculator } from 'lucide-react';
+import { Calendar, DollarSign, Calculator, Settings } from 'lucide-react';
 import { CreatePayrollData } from '@/hooks/usePayroll';
+import { useHRSettings } from '@/hooks/useHRSettings';
 import { formatCurrency } from '@/lib/utils';
 
 interface Employee {
@@ -37,6 +38,8 @@ export default function PayrollForm({
   selectedEmployeeId,
   initialData 
 }: PayrollFormProps) {
+  const { settings: hrSettings } = useHRSettings();
+  
   const [formData, setFormData] = useState<CreatePayrollData>(
     initialData || {
       employee_id: selectedEmployeeId || '',
@@ -72,16 +75,49 @@ export default function PayrollForm({
     }
   }, [selectedEmployeeId, employees]);
 
+  // Update overtime rate and calculate tax when HR settings change
+  useEffect(() => {
+    if (hrSettings && !initialData) {
+      setFormData(prev => ({
+        ...prev,
+        overtime_rate: calculateOvertimeRate(prev.basic_salary, hrSettings.overtime_rate_percentage || 150),
+      }));
+    }
+  }, [hrSettings, initialData]);
+
+  // Calculate overtime rate based on HR settings
+  const calculateOvertimeRate = (basicSalary: number, overtimePercentage: number) => {
+    if (!hrSettings || !basicSalary) return 0;
+    const dailyRate = basicSalary / (hrSettings.working_days_per_week * 4.33); // Monthly to daily
+    const hourlyRate = dailyRate / hrSettings.daily_working_hours;
+    return hourlyRate * (overtimePercentage / 100);
+  };
+
+  // Auto-calculate tax and social security
+  const calculateTaxAndDeductions = (grossAmount: number) => {
+    if (!hrSettings) return { tax: 0, socialSecurity: 0 };
+    
+    const taxAmount = grossAmount * (hrSettings.tax_rate / 100);
+    const socialSecurityAmount = grossAmount * (hrSettings.social_security_rate / 100);
+    
+    return {
+      tax: taxAmount,
+      socialSecurity: socialSecurityAmount
+    };
+  };
+
   const handleEmployeeChange = (employeeId: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (employee) {
       setSelectedEmployee(employee);
+      const newOvertimeRate = calculateOvertimeRate(employee.basic_salary, hrSettings?.overtime_rate_percentage || 150);
       setFormData(prev => ({
         ...prev,
         employee_id: employee.id,
         basic_salary: employee.basic_salary,
         allowances: employee.allowances || 0,
         bank_account: employee.iban || employee.bank_account || '',
+        overtime_rate: newOvertimeRate,
       }));
     }
   };
@@ -89,7 +125,13 @@ export default function PayrollForm({
   const calculateTotals = () => {
     const overtime_amount = (formData.overtime_hours || 0) * (formData.overtime_rate || 0);
     const gross_amount = formData.basic_salary + (formData.allowances || 0) + overtime_amount;
-    const total_deductions = (formData.deductions || 0) + (formData.tax_amount || 0);
+    
+    // Auto-calculate tax and social security if HR settings exist
+    const { tax, socialSecurity } = calculateTaxAndDeductions(gross_amount);
+    const auto_tax = hrSettings?.tax_rate ? tax : (formData.tax_amount || 0);
+    const auto_social_security = hrSettings?.social_security_rate ? socialSecurity : 0;
+    
+    const total_deductions = (formData.deductions || 0) + auto_tax + auto_social_security;
     const net_amount = gross_amount - total_deductions;
 
     return {
@@ -97,10 +139,12 @@ export default function PayrollForm({
       gross_amount,
       total_deductions,
       net_amount,
+      auto_tax,
+      auto_social_security,
     };
   };
 
-  const { overtime_amount, gross_amount, total_deductions, net_amount } = calculateTotals();
+  const { overtime_amount, gross_amount, total_deductions, net_amount, auto_tax, auto_social_security } = calculateTotals();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,7 +275,14 @@ export default function PayrollForm({
               />
             </div>
             <div>
-              <Label htmlFor="overtime_rate">سعر الساعة الإضافية</Label>
+              <Label htmlFor="overtime_rate" className="flex items-center gap-2">
+                سعر الساعة الإضافية
+                {hrSettings?.overtime_rate_percentage && (
+                  <span className="text-xs text-muted-foreground">
+                    (تلقائي: {hrSettings.overtime_rate_percentage}%)
+                  </span>
+                )}
+              </Label>
               <Input
                 id="overtime_rate"
                 type="number"
@@ -239,6 +290,7 @@ export default function PayrollForm({
                 min="0"
                 value={formData.overtime_rate}
                 onChange={(e) => setFormData(prev => ({ ...prev, overtime_rate: parseFloat(e.target.value) || 0 }))}
+                placeholder={hrSettings ? 'محسوب تلقائياً' : 'أدخل سعر الساعة'}
               />
             </div>
             <div>
@@ -253,17 +305,42 @@ export default function PayrollForm({
               />
             </div>
             <div>
-              <Label htmlFor="tax_amount">الضريبة</Label>
+              <Label htmlFor="tax_amount" className="flex items-center gap-2">
+                الضريبة
+                {hrSettings?.tax_rate && (
+                  <span className="text-xs text-muted-foreground">
+                    (معدل: {hrSettings.tax_rate}%)
+                  </span>
+                )}
+              </Label>
               <Input
                 id="tax_amount"
                 type="number"
                 step="0.001"
                 min="0"
-                value={formData.tax_amount}
+                value={hrSettings?.tax_rate ? auto_tax : formData.tax_amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, tax_amount: parseFloat(e.target.value) || 0 }))}
+                disabled={!!hrSettings?.tax_rate}
+                placeholder={hrSettings?.tax_rate ? 'محسوب تلقائياً' : 'أدخل مبلغ الضريبة'}
               />
             </div>
           </div>
+
+          {/* HR Settings Integration Info */}
+          {hrSettings && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-700 font-medium mb-2">
+                <Settings className="h-4 w-4" />
+                إعدادات الموارد البشرية المطبقة
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-blue-600">
+                <div>معدل الوقت الإضافي: {hrSettings.overtime_rate_percentage}%</div>
+                <div>معدل الضريبة: {hrSettings.tax_rate}%</div>
+                <div>معدل التأمينات: {hrSettings.social_security_rate}%</div>
+                <div>تكرار الراتب: {hrSettings.payroll_frequency === 'monthly' ? 'شهري' : hrSettings.payroll_frequency}</div>
+              </div>
+            </div>
+          )}
 
           {/* Calculations Summary */}
           <div className="bg-primary/5 p-4 rounded-lg border">
@@ -291,8 +368,14 @@ export default function PayrollForm({
               </div>
               <div className="flex justify-between">
                 <span>الضريبة:</span>
-                <span className="text-red-600">-{formatCurrency(formData.tax_amount || 0)}</span>
+                <span className="text-red-600">-{formatCurrency(hrSettings?.tax_rate ? auto_tax : (formData.tax_amount || 0))}</span>
               </div>
+              {hrSettings?.social_security_rate && auto_social_security > 0 && (
+                <div className="flex justify-between">
+                  <span>التأمينات الاجتماعية:</span>
+                  <span className="text-red-600">-{formatCurrency(auto_social_security)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold border-t pt-1 text-lg">
                 <span>صافي الراتب:</span>
                 <span className="text-primary">{formatCurrency(net_amount)}</span>

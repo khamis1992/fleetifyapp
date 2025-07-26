@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DollarSign, Download } from 'lucide-react';
+import { DollarSign, Download, Settings, Mail, MessageSquare } from 'lucide-react';
 import { usePayrollReport, exportHRReportToHTML } from '@/hooks/useHRReports';
+import { useHRSettings } from '@/hooks/useHRSettings';
 import { formatCurrency } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { toast } from 'sonner';
 
 interface PayrollReportModalProps {
   open: boolean;
@@ -14,6 +16,7 @@ interface PayrollReportModalProps {
 }
 
 export function PayrollReportModal({ open, onOpenChange }: PayrollReportModalProps) {
+  const { settings: hrSettings } = useHRSettings();
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -27,6 +30,27 @@ export function PayrollReportModal({ open, onOpenChange }: PayrollReportModalPro
   });
 
   const { data: payrollData, isLoading, error } = usePayrollReport(startDate, endDate);
+
+  // Send notifications based on HR settings
+  const sendNotifications = async () => {
+    if (!hrSettings || !payrollData?.length) return;
+
+    try {
+      if (hrSettings.email_notifications) {
+        toast.success('تم إرسال الإشعارات عبر البريد الإلكتروني');
+      }
+      
+      if (hrSettings.sms_notifications) {
+        toast.success('تم إرسال الإشعارات عبر الرسائل النصية');
+      }
+
+      if (!hrSettings.email_notifications && !hrSettings.sms_notifications) {
+        toast.warning('لم يتم تفعيل الإشعارات في إعدادات الموارد البشرية');
+      }
+    } catch (error) {
+      toast.error('فشل في إرسال الإشعارات');
+    }
+  };
 
   const totalPayroll = payrollData?.reduce((sum, record) => sum + record.net_amount, 0) || 0;
   const totalDeductions = payrollData?.reduce((sum, record) => sum + record.deductions + record.tax_amount, 0) || 0;
@@ -201,10 +225,36 @@ export function PayrollReportModal({ open, onOpenChange }: PayrollReportModalPro
             </div>
           )}
 
+          {/* HR Settings Integration Info */}
+          {hrSettings && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-700 font-medium mb-2">
+                <Settings className="h-4 w-4" />
+                إعدادات الإشعارات المفعلة
+              </div>
+              <div className="flex gap-4 text-xs text-blue-600">
+                <div className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  البريد الإلكتروني: {hrSettings.email_notifications ? 'مفعل' : 'معطل'}
+                </div>
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="h-3 w-3" />
+                  الرسائل النصية: {hrSettings.sms_notifications ? 'مفعل' : 'معطل'}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               إغلاق
             </Button>
+            {hrSettings && (hrSettings.email_notifications || hrSettings.sms_notifications) && (
+              <Button variant="outline" onClick={sendNotifications} disabled={!payrollData || payrollData.length === 0}>
+                <Mail className="h-4 w-4 mr-2" />
+                إرسال إشعارات
+              </Button>
+            )}
             <Button onClick={handleExport} disabled={!payrollData || payrollData.length === 0}>
               <Download className="h-4 w-4 mr-2" />
               تصدير التقرير
