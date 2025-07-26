@@ -2874,6 +2874,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          id: string
+          operation_type: string
+          user_id: string | null
+          window_start: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          operation_type: string
+          user_id?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          operation_type?: string
+          user_id?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           billing_cycle: string
@@ -4017,6 +4047,18 @@ export type Database = {
         Args: { budget_id_param: string }
         Returns: number
       }
+      check_rate_limit: {
+        Args: {
+          operation_type: string
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
+      check_session_timeout: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -4100,6 +4142,14 @@ export type Database = {
       }
       create_traffic_payment_journal_entry: {
         Args: { payment_id_param: string }
+        Returns: string
+      }
+      decrypt_sensitive_data: {
+        Args: { encrypted_data: string }
+        Returns: string
+      }
+      encrypt_sensitive_data: {
+        Args: { data: string }
         Returns: string
       }
       export_ledger_data: {
@@ -4245,6 +4295,15 @@ export type Database = {
         Args: { employee_id_param: string }
         Returns: undefined
       }
+      log_security_event: {
+        Args: {
+          event_type: string
+          resource_type: string
+          resource_id?: string
+          details?: Json
+        }
+        Returns: undefined
+      }
       log_user_account_action: {
         Args: {
           employee_id_param: string
@@ -4286,6 +4345,14 @@ export type Database = {
       }
       user_belongs_to_company: {
         Args: { _user_id: string; _company_id: string }
+        Returns: boolean
+      }
+      validate_password_strength: {
+        Args: { password: string }
+        Returns: boolean
+      }
+      validate_user_input: {
+        Args: { input_text: string; max_length?: number }
         Returns: boolean
       }
     }
