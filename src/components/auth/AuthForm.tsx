@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Eye, EyeOff, Building2 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import logoImage from '@/assets/logo.jpg';
 
 export const AuthForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -131,8 +132,8 @@ export const AuthForm: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-4 shadow-accent">
-            <Building2 className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-4 shadow-accent overflow-hidden">
+            <img src={logoImage} alt="Fleetify Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-bold text-primary">
             Fleetify
