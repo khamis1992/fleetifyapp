@@ -112,6 +112,16 @@ serve(async (req) => {
     if (!roles || roles.length === 0) {
       throw new Error('At least one role must be specified');
     }
+    
+    // Validate company_id format
+    if (typeof company_id !== 'string' || company_id === 'undefined' || company_id === 'null') {
+      throw new Error('Invalid company_id format');
+    }
+    
+    // Validate employee_id format
+    if (typeof employee_id !== 'string' || employee_id === 'undefined' || employee_id === 'null') {
+      throw new Error('Invalid employee_id format');
+    }
 
     // Verify the company exists
     const { data: companyData, error: companyError } = await supabaseClient

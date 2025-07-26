@@ -58,6 +58,16 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
   const onSubmit = async (data: CreateUserData) => {
     try {
+      // Validate that company_id is selected
+      if (!data.company_id) {
+        throw new Error('يجب اختيار شركة');
+      }
+      
+      // Validate that roles are selected
+      if (!data.roles || data.roles.length === 0) {
+        throw new Error('يجب اختيار دور واحد على الأقل');
+      }
+      
       await onCreateUser(data);
       reset();
     } catch (error) {
@@ -162,7 +172,10 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               
               <div className="space-y-2">
                 <Label>الشركة *</Label>
-                <Select onValueChange={(value) => setValue('company_id', value)}>
+                <Select 
+                  onValueChange={(value) => setValue('company_id', value)}
+                  {...register('company_id', { required: 'يجب اختيار شركة' })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="اختر الشركة" />
                   </SelectTrigger>
@@ -175,7 +188,7 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                   </SelectContent>
                 </Select>
                 {errors.company_id && (
-                  <p className="text-sm text-destructive">يجب اختيار شركة</p>
+                  <p className="text-sm text-destructive">{errors.company_id.message}</p>
                 )}
               </div>
             </div>
@@ -252,7 +265,7 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             </Button>
             <Button
               onClick={handleSubmit(onSubmit)}
-              disabled={isLoading || !selectedRoles?.length}
+              disabled={isLoading || !selectedRoles?.length || !watch('company_id')}
             >
               {isLoading ? (
                 <>

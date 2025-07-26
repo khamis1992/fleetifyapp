@@ -142,6 +142,22 @@ export const useSuperAdminUsers = () => {
   const createUser = async (userData: CreateUserData) => {
     setIsCreating(true);
     try {
+      // Validate required fields
+      if (!userData.company_id) {
+        throw new Error('يجب تحديد الشركة');
+      }
+      
+      if (!userData.email) {
+        throw new Error('يجب تحديد البريد الإلكتروني');
+      }
+      
+      if (!userData.first_name || !userData.last_name) {
+        throw new Error('يجب تحديد الاسم الأول واسم العائلة');
+      }
+      
+      if (!userData.roles || userData.roles.length === 0) {
+        throw new Error('يجب تحديد دور واحد على الأقل');
+      }
       // Find employee by email to link account
       const { data: employees, error: employeeError } = await supabase
         .from('employees')
