@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthForm } from '@/components/auth/AuthForm';
+import { ModernAuthForm } from '@/components/auth/ModernAuthForm';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const Auth: React.FC = () => {
@@ -9,7 +9,7 @@ const Auth: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-soft">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-hero">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -19,7 +19,7 @@ const Auth: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <AuthForm />;
+  return <ModernAuthForm />;
 };
 
 export default Auth;
