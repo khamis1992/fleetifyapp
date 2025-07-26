@@ -2465,6 +2465,74 @@ export type Database = {
           },
         ]
       }
+      traffic_violation_payments: {
+        Row: {
+          amount: number
+          bank_account: string | null
+          check_number: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          journal_entry_id: string | null
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          payment_number: string
+          payment_type: string
+          reference_number: string | null
+          status: string
+          traffic_violation_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account?: string | null
+          check_number?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number: string
+          payment_type?: string
+          reference_number?: string | null
+          status?: string
+          traffic_violation_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account?: string | null
+          check_number?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number?: string
+          payment_type?: string
+          reference_number?: string | null
+          status?: string
+          traffic_violation_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_violation_payments_traffic_violation_id_fkey"
+            columns: ["traffic_violation_id"]
+            isOneToOne: false
+            referencedRelation: "penalties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -3366,6 +3434,10 @@ export type Database = {
         Args: { penalty_id_param: string }
         Returns: string
       }
+      create_traffic_payment_journal_entry: {
+        Args: { payment_id_param: string }
+        Returns: string
+      }
       export_ledger_data: {
         Args: {
           company_id_param: string
@@ -3383,6 +3455,10 @@ export type Database = {
         Returns: string
       }
       generate_maintenance_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
+      generate_traffic_payment_number: {
         Args: { company_id_param: string }
         Returns: string
       }
