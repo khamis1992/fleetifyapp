@@ -1,229 +1,260 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePayrollSummary } from '@/hooks/usePayrollFinancialAnalysis';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Car, 
   FileText, 
   Users, 
   DollarSign,
+  TrendingUp,
   AlertTriangle,
-  Wrench,
-  XCircle
+  Calendar,
+  Plus
 } from 'lucide-react';
 
-// Enhanced Dashboard Components
-import { WelcomeHero } from '@/components/dashboard/WelcomeHero';
-import { MetricCard } from '@/components/dashboard/MetricCard';
-import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
-import { QuickActions } from '@/components/dashboard/QuickActions';
-import { StatusOverview } from '@/components/dashboard/StatusOverview';
-import { Skeleton } from '@/components/ui/skeleton';
+const DashboardStats = [
+  {
+    title: 'إجمالي الأسطول',
+    value: '24',
+    change: '+2',
+    changeType: 'positive' as const,
+    icon: Car,
+    color: 'from-blue-500 to-blue-600'
+  },
+  {
+    title: 'العقود النشطة',
+    value: '18',
+    change: '+3',
+    changeType: 'positive' as const,
+    icon: FileText,
+    color: 'from-green-500 to-green-600'
+  },
+  {
+    title: 'العملاء',
+    value: '157',
+    change: '+12',
+    changeType: 'positive' as const,
+    icon: Users,
+    color: 'from-purple-500 to-purple-600'
+  },
+  {
+    title: 'الإيرادات الشهرية',
+    value: '12,450 د.ك',
+    change: '+8.2%',
+    changeType: 'positive' as const,
+    icon: DollarSign,
+    color: 'from-amber-500 to-amber-600'
+  }
+];
 
-// Icon mapping for activities
-const iconMap = {
-  FileText,
-  AlertTriangle,
-  Users,
-  DollarSign,
-  Car
-};
+const RecentActivities = [
+  {
+    id: 1,
+    type: 'عقد جديد',
+    description: 'تم إنشاء عقد جديد للسيد أحمد المحمد',
+    time: 'منذ ساعتين',
+    icon: FileText,
+    color: 'text-green-600'
+  },
+  {
+    id: 2,
+    type: 'صيانة مطلوبة',
+    description: 'السيارة ABC-123 تحتاج صيانة دورية',
+    time: 'منذ 4 ساعات',
+    icon: AlertTriangle,
+    color: 'text-amber-600'
+  },
+  {
+    id: 3,
+    type: 'عميل جديد',
+    description: 'تم تسجيل عميل جديد: سارة الكندري',
+    time: 'منذ يوم',
+    icon: Users,
+    color: 'text-blue-600'
+  }
+];
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { data: payrollSummary } = usePayrollSummary();
-  const { metrics, activities, fleetStatus, isLoading, error } = useDashboardData();
-
-  const userName = user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف';
-
-  // Quick stats for hero section
-  const quickStats = [
-    { label: 'الأسطول النشط', value: '24 سيارة', trend: '+2' },
-    { label: 'العملاء', value: '157', trend: '+12' },
-    { label: 'الإيرادات', value: '12.4K د.ك', trend: '+8.2%' }
-  ];
-
-  // Quick actions configuration
-  const quickActions = [
-    {
-      id: 'new-contract',
-      title: 'إنشاء عقد جديد',
-      description: 'إنشاء عقد إيجار جديد',
-      icon: FileText,
-      action: () => navigate('/fleet'),
-      variant: 'primary' as const
-    },
-    {
-      id: 'add-vehicle',
-      title: 'إضافة سيارة جديدة',
-      description: 'تسجيل سيارة في الأسطول',
-      icon: Car,
-      action: () => navigate('/fleet'),
-      variant: 'default' as const
-    },
-    {
-      id: 'new-customer',
-      title: 'تسجيل عميل جديد',
-      description: 'إضافة عميل جديد',
-      icon: Users,
-      action: () => navigate('/fleet'),
-      variant: 'default' as const
-    },
-    {
-      id: 'payment',
-      title: 'إدخال دفعة مالية',
-      description: 'تسجيل دفعة من عميل',
-      icon: DollarSign,
-      action: () => navigate('/finance/payments'),
-      variant: 'default' as const
-    },
-    {
-      id: 'violation',
-      title: 'تسجيل مخالفة',
-      description: 'إضافة مخالفة مرورية',
-      icon: AlertTriangle,
-      action: () => navigate('/fleet/traffic-violations'),
-      variant: 'default' as const
-    }
-  ];
-
-  // Fleet status items
-  const fleetStatusItems = [
-    {
-      id: 'available',
-      label: 'متاحة',
-      value: fleetStatus.available,
-      color: 'bg-success',
-      bgColor: 'bg-success'
-    },
-    {
-      id: 'rented',
-      label: 'مؤجرة',
-      value: fleetStatus.rented,
-      color: 'bg-primary',
-      bgColor: 'bg-primary'
-    },
-    {
-      id: 'maintenance',
-      label: 'صيانة',
-      value: fleetStatus.maintenance,
-      color: 'bg-warning',
-      bgColor: 'bg-warning'
-    },
-    {
-      id: 'out-of-service',
-      label: 'خارج الخدمة',
-      value: fleetStatus.outOfService,
-      color: 'bg-destructive',
-      bgColor: 'bg-destructive'
-    }
-  ];
-
-  // Enhanced activities with proper icons
-  const enhancedActivities = activities.map(activity => ({
-    ...activity,
-    icon: iconMap[activity.icon as keyof typeof iconMap] || FileText
-  }));
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-2">
-          <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
-          <h3 className="text-lg font-semibold">حدث خطأ في تحميل البيانات</h3>
-          <p className="text-muted-foreground">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
-      {/* Enhanced Welcome Hero */}
-      <WelcomeHero 
-        userName={userName}
-        quickStats={quickStats}
-      />
+      {/* Welcome Section */}
+      <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">
+            مرحباً، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}
+          </h1>
+          <p className="text-primary-foreground/80">
+            نظرة سريعة على أداء شركتك اليوم
+          </p>
+        </div>
+      </div>
 
-      {/* Enhanced Metrics Grid */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="space-y-3">
-              <Skeleton className="h-[120px] w-full rounded-lg" />
-            </div>
-          ))
-        ) : (
-          metrics.map((metric, index) => {
-            const icons = [Car, FileText, Users, DollarSign];
-            return (
-              <MetricCard
-                key={index}
-                title={metric.title}
-                value={metric.value}
-                change={metric.change}
-                changeType={metric.changeType}
-                icon={icons[index]}
-                trend={metric.trend}
-              />
-            );
-          })
-        )}
+        {DashboardStats.map((stat, index) => (
+          <Card key={index} className="border-0 shadow-card hover:shadow-elevated transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">
+                    {stat.title}
+                  </p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="h-4 w-4 text-success mr-1" />
+                    <span className="text-sm text-success font-medium">
+                      {stat.change}
+                    </span>
+                  </div>
+                </div>
+                <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color}`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Enhanced Activity Feed */}
+        {/* Recent Activities */}
         <div className="lg:col-span-2">
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-[400px] w-full rounded-lg" />
-            </div>
-          ) : (
-            <ActivityFeed activities={enhancedActivities} />
-          )}
+          <Card className="border-0 shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                الأنشطة الأخيرة
+              </CardTitle>
+              <CardDescription>
+                آخر التحديثات في نظامك
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {RecentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-4 p-4 bg-background-soft rounded-lg">
+                    <div className={`p-2 rounded-lg bg-muted ${activity.color}`}>
+                      <activity.icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs">
+                          {activity.type}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {activity.time}
+                        </span>
+                      </div>
+                      <p className="text-sm">{activity.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Enhanced Sidebar */}
-        <div className="space-y-6">
-          {/* Enhanced Quick Actions */}
-          <QuickActions actions={quickActions} />
+        {/* Quick Actions */}
+        <div>
+          <Card className="border-0 shadow-card">
+            <CardHeader>
+              <CardTitle>إجراءات سريعة</CardTitle>
+              <CardDescription>
+                الإجراءات الأكثر استخداماً
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button className="w-full justify-start gap-3" variant="outline">
+                <FileText className="h-4 w-4" />
+                إنشاء عقد جديد
+              </Button>
+              <Button className="w-full justify-start gap-3" variant="outline">
+                <Car className="h-4 w-4" />
+                إضافة سيارة جديدة
+              </Button>
+              <Button className="w-full justify-start gap-3" variant="outline">
+                <Users className="h-4 w-4" />
+                تسجيل عميل جديد
+              </Button>
+              <Button className="w-full justify-start gap-3" variant="outline">
+                <DollarSign className="h-4 w-4" />
+                إدخال دفعة مالية
+              </Button>
+              <Button className="w-full justify-start gap-3" variant="outline">
+                <AlertTriangle className="h-4 w-4" />
+                تسجيل مخالفة
+              </Button>
+            </CardContent>
+          </Card>
 
-          {/* Enhanced Fleet Status */}
-          <StatusOverview
-            title="حالة الأسطول"
-            icon={Car}
-            items={fleetStatusItems}
-          />
+          {/* Fleet Status */}
+          <Card className="border-0 shadow-card mt-6">
+            <CardHeader>
+              <CardTitle>حالة الأسطول</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">متاحة</span>
+                <Badge variant="default" className="bg-success">6</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">مؤجرة</span>
+                <Badge variant="default" className="bg-primary">18</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">صيانة</span>
+                <Badge variant="default" className="bg-warning">2</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">خارج الخدمة</span>
+                <Badge variant="destructive">1</Badge>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Enhanced Payroll Summary */}
+          {/* Payroll Summary */}
           {payrollSummary && (
-            <StatusOverview
-              title="ملخص الرواتب"
-              icon={Users}
-              items={[
-                {
-                  id: 'total-payrolls',
-                  label: 'إجمالي الرواتب',
-                  value: payrollSummary.totalPayrolls,
-                  color: 'bg-primary'
-                },
-                {
-                  id: 'integration-rate',
-                  label: 'التكامل المحاسبي',
-                  value: Math.round(payrollSummary.integrationRate),
-                  color: payrollSummary.integrationRate > 80 ? 'bg-success' : 'bg-warning'
-                },
-                {
-                  id: 'pending-integration',
-                  label: 'معلقة التكامل',
-                  value: payrollSummary.pendingIntegration,
-                  color: payrollSummary.pendingIntegration > 0 ? 'bg-warning' : 'bg-success'
-                }
-              ]}
-              showProgress={true}
-            />
+            <Card className="border-0 shadow-card mt-6">
+              <CardHeader>
+                <CardTitle>ملخص الرواتب</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">إجمالي الرواتب</span>
+                  <Badge variant="default">{payrollSummary.totalPayrolls}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">التكامل المحاسبي</span>
+                  <Badge 
+                    variant={payrollSummary.integrationRate > 80 ? "default" : "secondary"}
+                    className={payrollSummary.integrationRate > 80 ? "bg-green-600" : ""}
+                  >
+                    {payrollSummary.integrationRate.toFixed(0)}%
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">المبلغ الإجمالي</span>
+                  <span className="text-sm font-medium">
+                    {(payrollSummary.totalNetAmount / 1000).toFixed(1)}ك د.ك
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">معلقة التكامل</span>
+                  <Badge 
+                    variant={payrollSummary.pendingIntegration > 0 ? "secondary" : "default"}
+                    className={payrollSummary.pendingIntegration > 0 ? "bg-yellow-500" : "bg-green-600"}
+                  >
+                    {payrollSummary.pendingIntegration}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
