@@ -20,15 +20,16 @@ interface Contract {
   updated_at: string;
 }
 
-export const useActiveContracts = (customerId?: string, vendorId?: string) => {
+export const useActiveContracts = (customerId?: string, vendorId?: string, companyId?: string) => {
   return useQuery({
-    queryKey: ["active-contracts", customerId, vendorId],
+    queryKey: ["active-contracts", customerId, vendorId, companyId],
     queryFn: async (): Promise<Contract[]> => {
-      if (!customerId && !vendorId) return [];
+      if (!companyId) return [];
       
       let query = supabase
         .from("contracts")
         .select("*")
+        .eq("company_id", companyId)
         .eq("status", "active")
         .order("contract_date", { ascending: false });
 
@@ -49,6 +50,6 @@ export const useActiveContracts = (customerId?: string, vendorId?: string) => {
       
       return data || [];
     },
-    enabled: !!(customerId || vendorId)
+    enabled: !!companyId && !!(customerId || vendorId)
   });
 };

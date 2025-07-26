@@ -32,16 +32,20 @@ export default function Contracts() {
 
   // Fetch contracts
   const { data: contracts, isLoading, refetch } = useQuery({
-    queryKey: ['contracts'],
+    queryKey: ['contracts', user?.profile?.company_id],
     queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
       const { data, error } = await supabase
         .from('contracts')
         .select('*')
+        .eq('company_id', user.profile.company_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
       return data
-    }
+    },
+    enabled: !!user?.profile?.company_id
   })
 
   // Contract statistics

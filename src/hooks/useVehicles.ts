@@ -134,11 +134,14 @@ export const useVehicles = () => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ["vehicles", user?.id],
+    queryKey: ["vehicles", user?.profile?.company_id],
     queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
       const { data, error } = await supabase
         .from("vehicles")
         .select("*")
+        .eq("company_id", user.profile.company_id)
         .eq("is_active", true)
         .order("plate_number")
 
@@ -149,7 +152,7 @@ export const useVehicles = () => {
 
       return data as Vehicle[]
     },
-    enabled: !!user
+    enabled: !!user?.profile?.company_id
   })
 }
 
@@ -157,11 +160,14 @@ export const useAvailableVehicles = () => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ["available-vehicles", user?.id],
+    queryKey: ["available-vehicles", user?.profile?.company_id],
     queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
       const { data, error } = await supabase
         .from("vehicles")
         .select("*")
+        .eq("company_id", user.profile.company_id)
         .eq("is_active", true)
         .eq("status", "available")
         .order("plate_number")
@@ -173,7 +179,7 @@ export const useAvailableVehicles = () => {
 
       return data as Vehicle[]
     },
-    enabled: !!user
+    enabled: !!user?.profile?.company_id
   })
 }
 
@@ -371,14 +377,17 @@ export const useVehicleMaintenance = (vehicleId?: string) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ["vehicle-maintenance", vehicleId],
+    queryKey: ["vehicle-maintenance", vehicleId, user?.profile?.company_id],
     queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
       let query = supabase
         .from("vehicle_maintenance")
         .select(`
           *,
           vehicles!inner(plate_number, make, model)
         `)
+        .eq("company_id", user.profile.company_id)
         .order("created_at", { ascending: false })
 
       if (vehicleId) {
@@ -390,7 +399,7 @@ export const useVehicleMaintenance = (vehicleId?: string) => {
       if (error) throw error
       return data as any[]
     },
-    enabled: !!user
+    enabled: !!user?.profile?.company_id
   })
 }
 
