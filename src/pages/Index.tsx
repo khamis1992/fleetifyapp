@@ -56,57 +56,57 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">
-                Fleetify
+                فليتيفاي
               </h3>
               <p className="text-sm text-muted-foreground">
-                Next-generation business management platform for modern enterprises.
+                منصة إدارة أعمال الجيل القادم للمؤسسات الحديثة.
               </p>
             </div>
             
             <div className="space-y-4">
-              <h4 className="font-medium">Product</h4>
+              <h4 className="font-medium">المنتج</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Fleet Management</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">HR Solutions</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Financial Control</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Analytics</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">إدارة الأسطول</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">حلول الموارد البشرية</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">التحكم المالي</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">التحليلات</a></li>
               </ul>
             </div>
             
             <div className="space-y-4">
-              <h4 className="font-medium">Company</h4>
+              <h4 className="font-medium">الشركة</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Support</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">من نحن</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">الوظائف</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">تواصل معنا</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">الدعم</a></li>
               </ul>
             </div>
             
             <div className="space-y-4">
-              <h4 className="font-medium">Legal</h4>
+              <h4 className="font-medium">القانونية</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">سياسة الخصوصية</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">شروط الخدمة</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">GDPR</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Security</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">الأمان</a></li>
               </ul>
             </div>
           </div>
           
           <div className="border-t border-border/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              © 2024 Fleetify. All rights reserved.
+              © 2024 فليتيفاي. جميع الحقوق محفوظة.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Privacy
+                الخصوصية
               </a>
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Terms
+                الشروط
               </a>
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Support
+                الدعم
               </a>
             </div>
           </div>

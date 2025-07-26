@@ -4,31 +4,31 @@ import { InteractiveCard } from './InteractiveCard';
 
 const testimonials = [
   {
-    name: "Ahmed Al-Rashid",
-    company: "Kuwait Transport Co.",
-    role: "Fleet Operations Director",
-    content: "Fleetify transformed our operations completely. We've seen a 40% reduction in maintenance costs and 25% improvement in fuel efficiency. The real-time tracking has been a game-changer.",
+    name: "أحمد الراشد",
+    company: "شركة الكويت للنقل",
+    role: "مدير عمليات الأسطول",
+    content: "فليتيفاي حولت عملياتنا بالكامل. رأينا انخفاضاً بنسبة 40% في تكاليف الصيانة وتحسناً بنسبة 25% في كفاءة الوقود. التتبع المباشر كان نقطة تحول حقيقية.",
     rating: 5,
     image: "👨‍💼",
-    metrics: { savings: "€150K/year", efficiency: "+40%" }
+    metrics: { savings: "€150K/سنة", efficiency: "+40%" }
   },
   {
-    name: "Sarah Johnson",
-    company: "Global Logistics Ltd",
-    role: "CEO",
-    content: "The comprehensive dashboard gives us insights we never had before. From HR management to financial tracking, everything is seamlessly integrated. Our team productivity increased by 35%.",
+    name: "سارة جونسون",
+    company: "شركة الخدمات اللوجستية العالمية",
+    role: "المدير التنفيذي",
+    content: "لوحة التحكم الشاملة تمنحنا رؤى لم نحصل عليها من قبل. من إدارة الموارد البشرية إلى التتبع المالي، كل شيء متكامل بسلاسة. زادت إنتاجية فريقنا بنسبة 35%.",
     rating: 5,
     image: "👩‍💼",
     metrics: { productivity: "+35%", integration: "100%" }
   },
   {
-    name: "Mohamed Hassan",
-    company: "Desert Eagle Freight",
-    role: "Technology Manager",
-    content: "Implementation was surprisingly smooth. The team was onboarded in just 2 days, and we started seeing benefits immediately. The automation features alone save us 20 hours per week.",
+    name: "محمد حسن",
+    company: "شركة النسر الصحراوي للشحن",
+    role: "مدير التكنولوجيا",
+    content: "التنفيذ كان سلساً بشكل مفاجئ. تم تدريب الفريق في يومين فقط، وبدأنا نرى النتائج فوراً. ميزات الأتمتة وحدها توفر لنا 20 ساعة أسبوعياً.",
     rating: 5,
     image: "👨‍💻",
-    metrics: { timeSaved: "20h/week", onboarding: "2 days" }
+    metrics: { timeSaved: "20س/أسبوع", onboarding: "يومان" }
   }
 ];
 
@@ -64,11 +64,11 @@ export function TestimonialsSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-            Trusted by Industry Leaders
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
+            يثق بنا قادة الصناعة
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            See how companies like yours are transforming their operations with Fleetify
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-center">
+            شاهد كيف تحول الشركات مثل شركتك عملياتها مع فليتيفاي
           </p>
         </motion.div>
 
@@ -136,10 +136,10 @@ export function TestimonialsSection() {
           className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8"
         >
           {[
-            { label: 'Companies Trust Us', value: '500+' },
-            { label: 'Vehicles Managed', value: '50K+' },
-            { label: 'Average ROI', value: '300%' },
-            { label: 'Customer Satisfaction', value: '99%' },
+            { label: 'الشركات تثق بنا', value: '500+' },
+            { label: 'المركبات المُدارة', value: '50K+' },
+            { label: 'متوسط العائد على الاستثمار', value: '300%' },
+            { label: 'رضا العملاء', value: '99%' },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}

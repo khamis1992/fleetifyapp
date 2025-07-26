@@ -5,45 +5,45 @@ import { InteractiveCard } from './InteractiveCard';
 const features = [
   {
     icon: Truck,
-    title: 'Fleet Management',
-    description: 'Complete vehicle tracking, maintenance scheduling, and route optimization',
+    title: 'إدارة الأسطول',
+    description: 'تتبع شامل للمركبات، جدولة الصيانة، وتحسين المسارات',
     color: 'hsl(var(--primary))',
-    benefits: ['Real-time GPS tracking', 'Predictive maintenance', 'Fuel optimization']
+    benefits: ['تتبع GPS مباشر', 'صيانة تنبؤية', 'تحسين الوقود']
   },
   {
     icon: Users,
-    title: 'HR Management',
-    description: 'Streamlined employee management with attendance tracking and payroll',
+    title: 'إدارة الموارد البشرية',
+    description: 'إدارة الموظفين المبسطة مع تتبع الحضور وكشوف المرتبات',
     color: 'hsl(var(--accent))',
-    benefits: ['Digital attendance', 'Automated payroll', 'Performance analytics']
+    benefits: ['حضور رقمي', 'كشوف مرتبات آلية', 'تحليلات الأداء']
   },
   {
     icon: DollarSign,
-    title: 'Financial Control',
-    description: 'Advanced accounting features with real-time financial reporting',
+    title: 'التحكم المالي',
+    description: 'ميزات محاسبية متقدمة مع تقارير مالية في الوقت الفعلي',
     color: 'hsl(var(--success))',
-    benefits: ['Real-time reporting', 'Budget tracking', 'Invoice automation']
+    benefits: ['تقارير فورية', 'تتبع الميزانية', 'أتمتة الفواتير']
   },
   {
     icon: BarChart3,
-    title: 'Analytics & Insights',
-    description: 'Powerful business intelligence with predictive analytics',
+    title: 'التحليلات والرؤى',
+    description: 'ذكاء أعمال قوي مع تحليلات تنبؤية',
     color: 'hsl(var(--warning))',
-    benefits: ['Predictive insights', 'Custom dashboards', 'KPI monitoring']
+    benefits: ['رؤى تنبؤية', 'لوحات مخصصة', 'مراقبة مؤشرات الأداء']
   },
   {
     icon: Shield,
-    title: 'Enterprise Security',
-    description: 'Bank-grade security with advanced encryption and compliance',
+    title: 'أمان على مستوى المؤسسات',
+    description: 'أمان بمستوى البنوك مع تشفير متقدم والامتثال',
     color: 'hsl(var(--destructive))',
-    benefits: ['End-to-end encryption', 'GDPR compliance', 'Role-based access']
+    benefits: ['تشفير شامل', 'امتثال GDPR', 'وصول قائم على الأدوار']
   },
   {
     icon: Zap,
-    title: 'Automation',
-    description: 'Intelligent automation to streamline your business processes',
+    title: 'الأتمتة',
+    description: 'أتمتة ذكية لتبسيط عمليات عملك',
     color: 'hsl(var(--primary))',
-    benefits: ['Workflow automation', 'Smart notifications', 'Process optimization']
+    benefits: ['أتمتة سير العمل', 'إشعارات ذكية', 'تحسين العمليات']
   }
 ];
 
@@ -79,11 +79,11 @@ export function FeatureShowcase() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-            Everything You Need to Scale
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
+            كل ما تحتاجه للنمو
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Comprehensive business management tools designed for modern enterprises
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-center">
+            أدوات إدارة أعمال شاملة مصممة للمؤسسات الحديثة
           </p>
         </motion.div>
 
