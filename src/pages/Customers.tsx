@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Users, Building, Phone, Mail, MapPin, UserX, FileText, Search, Filter, Edit, Eye, FileBarChart, ShieldX } from "lucide-react"
+import { Plus, Users, Building, Phone, Mail, MapPin, UserX, FileText, Search, Filter, Edit, Eye, FileBarChart, ShieldX, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,12 +11,14 @@ import { useCustomers, useToggleCustomerBlacklist, Customer } from "@/hooks/useC
 import { useDebounce } from "@/hooks/useDebounce"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
+import { CustomerDiagnostics } from "@/components/customers/CustomerDiagnostics";
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 
 export default function Customers() {
   const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
   const [showInvoiceForm, setShowInvoiceForm] = useState(false)
@@ -114,17 +116,27 @@ export default function Customers() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">إدارة العملاء</h1>
-          <p className="text-muted-foreground">
-            قاعدة بيانات شاملة لإدارة معلومات العملاء والحسابات المالية
+          <h1 className="text-3xl font-bold">العملاء</h1>
+          <p className="text-muted-foreground mt-1">
+            إدارة وتتبع معلومات العملاء
           </p>
         </div>
-        <Button onClick={() => setShowCustomerForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          عميل جديد
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowDiagnostics(true)}
+            className="flex items-center gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            تشخيص المشاكل
+          </Button>
+          <Button onClick={() => setShowCustomerForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            إضافة عميل جديد
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -380,6 +392,12 @@ export default function Customers() {
           </Card>
         )}
       </div>
+
+      {/* Customer Diagnostics */}
+      <CustomerDiagnostics 
+        open={showDiagnostics}
+        onOpenChange={setShowDiagnostics}
+      />
 
       {/* Customer Form Dialog */}
       <CustomerForm

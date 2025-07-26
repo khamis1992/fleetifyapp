@@ -243,6 +243,7 @@ export const useCreateCustomer = () => {
   return useMutation({
     mutationFn: async (customerData: CustomerFormData & { selectedCompanyId?: string }) => {
       console.log('📝 [useCreateCustomer] Starting customer creation...');
+      console.log('📝 [useCreateCustomer] Customer data:', customerData);
       console.log('📝 [useCreateCustomer] User data:', {
         id: user?.id,
         email: user?.email,
@@ -251,9 +252,25 @@ export const useCreateCustomer = () => {
         roles: user?.roles
       });
       
+      // مرحلة 1: التحقق من البيانات المطلوبة
+      if (customerData.customer_type === 'individual') {
+        if (!customerData.first_name || !customerData.last_name) {
+          throw new Error('الاسم الأول والأخير مطلوبان للعملاء الأفراد');
+        }
+      } else if (customerData.customer_type === 'corporate') {
+        if (!customerData.company_name) {
+          throw new Error('اسم الشركة مطلوب للعملاء الشركات');
+        }
+      }
+      
+      if (!customerData.phone) {
+        throw new Error('رقم الهاتف مطلوب');
+      }
+      
       const isSuperAdmin = user?.roles?.includes('super_admin');
       let company_id;
       
+      // مرحلة 2: تحديد الشركة
       if (isSuperAdmin && customerData.selectedCompanyId) {
         // Super Admin can select any company
         company_id = customerData.selectedCompanyId;
@@ -265,44 +282,90 @@ export const useCreateCustomer = () => {
         // Regular users use their company
         company_id = user?.profile?.company_id || user?.company?.id;
         console.log('📝 [useCreateCustomer] Regular user using company:', company_id);
+        console.log('📝 [useCreateCustomer] Profile company_id:', user?.profile?.company_id);
+        console.log('📝 [useCreateCustomer] User company.id:', user?.company?.id);
       }
 
       if (!company_id) {
         console.error('📝 [useCreateCustomer] No company_id found');
+        console.error('📝 [useCreateCustomer] User profile:', user?.profile);
+        console.error('📝 [useCreateCustomer] User company:', user?.company);
+        
         const errorMsg = isSuperAdmin 
           ? 'يرجى اختيار شركة لإضافة العميل إليها.'
-          : 'لا يمكن تحديد الشركة. يرجى التأكد من أن لديك ملف شخصي صحيح مع شركة مرتبطة.';
+          : 'لا يمكن تحديد الشركة. يرجى التأكد من أن لديك ملف شخصي صحيح مع شركة مرتبطة. إذا استمرت المشكلة، يرجى التواصل مع الإدارة.';
         throw new Error(errorMsg);
+      }
+
+      // مرحلة 3: التحقق من صلاحية المستخدم
+      console.log('📝 [useCreateCustomer] Checking user permissions...');
+      const hasPermission = isSuperAdmin || 
+        user?.roles?.includes('company_admin') || 
+        user?.roles?.includes('manager') || 
+        user?.roles?.includes('sales_agent');
+      
+      if (!hasPermission) {
+        throw new Error('ليس لديك الصلاحية المطلوبة لإضافة العملاء. يرجى التواصل مع الإدارة.');
       }
 
       const { selectedCompanyId, ...customerDataWithoutCompany } = customerData;
       
-      console.log('📝 [useCreateCustomer] Inserting customer with company_id:', company_id);
+      // مرحلة 4: إعداد البيانات النهائية
+      const finalCustomerData = {
+        ...customerDataWithoutCompany,
+        company_id,
+        // التأكد من وجود القيم الافتراضية
+        is_active: true,
+        is_blacklisted: false,
+        credit_limit: customerDataWithoutCompany.credit_limit || 0,
+        city: customerDataWithoutCompany.city || 'Kuwait City',
+        country: customerDataWithoutCompany.country || 'Kuwait'
+      };
       
-      const { data, error } = await supabase
-        .from('customers')
-        .insert([{
-          ...customerDataWithoutCompany,
-          company_id
-        }])
-        .select()
-        .single();
+      console.log('📝 [useCreateCustomer] Final customer data:', finalCustomerData);
+      
+      // مرحلة 5: إدراج البيانات في قاعدة البيانات
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .insert([finalCustomerData])
+          .select()
+          .single();
 
-      if (error) {
-        console.error('📝 [useCreateCustomer] Database error:', error);
-        throw error;
+        if (error) {
+          console.error('📝 [useCreateCustomer] Database error:', error);
+          
+          // معالجة أخطاء قاعدة البيانات الشائعة
+          if (error.code === 'PGRST301') {
+            throw new Error('ليس لديك الصلاحية المطلوبة لإضافة العملاء في هذه الشركة.');
+          } else if (error.code === 'PGRST116') {
+            throw new Error('لم يتم العثور على الشركة المحددة.');
+          } else if (error.message?.includes('duplicate')) {
+            throw new Error('يوجد عميل آخر بنفس البيانات. يرجى التحقق من رقم الهاتف أو رقم الهوية.');
+          } else if (error.message?.includes('foreign key')) {
+            throw new Error('الشركة المحددة غير صحيحة أو غير موجودة.');
+          } else if (error.message?.includes('permission')) {
+            throw new Error('ليس لديك الصلاحية المطلوبة لإضافة العملاء.');
+          } else {
+            throw new Error(`خطأ في قاعدة البيانات: ${error.message}`);
+          }
+        }
+        
+        console.log('📝 [useCreateCustomer] Customer created successfully:', data?.id);
+        return data;
+      } catch (dbError: any) {
+        console.error('📝 [useCreateCustomer] Database operation failed:', dbError);
+        throw dbError;
       }
-      
-      console.log('📝 [useCreateCustomer] Customer created successfully:', data?.id);
-      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('📝 [useCreateCustomer] Success callback triggered for customer:', data?.id);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast.success('تم إضافة العميل بنجاح');
+      toast.success(`تم إضافة العميل "${data?.first_name || data?.company_name}" بنجاح`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('📝 [useCreateCustomer] Mutation error:', error);
-      const errorMessage = error?.message || 'حدث خطأ أثناء إضافة العميل';
+      const errorMessage = error?.message || 'حدث خطأ غير متوقع أثناء إضافة العميل';
       toast.error(errorMessage);
     }
   });
@@ -505,5 +568,120 @@ export const useCustomerFinancialSummary = (customerId: string) => {
       };
     },
     enabled: !!customerId
+  });
+};
+
+export const useCustomerDiagnostics = () => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['customer-diagnostics', user?.id],
+    queryFn: async () => {
+      const diagnostics = {
+        userInfo: {
+          id: user?.id,
+          email: user?.email,
+          roles: user?.roles,
+          hasProfile: !!user?.profile,
+          profileCompanyId: user?.profile?.company_id,
+          userCompanyId: user?.company?.id
+        },
+        permissions: {
+          isSuperAdmin: user?.roles?.includes('super_admin'),
+          isCompanyAdmin: user?.roles?.includes('company_admin'),
+          isManager: user?.roles?.includes('manager'),
+          isSalesAgent: user?.roles?.includes('sales_agent'),
+          canCreateCustomers: false,
+          companyId: null as string | null
+        },
+        database: {
+          canAccessCustomers: false,
+          canInsertCustomers: false,
+          companyExists: false,
+          error: null as string | null
+        }
+      };
+
+      try {
+        // التحقق من company_id
+        const companyId = user?.profile?.company_id || user?.company?.id;
+        diagnostics.permissions.companyId = companyId;
+
+        if (companyId) {
+          // التحقق من وجود الشركة
+          const { data: company, error: companyError } = await supabase
+            .from('companies')
+            .select('id, name')
+            .eq('id', companyId)
+            .single();
+
+          if (companyError) {
+            diagnostics.database.error = `خطأ في جلب بيانات الشركة: ${companyError.message}`;
+          } else {
+            diagnostics.database.companyExists = !!company;
+          }
+
+          // التحقق من القدرة على قراءة العملاء
+          const { data: customers, error: selectError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('company_id', companyId)
+            .limit(1);
+
+          if (selectError) {
+            diagnostics.database.error = `خطأ في قراءة العملاء: ${selectError.message}`;
+          } else {
+            diagnostics.database.canAccessCustomers = true;
+          }
+
+          // التحقق من القدرة على إضافة العملاء (test insert)
+          const testCustomer = {
+            company_id: companyId,
+            customer_type: 'individual' as const,
+            first_name: '__TEST__',
+            last_name: '__TEST__',
+            phone: '__TEST__',
+            is_active: false // وضع غير نشط للاختبار
+          };
+
+          const { data: insertTest, error: insertError } = await supabase
+            .from('customers')
+            .insert([testCustomer])
+            .select()
+            .single();
+
+          if (insertError) {
+            diagnostics.database.error = `خطأ في إضافة العملاء: ${insertError.message}`;
+          } else {
+            diagnostics.database.canInsertCustomers = true;
+            
+            // حذف العميل التجريبي فوراً
+            if (insertTest?.id) {
+              await supabase
+                .from('customers')
+                .delete()
+                .eq('id', insertTest.id);
+            }
+          }
+        }
+
+        // تحديد إمكانية إنشاء العملاء
+        diagnostics.permissions.canCreateCustomers = 
+          diagnostics.database.canInsertCustomers &&
+          (diagnostics.permissions.isSuperAdmin ||
+           diagnostics.permissions.isCompanyAdmin ||
+           diagnostics.permissions.isManager ||
+           diagnostics.permissions.isSalesAgent);
+
+      } catch (error: any) {
+        diagnostics.database.error = `خطأ عام في التشخيص: ${error.message}`;
+      }
+
+      return diagnostics;
+    },
+    enabled: !!user?.id,
+    staleTime: 30 * 1000, // 30 ثانية
+    gcTime: 60 * 1000, // دقيقة واحدة
+    retry: 1 // محاولة واحدة فقط
   });
 };

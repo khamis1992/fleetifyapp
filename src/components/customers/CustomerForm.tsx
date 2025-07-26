@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,8 +26,9 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const { user } = useAuth();
   const { data: companies } = useCompanies();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [formErrors, setFormErrors] = useState<string[]>([]);
   
-  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<CustomerFormData>({
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors }, clearErrors } = useForm<CustomerFormData>({
     defaultValues: {
       customer_type: customer?.customer_type || 'individual',
       first_name: customer?.first_name || '',
@@ -58,7 +60,75 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const updateCustomerMutation = useUpdateCustomer();
   const isSuperAdmin = user?.roles?.includes('super_admin');
 
+  // مراقبة تغيير نوع العميل لمسح الأخطاء
+  useEffect(() => {
+    setFormErrors([]);
+    clearErrors();
+  }, [customerType, clearErrors]);
+
+  // التحقق من الصلاحيات
+  const hasPermission = isSuperAdmin || 
+    user?.roles?.includes('company_admin') || 
+    user?.roles?.includes('manager') || 
+    user?.roles?.includes('sales_agent');
+
+  // دالة التحقق من صحة البيانات قبل الإرسال
+  const validateFormData = (data: CustomerFormData): string[] => {
+    const errors: string[] = [];
+
+    // التحقق من البيانات الأساسية
+    if (customerType === 'individual') {
+      if (!data.first_name?.trim()) {
+        errors.push('الاسم الأول مطلوب للعملاء الأفراد');
+      }
+      if (!data.last_name?.trim()) {
+        errors.push('الاسم الأخير مطلوب للعملاء الأفراد');
+      }
+    } else if (customerType === 'corporate') {
+      if (!data.company_name?.trim()) {
+        errors.push('اسم الشركة مطلوب للعملاء الشركات');
+      }
+    }
+
+    if (!data.phone?.trim()) {
+      errors.push('رقم الهاتف مطلوب');
+    }
+
+    // التحقق من تنسيق رقم الهاتف (اختياري ولكن مفيد)
+    if (data.phone && !/^[\+]?[0-9\-\s]{8,15}$/.test(data.phone.trim())) {
+      errors.push('رقم الهاتف غير صحيح (يجب أن يحتوي على 8-15 رقم)');
+    }
+
+    // التحقق من البريد الإلكتروني إذا تم إدخاله
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.push('عنوان البريد الإلكتروني غير صحيح');
+    }
+
+    // التحقق من اختيار الشركة للمدير العام
+    if (isSuperAdmin && mode === 'create' && !selectedCompanyId) {
+      errors.push('يجب اختيار شركة لإضافة العميل إليها');
+    }
+
+    return errors;
+  };
+
   const onSubmit = (data: CustomerFormData) => {
+    // مسح الأخطاء السابقة
+    setFormErrors([]);
+
+    // التحقق من صحة البيانات
+    const validationErrors = validateFormData(data);
+    if (validationErrors.length > 0) {
+      setFormErrors(validationErrors);
+      return;
+    }
+
+    // التحقق من الصلاحيات
+    if (!hasPermission) {
+      setFormErrors(['ليس لديك الصلاحية المطلوبة لإضافة العملاء. يرجى التواصل مع الإدارة.']);
+      return;
+    }
+
     if (mode === 'create') {
       const customerData = {
         ...data,
@@ -70,6 +140,10 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           onOpenChange(false);
           reset();
           setSelectedCompanyId('');
+          setFormErrors([]);
+        },
+        onError: (error: any) => {
+          setFormErrors([error?.message || 'حدث خطأ أثناء إضافة العميل']);
         }
       });
     } else {
@@ -79,6 +153,10 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
       }, {
         onSuccess: () => {
           onOpenChange(false);
+          setFormErrors([]);
+        },
+        onError: (error: any) => {
+          setFormErrors([error?.message || 'حدث خطأ أثناء تحديث بيانات العميل']);
         }
       });
     }
@@ -87,7 +165,13 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const isLoading = createCustomerMutation.isPending || updateCustomerMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(open) => {
+      onOpenChange(open);
+      if (!open) {
+        setFormErrors([]);
+        setSelectedCompanyId('');
+      }
+    }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -95,12 +179,41 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           </DialogTitle>
         </DialogHeader>
 
+        {/* عرض الأخطاء */}
+        {formErrors.length > 0 && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <ul className="list-disc list-inside space-y-1">
+                {formErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* تحذير عدم وجود صلاحيات */}
+        {!hasPermission && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              ليس لديك الصلاحية المطلوبة لإدارة العملاء. يرجى التواصل مع الإدارة للحصول على الصلاحيات المناسبة.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Company Selection for Super Admin */}
           {isSuperAdmin && mode === 'create' && (
             <Card>
               <CardHeader>
-                <CardTitle>اختيار الشركة</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  اختيار الشركة *
+                  {selectedCompanyId && (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -163,7 +276,10 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                         <div className="space-y-2">
                           <Label>الاسم الأول *</Label>
                           <Input 
-                            {...register('first_name', { required: 'الاسم الأول مطلوب' })} 
+                            {...register('first_name', { 
+                              required: 'الاسم الأول مطلوب',
+                              minLength: { value: 2, message: 'الاسم الأول يجب أن يحتوي على حرفين على الأقل' }
+                            })} 
                             placeholder="الاسم الأول"
                           />
                           {errors.first_name && (
@@ -173,7 +289,10 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                         <div className="space-y-2">
                           <Label>الاسم الأخير *</Label>
                           <Input 
-                            {...register('last_name', { required: 'الاسم الأخير مطلوب' })} 
+                            {...register('last_name', { 
+                              required: 'الاسم الأخير مطلوب',
+                              minLength: { value: 2, message: 'الاسم الأخير يجب أن يحتوي على حرفين على الأقل' }
+                            })} 
                             placeholder="الاسم الأخير"
                           />
                           {errors.last_name && (
@@ -198,7 +317,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                         <Label>اسم الشركة *</Label>
                         <Input 
                           {...register('company_name', { 
-                            required: customerType === 'corporate' ? 'اسم الشركة مطلوب' : false 
+                            required: customerType === 'corporate' ? 'اسم الشركة مطلوب' : false,
+                            minLength: { value: 3, message: 'اسم الشركة يجب أن يحتوي على 3 أحرف على الأقل' }
                           })} 
                           placeholder="اسم الشركة"
                         />
@@ -224,8 +344,15 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                     <div className="space-y-2">
                       <Label>رقم الهاتف *</Label>
                       <Input 
-                        {...register('phone', { required: 'رقم الهاتف مطلوب' })} 
+                        {...register('phone', { 
+                          required: 'رقم الهاتف مطلوب',
+                          pattern: {
+                            value: /^[\+]?[0-9\-\s]{8,15}$/,
+                            message: 'رقم الهاتف غير صحيح'
+                          }
+                        })} 
                         placeholder="+965 XXXXXXXX"
+                        dir="ltr"
                       />
                       {errors.phone && (
                         <p className="text-sm text-red-600">{errors.phone.message}</p>
@@ -233,16 +360,37 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                     </div>
                     <div className="space-y-2">
                       <Label>رقم هاتف بديل</Label>
-                      <Input {...register('alternative_phone')} placeholder="+965 XXXXXXXX" />
+                      <Input 
+                        {...register('alternative_phone', {
+                          pattern: {
+                            value: /^[\+]?[0-9\-\s]{8,15}$/,
+                            message: 'رقم الهاتف البديل غير صحيح'
+                          }
+                        })} 
+                        placeholder="+965 XXXXXXXX"
+                        dir="ltr"
+                      />
+                      {errors.alternative_phone && (
+                        <p className="text-sm text-red-600">{errors.alternative_phone.message}</p>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>البريد الإلكتروني</Label>
                     <Input 
                       type="email" 
-                      {...register('email')} 
+                      {...register('email', {
+                        pattern: {
+                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message: 'عنوان البريد الإلكتروني غير صحيح'
+                        }
+                      })} 
                       placeholder="example@email.com"
+                      dir="ltr"
                     />
+                    {errors.email && (
+                      <p className="text-sm text-red-600">{errors.email.message}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -257,23 +405,36 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>رقم الهوية المدنية</Label>
-                      <Input {...register('national_id')} placeholder="123456789012" />
+                      <Input 
+                        {...register('national_id', {
+                          pattern: {
+                            value: /^[0-9]{12}$/,
+                            message: 'رقم الهوية المدنية يجب أن يحتوي على 12 رقم'
+                          }
+                        })} 
+                        placeholder="123456789012"
+                        dir="ltr"
+                      />
+                      {errors.national_id && (
+                        <p className="text-sm text-red-600">{errors.national_id.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>رقم جواز السفر</Label>
-                      <Input {...register('passport_number')} placeholder="A12345678" />
+                      <Input {...register('passport_number')} placeholder="A12345678" dir="ltr" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>رقم رخصة القيادة</Label>
-                      <Input {...register('license_number')} placeholder="DL123456" />
+                      <Input {...register('license_number')} placeholder="DL123456" dir="ltr" />
                     </div>
                     <div className="space-y-2">
                       <Label>تاريخ الميلاد</Label>
                       <Input 
                         type="date" 
                         {...register('date_of_birth')} 
+                        max={new Date().toISOString().split('T')[0]}
                       />
                     </div>
                   </div>
@@ -290,14 +451,23 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                     <Input 
                       type="number" 
                       step="0.001"
-                      {...register('credit_limit', { valueAsNumber: true })} 
+                      min="0"
+                      {...register('credit_limit', { 
+                        valueAsNumber: true,
+                        min: { value: 0, message: 'الحد الائتماني يجب أن يكون أكبر من أو يساوي صفر' }
+                      })} 
                       placeholder="0.000"
+                      dir="ltr"
                     />
+                    {errors.credit_limit && (
+                      <p className="text-sm text-red-600">{errors.credit_limit.message}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
+            {/* باقي التبويبات تبقى كما هي... */}
             <TabsContent value="contact" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -337,7 +507,19 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                     </div>
                     <div className="space-y-2">
                       <Label>رقم هاتف الطوارئ</Label>
-                      <Input {...register('emergency_contact_phone')} placeholder="+965 XXXXXXXX" />
+                      <Input 
+                        {...register('emergency_contact_phone', {
+                          pattern: {
+                            value: /^[\+]?[0-9\-\s]{8,15}$/,
+                            message: 'رقم هاتف الطوارئ غير صحيح'
+                          }
+                        })} 
+                        placeholder="+965 XXXXXXXX"
+                        dir="ltr"
+                      />
+                      {errors.emergency_contact_phone && (
+                        <p className="text-sm text-red-600">{errors.emergency_contact_phone.message}</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -369,6 +551,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
               type="submit" 
               disabled={
                 isLoading || 
+                !hasPermission ||
                 (isSuperAdmin && mode === 'create' && !selectedCompanyId)
               }
             >
