@@ -434,7 +434,7 @@ export default function FleetReports() {
 </head>
 <body>
     <div class="header">
-        <div class="company-name">نظام إدارة الأسطول</div>
+        <div class="company-name">Fleetify</div>
         <div class="report-title">${title}</div>
         <div class="report-date">تاريخ التقرير: ${currentDate}</div>
     </div>

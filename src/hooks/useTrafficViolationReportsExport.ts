@@ -373,7 +373,7 @@ export const exportTrafficViolationReportToHTML = (
         </div>
         
         <div class="header">
-            <div class="company-name">${companyName || 'Fleet Management System'}</div>
+            <div class="company-name">${companyName || 'Fleetify'}</div>
             <div class="report-title">${title}</div>
             <div class="report-date">Generated on ${currentDate}</div>
         </div>
@@ -383,8 +383,8 @@ export const exportTrafficViolationReportToHTML = (
         </div>
         
         <div class="footer">
-            <p>This report was generated automatically by the Fleet Management System</p>
-            <p>© ${new Date().getFullYear()} ${companyName || 'Fleet Management System'}. All rights reserved.</p>
+            <p>This report was generated automatically by Fleetify</p>
+            <p>© ${new Date().getFullYear()} ${companyName || 'Fleetify'}. All rights reserved.</p>
         </div>
     </div>
 

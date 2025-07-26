@@ -135,7 +135,7 @@ export const AuthForm: React.FC = () => {
             <Car className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            KW RentFlow
+            Fleetify
           </h1>
           <p className="text-muted-foreground mt-2">
             نظام إدارة تأجير السيارات المتكامل
@@ -344,7 +344,7 @@ export const AuthForm: React.FC = () => {
         </Card>
 
         <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>© 2024 KW RentFlow - جميع الحقوق محفوظة</p>
+          <p>© 2024 Fleetify - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </div>

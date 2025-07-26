@@ -45,7 +45,7 @@ export const DashboardLayout: React.FC = () => {
           <header className="h-14 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
-              <h2 className="text-lg font-semibold text-foreground">KW RentFlow</h2>
+              <h2 className="text-lg font-semibold text-foreground">Fleetify</h2>
             </div>
             
             <div className="flex items-center gap-4">

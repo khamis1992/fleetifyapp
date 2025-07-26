@@ -244,7 +244,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-foreground">KW RentFlow</h1>
+              <h1 className="text-lg font-bold text-foreground">Fleetify</h1>
               <p className="text-xs text-muted-foreground">نظام إدارة تأجير السيارات</p>
             </div>
           )}

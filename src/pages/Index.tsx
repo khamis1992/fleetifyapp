@@ -61,7 +61,7 @@ const Index = () => {
             
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               <span className="bg-gradient-to-r from-primary via-primary-light to-accent bg-clip-text text-transparent">
-                KW RentFlow
+                Fleetify
               </span>
             </h1>
             
@@ -119,7 +119,7 @@ const Index = () => {
 
           {/* Stats Section */}
           <div className="bg-gradient-primary p-8 rounded-3xl text-center text-primary-foreground shadow-elevated">
-            <h2 className="text-2xl font-bold mb-8">لماذا تختار KW RentFlow؟</h2>
+            <h2 className="text-2xl font-bold mb-8">لماذا تختار Fleetify؟</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div>
                 <div className="text-3xl font-bold text-accent mb-2">100%</div>
@@ -142,7 +142,7 @@ const Index = () => {
       <footer className="bg-primary text-primary-foreground py-8 mt-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-primary-foreground/80">
-            © 2024 KW RentFlow - جميع الحقوق محفوظة | مطور خصيصاً للسوق الكويتي
+            © 2024 Fleetify - جميع الحقوق محفوظة | مطور خصيصاً للسوق الكويتي
           </p>
         </div>
       </footer>

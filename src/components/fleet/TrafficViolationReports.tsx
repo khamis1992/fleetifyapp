@@ -120,7 +120,7 @@ export const TrafficViolationReports = () => {
     `;
 
     const title = `تقرير المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!violationsData || violationsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
-    exportTrafficViolationReportToHTML(content, title, 'نظام إدارة الأسطول');
+    exportTrafficViolationReportToHTML(content, title, 'Fleetify');
   };
 
   const generatePaymentsReportHTML = () => {
@@ -212,7 +212,7 @@ export const TrafficViolationReports = () => {
     `;
 
     const title = `تقرير مدفوعات المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!paymentsData || paymentsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
-    exportTrafficViolationReportToHTML(content, title, 'نظام إدارة الأسطول');
+    exportTrafficViolationReportToHTML(content, title, 'Fleetify');
   };
 
   return (
