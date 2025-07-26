@@ -5,45 +5,45 @@ import { InteractiveCard } from './InteractiveCard';
 const features = [
   {
     icon: Truck,
-    title: 'إدارة الأسطول',
-    description: 'تتبع شامل للمركبات، جدولة الصيانة، وتحسين المسارات',
+    title: 'Fleet Management',
+    description: 'Complete vehicle tracking, maintenance scheduling, and route optimization',
     color: 'hsl(var(--primary))',
-    benefits: ['تتبع GPS مباشر', 'صيانة تنبؤية', 'تحسين الوقود']
+    benefits: ['Real-time GPS tracking', 'Predictive maintenance', 'Fuel optimization']
   },
   {
     icon: Users,
-    title: 'إدارة الموارد البشرية',
-    description: 'إدارة الموظفين المبسطة مع تتبع الحضور وكشوف المرتبات',
+    title: 'HR Management',
+    description: 'Streamlined employee management with attendance tracking and payroll',
     color: 'hsl(var(--accent))',
-    benefits: ['حضور رقمي', 'كشوف مرتبات آلية', 'تحليلات الأداء']
+    benefits: ['Digital attendance', 'Automated payroll', 'Performance analytics']
   },
   {
     icon: DollarSign,
-    title: 'التحكم المالي',
-    description: 'ميزات محاسبية متقدمة مع تقارير مالية في الوقت الفعلي',
+    title: 'Financial Control',
+    description: 'Advanced accounting features with real-time financial reporting',
     color: 'hsl(var(--success))',
-    benefits: ['تقارير فورية', 'تتبع الميزانية', 'أتمتة الفواتير']
+    benefits: ['Real-time reporting', 'Budget tracking', 'Invoice automation']
   },
   {
     icon: BarChart3,
-    title: 'التحليلات والرؤى',
-    description: 'ذكاء أعمال قوي مع تحليلات تنبؤية',
+    title: 'Analytics & Insights',
+    description: 'Powerful business intelligence with predictive analytics',
     color: 'hsl(var(--warning))',
-    benefits: ['رؤى تنبؤية', 'لوحات مخصصة', 'مراقبة مؤشرات الأداء']
+    benefits: ['Predictive insights', 'Custom dashboards', 'KPI monitoring']
   },
   {
     icon: Shield,
-    title: 'أمان على مستوى المؤسسات',
-    description: 'أمان بمستوى البنوك مع تشفير متقدم والامتثال',
+    title: 'Enterprise Security',
+    description: 'Bank-grade security with advanced encryption and compliance',
     color: 'hsl(var(--destructive))',
-    benefits: ['تشفير شامل', 'امتثال GDPR', 'وصول قائم على الأدوار']
+    benefits: ['End-to-end encryption', 'GDPR compliance', 'Role-based access']
   },
   {
     icon: Zap,
-    title: 'الأتمتة',
-    description: 'أتمتة ذكية لتبسيط عمليات عملك',
+    title: 'Automation',
+    description: 'Intelligent automation to streamline your business processes',
     color: 'hsl(var(--primary))',
-    benefits: ['أتمتة سير العمل', 'إشعارات ذكية', 'تحسين العمليات']
+    benefits: ['Workflow automation', 'Smart notifications', 'Process optimization']
   }
 ];
 
@@ -79,11 +79,11 @@ export function FeatureShowcase() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
-            كل ما تحتاجه للنمو
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+            Everything You Need to Scale
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-center">
-            أدوات إدارة أعمال شاملة مصممة للمؤسسات الحديثة
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Comprehensive business management tools designed for modern enterprises
           </p>
         </motion.div>
 

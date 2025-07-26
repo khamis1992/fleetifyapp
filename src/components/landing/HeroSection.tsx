@@ -39,18 +39,18 @@ export function HeroSection() {
               className="inline-flex items-center space-x-2 bg-gradient-primary/10 px-4 py-2 rounded-full border border-primary/20"
             >
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">منصة احترافية على مستوى المؤسسات</span>
+              <span className="text-sm font-medium text-primary">Enterprise Grade Platform</span>
             </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-right"
+              className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
             >
-              حوّل عمليات
+              Transform Your
               <span className="block bg-gradient-primary bg-clip-text text-transparent">
-                شركتك التجارية
+                Business Operations
               </span>
             </motion.h1>
 
@@ -58,10 +58,10 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl text-right"
+              className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl"
             >
-              أقوى منصة لإدارة الأساطيل وأتمتة الأعمال. 
-              تبسيط العمليات، تعزيز الكفاءة، والنمو بثقة.
+              The most advanced fleet management and business automation platform. 
+              Streamline operations, boost efficiency, and scale with confidence.
             </motion.p>
 
             <motion.div
@@ -71,7 +71,7 @@ export function HeroSection() {
               className="flex flex-col sm:flex-row gap-4"
             >
               <Button size="lg" className="text-lg px-8 py-6 group transition-all duration-300 hover:scale-105">
-                ابدأ تجربة مجانية
+                Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               
@@ -81,7 +81,7 @@ export function HeroSection() {
                 className="text-lg px-8 py-6 group bg-background/80 backdrop-blur-sm hover:bg-background/90"
               >
                 <Play className="mr-2 h-5 w-5" />
-                شاهد العرض التوضيحي
+                Watch Demo
               </Button>
             </motion.div>
 
@@ -93,15 +93,15 @@ export function HeroSection() {
             >
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                <span>تجربة مجانية لـ 14 يوم</span>
+                <span>14-day free trial</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <span>لا حاجة لبطاقة ائتمان</span>
+                <span>No credit card required</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                <span>إعداد في 5 دقائق</span>
+                <span>Setup in 5 minutes</span>
               </div>
             </motion.div>
           </motion.div>
@@ -118,7 +118,7 @@ export function HeroSection() {
                 <div className="space-y-6">
                   {/* Header */}
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold">لوحة تحكم الأسطول</h3>
+                    <h3 className="text-xl font-semibold">Fleet Dashboard</h3>
                     <div className="flex space-x-1">
                       <div className="w-3 h-3 bg-destructive rounded-full" />
                       <div className="w-3 h-3 bg-warning rounded-full" />
@@ -129,10 +129,10 @@ export function HeroSection() {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { label: 'المركبات النشطة', value: '247', color: 'bg-primary' },
-                      { label: 'الإيرادات', value: '€52K', color: 'bg-success' },
-                      { label: 'الكفاءة', value: '94%', color: 'bg-accent' },
-                      { label: 'الحوادث', value: '3', color: 'bg-warning' },
+                      { label: 'Active Vehicles', value: '247', color: 'bg-primary' },
+                      { label: 'Revenue', value: '€52K', color: 'bg-success' },
+                      { label: 'Efficiency', value: '94%', color: 'bg-accent' },
+                      { label: 'Incidents', value: '3', color: 'bg-warning' },
                     ].map((stat, i) => (
                       <motion.div
                         key={stat.label}

@@ -4,10 +4,10 @@ import { InteractiveCard } from './InteractiveCard';
 
 export function DashboardPreview() {
   const mockData = [
-    { label: 'الإيرادات', value: '€124,500', icon: DollarSign, change: '+12%' },
-    { label: 'المستخدمون النشطون', value: '2,847', icon: Users, change: '+8%' },
-    { label: 'الكفاءة', value: '94.2%', icon: TrendingUp, change: '+3%' },
-    { label: 'المشاريع', value: '156', icon: Calendar, change: '+15%' },
+    { label: 'Revenue', value: '$124,500', icon: DollarSign, change: '+12%' },
+    { label: 'Active Users', value: '2,847', icon: Users, change: '+8%' },
+    { label: 'Efficiency', value: '94.2%', icon: TrendingUp, change: '+3%' },
+    { label: 'Projects', value: '156', icon: Calendar, change: '+15%' },
   ];
 
   return (
@@ -20,11 +20,11 @@ export function DashboardPreview() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
-            لوحة تحليلات في الوقت الفعلي
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+            Real-time Analytics Dashboard
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-center">
-            راقب أداء عملك مع منصة التحليلات المتقدمة لدينا
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Monitor your business performance with our advanced analytics platform
           </p>
         </motion.div>
 
@@ -83,15 +83,15 @@ export function DashboardPreview() {
               <div className="grid grid-cols-3 gap-4 mt-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">247</p>
-                  <p className="text-sm text-muted-foreground">المركبات النشطة</p>
+                  <p className="text-sm text-muted-foreground">Active Vehicles</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-accent">98.5%</p>
-                  <p className="text-sm text-muted-foreground">وقت التشغيل</p>
+                  <p className="text-sm text-muted-foreground">Uptime</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-success">€52K</p>
-                  <p className="text-sm text-muted-foreground">الإيرادات الشهرية</p>
+                  <p className="text-sm text-muted-foreground">Monthly Revenue</p>
                 </div>
               </div>
             </div>
