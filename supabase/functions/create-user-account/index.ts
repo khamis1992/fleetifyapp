@@ -148,7 +148,7 @@ serve(async (req) => {
       // User already exists, check if they're linked to this employee
       const { data: employeeData, error: employeeCheckError } = await supabaseClient
         .from('employees')
-        .select('user_id, has_system_access')
+        .select('user_id, has_system_access, company_id')
         .eq('id', employee_id)
         .single();
 
@@ -156,8 +156,42 @@ serve(async (req) => {
         throw new Error(`Failed to check employee data: ${employeeCheckError.message}`);
       }
 
-      if (employeeData.user_id && employeeData.has_system_access) {
-        throw new Error('Employee already has a system account');
+      // Check if this employee already has system access for the SAME company
+      if (employeeData.user_id && employeeData.has_system_access && employeeData.company_id === company_id) {
+        throw new Error('Employee already has a system account for this company');
+      }
+
+      // If employee has system access for a different company, we need to check if this is a super admin request
+      if (employeeData.user_id && employeeData.has_system_access && employeeData.company_id !== company_id) {
+        // Get current user's roles to check if they're super admin
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader) {
+          throw new Error('Authentication required');
+        }
+        
+        const token = authHeader.replace('Bearer ', '');
+        const { data: tokenData, error: tokenError } = await supabaseClient.auth.getUser(token);
+        
+        if (tokenError || !tokenData.user) {
+          throw new Error('Invalid authentication token');
+        }
+        
+        const { data: currentUserRoles, error: rolesError } = await supabaseClient
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', tokenData.user.id);
+          
+        if (rolesError) {
+          throw new Error('Failed to check user permissions');
+        }
+        
+        const isSuperAdmin = currentUserRoles?.some(r => r.role === 'super_admin');
+        
+        if (!isSuperAdmin) {
+          throw new Error('Only super admins can assign existing employees to different companies');
+        }
+        
+        console.log('Super admin creating user for different company - this is allowed');
       }
 
       // Generate temporary password for existing user linking

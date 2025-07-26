@@ -242,11 +242,18 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                   {...register('temporary_password')}
                   placeholder="اتركه فارغاً لإنشاء كلمة مرور تلقائية"
                 />
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    💡 إذا تركت هذا الحقل فارغاً، سيتم إنشاء كلمة مرور مؤقتة تلقائياً وعرضها بعد الإنشاء
-                  </p>
-                </div>
+                 <div className="space-y-2">
+                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                     <p className="text-sm text-blue-800">
+                       💡 إذا تركت هذا الحقل فارغاً، سيتم إنشاء كلمة مرور مؤقتة تلقائياً وعرضها بعد الإنشاء
+                     </p>
+                   </div>
+                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                     <p className="text-sm text-green-800">
+                       📝 إذا لم يكن هناك موظف بهذا البريد الإلكتروني في الشركة المحددة، سيتم إنشاء ملف موظف جديد تلقائياً
+                     </p>
+                   </div>
+                 </div>
               </div>
             </div>
           </form>

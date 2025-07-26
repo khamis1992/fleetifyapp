@@ -210,7 +210,16 @@ export const useSuperAdminUsers = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(`فشل في إنشاء حساب المستخدم: ${error.message || 'خطأ غير معروف'}`);
+      }
+
+      if (!data || !data.success) {
+        const errorMessage = data?.error || 'خطأ غير معروف';
+        console.error('Edge function returned error:', errorMessage);
+        throw new Error(`فشل في إنشاء حساب المستخدم: ${errorMessage}`);
+      }
 
       toast({
         title: 'تم بنجاح',
