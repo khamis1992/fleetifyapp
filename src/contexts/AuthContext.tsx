@@ -21,48 +21,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    console.log('📝 [AUTH_CONTEXT] Initializing AuthProvider...');
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('📝 [AUTH_CONTEXT] Auth state changed:', event, !!session?.user);
         setSession(session);
         
         if (session?.user) {
-          console.log('📝 [AUTH_CONTEXT] User session found, fetching profile...');
-          // Defer the profile fetch to avoid blocking the auth state change
-          setTimeout(async () => {
-            try {
-              const authUser = await authService.getCurrentUser();
-              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-              setUser(authUser);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              setUser(session.user as AuthUser);
-            }
-          }, 0);
+          setProfileLoading(true);
+          try {
+            console.log('📝 [AUTH_CONTEXT] Fetching user profile for:', session.user.id);
+            const authUser = await authService.getCurrentUser();
+            console.log('📝 [AUTH_CONTEXT] Profile loaded successfully:', {
+              userId: authUser?.id,
+              profileId: authUser?.profile?.id,
+              companyId: authUser?.profile?.company_id || authUser?.company?.id,
+              hasProfile: !!authUser?.profile,
+              hasCompany: !!authUser?.company
+            });
+            setUser(authUser);
+          } catch (error) {
+            console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+            // Fallback to basic user data
+            setUser(session.user as AuthUser);
+          } finally {
+            setProfileLoading(false);
+          }
         } else {
-          console.log('📝 [AUTH_CONTEXT] No user session');
+          console.log('📝 [AUTH_CONTEXT] No user session, clearing state');
           setUser(null);
+          setProfileLoading(false);
         }
         
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      console.log('📝 [AUTH_CONTEXT] Initial session check:', !!session?.user);
       if (session?.user) {
+        setSession(session);
+        setProfileLoading(true);
         authService.getCurrentUser().then(authUser => {
+          console.log('📝 [AUTH_CONTEXT] Initial profile load success:', {
+            userId: authUser?.id,
+            companyId: authUser?.profile?.company_id || authUser?.company?.id
+          });
           setUser(authUser);
           setLoading(false);
-        }).catch(() => {
+          setProfileLoading(false);
+        }).catch((error) => {
+          console.error('📝 [AUTH_CONTEXT] Initial profile load error:', error);
           setUser(session.user as AuthUser);
           setLoading(false);
+          setProfileLoading(false);
         });
       } else {
         setLoading(false);
+        setProfileLoading(false);
       }
     });
 

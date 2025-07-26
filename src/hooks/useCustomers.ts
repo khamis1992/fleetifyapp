@@ -101,8 +101,23 @@ export const useCustomers = (filters?: {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['customers', filters],
+    queryKey: ['customers', filters, user?.profile?.company_id || user?.company?.id],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      
+      console.log('📝 [USE_CUSTOMERS] Hook called with user:', {
+        userId: user?.id,
+        companyId,
+        hasProfile: !!user?.profile
+      });
+
+      if (!companyId) {
+        console.error('📝 [USE_CUSTOMERS] No company ID available');
+        throw new Error('لم يتم العثور على معرف الشركة');
+      }
+
+      console.log('📝 [USE_CUSTOMERS] Fetching customers for company:', companyId);
+
       let query = supabase
         .from('customers')
         .select(`
@@ -117,7 +132,7 @@ export const useCustomers = (filters?: {
             )
           )
         `)
-        .eq('company_id', user?.profile?.company_id || user?.company?.id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (filters?.customer_type) {
@@ -141,8 +156,10 @@ export const useCustomers = (filters?: {
 
       const { data, error } = await query;
 
+      console.log('📝 [USE_CUSTOMERS] Query result:', { data: data?.length, error });
+
       if (error) {
-        console.error('Error fetching customers:', error);
+        console.error('📝 [USE_CUSTOMERS] Error fetching customers:', error);
         throw error;
       }
 
@@ -168,7 +185,7 @@ export const useCustomers = (filters?: {
 
       return data || [];
     },
-    enabled: !!user?.profile?.company_id || !!user?.company?.id
+    enabled: !!(user?.profile?.company_id || user?.company?.id)
   });
 };
 
@@ -221,25 +238,74 @@ export const useCreateCustomer = () => {
 
   return useMutation({
     mutationFn: async (customerData: CustomerFormData) => {
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      
+      console.log('📝 [CREATE_CUSTOMER] Attempting to create customer:', {
+        hasUser: !!user,
+        userId: user?.id,
+        companyId: companyId,
+        hasProfile: !!user?.profile,
+        hasCompany: !!user?.company,
+        customerType: customerData.customer_type,
+        phone: customerData.phone
+      });
+
+      if (!companyId) {
+        console.error('📝 [CREATE_CUSTOMER] No company ID available:', {
+          userProfile: user?.profile,
+          userCompany: user?.company,
+          user: user
+        });
+        throw new Error('لم يتم العثور على معرف الشركة. يرجى المحاولة مرة أخرى.');
+      }
+
+      if (!user?.id) {
+        console.error('📝 [CREATE_CUSTOMER] No user ID available');
+        throw new Error('لم يتم تسجيل الدخول بشكل صحيح. يرجى تسجيل الدخول مرة أخرى.');
+      }
+
+      const insertData = {
+        ...customerData,
+        company_id: companyId
+      };
+
+      console.log('📝 [CREATE_CUSTOMER] Inserting data:', insertData);
+
       const { data, error } = await supabase
         .from('customers')
-        .insert([{
-          ...customerData,
-          company_id: user?.profile?.company_id || user?.company?.id
-        }])
+        .insert([insertData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('📝 [CREATE_CUSTOMER] Database error:', error);
+        throw error;
+      }
+
+      console.log('📝 [CREATE_CUSTOMER] Customer created successfully:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('📝 [CREATE_CUSTOMER] Success callback triggered:', data);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('تم إضافة العميل بنجاح');
     },
-    onError: (error) => {
-      console.error('Error creating customer:', error);
-      toast.error('حدث خطأ أثناء إضافة العميل');
+    onError: (error: any) => {
+      console.error('📝 [CREATE_CUSTOMER] Error callback triggered:', error);
+      
+      let errorMessage = 'حدث خطأ أثناء إضافة العميل';
+      
+      if (error.message?.includes('company ID')) {
+        errorMessage = 'خطأ في معرف الشركة. يرجى إعادة تسجيل الدخول.';
+      } else if (error.message?.includes('duplicate key')) {
+        errorMessage = 'رقم الهاتف مستخدم بالفعل. يرجى استخدام رقم مختلف.';
+      } else if (error.message?.includes('permission denied')) {
+        errorMessage = 'ليس لديك صلاحية لإضافة عملاء. يرجى التواصل مع المدير.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   });
 };
