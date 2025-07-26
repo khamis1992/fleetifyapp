@@ -75,6 +75,8 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
   return useQuery({
     queryKey: ["enhancedJournalEntries", user?.profile?.company_id, filters],
     queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
       let query = supabase
         .from("journal_entries")
         .select(`
@@ -87,6 +89,7 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
             cost_center:cost_centers(*)
           )
         `)
+        .eq("company_id", user.profile.company_id)
         .order("entry_date", { ascending: false })
         .order("entry_number", { ascending: false })
       

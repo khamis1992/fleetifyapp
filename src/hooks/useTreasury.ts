@@ -72,9 +72,22 @@ export const useBanks = () => {
   return useQuery({
     queryKey: ['banks'],
     queryFn: async () => {
+      // Get company_id from current user
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       const { data, error } = await supabase
         .from('banks')
         .select('*')
+        .eq('company_id', profile.company_id)
         .eq('is_active', true)
         .order('bank_name');
 

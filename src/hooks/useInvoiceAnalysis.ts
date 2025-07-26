@@ -44,7 +44,7 @@ export const useInvoiceCostCenterAnalysis = (startDate?: string, endDate?: strin
   return useQuery({
     queryKey: ['invoice-cost-center-analysis', startDate, endDate],
     queryFn: async (): Promise<InvoiceAnalysisData[]> => {
-      if (!user?.user_metadata?.company_id) {
+      if (!user?.profile?.company_id) {
         throw new Error('Company ID not found')
       }
 
@@ -60,7 +60,7 @@ export const useInvoiceCostCenterAnalysis = (startDate?: string, endDate?: strin
             budget_amount
           )
         `)
-        .eq('company_id', user.user_metadata.company_id)
+        .eq('company_id', user.profile.company_id)
         .not('cost_center_id', 'is', null)
 
       if (startDate) {
@@ -105,7 +105,7 @@ export const useInvoiceCostCenterAnalysis = (startDate?: string, endDate?: strin
           : 0
       }))
     },
-    enabled: !!user?.user_metadata?.company_id
+    enabled: !!user?.profile?.company_id
   })
 }
 
@@ -116,7 +116,7 @@ export const useInvoiceBudgetComparison = (year: number) => {
   return useQuery({
     queryKey: ['invoice-budget-comparison', year],
     queryFn: async (): Promise<InvoiceBudgetComparison[]> => {
-      if (!user?.user_metadata?.company_id) {
+      if (!user?.profile?.company_id) {
         throw new Error('Company ID not found')
       }
 
@@ -133,7 +133,7 @@ export const useInvoiceBudgetComparison = (year: number) => {
             )
           )
         `)
-        .eq('company_id', user.user_metadata.company_id)
+        .eq('company_id', user.profile.company_id)
         .eq('budget_year', year)
 
       if (budgetError) throw budgetError
@@ -142,7 +142,7 @@ export const useInvoiceBudgetComparison = (year: number) => {
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .select('invoice_type, total_amount, invoice_date')
-        .eq('company_id', user.user_metadata.company_id)
+        .eq('company_id', user.profile.company_id)
         .gte('invoice_date', `${year}-01-01`)
         .lte('invoice_date', `${year}-12-31`)
 
@@ -192,7 +192,7 @@ export const useInvoiceBudgetComparison = (year: number) => {
 
       return monthlyData
     },
-    enabled: !!user?.user_metadata?.company_id
+    enabled: !!user?.profile?.company_id
   })
 }
 
@@ -203,7 +203,7 @@ export const useFixedAssetInvoiceAnalysis = () => {
   return useQuery({
     queryKey: ['fixed-asset-invoice-analysis'],
     queryFn: async (): Promise<FixedAssetInvoiceData[]> => {
-      if (!user?.user_metadata?.company_id) {
+      if (!user?.profile?.company_id) {
         throw new Error('Company ID not found')
       }
 
@@ -220,7 +220,7 @@ export const useFixedAssetInvoiceAnalysis = () => {
             notes
           )
         `)
-        .eq('company_id', user.user_metadata.company_id)
+        .eq('company_id', user.profile.company_id)
         .eq('is_active', true)
 
       if (error) throw error
@@ -254,6 +254,6 @@ export const useFixedAssetInvoiceAnalysis = () => {
         }
       })
     },
-    enabled: !!user?.user_metadata?.company_id
+    enabled: !!user?.profile?.company_id
   })
 }

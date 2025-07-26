@@ -58,6 +58,18 @@ export function useTrafficViolations() {
   return useQuery({
     queryKey: ['traffic-violations'],
     queryFn: async () => {
+      // الحصول على company_id من المستخدم الحالي
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       const { data, error } = await supabase
         .from('penalties')
         .select(`
@@ -69,6 +81,7 @@ export function useTrafficViolations() {
             phone
           )
         `)
+        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -86,6 +99,18 @@ export function useTrafficViolation(id: string) {
   return useQuery({
     queryKey: ['traffic-violation', id],
     queryFn: async () => {
+      // الحصول على company_id من المستخدم الحالي
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       const { data, error } = await supabase
         .from('penalties')
         .select(`
@@ -98,6 +123,7 @@ export function useTrafficViolation(id: string) {
           )
         `)
         .eq('id', id)
+        .eq('company_id', profile.company_id)
         .single();
 
       if (error) {

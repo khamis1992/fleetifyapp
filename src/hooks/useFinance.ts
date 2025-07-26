@@ -222,9 +222,12 @@ export const useChartOfAccounts = () => {
   return useQuery({
     queryKey: ["chartOfAccounts", user?.profile?.company_id],
     queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
       const { data, error } = await supabase
         .from("chart_of_accounts")
         .select("*")
+        .eq("company_id", user.profile.company_id)
         .eq("is_active", true)
         .order("account_level, sort_order, account_code")
       

@@ -86,14 +86,15 @@ export function usePayrollRecords(filters?: {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['payroll-records', filters],
+    queryKey: ['payroll-records', user?.profile?.company_id, filters],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user?.profile?.company_id) return [];
 
       // First, get payroll records
       let payrollQuery = supabase
         .from('payroll')
         .select('*')
+        .eq('company_id', user.profile.company_id)
         .order('created_at', { ascending: false });
 
       if (filters?.employee_id) {
@@ -153,7 +154,7 @@ export function usePayrollRecords(filters?: {
 
       return combinedData as PayrollRecord[];
     },
-    enabled: !!user,
+    enabled: !!user?.profile?.company_id,
   });
 }
 

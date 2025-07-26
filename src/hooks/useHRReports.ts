@@ -60,6 +60,18 @@ export const useAttendanceReport = (startDate?: string, endDate?: string) => {
   return useQuery({
     queryKey: ["attendance-report", startDate, endDate],
     queryFn: async () => {
+      // Get company_id from current user
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       // Get attendance records for the period
       let attendanceQuery = supabase
         .from("attendance_records")
@@ -85,6 +97,7 @@ export const useAttendanceReport = (startDate?: string, endDate?: string) => {
           first_name_ar,
           last_name_ar
         `)
+        .eq("company_id", profile.company_id)
         .in("id", employeeIds)
 
       if (employeesError) throw employeesError

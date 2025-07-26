@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 // Types
@@ -72,18 +73,34 @@ export interface LeaveRequest {
 }
 
 export const useLeaveTypes = () => {
+  const { user } = useAuth()
+  
   return useQuery({
-    queryKey: ["leave-types"],
+    queryKey: ["leave-types", user?.profile?.company_id],
     queryFn: async () => {
+      // الحصول على company_id من المستخدم الحالي
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', currentUser.user.id)
+        .single();
+      
+      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       const { data, error } = await supabase
         .from("leave_types")
         .select("*")
+        .eq("company_id", profile.company_id)
         .eq("is_active", true)
         .order("type_name");
 
       if (error) throw error;
       return data as LeaveType[];
     },
+    enabled: !!user?.profile?.company_id
   });
 };
 
