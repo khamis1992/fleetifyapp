@@ -161,11 +161,6 @@ const hrSubItems = [
     icon: Clock
   },
   {
-    name: 'تسجيل الحضور',
-    href: '/hr/employee-attendance',
-    icon: UserCheck
-  },
-  {
     name: 'الرواتب',
     href: '/hr/payroll',
     icon: DollarSign
