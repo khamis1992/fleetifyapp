@@ -31,18 +31,6 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Create client for user authentication check
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -56,19 +44,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Set the auth token for the client
-    supabase.auth.setSession({
-      access_token: authHeader.replace('Bearer ', ''),
-      refresh_token: '',
-    } as any);
+    // Extract JWT token
+    const jwt = authHeader.replace('Bearer ', '');
+    console.log('JWT token length:', jwt.length);
 
-    // Get current user
-    const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+    // Get current user using admin client with JWT
+    const { data: { user: currentUser }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
     
     if (userError || !currentUser) {
-      console.error('Error getting current user:', userError);
+      console.error('Error getting current user with admin client:', userError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        JSON.stringify({ success: false, error: 'Unauthorized - Invalid token' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -76,10 +62,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Current user:', currentUser.id);
+    console.log('Current user authenticated:', currentUser.id);
 
-    // Check if user has admin privileges
-    const { data: userRoles, error: rolesError } = await supabase
+    // Check if user has admin privileges using admin client
+    const { data: userRoles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', currentUser.id);
@@ -135,8 +121,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if target user exists
-    const { data: targetUser, error: targetUserError } = await supabase
+    // Check if target user exists using admin client
+    const { data: targetUser, error: targetUserError } = await supabaseAdmin
       .from('profiles')
       .select('user_id, email, company_id')
       .eq('user_id', body.user_id)
@@ -156,7 +142,7 @@ Deno.serve(async (req) => {
     console.log('Target user found:', targetUser.email);
 
     // For company admins, ensure they can only reset passwords in their own company
-    const { data: currentUserProfile, error: profileError } = await supabase
+    const { data: currentUserProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('company_id')
       .eq('user_id', currentUser.id)
