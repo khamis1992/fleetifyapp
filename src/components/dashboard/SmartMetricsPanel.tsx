@@ -69,20 +69,20 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
   const metrics = [
     {
       label: 'الإيرادات الشهرية',
-      value: `${financialData.monthlyRevenue.toLocaleString()} د.ك`,
-      change: financialData.monthlyGrowth,
-      positive: financialData.monthlyGrowth > 0
+      value: `${(financialData.monthlyRevenue || 0).toLocaleString()} د.ك`,
+      change: financialData.monthlyGrowth || 0,
+      positive: (financialData.monthlyGrowth || 0) > 0
     },
     {
       label: 'إجمالي الأرباح',
-      value: `${financialData.totalProfit.toLocaleString()} د.ك`,
-      change: financialData.profitMargin,
-      positive: financialData.profitMargin > 0,
+      value: `${(financialData.totalProfit || 0).toLocaleString()} د.ك`,
+      change: financialData.profitMargin || 0,
+      positive: (financialData.profitMargin || 0) > 0,
       suffix: '%'
     },
     {
       label: 'العقود النشطة',
-      value: financialData.activeContracts.toString(),
+      value: (financialData.activeContracts || 0).toString(),
       change: null,
       positive: true
     }
@@ -134,14 +134,14 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">المدفوعات المعلقة</span>
               <Badge variant="secondary" className="text-xs">
-                {financialData.pendingPayments}
+                {financialData.pendingPayments || 0}
               </Badge>
             </div>
-            {financialData.overduePayments > 0 && (
+            {(financialData.overduePayments || 0) > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">المدفوعات المتأخرة</span>
                 <Badge variant="destructive" className="text-xs">
-                  {financialData.overduePayments}
+                  {financialData.overduePayments || 0}
                 </Badge>
               </div>
             )}

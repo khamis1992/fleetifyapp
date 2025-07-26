@@ -19,6 +19,37 @@ const Dashboard: React.FC = () => {
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
 
+  // Convert financial overview data to the format expected by SmartMetricsPanel
+  const smartMetricsData = financialOverview ? {
+    totalRevenue: financialOverview.totalRevenue || 0,
+    monthlyRevenue: financialOverview.monthlyTrend?.[financialOverview.monthlyTrend.length - 1]?.revenue || 0,
+    totalProfit: financialOverview.netIncome || 0,
+    profitMargin: financialOverview.profitMargin || 0,
+    monthlyGrowth: 0, // Calculate based on monthly trend if needed
+    activeContracts: 0, // This would need to come from a different source
+    pendingPayments: 0, // This would need to come from a different source
+    overduePayments: 0, // This would need to come from a different source
+  } : undefined;
+
+  // Convert smart alerts to the format expected by MinimalAlertSystem
+  const convertedAlerts = smartAlerts?.map(alert => ({
+    id: alert.id,
+    title: alert.title,
+    message: alert.message,
+    type: alert.type,
+    priority: alert.priority,
+    timestamp: new Date(alert.created_at).toLocaleDateString('ar-EG', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    action: alert.action ? {
+      label: alert.action,
+      onClick: () => window.location.href = alert.actionUrl || '#'
+    } : undefined
+  })) || [];
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "صباح الخير";
@@ -31,7 +62,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'إجمالي المركبات',
       value: String(enhancedStats?.totalVehicles || 0),
-      change: enhancedStats?.vehiclesChange || '+0%',
+      change: String(enhancedStats?.vehiclesChange || '+0%'),
       icon: Car,
       trend: 'up' as const,
       description: 'مركبة في الأسطول'
@@ -39,7 +70,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'العملاء النشطين',
       value: String(enhancedStats?.totalCustomers || 0),
-      change: enhancedStats?.customersChange || '+0%',
+      change: String(enhancedStats?.customersChange || '+0%'),
       icon: Users,
       trend: 'up' as const,
       description: 'عميل مسجل'
@@ -47,7 +78,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'العقود النشطة',
       value: String(enhancedStats?.activeContracts || 0),
-      change: enhancedStats?.contractsChange || '+0%',
+      change: String(enhancedStats?.contractsChange || '+0%'),
       icon: FileText,
       trend: 'neutral' as const,
       description: 'عقد ساري المفعول'
@@ -55,7 +86,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'الإيرادات الشهرية',
       value: `${enhancedStats?.monthlyRevenue || 0} د.ك`,
-      change: enhancedStats?.revenueChange || '+0%',
+      change: String(enhancedStats?.revenueChange || '+0%'),
       icon: DollarSign,
       trend: 'up' as const,
       description: 'هذا الشهر'
@@ -133,12 +164,12 @@ const Dashboard: React.FC = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             <SmartMetricsPanel 
-              financialData={financialOverview} 
+              financialData={smartMetricsData} 
               loading={financialLoading} 
             />
             
             <MinimalAlertSystem 
-              alerts={smartAlerts} 
+              alerts={convertedAlerts} 
               loading={alertsLoading} 
             />
           </div>
