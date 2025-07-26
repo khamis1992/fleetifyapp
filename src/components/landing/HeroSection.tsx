@@ -74,15 +74,6 @@ export function HeroSection() {
                 ابدأ تجربة مجانية
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="arabic-body px-8 py-6 group bg-background/80 backdrop-blur-sm hover:bg-background/90"
-              >
-                <Play className="mr-2 h-5 w-5" />
-                شاهد العرض التوضيحي
-              </Button>
             </motion.div>
 
             <motion.div
