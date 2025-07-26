@@ -308,30 +308,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      {/* Footer */}
-      <SidebarFooter className="border-t border-border/50 p-3">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="h-10">
-              <NavLink to="/settings" className={getNavClassName}>
-                <Settings className="h-4 w-4" />
-                {!collapsed && <span>الإعدادات</span>}
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Button
-              variant="ghost"
-              onClick={handleSignOut}
-              className="w-full justify-start h-10 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="h-4 w-4" />
-              {!collapsed && <span>تسجيل الخروج</span>}
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }
