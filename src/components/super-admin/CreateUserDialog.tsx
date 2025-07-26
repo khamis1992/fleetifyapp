@@ -72,7 +72,7 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl" dir="rtl">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
         <DialogHeader>
           <DialogTitle>إضافة مستخدم جديد</DialogTitle>
           <DialogDescription>
@@ -80,154 +80,168 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">المعلومات الشخصية</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">الاسم الأول (بالإنجليزية) *</Label>
-                <Input
-                  id="first_name"
-                  {...register('first_name', { required: 'الاسم الأول مطلوب' })}
-                  placeholder="الاسم الأول"
-                />
-                {errors.first_name && (
-                  <p className="text-sm text-destructive">{errors.first_name.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="last_name">اسم العائلة (بالإنجليزية) *</Label>
-                <Input
-                  id="last_name"
-                  {...register('last_name', { required: 'اسم العائلة مطلوب' })}
-                  placeholder="اسم العائلة"
-                />
-                {errors.last_name && (
-                  <p className="text-sm text-destructive">{errors.last_name.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name_ar">الاسم الأول (بالعربية)</Label>
-                <Input
-                  id="first_name_ar"
-                  {...register('first_name_ar')}
-                  placeholder="الاسم الأول بالعربية"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="last_name_ar">اسم العائلة (بالعربية)</Label>
-                <Input
-                  id="last_name_ar"
-                  {...register('last_name_ar')}
-                  placeholder="اسم العائلة بالعربية"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني *</Label>
-              <Input
-                id="email"
-                type="email"
-                {...register('email', { 
-                  required: 'البريد الإلكتروني مطلوب',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'صيغة البريد الإلكتروني غير صحيحة'
-                  }
-                })}
-                placeholder="user@company.com"
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Company Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">إعدادات الشركة</h3>
-            
-            <div className="space-y-2">
-              <Label>الشركة *</Label>
-              <Select
-                onValueChange={(value) => setValue('company_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر الشركة" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.company_id && (
-                <p className="text-sm text-destructive">يجب اختيار شركة</p>
-              )}
-            </div>
-          </div>
-
-          {/* Roles Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">الأدوار والصلاحيات</h3>
-            
-            <div className="space-y-3">
-              {roleOptions.map((role) => (
-                <div key={role.id} className="flex items-start space-x-3 space-x-reverse">
-                  <Checkbox
-                    id={role.id}
-                    checked={selectedRoles?.includes(role.id) || false}
-                    onCheckedChange={(checked) => handleRoleChange(role.id, !!checked)}
+        <div className="flex-1 overflow-y-auto p-1">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Personal Information */}
+            <div className="space-y-4 p-4 border rounded-lg bg-background">
+              <h3 className="text-lg font-medium flex items-center gap-2 text-primary">
+                👤 المعلومات الشخصية
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name">الاسم الأول (بالإنجليزية) *</Label>
+                  <Input
+                    id="first_name"
+                    {...register('first_name', { required: 'الاسم الأول مطلوب' })}
+                    placeholder="First Name"
                   />
-                  <div className="space-y-1">
-                    <Label htmlFor={role.id} className="font-medium">
-                      {role.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      {role.description}
-                    </p>
-                  </div>
+                  {errors.first_name && (
+                    <p className="text-sm text-destructive">{errors.first_name.message}</p>
+                  )}
                 </div>
-              ))}
-            </div>
-            
-            {(!selectedRoles || selectedRoles.length === 0) && (
-              <p className="text-sm text-muted-foreground">
-                يجب اختيار دور واحد على الأقل
-              </p>
-            )}
-          </div>
 
-          {/* Security Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">إعدادات الأمان</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="temporary_password">كلمة المرور المؤقتة</Label>
-              <Input
-                id="temporary_password"
-                type="password"
-                {...register('temporary_password')}
-                placeholder="اتركه فارغاً لإنشاء كلمة مرور تلقائية"
-              />
-              <p className="text-sm text-muted-foreground">
-                إذا تركت هذا الحقل فارغاً، سيتم إنشاء كلمة مرور مؤقتة تلقائياً
-              </p>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">اسم العائلة (بالإنجليزية) *</Label>
+                  <Input
+                    id="last_name"
+                    {...register('last_name', { required: 'اسم العائلة مطلوب' })}
+                    placeholder="Last Name"
+                  />
+                  {errors.last_name && (
+                    <p className="text-sm text-destructive">{errors.last_name.message}</p>
+                  )}
+                </div>
+              </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name_ar">الاسم الأول (بالعربية)</Label>
+                  <Input
+                    id="first_name_ar"
+                    {...register('first_name_ar')}
+                    placeholder="الاسم الأول"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="last_name_ar">اسم العائلة (بالعربية)</Label>
+                  <Input
+                    id="last_name_ar"
+                    {...register('last_name_ar')}
+                    placeholder="اسم العائلة"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">البريد الإلكتروني *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register('email', { 
+                    required: 'البريد الإلكتروني مطلوب',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'صيغة البريد الإلكتروني غير صحيحة'
+                    }
+                  })}
+                  placeholder="user@company.com"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Company Selection */}
+            <div className="space-y-4 p-4 border rounded-lg bg-background">
+              <h3 className="text-lg font-medium flex items-center gap-2 text-primary">
+                🏢 إعدادات الشركة
+              </h3>
+              
+              <div className="space-y-2">
+                <Label>الشركة *</Label>
+                <Select onValueChange={(value) => setValue('company_id', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الشركة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.company_id && (
+                  <p className="text-sm text-destructive">يجب اختيار شركة</p>
+                )}
+              </div>
+            </div>
+
+            {/* Roles Selection */}
+            <div className="space-y-4 p-4 border rounded-lg bg-background">
+              <h3 className="text-lg font-medium flex items-center gap-2 text-primary">
+                🛡️ الأدوار والصلاحيات
+              </h3>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {roleOptions.map((role) => (
+                  <div key={role.id} className="flex items-start space-x-3 space-x-reverse p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      id={role.id}
+                      checked={selectedRoles?.includes(role.id) || false}
+                      onCheckedChange={(checked) => handleRoleChange(role.id, !!checked)}
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor={role.id} className="font-medium cursor-pointer">
+                        {role.label}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {role.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {(!selectedRoles || selectedRoles.length === 0) && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    ⚠️ يجب اختيار دور واحد على الأقل
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Security Settings */}
+            <div className="space-y-4 p-4 border rounded-lg bg-background">
+              <h3 className="text-lg font-medium flex items-center gap-2 text-primary">
+                🔒 إعدادات الأمان
+              </h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="temporary_password">كلمة المرور المؤقتة</Label>
+                <Input
+                  id="temporary_password"
+                  type="password"
+                  {...register('temporary_password')}
+                  placeholder="اتركه فارغاً لإنشاء كلمة مرور تلقائية"
+                />
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    💡 إذا تركت هذا الحقل فارغاً، سيتم إنشاء كلمة مرور مؤقتة تلقائياً وعرضها بعد الإنشاء
+                  </p>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Fixed Actions at bottom */}
+        <div className="border-t bg-background p-4">
+          <div className="flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -237,7 +251,7 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               إلغاء
             </Button>
             <Button
-              type="submit"
+              onClick={handleSubmit(onSubmit)}
               disabled={isLoading || !selectedRoles?.length}
             >
               {isLoading ? (
@@ -250,7 +264,7 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               )}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
