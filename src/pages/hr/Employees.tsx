@@ -11,9 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 import EmployeeDialog from '@/components/hr/EmployeeDialog';
 import EditEmployeeDialog from '@/components/hr/EditEmployeeDialog';
 import DeleteEmployeeConfirmDialog from '@/components/hr/DeleteEmployeeConfirmDialog';
-import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
 import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
+import { EmployeeFormData } from '@/components/hr/EmployeeForm';
+import { AttendancePermissionsPanel } from '@/components/hr/AttendancePermissionsPanel';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 
 interface Employee {
@@ -455,6 +456,9 @@ export default function Employees() {
           />
         </div>
       </div>
+
+      {/* Attendance Permissions Panel */}
+      <AttendancePermissionsPanel />
 
       <div className="grid gap-4">
         {filteredEmployees.length === 0 ? (
