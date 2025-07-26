@@ -242,22 +242,42 @@ export const useCreateCustomer = () => {
 
   return useMutation({
     mutationFn: async (customerData: CustomerFormData & { selectedCompanyId?: string }) => {
+      console.log('📝 [useCreateCustomer] Starting customer creation...');
+      console.log('📝 [useCreateCustomer] User data:', {
+        id: user?.id,
+        email: user?.email,
+        profile: user?.profile,
+        company: user?.company,
+        roles: user?.roles
+      });
+      
       const isSuperAdmin = user?.roles?.includes('super_admin');
       let company_id;
       
       if (isSuperAdmin && customerData.selectedCompanyId) {
         // Super Admin can select any company
         company_id = customerData.selectedCompanyId;
+        console.log('📝 [useCreateCustomer] Super Admin using selected company:', company_id);
+      } else if (isSuperAdmin && !customerData.selectedCompanyId) {
+        // Super Admin must select a company
+        throw new Error('كونك مدير عام، يجب عليك اختيار شركة لإضافة العميل إليها.');
       } else {
         // Regular users use their company
         company_id = user?.profile?.company_id || user?.company?.id;
+        console.log('📝 [useCreateCustomer] Regular user using company:', company_id);
       }
 
       if (!company_id) {
-        throw new Error('لا يمكن تحديد الشركة. يرجى التأكد من اختيار شركة صحيحة.');
+        console.error('📝 [useCreateCustomer] No company_id found');
+        const errorMsg = isSuperAdmin 
+          ? 'يرجى اختيار شركة لإضافة العميل إليها.'
+          : 'لا يمكن تحديد الشركة. يرجى التأكد من أن لديك ملف شخصي صحيح مع شركة مرتبطة.';
+        throw new Error(errorMsg);
       }
 
       const { selectedCompanyId, ...customerDataWithoutCompany } = customerData;
+      
+      console.log('📝 [useCreateCustomer] Inserting customer with company_id:', company_id);
       
       const { data, error } = await supabase
         .from('customers')
@@ -268,7 +288,12 @@ export const useCreateCustomer = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('📝 [useCreateCustomer] Database error:', error);
+        throw error;
+      }
+      
+      console.log('📝 [useCreateCustomer] Customer created successfully:', data?.id);
       return data;
     },
     onSuccess: () => {
@@ -276,8 +301,9 @@ export const useCreateCustomer = () => {
       toast.success('تم إضافة العميل بنجاح');
     },
     onError: (error) => {
-      console.error('Error creating customer:', error);
-      toast.error('حدث خطأ أثناء إضافة العميل');
+      console.error('📝 [useCreateCustomer] Mutation error:', error);
+      const errorMessage = error?.message || 'حدث خطأ أثناء إضافة العميل';
+      toast.error(errorMessage);
     }
   });
 };
