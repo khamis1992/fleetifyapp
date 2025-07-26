@@ -4258,6 +4258,18 @@ export type Database = {
           unbalanced_entries_count: number
         }[]
       }
+      get_inconsistent_accounts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          employee_id: string
+          employee_email: string
+          user_id: string
+          has_system_access: boolean
+          employee_company_id: string
+          profile_company_id: string
+          role_count: number
+        }[]
+      }
       get_maintenance_cost_center: {
         Args: { company_id_param: string }
         Returns: string
