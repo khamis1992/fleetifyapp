@@ -55,19 +55,18 @@ export const useSuperAdminUsers = () => {
   // Fetch all users with their profiles and roles
   const fetchUsers = async () => {
     try {
-      // Get auth users data first
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        throw authError;
-      }
-
-      // Get all profiles
+      // Get all profiles with companies and user roles in a single query
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
-          *,
+          user_id,
+          email,
+          created_at,
+          first_name,
+          last_name,
+          first_name_ar,
+          last_name_ar,
+          company_id,
           companies (
             id,
             name,
@@ -91,16 +90,23 @@ export const useSuperAdminUsers = () => {
         throw rolesError;
       }
 
-      // Combine auth users with profiles and roles
-      const combinedUsers: SuperAdminUser[] = authUsers.users.map(authUser => {
-        const profile = profilesData?.find(p => p.user_id === authUser.id);
-        const userRoles = rolesData?.filter(r => r.user_id === authUser.id) || [];
+      // Combine profiles with roles
+      const combinedUsers: SuperAdminUser[] = (profilesData || []).map(profile => {
+        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id) || [];
         
         return {
-          id: authUser.id,
-          email: authUser.email || '',
-          created_at: authUser.created_at,
-          profiles: profile || undefined,
+          id: profile.user_id,
+          email: profile.email || '',
+          created_at: profile.created_at,
+          profiles: {
+            id: profile.user_id,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            first_name_ar: profile.first_name_ar,
+            last_name_ar: profile.last_name_ar,
+            company_id: profile.company_id,
+            companies: profile.companies
+          },
           user_roles: userRoles.map(role => ({
             id: role.id,
             role: role.role
@@ -113,7 +119,7 @@ export const useSuperAdminUsers = () => {
       console.error('Error in fetchUsers:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل في تحميل بيانات المستخدمين',
+        description: 'فشل في تحميل بيانات المستخدمين. يرجى التحقق من صلاحياتك والمحاولة مرة أخرى.',
         variant: 'destructive',
       });
     }
@@ -371,10 +377,23 @@ export const useSuperAdminUsers = () => {
   const deleteUser = async (userId: string) => {
     setIsDeleting(true);
     try {
-      // Delete from auth (this will cascade to profiles and user_roles due to foreign keys)
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // Delete user profile (this will cascade to related data)
+      // Note: We can't delete from auth.users directly without admin privileges
+      // So we'll just delete the profile and roles, which effectively removes user access
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Delete user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
 
       toast({
         title: 'تم بنجاح',
