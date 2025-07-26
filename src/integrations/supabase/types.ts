@@ -1620,6 +1620,144 @@ export type Database = {
           },
         ]
       }
+      leave_balances: {
+        Row: {
+          created_at: string | null
+          employee_id: string
+          id: string
+          leave_type_id: string
+          remaining_days: number | null
+          total_days: number | null
+          updated_at: string | null
+          used_days: number | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          leave_type_id: string
+          remaining_days?: number | null
+          total_days?: number | null
+          updated_at?: string | null
+          used_days?: number | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          leave_type_id?: string
+          remaining_days?: number | null
+          total_days?: number | null
+          updated_at?: string | null
+          used_days?: number | null
+          year?: number
+        }
+        Relationships: []
+      }
+      leave_requests: {
+        Row: {
+          applied_date: string | null
+          attachment_url: string | null
+          covering_employee_id: string | null
+          created_at: string | null
+          emergency_contact: string | null
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type_id: string
+          reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string | null
+          total_days: number
+          updated_at: string | null
+        }
+        Insert: {
+          applied_date?: string | null
+          attachment_url?: string | null
+          covering_employee_id?: string | null
+          created_at?: string | null
+          emergency_contact?: string | null
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type_id: string
+          reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string | null
+          total_days: number
+          updated_at?: string | null
+        }
+        Update: {
+          applied_date?: string | null
+          attachment_url?: string | null
+          covering_employee_id?: string | null
+          created_at?: string | null
+          emergency_contact?: string | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type_id?: string
+          reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string | null
+          total_days?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      leave_types: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_paid: boolean | null
+          max_days_per_year: number | null
+          requires_approval: boolean | null
+          type_name: string
+          type_name_ar: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_paid?: boolean | null
+          max_days_per_year?: number | null
+          requires_approval?: boolean | null
+          type_name: string
+          type_name_ar?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_paid?: boolean | null
+          max_days_per_year?: number | null
+          requires_approval?: boolean | null
+          type_name?: string
+          type_name_ar?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -2853,6 +2991,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
         }
         Returns: boolean
+      }
+      initialize_employee_leave_balances: {
+        Args: { employee_id_param: string }
+        Returns: undefined
       }
       log_user_account_action: {
         Args: {
