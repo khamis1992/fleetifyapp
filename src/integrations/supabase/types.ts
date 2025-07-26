@@ -3948,6 +3948,7 @@ export type Database = {
     Views: {
       contract_payment_summary: {
         Row: {
+          company_id: string | null
           contract_amount: number | null
           contract_id: string | null
           has_outstanding_payments: boolean | null

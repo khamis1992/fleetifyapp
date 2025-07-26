@@ -99,6 +99,7 @@ export const useRenewContract = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       queryClient.invalidateQueries({ queryKey: ["expiring-contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["eligible-contracts-for-renewal"] });
       toast.success("تم تجديد العقد بنجاح");
     },
     onError: (error) => {
