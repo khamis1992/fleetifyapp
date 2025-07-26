@@ -208,8 +208,8 @@ export default function Payroll() {
                             </h3>
                             <p className="text-muted-foreground">رقم الراتب: {record.payroll_number}</p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(record.pay_period_start).toLocaleDateString('ar-SA')} - {' '}
-                              {new Date(record.pay_period_end).toLocaleDateString('ar-SA')}
+                              {new Date(record.pay_period_start).toLocaleDateString('en-GB')} - {' '}
+                              {new Date(record.pay_period_end).toLocaleDateString('en-GB')}
                             </p>
                           </div>
                         </div>
