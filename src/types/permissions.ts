@@ -151,6 +151,13 @@ export const PERMISSIONS: Permission[] = [
     category: PERMISSION_CATEGORIES[0],
     level: 'write'
   },
+  {
+    id: 'attendance.clock_in',
+    name: 'Clock In/Out',
+    description: 'Record personal attendance times',
+    category: PERMISSION_CATEGORIES[0],
+    level: 'write'
+  },
 
   // Finance Permissions
   {
@@ -323,16 +330,16 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       p.id.includes('operations.') || 
       p.id.includes('finance.invoices') ||
       p.id.includes('finance.payments') ||
-      p.id.includes('reports.operations')
+      p.id.includes('reports.operations') ||
+      p.id === 'attendance.clock_in'
     ).map(p => p.id),
     canAssignRoles: []
   },
   employee: {
     role: 'employee',
     permissions: PERMISSIONS.filter(p => 
-      p.level === 'read' && 
-      !p.id.includes('admin.') &&
-      !p.isSystemLevel
+      (p.level === 'read' && !p.id.includes('admin.') && !p.isSystemLevel) ||
+      p.id === 'attendance.clock_in'
     ).map(p => p.id),
     canAssignRoles: []
   }

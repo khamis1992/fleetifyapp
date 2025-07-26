@@ -1,55 +1,45 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePermissionCheck } from '@/hooks/usePermissionCheck';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MapPin, Loader2 } from 'lucide-react';
+import { Clock, MapPin, Loader2, AlertCircle, UserX } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export const HeaderAttendanceButton: React.FC = () => {
   const { user } = useAuth();
   const { getCurrentLocation, clockIn, clockOut } = useAttendance();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Get employee info
-  const { data: employee } = useQuery({
-    queryKey: ['employee', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, company_id')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+  // Check attendance permission
+  const { data: permissionCheck, isLoading: isCheckingPermission } = usePermissionCheck('attendance.clock_in');
 
   // Get today's attendance
   const { data: todayAttendance, refetch: refetchAttendance } = useQuery({
-    queryKey: ['attendance', employee?.id, new Date().toISOString().split('T')[0]],
+    queryKey: ['attendance', permissionCheck?.employee_id, new Date().toISOString().split('T')[0]],
     queryFn: async () => {
+      if (!permissionCheck?.employee_id) return null;
+      
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('attendance_records')
         .select('*')
-        .eq('employee_id', employee?.id)
+        .eq('employee_id', permissionCheck.employee_id)
         .eq('attendance_date', today)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
-    enabled: !!employee?.id,
+    enabled: !!permissionCheck?.employee_id,
   });
 
   const handleClockAction = async () => {
-    if (!employee) {
-      toast.error('لم يتم العثور على بيانات الموظف');
+    if (!permissionCheck?.hasPermission || !permissionCheck.employee_id) {
+      toast.error(permissionCheck?.reason || 'ليس لديك صلاحية لتسجيل الحضور');
       return;
     }
 
@@ -60,14 +50,14 @@ export const HeaderAttendanceButton: React.FC = () => {
       if (!todayAttendance?.check_in_time) {
         // Clock in
         await clockIn.mutateAsync({
-          employeeId: employee.id,
+          employeeId: permissionCheck.employee_id,
           latitude: location.latitude,
           longitude: location.longitude,
         });
       } else if (!todayAttendance?.check_out_time) {
         // Clock out
         await clockOut.mutateAsync({
-          employeeId: employee.id,
+          employeeId: permissionCheck.employee_id,
           latitude: location.latitude,
           longitude: location.longitude,
         });
@@ -81,9 +71,36 @@ export const HeaderAttendanceButton: React.FC = () => {
     }
   };
 
-  // Don't show if user is not an employee
-  if (!employee) {
-    return null;
+  // Loading state
+  if (isCheckingPermission) {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">جاري التحقق...</span>
+      </div>
+    );
+  }
+
+  // No permission or not an employee
+  if (!permissionCheck?.hasPermission) {
+    return (
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="gap-1">
+          <UserX className="w-3 h-3" />
+          غير مخول
+        </Badge>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled
+          className="gap-1"
+          title={permissionCheck?.reason || 'ليس لديك صلاحية لتسجيل الحضور'}
+        >
+          <AlertCircle className="w-3 h-3" />
+          لا يمكن التسجيل
+        </Button>
+      </div>
+    );
   }
 
   const isCheckedIn = todayAttendance?.check_in_time && !todayAttendance?.check_out_time;
