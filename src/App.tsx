@@ -21,6 +21,7 @@ import LocationSettings from "./pages/hr/LocationSettings";
 import Payroll from "./pages/hr/Payroll";
 import HRReports from "./pages/hr/Reports";
 import HRSettings from "./pages/hr/Settings";
+import Fleet from "./pages/Fleet";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
@@ -49,7 +50,7 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
-              <Route path="fleet" element={<div className="p-8 text-center text-muted-foreground">صفحة الأسطول - قيد التطوير</div>} />
+              <Route path="fleet" element={<Fleet />} />
               <Route path="contracts" element={<div className="p-8 text-center text-muted-foreground">صفحة العقود - قيد التطوير</div>} />
               <Route path="customers" element={<div className="p-8 text-center text-muted-foreground">صفحة العملاء - قيد التطوير</div>} />
               <Route path="finance/*" element={<Finance />} />
