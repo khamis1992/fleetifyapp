@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion';
 
 const companies = [
-  { name: 'TechCorp', logo: '🏢' },
-  { name: 'InnovateLab', logo: '🔬' },
-  { name: 'DataFlow Systems', logo: '📊' },
-  { name: 'CloudTech Solutions', logo: '☁️' },
-  { name: 'NextGen Industries', logo: '🚀' },
-  { name: 'Digital Dynamics', logo: '💻' },
+  { name: 'شركة التقنية', logo: '🏢' },
+  { name: 'مختبر الابتكار', logo: '🔬' },
+  { name: 'أنظمة تدفق البيانات', logo: '📊' },
+  { name: 'حلول التقنية السحابية', logo: '☁️' },
+  { name: 'صناعات الجيل القادم', logo: '🚀' },
+  { name: 'الديناميكيات الرقمية', logo: '💻' },
 ];
 
 export function TrustedCompanies() {
@@ -43,9 +43,9 @@ export function TrustedCompanies() {
         >
           <motion.h3 
             variants={itemVariants}
-            className="text-lg font-medium text-muted-foreground mb-12"
+            className="text-lg font-medium text-muted-foreground mb-12 text-center"
           >
-            Trusted by leading companies worldwide
+            يثق بنا قادة الشركات العالمية
           </motion.h3>
           
           <motion.div 

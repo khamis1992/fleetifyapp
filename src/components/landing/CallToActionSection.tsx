@@ -5,12 +5,12 @@ import { InteractiveCard } from './InteractiveCard';
 
 export function CallToActionSection() {
   const benefits = [
-    'Setup in under 5 minutes',
-    '14-day free trial',
-    'No credit card required',
-    'Cancel anytime',
-    'Premium support included',
-    'Data migration assistance'
+    'إعداد في أقل من 5 دقائق',
+    'تجربة مجانية لـ 14 يوم',
+    'لا حاجة لبطاقة ائتمان',
+    'إلغاء في أي وقت',
+    'دعم متميز مُتضمن',
+    'مساعدة في نقل البيانات'
   ];
 
   return (
@@ -53,9 +53,9 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent"
+                className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent text-center"
               >
-                Ready to Transform Your Business?
+                هل أنت مستعد لتحويل عملك؟
               </motion.h2>
 
               <motion.p
@@ -63,10 +63,10 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-xl text-muted-foreground max-w-2xl mx-auto"
+                className="text-xl text-muted-foreground max-w-2xl mx-auto text-center"
               >
-                Join thousands of companies already using Fleetify to streamline operations, 
-                reduce costs, and drive growth. Start your free trial today.
+                انضم إلى آلاف الشركات التي تستخدم فليتيفاي بالفعل لتبسيط العمليات، 
+                تقليل التكاليف، ودفع النمو. ابدأ تجربتك المجانية اليوم.
               </motion.p>
 
               <motion.div
@@ -102,7 +102,7 @@ export function CallToActionSection() {
                   size="lg" 
                   className="text-lg px-8 py-6 group transition-all duration-300 hover:scale-105"
                 >
-                  Start Free Trial
+                  ابدأ تجربة مجانية
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 
@@ -111,7 +111,7 @@ export function CallToActionSection() {
                   size="lg" 
                   className="text-lg px-8 py-6 bg-background/80 backdrop-blur-sm hover:bg-background/90"
                 >
-                  Schedule Demo
+                  احجز عرض توضيحي
                 </Button>
               </motion.div>
 
@@ -120,9 +120,9 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 1 }}
-                className="text-sm text-muted-foreground"
+                className="text-sm text-muted-foreground text-center"
               >
-                Trusted by 500+ companies • 99% customer satisfaction • Enterprise-grade security
+                يثق بنا 500+ شركة • رضا العملاء 99% • أمان على مستوى المؤسسات
               </motion.p>
             </div>
           </InteractiveCard>
