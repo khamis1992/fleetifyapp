@@ -12,6 +12,7 @@ import { ContractStatusManagement } from "@/components/contracts/ContractStatusM
 import { ContractDetailsDialog } from "@/components/contracts/ContractDetailsDialog"
 import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilters"
 import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
+import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
@@ -24,6 +25,7 @@ export default function Contracts() {
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [filters, setFilters] = useState<any>({})
   const { user } = useAuth()
   const autoRenewContracts = useAutoRenewContracts()
@@ -126,6 +128,10 @@ export default function Contracts() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowExportDialog(true)}>
+            <FileText className="h-4 w-4 mr-2" />
+            تصدير التقرير
+          </Button>
           <Button variant="outline" onClick={handleAutoRenew} disabled={autoRenewContracts.isPending}>
             <RefreshCw className="h-4 w-4 mr-2" />
             {autoRenewContracts.isPending ? 'جاري التجديد...' : 'تجديد تلقائي'}
@@ -183,6 +189,12 @@ export default function Contracts() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Search and Filters */}
+      <ContractSearchFilters 
+        onFiltersChange={setFilters}
+        activeFilters={filters}
+      />
 
       {/* Contract Management Tabs */}
       <Tabs defaultValue="all" className="space-y-4">
@@ -511,6 +523,11 @@ export default function Contracts() {
         onOpenChange={setShowInvoiceDialog}
         contract={selectedContract}
         onSuccess={() => { refetch(); setShowInvoiceDialog(false); }}
+      />
+      
+      <ContractExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
       />
     </div>
   )

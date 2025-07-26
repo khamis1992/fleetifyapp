@@ -48,25 +48,128 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock approval workflow steps for demo
-  const approvalSteps = [
-    {
-      id: '1',
-      step_order: 1,
-      approver_role: 'manager',
-      status: contract?.status === 'draft' ? 'pending' : 'approved',
-      approved_at: contract?.status !== 'draft' ? contract?.created_at : null,
-      rejected_at: null,
-      comments: contract?.status !== 'draft' ? 'تمت الموافقة على العقد' : null,
-      approver: null
+  // Fetch real approval workflow steps
+  const { data: approvalSteps, isLoading } = useQuery({
+    queryKey: ['contract-approval-steps', contract?.id],
+    queryFn: async () => {
+      if (!contract?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('contract_approval_steps')
+        .select(`
+          *,
+          approver:profiles!contract_approval_steps_approver_id_fkey(first_name, last_name, email)
+        `)
+        .eq('contract_id', contract.id)
+        .order('step_order');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!contract?.id
+  });
+  
+
+  // Check if current user can approve current step
+  const { data: canApprove } = useQuery({
+    queryKey: ['can-approve', contract?.id, user?.id],
+    queryFn: async () => {
+      if (!contract?.id || !user?.id) return false;
+      
+      // Check if user has manager or admin role
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      const hasApprovalRole = userRoles?.some(r => 
+        r.role === 'company_admin' || r.role === 'manager'
+      );
+      
+      if (!hasApprovalRole) return false;
+      
+      // Check if there's a pending step that user can approve
+      const pendingStep = approvalSteps?.find(step => 
+        step.status === 'pending' && 
+        (step.approver_id === user.id || !step.approver_id)
+      );
+      
+      return !!pendingStep;
+    },
+    enabled: !!contract?.id && !!user?.id && !!approvalSteps
+  });
+
+  // Approve contract mutation
+  const approveContract = useMutation({
+    mutationFn: async ({ action, comments }: { action: 'approve' | 'reject', comments: string }) => {
+      const pendingStep = approvalSteps?.find(step => step.status === 'pending');
+      if (!pendingStep) throw new Error('No pending approval step found');
+
+      // Update the current step
+      const { error: stepError } = await supabase
+        .from('contract_approval_steps')
+        .update({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          approver_id: user?.id,
+          approved_at: action === 'approve' ? new Date().toISOString() : null,
+          rejected_at: action === 'reject' ? new Date().toISOString() : null,
+          comments
+        })
+        .eq('id', pendingStep.id);
+
+      if (stepError) throw stepError;
+
+      // Update contract status based on workflow completion
+      let newContractStatus = contract.status;
+      
+      if (action === 'reject') {
+        newContractStatus = 'cancelled';
+      } else {
+        // Check if all steps are approved
+        const { data: allSteps } = await supabase
+          .from('contract_approval_steps')
+          .select('status')
+          .eq('contract_id', contract.id);
+        
+        const allApproved = allSteps?.every((step: any) => 
+          step.status === 'approved'
+        );
+        
+        if (allApproved) {
+          newContractStatus = 'active';
+        }
+      }
+
+      // Update contract status if changed
+      if (newContractStatus !== contract.status) {
+        const { error: contractError } = await supabase
+          .from('contracts')
+          .update({ status: newContractStatus })
+          .eq('id', contract.id);
+
+        if (contractError) throw contractError;
+      }
+
+      return { action, newContractStatus };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['contract-approval-steps'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      
+      toast.success(
+        data.action === 'approve' 
+          ? 'تم الموافقة على العقد بنجاح' 
+          : 'تم رفض العقد'
+      );
+      
+      setComment('');
+    },
+    onError: (error) => {
+      console.error('Error updating approval:', error);
+      toast.error('حدث خطأ في تحديث حالة الموافقة');
     }
-  ];
-  const isLoading = false;
+  });
 
-  // Simple check if user can approve (for demo)
-  const canApprove = contract?.status === 'draft';
-
-  // Simple approve contract function
   const handleApproval = async (action: 'approve' | 'reject') => {
     if (!comment.trim()) {
       toast.error('يرجى إضافة تعليق');
@@ -75,19 +178,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
     
     setIsSubmitting(true);
     try {
-      const newStatus = action === 'approve' ? 'active' : 'cancelled';
-      const { error } = await supabase
-        .from('contracts')
-        .update({ status: newStatus })
-        .eq('id', contract.id);
-
-      if (error) throw error;
-
-      toast.success(action === 'approve' ? 'تم الموافقة على العقد بنجاح' : 'تم رفض العقد');
+      await approveContract.mutateAsync({ action, comments: comment });
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error updating contract:', error);
-      toast.error('حدث خطأ في تحديث حالة الموافقة');
     } finally {
       setIsSubmitting(false);
     }

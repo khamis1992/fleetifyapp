@@ -115,6 +115,45 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_templates: {
+        Row: {
+          company_id: string
+          contract_type: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          max_amount: number | null
+          min_amount: number | null
+          steps: Json
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contract_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_amount?: number | null
+          min_amount?: number | null
+          steps: Json
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contract_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_amount?: number | null
+          min_amount?: number | null
+          steps?: Json
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attendance_records: {
         Row: {
           approved_at: string | null
@@ -709,6 +748,112 @@ export type Database = {
           work_start_time?: string | null
         }
         Relationships: []
+      }
+      contract_approval_steps: {
+        Row: {
+          approved_at: string | null
+          approver_id: string | null
+          approver_role: string
+          comments: string | null
+          company_id: string
+          contract_id: string
+          created_at: string
+          id: string
+          rejected_at: string | null
+          status: string
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approver_id?: string | null
+          approver_role: string
+          comments?: string | null
+          company_id: string
+          contract_id: string
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          status?: string
+          step_order: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approver_id?: string | null
+          approver_role?: string
+          comments?: string | null
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          status?: string
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_contract_approval_steps_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_notifications: {
+        Row: {
+          company_id: string
+          contract_id: string
+          created_at: string
+          delivery_status: string | null
+          id: string
+          message: string
+          notification_type: string
+          recipient_email: string | null
+          recipient_id: string
+          recipient_phone: string | null
+          sent_at: string | null
+          title: string
+        }
+        Insert: {
+          company_id: string
+          contract_id: string
+          created_at?: string
+          delivery_status?: string | null
+          id?: string
+          message: string
+          notification_type: string
+          recipient_email?: string | null
+          recipient_id: string
+          recipient_phone?: string | null
+          sent_at?: string | null
+          title: string
+        }
+        Update: {
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          delivery_status?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          recipient_email?: string | null
+          recipient_id?: string
+          recipient_phone?: string | null
+          sent_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_contract_notifications_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contracts: {
         Row: {
@@ -1981,6 +2126,42 @@ export type Database = {
           item_name?: string
           maintenance_id?: string
           notes?: string | null
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          email_notifications: boolean | null
+          expiry_reminder_days: number | null
+          id: string
+          renewal_reminder_days: number | null
+          sms_notifications: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email_notifications?: boolean | null
+          expiry_reminder_days?: number | null
+          id?: string
+          renewal_reminder_days?: number | null
+          sms_notifications?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email_notifications?: boolean | null
+          expiry_reminder_days?: number | null
+          id?: string
+          renewal_reminder_days?: number | null
+          sms_notifications?: boolean | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
