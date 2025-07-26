@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { useFleetAnalytics, useProcessVehicleDepreciation } from "@/hooks/useVehicles";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Calculator, TrendingUp, TrendingDown, Car, Wrench, DollarSign } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
 
@@ -11,7 +13,23 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 
 export function FleetAnalytics() {
   const { user } = useAuth();
-  const { data: analytics, isLoading } = useFleetAnalytics(user?.user_metadata?.company_id);
+  
+  // Get user profile with company ID
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: analytics, isLoading } = useFleetAnalytics(profile?.company_id);
   const processDepreciation = useProcessVehicleDepreciation();
 
   if (isLoading || !analytics) {

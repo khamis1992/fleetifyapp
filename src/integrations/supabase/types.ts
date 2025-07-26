@@ -3432,6 +3432,10 @@ export type Database = {
           unbalanced_entries_count: number
         }[]
       }
+      get_maintenance_cost_center: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       get_payment_analytics: {
         Args: {
           company_id_param: string

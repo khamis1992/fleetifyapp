@@ -8,8 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { FileText, Plus } from 'lucide-react'
 import { useCostCenters } from '@/hooks/useFinance'
+import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
+import { useAuth } from '@/contexts/AuthContext'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
 
 interface ContractFormProps {
   open: boolean
@@ -18,6 +22,8 @@ interface ContractFormProps {
 }
 
 export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, onSubmit }) => {
+  const { user } = useAuth()
+  
   const [contractData, setContractData] = useState({
     contract_number: '',
     contract_date: new Date().toISOString().slice(0, 10),
@@ -33,7 +39,41 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     terms: ''
   })
 
+  // Get user profile with company ID
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Get customers for the company
+  const { data: customers } = useQuery({
+    queryKey: ['customers', profile?.company_id],
+    queryFn: async () => {
+      if (!profile?.company_id) return [];
+      const { data } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type')
+        .eq('company_id', profile.company_id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!profile?.company_id,
+  });
+
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
+  
+  // Get available vehicles for contracts (excluding those under maintenance or already rented)
+  const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -176,6 +216,66 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customer and Vehicle Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">العميل والمركبة</CardTitle>
+              <CardDescription>اختيار العميل والمركبة للعقد</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer_id">العميل *</Label>
+                <Select 
+                  value={contractData.customer_id} 
+                  onValueChange={(value) => setContractData({...contractData, customer_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر العميل" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers?.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.customer_type === 'individual' 
+                          ? `${customer.first_name} ${customer.last_name}`
+                          : customer.company_name
+                        }
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_id">المركبة (للإيجار)</Label>
+                <Select 
+                  value={contractData.vehicle_id} 
+                  onValueChange={(value) => setContractData({...contractData, vehicle_id: value})}
+                  disabled={vehiclesLoading || contractData.contract_type !== 'rental'}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      vehiclesLoading ? "جاري التحميل..." :
+                      contractData.contract_type !== 'rental' ? "مخصص لعقود الإيجار فقط" :
+                      "اختر المركبة المتاحة"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">لا يوجد</SelectItem>
+                    {availableVehicles?.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
+                        {vehicle.daily_rate && ` - ${vehicle.daily_rate} د.ك/يوم`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {contractData.contract_type === 'rental' && (!availableVehicles || availableVehicles.length === 0) && (
+                  <p className="text-sm text-muted-foreground">لا توجد مركبات متاحة حالياً</p>
+                )}
               </div>
             </CardContent>
           </Card>

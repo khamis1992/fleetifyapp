@@ -397,6 +397,21 @@ export const useVehicleMaintenance = (vehicleId?: string) => {
 export const useCreateVehicleMaintenance = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { user } = useAuth()
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
   
   return useMutation({
     mutationFn: async (maintenanceData: Omit<VehicleMaintenance, 'id' | 'created_at' | 'updated_at' | 'maintenance_number'>) => {
@@ -406,9 +421,22 @@ export const useCreateVehicleMaintenance = () => {
 
       if (numberError) throw numberError
 
+      // Get maintenance cost center if not provided
+      let costCenterId = maintenanceData.cost_center_id;
+      if (!costCenterId && profile?.company_id) {
+        const { data: defaultCostCenter } = await supabase.rpc('get_maintenance_cost_center', {
+          company_id_param: profile.company_id
+        });
+        costCenterId = defaultCostCenter;
+      }
+
       const { data, error } = await supabase
         .from("vehicle_maintenance")
-        .insert([{ ...maintenanceData, maintenance_number: maintenanceNumber }])
+        .insert([{ 
+          ...maintenanceData, 
+          maintenance_number: maintenanceNumber,
+          cost_center_id: costCenterId 
+        }])
         .select()
         .single()
 
@@ -419,8 +447,8 @@ export const useCreateVehicleMaintenance = () => {
       queryClient.invalidateQueries({ queryKey: ["vehicle-maintenance"] })
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       toast({
-        title: "Success",
-        description: "Maintenance request created successfully",
+        title: "نجح",
+        description: "تم إنشاء طلب الصيانة بنجاح",
       })
     }
   })
