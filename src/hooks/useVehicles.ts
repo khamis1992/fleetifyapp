@@ -569,63 +569,136 @@ export const useFleetAnalytics = (companyId?: string) => {
     queryFn: async () => {
       if (!companyId) throw new Error("Company ID is required")
 
-      // Get vehicle statistics with financial data
-      const { data: vehicles, error: vehiclesError } = await supabase
-        .from("vehicles")
-        .select(`
-          *,
-          vehicle_pricing(daily_rate, weekly_rate, monthly_rate),
-          fixed_assets(book_value, accumulated_depreciation, purchase_cost)
-        `)
-        .eq("company_id", companyId)
-        .eq("is_active", true)
+      console.log("Starting fleet analytics fetch for company:", companyId)
 
-      if (vehiclesError) throw vehiclesError
+      try {
+        // First, get basic vehicle data
+        const { data: vehicles, error: vehiclesError } = await supabase
+          .from("vehicles")
+          .select("*")
+          .eq("company_id", companyId)
+          .eq("is_active", true)
 
-      // Get maintenance statistics
-      const { data: maintenance, error: maintenanceError } = await supabase
-        .from("vehicle_maintenance")
-        .select("*, vehicles(plate_number)")
-        .in("vehicle_id", vehicles?.map(v => v.id) || [])
+        if (vehiclesError) {
+          console.error("Error fetching vehicles:", vehiclesError)
+          throw vehiclesError
+        }
 
-      if (maintenanceError) throw maintenanceError
+        console.log("Fetched vehicles:", vehicles?.length || 0)
 
-      // Calculate analytics
-      const totalVehicles = vehicles?.length || 0
-      const availableVehicles = vehicles?.filter(v => v.status === 'available').length || 0
-      const maintenanceVehicles = vehicles?.filter(v => v.status === 'maintenance').length || 0
-      const rentedVehicles = vehicles?.filter(v => v.status === 'rented').length || 0
+        // Get vehicle pricing data separately
+        let vehiclePricing: any[] = []
+        if (vehicles && vehicles.length > 0) {
+          const { data: pricingData, error: pricingError } = await supabase
+            .from("vehicle_pricing")
+            .select("vehicle_id, daily_rate, weekly_rate, monthly_rate")
+            .in("vehicle_id", vehicles.map(v => v.id))
+            .eq("is_active", true)
 
-      const totalBookValue = vehicles?.reduce((sum, v: any) => {
-        return sum + (v.fixed_assets?.[0]?.book_value || 0)
-      }, 0) || 0
+          if (pricingError) {
+            console.warn("Error fetching vehicle pricing:", pricingError)
+          } else {
+            vehiclePricing = pricingData || []
+          }
+        }
 
-      const totalDepreciation = vehicles?.reduce((sum, v: any) => {
-        return sum + (v.fixed_assets?.[0]?.accumulated_depreciation || 0)
-      }, 0) || 0
+        console.log("Fetched vehicle pricing:", vehiclePricing.length)
 
-      const monthlyMaintenanceCost = maintenance
-        ?.filter(m => {
-          const date = new Date(m.scheduled_date)
-          const now = new Date()
-          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-        })
-        .reduce((sum, m) => sum + (m.estimated_cost || 0), 0) || 0
+        // Get fixed assets data separately
+        let fixedAssets: any[] = []
+        if (vehicles && vehicles.length > 0) {
+          const { data: assetsData, error: assetsError } = await supabase
+            .from("fixed_assets")
+            .select("id, book_value, accumulated_depreciation, purchase_cost")
+            .eq("company_id", companyId)
+            .eq("is_active", true)
 
-      return {
-        totalVehicles,
-        availableVehicles,
-        maintenanceVehicles,
-        rentedVehicles,
-        totalBookValue,
-        totalDepreciation,
-        monthlyMaintenanceCost,
-        utilizationRate: totalVehicles > 0 ? ((rentedVehicles / totalVehicles) * 100) : 0,
-        maintenanceRate: totalVehicles > 0 ? ((maintenanceVehicles / totalVehicles) * 100) : 0,
-        vehicles: vehicles || [],
-        maintenance: maintenance || [],
+          if (assetsError) {
+            console.warn("Error fetching fixed assets:", assetsError)
+          } else {
+            fixedAssets = assetsData || []
+          }
+        }
+
+        console.log("Fetched fixed assets:", fixedAssets.length)
+
+        // Get maintenance statistics
+        let maintenance: any[] = []
+        if (vehicles && vehicles.length > 0) {
+          const { data: maintenanceData, error: maintenanceError } = await supabase
+            .from("vehicle_maintenance")
+            .select("*, vehicles(plate_number)")
+            .in("vehicle_id", vehicles.map(v => v.id))
+
+          if (maintenanceError) {
+            console.warn("Error fetching maintenance data:", maintenanceError)
+          } else {
+            maintenance = maintenanceData || []
+          }
+        }
+
+        console.log("Fetched maintenance records:", maintenance.length)
+
+        // Calculate analytics
+        const totalVehicles = vehicles?.length || 0
+        const availableVehicles = vehicles?.filter(v => v.status === 'available').length || 0
+        const maintenanceVehicles = vehicles?.filter(v => v.status === 'maintenance').length || 0
+        const rentedVehicles = vehicles?.filter(v => v.status === 'rented').length || 0
+
+        // Calculate total book value from fixed assets
+        const totalBookValue = fixedAssets.reduce((sum, asset) => {
+          return sum + (asset.book_value || 0)
+        }, 0)
+
+        // Calculate total depreciation from fixed assets
+        const totalDepreciation = fixedAssets.reduce((sum, asset) => {
+          return sum + (asset.accumulated_depreciation || 0)
+        }, 0)
+
+        // Calculate monthly maintenance cost
+        const monthlyMaintenanceCost = maintenance
+          ?.filter(m => {
+            const date = new Date(m.scheduled_date)
+            const now = new Date()
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+          })
+          .reduce((sum, m) => sum + (m.estimated_cost || 0), 0) || 0
+
+        // Combine vehicles with their pricing data
+        const vehiclesWithPricing = vehicles?.map(vehicle => {
+          const pricing = vehiclePricing.find(p => p.vehicle_id === vehicle.id)
+          return {
+            ...vehicle,
+            daily_rate: pricing?.daily_rate || 0,
+            weekly_rate: pricing?.weekly_rate || 0,
+            monthly_rate: pricing?.monthly_rate || 0,
+          }
+        }) || []
+
+        const result = {
+          totalVehicles,
+          availableVehicles,
+          maintenanceVehicles,
+          rentedVehicles,
+          totalBookValue,
+          totalDepreciation,
+          monthlyMaintenanceCost,
+          utilizationRate: totalVehicles > 0 ? ((rentedVehicles / totalVehicles) * 100) : 0,
+          maintenanceRate: totalVehicles > 0 ? ((maintenanceVehicles / totalVehicles) * 100) : 0,
+          vehicles: vehiclesWithPricing,
+          maintenance: maintenance,
+        }
+
+        console.log("Fleet analytics result:", result)
+        return result
+
+      } catch (error) {
+        console.error("Error in fleet analytics:", error)
+        throw error
       }
     },
     enabled: !!companyId,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }

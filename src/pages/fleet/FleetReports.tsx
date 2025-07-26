@@ -30,23 +30,57 @@ export default function FleetReports() {
     enabled: !!user?.id,
   });
 
-  const { data: analytics, isLoading } = useFleetAnalytics(profile?.company_id);
+  const { data: analytics, isLoading, error } = useFleetAnalytics(profile?.company_id);
   const processDepreciation = useProcessVehicleDepreciation();
 
-  if (isLoading || !analytics) {
-    return <div>جاري تحميل التحليلات...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">جاري تحميل التحليلات...</p>
+        </div>
+      </div>
+    );
   }
 
+  if (error) {
+    console.error("Fleet analytics error:", error);
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-destructive mb-2">حدث خطأ في تحميل البيانات</p>
+          <p className="text-muted-foreground text-sm">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Provide fallback data if analytics is null
+  const safeAnalytics = analytics || {
+    totalVehicles: 0,
+    availableVehicles: 0,
+    maintenanceVehicles: 0,
+    rentedVehicles: 0,
+    totalBookValue: 0,
+    totalDepreciation: 0,
+    monthlyMaintenanceCost: 0,
+    utilizationRate: 0,
+    maintenanceRate: 0,
+    vehicles: [],
+    maintenance: [],
+  };
+
   const statusData = [
-    { name: 'متاحة', value: analytics.availableVehicles, color: COLORS[0] },
-    { name: 'مؤجرة', value: analytics.rentedVehicles, color: COLORS[1] },
-    { name: 'قيد الصيانة', value: analytics.maintenanceVehicles, color: COLORS[2] },
+    { name: 'متاحة', value: safeAnalytics.availableVehicles, color: COLORS[0] },
+    { name: 'مؤجرة', value: safeAnalytics.rentedVehicles, color: COLORS[1] },
+    { name: 'قيد الصيانة', value: safeAnalytics.maintenanceVehicles, color: COLORS[2] },
   ];
 
   const monthlyData = [
-    { month: 'الإيرادات', amount: analytics.vehicles.reduce((sum, v) => sum + (v.monthly_rate || 0), 0) },
-    { month: 'الإهلاك', amount: analytics.totalDepreciation },
-    { month: 'الصيانة', amount: analytics.monthlyMaintenanceCost },
+    { month: 'الإيرادات', amount: safeAnalytics.vehicles.reduce((sum, v) => sum + (v.monthly_rate || 0), 0) },
+    { month: 'الإهلاك', amount: safeAnalytics.totalDepreciation },
+    { month: 'الصيانة', amount: safeAnalytics.monthlyMaintenanceCost },
   ];
 
   const handleProcessDepreciation = () => {
@@ -73,9 +107,9 @@ export default function FleetReports() {
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalVehicles}</div>
+            <div className="text-2xl font-bold">{safeAnalytics.totalVehicles}</div>
             <p className="text-xs text-muted-foreground">
-              {analytics.availableVehicles} متاحة
+              {safeAnalytics.availableVehicles} متاحة
             </p>
           </CardContent>
         </Card>
@@ -86,7 +120,7 @@ export default function FleetReports() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics.totalBookValue)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(safeAnalytics.totalBookValue)}</div>
             <p className="text-xs text-muted-foreground">
               القيمة الدفترية الحالية
             </p>
@@ -99,7 +133,7 @@ export default function FleetReports() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.utilizationRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{safeAnalytics.utilizationRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
               المركبات المؤجرة حالياً
             </p>
@@ -112,7 +146,7 @@ export default function FleetReports() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics.monthlyMaintenanceCost)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(safeAnalytics.monthlyMaintenanceCost)}</div>
             <p className="text-xs text-muted-foreground">
               هذا الشهر
             </p>
@@ -194,7 +228,7 @@ export default function FleetReports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                إجمالي الإهلاك المتراكم: {formatCurrency(analytics.totalDepreciation)}
+                إجمالي الإهلاك المتراكم: {formatCurrency(safeAnalytics.totalDepreciation)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 معالجة الإهلاك لتحديث القيم الدفترية للمركبات
@@ -340,7 +374,7 @@ export default function FleetReports() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {analytics.maintenance.slice(0, 5).map((maintenance: any) => (
+            {safeAnalytics.maintenance.slice(0, 5).map((maintenance: any) => (
               <div key={maintenance.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <p className="font-medium">{maintenance.vehicles?.plate_number || 'غير محدد'}</p>
@@ -366,7 +400,7 @@ export default function FleetReports() {
                 </div>
               </div>
             ))}
-            {analytics.maintenance.length === 0 && (
+            {safeAnalytics.maintenance.length === 0 && (
               <div className="text-center py-8">
                 <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">لا توجد أنشطة صيانة حديثة</p>
