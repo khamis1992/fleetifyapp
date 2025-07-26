@@ -262,28 +262,37 @@ export const useCreateVehicle = () => {
       return data
     },
     onSuccess: (data) => {
-      console.log("🎉 [USE_CREATE_VEHICLE] Success callback triggered");
+      console.log("🎉 [USE_CREATE_VEHICLE] Success callback triggered for vehicle:", data.plate_number);
+      console.log("🔄 [USE_CREATE_VEHICLE] Invalidating vehicle queries...");
+      
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["fleet-analytics"] })
+      queryClient.invalidateQueries({ queryKey: ["fleet-status"] })
+      
+      // Success toast
       toast({
-        title: "نجح",
-        description: "تم إنشاء المركبة بنجاح",
+        title: "نجح ✅",
+        description: `تم إنشاء المركبة ${data.plate_number} بنجاح`,
       })
+      
+      console.log("✅ [USE_CREATE_VEHICLE] Success flow completed");
     },
     onError: (error) => {
-      console.error("❌ [USE_CREATE_VEHICLE] Error callback triggered:", error)
+      console.error("❌ [USE_CREATE_VEHICLE] Error callback triggered");
+      console.error("❌ [USE_CREATE_VEHICLE] Error object:", error);
+      console.error("❌ [USE_CREATE_VEHICLE] Error stack:", error instanceof Error ? error.stack : "No stack trace");
       
-      let errorMessage = "فشل في إنشاء المركبة";
+      let errorMessage = "فشل في إنشاء المركبة - خطأ غير معروف";
+      
       if (error instanceof Error) {
+        console.error("❌ [USE_CREATE_VEHICLE] Error message:", error.message);
         errorMessage = error.message;
       }
       
-      toast({
-        title: "خطأ",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      // Don't show toast here if it's already handled in the form
+      console.log("⚠️ [USE_CREATE_VEHICLE] Error handled, message:", errorMessage);
     }
   })
 }

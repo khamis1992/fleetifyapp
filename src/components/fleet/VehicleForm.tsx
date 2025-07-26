@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 interface VehicleFormProps {
   vehicle?: Vehicle
@@ -23,6 +25,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { data: costCenters } = useCostCenters()
   const createVehicle = useCreateVehicle()
   const updateVehicle = useUpdateVehicle()
+  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   const form = useForm({
     defaultValues: {
@@ -92,6 +96,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   }, [vehicle, form])
 
   const onSubmit = async (data: any) => {
+    setIsSubmitting(true)
     try {
       console.log("🚗 [VEHICLE_FORM] Form submission started", data);
       
@@ -132,6 +137,12 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         console.error("❌ [VEHICLE_FORM] No user found");
         throw new Error("يجب تسجيل الدخول لإنشاء مركبة.");
       }
+
+      // Show progress feedback
+      toast({
+        title: "جاري المعالجة",
+        description: vehicle ? "جاري تحديث المركبة..." : "جاري إنشاء المركبة الجديدة...",
+      })
 
       // Prepare vehicle data with proper type conversions and defaults
       const vehicleData = {
@@ -197,7 +208,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
     } catch (error) {
       console.error("❌ [VEHICLE_FORM] Error saving vehicle:", error);
       
-      // Provide specific error messages
+      // Provide specific error messages using toast instead of alert
       let errorMessage = "حدث خطأ أثناء حفظ المركبة";
       
       if (error instanceof Error) {
@@ -215,7 +226,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         }
       }
       
-      alert(errorMessage);
+      toast({
+        title: "خطأ",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -671,15 +688,28 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex justify-end space-x-2 rtl:space-x-reverse">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+              >
                 إلغاء
               </Button>
               <Button 
                 type="submit" 
-                disabled={createVehicle.isPending || updateVehicle.isPending}
+                disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+                className="min-w-[120px]"
               >
-                {createVehicle.isPending || updateVehicle.isPending ? "جاري الحفظ..." : "حفظ المركبة"}
+                {isSubmitting || createVehicle.isPending || updateVehicle.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <LoadingSpinner size="sm" />
+                    جاري الحفظ...
+                  </div>
+                ) : (
+                  vehicle ? "حفظ التغييرات" : "حفظ المركبة"
+                )}
               </Button>
             </div>
           </form>
