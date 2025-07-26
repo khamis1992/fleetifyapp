@@ -43,7 +43,7 @@ export function TrustedCompanies() {
         >
           <motion.h3 
             variants={itemVariants}
-            className="arabic-heading-sm text-muted-foreground mb-12 text-center"
+            className="arabic-heading-sm text-muted-foreground mb-12 text-center text-container"
           >
             يثق بنا قادة الشركات العالمية
           </motion.h3>

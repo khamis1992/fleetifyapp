@@ -155,62 +155,101 @@ All colors MUST be HSL.
     @apply bg-background text-foreground font-cairo;
     font-feature-settings: "rlig" 1, "calt" 1;
     direction: rtl;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Arabic Typography System */
+  /* Arabic Typography System with proper text rendering */
   .arabic-heading-xl {
-    @apply font-cairo font-bold text-7xl leading-tight tracking-wide;
+    @apply font-cairo font-bold text-7xl leading-tight;
     font-size: 4.5rem;
     line-height: 1.1;
     letter-spacing: 0.02em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-heading-lg {
-    @apply font-cairo font-bold text-5xl leading-tight tracking-wide;
+    @apply font-cairo font-bold text-5xl leading-tight;
     font-size: 3rem;
     line-height: 1.2;
     letter-spacing: 0.015em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-heading-md {
-    @apply font-tajawal font-semibold text-3xl leading-snug tracking-normal;
+    @apply font-tajawal font-semibold text-3xl leading-snug;
     font-size: 2rem;
     line-height: 1.3;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-heading-sm {
     @apply font-tajawal font-semibold text-xl leading-relaxed;
     font-size: 1.5rem;
     line-height: 1.4;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-body-lg {
-    @apply font-cairo text-lg leading-loose tracking-wide;
+    @apply font-cairo text-lg leading-loose;
     font-size: 1.25rem;
     line-height: 1.7;
     letter-spacing: 0.01em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-body {
-    @apply font-cairo text-base leading-relaxed tracking-normal;
+    @apply font-cairo text-base leading-relaxed;
     font-size: 1.125rem;
     line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-body-sm {
     @apply font-tajawal text-sm leading-relaxed;
     font-size: 0.95rem;
     line-height: 1.5;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-display {
     @apply font-amiri font-bold text-6xl leading-none;
     font-size: 4rem;
     line-height: 1.05;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
 
   .arabic-accent {
-    @apply font-reem-kufi font-medium tracking-wide;
+    @apply font-reem-kufi font-medium;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
   }
   
   /* Custom utilities for gradients */
@@ -340,7 +379,7 @@ All colors MUST be HSL.
     100% { transform: scale(1) translateY(0); opacity: 1; }
   }
   
-  /* RTL support and Arabic text */
+  /* RTL support and Arabic text improvements */
   [dir="rtl"] {
     text-align: right;
   }
@@ -349,8 +388,39 @@ All colors MUST be HSL.
     --tw-space-x-reverse: 1;
   }
   
-  /* Arabic font support */
+  /* Enhanced Arabic font support with better rendering */
   * {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-display: swap;
+  }
+
+  /* Ensure proper text display for Arabic content */
+  .text-container {
+    width: 100%;
+    max-width: 100%;
+    word-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  /* Fix for text truncation in containers */
+  .content-container {
+    min-height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  /* Ensure headings have enough space */
+  h1, h2, h3, h4, h5, h6 {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    hyphens: none;
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
   }
 }

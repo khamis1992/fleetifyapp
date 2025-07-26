@@ -46,9 +46,9 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="arabic-heading-xl text-right"
+              className="arabic-heading-xl text-right text-container"
             >
-              حوّل عمليات
+              <span className="block">حوّل عمليات</span>
               <span className="block bg-gradient-primary bg-clip-text text-transparent">
                 شركتك التجارية
               </span>
@@ -58,7 +58,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="arabic-body-lg text-muted-foreground max-w-2xl text-right"
+              className="arabic-body-lg text-muted-foreground max-w-2xl text-right text-container"
             >
               أقوى منصة لإدارة الأساطيل وأتمتة الأعمال. 
               تبسيط العمليات، تعزيز الكفاءة، والنمو بثقة.
@@ -118,7 +118,7 @@ export function HeroSection() {
                 <div className="space-y-6">
                   {/* Header */}
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold">لوحة تحكم الأسطول</h3>
+                    <h3 className="arabic-heading-sm text-container">لوحة تحكم الأسطول</h3>
                     <div className="flex space-x-1">
                       <div className="w-3 h-3 bg-destructive rounded-full" />
                       <div className="w-3 h-3 bg-warning rounded-full" />
@@ -143,9 +143,9 @@ export function HeroSection() {
                       >
                         <div className="flex items-center space-x-2">
                           <div className={`w-2 h-2 ${stat.color} rounded-full`} />
-                          <span className="text-xs text-muted-foreground">{stat.label}</span>
+                          <span className="arabic-body-sm text-muted-foreground text-container">{stat.label}</span>
                         </div>
-                        <p className="text-lg font-bold mt-1">{stat.value}</p>
+                        <p className="arabic-body font-bold mt-1 text-container">{stat.value}</p>
                       </motion.div>
                     ))}
                   </div>

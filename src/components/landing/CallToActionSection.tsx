@@ -53,7 +53,7 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="arabic-heading-lg bg-gradient-primary bg-clip-text text-transparent text-center"
+                className="arabic-heading-lg bg-gradient-primary bg-clip-text text-transparent text-center text-container"
               >
                 هل أنت مستعد لتحويل عملك؟
               </motion.h2>
@@ -63,7 +63,7 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="arabic-body-lg text-muted-foreground max-w-2xl mx-auto text-center"
+                className="arabic-body-lg text-muted-foreground max-w-2xl mx-auto text-center text-container"
               >
                 انضم إلى آلاف الشركات التي تستخدم فليتيفاي بالفعل لتبسيط العمليات، 
                 تقليل التكاليف، ودفع النمو. ابدأ تجربتك المجانية اليوم.

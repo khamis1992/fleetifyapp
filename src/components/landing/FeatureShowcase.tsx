@@ -79,10 +79,10 @@ export function FeatureShowcase() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="arabic-heading-lg mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
+          <h2 className="arabic-heading-lg mb-6 bg-gradient-primary bg-clip-text text-transparent text-center text-container">
             كل ما تحتاجه للنمو
           </h2>
-          <p className="arabic-body-lg text-muted-foreground max-w-3xl mx-auto text-center">
+          <p className="arabic-body-lg text-muted-foreground max-w-3xl mx-auto text-center text-container">
             أدوات إدارة أعمال شاملة مصممة للمؤسسات الحديثة
           </p>
         </motion.div>
@@ -108,8 +108,8 @@ export function FeatureShowcase() {
                     />
                   </div>
                   
-                  <h3 className="arabic-heading-sm">{feature.title}</h3>
-                  <p className="arabic-body text-muted-foreground">{feature.description}</p>
+                  <h3 className="arabic-heading-sm text-container">{feature.title}</h3>
+                  <p className="arabic-body text-muted-foreground text-container">{feature.description}</p>
                   
                   <ul className="space-y-2">
                     {feature.benefits.map((benefit, i) => (
