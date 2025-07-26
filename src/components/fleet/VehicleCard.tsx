@@ -21,11 +21,11 @@ const statusColors = {
 }
 
 const statusLabels = {
-  available: "Available",
-  rented: "Rented",
-  maintenance: "Maintenance", 
-  out_of_service: "Out of Service",
-  reserved: "Reserved"
+  available: "متاحة",
+  rented: "مؤجرة",
+  maintenance: "قيد الصيانة", 
+  out_of_service: "خارج الخدمة",
+  reserved: "محجوزة"
 }
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {
@@ -56,21 +56,21 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setShowDetails(true)}>
                     <Eye className="h-4 w-4 mr-2" />
-                    View Details
+                    عرض التفاصيل
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowEditForm(true)}>
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit Vehicle
+                    تعديل المركبة
                   </DropdownMenuItem>
                   {status === 'available' && (
                     <DropdownMenuItem>
                       <Wrench className="h-4 w-4 mr-2" />
-                      Schedule Maintenance
+                      جدولة الصيانة
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem className="text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Deactivate
+                    إلغاء التفعيل
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -83,18 +83,18 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             {vehicle.make} {vehicle.model}
           </div>
           <div className="text-sm text-muted-foreground">
-            Year: {vehicle.year} • Color: {vehicle.color}
+            السنة: {vehicle.year} • اللون: {vehicle.color}
           </div>
           
           {vehicle.current_mileage && (
             <div className="text-sm text-muted-foreground">
-              Mileage: {vehicle.current_mileage?.toLocaleString()} km
+              المسافة المقطوعة: {vehicle.current_mileage?.toLocaleString()} كم
             </div>
           )}
           
           {vehicle.last_maintenance_date && (
             <div className="text-sm text-muted-foreground">
-              Last Service: {new Date(vehicle.last_maintenance_date).toLocaleDateString()}
+              آخر صيانة: {new Date(vehicle.last_maintenance_date).toLocaleDateString()}
             </div>
           )}
         </CardContent>
@@ -109,7 +109,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               size="sm"
               onClick={() => setShowDetails(true)}
             >
-              View Details
+              عرض التفاصيل
             </Button>
           </div>
         </CardFooter>

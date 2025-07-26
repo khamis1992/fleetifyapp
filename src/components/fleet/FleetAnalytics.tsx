@@ -58,52 +58,52 @@ export function FleetAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي المركبات</CardTitle>
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.totalVehicles}</div>
             <p className="text-xs text-muted-foreground">
-              {analytics.availableVehicles} available
+              {analytics.availableVehicles} متاحة
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fleet Value</CardTitle>
+            <CardTitle className="text-sm font-medium">قيمة الأسطول</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(analytics.totalBookValue)}</div>
             <p className="text-xs text-muted-foreground">
-              Current book value
+              القيمة الدفترية الحالية
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utilization Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">معدل الاستخدام</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.utilizationRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
-              Vehicles currently rented
+              المركبات المؤجرة حالياً
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Maintenance Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">تكلفة الصيانة</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(analytics.monthlyMaintenanceCost)}</div>
             <p className="text-xs text-muted-foreground">
-              This month
+              هذا الشهر
             </p>
           </CardContent>
         </Card>
@@ -113,8 +113,8 @@ export function FleetAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Vehicle Status Distribution</CardTitle>
-            <CardDescription>Current status of all vehicles</CardDescription>
+            <CardTitle>توزيع حالة المركبات</CardTitle>
+            <CardDescription>الحالة الحالية لجميع المركبات</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -151,8 +151,8 @@ export function FleetAnalytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Financial Overview</CardTitle>
-            <CardDescription>Monthly financial metrics</CardDescription>
+            <CardTitle>النظرة المالية العامة</CardTitle>
+            <CardDescription>المقاييس المالية الشهرية</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -173,27 +173,27 @@ export function FleetAnalytics() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calculator className="h-5 w-5" />
-            <span>Depreciation Management</span>
+            <span>إدارة الإهلاك</span>
           </CardTitle>
           <CardDescription>
-            Process monthly depreciation for all vehicles
+            معالجة الإهلاك الشهري لجميع المركبات
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                Total accumulated depreciation: {formatCurrency(analytics.totalDepreciation)}
+                إجمالي الإهلاك المتراكم: {formatCurrency(analytics.totalDepreciation)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Process depreciation to update vehicle book values
+                معالجة الإهلاك لتحديث القيم الدفترية للمركبات
               </p>
             </div>
             <Button 
               onClick={handleProcessDepreciation}
               disabled={processDepreciation.isPending}
             >
-              {processDepreciation.isPending ? "Processing..." : "Process Depreciation"}
+              {processDepreciation.isPending ? "جاري المعالجة..." : "معالجة الإهلاك"}
             </Button>
           </div>
         </CardContent>
@@ -202,8 +202,8 @@ export function FleetAnalytics() {
       {/* Recent Maintenance */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Maintenance Activities</CardTitle>
-          <CardDescription>Latest maintenance records</CardDescription>
+          <CardTitle>أنشطة الصيانة الحديثة</CardTitle>
+          <CardDescription>سجلات الصيانة الأخيرة</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
