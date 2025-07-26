@@ -201,10 +201,13 @@ All colors MUST be HSL.
     transition: var(--transition-fast);
   }
   
+}
+
+@layer utilities {
+  /* Custom transition utilities */
   .transition-glow {
     transition: var(--transition-glow);
   }
-  
 }
 
 @layer components {
@@ -222,7 +225,7 @@ All colors MUST be HSL.
   }
   
   .glow-on-hover {
-    @apply transition-smooth hover:shadow-glow;
+    @apply transition-glow hover:shadow-glow;
   }
   
   /* Enhanced gradients with animation */
