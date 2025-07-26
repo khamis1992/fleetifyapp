@@ -39,6 +39,7 @@ export interface CreateUserData {
   last_name_ar?: string;
   company_id: string;
   roles: string[];
+  employee_id?: string;
   temporary_password?: string;
 }
 
@@ -141,62 +142,77 @@ export const useSuperAdminUsers = () => {
   // Create new user
   const createUser = async (userData: CreateUserData) => {
     setIsCreating(true);
+    
     try {
-      // Validate required fields
-      if (!userData.company_id) {
-        throw new Error('يجب تحديد الشركة');
-      }
+      console.log('=== FRONTEND: Creating user with data ===', userData);
       
-      if (!userData.email) {
-        throw new Error('يجب تحديد البريد الإلكتروني');
-      }
-      
-      if (!userData.first_name || !userData.last_name) {
-        throw new Error('يجب تحديد الاسم الأول واسم العائلة');
-      }
-      
-      if (!userData.roles || userData.roles.length === 0) {
-        throw new Error('يجب تحديد دور واحد على الأقل');
-      }
-      // Find employee by email to link account
-      const { data: employees, error: employeeError } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('email', userData.email)
-        .eq('company_id', userData.company_id)
-        .single();
-
-      if (employeeError && employeeError.code !== 'PGRST116') {
-        throw new Error('خطأ في البحث عن الموظف');
+      // Validate input data before sending to edge function
+      if (!userData.first_name || !userData.last_name || !userData.email || !userData.company_id || !userData.roles?.length) {
+        throw new Error('Missing required fields. Please fill in all required information.');
       }
 
-      let employeeId = employees?.id;
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        throw new Error('Please enter a valid email address.');
+      }
 
-      // If no employee found, create one
-      if (!employees) {
-        const { data: newEmployee, error: createEmployeeError } = await supabase
+      // Find employee by email to link account or use provided employee_id
+      let employeeId = userData.employee_id;
+      
+      if (!employeeId) {
+        console.log('No employee_id provided, searching by email...');
+        const { data: employees, error: employeeError } = await supabase
           .from('employees')
-          .insert({
-            company_id: userData.company_id,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            first_name_ar: userData.first_name_ar,
-            last_name_ar: userData.last_name_ar,
-            email: userData.email,
-            employee_number: `EMP-${Date.now()}`,
-            hire_date: new Date().toISOString().split('T')[0],
-            basic_salary: 0,
-            is_active: true
-          })
-          .select()
+          .select('*')
+          .eq('email', userData.email)
+          .eq('company_id', userData.company_id)
           .single();
 
-        if (createEmployeeError) throw createEmployeeError;
-        employeeId = newEmployee.id;
+        if (employeeError && employeeError.code !== 'PGRST116') {
+          throw new Error('Error searching for employee. Please try again.');
+        }
+
+        if (!employees) {
+          // Create new employee if none found
+          console.log('Creating new employee...');
+          const { data: newEmployee, error: createEmployeeError } = await supabase
+            .from('employees')
+            .insert({
+              company_id: userData.company_id,
+              first_name: userData.first_name,
+              last_name: userData.last_name,
+              first_name_ar: userData.first_name_ar,
+              last_name_ar: userData.last_name_ar,
+              email: userData.email,
+              employee_number: `EMP-${Date.now()}`,
+              hire_date: new Date().toISOString().split('T')[0],
+              basic_salary: 0,
+              is_active: true
+            })
+            .select()
+            .single();
+
+          if (createEmployeeError) {
+            console.error('Error creating employee:', createEmployeeError);
+            throw new Error('Failed to create employee record. Please try again.');
+          }
+          employeeId = newEmployee.id;
+          console.log('New employee created:', newEmployee);
+        } else {
+          employeeId = employees.id;
+          console.log('Found existing employee:', employees);
+          
+          // Check if employee already has system access
+          if (employees.has_system_access && employees.user_id) {
+            throw new Error('This employee already has a system account. Please select a different employee.');
+          }
+        }
       }
 
-      // Call edge function to create user account
-      const { data, error } = await supabase.functions.invoke('create-user-account', {
+      // Call the edge function with proper error handling
+      console.log('Calling create-user-account edge function...');
+      const { data: result, error: functionError } = await supabase.functions.invoke('create-user-account', {
         body: {
           employee_id: employeeId,
           first_name: userData.first_name,
@@ -206,37 +222,89 @@ export const useSuperAdminUsers = () => {
           email: userData.email,
           company_id: userData.company_id,
           roles: userData.roles,
-          temporary_password: userData.temporary_password || 'TempPassword123!'
+          temporary_password: userData.temporary_password
         }
       });
 
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(`فشل في إنشاء حساب المستخدم: ${error.message || 'خطأ غير معروف'}`);
+      console.log('Edge function response:', { result, functionError });
+
+      // Handle edge function errors
+      if (functionError) {
+        console.error('Edge function error:', functionError);
+        
+        // Check if it's a network/connection error
+        if (functionError.message?.includes('fetch')) {
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }
+        
+        // Check if it's an authentication error
+        if (functionError.message?.includes('auth') || functionError.message?.includes('401')) {
+          throw new Error('Authentication error. Please refresh the page and try again.');
+        }
+        
+        throw new Error(functionError.message || 'Failed to create user account due to a server error.');
       }
 
-      if (!data || !data.success) {
-        const errorMessage = data?.error || 'خطأ غير معروف';
-        console.error('Edge function returned error:', errorMessage);
-        throw new Error(`فشل في إنشاء حساب المستخدم: ${errorMessage}`);
+      // Handle business logic errors from the edge function
+      if (!result?.success) {
+        console.error('Edge function returned error:', result);
+        
+        const errorMessage = result?.error || 'Unknown error occurred while creating the user.';
+        
+        // Provide more user-friendly error messages
+        if (errorMessage.includes('already has a system account')) {
+          throw new Error('This employee already has a system account for this company.');
+        }
+        
+        if (errorMessage.includes('email is already linked')) {
+          throw new Error('This email address is already linked to another employee in this company.');
+        }
+        
+        if (errorMessage.includes('company not found')) {
+          throw new Error('The selected company was not found. Please refresh the page and try again.');
+        }
+        
+        if (errorMessage.includes('employee not found')) {
+          throw new Error('The selected employee was not found. Please refresh the page and try again.');
+        }
+        
+        if (errorMessage.includes('permissions')) {
+          throw new Error('You do not have sufficient permissions to create users for this company.');
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      toast({
-        title: 'تم بنجاح',
-        description: `تم إنشاء حساب المستخدم بنجاح. كلمة المرور المؤقتة: ${data.temporary_password}`,
-      });
-
-      // Refresh users list
+      console.log('User created successfully:', result);
+      
+      // Refresh the users list to show the new user
       await fetchUsers();
       
-      return data;
-    } catch (error) {
-      console.error('Error creating user:', error);
+      // Show success message with temporary password if provided
+      const successMessage = result.temporary_password 
+        ? `User account created successfully. Temporary password: ${result.temporary_password}` 
+        : 'User account created successfully.';
+      
       toast({
-        title: 'خطأ',
-        description: error instanceof Error ? error.message : 'فشل في إنشاء المستخدم',
-        variant: 'destructive',
+        title: "Success",
+        description: successMessage,
       });
+      
+      return result;
+      
+    } catch (error: any) {
+      console.error('=== FRONTEND ERROR CREATING USER ===');
+      console.error('Error details:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || "An unexpected error occurred while creating the user. Please try again.";
+      
+      toast({
+        title: "Error Creating User",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
       throw error;
     } finally {
       setIsCreating(false);

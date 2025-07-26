@@ -30,51 +30,77 @@ const assignRolesAndCreateRecord = async (
   roles: string[],
   employeeId: string,
   companyId: string,
+  requestedBy: string,
   notes?: string,
   temporaryPassword?: string,
   passwordExpiresAt?: string
 ) => {
-  // Assign roles to user
-  if (roles && roles.length > 0 && userId) {
-    const roleInserts = roles.map(role => ({
-      user_id: userId,
-      role: role
-    }));
-
-    const { error: rolesError } = await supabaseClient
+  try {
+    console.log('Assigning roles and creating record for user:', userId);
+    
+    // Clear existing roles for this user first
+    const { error: deleteError } = await supabaseClient
       .from('user_roles')
-      .insert(roleInserts);
+      .delete()
+      .eq('user_id', userId);
 
-    if (rolesError) {
-      console.error('Error assigning roles:', rolesError);
-      throw new Error(`Failed to assign roles: ${rolesError.message}`);
+    if (deleteError) {
+      console.error('Error clearing existing roles:', deleteError);
+      // Don't fail here, user might not have existing roles
     }
-  }
 
-  // Create account creation request record
-  const { data: requestData, error: requestError } = await supabaseClient
-    .from('account_creation_requests')
-    .insert({
+    // Assign new roles to user
+    if (roles && roles.length > 0 && userId) {
+      const roleInserts = roles.map(role => ({
+        user_id: userId,
+        role: role
+      }));
+
+      console.log('Inserting roles:', roleInserts);
+      const { error: rolesError } = await supabaseClient
+        .from('user_roles')
+        .insert(roleInserts);
+
+      if (rolesError) {
+        console.error('Error assigning roles:', rolesError);
+        return { success: false, error: `Failed to assign roles: ${rolesError.message}` };
+      }
+      console.log('Roles assigned successfully');
+    }
+
+    // Create account creation request record
+    const requestRecord = {
       employee_id: employeeId,
       company_id: companyId,
-      requested_by: userId, // Use the created user ID as the requester for consistency
+      requested_by: requestedBy,
       requested_roles: roles,
-      notes,
+      notes: notes || 'Direct user creation',
       status: 'approved',
       direct_creation: true,
       temporary_password: temporaryPassword,
       password_expires_at: passwordExpiresAt,
-      processed_at: new Date().toISOString()
-    })
-    .select()
-    .single();
+      processed_at: new Date().toISOString(),
+      processed_by: requestedBy
+    };
 
-  if (requestError) {
-    console.error('Error creating request record:', requestError);
-    throw new Error(`Failed to create request record: ${requestError.message}`);
+    console.log('Creating account request record:', requestRecord);
+    const { data: requestData, error: requestError } = await supabaseClient
+      .from('account_creation_requests')
+      .insert(requestRecord)
+      .select()
+      .single();
+
+    if (requestError) {
+      console.error('Error creating request record:', requestError);
+      return { success: false, error: `Failed to create request record: ${requestError.message}` };
+    }
+
+    console.log('Account request record created successfully');
+    return { success: true, data: requestData };
+  } catch (error) {
+    console.error('Error in assignRolesAndCreateRecord:', error);
+    return { success: false, error: error.message };
   }
-
-  return requestData;
 };
 
 serve(async (req) => {
@@ -259,16 +285,21 @@ serve(async (req) => {
         .delete()
         .eq('user_id', existingUser.id);
 
-      await assignRolesAndCreateRecord(
+      const roleResult = await assignRolesAndCreateRecord(
         supabaseClient, 
         existingUser.id, 
         roles, 
         employee_id, 
         company_id, 
+        tokenData.user.id, // requested_by
         notes, 
         tempPassword, 
         passwordExpiresAt.toISOString()
       );
+
+      if (!roleResult.success) {
+        throw new Error(roleResult.error);
+      }
 
       return new Response(
         JSON.stringify({
@@ -349,7 +380,21 @@ serve(async (req) => {
     }
 
     // Assign roles and create request record
-    await assignRolesAndCreateRecord(supabaseClient, userData.user?.id, roles, employee_id, company_id, notes, temporaryPassword, passwordExpiresAt.toISOString());
+    const roleResult = await assignRolesAndCreateRecord(
+      supabaseClient, 
+      userData.user?.id, 
+      roles, 
+      employee_id, 
+      company_id, 
+      tokenData.user.id, // requested_by
+      notes, 
+      temporaryPassword, 
+      passwordExpiresAt.toISOString()
+    );
+
+    if (!roleResult.success) {
+      throw new Error(roleResult.error);
+    }
 
     console.log('Account creation completed successfully');
 
