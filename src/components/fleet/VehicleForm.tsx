@@ -93,9 +93,22 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
   const onSubmit = async (data: any) => {
     try {
+      // Check if user has valid company_id
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      
+      if (!companyId) {
+        console.error("No company ID found for user");
+        throw new Error("لا يمكن إنشاء المركبة. معرف الشركة غير موجود.");
+      }
+
+      // Check if user has permission to create vehicles
+      if (!user) {
+        throw new Error("يجب تسجيل الدخول لإنشاء مركبة.");
+      }
+
       const vehicleData = {
         ...data,
-        company_id: user?.user_metadata?.company_id,
+        company_id: companyId,
         year: parseInt(data.year),
         seating_capacity: parseInt(data.seating_capacity),
         useful_life_years: parseInt(data.useful_life_years),
@@ -109,6 +122,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         is_active: true,
       }
 
+      console.log("Creating/updating vehicle with data:", { ...vehicleData, company_id: companyId });
+
       if (vehicle) {
         await updateVehicle.mutateAsync({ id: vehicle.id, ...vehicleData })
       } else {
@@ -118,7 +133,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       onOpenChange(false)
       form.reset()
     } catch (error) {
-      console.error("Error saving vehicle:", error)
+      console.error("Error saving vehicle:", error);
+      // Better error message for user
+      const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء حفظ المركبة";
+      alert(errorMessage);
     }
   }
 
