@@ -56,7 +56,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
 
   const handleFilterChange = (key: string, value: any) => {
     const newFilters = { ...activeFilters, [key]: value };
-    if (value === '' || value === null || value === undefined) {
+    if (value === '' || value === null || value === undefined || value === 'all') {
       delete newFilters[key];
     }
     onFiltersChange(newFilters);
@@ -120,7 +120,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
                 <SelectValue placeholder="جميع الحالات" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الحالات</SelectItem>
+                <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="draft">مسودة</SelectItem>
                 <SelectItem value="active">نشط</SelectItem>
                 <SelectItem value="suspended">معلق</SelectItem>
@@ -141,7 +141,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
                 <SelectValue placeholder="جميع الأنواع" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الأنواع</SelectItem>
+                <SelectItem value="all">جميع الأنواع</SelectItem>
                 <SelectItem value="rental">إيجار</SelectItem>
                 <SelectItem value="service">خدمة</SelectItem>
                 <SelectItem value="maintenance">صيانة</SelectItem>
@@ -165,7 +165,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
                     <SelectValue placeholder="جميع العملاء" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع العملاء</SelectItem>
+                    <SelectItem value="all">جميع العملاء</SelectItem>
                     {customers?.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.customer_type === 'individual' 
@@ -188,7 +188,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
                     <SelectValue placeholder="جميع المراكز" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع المراكز</SelectItem>
+                    <SelectItem value="all">جميع المراكز</SelectItem>
                     {costCenters?.map((center) => (
                       <SelectItem key={center.id} value={center.id}>
                         {center.center_code} - {center.center_name}
