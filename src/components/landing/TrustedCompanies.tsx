@@ -43,7 +43,7 @@ export function TrustedCompanies() {
         >
           <motion.h3 
             variants={itemVariants}
-            className="text-lg font-medium text-muted-foreground mb-12 text-center"
+            className="arabic-heading-sm text-muted-foreground mb-12 text-center"
           >
             يثق بنا قادة الشركات العالمية
           </motion.h3>
@@ -60,7 +60,7 @@ export function TrustedCompanies() {
                 className="flex flex-col items-center space-y-2 p-4 rounded-lg bg-card/50 backdrop-blur-sm border border-border/30 hover:border-primary/30 transition-all duration-300"
               >
                 <span className="text-3xl">{company.logo}</span>
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="arabic-body-sm font-medium text-muted-foreground">
                   {company.name}
                 </span>
               </motion.div>

@@ -39,14 +39,14 @@ export function HeroSection() {
               className="inline-flex items-center space-x-2 bg-gradient-primary/10 px-4 py-2 rounded-full border border-primary/20"
             >
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">منصة احترافية على مستوى المؤسسات</span>
+              <span className="arabic-body-sm font-medium text-primary">منصة احترافية على مستوى المؤسسات</span>
             </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-right"
+              className="arabic-heading-xl text-right"
             >
               حوّل عمليات
               <span className="block bg-gradient-primary bg-clip-text text-transparent">
@@ -58,7 +58,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl text-right"
+              className="arabic-body-lg text-muted-foreground max-w-2xl text-right"
             >
               أقوى منصة لإدارة الأساطيل وأتمتة الأعمال. 
               تبسيط العمليات، تعزيز الكفاءة، والنمو بثقة.
@@ -70,7 +70,7 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <Button size="lg" className="text-lg px-8 py-6 group transition-all duration-300 hover:scale-105">
+              <Button size="lg" className="arabic-body px-8 py-6 group transition-all duration-300 hover:scale-105">
                 ابدأ تجربة مجانية
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -78,7 +78,7 @@ export function HeroSection() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="text-lg px-8 py-6 group bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                className="arabic-body px-8 py-6 group bg-background/80 backdrop-blur-sm hover:bg-background/90"
               >
                 <Play className="mr-2 h-5 w-5" />
                 شاهد العرض التوضيحي
@@ -89,7 +89,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="flex items-center space-x-8 text-sm text-muted-foreground"
+              className="flex items-center space-x-8 arabic-body-sm text-muted-foreground"
             >
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse" />

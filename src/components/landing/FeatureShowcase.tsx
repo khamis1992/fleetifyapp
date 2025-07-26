@@ -79,10 +79,10 @@ export function FeatureShowcase() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
+          <h2 className="arabic-heading-lg mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
             كل ما تحتاجه للنمو
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-center">
+          <p className="arabic-body-lg text-muted-foreground max-w-3xl mx-auto text-center">
             أدوات إدارة أعمال شاملة مصممة للمؤسسات الحديثة
           </p>
         </motion.div>
@@ -108,12 +108,12 @@ export function FeatureShowcase() {
                     />
                   </div>
                   
-                  <h3 className="text-xl font-semibold">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <h3 className="arabic-heading-sm">{feature.title}</h3>
+                  <p className="arabic-body text-muted-foreground">{feature.description}</p>
                   
                   <ul className="space-y-2">
                     {feature.benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-center text-sm">
+                      <li key={i} className="flex items-center arabic-body-sm">
                         <div 
                           className="w-1.5 h-1.5 rounded-full mr-2"
                           style={{ backgroundColor: feature.color }}

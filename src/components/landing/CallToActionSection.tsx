@@ -53,7 +53,7 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent text-center"
+                className="arabic-heading-lg bg-gradient-primary bg-clip-text text-transparent text-center"
               >
                 هل أنت مستعد لتحويل عملك؟
               </motion.h2>
@@ -63,7 +63,7 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-xl text-muted-foreground max-w-2xl mx-auto text-center"
+                className="arabic-body-lg text-muted-foreground max-w-2xl mx-auto text-center"
               >
                 انضم إلى آلاف الشركات التي تستخدم فليتيفاي بالفعل لتبسيط العمليات، 
                 تقليل التكاليف، ودفع النمو. ابدأ تجربتك المجانية اليوم.
@@ -83,7 +83,7 @@ export function CallToActionSection() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                    className="flex items-center space-x-2 text-sm"
+                    className="flex items-center space-x-2 arabic-body-sm"
                   >
                     <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
                     <span>{benefit}</span>
@@ -100,7 +100,7 @@ export function CallToActionSection() {
               >
                 <Button 
                   size="lg" 
-                  className="text-lg px-8 py-6 group transition-all duration-300 hover:scale-105"
+                  className="arabic-body px-8 py-6 group transition-all duration-300 hover:scale-105"
                 >
                   ابدأ تجربة مجانية
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -109,7 +109,7 @@ export function CallToActionSection() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="text-lg px-8 py-6 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                  className="arabic-body px-8 py-6 bg-background/80 backdrop-blur-sm hover:bg-background/90"
                 >
                   احجز عرض توضيحي
                 </Button>
@@ -120,7 +120,7 @@ export function CallToActionSection() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 1 }}
-                className="text-sm text-muted-foreground text-center"
+                className="arabic-body-sm text-muted-foreground text-center"
               >
                 يثق بنا 500+ شركة • رضا العملاء 99% • أمان على مستوى المؤسسات
               </motion.p>
