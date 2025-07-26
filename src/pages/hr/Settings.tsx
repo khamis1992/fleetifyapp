@@ -327,7 +327,7 @@ export default function HRSettings() {
                 <Calendar className="h-5 w-5 text-primary" />
                 <div>
                   <CardTitle>إعدادات الإجازات</CardTitle>
-                  <CardDescription>إدارة أنواع الإجازات والأرصدة</CardDescription>
+                  <CardDescription>إدارة أنواع الإجازات والأرصدة من جدول واحد موحد</CardDescription>
                 </div>
               </div>
               <Dialog open={isLeaveTypeDialogOpen} onOpenChange={setIsLeaveTypeDialogOpen}>
@@ -419,88 +419,64 @@ export default function HRSettings() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="space-y-2">
-                <Label htmlFor="annual-leave">إجازة سنوية (أيام)</Label>
-                <Input 
-                  id="annual-leave" 
-                  type="number" 
-                  value={formData.annual_leave_days || 30}
-                  onChange={(e) => handleInputChange('annual_leave_days', parseInt(e.target.value))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sick-leave">إجازة مرضية (أيام)</Label>
-                <Input 
-                  id="sick-leave" 
-                  type="number" 
-                  value={formData.sick_leave_days || 15}
-                  onChange={(e) => handleInputChange('sick_leave_days', parseInt(e.target.value))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="casual-leave">إجازة عارضة (أيام)</Label>
-                <Input 
-                  id="casual-leave" 
-                  type="number" 
-                  value={formData.casual_leave_days || 5}
-                  onChange={(e) => handleInputChange('casual_leave_days', parseInt(e.target.value))}
-                />
-              </div>
-            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                جميع أنواع الإجازات يتم إدارتها الآن من خلال نظام موحد. يمكنك إضافة وتعديل أنواع الإجازات أدناه.
+              </p>
 
-            {leaveTypesLoading ? (
-              <div className="flex justify-center py-4">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <h4 className="font-medium">أنواع الإجازات المخصصة</h4>
-                {leaveTypes && leaveTypes.length > 0 ? (
-                  <div className="space-y-2">
-                    {leaveTypes.map((leaveType) => (
-                      <div key={leaveType.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h5 className="font-medium">{leaveType.type_name_ar || leaveType.type_name}</h5>
-                            <Badge variant={leaveType.is_active ? "default" : "secondary"}>
-                              {leaveType.is_active ? "نشط" : "غير نشط"}
-                            </Badge>
+              {leaveTypesLoading ? (
+                <div className="flex justify-center py-4">
+                  <LoadingSpinner />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="font-medium">أنواع الإجازات المتاحة</h4>
+                  {leaveTypes && leaveTypes.length > 0 ? (
+                    <div className="space-y-2">
+                      {leaveTypes.map((leaveType) => (
+                        <div key={leaveType.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-medium">{leaveType.type_name_ar || leaveType.type_name}</h5>
+                              <Badge variant={leaveType.is_active ? "default" : "secondary"}>
+                                {leaveType.is_active ? "نشط" : "غير نشط"}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {leaveType.max_days_per_year} أيام سنوياً • 
+                              {leaveType.requires_approval ? " يتطلب موافقة" : " لا يتطلب موافقة"}
+                            </p>
+                            {leaveType.description && (
+                              <p className="text-sm text-muted-foreground mt-1">{leaveType.description}</p>
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {leaveType.max_days_per_year} أيام سنوياً • 
-                            {leaveType.requires_approval ? " يتطلب موافقة" : " لا يتطلب موافقة"}
-                          </p>
-                          {leaveType.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{leaveType.description}</p>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditLeaveType(leaveType)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteLeaveType(leaveType.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditLeaveType(leaveType)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteLeaveType(leaveType.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    لا توجد أنواع إجازات مخصصة
-                  </p>
-                )}
-              </div>
-            )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">
+                      لا توجد أنواع إجازات محددة
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

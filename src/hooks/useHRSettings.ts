@@ -20,10 +20,6 @@ export interface HRSettings {
   tax_rate: number;
   payroll_frequency: string;
   pay_date: number;
-  // Leave settings
-  annual_leave_days: number;
-  sick_leave_days: number;
-  casual_leave_days: number;
   // System settings
   require_manager_approval: boolean;
   email_notifications: boolean;

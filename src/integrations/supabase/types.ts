@@ -1245,9 +1245,7 @@ export type Database = {
       hr_settings: {
         Row: {
           allow_negative_balance: boolean
-          annual_leave_days: number
           auto_calculate_overtime: boolean
-          casual_leave_days: number
           company_id: string
           created_at: string
           daily_working_hours: number
@@ -1259,7 +1257,6 @@ export type Database = {
           pay_date: number
           payroll_frequency: string
           require_manager_approval: boolean
-          sick_leave_days: number
           sms_notifications: boolean
           social_security_rate: number
           tax_rate: number
@@ -1270,9 +1267,7 @@ export type Database = {
         }
         Insert: {
           allow_negative_balance?: boolean
-          annual_leave_days?: number
           auto_calculate_overtime?: boolean
-          casual_leave_days?: number
           company_id: string
           created_at?: string
           daily_working_hours?: number
@@ -1284,7 +1279,6 @@ export type Database = {
           pay_date?: number
           payroll_frequency?: string
           require_manager_approval?: boolean
-          sick_leave_days?: number
           sms_notifications?: boolean
           social_security_rate?: number
           tax_rate?: number
@@ -1295,9 +1289,7 @@ export type Database = {
         }
         Update: {
           allow_negative_balance?: boolean
-          annual_leave_days?: number
           auto_calculate_overtime?: boolean
-          casual_leave_days?: number
           company_id?: string
           created_at?: string
           daily_working_hours?: number
@@ -1309,7 +1301,6 @@ export type Database = {
           pay_date?: number
           payroll_frequency?: string
           require_manager_approval?: boolean
-          sick_leave_days?: number
           sms_notifications?: boolean
           social_security_rate?: number
           tax_rate?: number
@@ -2925,6 +2916,10 @@ export type Database = {
       create_contract_journal_entry: {
         Args: { contract_id_param: string }
         Returns: string
+      }
+      create_default_leave_types_for_company: {
+        Args: { target_company_id: string }
+        Returns: undefined
       }
       create_deferred_revenue_journal_entry: {
         Args: {
