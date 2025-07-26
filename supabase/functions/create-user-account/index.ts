@@ -8,13 +8,15 @@ const corsHeaders = {
 
 interface CreateUserAccountRequest {
   employee_id: string;
-  employee_name: string;
-  employee_email: string;
+  first_name: string;
+  last_name: string;
+  first_name_ar?: string;
+  last_name_ar?: string;
+  email: string;
   roles: string[];
-  requester_name: string;
-  notes?: string;
-  user_id: string;
   company_id: string;
+  notes?: string;
+  temporary_password?: string;
 }
 
 const generateTemporaryPassword = (): string => {
@@ -28,7 +30,6 @@ const assignRolesAndCreateRecord = async (
   roles: string[],
   employeeId: string,
   companyId: string,
-  requestedBy: string,
   notes?: string,
   temporaryPassword?: string,
   passwordExpiresAt?: string
@@ -56,7 +57,7 @@ const assignRolesAndCreateRecord = async (
     .insert({
       employee_id: employeeId,
       company_id: companyId,
-      requested_by: requestedBy,
+      requested_by: userId, // Use the created user ID as the requester for consistency
       requested_roles: roles,
       notes,
       status: 'approved',
@@ -89,20 +90,27 @@ serve(async (req) => {
 
     const {
       employee_id,
-      employee_name,
-      employee_email,
+      first_name,
+      last_name,
+      first_name_ar,
+      last_name_ar,
+      email,
       roles,
-      requester_name,
+      company_id,
       notes,
-      user_id,
-      company_id
+      temporary_password
     }: CreateUserAccountRequest = await req.json();
 
-    console.log('Creating user account for:', employee_email);
+    console.log('Creating user account for:', email);
+    console.log('Request data:', { employee_id, first_name, last_name, email, company_id, roles });
 
     // Validate required fields
-    if (!user_id || !company_id) {
-      throw new Error('Missing required fields: user_id and company_id');
+    if (!employee_id || !company_id || !email || !first_name || !last_name) {
+      throw new Error('Missing required fields: employee_id, company_id, email, first_name, and last_name are required');
+    }
+
+    if (!roles || roles.length === 0) {
+      throw new Error('At least one role must be specified');
     }
 
     // Verify the company exists
@@ -124,7 +132,7 @@ serve(async (req) => {
       throw new Error(`Failed to check existing users: ${checkError.message}`);
     }
 
-    const existingUser = existingUsers.users.find(u => u.email === employee_email);
+    const existingUser = existingUsers.users.find(u => u.email === email);
     
     if (existingUser) {
       // User already exists, check if they're linked to this employee
@@ -185,7 +193,6 @@ serve(async (req) => {
         roles, 
         employee_id, 
         company_id, 
-        user_id, 
         notes, 
         temporaryPassword, 
         passwordExpiresAt.toISOString()
@@ -214,12 +221,14 @@ serve(async (req) => {
 
     // Create user account using admin API
     const { data: userData, error: userError } = await supabaseClient.auth.admin.createUser({
-      email: employee_email,
+      email: email,
       password: temporaryPassword,
       email_confirm: true, // Auto-confirm email
       user_metadata: {
-        first_name: employee_name.split(' ')[0],
-        last_name: employee_name.split(' ').slice(1).join(' '),
+        first_name: first_name,
+        last_name: last_name,
+        first_name_ar: first_name_ar,
+        last_name_ar: last_name_ar,
         requires_password_change: true
       }
     });
@@ -251,9 +260,12 @@ serve(async (req) => {
       .from('profiles')
       .insert({
         user_id: userData.user?.id,
-        first_name: employee_name.split(' ')[0],
-        last_name: employee_name.split(' ').slice(1).join(' '),
-        email: employee_email
+        first_name: first_name,
+        last_name: last_name,
+        first_name_ar: first_name_ar,
+        last_name_ar: last_name_ar,
+        email: email,
+        company_id: company_id
       });
 
     if (profileError) {
@@ -262,7 +274,7 @@ serve(async (req) => {
     }
 
     // Assign roles and create request record
-    await assignRolesAndCreateRecord(supabaseClient, userData.user?.id, roles, employee_id, company_id, user_id, notes, temporaryPassword, passwordExpiresAt.toISOString());
+    await assignRolesAndCreateRecord(supabaseClient, userData.user?.id, roles, employee_id, company_id, notes, temporaryPassword, passwordExpiresAt.toISOString());
 
     console.log('Account creation completed successfully');
 
