@@ -4016,6 +4016,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_management_view: {
+        Row: {
+          company_id: string | null
+          company_name: string | null
+          company_name_ar: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          first_name_ar: string | null
+          id: string | null
+          last_name: string | null
+          last_name_ar: string | null
+          user_roles: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_account_level: {
