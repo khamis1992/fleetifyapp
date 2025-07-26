@@ -158,6 +158,11 @@ const fleetSubItems = [
     icon: AlertTriangle
   },
   {
+    name: 'مدفوعات المخالفات',
+    href: '/fleet/traffic-violation-payments',
+    icon: CreditCard
+  },
+  {
     name: 'التقارير والتحليلات',
     href: '/fleet/reports',
     icon: BarChart3

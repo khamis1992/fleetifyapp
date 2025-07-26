@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrafficViolationForm } from '@/components/fleet/TrafficViolationForm';
+import { TrafficViolationPaymentsDialog } from '@/components/fleet/TrafficViolationPaymentsDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useTrafficViolations } from '@/hooks/useTrafficViolations';
+import { useTrafficViolations, TrafficViolation } from '@/hooks/useTrafficViolations';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -17,6 +18,8 @@ export default function TrafficViolations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
+  const [selectedViolation, setSelectedViolation] = useState<TrafficViolation | null>(null);
+  const [isPaymentsDialogOpen, setIsPaymentsDialogOpen] = useState(false);
 
   const { data: violations = [], isLoading } = useTrafficViolations();
 
@@ -100,6 +103,13 @@ export default function TrafficViolations() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* حوار المدفوعات */}
+      <TrafficViolationPaymentsDialog
+        violation={selectedViolation}
+        open={isPaymentsDialogOpen}
+        onOpenChange={setIsPaymentsDialogOpen}
+      />
 
       {/* الإحصائيات */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -242,6 +252,17 @@ export default function TrafficViolations() {
                       <TableCell>{getPaymentStatusBadge(violation.payment_status || 'unpaid')}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedViolation(violation);
+                              setIsPaymentsDialogOpen(true);
+                            }}
+                          >
+                            <CreditCard className="w-3 h-3 ml-1" />
+                            المدفوعات
+                          </Button>
                           <Button variant="outline" size="sm">
                             <FileText className="w-3 h-3 ml-1" />
                             عرض
