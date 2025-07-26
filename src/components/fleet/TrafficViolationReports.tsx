@@ -17,18 +17,27 @@ export const TrafficViolationReports = () => {
     endDate: ''
   });
 
-  const { data: violationsData, isLoading: violationsLoading } = useTrafficViolationsReport(
+  const { data: violationsData, isLoading: violationsLoading, error: violationsError } = useTrafficViolationsReport(
     dateRange.startDate,
     dateRange.endDate
   );
 
-  const { data: paymentsData, isLoading: paymentsLoading } = useTrafficViolationPaymentsReport(
+  const { data: paymentsData, isLoading: paymentsLoading, error: paymentsError } = useTrafficViolationPaymentsReport(
     dateRange.startDate,
     dateRange.endDate
   );
+
+  // Debug logging
+  console.log("Violations data:", violationsData);
+  console.log("Payments data:", paymentsData);
+  console.log("Violations error:", violationsError);
+  console.log("Payments error:", paymentsError);
 
   const generateViolationsReportHTML = () => {
+    console.log("Generating violations report...", violationsData);
+    
     if (!violationsData || violationsData.length === 0) {
+      alert("لا توجد بيانات مخالفات لإنشاء التقرير");
       return;
     }
 
@@ -41,33 +50,33 @@ export const TrafficViolationReports = () => {
       <div class="summary-stats">
         <div class="stat-card">
           <div class="stat-value">${violationsData.length}</div>
-          <div class="stat-label">Total Violations</div>
+          <div class="stat-label">إجمالي المخالفات</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${confirmedViolations.length}</div>
-          <div class="stat-label">Confirmed Violations</div>
+          <div class="stat-label">المخالفات المؤكدة</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">KWD ${totalAmount.toFixed(3)}</div>
-          <div class="stat-label">Total Amount</div>
+          <div class="stat-label">إجمالي المبلغ</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${paidViolations.length}</div>
-          <div class="stat-label">Paid Violations</div>
+          <div class="stat-label">المخالفات المدفوعة</div>
         </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Penalty Number</th>
-            <th>Date</th>
-            <th>Vehicle Plate</th>
-            <th>Amount (KWD)</th>
-            <th>Status</th>
-            <th>Payment Status</th>
-            <th>Reason</th>
-            <th>Location</th>
+            <th>رقم المخالفة</th>
+            <th>التاريخ</th>
+            <th>لوحة المركبة</th>
+            <th>المبلغ (د.ك)</th>
+            <th>الحالة</th>
+            <th>حالة الدفع</th>
+            <th>السبب</th>
+            <th>الموقع</th>
           </tr>
         </thead>
         <tbody>
@@ -77,8 +86,8 @@ export const TrafficViolationReports = () => {
               <td>${format(new Date(item.penalty_date), 'dd/MM/yyyy')}</td>
               <td>${item.vehicle?.plate_number || item.vehicle_id || '-'}</td>
               <td>${item.amount.toFixed(3)}</td>
-              <td>${item.status}</td>
-              <td>${item.payment_status}</td>
+              <td>${item.status === 'confirmed' ? 'مؤكدة' : item.status === 'pending' ? 'معلقة' : item.status}</td>
+              <td>${item.payment_status === 'paid' ? 'مدفوعة' : item.payment_status === 'unpaid' ? 'غير مدفوعة' : item.payment_status}</td>
               <td>${item.reason}</td>
               <td>${item.location || '-'}</td>
             </tr>
@@ -87,12 +96,15 @@ export const TrafficViolationReports = () => {
       </table>
     `;
 
-    const title = `Traffic Violations Report${dateRange.startDate ? ` (${dateRange.startDate} to ${dateRange.endDate || 'Present'})` : ''}`;
-    exportTrafficViolationReportToHTML(content, title, 'Fleet Management System');
+    const title = `تقرير المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}`;
+    exportTrafficViolationReportToHTML(content, title, 'نظام إدارة الأسطول');
   };
 
   const generatePaymentsReportHTML = () => {
+    console.log("Generating payments report...", paymentsData);
+    
     if (!paymentsData || paymentsData.length === 0) {
+      alert("لا توجد بيانات مدفوعات لإنشاء التقرير");
       return;
     }
 
@@ -105,34 +117,34 @@ export const TrafficViolationReports = () => {
       <div class="summary-stats">
         <div class="stat-card">
           <div class="stat-value">${paymentsData.length}</div>
-          <div class="stat-label">Total Payments</div>
+          <div class="stat-label">إجمالي المدفوعات</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${completedPayments.length}</div>
-          <div class="stat-label">Completed Payments</div>
+          <div class="stat-label">المدفوعات المكتملة</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">KWD ${totalAmount.toFixed(3)}</div>
-          <div class="stat-label">Total Amount</div>
+          <div class="stat-label">إجمالي المبلغ</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${cashPayments.length}</div>
-          <div class="stat-label">Cash Payments</div>
+          <div class="stat-label">المدفوعات النقدية</div>
         </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Payment Number</th>
-            <th>Penalty Number</th>
-            <th>Date</th>
-            <th>Amount (KWD)</th>
-            <th>Method</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Reference</th>
-            <th>Vehicle Plate</th>
+            <th>رقم الدفع</th>
+            <th>رقم المخالفة</th>
+            <th>التاريخ</th>
+            <th>المبلغ (د.ك)</th>
+            <th>الطريقة</th>
+            <th>النوع</th>
+            <th>الحالة</th>
+            <th>المرجع</th>
+            <th>لوحة المركبة</th>
           </tr>
         </thead>
         <tbody>
@@ -142,9 +154,9 @@ export const TrafficViolationReports = () => {
               <td>${item.penalty_number}</td>
               <td>${format(new Date(item.payment_date), 'dd/MM/yyyy')}</td>
               <td>${item.amount.toFixed(3)}</td>
-              <td>${item.payment_method.replace('_', ' ')}</td>
+              <td>${item.payment_method === 'cash' ? 'نقدي' : item.payment_method === 'bank_transfer' ? 'تحويل بنكي' : item.payment_method}</td>
               <td>${item.payment_type}</td>
-              <td>${item.status}</td>
+              <td>${item.status === 'completed' ? 'مكتملة' : item.status === 'pending' ? 'معلقة' : item.status}</td>
               <td>${item.reference_number || '-'}</td>
               <td>${item.penalty?.vehicle?.plate_number || '-'}</td>
             </tr>
@@ -153,8 +165,8 @@ export const TrafficViolationReports = () => {
       </table>
     `;
 
-    const title = `Traffic Violation Payments Report${dateRange.startDate ? ` (${dateRange.startDate} to ${dateRange.endDate || 'Present'})` : ''}`;
-    exportTrafficViolationReportToHTML(content, title, 'Fleet Management System');
+    const title = `تقرير مدفوعات المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}`;
+    exportTrafficViolationReportToHTML(content, title, 'نظام إدارة الأسطول');
   };
 
   return (
