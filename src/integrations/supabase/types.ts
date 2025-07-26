@@ -4059,6 +4059,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      cleanup_inactive_accounts: {
+        Args: { target_company_id: string; days_old?: number }
+        Returns: number
+      }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -4361,6 +4365,10 @@ export type Database = {
           reversed_by_user: string
         }
         Returns: string
+      }
+      soft_delete_account: {
+        Args: { account_id_param: string }
+        Returns: boolean
       }
       update_account_levels_manually: {
         Args: { company_id_param: string }

@@ -380,22 +380,30 @@ export const useDeleteAccount = () => {
   
   return useMutation({
     mutationFn: async (accountId: string) => {
-      // Instead of deleting, we deactivate the account
-      const { data, error } = await supabase
-        .from("chart_of_accounts")
-        .update({ is_active: false })
-        .eq("id", accountId)
-        .select()
-        .single()
+      console.log('🗑️ [FINANCE] Deleting account:', accountId);
       
-      if (error) throw error
-      return data
+      // Use the new soft delete function
+      const { data, error } = await supabase.rpc('soft_delete_account', {
+        account_id_param: accountId
+      });
+
+      if (error) {
+        console.error('❌ [FINANCE] Error deleting account:', error);
+        throw error;
+      }
+
+      return data; // Returns true for hard delete, false for soft delete
     },
-    onSuccess: () => {
+    onSuccess: (wasHardDeleted) => {
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] })
-      toast.success("تم حذف الحساب بنجاح")
+      toast.success(
+        wasHardDeleted 
+          ? "تم حذف الحساب نهائياً من دليل الحسابات"
+          : "تم إلغاء تفعيل الحساب (يحتوي على معاملات أو حسابات فرعية)"
+      )
     },
     onError: (error) => {
+      console.error('❌ [FINANCE] Account deletion failed:', error);
       toast.error("خطأ في حذف الحساب: " + error.message)
     }
   })
@@ -870,6 +878,34 @@ export const useCopyDefaultAccounts = () => {
     onError: (error) => {
       console.error('Error copying default accounts:', error);
       toast.error('حدث خطأ في نسخ دليل الحسابات الافتراضي');
+    },
+  });
+};
+
+// Hook to cleanup inactive accounts
+export const useCleanupInactiveAccounts = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (daysOld: number = 30) => {
+      if (!user?.profile?.company_id) throw new Error("Company ID is required");
+      
+      const { data, error } = await supabase.rpc('cleanup_inactive_accounts', {
+        target_company_id: user.profile.company_id,
+        days_old: daysOld
+      });
+
+      if (error) throw error;
+      return data; // Returns count of deleted accounts
+    },
+    onSuccess: (deletedCount) => {
+      queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
+      toast.success(`تم حذف ${deletedCount} حساب غير نشط من قاعدة البيانات`);
+    },
+    onError: (error) => {
+      console.error('Error cleaning up inactive accounts:', error);
+      toast.error('حدث خطأ في تنظيف الحسابات غير النشطة');
     },
   });
 };
