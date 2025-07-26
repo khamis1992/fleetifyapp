@@ -93,11 +93,11 @@ export default function LocationSettings() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Location settings updated successfully');
+      toast.success('تم تحديث إعدادات الموقع بنجاح');
       queryClient.invalidateQueries({ queryKey: ['company-location'] });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update settings');
+      toast.error(error.message || 'فشل في تحديث الإعدادات');
     },
   });
 
@@ -105,7 +105,7 @@ export default function LocationSettings() {
     setIsGettingLocation(true);
     try {
       if (!navigator.geolocation) {
-        throw new Error('Geolocation is not supported by this browser');
+        throw new Error('الموقع الجغرافي غير مدعوم في هذا المتصفح');
       }
 
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -122,9 +122,9 @@ export default function LocationSettings() {
         office_longitude: position.coords.longitude.toString(),
       }));
 
-      toast.success('Current location captured successfully');
+      toast.success('تم الحصول على الموقع الحالي بنجاح');
     } catch (error: any) {
-      toast.error(`Failed to get location: ${error.message}`);
+      toast.error(`فشل في الحصول على الموقع: ${error.message}`);
     } finally {
       setIsGettingLocation(false);
     }
@@ -134,7 +134,7 @@ export default function LocationSettings() {
     e.preventDefault();
     
     if (!formData.office_latitude || !formData.office_longitude) {
-      toast.error('Please set office coordinates');
+      toast.error('يرجى تحديد إحداثيات المكتب');
       return;
     }
 
@@ -157,12 +157,12 @@ export default function LocationSettings() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-4xl" dir="rtl">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Location Settings</h1>
+          <h1 className="text-3xl font-bold">إعدادات الموقع</h1>
           <p className="text-muted-foreground mt-2">
-            Configure office location and attendance settings for {company?.name}
+            تكوين موقع المكتب وإعدادات الحضور لـ {company?.name}
           </p>
         </div>
 
@@ -172,16 +172,16 @@ export default function LocationSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Office Location
+                موقع المكتب
               </CardTitle>
               <CardDescription>
-                Set the GPS coordinates for your office location. Employees will need to be within the specified radius to clock in/out.
+                تحديد إحداثيات GPS لموقع المكتب. يجب أن يكون الموظفون ضمن المسافة المحددة لتسجيل الدخول/الخروج.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="latitude">Latitude</Label>
+                  <Label htmlFor="latitude">خط العرض</Label>
                   <Input
                     id="latitude"
                     type="number"
@@ -192,7 +192,7 @@ export default function LocationSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="longitude">Longitude</Label>
+                  <Label htmlFor="longitude">خط الطول</Label>
                   <Input
                     id="longitude"
                     type="number"
@@ -213,19 +213,19 @@ export default function LocationSettings() {
               >
                 {isGettingLocation ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Getting Current Location...
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    جاري الحصول على الموقع الحالي...
                   </>
                 ) : (
                   <>
-                    <MapPin className="mr-2 h-4 w-4" />
-                    Use Current Location
+                    <MapPin className="ml-2 h-4 w-4" />
+                    استخدام الموقع الحالي
                   </>
                 )}
               </Button>
 
               <div className="space-y-2">
-                <Label htmlFor="radius">Allowed Radius (meters)</Label>
+                <Label htmlFor="radius">المسافة المسموحة (متر)</Label>
                 <Input
                   id="radius"
                   type="number"
@@ -235,7 +235,7 @@ export default function LocationSettings() {
                   onChange={(e) => setFormData(prev => ({ ...prev, allowed_radius: parseInt(e.target.value) }))}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Employees must be within this distance from the office to clock in/out
+                  يجب أن يكون الموظفون ضمن هذه المسافة من المكتب لتسجيل الدخول/الخروج
                 </p>
               </div>
             </CardContent>
@@ -244,15 +244,15 @@ export default function LocationSettings() {
           {/* Work Hours */}
           <Card>
             <CardHeader>
-              <CardTitle>Work Hours & Auto Checkout</CardTitle>
+              <CardTitle>ساعات العمل والخروج التلقائي</CardTitle>
               <CardDescription>
-                Configure standard work hours and automatic checkout settings
+                تكوين ساعات العمل القياسية وإعدادات الخروج التلقائي
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start-time">Work Start Time</Label>
+                  <Label htmlFor="start-time">وقت بداية العمل</Label>
                   <Input
                     id="start-time"
                     type="time"
@@ -261,7 +261,7 @@ export default function LocationSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="end-time">Work End Time</Label>
+                  <Label htmlFor="end-time">وقت انتهاء العمل</Label>
                   <Input
                     id="end-time"
                     type="time"
@@ -275,9 +275,9 @@ export default function LocationSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="auto-checkout">Auto Checkout</Label>
+                  <Label htmlFor="auto-checkout">الخروج التلقائي</Label>
                   <p className="text-sm text-muted-foreground">
-                    Automatically clock out employees who forget to clock out after work hours
+                    تسجيل خروج تلقائي للموظفين الذين ينسون تسجيل الخروج بعد انتهاء ساعات العمل
                   </p>
                 </div>
                 <Switch
@@ -290,7 +290,7 @@ export default function LocationSettings() {
           </Card>
 
           {/* Submit Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <Button 
               type="submit" 
               disabled={updateLocationSettings.isPending}
@@ -298,13 +298,13 @@ export default function LocationSettings() {
             >
               {updateLocationSettings.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الحفظ...
                 </>
               ) : (
                 <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Settings
+                  <Save className="ml-2 h-4 w-4" />
+                  حفظ الإعدادات
                 </>
               )}
             </Button>
