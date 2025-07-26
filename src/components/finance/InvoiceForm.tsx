@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Trash2 } from "lucide-react";
 import { useCreateInvoice, useChartOfAccounts, useCostCenters, useFixedAssets } from "@/hooks/useFinance";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveContracts } from "@/hooks/useContracts";
 import { toast } from "sonner";
 
 interface InvoiceItem {
@@ -29,14 +30,18 @@ interface InvoiceFormProps {
   customerId?: string;
   vendorId?: string;
   type: 'sales' | 'purchase';
+  contractId?: string;
 }
 
-export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: InvoiceFormProps) {
+export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, contractId }: InvoiceFormProps) {
   const { user } = useAuth();
   const { data: accounts, isLoading: accountsLoading } = useChartOfAccounts();
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters();
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const createInvoice = useCreateInvoice();
+  
+  // Fetch contracts for the customer/vendor
+  const { data: contracts } = useActiveContracts(customerId, vendorId);
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: '',
@@ -48,6 +53,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
     discount_amount: 0,
     cost_center_id: '',
     fixed_asset_id: '',
+    contract_id: contractId || '',
   });
 
   const [items, setItems] = useState<InvoiceItem[]>([
@@ -126,6 +132,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
         invoice_type: type,
         customer_id: type === 'sales' ? customerId : undefined,
         vendor_id: type === 'purchase' ? vendorId : undefined,
+        contract_id: invoiceData.contract_id || undefined,
         subtotal,
         tax_amount: totalTax,
         total_amount: total,
@@ -147,6 +154,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
         discount_amount: 0,
         cost_center_id: '',
         fixed_asset_id: '',
+        contract_id: '',
       });
       setItems([{
         id: '1',
@@ -280,21 +288,38 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type }: 
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="fixed_asset_id">الأصل الثابت (اختياري)</Label>
-                <Select value={invoiceData.fixed_asset_id} onValueChange={(value) => setInvoiceData({...invoiceData, fixed_asset_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر الأصل الثابت" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fixedAssets?.map(asset => (
-                      <SelectItem key={asset.id} value={asset.id}>
-                        {asset.asset_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fixed_asset_id">الأصل الثابت (اختياري)</Label>
+                  <Select value={invoiceData.fixed_asset_id} onValueChange={(value) => setInvoiceData({...invoiceData, fixed_asset_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر الأصل الثابت" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fixedAssets?.map(asset => (
+                        <SelectItem key={asset.id} value={asset.id}>
+                          {asset.asset_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contract_id">العقد المرتبط (اختياري)</Label>
+                  <Select value={invoiceData.contract_id} onValueChange={(value) => setInvoiceData({...invoiceData, contract_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر العقد" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">بدون عقد</SelectItem>
+                      {contracts?.map(contract => (
+                        <SelectItem key={contract.id} value={contract.id}>
+                          {contract.contract_number} - {contract.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
               <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="notes">ملاحظات</Label>

@@ -575,6 +575,7 @@ export const useCreateInvoice = () => {
       payment_status?: 'unpaid' | 'partial' | 'paid'
       notes?: string
       terms?: string
+      contract_id?: string
     }) => {
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
@@ -598,6 +599,7 @@ export const useCreateInvoice = () => {
           payment_status: invoiceData.payment_status || 'unpaid',
           notes: invoiceData.notes,
           terms: invoiceData.terms,
+          contract_id: invoiceData.contract_id,
           company_id: user.profile.company_id,
           created_by: user.id
         })

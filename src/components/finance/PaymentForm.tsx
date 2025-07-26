@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCostCenters, useBanks } from "@/hooks/useTreasury";
+import { useActiveContracts } from "@/hooks/useContracts";
 
 interface PaymentFormProps {
   open: boolean;
@@ -18,14 +18,18 @@ interface PaymentFormProps {
   customerId?: string;
   vendorId?: string;
   invoiceId?: string;
+  contractId?: string;
   type: 'receipt' | 'payment';
 }
 
-export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceId, type }: PaymentFormProps) {
+export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceId, contractId, type }: PaymentFormProps) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const { data: costCenters } = useCostCenters();
   const { data: banks } = useBanks();
+
+  // Fetch contracts for the customer/vendor
+  const { data: contracts } = useActiveContracts(customerId, vendorId);
 
   const [paymentData, setPaymentData] = useState({
     payment_number: '',
@@ -39,6 +43,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     bank_id: '',
     currency: 'KWD',
     notes: '',
+    contract_id: contractId || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +74,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         customer_id: type === 'receipt' ? customerId : null,
         vendor_id: type === 'payment' ? vendorId : null,
         invoice_id: invoiceId,
+        contract_id: paymentData.contract_id || null,
         cost_center_id: paymentData.cost_center_id || null,
         bank_id: paymentData.bank_id || null,
         status: 'completed',
@@ -93,6 +99,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         bank_id: '',
         currency: 'KWD',
         notes: '',
+        contract_id: '',
       });
     } catch (error) {
       console.error('Error creating payment:', error);
@@ -219,6 +226,23 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
                     <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
                     <SelectItem value="debit_card">بطاقة خصم</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contract_id">العقد المرتبط (اختياري)</Label>
+                <Select value={paymentData.contract_id} onValueChange={(value) => setPaymentData({...paymentData, contract_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر العقد" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">بدون عقد</SelectItem>
+                    {contracts?.map(contract => (
+                      <SelectItem key={contract.id} value={contract.id}>
+                        {contract.contract_number} - {contract.description}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

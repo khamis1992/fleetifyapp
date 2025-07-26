@@ -1552,6 +1552,7 @@ export type Database = {
         Row: {
           balance_due: number | null
           company_id: string
+          contract_id: string | null
           cost_center_id: string | null
           created_at: string
           created_by: string | null
@@ -1579,6 +1580,7 @@ export type Database = {
         Insert: {
           balance_due?: number | null
           company_id: string
+          contract_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1606,6 +1608,7 @@ export type Database = {
         Update: {
           balance_due?: number | null
           company_id?: string
+          contract_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1631,6 +1634,13 @@ export type Database = {
           vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_invoices_contract_id"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_cost_center_id_fkey"
             columns: ["cost_center_id"]
@@ -1981,6 +1991,7 @@ export type Database = {
           bank_id: string | null
           check_number: string | null
           company_id: string
+          contract_id: string | null
           cost_center_id: string | null
           created_at: string
           created_by: string | null
@@ -2005,6 +2016,7 @@ export type Database = {
           bank_id?: string | null
           check_number?: string | null
           company_id: string
+          contract_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2029,6 +2041,7 @@ export type Database = {
           bank_id?: string | null
           check_number?: string | null
           company_id?: string
+          contract_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2048,6 +2061,13 @@ export type Database = {
           vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payments_contract_id"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_customer_id_fkey"
             columns: ["customer_id"]
