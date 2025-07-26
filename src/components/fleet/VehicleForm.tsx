@@ -28,6 +28,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
+  // Backup state for model field debugging
+  const [modelBackup, setModelBackup] = useState("")
+  
+  console.log("🚗 [VEHICLE_FORM] Component rendered. Model backup:", modelBackup)
+  
   const form = useForm({
     defaultValues: {
       // Basic Information
@@ -65,7 +70,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   })
 
   useEffect(() => {
+    console.log("🔄 [VEHICLE_FORM] useEffect triggered. Vehicle:", vehicle)
     if (vehicle) {
+      console.log("📝 [VEHICLE_FORM] Resetting form with vehicle data. Model:", vehicle.model)
+      setModelBackup(vehicle.model || "")
       form.reset({
         plate_number: vehicle.plate_number,
         make: vehicle.make,
@@ -92,8 +100,18 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         notes: vehicle.notes || "",
         cost_center_id: vehicle.cost_center_id || "",
       })
+    } else {
+      console.log("🆕 [VEHICLE_FORM] No vehicle data, resetting to defaults")
+      setModelBackup("")
+      form.reset()
     }
   }, [vehicle, form])
+
+  // Watch model field for debugging
+  const watchedModel = form.watch("model")
+  useEffect(() => {
+    console.log("👀 [VEHICLE_FORM] Model field changed. Current value:", watchedModel)
+  }, [watchedModel])
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true)
@@ -296,15 +314,31 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                     <FormField
                       control={form.control}
                       name="model"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>الطراز *</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="مثال: كامري" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        console.log("🎯 [VEHICLE_FORM] Model field render. Field value:", field.value, "Backup:", modelBackup)
+                        return (
+                          <FormItem>
+                            <FormLabel>الطراز *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                placeholder="مثال: كامري"
+                                value={field.value || modelBackup}
+                                onChange={(e) => {
+                                  console.log("✏️ [VEHICLE_FORM] Model input onChange:", e.target.value)
+                                  setModelBackup(e.target.value)
+                                  field.onChange(e)
+                                }}
+                                onBlur={(e) => {
+                                  console.log("👋 [VEHICLE_FORM] Model input onBlur:", e.target.value)
+                                  field.onBlur()
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )
+                      }}
                     />
 
                     <FormField
