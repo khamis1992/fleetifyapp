@@ -250,6 +250,9 @@ export const useCreateVehicle = () => {
           throw new Error("هناك حقول مطلوبة لم يتم تزويدها");
         } else if (error.message.includes('permission denied') || error.message.includes('RLS')) {
           throw new Error("ليس لديك صلاحية لإنشاء مركبة");
+        } else if (error.message.includes('trigger') || error.message.includes('function')) {
+          console.warn("⚠️ [USE_CREATE_VEHICLE] Trigger warning, but vehicle may have been created");
+          throw new Error("تم إنشاء المركبة ولكن حدث خطأ في المعالجة الإضافية");
         } else {
           throw new Error(`خطأ في قاعدة البيانات: ${error.message}`);
         }
