@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { EnhancedLoadingState } from "@/components/ui/enhanced-loading-state"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCustomers, useToggleCustomerBlacklist, Customer } from "@/hooks/useCustomers"
@@ -26,7 +27,7 @@ export default function Customers() {
   })
 
   const navigate = useNavigate()
-  const { data: customers, isLoading } = useCustomers(filters)
+  const { data: customers, isLoading, error, refetch } = useCustomers(filters)
   const toggleBlacklistMutation = useToggleCustomerBlacklist()
 
   // Customer statistics
@@ -75,12 +76,52 @@ export default function Customers() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+  // Handle loading, error, and empty states
+  if (isLoading || error || !customers || customers.length === 0) {
+    const shouldShowEnhancedState = isLoading || error || (customers && customers.length === 0 && !Object.values(filters).some(v => v));
+    
+    if (shouldShowEnhancedState) {
+      return (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">إدارة العملاء</h1>
+              <p className="text-muted-foreground">
+                قاعدة بيانات شاملة لإدارة معلومات العملاء والحسابات المالية
+              </p>
+            </div>
+            <Button onClick={() => setShowCustomerForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              عميل جديد
+            </Button>
+          </div>
+
+          {/* Enhanced Loading State */}
+          <EnhancedLoadingState
+            isLoading={isLoading}
+            error={error}
+            onRetry={() => refetch()}
+            hasData={!!customers && customers.length > 0}
+            dataLength={customers?.length || 0}
+            emptyStateMessage="لم يتم العثور على أي عملاء. ابدأ بإضافة عميلك الأول!"
+          />
+
+          {/* Customer Form Dialog */}
+          <CustomerForm
+            open={showCustomerForm}
+            onOpenChange={(open) => {
+              setShowCustomerForm(open)
+              if (!open) {
+                setEditingCustomer(null)
+              }
+            }}
+            customer={editingCustomer}
+            mode={editingCustomer ? 'edit' : 'create'}
+          />
+        </div>
+      );
+    }
   }
 
   return (
@@ -321,23 +362,18 @@ export default function Customers() {
           )
         })}
         
-        {customers?.length === 0 && (
+        {customers?.length === 0 && Object.values(filters).some(v => v) && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد عملاء</h3>
+              <Search className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">لا توجد نتائج</h3>
               <p className="text-muted-foreground text-center mb-4">
-                {Object.values(filters).some(v => v) 
-                  ? 'لا توجد نتائج تطابق معايير البحث المحددة'
-                  : 'ابدأ في إضافة أول عميل إلى قاعدة البيانات'
-                }
+                لا توجد عملاء تطابق معايير البحث المحددة
               </p>
-              {!Object.values(filters).some(v => v) && (
-                <Button onClick={() => setShowCustomerForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  إضافة عميل جديد
-                </Button>
-              )}
+              <Button variant="outline" onClick={resetFilters}>
+                <Filter className="h-4 w-4 mr-2" />
+                إعادة تعيين الفلاتر
+              </Button>
             </CardContent>
           </Card>
         )}

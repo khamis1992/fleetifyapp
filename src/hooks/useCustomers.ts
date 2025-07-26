@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryPerformanceMonitor } from "@/hooks/useQueryPerformanceMonitor";
 import { toast } from "sonner";
 
 export interface Customer {
@@ -100,6 +101,13 @@ export const useCustomers = (filters?: {
 }) => {
   const { user } = useAuth();
   
+  const { recordQueryEnd } = useQueryPerformanceMonitor({
+    queryKey: 'customers',
+    enabled: true,
+    slowQueryThreshold: 3000,
+    timeoutThreshold: 10000
+  });
+  
   return useQuery({
     queryKey: ['customers', filters, user?.profile?.company_id || user?.company?.id],
     queryFn: async () => {
@@ -118,74 +126,109 @@ export const useCustomers = (filters?: {
 
       console.log('📝 [USE_CUSTOMERS] Fetching customers for company:', companyId);
 
-      let query = supabase
-        .from('customers')
-        .select(`
-          *,
-          customer_accounts:customer_accounts(
-            id,
-            account:chart_of_accounts(
+      try {
+        let query = supabase
+          .from('customers')
+          .select(`
+            *,
+            customer_accounts:customer_accounts(
               id,
-              account_code,
-              account_name,
-              current_balance
+              account:chart_of_accounts(
+                id,
+                account_code,
+                account_name,
+                current_balance
+              )
             )
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+          `)
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false });
 
-      if (filters?.customer_type) {
-        query = query.eq('customer_type', filters.customer_type);
-      }
+        if (filters?.customer_type) {
+          query = query.eq('customer_type', filters.customer_type);
+        }
 
-      if (filters?.is_blacklisted !== undefined) {
-        query = query.eq('is_blacklisted', filters.is_blacklisted);
-      }
+        if (filters?.is_blacklisted !== undefined) {
+          query = query.eq('is_blacklisted', filters.is_blacklisted);
+        }
 
-      if (filters?.search) {
-        query = query.or(
-          `first_name.ilike.%${filters.search}%,` +
-          `last_name.ilike.%${filters.search}%,` +
-          `company_name.ilike.%${filters.search}%,` +
-          `phone.ilike.%${filters.search}%,` +
-          `email.ilike.%${filters.search}%,` +
-          `national_id.ilike.%${filters.search}%`
-        );
-      }
+        if (filters?.search) {
+          query = query.or(
+            `first_name.ilike.%${filters.search}%,` +
+            `last_name.ilike.%${filters.search}%,` +
+            `company_name.ilike.%${filters.search}%,` +
+            `phone.ilike.%${filters.search}%,` +
+            `email.ilike.%${filters.search}%,` +
+            `national_id.ilike.%${filters.search}%`
+          );
+        }
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      console.log('📝 [USE_CUSTOMERS] Query result:', { data: data?.length, error });
+        console.log('📝 [USE_CUSTOMERS] Query result:', { 
+          customersCount: data?.length, 
+          error: error?.message,
+          hasData: !!data 
+        });
 
-      if (error) {
-        console.error('📝 [USE_CUSTOMERS] Error fetching customers:', error);
+        if (error) {
+          console.error('📝 [USE_CUSTOMERS] Error fetching customers:', error);
+          // Enhanced error handling with specific error types
+          if (error.code === 'PGRST301') {
+            throw new Error('مشكلة في صلاحيات الوصول للبيانات. يرجى المحاولة مرة أخرى.');
+          } else if (error.code === 'PGRST116') {
+            console.log('📝 [USE_CUSTOMERS] No customers found - empty result');
+            return [];
+          } else if (error.message.includes('timeout')) {
+            throw new Error('انتهت مهلة الاتصال. يرجى التحقق من الاتصال بالإنترنت.');
+          }
+          throw error;
+        }
+
+        // Get contract counts separately to avoid relationship issues
+        if (data && data.length > 0) {
+          console.log('📝 [USE_CUSTOMERS] Fetching contract counts for customers');
+          const customerIds = data.map(customer => customer.id);
+          const { data: contractCounts, error: contractError } = await supabase
+            .from('contracts')
+            .select('customer_id')
+            .in('customer_id', customerIds);
+          
+          if (contractError) {
+            console.warn('📝 [USE_CUSTOMERS] Could not fetch contract counts:', contractError);
+          }
+          
+          // Add contract count to each customer
+          const contractCountMap = new Map();
+          contractCounts?.forEach(contract => {
+            const count = contractCountMap.get(contract.customer_id) || 0;
+            contractCountMap.set(contract.customer_id, count + 1);
+          });
+          
+          data.forEach((customer: any) => {
+            customer.contracts_count = contractCountMap.get(customer.id) || 0;
+          });
+        }
+
+        console.log('📝 [USE_CUSTOMERS] Successfully processed customers data');
+        recordQueryEnd(true);
+        return data || [];
+      } catch (error: any) {
+        console.error('📝 [USE_CUSTOMERS] Unexpected error:', error);
+        recordQueryEnd(false, error);
         throw error;
       }
-
-      // Get contract counts separately to avoid relationship issues
-      if (data && data.length > 0) {
-        const customerIds = data.map(customer => customer.id);
-        const { data: contractCounts } = await supabase
-          .from('contracts')
-          .select('customer_id')
-          .in('customer_id', customerIds);
-        
-        // Add contract count to each customer
-        const contractCountMap = new Map();
-        contractCounts?.forEach(contract => {
-          const count = contractCountMap.get(contract.customer_id) || 0;
-          contractCountMap.set(contract.customer_id, count + 1);
-        });
-        
-        data.forEach((customer: any) => {
-          customer.contracts_count = contractCountMap.get(customer.id) || 0;
-        });
-      }
-
-      return data || [];
     },
-    enabled: !!(user?.profile?.company_id || user?.company?.id)
+    enabled: !!(user?.profile?.company_id || user?.company?.id),
+    retry: (failureCount, error: any) => {
+      // Custom retry logic
+      if (error?.code === 'PGRST116') return false; // Don't retry for empty results
+      if (error?.code === 'PGRST301') return false; // Don't retry for permission errors
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000 // 10 minutes
   });
 };
 
