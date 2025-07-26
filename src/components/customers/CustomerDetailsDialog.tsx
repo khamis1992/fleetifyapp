@@ -14,6 +14,7 @@ import {
   User, Shield, MessageSquare
 } from "lucide-react";
 import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useCustomers";
+import { CustomerInvoicesTab } from "./CustomerInvoicesTab";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ interface CustomerDetailsDialogProps {
   customerId: string;
   onEdit: () => void;
   onCreateContract: () => void;
+  onCreateInvoice?: () => void;
 }
 
 interface NoteFormData {
@@ -38,7 +40,8 @@ export function CustomerDetailsDialog({
   onOpenChange, 
   customerId, 
   onEdit,
-  onCreateContract 
+  onCreateContract,
+  onCreateInvoice 
 }: CustomerDetailsDialogProps) {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const { data: customer, isLoading } = useCustomer(customerId);
@@ -121,15 +124,22 @@ export function CustomerDetailsDialog({
                 <Plus className="h-4 w-4 mr-2" />
                 عقد جديد
               </Button>
+              {onCreateInvoice && (
+                <Button onClick={onCreateInvoice} variant="outline">
+                  <FileText className="h-4 w-4 mr-2" />
+                  فاتورة جديدة
+                </Button>
+              )}
             </div>
           </div>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger value="financial">المالية</TabsTrigger>
             <TabsTrigger value="contracts">العقود</TabsTrigger>
+            <TabsTrigger value="invoices">الفواتير</TabsTrigger>
             <TabsTrigger value="notes">الملاحظات</TabsTrigger>
           </TabsList>
 
@@ -260,7 +270,7 @@ export function CustomerDetailsDialog({
 
           <TabsContent value="financial" className="space-y-4">
             {financialSummary && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">الرصيد الحالي</CardTitle>
@@ -308,30 +318,88 @@ export function CustomerDetailsDialog({
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">إجمالي الفواتير</CardTitle>
+                    <FileText className="h-4 w-4 text-indigo-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-indigo-600">
+                      {(financialSummary.totalInvoices || 0).toFixed(3)} د.ك
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {financialSummary.invoicesCount || 0} فاتورة
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">فواتير مستحقة</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      {(financialSummary.totalInvoicesOutstanding || 0).toFixed(3)} د.ك
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      مبلغ غير مدفوع
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>معلومات مالية إضافية</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {customer.credit_limit && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">تفاصيل الحساب</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {customer.credit_limit && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">الحد الائتماني:</span>
+                      <span className="font-medium">{customer.credit_limit.toFixed(3)} د.ك</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
-                    <span>الحد الائتماني:</span>
-                    <span className="font-semibold">{customer.credit_limit.toFixed(3)} د.ك</span>
+                    <span className="text-muted-foreground">العقود النشطة:</span>
+                    <span className="font-medium">{financialSummary?.activeContracts || 0}</span>
                   </div>
-                )}
-                <div className="flex justify-between">
-                  <span>عدد العقود النشطة:</span>
-                  <span className="font-semibold">{financialSummary?.activeContracts || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>إجمالي العقود:</span>
-                  <span className="font-semibold">{financialSummary?.contractsCount || 0}</span>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">إجمالي العقود:</span>
+                    <span className="font-medium">{financialSummary?.contractsCount || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">عدد الفواتير:</span>
+                    <span className="font-medium">{financialSummary?.invoicesCount || 0}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">النشاط المالي</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">مدفوعات الفواتير:</span>
+                    <span className="font-medium">{(financialSummary?.totalInvoicesPaid || 0).toFixed(3)} د.ك</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">فواتير مستحقة:</span>
+                    <span className="font-medium text-red-600">{(financialSummary?.totalInvoicesOutstanding || 0).toFixed(3)} د.ك</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">حالة الحساب:</span>
+                    <Badge variant={customer.is_blacklisted ? "destructive" : "secondary"}>
+                      {customer.is_blacklisted ? "قائمة سوداء" : "نشط"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="contracts" className="space-y-4">
@@ -368,6 +436,13 @@ export function CustomerDetailsDialog({
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="invoices" className="space-y-6">
+            <CustomerInvoicesTab 
+              customerId={customerId} 
+              onCreateInvoice={onCreateInvoice}
+            />
           </TabsContent>
 
           <TabsContent value="notes" className="space-y-4">

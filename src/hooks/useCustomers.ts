@@ -375,10 +375,27 @@ export const useCustomerFinancialSummary = (customerId: string) => {
         throw paymentsError;
       }
 
+      // Get invoices summary
+      const { data: invoices, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('total_amount, paid_amount, balance_due, payment_status')
+        .eq('customer_id', customerId);
+
+      if (invoicesError) {
+        console.error('Error fetching invoices:', invoicesError);
+        throw invoicesError;
+      }
+
       const currentBalance = (customerAccount?.chart_of_accounts as any)?.current_balance || 0;
       const totalContracts = contracts?.reduce((sum, contract) => sum + (contract.contract_amount || 0), 0) || 0;
       const totalPayments = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
       const activeContracts = contracts?.filter(c => c.status === 'active')?.length || 0;
+      
+      // Calculate invoice totals
+      const totalInvoices = invoices?.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0) || 0;
+      const totalInvoicesPaid = invoices?.reduce((sum, invoice) => sum + (invoice.paid_amount || 0), 0) || 0;
+      const totalInvoicesOutstanding = invoices?.reduce((sum, invoice) => sum + (invoice.balance_due || 0), 0) || 0;
+      const invoicesCount = invoices?.length || 0;
 
       return {
         currentBalance,
@@ -386,7 +403,11 @@ export const useCustomerFinancialSummary = (customerId: string) => {
         totalPayments,
         outstandingBalance: totalContracts - totalPayments,
         activeContracts,
-        contractsCount: contracts?.length || 0
+        contractsCount: contracts?.length || 0,
+        totalInvoices,
+        totalInvoicesPaid,
+        totalInvoicesOutstanding,
+        invoicesCount
       };
     },
     enabled: !!customerId

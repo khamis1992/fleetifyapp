@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCustomers, useToggleCustomerBlacklist } from "@/hooks/useCustomers"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
+import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 
@@ -16,6 +17,8 @@ export default function Customers() {
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false)
+  const [invoiceCustomerId, setInvoiceCustomerId] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     customer_type: undefined as 'individual' | 'corporate' | undefined,
     is_blacklisted: undefined as boolean | undefined,
@@ -45,6 +48,12 @@ export default function Customers() {
   const handleCreateContract = () => {
     // Navigate to contracts page with customer pre-selected
     navigate('/contracts', { state: { selectedCustomerId } })
+  }
+
+  const handleCreateInvoice = (customerId: string) => {
+    setInvoiceCustomerId(customerId)
+    setShowInvoiceForm(true)
+    setSelectedCustomerId(null)
   }
 
   const handleToggleBlacklist = (customerId: string, isBlacklisted: boolean) => {
@@ -361,8 +370,26 @@ export default function Customers() {
             }
           }}
           onCreateContract={handleCreateContract}
+          onCreateInvoice={() => {
+            if (selectedCustomerId) {
+              handleCreateInvoice(selectedCustomerId)
+            }
+          }}
         />
       )}
+
+      {/* Invoice Form Dialog */}
+      <InvoiceForm
+        open={showInvoiceForm}
+        onOpenChange={(open) => {
+          setShowInvoiceForm(open)
+          if (!open) {
+            setInvoiceCustomerId(null)
+          }
+        }}
+        customerId={invoiceCustomerId}
+        type="sales"
+      />
     </div>
   )
 }
