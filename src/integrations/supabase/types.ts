@@ -1242,6 +1242,84 @@ export type Database = {
           },
         ]
       }
+      hr_settings: {
+        Row: {
+          allow_negative_balance: boolean
+          annual_leave_days: number
+          auto_calculate_overtime: boolean
+          casual_leave_days: number
+          company_id: string
+          created_at: string
+          daily_working_hours: number
+          email_notifications: boolean
+          id: string
+          late_penalty_per_hour: number
+          late_threshold_minutes: number
+          overtime_rate_percentage: number
+          pay_date: number
+          payroll_frequency: string
+          require_manager_approval: boolean
+          sick_leave_days: number
+          sms_notifications: boolean
+          social_security_rate: number
+          tax_rate: number
+          updated_at: string
+          work_end_time: string
+          work_start_time: string
+          working_days_per_week: number
+        }
+        Insert: {
+          allow_negative_balance?: boolean
+          annual_leave_days?: number
+          auto_calculate_overtime?: boolean
+          casual_leave_days?: number
+          company_id: string
+          created_at?: string
+          daily_working_hours?: number
+          email_notifications?: boolean
+          id?: string
+          late_penalty_per_hour?: number
+          late_threshold_minutes?: number
+          overtime_rate_percentage?: number
+          pay_date?: number
+          payroll_frequency?: string
+          require_manager_approval?: boolean
+          sick_leave_days?: number
+          sms_notifications?: boolean
+          social_security_rate?: number
+          tax_rate?: number
+          updated_at?: string
+          work_end_time?: string
+          work_start_time?: string
+          working_days_per_week?: number
+        }
+        Update: {
+          allow_negative_balance?: boolean
+          annual_leave_days?: number
+          auto_calculate_overtime?: boolean
+          casual_leave_days?: number
+          company_id?: string
+          created_at?: string
+          daily_working_hours?: number
+          email_notifications?: boolean
+          id?: string
+          late_penalty_per_hour?: number
+          late_threshold_minutes?: number
+          overtime_rate_percentage?: number
+          pay_date?: number
+          payroll_frequency?: string
+          require_manager_approval?: boolean
+          sick_leave_days?: number
+          sms_notifications?: boolean
+          social_security_rate?: number
+          tax_rate?: number
+          updated_at?: string
+          work_end_time?: string
+          work_start_time?: string
+          working_days_per_week?: number
+        }
+        Relationships: []
+      }
       invoice_cost_center_analysis: {
         Row: {
           budget_amount: number | null
