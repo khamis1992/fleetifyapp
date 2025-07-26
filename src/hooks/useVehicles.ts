@@ -457,11 +457,30 @@ export const useUpdateVehicleMaintenance = () => {
 export const useProcessVehicleDepreciation = () => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   return useMutation({
-    mutationFn: async ({ companyId, date }: { companyId: string; date?: string }) => {
+    mutationFn: async (date?: string) => {
+      if (!profile?.company_id) {
+        throw new Error('Company ID not found');
+      }
+
       const { data, error } = await supabase.rpc('process_vehicle_depreciation', {
-        company_id_param: companyId,
+        company_id_param: profile.company_id,
         depreciation_date_param: date || new Date().toISOString().split('T')[0]
       })
 

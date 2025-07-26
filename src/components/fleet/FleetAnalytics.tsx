@@ -31,9 +31,7 @@ export function FleetAnalytics() {
   ];
 
   const handleProcessDepreciation = () => {
-    if (user?.user_metadata?.company_id) {
-      processDepreciation.mutate({ companyId: user.user_metadata.company_id });
-    }
+    processDepreciation.mutate(undefined);
   };
 
   return (
