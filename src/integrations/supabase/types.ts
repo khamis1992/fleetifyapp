@@ -832,6 +832,72 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_accounts: {
+        Row: {
+          account_id: string
+          company_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          company_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_notes: {
+        Row: {
+          company_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          is_important: boolean | null
+          note_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          is_important?: boolean | null
+          note_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          is_important?: boolean | null
+          note_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -3721,6 +3787,10 @@ export type Database = {
       }
       create_contract_journal_entry: {
         Args: { contract_id_param: string }
+        Returns: string
+      }
+      create_customer_financial_account: {
+        Args: { customer_id_param: string; company_id_param: string }
         Returns: string
       }
       create_default_leave_types_for_company: {
