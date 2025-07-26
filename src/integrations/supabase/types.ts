@@ -1827,6 +1827,42 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_checklist: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          item_description: string | null
+          item_name: string
+          maintenance_id: string
+          notes: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          item_description?: string | null
+          item_name: string
+          maintenance_id: string
+          notes?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          item_description?: string | null
+          item_name?: string
+          maintenance_id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -2660,93 +2696,441 @@ export type Database = {
           },
         ]
       }
+      vehicle_documents: {
+        Row: {
+          created_at: string | null
+          document_name: string
+          document_number: string | null
+          document_type: string
+          document_url: string
+          expiry_date: string | null
+          id: string
+          is_active: boolean | null
+          issue_date: string | null
+          issuing_authority: string | null
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_name: string
+          document_number?: string | null
+          document_type: string
+          document_url: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          issue_date?: string | null
+          issuing_authority?: string | null
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string | null
+          document_name?: string
+          document_number?: string | null
+          document_type?: string
+          document_url?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          issue_date?: string | null
+          issuing_authority?: string | null
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_insurance: {
+        Row: {
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          coverage_amount: number | null
+          coverage_type: string
+          created_at: string | null
+          deductible_amount: number | null
+          end_date: string
+          id: string
+          insurance_company: string
+          is_active: boolean | null
+          notes: string | null
+          policy_document_url: string | null
+          policy_number: string
+          premium_amount: number
+          start_date: string
+          status: Database["public"]["Enums"]["insurance_status"] | null
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          coverage_amount?: number | null
+          coverage_type: string
+          created_at?: string | null
+          deductible_amount?: number | null
+          end_date: string
+          id?: string
+          insurance_company: string
+          is_active?: boolean | null
+          notes?: string | null
+          policy_document_url?: string | null
+          policy_number: string
+          premium_amount: number
+          start_date: string
+          status?: Database["public"]["Enums"]["insurance_status"] | null
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          coverage_amount?: number | null
+          coverage_type?: string
+          created_at?: string | null
+          deductible_amount?: number | null
+          end_date?: string
+          id?: string
+          insurance_company?: string
+          is_active?: boolean | null
+          notes?: string | null
+          policy_document_url?: string | null
+          policy_number?: string
+          premium_amount?: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["insurance_status"] | null
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_maintenance: {
+        Row: {
+          actual_cost: number | null
+          assigned_to: string | null
+          attachments: Json | null
+          company_id: string
+          completed_date: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          estimated_cost: number | null
+          id: string
+          invoice_id: string | null
+          journal_entry_id: string | null
+          maintenance_number: string
+          maintenance_type: string
+          mileage_at_service: number | null
+          notes: string | null
+          parts_replaced: string[] | null
+          priority: Database["public"]["Enums"]["maintenance_priority"] | null
+          scheduled_date: string | null
+          service_provider: string | null
+          service_provider_contact: string | null
+          started_date: string | null
+          status: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at: string | null
+          vehicle_id: string
+          warranty_until: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          assigned_to?: string | null
+          attachments?: Json | null
+          company_id: string
+          completed_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          estimated_cost?: number | null
+          id?: string
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          maintenance_number: string
+          maintenance_type: string
+          mileage_at_service?: number | null
+          notes?: string | null
+          parts_replaced?: string[] | null
+          priority?: Database["public"]["Enums"]["maintenance_priority"] | null
+          scheduled_date?: string | null
+          service_provider?: string | null
+          service_provider_contact?: string | null
+          started_date?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at?: string | null
+          vehicle_id: string
+          warranty_until?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          assigned_to?: string | null
+          attachments?: Json | null
+          company_id?: string
+          completed_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          estimated_cost?: number | null
+          id?: string
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          maintenance_number?: string
+          maintenance_type?: string
+          mileage_at_service?: number | null
+          notes?: string | null
+          parts_replaced?: string[] | null
+          priority?: Database["public"]["Enums"]["maintenance_priority"] | null
+          scheduled_date?: string | null
+          service_provider?: string | null
+          service_provider_contact?: string | null
+          started_date?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at?: string | null
+          vehicle_id?: string
+          warranty_until?: string | null
+        }
+        Relationships: []
+      }
+      vehicle_pricing: {
+        Row: {
+          annual_rate: number
+          annual_rate_max: number | null
+          annual_rate_min: number | null
+          created_at: string | null
+          currency: string | null
+          daily_rate: number
+          daily_rate_max: number | null
+          daily_rate_min: number | null
+          effective_from: string | null
+          effective_to: string | null
+          extra_km_charge: number | null
+          id: string
+          included_km_annual: number | null
+          included_km_daily: number | null
+          included_km_monthly: number | null
+          included_km_weekly: number | null
+          is_active: boolean | null
+          monthly_rate: number
+          monthly_rate_max: number | null
+          monthly_rate_min: number | null
+          security_deposit: number | null
+          updated_at: string | null
+          vehicle_id: string
+          weekly_rate: number
+          weekly_rate_max: number | null
+          weekly_rate_min: number | null
+        }
+        Insert: {
+          annual_rate?: number
+          annual_rate_max?: number | null
+          annual_rate_min?: number | null
+          created_at?: string | null
+          currency?: string | null
+          daily_rate?: number
+          daily_rate_max?: number | null
+          daily_rate_min?: number | null
+          effective_from?: string | null
+          effective_to?: string | null
+          extra_km_charge?: number | null
+          id?: string
+          included_km_annual?: number | null
+          included_km_daily?: number | null
+          included_km_monthly?: number | null
+          included_km_weekly?: number | null
+          is_active?: boolean | null
+          monthly_rate?: number
+          monthly_rate_max?: number | null
+          monthly_rate_min?: number | null
+          security_deposit?: number | null
+          updated_at?: string | null
+          vehicle_id: string
+          weekly_rate?: number
+          weekly_rate_max?: number | null
+          weekly_rate_min?: number | null
+        }
+        Update: {
+          annual_rate?: number
+          annual_rate_max?: number | null
+          annual_rate_min?: number | null
+          created_at?: string | null
+          currency?: string | null
+          daily_rate?: number
+          daily_rate_max?: number | null
+          daily_rate_min?: number | null
+          effective_from?: string | null
+          effective_to?: string | null
+          extra_km_charge?: number | null
+          id?: string
+          included_km_annual?: number | null
+          included_km_daily?: number | null
+          included_km_monthly?: number | null
+          included_km_weekly?: number | null
+          is_active?: boolean | null
+          monthly_rate?: number
+          monthly_rate_max?: number | null
+          monthly_rate_min?: number | null
+          security_deposit?: number | null
+          updated_at?: string | null
+          vehicle_id?: string
+          weekly_rate?: number
+          weekly_rate_max?: number | null
+          weekly_rate_min?: number | null
+        }
+        Relationships: []
+      }
       vehicles: {
         Row: {
+          accumulated_depreciation: number | null
+          annual_depreciation_rate: number | null
+          body_type: string | null
+          book_value: number | null
           category_id: string | null
           color: string | null
           color_ar: string | null
           company_id: string
+          cost_center_id: string | null
           created_at: string
+          current_mileage: number | null
           daily_rate: number | null
           deposit_amount: number | null
+          depreciation_method: string | null
+          engine_number: string | null
           features: Json | null
+          fixed_asset_id: string | null
           fuel_level: number | null
+          fuel_type: string | null
           id: string
           images: Json | null
           insurance_expiry: string | null
           insurance_policy: string | null
           is_active: boolean | null
+          last_maintenance_date: string | null
+          last_service_mileage: number | null
           license_expiry: string | null
           location: string | null
           make: string
           model: string
           monthly_rate: number | null
+          next_service_mileage: number | null
           notes: string | null
           odometer_reading: number | null
           plate_number: string
+          purchase_cost: number | null
+          purchase_date: string | null
           registration_number: string | null
+          residual_value: number | null
+          seating_capacity: number | null
           status: Database["public"]["Enums"]["vehicle_status"] | null
+          transmission: string | null
           updated_at: string
+          useful_life_years: number | null
+          vin: string | null
           vin_number: string | null
           weekly_rate: number | null
           year: number
         }
         Insert: {
+          accumulated_depreciation?: number | null
+          annual_depreciation_rate?: number | null
+          body_type?: string | null
+          book_value?: number | null
           category_id?: string | null
           color?: string | null
           color_ar?: string | null
           company_id: string
+          cost_center_id?: string | null
           created_at?: string
+          current_mileage?: number | null
           daily_rate?: number | null
           deposit_amount?: number | null
+          depreciation_method?: string | null
+          engine_number?: string | null
           features?: Json | null
+          fixed_asset_id?: string | null
           fuel_level?: number | null
+          fuel_type?: string | null
           id?: string
           images?: Json | null
           insurance_expiry?: string | null
           insurance_policy?: string | null
           is_active?: boolean | null
+          last_maintenance_date?: string | null
+          last_service_mileage?: number | null
           license_expiry?: string | null
           location?: string | null
           make: string
           model: string
           monthly_rate?: number | null
+          next_service_mileage?: number | null
           notes?: string | null
           odometer_reading?: number | null
           plate_number: string
+          purchase_cost?: number | null
+          purchase_date?: string | null
           registration_number?: string | null
+          residual_value?: number | null
+          seating_capacity?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"] | null
+          transmission?: string | null
           updated_at?: string
+          useful_life_years?: number | null
+          vin?: string | null
           vin_number?: string | null
           weekly_rate?: number | null
           year: number
         }
         Update: {
+          accumulated_depreciation?: number | null
+          annual_depreciation_rate?: number | null
+          body_type?: string | null
+          book_value?: number | null
           category_id?: string | null
           color?: string | null
           color_ar?: string | null
           company_id?: string
+          cost_center_id?: string | null
           created_at?: string
+          current_mileage?: number | null
           daily_rate?: number | null
           deposit_amount?: number | null
+          depreciation_method?: string | null
+          engine_number?: string | null
           features?: Json | null
+          fixed_asset_id?: string | null
           fuel_level?: number | null
+          fuel_type?: string | null
           id?: string
           images?: Json | null
           insurance_expiry?: string | null
           insurance_policy?: string | null
           is_active?: boolean | null
+          last_maintenance_date?: string | null
+          last_service_mileage?: number | null
           license_expiry?: string | null
           location?: string | null
           make?: string
           model?: string
           monthly_rate?: number | null
+          next_service_mileage?: number | null
           notes?: string | null
           odometer_reading?: number | null
           plate_number?: string
+          purchase_cost?: number | null
+          purchase_date?: string | null
           registration_number?: string | null
+          residual_value?: number | null
+          seating_capacity?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"] | null
+          transmission?: string | null
           updated_at?: string
+          useful_life_years?: number | null
+          vin?: string | null
           vin_number?: string | null
           weekly_rate?: number | null
           year?: number
@@ -2982,6 +3366,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: string
       }
+      generate_maintenance_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       get_account_balances: {
         Args: {
           company_id_param: string
@@ -3111,6 +3499,9 @@ export type Database = {
     }
     Enums: {
       customer_type: "individual" | "corporate"
+      insurance_status: "active" | "expired" | "cancelled" | "pending"
+      maintenance_priority: "low" | "medium" | "high" | "urgent"
+      maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
       user_role:
         | "super_admin"
         | "company_admin"
@@ -3253,6 +3644,9 @@ export const Constants = {
   public: {
     Enums: {
       customer_type: ["individual", "corporate"],
+      insurance_status: ["active", "expired", "cancelled", "pending"],
+      maintenance_priority: ["low", "medium", "high", "urgent"],
+      maintenance_status: ["pending", "in_progress", "completed", "cancelled"],
       user_role: [
         "super_admin",
         "company_admin",
