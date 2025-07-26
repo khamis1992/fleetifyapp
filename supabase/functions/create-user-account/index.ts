@@ -17,9 +17,74 @@ interface CreateUserAccountRequest {
   company_id: string;
 }
 
-const generateTemporaryPassword = (): string => {
-  // Return simple default password for easier onboarding
-  return "123456";
+// Secure password generation using database function
+const generateSecurePassword = async (supabaseClient: any): Promise<string> => {
+  const { data, error } = await supabaseClient.rpc('generate_secure_password');
+  
+  if (error) {
+    console.error('Error generating secure password:', error);
+    // Fallback to client-side generation if database function fails
+    return generateClientSidePassword();
+  }
+  
+  return data;
+};
+
+// Fallback client-side password generation
+const generateClientSidePassword = (): string => {
+  const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
+  const numberChars = '0123456789';
+  const specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const allChars = upperChars + lowerChars + numberChars + specialChars;
+  
+  let password = '';
+  
+  // Ensure at least one character from each type
+  password += upperChars[Math.floor(Math.random() * upperChars.length)];
+  password += lowerChars[Math.floor(Math.random() * lowerChars.length)];
+  password += numberChars[Math.floor(Math.random() * numberChars.length)];
+  password += specialChars[Math.floor(Math.random() * specialChars.length)];
+  
+  // Add 8 more random characters
+  for (let i = 0; i < 8; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
+
+// Input validation function
+const validateInput = (input: string, maxLength: number = 255): boolean => {
+  if (!input || input.trim().length === 0) return false;
+  if (input.length > maxLength) return false;
+  
+  // Check for SQL injection patterns
+  const sqlInjectionPattern = /(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|EXEC|UNION|SELECT)[\s\(]/i;
+  if (sqlInjectionPattern.test(input)) return false;
+  
+  // Check for XSS patterns
+  const xssPattern = /<script|javascript:|data:|vbscript:|on\w+=/i;
+  if (xssPattern.test(input)) return false;
+  
+  return true;
+};
+
+// Rate limiting check
+const checkRateLimit = async (supabaseClient: any, operation: string): Promise<boolean> => {
+  const { data, error } = await supabaseClient.rpc('check_rate_limit', {
+    operation_type: operation,
+    max_attempts: 5,
+    window_minutes: 15
+  });
+  
+  if (error) {
+    console.error('Rate limit check failed:', error);
+    return true; // Allow on error to avoid blocking legitimate requests
+  }
+  
+  return data;
 };
 
 const assignRolesAndCreateRecord = async (
@@ -33,9 +98,13 @@ const assignRolesAndCreateRecord = async (
   temporaryPassword?: string,
   passwordExpiresAt?: string
 ) => {
+  // Validate roles
+  const validRoles = ['super_admin', 'company_admin', 'manager', 'accountant', 'fleet_manager', 'sales_agent', 'employee'];
+  const filteredRoles = roles.filter(role => validRoles.includes(role));
+  
   // Assign roles to user
-  if (roles && roles.length > 0 && userId) {
-    const roleInserts = roles.map(role => ({
+  if (filteredRoles && filteredRoles.length > 0 && userId) {
+    const roleInserts = filteredRoles.map(role => ({
       user_id: userId,
       role: role
     }));
@@ -57,8 +126,8 @@ const assignRolesAndCreateRecord = async (
       employee_id: employeeId,
       company_id: companyId,
       requested_by: requestedBy,
-      requested_roles: roles,
-      notes,
+      requested_roles: filteredRoles,
+      notes: notes?.substring(0, 500), // Limit notes length
       status: 'approved',
       direct_creation: true,
       temporary_password: temporaryPassword,
@@ -100,9 +169,26 @@ serve(async (req) => {
 
     console.log('Creating user account for:', employee_email);
 
+    // Input validation
+    if (!validateInput(employee_name) || !validateInput(employee_email) || !validateInput(requester_name)) {
+      throw new Error('Invalid input data provided');
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(employee_email)) {
+      throw new Error('Invalid email format');
+    }
+
     // Validate required fields
-    if (!user_id || !company_id) {
-      throw new Error('Missing required fields: user_id and company_id');
+    if (!user_id || !company_id || !employee_id) {
+      throw new Error('Missing required fields: user_id, company_id, and employee_id');
+    }
+
+    // Rate limiting check
+    const rateLimitOk = await checkRateLimit(supabaseClient, 'account_creation');
+    if (!rateLimitOk) {
+      throw new Error('Rate limit exceeded. Please try again later.');
     }
 
     // Verify the company exists
@@ -142,8 +228,8 @@ serve(async (req) => {
         throw new Error('Employee already has a system account');
       }
 
-      // Generate temporary password for existing user linking
-      const temporaryPassword = generateTemporaryPassword();
+      // Generate secure temporary password for existing user linking
+      const temporaryPassword = await generateSecurePassword(supabaseClient);
       const passwordExpiresAt = new Date();
       passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7); // Expires in 7 days
 
@@ -154,7 +240,8 @@ serve(async (req) => {
           password: temporaryPassword,
           user_metadata: {
             ...existingUser.user_metadata,
-            requires_password_change: true
+            requires_password_change: true,
+            password_expires_at: passwordExpiresAt.toISOString()
           }
         }
       );
@@ -191,6 +278,14 @@ serve(async (req) => {
         passwordExpiresAt.toISOString()
       );
 
+      // Log security event
+      await supabaseClient.rpc('log_security_event', {
+        event_type: 'account_linked',
+        resource_type: 'employee',
+        resource_id: employee_id,
+        details: { linked_user_id: existingUser.id, roles: roles }
+      });
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -207,8 +302,8 @@ serve(async (req) => {
       );
     }
 
-    // Generate temporary password
-    const temporaryPassword = generateTemporaryPassword();
+    // Generate secure temporary password
+    const temporaryPassword = await generateSecurePassword(supabaseClient);
     const passwordExpiresAt = new Date();
     passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7); // Expires in 7 days
 
@@ -220,7 +315,8 @@ serve(async (req) => {
       user_metadata: {
         first_name: employee_name.split(' ')[0],
         last_name: employee_name.split(' ').slice(1).join(' '),
-        requires_password_change: true
+        requires_password_change: true,
+        password_expires_at: passwordExpiresAt.toISOString()
       }
     });
 
@@ -263,6 +359,14 @@ serve(async (req) => {
 
     // Assign roles and create request record
     await assignRolesAndCreateRecord(supabaseClient, userData.user?.id, roles, employee_id, company_id, user_id, notes, temporaryPassword, passwordExpiresAt.toISOString());
+
+    // Log security event
+    await supabaseClient.rpc('log_security_event', {
+      event_type: 'account_created',
+      resource_type: 'employee',
+      resource_id: employee_id,
+      details: { new_user_id: userData.user?.id, roles: roles }
+    });
 
     console.log('Account creation completed successfully');
 

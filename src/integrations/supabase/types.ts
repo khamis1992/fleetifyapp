@@ -4172,6 +4172,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: string
       }
+      generate_secure_password: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_traffic_payment_number: {
         Args: { company_id_param: string }
         Returns: string

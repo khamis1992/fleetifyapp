@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/permissions';
 import { useToast } from '@/hooks/use-toast';
+import { SecurityValidator } from '@/lib/security';
 
 export interface UserPermission {
   id: string;
@@ -56,6 +57,38 @@ export const useUpdateUserPermissions = () => {
     }) => {
       const currentUser = await supabase.auth.getUser();
       if (!currentUser.data.user) throw new Error('Not authenticated');
+
+      // Validate userId format
+      if (!userId || !SecurityValidator.validateInput(userId, 'User ID', 36).isValid) {
+        throw new Error('Invalid user ID format');
+      }
+
+      // Check rate limiting for permission updates
+      const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+        operation_type: 'permission_update',
+        max_attempts: 10,
+        window_minutes: 5
+      });
+
+      if (rateLimitError || !rateLimitOk) {
+        throw new Error('Rate limit exceeded for permission updates');
+      }
+
+      // Validate permissions array
+      if (!Array.isArray(permissions) || permissions.length > 50) {
+        throw new Error('Invalid permissions data');
+      }
+
+      // Log security event for permission changes
+      await supabase.rpc('log_security_event', {
+        event_type: 'permissions_updated',
+        resource_type: 'user_permissions',
+        resource_id: userId,
+        details: {
+          permissions_count: permissions.length,
+          granted_count: permissions.filter(p => p.granted).length
+        }
+      });
 
       // Delete existing permissions for this user
       await supabase
@@ -113,6 +146,40 @@ export const useUpdateUserRoles = () => {
       roles: UserRole[] 
     }) => {
       console.log('Updating roles for user:', userId, 'New roles:', roles);
+      
+      // Validate userId format
+      if (!userId || !SecurityValidator.validateInput(userId, 'User ID', 36).isValid) {
+        throw new Error('Invalid user ID format');
+      }
+
+      // Validate roles array
+      const validRoles: UserRole[] = ['super_admin', 'company_admin', 'manager', 'sales_agent', 'employee'];
+      const invalidRoles = roles.filter(role => !validRoles.includes(role));
+      if (invalidRoles.length > 0) {
+        throw new Error(`Invalid roles: ${invalidRoles.join(', ')}`);
+      }
+
+      // Check rate limiting for role updates
+      const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+        operation_type: 'role_update',
+        max_attempts: 5,
+        window_minutes: 5
+      });
+
+      if (rateLimitError || !rateLimitOk) {
+        throw new Error('Rate limit exceeded for role updates');
+      }
+
+      // Log security event for role changes
+      await supabase.rpc('log_security_event', {
+        event_type: 'roles_updated',
+        resource_type: 'user_roles',
+        resource_id: userId,
+        details: {
+          new_roles: roles,
+          roles_count: roles.length
+        }
+      });
       
       // Delete existing roles for this user
       const { error: deleteError } = await supabase
