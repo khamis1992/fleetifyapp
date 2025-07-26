@@ -797,13 +797,6 @@ export type Database = {
             foreignKeyName: "fk_contract_approval_steps_contract"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "contract_payment_summary"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "fk_contract_approval_steps_contract"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -857,13 +850,6 @@ export type Database = {
             foreignKeyName: "fk_contract_notifications_contract"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "contract_payment_summary"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "fk_contract_notifications_contract"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -871,7 +857,6 @@ export type Database = {
       }
       contracts: {
         Row: {
-          auto_renew_enabled: boolean | null
           company_id: string
           contract_amount: number
           contract_date: string
@@ -885,18 +870,14 @@ export type Database = {
           end_date: string
           id: string
           journal_entry_id: string | null
-          last_renewal_check: string | null
           monthly_amount: number
-          renewal_terms: Json | null
           start_date: string
           status: string
           terms: string | null
           updated_at: string
           vehicle_id: string | null
-          vehicle_returned: boolean | null
         }
         Insert: {
-          auto_renew_enabled?: boolean | null
           company_id: string
           contract_amount?: number
           contract_date: string
@@ -910,18 +891,14 @@ export type Database = {
           end_date: string
           id?: string
           journal_entry_id?: string | null
-          last_renewal_check?: string | null
           monthly_amount?: number
-          renewal_terms?: Json | null
           start_date: string
           status?: string
           terms?: string | null
           updated_at?: string
           vehicle_id?: string | null
-          vehicle_returned?: boolean | null
         }
         Update: {
-          auto_renew_enabled?: boolean | null
           company_id?: string
           contract_amount?: number
           contract_date?: string
@@ -935,15 +912,12 @@ export type Database = {
           end_date?: string
           id?: string
           journal_entry_id?: string | null
-          last_renewal_check?: string | null
           monthly_amount?: number
-          renewal_terms?: Json | null
           start_date?: string
           status?: string
           terms?: string | null
           updated_at?: string
           vehicle_id?: string | null
-          vehicle_returned?: boolean | null
         }
         Relationships: [
           {
@@ -1809,13 +1783,6 @@ export type Database = {
             foreignKeyName: "fk_invoices_contract_id"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "contract_payment_summary"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "fk_invoices_contract_id"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -2275,13 +2242,6 @@ export type Database = {
           vendor_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_payments_contract_id"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contract_payment_summary"
-            referencedColumns: ["contract_id"]
-          },
           {
             foreignKeyName: "fk_payments_contract_id"
             columns: ["contract_id"]
@@ -2871,36 +2831,6 @@ export type Database = {
           updated_at?: string
           valid_until?: string
           vehicle_id?: string | null
-        }
-        Relationships: []
-      }
-      rate_limits: {
-        Row: {
-          attempt_count: number | null
-          blocked_until: string | null
-          created_at: string | null
-          id: string
-          operation_type: string
-          user_id: string | null
-          window_start: string | null
-        }
-        Insert: {
-          attempt_count?: number | null
-          blocked_until?: string | null
-          created_at?: string | null
-          id?: string
-          operation_type: string
-          user_id?: string | null
-          window_start?: string | null
-        }
-        Update: {
-          attempt_count?: number | null
-          blocked_until?: string | null
-          created_at?: string | null
-          id?: string
-          operation_type?: string
-          user_id?: string | null
-          window_start?: string | null
         }
         Relationships: []
       }
@@ -3976,17 +3906,6 @@ export type Database = {
       }
     }
     Views: {
-      contract_payment_summary: {
-        Row: {
-          company_id: string | null
-          contract_amount: number | null
-          contract_id: string | null
-          has_outstanding_payments: boolean | null
-          outstanding_amount: number | null
-          total_paid: number | null
-        }
-        Relationships: []
-      }
       payroll_financial_analysis: {
         Row: {
           allowances: number | null
@@ -4046,18 +3965,6 @@ export type Database = {
       check_budget_overruns: {
         Args: { budget_id_param: string }
         Returns: number
-      }
-      check_rate_limit: {
-        Args: {
-          operation_type: string
-          max_attempts?: number
-          window_minutes?: number
-        }
-        Returns: boolean
-      }
-      check_session_timeout: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
       }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
@@ -4144,14 +4051,6 @@ export type Database = {
         Args: { payment_id_param: string }
         Returns: string
       }
-      decrypt_sensitive_data: {
-        Args: { encrypted_data: string }
-        Returns: string
-      }
-      encrypt_sensitive_data: {
-        Args: { data: string }
-        Returns: string
-      }
       export_ledger_data: {
         Args: {
           company_id_param: string
@@ -4170,10 +4069,6 @@ export type Database = {
       }
       generate_maintenance_number: {
         Args: { company_id_param: string }
-        Returns: string
-      }
-      generate_secure_password: {
-        Args: Record<PropertyKey, never>
         Returns: string
       }
       generate_traffic_payment_number: {
@@ -4224,20 +4119,6 @@ export type Database = {
           total_credits: number
           net_amount: number
           entry_count: number
-        }[]
-      }
-      get_eligible_contracts_for_renewal: {
-        Args: { company_id_param: string }
-        Returns: {
-          contract_id: string
-          contract_number: string
-          customer_name: string
-          vehicle_info: string
-          end_date: string
-          contract_amount: number
-          total_paid: number
-          outstanding_amount: number
-          days_since_expiry: number
         }[]
       }
       get_financial_summary: {
@@ -4299,15 +4180,6 @@ export type Database = {
         Args: { employee_id_param: string }
         Returns: undefined
       }
-      log_security_event: {
-        Args: {
-          event_type: string
-          resource_type: string
-          resource_id?: string
-          details?: Json
-        }
-        Returns: undefined
-      }
       log_user_account_action: {
         Args: {
           employee_id_param: string
@@ -4349,14 +4221,6 @@ export type Database = {
       }
       user_belongs_to_company: {
         Args: { _user_id: string; _company_id: string }
-        Returns: boolean
-      }
-      validate_password_strength: {
-        Args: { password: string }
-        Returns: boolean
-      }
-      validate_user_input: {
-        Args: { input_text: string; max_length?: number }
         Returns: boolean
       }
     }

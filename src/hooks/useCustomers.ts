@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryPerformanceMonitor } from "@/hooks/useQueryPerformanceMonitor";
 import { toast } from "sonner";
 
 export interface Customer {
@@ -101,134 +100,75 @@ export const useCustomers = (filters?: {
 }) => {
   const { user } = useAuth();
   
-  const { recordQueryEnd } = useQueryPerformanceMonitor({
-    queryKey: 'customers',
-    enabled: true,
-    slowQueryThreshold: 3000,
-    timeoutThreshold: 10000
-  });
-  
   return useQuery({
-    queryKey: ['customers', filters, user?.profile?.company_id || user?.company?.id],
+    queryKey: ['customers', filters],
     queryFn: async () => {
-      const companyId = user?.profile?.company_id || user?.company?.id;
-      
-      console.log('📝 [USE_CUSTOMERS] Hook called with user:', {
-        userId: user?.id,
-        companyId,
-        hasProfile: !!user?.profile
-      });
+      let query = supabase
+        .from('customers')
+        .select(`
+          *,
+          customer_accounts:customer_accounts(
+            id,
+            account:chart_of_accounts(
+              id,
+              account_code,
+              account_name,
+              current_balance
+            )
+          )
+        `)
+        .eq('company_id', user?.profile?.company_id || user?.company?.id)
+        .order('created_at', { ascending: false });
 
-      if (!companyId) {
-        console.error('📝 [USE_CUSTOMERS] No company ID available');
-        throw new Error('لم يتم العثور على معرف الشركة');
+      if (filters?.customer_type) {
+        query = query.eq('customer_type', filters.customer_type);
       }
 
-      console.log('📝 [USE_CUSTOMERS] Fetching customers for company:', companyId);
+      if (filters?.is_blacklisted !== undefined) {
+        query = query.eq('is_blacklisted', filters.is_blacklisted);
+      }
 
-      try {
-        let query = supabase
-          .from('customers')
-          .select(`
-            *,
-            customer_accounts:customer_accounts(
-              id,
-              account:chart_of_accounts(
-                id,
-                account_code,
-                account_name,
-                current_balance
-              )
-            )
-          `)
-          .eq('company_id', companyId)
-          .order('created_at', { ascending: false });
+      if (filters?.search) {
+        query = query.or(
+          `first_name.ilike.%${filters.search}%,` +
+          `last_name.ilike.%${filters.search}%,` +
+          `company_name.ilike.%${filters.search}%,` +
+          `phone.ilike.%${filters.search}%,` +
+          `email.ilike.%${filters.search}%,` +
+          `national_id.ilike.%${filters.search}%`
+        );
+      }
 
-        if (filters?.customer_type) {
-          query = query.eq('customer_type', filters.customer_type);
-        }
+      const { data, error } = await query;
 
-        if (filters?.is_blacklisted !== undefined) {
-          query = query.eq('is_blacklisted', filters.is_blacklisted);
-        }
-
-        if (filters?.search) {
-          query = query.or(
-            `first_name.ilike.%${filters.search}%,` +
-            `last_name.ilike.%${filters.search}%,` +
-            `company_name.ilike.%${filters.search}%,` +
-            `phone.ilike.%${filters.search}%,` +
-            `email.ilike.%${filters.search}%,` +
-            `national_id.ilike.%${filters.search}%`
-          );
-        }
-
-        const { data, error } = await query;
-
-        console.log('📝 [USE_CUSTOMERS] Query result:', { 
-          customersCount: data?.length, 
-          error: error?.message,
-          hasData: !!data 
-        });
-
-        if (error) {
-          console.error('📝 [USE_CUSTOMERS] Error fetching customers:', error);
-          // Enhanced error handling with specific error types
-          if (error.code === 'PGRST301') {
-            throw new Error('مشكلة في صلاحيات الوصول للبيانات. يرجى المحاولة مرة أخرى.');
-          } else if (error.code === 'PGRST116') {
-            console.log('📝 [USE_CUSTOMERS] No customers found - empty result');
-            return [];
-          } else if (error.message.includes('timeout')) {
-            throw new Error('انتهت مهلة الاتصال. يرجى التحقق من الاتصال بالإنترنت.');
-          }
-          throw error;
-        }
-
-        // Get contract counts separately to avoid relationship issues
-        if (data && data.length > 0) {
-          console.log('📝 [USE_CUSTOMERS] Fetching contract counts for customers');
-          const customerIds = data.map(customer => customer.id);
-          const { data: contractCounts, error: contractError } = await supabase
-            .from('contracts')
-            .select('customer_id')
-            .in('customer_id', customerIds);
-          
-          if (contractError) {
-            console.warn('📝 [USE_CUSTOMERS] Could not fetch contract counts:', contractError);
-          }
-          
-          // Add contract count to each customer
-          const contractCountMap = new Map();
-          contractCounts?.forEach(contract => {
-            const count = contractCountMap.get(contract.customer_id) || 0;
-            contractCountMap.set(contract.customer_id, count + 1);
-          });
-          
-          data.forEach((customer: any) => {
-            customer.contracts_count = contractCountMap.get(customer.id) || 0;
-          });
-        }
-
-        console.log('📝 [USE_CUSTOMERS] Successfully processed customers data');
-        recordQueryEnd(true);
-        return data || [];
-      } catch (error: any) {
-        console.error('📝 [USE_CUSTOMERS] Unexpected error:', error);
-        recordQueryEnd(false, error);
+      if (error) {
+        console.error('Error fetching customers:', error);
         throw error;
       }
+
+      // Get contract counts separately to avoid relationship issues
+      if (data && data.length > 0) {
+        const customerIds = data.map(customer => customer.id);
+        const { data: contractCounts } = await supabase
+          .from('contracts')
+          .select('customer_id')
+          .in('customer_id', customerIds);
+        
+        // Add contract count to each customer
+        const contractCountMap = new Map();
+        contractCounts?.forEach(contract => {
+          const count = contractCountMap.get(contract.customer_id) || 0;
+          contractCountMap.set(contract.customer_id, count + 1);
+        });
+        
+        data.forEach((customer: any) => {
+          customer.contracts_count = contractCountMap.get(customer.id) || 0;
+        });
+      }
+
+      return data || [];
     },
-    enabled: !!(user?.profile?.company_id || user?.company?.id),
-    retry: (failureCount, error: any) => {
-      // Custom retry logic
-      if (error?.code === 'PGRST116') return false; // Don't retry for empty results
-      if (error?.code === 'PGRST301') return false; // Don't retry for permission errors
-      return failureCount < 3;
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    enabled: !!user?.profile?.company_id || !!user?.company?.id
   });
 };
 
@@ -281,74 +221,25 @@ export const useCreateCustomer = () => {
 
   return useMutation({
     mutationFn: async (customerData: CustomerFormData) => {
-      const companyId = user?.profile?.company_id || user?.company?.id;
-      
-      console.log('📝 [CREATE_CUSTOMER] Attempting to create customer:', {
-        hasUser: !!user,
-        userId: user?.id,
-        companyId: companyId,
-        hasProfile: !!user?.profile,
-        hasCompany: !!user?.company,
-        customerType: customerData.customer_type,
-        phone: customerData.phone
-      });
-
-      if (!companyId) {
-        console.error('📝 [CREATE_CUSTOMER] No company ID available:', {
-          userProfile: user?.profile,
-          userCompany: user?.company,
-          user: user
-        });
-        throw new Error('لم يتم العثور على معرف الشركة. يرجى المحاولة مرة أخرى.');
-      }
-
-      if (!user?.id) {
-        console.error('📝 [CREATE_CUSTOMER] No user ID available');
-        throw new Error('لم يتم تسجيل الدخول بشكل صحيح. يرجى تسجيل الدخول مرة أخرى.');
-      }
-
-      const insertData = {
-        ...customerData,
-        company_id: companyId
-      };
-
-      console.log('📝 [CREATE_CUSTOMER] Inserting data:', insertData);
-
       const { data, error } = await supabase
         .from('customers')
-        .insert([insertData])
+        .insert([{
+          ...customerData,
+          company_id: user?.profile?.company_id || user?.company?.id
+        }])
         .select()
         .single();
 
-      if (error) {
-        console.error('📝 [CREATE_CUSTOMER] Database error:', error);
-        throw error;
-      }
-
-      console.log('📝 [CREATE_CUSTOMER] Customer created successfully:', data);
+      if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      console.log('📝 [CREATE_CUSTOMER] Success callback triggered:', data);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('تم إضافة العميل بنجاح');
     },
-    onError: (error: any) => {
-      console.error('📝 [CREATE_CUSTOMER] Error callback triggered:', error);
-      
-      let errorMessage = 'حدث خطأ أثناء إضافة العميل';
-      
-      if (error.message?.includes('company ID')) {
-        errorMessage = 'خطأ في معرف الشركة. يرجى إعادة تسجيل الدخول.';
-      } else if (error.message?.includes('duplicate key')) {
-        errorMessage = 'رقم الهاتف مستخدم بالفعل. يرجى استخدام رقم مختلف.';
-      } else if (error.message?.includes('permission denied')) {
-        errorMessage = 'ليس لديك صلاحية لإضافة عملاء. يرجى التواصل مع المدير.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
+    onError: (error) => {
+      console.error('Error creating customer:', error);
+      toast.error('حدث خطأ أثناء إضافة العميل');
     }
   });
 };

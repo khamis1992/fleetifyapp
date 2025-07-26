@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
-import { SecurityValidator, ClientRateLimit } from './security';
 
 export interface AuthUser extends User {
   profile?: {
@@ -35,27 +34,10 @@ export interface AuthContextType {
 
 export const authService = {
   async signUp(email: string, password: string, userData?: any) {
-    // Input validation
-    const emailValidation = SecurityValidator.validateEmail(email);
-    if (!emailValidation.isValid) {
-      return { error: { message: emailValidation.errors.join(', ') } };
-    }
-
-    const passwordValidation = SecurityValidator.validatePasswordStrength(password);
-    if (!passwordValidation.isValid) {
-      return { error: { message: passwordValidation.errors.join(', ') } };
-    }
-
-    // Rate limiting
-    const rateLimitKey = `signup_${email}`;
-    if (!ClientRateLimit.checkRateLimit(rateLimitKey, 3, 60 * 60 * 1000)) { // 3 attempts per hour
-      return { error: { message: 'Too many signup attempts. Please try again later.' } };
-    }
-
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
-      email: SecurityValidator.sanitizeInput(email),
+      email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
@@ -67,20 +49,8 @@ export const authService = {
   },
 
   async signIn(email: string, password: string) {
-    // Input validation
-    const emailValidation = SecurityValidator.validateEmail(email);
-    if (!emailValidation.isValid) {
-      return { error: { message: emailValidation.errors.join(', ') } };
-    }
-
-    // Rate limiting
-    const rateLimitKey = `signin_${email}`;
-    if (!ClientRateLimit.checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) { // 5 attempts per 15 minutes
-      return { error: { message: 'Too many login attempts. Please try again later.' } };
-    }
-
     const { error } = await supabase.auth.signInWithPassword({
-      email: SecurityValidator.sanitizeInput(email),
+      email,
       password
     });
     
@@ -159,18 +129,6 @@ export const authService = {
   },
 
   async changePassword(newPassword: string) {
-    // Validate password strength
-    const passwordValidation = SecurityValidator.validatePasswordStrength(newPassword);
-    if (!passwordValidation.isValid) {
-      return { error: { message: passwordValidation.errors.join(', ') } };
-    }
-
-    // Rate limiting for password changes
-    const rateLimitKey = `password_change_${Date.now()}`;
-    if (!ClientRateLimit.checkRateLimit(rateLimitKey, 3, 60 * 60 * 1000)) { // 3 attempts per hour
-      return { error: { message: 'Too many password change attempts. Please try again later.' } };
-    }
-
     const { error } = await supabase.auth.updateUser({
       password: newPassword
     });

@@ -13,7 +13,6 @@ import { ContractDetailsDialog } from "@/components/contracts/ContractDetailsDia
 import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilters"
 import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
-import { EligibleContractsForRenewalList } from "@/components/contracts/EligibleContractsForRenewalList"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
@@ -201,16 +200,11 @@ export default function Contracts() {
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">جميع العقود</TabsTrigger>
-          <TabsTrigger value="smart-renewal">التجديد الذكي</TabsTrigger>
           <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
           <TabsTrigger value="active">النشطة</TabsTrigger>
           <TabsTrigger value="suspended">المعلقة</TabsTrigger>
           <TabsTrigger value="expired">المنتهية</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="smart-renewal">
-          <EligibleContractsForRenewalList onRefresh={() => refetch()} />
-        </TabsContent>
 
         <TabsContent value="all">
           {/* All Contracts List */}

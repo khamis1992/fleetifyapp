@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface CustomerFormProps {
   open: boolean;
@@ -20,7 +19,6 @@ interface CustomerFormProps {
 }
 
 export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
-  const { user } = useAuth();
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<CustomerFormData>({
     defaultValues: {
       customer_type: customer?.customer_type || 'individual',
@@ -53,22 +51,11 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const updateCustomerMutation = useUpdateCustomer();
 
   const onSubmit = (data: CustomerFormData) => {
-    console.log('📝 [CUSTOMER_FORM] Form submitted:', {
-      mode,
-      data,
-      user: user?.id,
-      companyId: user?.profile?.company_id || user?.company?.id
-    });
-
     if (mode === 'create') {
       createCustomerMutation.mutate(data, {
         onSuccess: () => {
-          console.log('📝 [CUSTOMER_FORM] Customer created successfully');
           onOpenChange(false);
           reset();
-        },
-        onError: (error) => {
-          console.error('📝 [CUSTOMER_FORM] Error creating customer:', error);
         }
       });
     } else {
@@ -77,21 +64,13 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
         data
       }, {
         onSuccess: () => {
-          console.log('📝 [CUSTOMER_FORM] Customer updated successfully');
           onOpenChange(false);
-        },
-        onError: (error) => {
-          console.error('📝 [CUSTOMER_FORM] Error updating customer:', error);
         }
       });
     }
   };
 
   const isLoading = createCustomerMutation.isPending || updateCustomerMutation.isPending;
-  const companyId = user?.profile?.company_id || user?.company?.id;
-  
-  // Check if user data is properly loaded
-  const canSubmit = !!user && !!companyId;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -336,19 +315,11 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
             </TabsContent>
           </Tabs>
 
-          {!canSubmit && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-              <p className="text-sm text-red-600">
-                يرجى الانتظار حتى يتم تحميل بيانات المستخدم...
-              </p>
-            </div>
-          )}
-
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={isLoading || !canSubmit}>
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? 'جاري الحفظ...' : (mode === 'create' ? 'إضافة العميل' : 'حفظ التغييرات')}
             </Button>
           </div>
