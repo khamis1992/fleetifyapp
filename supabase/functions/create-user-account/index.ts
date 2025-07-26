@@ -134,7 +134,47 @@ serve(async (req) => {
       throw new Error('Invalid company_id');
     }
 
-    // Check if user already exists in auth
+    // Get current user's roles to verify permissions
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const { data: tokenData, error: tokenError } = await supabaseClient.auth.getUser(token);
+    
+    if (tokenError || !tokenData.user) {
+      throw new Error('Invalid authentication token');
+    }
+    
+    const { data: currentUserRoles, error: rolesError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', tokenData.user.id);
+      
+    if (rolesError) {
+      throw new Error('Failed to check user permissions');
+    }
+    
+    const isSuperAdmin = currentUserRoles?.some(r => r.role === 'super_admin');
+    
+    // Check if employee already exists for this company
+    const { data: employeeData, error: employeeCheckError } = await supabaseClient
+      .from('employees')
+      .select('user_id, has_system_access, company_id, email')
+      .eq('id', employee_id)
+      .single();
+
+    if (employeeCheckError) {
+      throw new Error(`Failed to check employee data: ${employeeCheckError.message}`);
+    }
+
+    // Scenario 1: Employee already has system access for THIS company
+    if (employeeData.user_id && employeeData.has_system_access && employeeData.company_id === company_id) {
+      throw new Error('Employee already has a system account for this company');
+    }
+
+    // Check if a user with this email already exists in auth
     const { data: existingUsers, error: checkError } = await supabaseClient.auth.admin.listUsers();
     
     if (checkError) {
@@ -143,69 +183,35 @@ serve(async (req) => {
     }
 
     const existingUser = existingUsers.users.find(u => u.email === email);
-    
+
+    // Scenario 2: User exists with this email but employee doesn't have system access yet
     if (existingUser) {
-      // User already exists, check if they're linked to this employee
-      const { data: employeeData, error: employeeCheckError } = await supabaseClient
-        .from('employees')
-        .select('user_id, has_system_access, company_id')
-        .eq('id', employee_id)
-        .single();
-
-      if (employeeCheckError) {
-        throw new Error(`Failed to check employee data: ${employeeCheckError.message}`);
-      }
-
-      // Check if this employee already has system access for the SAME company
-      if (employeeData.user_id && employeeData.has_system_access && employeeData.company_id === company_id) {
-        throw new Error('Employee already has a system account for this company');
-      }
-
-      // If employee has system access for a different company, we need to check if this is a super admin request
+      console.log('User with email exists, linking to employee');
+      
+      // If employee has system access for a different company, verify super admin permissions
       if (employeeData.user_id && employeeData.has_system_access && employeeData.company_id !== company_id) {
-        // Get current user's roles to check if they're super admin
-        const authHeader = req.headers.get('authorization');
-        if (!authHeader) {
-          throw new Error('Authentication required');
-        }
-        
-        const token = authHeader.replace('Bearer ', '');
-        const { data: tokenData, error: tokenError } = await supabaseClient.auth.getUser(token);
-        
-        if (tokenError || !tokenData.user) {
-          throw new Error('Invalid authentication token');
-        }
-        
-        const { data: currentUserRoles, error: rolesError } = await supabaseClient
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', tokenData.user.id);
-          
-        if (rolesError) {
-          throw new Error('Failed to check user permissions');
-        }
-        
-        const isSuperAdmin = currentUserRoles?.some(r => r.role === 'super_admin');
-        
         if (!isSuperAdmin) {
-          throw new Error('Only super admins can assign existing employees to different companies');
+          throw new Error('Only super admins can reassign employees with existing system access to different companies');
         }
-        
-        console.log('Super admin creating user for different company - this is allowed');
+        console.log('Super admin reassigning employee with existing system access to new company');
       }
 
-      // Generate temporary password for existing user linking
-      const temporaryPassword = generateTemporaryPassword();
+      // Generate temporary password for existing user
+      const tempPassword = temporary_password || generateTemporaryPassword();
       const passwordExpiresAt = new Date();
-      passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7); // Expires in 7 days
+      passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7);
 
-      // Update existing user's password
+      // Update existing user's password and metadata
       const { error: passwordError } = await supabaseClient.auth.admin.updateUserById(
         existingUser.id,
         {
-          password: temporaryPassword,
+          password: tempPassword,
           user_metadata: {
             ...existingUser.user_metadata,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
             requires_password_change: true
           }
         }
@@ -230,7 +236,29 @@ serve(async (req) => {
         throw new Error(`Failed to link existing user to employee: ${linkError.message}`);
       }
 
-      // Assign roles and create request record with password info
+      // Update or create profile
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .upsert({
+          user_id: existingUser.id,
+          first_name,
+          last_name,
+          first_name_ar,
+          last_name_ar,
+          email,
+          company_id
+        });
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+      }
+
+      // Clear existing roles for this user and assign new ones
+      await supabaseClient
+        .from('user_roles')
+        .delete()
+        .eq('user_id', existingUser.id);
+
       await assignRolesAndCreateRecord(
         supabaseClient, 
         existingUser.id, 
@@ -238,7 +266,7 @@ serve(async (req) => {
         employee_id, 
         company_id, 
         notes, 
-        temporaryPassword, 
+        tempPassword, 
         passwordExpiresAt.toISOString()
       );
 
@@ -248,7 +276,7 @@ serve(async (req) => {
           user_id: existingUser.id,
           message: 'Existing user linked to employee account',
           linked_existing_user: true,
-          temporary_password: temporaryPassword,
+          temporary_password: tempPassword,
           password_expires_at: passwordExpiresAt.toISOString()
         }),
         {
@@ -257,6 +285,9 @@ serve(async (req) => {
         }
       );
     }
+
+    // Scenario 3: No user exists with this email - create completely new user
+    console.log('Creating completely new user account');
 
     // Generate temporary password
     const temporaryPassword = generateTemporaryPassword();
