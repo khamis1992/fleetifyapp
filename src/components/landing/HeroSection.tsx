@@ -2,8 +2,15 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InteractiveCard } from './InteractiveCard';
+import { useNavigate } from 'react-router-dom';
 
 export function HeroSection() {
+  const navigate = useNavigate();
+
+  const handleLoginClick = () => {
+    navigate('/auth');
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Elements */}
@@ -70,8 +77,12 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <Button size="lg" className="arabic-body px-8 py-6 group transition-all duration-300 hover:scale-105">
-                ابدأ تجربة مجانية
+              <Button 
+                size="lg" 
+                onClick={handleLoginClick}
+                className="arabic-body px-8 py-6 group transition-all duration-300 hover:scale-105"
+              >
+                تسجيل الدخول
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </motion.div>
