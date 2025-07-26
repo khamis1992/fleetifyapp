@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 interface CustomerFormData {
-  customer_type: 'individual' | 'company'
+  customer_type: 'individual' | 'corporate'
   first_name?: string
   last_name?: string
   company_name?: string
@@ -85,7 +85,7 @@ export default function Customers() {
 
   // Customer statistics
   const individualCustomers = customers?.filter(c => c.customer_type === 'individual') || []
-  const companyCustomers = customers?.filter(c => c.customer_type === 'company') || []
+  const companyCustomers = customers?.filter(c => c.customer_type === 'corporate') || []
   const blacklistedCustomers = customers?.filter(c => c.is_blacklisted) || []
   const activeCustomers = customers?.filter(c => c.is_active) || []
 
@@ -172,13 +172,13 @@ export default function Customers() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    {customer.customer_type === 'company' ? (
+                    {customer.customer_type === 'corporate' ? (
                       <Building className="h-5 w-5 text-purple-600" />
                     ) : (
                       <Users className="h-5 w-5 text-green-600" />
                     )}
                     <h3 className="font-semibold text-lg">
-                      {customer.customer_type === 'company' 
+                      {customer.customer_type === 'corporate' 
                         ? customer.company_name 
                         : `${customer.first_name} ${customer.last_name}`}
                     </h3>
@@ -268,14 +268,14 @@ export default function Customers() {
               <Label>نوع العميل</Label>
               <Select 
                 value={customerType} 
-                onValueChange={(value) => setValue('customer_type', value as 'individual' | 'company')}
+                onValueChange={(value) => setValue('customer_type', value as 'individual' | 'corporate')}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="individual">فرد</SelectItem>
-                  <SelectItem value="company">شركة</SelectItem>
+                  <SelectItem value="corporate">شركة</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -296,7 +296,7 @@ export default function Customers() {
             ) : (
               <div className="space-y-2">
                 <Label>اسم الشركة *</Label>
-                <Input {...register('company_name', { required: true })} />
+                <Input {...register('company_name', { required: customerType === 'corporate' })} />
               </div>
             )}
 

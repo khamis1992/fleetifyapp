@@ -20,23 +20,7 @@ export default function Contracts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contracts')
-        .select(`
-          *,
-          customers:customer_id (
-            id,
-            first_name,
-            last_name,
-            company_name,
-            customer_type
-          ),
-          vehicles:vehicle_id (
-            id,
-            plate_number,
-            make,
-            model,
-            year
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -182,20 +166,16 @@ export default function Contracts() {
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        {contract.customers?.customer_type === 'company' 
-                          ? contract.customers?.company_name 
-                          : `${contract.customers?.first_name} ${contract.customers?.last_name}`}
+                        عقد رقم {contract.contract_number}
                       </span>
                     </div>
                     
-                    {contract.vehicles && (
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {contract.vehicles.make} {contract.vehicles.model} - {contract.vehicles.plate_number}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {contract.contract_type === 'rental' ? 'عقد إيجار' : 'عقد خدمات'}
+                      </span>
+                    </div>
                     
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />

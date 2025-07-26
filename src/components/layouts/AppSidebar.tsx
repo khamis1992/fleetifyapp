@@ -69,6 +69,12 @@ const navigationItems = [
     icon: Users 
   },
   { 
+    name: 'عروض الأسعار', 
+    name_en: 'Quotations',
+    href: '/quotations', 
+    icon: FileText 
+  },
+  { 
     name: 'التقارير', 
     name_en: 'Reports',
     href: '/reports', 

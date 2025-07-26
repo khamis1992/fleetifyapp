@@ -53,23 +53,7 @@ export default function Quotations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('quotations')
-        .select(`
-          *,
-          customers:customer_id (
-            id,
-            first_name,
-            last_name,
-            company_name,
-            customer_type
-          ),
-          vehicles:vehicle_id (
-            id,
-            plate_number,
-            make,
-            model,
-            year
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -336,9 +320,7 @@ export default function Quotations() {
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        {quotation.customers?.customer_type === 'company' 
-                          ? quotation.customers?.company_name 
-                          : `${quotation.customers?.first_name} ${quotation.customers?.last_name}`}
+                        عرض سعر رقم {quotation.quotation_number}
                       </span>
                     </div>
                     
@@ -429,7 +411,7 @@ export default function Quotations() {
                   <SelectContent>
                     {customers?.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        {customer.customer_type === 'company' 
+                        {customer.customer_type === 'corporate'
                           ? customer.company_name 
                           : `${customer.first_name} ${customer.last_name}`}
                       </SelectItem>

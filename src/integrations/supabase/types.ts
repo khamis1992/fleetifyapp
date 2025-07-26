@@ -2510,6 +2510,63 @@ export type Database = {
           },
         ]
       }
+      quotations: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          description: string | null
+          duration: number
+          id: string
+          quotation_number: string
+          quotation_type: string
+          rate_per_unit: number
+          status: string
+          terms: string | null
+          total_amount: number
+          updated_at: string
+          valid_until: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          description?: string | null
+          duration?: number
+          id?: string
+          quotation_number: string
+          quotation_type?: string
+          rate_per_unit?: number
+          status?: string
+          terms?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          quotation_number?: string
+          quotation_type?: string
+          rate_per_unit?: number
+          status?: string
+          terms?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           billing_cycle: string
