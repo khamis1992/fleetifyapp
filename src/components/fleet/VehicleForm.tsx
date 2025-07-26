@@ -127,10 +127,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {vehicle ? "Edit Vehicle" : "Add New Vehicle"}
+            {vehicle ? "تعديل المركبة" : "إضافة مركبة جديدة"}
           </DialogTitle>
           <DialogDescription>
-            {vehicle ? "Update vehicle information" : "Add a new vehicle to your fleet"}
+            {vehicle ? "تحديث معلومات المركبة" : "إضافة مركبة جديدة إلى الأسطول"}
           </DialogDescription>
         </DialogHeader>
 
@@ -138,17 +138,17 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="financial">Financial</TabsTrigger>
-                <TabsTrigger value="operational">Operational</TabsTrigger>
-                <TabsTrigger value="additional">Additional</TabsTrigger>
+                <TabsTrigger value="basic">المعلومات الأساسية</TabsTrigger>
+                <TabsTrigger value="financial">المالية</TabsTrigger>
+                <TabsTrigger value="operational">التشغيلية</TabsTrigger>
+                <TabsTrigger value="additional">إضافية</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Basic Vehicle Information</CardTitle>
-                    <CardDescription>Essential details about the vehicle</CardDescription>
+                    <CardTitle>المعلومات الأساسية للمركبة</CardTitle>
+                    <CardDescription>التفاصيل الأساسية حول المركبة</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -156,9 +156,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="plate_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>License Plate *</FormLabel>
+                          <FormLabel>رقم اللوحة *</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Enter license plate" />
+                            <Input {...field} placeholder="أدخل رقم اللوحة" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -170,9 +170,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="make"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Make *</FormLabel>
+                          <FormLabel>الشركة المصنعة *</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., Toyota" />
+                            <Input {...field} placeholder="مثال: تويوتا" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -184,9 +184,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="model"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Model *</FormLabel>
+                          <FormLabel>الطراز *</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., Camry" />
+                            <Input {...field} placeholder="مثال: كامري" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -198,7 +198,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="year"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Year *</FormLabel>
+                          <FormLabel>السنة *</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" min="1990" max={new Date().getFullYear() + 1} />
                           </FormControl>
@@ -212,9 +212,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="color"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color</FormLabel>
+                          <FormLabel>اللون</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., White" />
+                            <Input {...field} placeholder="مثال: أبيض" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -226,9 +226,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="vin"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>VIN Number</FormLabel>
+                          <FormLabel>رقم الهيكل</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Vehicle Identification Number" />
+                            <Input {...field} placeholder="رقم تعريف المركبة" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -240,9 +240,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="engine_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Engine Number</FormLabel>
+                          <FormLabel>رقم المحرك</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Engine Number" />
+                            <Input {...field} placeholder="رقم المحرك" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -254,16 +254,16 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="transmission"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Transmission</FormLabel>
+                          <FormLabel>ناقل الحركة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select transmission" />
+                                <SelectValue placeholder="اختر ناقل الحركة" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="automatic">Automatic</SelectItem>
-                              <SelectItem value="manual">Manual</SelectItem>
+                              <SelectItem value="automatic">أوتوماتيك</SelectItem>
+                              <SelectItem value="manual">يدوي</SelectItem>
                               <SelectItem value="cvt">CVT</SelectItem>
                             </SelectContent>
                           </Select>
@@ -277,9 +277,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="body_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Body Type</FormLabel>
+                          <FormLabel>نوع الهيكل</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., Sedan, SUV, Hatchback" />
+                            <Input {...field} placeholder="مثال: سيدان، SUV، هاتشباك" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -291,18 +291,18 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="fuel_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Fuel Type</FormLabel>
+                          <FormLabel>نوع الوقود</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select fuel type" />
+                                <SelectValue placeholder="اختر نوع الوقود" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="gasoline">Gasoline</SelectItem>
-                              <SelectItem value="diesel">Diesel</SelectItem>
-                              <SelectItem value="hybrid">Hybrid</SelectItem>
-                              <SelectItem value="electric">Electric</SelectItem>
+                              <SelectItem value="gasoline">بنزين</SelectItem>
+                              <SelectItem value="diesel">ديزل</SelectItem>
+                              <SelectItem value="hybrid">هجين</SelectItem>
+                              <SelectItem value="electric">كهربائي</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -315,7 +315,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="seating_capacity"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Seating Capacity</FormLabel>
+                          <FormLabel>عدد المقاعد</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" min="2" max="50" />
                           </FormControl>
@@ -330,8 +330,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               <TabsContent value="financial" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Financial Information</CardTitle>
-                    <CardDescription>Purchase details and depreciation information</CardDescription>
+                    <CardTitle>المعلومات المالية</CardTitle>
+                    <CardDescription>تفاصيل الشراء ومعلومات الإهلاك</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -339,7 +339,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="purchase_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Purchase Date</FormLabel>
+                          <FormLabel>تاريخ الشراء</FormLabel>
                           <FormControl>
                             <Input {...field} type="date" />
                           </FormControl>
@@ -353,7 +353,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="purchase_cost"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Purchase Cost (KWD)</FormLabel>
+                          <FormLabel>تكلفة الشراء (د.ك)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
@@ -367,7 +367,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="useful_life_years"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Useful Life (Years)</FormLabel>
+                          <FormLabel>العمر الإنتاجي (بالسنوات)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" min="1" max="50" />
                           </FormControl>
@@ -381,7 +381,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="residual_value"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Residual Value (KWD)</FormLabel>
+                          <FormLabel>القيمة المتبقية (د.ك)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
@@ -395,16 +395,16 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="depreciation_method"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Depreciation Method</FormLabel>
+                          <FormLabel>طريقة الإهلاك</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select method" />
+                                <SelectValue placeholder="اختر الطريقة" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="straight_line">Straight Line</SelectItem>
-                              <SelectItem value="declining_balance">Declining Balance</SelectItem>
+                              <SelectItem value="straight_line">القسط الثابت</SelectItem>
+                              <SelectItem value="declining_balance">الرصيد المتناقص</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -417,11 +417,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="cost_center_id"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Cost Center</FormLabel>
+                          <FormLabel>مركز التكلفة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select cost center" />
+                                <SelectValue placeholder="اختر مركز التكلفة" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -443,8 +443,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               <TabsContent value="operational" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Operational Information</CardTitle>
-                    <CardDescription>Mileage, pricing, and operational status</CardDescription>
+                    <CardTitle>المعلومات التشغيلية</CardTitle>
+                    <CardDescription>المسافة المقطوعة والتسعير والحالة التشغيلية</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -452,7 +452,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="current_mileage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current Mileage (km)</FormLabel>
+                          <FormLabel>المسافة المقطوعة الحالية (كم)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.1" placeholder="0" />
                           </FormControl>
@@ -466,19 +466,19 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Status</FormLabel>
+                          <FormLabel>الحالة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder="اختر الحالة" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="available">Available</SelectItem>
-                              <SelectItem value="rented">Rented</SelectItem>
-                              <SelectItem value="maintenance">Maintenance</SelectItem>
-                              <SelectItem value="out_of_service">Out of Service</SelectItem>
-                              <SelectItem value="reserved">Reserved</SelectItem>
+                              <SelectItem value="available">متاحة</SelectItem>
+                              <SelectItem value="rented">مؤجرة</SelectItem>
+                              <SelectItem value="maintenance">قيد الصيانة</SelectItem>
+                              <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
+                              <SelectItem value="reserved">محجوزة</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -491,7 +491,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="daily_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Daily Rate (KWD)</FormLabel>
+                          <FormLabel>التعرفة اليومية (د.ك)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
@@ -505,7 +505,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="weekly_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Weekly Rate (KWD)</FormLabel>
+                          <FormLabel>التعرفة الأسبوعية (د.ك)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
@@ -519,7 +519,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="monthly_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Monthly Rate (KWD)</FormLabel>
+                          <FormLabel>التعرفة الشهرية (د.ك)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
@@ -533,7 +533,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="deposit_amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Security Deposit (KWD)</FormLabel>
+                          <FormLabel>التأمين (د.ك)</FormLabel>
                           <FormControl>
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
@@ -548,8 +548,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               <TabsContent value="additional" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Additional Information</CardTitle>
-                    <CardDescription>Notes and other details</CardDescription>
+                    <CardTitle>معلومات إضافية</CardTitle>
+                    <CardDescription>ملاحظات وتفاصيل أخرى</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <FormField
@@ -557,11 +557,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="notes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Notes</FormLabel>
+                          <FormLabel>ملاحظات</FormLabel>
                           <FormControl>
                             <Textarea 
                               {...field} 
-                              placeholder="Additional notes about the vehicle..."
+                              placeholder="ملاحظات إضافية حول المركبة..."
                               rows={4}
                             />
                           </FormControl>
@@ -576,13 +576,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                إلغاء
               </Button>
               <Button 
                 type="submit" 
                 disabled={createVehicle.isPending || updateVehicle.isPending}
               >
-                {createVehicle.isPending || updateVehicle.isPending ? "Saving..." : "Save Vehicle"}
+                {createVehicle.isPending || updateVehicle.isPending ? "جاري الحفظ..." : "حفظ المركبة"}
               </Button>
             </div>
           </form>

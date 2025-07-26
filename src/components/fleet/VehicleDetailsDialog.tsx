@@ -21,11 +21,11 @@ const statusColors = {
 }
 
 const statusLabels = {
-  available: "Available",
-  rented: "Rented",
-  maintenance: "Under Maintenance", 
-  out_of_service: "Out of Service",
-  reserved: "Reserved"
+  available: "متاحة",
+  rented: "مؤجرة",
+  maintenance: "قيد الصيانة", 
+  out_of_service: "خارج الخدمة",
+  reserved: "محجوزة"
 }
 
 export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDetailsDialogProps) {
@@ -42,7 +42,7 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
                 {vehicle.plate_number} - {vehicle.make} {vehicle.model}
               </DialogTitle>
               <DialogDescription>
-                Vehicle details and information
+                تفاصيل ومعلومات المركبة
               </DialogDescription>
             </div>
             <Badge className={statusColors[status]}>
@@ -53,11 +53,11 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="specifications">Specs</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
-            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
+            <TabsTrigger value="specifications">المواصفات</TabsTrigger>
+            <TabsTrigger value="financial">المالية</TabsTrigger>
+            <TabsTrigger value="maintenance">الصيانة</TabsTrigger>
+            <TabsTrigger value="documents">الوثائق</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -66,32 +66,32 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Car className="h-4 w-4" />
-                    Basic Information
+                    المعلومات الأساسية
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">License Plate:</span>
+                    <span className="text-muted-foreground">رقم اللوحة:</span>
                     <span className="font-medium">{vehicle.plate_number}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Make:</span>
+                    <span className="text-muted-foreground">الشركة المصنعة:</span>
                     <span className="font-medium">{vehicle.make}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Model:</span>
+                    <span className="text-muted-foreground">الطراز:</span>
                     <span className="font-medium">{vehicle.model}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Year:</span>
+                    <span className="text-muted-foreground">السنة:</span>
                     <span className="font-medium">{vehicle.year}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Color:</span>
-                    <span className="font-medium">{vehicle.color || 'Not specified'}</span>
+                    <span className="text-muted-foreground">اللون:</span>
+                    <span className="font-medium">{vehicle.color || 'غير محدد'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
+                    <span className="text-muted-foreground">الحالة:</span>
                     <Badge className={statusColors[status]} variant="secondary">
                       {statusLabels[status]}
                     </Badge>
@@ -103,34 +103,34 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Gauge className="h-4 w-4" />
-                    Operational Info
+                    المعلومات التشغيلية
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Current Mileage:</span>
+                    <span className="text-muted-foreground">المسافة المقطوعة الحالية:</span>
                     <span className="font-medium">
-                      {vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString()} km` : 'Not recorded'}
+                      {vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString()} كم` : 'غير مسجلة'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Last Service Mileage:</span>
+                    <span className="text-muted-foreground">مسافة آخر صيانة:</span>
                     <span className="font-medium">
-                      {vehicle.last_service_mileage ? `${vehicle.last_service_mileage.toLocaleString()} km` : 'Not recorded'}
+                      {vehicle.last_service_mileage ? `${vehicle.last_service_mileage.toLocaleString()} كم` : 'غير مسجلة'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Next Service:</span>
+                    <span className="text-muted-foreground">الصيانة التالية:</span>
                     <span className="font-medium">
-                      {vehicle.next_service_mileage ? `${vehicle.next_service_mileage.toLocaleString()} km` : 'Not scheduled'}
+                      {vehicle.next_service_mileage ? `${vehicle.next_service_mileage.toLocaleString()} كم` : 'غير محددة'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Last Maintenance:</span>
+                    <span className="text-muted-foreground">آخر صيانة:</span>
                     <span className="font-medium">
                       {vehicle.last_maintenance_date 
                         ? new Date(vehicle.last_maintenance_date).toLocaleDateString() 
-                        : 'No record'}
+                        : 'لا يوجد سجل'}
                     </span>
                   </div>
                 </CardContent>
@@ -141,7 +141,7 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  Pricing Information
+                  معلومات التسعير
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -150,25 +150,25 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
                     <div className="text-2xl font-bold text-primary">
                       {vehicle.daily_rate ? `${vehicle.daily_rate} KWD` : 'N/A'}
                     </div>
-                    <div className="text-sm text-muted-foreground">Daily Rate</div>
+                    <div className="text-sm text-muted-foreground">التعرفة اليومية</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.weekly_rate ? `${vehicle.weekly_rate} KWD` : 'N/A'}
+                      {vehicle.weekly_rate ? `${vehicle.weekly_rate} د.ك` : 'غ/م'}
                     </div>
-                    <div className="text-sm text-muted-foreground">Weekly Rate</div>
+                    <div className="text-sm text-muted-foreground">التعرفة الأسبوعية</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.monthly_rate ? `${vehicle.monthly_rate} KWD` : 'N/A'}
+                      {vehicle.monthly_rate ? `${vehicle.monthly_rate} د.ك` : 'غ/م'}
                     </div>
-                    <div className="text-sm text-muted-foreground">Monthly Rate</div>
+                    <div className="text-sm text-muted-foreground">التعرفة الشهرية</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.deposit_amount ? `${vehicle.deposit_amount} KWD` : 'N/A'}
+                      {vehicle.deposit_amount ? `${vehicle.deposit_amount} د.ك` : 'غ/م'}
                     </div>
-                    <div className="text-sm text-muted-foreground">Security Deposit</div>
+                    <div className="text-sm text-muted-foreground">التأمين</div>
                   </div>
                 </div>
               </CardContent>
@@ -177,7 +177,7 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
             {vehicle.notes && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Notes</CardTitle>
+                  <CardTitle>ملاحظات</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">{vehicle.notes}</p>
@@ -189,7 +189,7 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
           <TabsContent value="specifications" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Technical Specifications</CardTitle>
+                <CardTitle>المواصفات الفنية</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">

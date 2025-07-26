@@ -60,27 +60,27 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Vehicle Pricing</CardTitle>
-            <CardDescription>Manage rental rates and pricing history</CardDescription>
+            <CardTitle className="text-lg">تسعير المركبة</CardTitle>
+            <CardDescription>إدارة أسعار الإيجار وتاريخ التسعير</CardDescription>
           </div>
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Pricing
+                إضافة تسعير
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Pricing</DialogTitle>
+                <DialogTitle>إضافة تسعير جديد</DialogTitle>
                 <DialogDescription>
-                  Set new rental rates for this vehicle
+                  تحديد أسعار إيجار جديدة لهذه المركبة
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="daily_rate">Daily Rate (KWD)</Label>
+                    <Label htmlFor="daily_rate">التعرفة اليومية (د.ك)</Label>
                     <Input
                       id="daily_rate"
                       type="number"
@@ -89,7 +89,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="weekly_rate">Weekly Rate (KWD)</Label>
+                    <Label htmlFor="weekly_rate">التعرفة الأسبوعية (د.ك)</Label>
                     <Input
                       id="weekly_rate"
                       type="number"
@@ -98,7 +98,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="monthly_rate">Monthly Rate (KWD)</Label>
+                    <Label htmlFor="monthly_rate">التعرفة الشهرية (د.ك)</Label>
                     <Input
                       id="monthly_rate"
                       type="number"
@@ -107,7 +107,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="annual_rate">Annual Rate (KWD)</Label>
+                    <Label htmlFor="annual_rate">التعرفة السنوية (د.ك)</Label>
                     <Input
                       id="annual_rate"
                       type="number"
@@ -116,7 +116,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="effective_from">Effective From</Label>
+                    <Label htmlFor="effective_from">ساري من</Label>
                     <Input
                       id="effective_from"
                       type="date"
@@ -125,7 +125,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="effective_to">Effective To (Optional)</Label>
+                  <Label htmlFor="effective_to">ساري إلى (اختياري)</Label>
                   <Input
                     id="effective_to"
                     type="date"
@@ -134,10 +134,10 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                    Cancel
+                    إلغاء
                   </Button>
                   <Button type="submit" disabled={createPricing.isPending}>
-                    {createPricing.isPending ? "Saving..." : "Save Pricing"}
+                    {createPricing.isPending ? "جاري الحفظ..." : "حفظ التسعير"}
                   </Button>
                 </div>
               </form>
@@ -149,47 +149,47 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
         {activePricing ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium">Current Pricing</h4>
-              <Badge variant="default">Active</Badge>
+              <h4 className="font-medium">التسعير الحالي</h4>
+              <Badge variant="default">نشط</Badge>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Daily</p>
+                <p className="text-sm text-muted-foreground">يومي</p>
                 <p className="text-lg font-semibold">{formatCurrency(activePricing.daily_rate)}</p>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Weekly</p>
+                <p className="text-sm text-muted-foreground">أسبوعي</p>
                 <p className="text-lg font-semibold">{formatCurrency(activePricing.weekly_rate)}</p>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Monthly</p>
+                <p className="text-sm text-muted-foreground">شهري</p>
                 <p className="text-lg font-semibold">{formatCurrency(activePricing.monthly_rate)}</p>
               </div>
             </div>
             {activePricing.annual_rate && (
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Annual</p>
+                <p className="text-sm text-muted-foreground">سنوي</p>
                 <p className="text-lg font-semibold">{formatCurrency(activePricing.annual_rate)}</p>
               </div>
             )}
             <div className="flex items-center text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 mr-2" />
-              Effective from {new Date(activePricing.effective_from).toLocaleDateString()}
+              ساري من {new Date(activePricing.effective_from).toLocaleDateString()}
               {activePricing.effective_to && (
-                <span> to {new Date(activePricing.effective_to).toLocaleDateString()}</span>
+                <span> إلى {new Date(activePricing.effective_to).toLocaleDateString()}</span>
               )}
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No pricing set for this vehicle</p>
+            <p className="text-muted-foreground">لم يتم تحديد تسعير لهذه المركبة</p>
             <Button
               variant="outline"
               className="mt-2"
               onClick={() => setShowForm(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Pricing
+              إضافة تسعير
             </Button>
           </div>
         )}
@@ -197,7 +197,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
         {/* Pricing History */}
         {pricing && pricing.length > 1 && (
           <div className="mt-6 pt-6 border-t">
-            <h4 className="font-medium mb-3">Pricing History</h4>
+            <h4 className="font-medium mb-3">تاريخ التسعير</h4>
             <div className="space-y-2">
               {pricing
                 .filter(p => !p.is_active)
@@ -205,9 +205,9 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                 .map((p) => (
                   <div key={p.id} className="flex items-center justify-between text-sm">
                     <span>
-                      Daily: {formatCurrency(p.daily_rate)} | 
-                      Weekly: {formatCurrency(p.weekly_rate)} | 
-                      Monthly: {formatCurrency(p.monthly_rate)}
+                      يومي: {formatCurrency(p.daily_rate)} | 
+                      أسبوعي: {formatCurrency(p.weekly_rate)} | 
+                      شهري: {formatCurrency(p.monthly_rate)}
                     </span>
                     <span className="text-muted-foreground">
                       {new Date(p.effective_from).toLocaleDateString()}

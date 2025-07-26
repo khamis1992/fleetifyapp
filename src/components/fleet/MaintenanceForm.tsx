@@ -91,10 +91,10 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {maintenance ? "Edit Maintenance" : "Schedule Maintenance"}
+            {maintenance ? "تعديل الصيانة" : "جدولة الصيانة"}
           </DialogTitle>
           <DialogDescription>
-            {maintenance ? "Update maintenance information" : "Schedule new maintenance for a vehicle"}
+            {maintenance ? "تحديث معلومات الصيانة" : "جدولة صيانة جديدة لمركبة"}
           </DialogDescription>
         </DialogHeader>
 
@@ -102,8 +102,8 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Maintenance Details</CardTitle>
-                <CardDescription>Basic information about the maintenance</CardDescription>
+                <CardTitle>تفاصيل الصيانة</CardTitle>
+                <CardDescription>المعلومات الأساسية حول الصيانة</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -111,11 +111,11 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="vehicle_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vehicle *</FormLabel>
+                      <FormLabel>المركبة *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!vehicleId}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select vehicle" />
+                            <SelectValue placeholder="اختر المركبة" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -137,25 +137,25 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="maintenance_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Maintenance Type *</FormLabel>
+                        <FormLabel>نوع الصيانة *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
+                              <SelectValue placeholder="اختر النوع" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="routine">Routine Service</SelectItem>
-                            <SelectItem value="oil_change">Oil Change</SelectItem>
-                            <SelectItem value="tire_service">Tire Service</SelectItem>
-                            <SelectItem value="brake_service">Brake Service</SelectItem>
-                            <SelectItem value="engine_repair">Engine Repair</SelectItem>
-                            <SelectItem value="transmission">Transmission Service</SelectItem>
-                            <SelectItem value="electrical">Electrical Repair</SelectItem>
-                            <SelectItem value="body_work">Body Work</SelectItem>
-                            <SelectItem value="inspection">Inspection</SelectItem>
-                            <SelectItem value="emergency">Emergency Repair</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="routine">صيانة دورية</SelectItem>
+                            <SelectItem value="oil_change">تغيير زيت</SelectItem>
+                            <SelectItem value="tire_service">خدمة الإطارات</SelectItem>
+                            <SelectItem value="brake_service">خدمة الفرامل</SelectItem>
+                            <SelectItem value="engine_repair">إصلاح المحرك</SelectItem>
+                            <SelectItem value="transmission">خدمة ناقل الحركة</SelectItem>
+                            <SelectItem value="electrical">إصلاح كهربائي</SelectItem>
+                            <SelectItem value="body_work">أعمال الهيكل</SelectItem>
+                            <SelectItem value="inspection">فحص</SelectItem>
+                            <SelectItem value="emergency">إصلاح طارئ</SelectItem>
+                            <SelectItem value="other">أخرى</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -168,18 +168,18 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="priority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Priority</FormLabel>
+                        <FormLabel>الأولوية</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select priority" />
+                              <SelectValue placeholder="اختر الأولوية" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="urgent">Urgent</SelectItem>
+                            <SelectItem value="low">منخفضة</SelectItem>
+                            <SelectItem value="medium">متوسطة</SelectItem>
+                            <SelectItem value="high">عالية</SelectItem>
+                            <SelectItem value="urgent">عاجلة</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -193,11 +193,11 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description *</FormLabel>
+                      <FormLabel>الوصف *</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Describe the maintenance work needed..."
+                          placeholder="وصف أعمال الصيانة المطلوبة..."
                           rows={3}
                         />
                       </FormControl>
@@ -212,7 +212,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="scheduled_date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Scheduled Date</FormLabel>
+                        <FormLabel>التاريخ المحدد</FormLabel>
                         <FormControl>
                           <Input {...field} type="date" />
                         </FormControl>
@@ -226,7 +226,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="estimated_cost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Estimated Cost (KWD)</FormLabel>
+                        <FormLabel>التكلفة المقدرة (د.ك)</FormLabel>
                         <FormControl>
                           <Input {...field} type="number" step="0.01" placeholder="0.00" />
                         </FormControl>
@@ -240,8 +240,8 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
 
             <Card>
               <CardHeader>
-                <CardTitle>Service Provider</CardTitle>
-                <CardDescription>Information about the service provider</CardDescription>
+                <CardTitle>مزود الخدمة</CardTitle>
+                <CardDescription>معلومات حول مزود الخدمة</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -250,9 +250,9 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="service_provider"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Service Provider</FormLabel>
+                        <FormLabel>مزود الخدمة</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Company or mechanic name" />
+                          <Input {...field} placeholder="اسم الشركة أو الميكانيكي" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -264,9 +264,9 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="service_provider_contact"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contact Information</FormLabel>
+                        <FormLabel>معلومات التواصل</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Phone number or email" />
+                          <Input {...field} placeholder="رقم الهاتف أو البريد الإلكتروني" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -279,9 +279,9 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="parts_replaced"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Parts to be Replaced</FormLabel>
+                      <FormLabel>القطع المراد استبدالها</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="List parts separated by commas" />
+                        <Input {...field} placeholder="اذكر القطع مفصولة بفواصل" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -292,7 +292,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
 
             <Card>
               <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
+                <CardTitle>معلومات إضافية</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -300,11 +300,11 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="cost_center_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cost Center</FormLabel>
+                      <FormLabel>مركز التكلفة</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select cost center" />
+                            <SelectValue placeholder="اختر مركز التكلفة" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -325,11 +325,11 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Additional Notes</FormLabel>
+                      <FormLabel>ملاحظات إضافية</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Any additional notes or special instructions..."
+                          placeholder="أي ملاحظات إضافية أو تعليمات خاصة..."
                           rows={3}
                         />
                       </FormControl>
@@ -342,13 +342,13 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
 
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                إلغاء
               </Button>
               <Button 
                 type="submit" 
                 disabled={createMaintenance.isPending}
               >
-                {createMaintenance.isPending ? "Scheduling..." : "Schedule Maintenance"}
+                {createMaintenance.isPending ? "جاري الجدولة..." : "جدولة الصيانة"}
               </Button>
             </div>
           </form>
