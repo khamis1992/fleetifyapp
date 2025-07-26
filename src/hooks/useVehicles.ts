@@ -265,17 +265,14 @@ export const useCreateVehicle = () => {
       console.log("🎉 [USE_CREATE_VEHICLE] Success callback triggered for vehicle:", data.plate_number);
       console.log("🔄 [USE_CREATE_VEHICLE] Invalidating vehicle queries...");
       
-      // Invalidate queries to refresh data
+      // Invalidate all related queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["fleet-analytics"] })
       queryClient.invalidateQueries({ queryKey: ["fleet-status"] })
       
-      // Success toast
-      toast({
-        title: "نجح ✅",
-        description: `تم إنشاء المركبة ${data.plate_number} بنجاح`,
-      })
+      // Force a refetch to ensure data is updated immediately
+      queryClient.refetchQueries({ queryKey: ["vehicles"] })
       
       console.log("✅ [USE_CREATE_VEHICLE] Success flow completed");
     },

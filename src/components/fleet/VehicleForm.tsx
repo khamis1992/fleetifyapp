@@ -108,21 +108,35 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true)
+    console.log("🚀 [VEHICLE_FORM] Starting form submission");
+    console.log("📋 [VEHICLE_FORM] Form data received:", data);
+    console.log("🔄 [VEHICLE_FORM] Form values from react-hook-form:", form.getValues());
+    console.log("💾 [VEHICLE_FORM] Backup states - Model:", modelBackup, "Color:", colorBackup);
+    
     try {
+      // Use backup values if form values are empty
+      const finalData = {
+        ...data,
+        model: data.model || modelBackup || "",
+        color: data.color || colorBackup || ""
+      };
+      
+      console.log("🔧 [VEHICLE_FORM] Final data after backup merge:", finalData);
+      
       // Validate required fields
-      if (!data.plate_number || !data.plate_number.trim()) {
+      if (!finalData.plate_number || !finalData.plate_number.trim()) {
         throw new Error("رقم اللوحة مطلوب");
       }
       
-      if (!data.make || !data.make.trim()) {
+      if (!finalData.make || !finalData.make.trim()) {
         throw new Error("الشركة المصنعة مطلوبة");
       }
       
-      if (!data.model || !data.model.trim()) {
+      if (!finalData.model || !finalData.model.trim()) {
         throw new Error("الطراز مطلوب");
       }
       
-      if (!data.year || isNaN(parseInt(data.year))) {
+      if (!finalData.year || isNaN(parseInt(finalData.year))) {
         throw new Error("السنة مطلوبة ويجب أن تكون رقماً صحيحاً");
       }
       
@@ -156,40 +170,40 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       // Prepare vehicle data with proper type conversions and defaults
       const vehicleData = {
         // Required fields
-        plate_number: data.plate_number.trim(),
-        make: data.make.trim(),
-        model: data.model.trim(),
-        year: parseInt(data.year),
+        plate_number: finalData.plate_number.trim(),
+        make: finalData.make.trim(),
+        model: finalData.model.trim(),
+        year: parseInt(finalData.year),
         company_id: companyId,
         is_active: true,
-        status: data.status || "available",
+        status: finalData.status || "available",
         
         // Optional fields with defaults
-        color: data.color?.trim() || null,
-        vin: data.vin?.trim() || null,
-        engine_number: data.engine_number?.trim() || null,
-        transmission: data.transmission || "automatic",
-        body_type: data.body_type?.trim() || null,
-        fuel_type: data.fuel_type || "gasoline",
-        seating_capacity: data.seating_capacity ? parseInt(data.seating_capacity) : 5,
+        color: finalData.color?.trim() || null,
+        vin: finalData.vin?.trim() || null,
+        engine_number: finalData.engine_number?.trim() || null,
+        transmission: finalData.transmission || "automatic",
+        body_type: finalData.body_type?.trim() || null,
+        fuel_type: finalData.fuel_type || "gasoline",
+        seating_capacity: finalData.seating_capacity ? parseInt(finalData.seating_capacity) : 5,
         
         // Date fields
-        purchase_date: data.purchase_date || null,
+        purchase_date: finalData.purchase_date || null,
         
         // Numeric fields (nullable)
-        purchase_cost: data.purchase_cost ? parseFloat(data.purchase_cost) : null,
-        useful_life_years: data.useful_life_years ? parseInt(data.useful_life_years) : 10,
-        residual_value: data.residual_value ? parseFloat(data.residual_value) : null,
-        current_mileage: data.current_mileage ? parseFloat(data.current_mileage) : null,
-        daily_rate: data.daily_rate ? parseFloat(data.daily_rate) : null,
-        weekly_rate: data.weekly_rate ? parseFloat(data.weekly_rate) : null,
-        monthly_rate: data.monthly_rate ? parseFloat(data.monthly_rate) : null,
-        deposit_amount: data.deposit_amount ? parseFloat(data.deposit_amount) : null,
+        purchase_cost: finalData.purchase_cost ? parseFloat(finalData.purchase_cost) : null,
+        useful_life_years: finalData.useful_life_years ? parseInt(finalData.useful_life_years) : 10,
+        residual_value: finalData.residual_value ? parseFloat(finalData.residual_value) : null,
+        current_mileage: finalData.current_mileage ? parseFloat(finalData.current_mileage) : null,
+        daily_rate: finalData.daily_rate ? parseFloat(finalData.daily_rate) : null,
+        weekly_rate: finalData.weekly_rate ? parseFloat(finalData.weekly_rate) : null,
+        monthly_rate: finalData.monthly_rate ? parseFloat(finalData.monthly_rate) : null,
+        deposit_amount: finalData.deposit_amount ? parseFloat(finalData.deposit_amount) : null,
         
         // Additional fields
-        notes: data.notes?.trim() || null,
-        cost_center_id: data.cost_center_id || null,
-        depreciation_method: data.depreciation_method || "straight_line",
+        notes: finalData.notes?.trim() || null,
+        cost_center_id: finalData.cost_center_id || null,
+        depreciation_method: finalData.depreciation_method || "straight_line",
       }
 
       console.log("📤 [VEHICLE_FORM] Prepared vehicle data:", vehicleData);
@@ -207,26 +221,28 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       if (vehicle) {
         console.log("✏️ [VEHICLE_FORM] Updating existing vehicle:", vehicle.id);
         result = await updateVehicle.mutateAsync({ id: vehicle.id, ...vehicleData })
-        toast({
-          title: "تم التحديث بنجاح",
-          description: `تم تحديث المركبة ${vehicleData.plate_number} بنجاح`,
-        })
       } else {
         console.log("➕ [VEHICLE_FORM] Creating new vehicle");
         result = await createVehicle.mutateAsync(vehicleData)
-        toast({
-          title: "تم الإنشاء بنجاح",
-          description: `تم إضافة المركبة ${vehicleData.plate_number} إلى الأسطول`,
-        })
       }
       
       console.log("✅ [VEHICLE_FORM] Vehicle operation completed successfully. Result:", result);
+      
+      // Wait a moment before closing to ensure data is saved
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Reset form and close dialog
       form.reset()
       setModelBackup("")
       setColorBackup("")
       onOpenChange(false)
+      
+      // Force refetch vehicles data
+      setTimeout(() => {
+        console.log("🔄 [VEHICLE_FORM] Forcing data refresh...");
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       console.error("❌ [VEHICLE_FORM] Error saving vehicle:", error);
       
