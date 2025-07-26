@@ -4089,6 +4089,11 @@ export type Database = {
       }
       create_customer_financial_account: {
         Args:
+          | {
+              company_id_param: string
+              customer_id_param: string
+              customer_name_param: string
+            }
           | { customer_id_param: string; company_id_param: string }
           | {
               customer_id_param: string
