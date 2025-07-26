@@ -28,10 +28,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // Backup state for model field debugging
+  // Backup state for problematic input fields
   const [modelBackup, setModelBackup] = useState("")
-  
-  console.log("🚗 [VEHICLE_FORM] Component rendered. Model backup:", modelBackup)
+  const [colorBackup, setColorBackup] = useState("")
   
   const form = useForm({
     defaultValues: {
@@ -70,10 +69,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   })
 
   useEffect(() => {
-    console.log("🔄 [VEHICLE_FORM] useEffect triggered. Vehicle:", vehicle)
     if (vehicle) {
-      console.log("📝 [VEHICLE_FORM] Resetting form with vehicle data. Model:", vehicle.model)
       setModelBackup(vehicle.model || "")
+      setColorBackup(vehicle.color || "")
       form.reset({
         plate_number: vehicle.plate_number,
         make: vehicle.make,
@@ -101,23 +99,16 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         cost_center_id: vehicle.cost_center_id || "",
       })
     } else {
-      console.log("🆕 [VEHICLE_FORM] No vehicle data, resetting to defaults")
       setModelBackup("")
+      setColorBackup("")
       form.reset()
     }
   }, [vehicle, form])
 
-  // Watch model field for debugging
-  const watchedModel = form.watch("model")
-  useEffect(() => {
-    console.log("👀 [VEHICLE_FORM] Model field changed. Current value:", watchedModel)
-  }, [watchedModel])
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true)
     try {
-      console.log("🚗 [VEHICLE_FORM] Form submission started", data);
-      
       // Validate required fields
       if (!data.plate_number || !data.plate_number.trim()) {
         throw new Error("رقم اللوحة مطلوب");
@@ -212,17 +203,30 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         throw new Error("عدد المقاعد يجب أن يكون بين 1 و 50");
       }
 
+      let result;
       if (vehicle) {
         console.log("✏️ [VEHICLE_FORM] Updating existing vehicle:", vehicle.id);
-        await updateVehicle.mutateAsync({ id: vehicle.id, ...vehicleData })
+        result = await updateVehicle.mutateAsync({ id: vehicle.id, ...vehicleData })
+        toast({
+          title: "تم التحديث بنجاح",
+          description: `تم تحديث المركبة ${vehicleData.plate_number} بنجاح`,
+        })
       } else {
         console.log("➕ [VEHICLE_FORM] Creating new vehicle");
-        await createVehicle.mutateAsync(vehicleData)
+        result = await createVehicle.mutateAsync(vehicleData)
+        toast({
+          title: "تم الإنشاء بنجاح",
+          description: `تم إضافة المركبة ${vehicleData.plate_number} إلى الأسطول`,
+        })
       }
       
-      console.log("✅ [VEHICLE_FORM] Vehicle operation completed successfully");
-      onOpenChange(false)
+      console.log("✅ [VEHICLE_FORM] Vehicle operation completed successfully. Result:", result);
+      
+      // Reset form and close dialog
       form.reset()
+      setModelBackup("")
+      setColorBackup("")
+      onOpenChange(false)
     } catch (error) {
       console.error("❌ [VEHICLE_FORM] Error saving vehicle:", error);
       
@@ -315,7 +319,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       control={form.control}
                       name="model"
                       render={({ field }) => {
-                        console.log("🎯 [VEHICLE_FORM] Model field render. Field value:", field.value, "Backup:", modelBackup)
+                        
                         return (
                           <FormItem>
                             <FormLabel>الطراز *</FormLabel>
@@ -324,15 +328,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                 {...field} 
                                 placeholder="مثال: كامري"
                                 value={field.value || modelBackup}
-                                onChange={(e) => {
-                                  console.log("✏️ [VEHICLE_FORM] Model input onChange:", e.target.value)
-                                  setModelBackup(e.target.value)
-                                  field.onChange(e)
-                                }}
-                                onBlur={(e) => {
-                                  console.log("👋 [VEHICLE_FORM] Model input onBlur:", e.target.value)
-                                  field.onBlur()
-                                }}
+                                 onChange={(e) => {
+                                   setModelBackup(e.target.value)
+                                   field.onChange(e)
+                                 }}
+                                 onBlur={field.onBlur}
                               />
                             </FormControl>
                             <FormMessage />
@@ -362,7 +362,16 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel>اللون</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="مثال: أبيض" />
+                            <Input 
+                              {...field} 
+                              placeholder="مثال: أبيض"
+                              value={field.value || colorBackup}
+                              onChange={(e) => {
+                                setColorBackup(e.target.value)
+                                field.onChange(e)
+                              }}
+                              onBlur={field.onBlur}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
