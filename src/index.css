@@ -189,7 +189,6 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-glow);
   }
   
-  /* Smooth transitions */
   .transition-smooth {
     transition: var(--transition-smooth);
   }
@@ -202,6 +201,13 @@ All colors MUST be HSL.
     transition: var(--transition-fast);
   }
   
+  .transition-glow {
+    transition: var(--transition-glow);
+  }
+  
+}
+
+@layer components {
   /* Enhanced interactive elements */
   .card-hover {
     @apply transition-smooth hover:shadow-elevated hover:-translate-y-1;
@@ -216,7 +222,7 @@ All colors MUST be HSL.
   }
   
   .glow-on-hover {
-    @apply transition-glow hover:shadow-glow;
+    @apply transition-smooth hover:shadow-glow;
   }
   
   /* Enhanced gradients with animation */
@@ -224,12 +230,6 @@ All colors MUST be HSL.
     background: linear-gradient(-45deg, hsl(var(--primary)), hsl(var(--primary-light)), hsl(var(--accent)), hsl(var(--primary-glow)));
     background-size: 400% 400%;
     animation: gradient-shift 8s ease infinite;
-  }
-  
-  @keyframes gradient-shift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
   }
   
   /* Activity indicators */
@@ -244,14 +244,23 @@ All colors MUST be HSL.
     animation: shimmer 2s infinite;
   }
   
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  
   .animate-shimmer {
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
+  }
+}
+
+@layer base {
+  /* Keyframes */
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
   
   /* RTL support */
