@@ -277,7 +277,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                             <SelectValue placeholder="اختر مركز التكلفة (اختياري)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">لا يوجد</SelectItem>
+                            <SelectItem value="none">لا يوجد</SelectItem>
                             {costCenters?.map((costCenter) => (
                               <SelectItem key={costCenter.id} value={costCenter.id}>
                                 {costCenter.center_code} - {costCenter.center_name}
