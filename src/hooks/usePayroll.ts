@@ -272,7 +272,7 @@ export function useUpdatePayrollStatus() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ payrollId, status }: { payrollId: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const updateData: any = { status };
       
       // Add updated timestamp and user info
@@ -283,7 +283,7 @@ export function useUpdatePayrollStatus() {
       const { data, error } = await supabase
         .from('payroll')
         .update(updateData)
-        .eq('id', payrollId)
+        .eq('id', id)
         .select()
         .single();
 
@@ -312,7 +312,7 @@ export function useUpdatePayroll() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ payrollId, updates }: { payrollId: string; updates: Partial<CreatePayrollData> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<CreatePayrollData> }) => {
       if (!user) throw new Error('User not authenticated');
 
       // Calculate updated amounts if needed
@@ -326,7 +326,7 @@ export function useUpdatePayroll() {
         const { data: currentPayroll } = await supabase
           .from('payroll')
           .select('*')
-          .eq('id', payrollId)
+          .eq('id', id)
           .single();
 
         if (currentPayroll) {
@@ -353,7 +353,7 @@ export function useUpdatePayroll() {
       const { data, error } = await supabase
         .from('payroll')
         .update(updateData)
-        .eq('id', payrollId)
+        .eq('id', id)
         .select()
         .single();
 

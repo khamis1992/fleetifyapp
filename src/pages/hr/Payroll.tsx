@@ -94,22 +94,23 @@ export default function Payroll() {
   const handleUpdatePayroll = (data: CreatePayrollData) => {
     if (selectedPayroll) {
       updatePayrollMutation.mutate({
-        payrollId: selectedPayroll.id,
+        id: selectedPayroll.id,
         updates: data
       });
+      setShowEditPayroll(false);
     }
   };
 
-  const handleApprovePayroll = (payrollId: string) => {
+  const handleApprovePayroll = (payroll: PayrollRecord) => {
     updatePayrollStatusMutation.mutate({
-      payrollId,
+      id: payroll.id,
       status: 'approved'
     });
   };
 
-  const handlePayPayroll = (payrollId: string) => {
+  const handlePayPayroll = (payroll: PayrollRecord) => {
     updatePayrollStatusMutation.mutate({
-      payrollId,
+      id: payroll.id,
       status: 'paid'
     });
   };
@@ -261,9 +262,9 @@ export default function Payroll() {
                             payroll={record}
                             onView={handleViewPayroll}
                             onEdit={handleEditPayroll}
-                            onApprove={handleApprovePayroll}
-                            onPay={handlePayPayroll}
-                            onDelete={handleDeletePayroll}
+                            onApprove={() => handleApprovePayroll(record)}
+                            onPay={() => handlePayPayroll(record)}
+                            onDelete={() => handleDeletePayroll(record.id)}
                             isUpdating={updatePayrollStatusMutation.isPending || updatePayrollMutation.isPending}
                             isDeleting={deletePayrollMutation.isPending}
                           />
