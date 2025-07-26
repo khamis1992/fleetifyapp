@@ -193,6 +193,51 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          company_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          resource_id: string | null
+          resource_type: string
+          severity: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type: string
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       bank_transactions: {
         Row: {
           amount: number
@@ -2464,6 +2509,246 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_plans: {
+        Row: {
+          billing_cycle: string
+          created_at: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          max_companies: number | null
+          max_users: number | null
+          name: string
+          name_ar: string | null
+          price: number
+          storage_limit_gb: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_cycle?: string
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          max_companies?: number | null
+          max_users?: number | null
+          name: string
+          name_ar?: string | null
+          price?: number
+          storage_limit_gb?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          max_companies?: number | null
+          max_users?: number | null
+          name?: string
+          name_ar?: string | null
+          price?: number
+          storage_limit_gb?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscription_transactions: {
+        Row: {
+          amount: number
+          billing_period_end: string | null
+          billing_period_start: string | null
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          processed_at: string | null
+          status: string
+          subscription_plan_id: string
+          transaction_reference: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          subscription_plan_id: string
+          transaction_reference?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          subscription_plan_id?: string
+          transaction_reference?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_analytics: {
+        Row: {
+          category: string
+          created_at: string | null
+          date_recorded: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          metric_value: number
+          time_period: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          date_recorded?: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          metric_value: number
+          time_period?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          date_recorded?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          metric_value?: number
+          time_period?: string | null
+        }
+        Relationships: []
+      }
+      system_notifications: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          is_dismissible: boolean | null
+          message: string
+          message_ar: string | null
+          priority: string | null
+          target_audience: string | null
+          target_company_id: string | null
+          title: string
+          title_ar: string | null
+          type: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_dismissible?: boolean | null
+          message: string
+          message_ar?: string | null
+          priority?: string | null
+          target_audience?: string | null
+          target_company_id?: string | null
+          title: string
+          title_ar?: string | null
+          type?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_dismissible?: boolean | null
+          message?: string
+          message_ar?: string | null
+          priority?: string | null
+          target_audience?: string | null
+          target_company_id?: string | null
+          title?: string
+          title_ar?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          description_ar: string | null
+          id: string
+          is_public: boolean | null
+          requires_restart: boolean | null
+          setting_key: string
+          setting_type: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          is_public?: boolean | null
+          requires_restart?: boolean | null
+          setting_key: string
+          setting_type: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          is_public?: boolean | null
+          requires_restart?: boolean | null
+          setting_key?: string
+          setting_type?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       traffic_violation_payments: {
         Row: {
