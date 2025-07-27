@@ -9,55 +9,55 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Professional Blue-Grey Base */
-    --background: 220 15% 97%;
-    --background-soft: 220 12% 95%;
-    --foreground: 220 25% 15%;
+    /* Light Grey Professional Base */
+    --background: 0 0% 96%;
+    --background-soft: 0 0% 94%;
+    --foreground: 0 0% 15%;
     
-    /* Cool Card System */
+    /* Clean Card System */
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 15%;
-    --card-hover: 220 10% 98%;
+    --card-foreground: 0 0% 15%;
+    --card-hover: 0 0% 98%;
     --card-glass: 0 0% 100% / 0.9;
     
-    /* Professional Blue Primary */
-    --primary: 220 85% 55%;
+    /* Deep Red Primary */
+    --primary: 0 70% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 220 85% 45%;
-    --primary-light: 220 85% 65%;
-    --primary-glow: 220 85% 55% / 0.2;
+    --primary-dark: 0 70% 35%;
+    --primary-light: 0 70% 55%;
+    --primary-glow: 0 70% 45% / 0.2;
     
-    /* Cool Accent System */
-    --accent: 210 40% 92%;
-    --accent-foreground: 220 25% 15%;
-    --accent-light: 210 40% 95%;
-    --accent-muted: 210 40% 85%;
+    /* Professional Orange Accent System */
+    --accent: 25 90% 92%;
+    --accent-foreground: 0 0% 15%;
+    --accent-light: 25 90% 95%;
+    --accent-muted: 25 90% 85%;
     
-    /* Sophisticated Secondary */
-    --secondary: 215 15% 85%;
-    --secondary-foreground: 220 25% 15%;
-    --secondary-dark: 215 15% 80%;
+    /* Neutral Secondary */
+    --secondary: 0 0% 85%;
+    --secondary-foreground: 0 0% 15%;
+    --secondary-dark: 0 0% 80%;
     
     /* Interactive Elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 15%;
+    --popover-foreground: 0 0% 15%;
     
     /* Muted Elements */
-    --muted: 215 12% 92%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 45%;
     
-    /* Status Colors - Harmonious with Theme */
+    /* Status Colors - Professional Orange for Warnings */
     --success: 142 56% 42%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 82% 55%;
+    --warning: 25 85% 55%;
     --warning-foreground: 0 0% 100%;
-    --destructive: 0 74% 60%;
+    --destructive: 0 65% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Refined Borders and Inputs */
-    --border: 215 12% 88%;
-    --input: 215 12% 96%;
-    --ring: 220 85% 55%;
+    /* Clean Borders and Inputs */
+    --border: 0 0% 88%;
+    --input: 0 0% 96%;
+    --ring: 0 70% 45%;
     
     /* Elegant Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
@@ -66,12 +66,12 @@ All colors MUST be HSL.
     --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
     
-    /* Refined Shadows */
-    --shadow-subtle: 0 1px 3px 0 hsl(220 25% 15% / 0.08), 0 1px 2px -1px hsl(220 25% 15% / 0.08);
-    --shadow-card: 0 4px 6px -1px hsl(220 25% 15% / 0.08), 0 2px 4px -2px hsl(220 25% 15% / 0.08);
-    --shadow-elevated: 0 10px 15px -3px hsl(220 25% 15% / 0.1), 0 4px 6px -4px hsl(220 25% 15% / 0.1);
+    /* Clean Shadows */
+    --shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
+    --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
     --shadow-glow: 0 0 20px hsl(var(--primary-glow));
-    --shadow-glass: 0 8px 32px hsl(220 25% 15% / 0.06);
+    --shadow-glass: 0 8px 32px hsl(0 0% 15% / 0.06);
     
     /* Smooth Professional Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,15 +81,15 @@ All colors MUST be HSL.
     
     --radius: 0.75rem;
 
-    /* Professional Blue Sidebar Variables */
-    --sidebar-background: 220 15% 98%;
-    --sidebar-foreground: 220 25% 15%;
-    --sidebar-primary: 220 85% 55%;
+    /* Charcoal Sidebar Variables */
+    --sidebar-background: 0 0% 20%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 95%;
-    --sidebar-accent-foreground: 220 25% 15%;
-    --sidebar-border: 215 12% 90%;
-    --sidebar-ring: 220 85% 55%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 30%;
+    --sidebar-ring: 0 70% 45%;
   }
 
   .dark {
