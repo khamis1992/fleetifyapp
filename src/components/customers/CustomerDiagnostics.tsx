@@ -27,6 +27,8 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
 }) => {
   const { data: diagnostics, isLoading, refetch } = useCustomerDiagnostics();
 
+  console.log('🔍 CustomerDiagnostics render:', { open, diagnostics });
+
   if (!open) return null;
 
   const getStatusIcon = (status: boolean | null, error?: string | null) => {
@@ -297,4 +299,4 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
       </div>
     </div>
   );
-}; 
+};

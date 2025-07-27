@@ -79,7 +79,12 @@ export const useCustomers = (filters?: {
     queryKey: ['customers', user?.profile?.company_id || user?.company?.id, filters],
     queryFn: async () => {
       const companyId = user?.profile?.company_id || user?.company?.id;
-      if (!companyId) return [];
+      if (!companyId) {
+        console.log('❌ No company ID found for user');
+        return [];
+      }
+
+      console.log('🔍 Fetching customers for company:', companyId);
 
       let query = supabase
         .from('customers')
@@ -111,10 +116,11 @@ export const useCustomers = (filters?: {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching customers:', error);
+        console.error('❌ Error fetching customers:', error);
         throw error;
       }
 
+      console.log('✅ Successfully fetched customers:', data?.length || 0);
       return data || [];
     },
     enabled: !!(user?.profile?.company_id || user?.company?.id),
@@ -159,8 +165,10 @@ export const useCreateCustomer = () => {
 
       if (isSuperAdmin && customerData.selectedCompanyId) {
         companyId = customerData.selectedCompanyId;
+        console.log('🏢 Using selected company ID for super admin:', companyId);
       } else {
         companyId = user?.profile?.company_id || user?.company?.id;
+        console.log('🏢 Using user company ID:', companyId);
       }
 
       if (!companyId) {
@@ -220,19 +228,26 @@ export const useUpdateCustomer = () => {
 
   return useMutation({
     mutationFn: async ({ customerId, data }: { customerId: string; data: Partial<CustomerFormData> }) => {
+      console.log('🔄 Updating customer:', customerId, data);
+      
       const { error } = await supabase
         .from('customers')
         .update(data)
         .eq('id', customerId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error updating customer:', error);
+        throw error;
+      }
+
+      console.log('✅ Customer updated successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('تم تحديث بيانات العميل بنجاح');
     },
     onError: (error) => {
-      console.error('Error updating customer:', error);
+      console.error('❌ Error updating customer:', error);
       toast.error('حدث خطأ أثناء تحديث بيانات العميل');
     }
   });
@@ -289,7 +304,6 @@ export const useCustomer = (customerId: string) => {
         throw error;
       }
 
-      // Add contracts as empty array for now since we don't have contract data in the query
       return { ...data, contracts: [] };
     },
     enabled: !!customerId
@@ -362,7 +376,6 @@ export const useCustomerFinancialSummary = (customerId: string) => {
   return useQuery({
     queryKey: ['customer-financial-summary', customerId],
     queryFn: async () => {
-      // Mock data for financial summary - in a real app, this would be calculated from actual data
       return {
         currentBalance: 0,
         totalContracts: 0,
@@ -384,11 +397,13 @@ export const useCustomerDiagnostics = () => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['customer-diagnostics'],
+    queryKey: ['customer-diagnostics', user?.id],
     queryFn: async () => {
       const companyId = user?.profile?.company_id || user?.company?.id;
       
-      // Run diagnostics checks
+      console.log('🔍 Running customer diagnostics for user:', user?.id);
+      console.log('🏢 Company ID:', companyId);
+
       const diagnostics = {
         userInfo: {
           id: user?.id || 'غير متاح',
@@ -412,16 +427,18 @@ export const useCustomerDiagnostics = () => {
           )
         },
         database: {
-          companyExists: null,
-          canAccessCustomers: null,
-          canInsertCustomers: null,
-          error: null
+          companyExists: null as boolean | null,
+          canAccessCustomers: null as boolean | null,
+          canInsertCustomers: null as boolean | null,
+          error: null as string | null
         }
       };
 
       // Test database access if we have a company ID
       if (companyId) {
         try {
+          console.log('🔍 Testing database access...');
+          
           // Check if company exists
           const { data: companyData, error: companyError } = await supabase
             .from('companies')
@@ -431,8 +448,10 @@ export const useCustomerDiagnostics = () => {
 
           if (companyError && companyError.code !== 'PGRST116') {
             diagnostics.database.error = companyError.message;
+            console.error('❌ Company check error:', companyError);
           } else {
             diagnostics.database.companyExists = !!companyData;
+            console.log('✅ Company exists:', !!companyData);
           }
 
           // Test customer access
@@ -447,8 +466,10 @@ export const useCustomerDiagnostics = () => {
             if (!diagnostics.database.error) {
               diagnostics.database.error = customerError.message;
             }
+            console.error('❌ Customer access error:', customerError);
           } else {
             diagnostics.database.canAccessCustomers = true;
+            console.log('✅ Can access customers');
           }
 
           // Test customer insertion (dry run)
@@ -465,7 +486,7 @@ export const useCustomerDiagnostics = () => {
             country: 'Kuwait'
           };
 
-          const { error: insertError } = await supabase
+          const { data: insertData, error: insertError } = await supabase
             .from('customers')
             .insert([testCustomer])
             .select()
@@ -476,24 +497,30 @@ export const useCustomerDiagnostics = () => {
             if (!diagnostics.database.error) {
               diagnostics.database.error = insertError.message;
             }
+            console.error('❌ Customer insert test error:', insertError);
           } else {
             diagnostics.database.canInsertCustomers = true;
+            console.log('✅ Can insert customers');
             
             // Clean up test customer
             await supabase
               .from('customers')
               .delete()
-              .eq('phone', '12345678')
-              .eq('company_id', companyId);
+              .eq('id', insertData.id);
+            console.log('🧹 Test customer cleaned up');
           }
 
         } catch (error: any) {
           diagnostics.database.error = error.message;
+          console.error('❌ Database diagnostics error:', error);
         }
       }
 
+      console.log('📊 Diagnostics complete:', diagnostics);
       return diagnostics;
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000, // 1 minute
   });
 };

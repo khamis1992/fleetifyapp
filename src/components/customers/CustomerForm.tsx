@@ -49,10 +49,21 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const updateCustomerMutation = useUpdateCustomer();
   const isSuperAdmin = user?.roles?.includes('super_admin');
 
+  console.log('👤 CustomerForm render:', { 
+    open, 
+    mode, 
+    user: user?.email, 
+    isSuperAdmin,
+    companies: companies?.length 
+  });
+
   // إعادة تعيين البيانات عند فتح النموذج
   useEffect(() => {
     if (open) {
+      console.log('🔄 Resetting form for mode:', mode);
+      
       if (customer && mode === 'edit') {
+        console.log('📝 Editing customer:', customer.id);
         reset({
           customer_type: customer.customer_type || 'individual',
           first_name: customer.first_name || '',
@@ -78,6 +89,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           notes: customer.notes || ''
         });
       } else {
+        console.log('➕ Creating new customer');
         reset({
           customer_type: 'individual',
           first_name: '',
@@ -128,6 +140,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
 
       if (validationErrors.length > 0) {
         setFormErrors(validationErrors);
+        console.log('❌ Validation errors:', validationErrors);
         return;
       }
 
@@ -136,6 +149,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
         ...data,
         ...(isSuperAdmin && selectedCompanyId ? { selectedCompanyId } : {})
       };
+
+      console.log('📤 Submitting customer data:', customerData);
 
       if (mode === 'create') {
         await createCustomerMutation.mutateAsync(customerData);
