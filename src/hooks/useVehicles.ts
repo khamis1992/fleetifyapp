@@ -32,13 +32,43 @@ export interface Vehicle {
   is_active?: boolean
   created_at: string
   updated_at: string
-  // New fleet management fields
+  // Enhanced vehicle fields
   vin?: string
   engine_number?: string
+  chassis_number?: string
+  fuel_capacity?: number
+  seating_capacity?: number
+  transmission_type?: string
+  drive_type?: string
+  vehicle_category?: string
+  registration_date?: string
+  registration_expiry?: string
+  inspection_due_date?: string
+  warranty_start_date?: string
+  warranty_end_date?: string
+  current_location?: string
+  gps_tracking_device?: string
+  safety_features?: any[]
+  entertainment_features?: any[]
+  comfort_features?: any[]
+  vehicle_condition?: string
+  fuel_type?: string
+  ownership_status?: string
+  lease_start_date?: string
+  lease_end_date?: string
+  monthly_lease_amount?: number
+  lease_company?: string
+  expected_depreciation_rate?: number
+  total_fuel_cost?: number
+  average_fuel_consumption?: number
+  total_distance_km?: number
+  vehicle_documents?: any[]
+  emergency_contact_info?: any
+  maintenance_schedule?: any[]
+  performance_metrics?: any
+  // Legacy fields for backward compatibility
   transmission?: string
   body_type?: string
-  fuel_type?: string
-  seating_capacity?: number
   current_mileage?: number
   last_service_mileage?: number
   next_service_mileage?: number
@@ -128,6 +158,114 @@ export interface VehicleMaintenance {
   assigned_to?: string
   notes?: string
   attachments?: any[]
+}
+
+// New interfaces for enhanced fleet management
+export interface OdometerReading {
+  id: string
+  vehicle_id: string
+  company_id: string
+  reading_date: string
+  odometer_reading: number
+  fuel_level_percentage?: number
+  notes?: string
+  recorded_by?: string
+  location?: string
+  photo_url?: string
+  is_verified: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface VehicleInspection {
+  id: string
+  vehicle_id: string
+  company_id: string
+  inspection_date: string
+  inspector_name: string
+  inspection_type: string
+  overall_condition: string
+  mileage_at_inspection?: number
+  engine_condition?: string
+  transmission_condition?: string
+  brake_condition?: string
+  tire_condition?: string
+  battery_condition?: string
+  lights_condition?: string
+  ac_condition?: string
+  interior_condition?: string
+  exterior_condition?: string
+  safety_equipment_status?: string
+  identified_issues?: string[]
+  repair_recommendations?: string[]
+  estimated_repair_cost?: number
+  next_inspection_due?: string
+  inspection_certificate_url?: string
+  photos?: any[]
+  is_passed: boolean
+  notes?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface TrafficViolation {
+  id: string
+  vehicle_id: string
+  company_id: string
+  violation_number: string
+  violation_date: string
+  violation_time?: string
+  violation_type: string
+  violation_description?: string
+  location?: string
+  fine_amount: number
+  late_fee?: number
+  total_amount: number
+  currency: string
+  issuing_authority?: string
+  officer_name?: string
+  status: 'pending' | 'paid' | 'appealed' | 'cancelled' | 'overdue'
+  due_date?: string
+  paid_date?: string
+  payment_method?: string
+  payment_reference?: string
+  discount_applied?: number
+  driver_name?: string
+  driver_license?: string
+  driver_phone?: string
+  court_date?: string
+  court_status?: string
+  appeal_date?: string
+  appeal_status?: string
+  vehicle_impounded: boolean
+  impound_location?: string
+  impound_release_date?: string
+  photos?: any[]
+  documents?: any[]
+  notes?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface VehicleActivityLog {
+  id: string
+  vehicle_id: string
+  company_id: string
+  activity_type: string
+  description?: string
+  activity_date: string
+  activity_time?: string
+  mileage?: number
+  location?: string
+  performed_by?: string
+  cost_amount?: number
+  cost_center_id?: string
+  reference_document?: string
+  notes?: string
+  created_at: string
+  updated_at: string
 }
 
 export const useVehicles = () => {
@@ -786,5 +924,182 @@ export const useFleetAnalytics = (companyId?: string) => {
     enabled: !!companyId,
     retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+// Hooks for enhanced fleet management features
+
+// Odometer Readings Hooks
+export const useOdometerReadings = (vehicleId?: string) => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["odometer-readings", vehicleId, user?.profile?.company_id],
+    queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
+      let query = supabase
+        .from("odometer_readings")
+        .select(`
+          *,
+          vehicles!inner(plate_number, make, model)
+        `)
+        .eq("company_id", user.profile.company_id)
+        .order("reading_date", { ascending: false })
+
+      if (vehicleId) {
+        query = query.eq("vehicle_id", vehicleId)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      return data as any[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateOdometerReading = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  
+  return useMutation({
+    mutationFn: async (readingData: Omit<OdometerReading, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data, error } = await supabase
+        .from("odometer_readings")
+        .insert([readingData])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["odometer-readings"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      toast({
+        title: "نجح",
+        description: "تم تسجيل قراءة العداد بنجاح",
+      })
+    }
+  })
+}
+
+// Vehicle Inspections Hooks
+export const useVehicleInspections = (vehicleId?: string) => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["vehicle-inspections", vehicleId, user?.profile?.company_id],
+    queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
+      let query = supabase
+        .from("vehicle_inspections")
+        .select(`
+          *,
+          vehicles!inner(plate_number, make, model)
+        `)
+        .eq("company_id", user.profile.company_id)
+        .order("inspection_date", { ascending: false })
+
+      if (vehicleId) {
+        query = query.eq("vehicle_id", vehicleId)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      return data as any[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateVehicleInspection = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  
+  return useMutation({
+    mutationFn: async (inspectionData: Omit<VehicleInspection, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data, error } = await supabase
+        .from("vehicle_inspections")
+        .insert([inspectionData])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["vehicle-inspections"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      toast({
+        title: "نجح",
+        description: "تم تسجيل تقييم المركبة بنجاح",
+      })
+    }
+  })
+}
+
+// Traffic Violations Hook - temporariliy disabled until database types are updated
+// Will be implemented in Phase 2 with proper TypeScript integration
+
+// Vehicle Activity Log Hooks
+export const useVehicleActivityLog = (vehicleId?: string) => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["vehicle-activity-log", vehicleId, user?.profile?.company_id],
+    queryFn: async () => {
+      if (!user?.profile?.company_id) return []
+      
+      let query = supabase
+        .from("vehicle_activity_log")
+        .select(`
+          *,
+          vehicles!inner(plate_number, make, model),
+          cost_centers(center_name, center_name_ar)
+        `)
+        .eq("company_id", user.profile.company_id)
+        .order("activity_date", { ascending: false })
+
+      if (vehicleId) {
+        query = query.eq("vehicle_id", vehicleId)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      return data as any[]
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
+export const useCreateVehicleActivity = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  
+  return useMutation({
+    mutationFn: async (activityData: Omit<VehicleActivityLog, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data, error } = await supabase
+        .from("vehicle_activity_log")
+        .insert([activityData])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["vehicle-activity-log"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      toast({
+        title: "نجح",
+        description: "تم تسجيل النشاط بنجاح",
+      })
+    }
   })
 }
