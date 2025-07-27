@@ -264,7 +264,7 @@ const ProtectedFinanceRoute = ({ children, permission }: { children: React.React
   useEffect(() => {
     if (!user) {
       console.log('[Finance] User not authenticated');
-    } else if (!user.user_metadata?.company_id) {
+    } else if (!user.profile?.company_id) {
       console.log('[Finance] User missing company_id:', user);
       toast({
         title: "خطأ في البيانات",
@@ -272,7 +272,7 @@ const ProtectedFinanceRoute = ({ children, permission }: { children: React.React
         variant: "destructive",
       });
     } else {
-      console.log('[Finance] User authenticated with company:', user.user_metadata.company_id);
+      console.log('[Finance] User authenticated with company:', user.profile.company_id);
     }
   }, [user, toast]);
 
@@ -280,7 +280,7 @@ const ProtectedFinanceRoute = ({ children, permission }: { children: React.React
     return <Navigate to="/auth" replace />;
   }
 
-  if (!user.user_metadata?.company_id) {
+  if (!user.profile?.company_id) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <p className="text-destructive font-medium">خطأ في البيانات</p>
