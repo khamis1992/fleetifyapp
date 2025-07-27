@@ -26,6 +26,7 @@ import {
   PermissionCategory 
 } from '@/types/permissions';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PermissionsMatrixProps {
   selectedUser?: {
@@ -90,9 +91,37 @@ export default function PermissionsMatrix({
 }: PermissionsMatrixProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const { user } = useAuth();
 
   // Fetch user custom permissions from database
   const { data: customPermissions, isLoading: loadingPermissions } = useUserPermissions(selectedUser?.user_id);
+
+  // Check what roles the current user can assign
+  const getAssignableRoles = (): UserRole[] => {
+    if (!user?.roles) return [];
+    
+    // Super admin can assign all roles
+    if (user.roles.includes('super_admin')) {
+      return Object.keys(ROLE_PERMISSIONS) as UserRole[];
+    }
+    
+    // Company admin can assign all roles except super_admin
+    if (user.roles.includes('company_admin')) {
+      return ['company_admin', 'manager', 'sales_agent', 'employee'];
+    }
+    
+    // Other roles use their defined assignable roles
+    for (const role of user.roles) {
+      const roleData = ROLE_PERMISSIONS[role as UserRole];
+      if (roleData?.canAssignRoles) {
+        return roleData.canAssignRoles;
+      }
+    }
+    
+    return [];
+  };
+
+  const assignableRoles = getAssignableRoles();
 
   const getUserPermissions = useMemo(() => {
     if (!selectedUser) return new Set<string>();
@@ -212,13 +241,13 @@ export default function PermissionsMatrix({
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={isAssigned}
-                            onCheckedChange={(checked) => 
-                              handleRoleToggle(roleKey, checked as boolean)
-                            }
-                            disabled={readOnly}
-                          />
+                           <Checkbox
+                             checked={isAssigned}
+                             onCheckedChange={(checked) => 
+                               handleRoleToggle(roleKey, checked as boolean)
+                             }
+                             disabled={readOnly || !assignableRoles.includes(roleKey)}
+                           />
                           <div>
                             <p className="font-medium">{roleLabels[roleKey]}</p>
                             <p className="text-xs text-muted-foreground">
@@ -309,7 +338,7 @@ export default function PermissionsMatrix({
                                         onCheckedChange={(checked) =>
                                           handlePermissionToggle(permission.id, checked as boolean)
                                         }
-                                        disabled={readOnly || (isSystemLevel && !selectedUser?.roles.includes('super_admin'))}
+                                        disabled={readOnly || (isSystemLevel && !user?.roles?.includes('super_admin') && !user?.roles?.includes('company_admin'))}
                                       />
                                       <div className="flex items-center space-x-2">
                                         <div className={getPermissionLevelColor(permission.level)}>

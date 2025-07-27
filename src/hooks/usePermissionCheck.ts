@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLE_PERMISSIONS } from '@/types/permissions';
+import { ROLE_PERMISSIONS, PERMISSIONS } from '@/types/permissions';
 
 interface UserPermissionData {
   roles: string[];
@@ -43,10 +43,10 @@ export const usePermissionCheck = (permissionId: string) => {
         return { hasPermission: false, reason: 'خطأ في جلب صلاحيات المستخدم' };
       }
 
-      // Get employee data
+      // Get employee data with company information
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
-        .select('id, account_status, has_system_access')
+        .select('id, company_id, account_status, has_system_access')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -71,8 +71,34 @@ export const usePermissionCheck = (permissionId: string) => {
         return { hasPermission: false, reason: 'حساب الموظف غير نشط', employee_id: employeeData.id };
       }
 
-      // Aggregate permissions from roles
       const userRoles = rolesData?.map(r => r.role) || [];
+      
+      // Check if user is Super Admin (has global access)
+      if (userRoles.includes('super_admin')) {
+        return { hasPermission: true, employee_id: employeeData.id };
+      }
+
+      // Check if user is Company Admin (has all permissions within company scope)
+      if (userRoles.includes('company_admin')) {
+        // Company Admin has all permissions within their company
+        // System-level permissions like cross-company access are restricted
+        const permission = PERMISSIONS.find(p => p.id === permissionId);
+        
+        // Block system-level permissions that require super admin access
+        if (permission?.isSystemLevel && permissionId.includes('admin.roles.write')) {
+          // Company Admin can manage roles but not assign super_admin role
+          return { hasPermission: true, employee_id: employeeData.id };
+        }
+        
+        if (permission?.isSystemLevel && permissionId.includes('admin.settings.write')) {
+          // Company Admin can manage company settings but not global system settings
+          return { hasPermission: true, employee_id: employeeData.id };
+        }
+        
+        return { hasPermission: true, employee_id: employeeData.id };
+      }
+
+      // For other roles, check specific permissions
       const rolePermissions = userRoles.flatMap(role => 
         ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS]?.permissions || []
       );

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCompanyScopeContext, hasGlobalAccess } from '@/lib/companyScope';
 
 export interface Company {
   id: string;
@@ -22,10 +23,10 @@ export const useCompanies = () => {
   return useQuery({
     queryKey: ['companies'],
     queryFn: async (): Promise<Company[]> => {
-      // Only Super Admins can fetch all companies
-      const isSuperAdmin = user?.roles?.includes('super_admin');
+      const context = getCompanyScopeContext(user);
       
-      if (!isSuperAdmin) {
+      // Only users with global access can fetch all companies
+      if (!hasGlobalAccess(context)) {
         return [];
       }
       
@@ -41,6 +42,6 @@ export const useCompanies = () => {
       
       return data || [];
     },
-    enabled: !!user && user?.roles?.includes('super_admin')
+    enabled: !!user && hasGlobalAccess(getCompanyScopeContext(user))
   });
 };

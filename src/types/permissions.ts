@@ -26,6 +26,7 @@ export interface RolePermissions {
   role: UserRole;
   permissions: string[];
   canAssignRoles?: UserRole[];
+  companyScoped?: boolean; // Indicates if permissions are scoped to the user's company
 }
 
 export interface UserPermissionState {
@@ -409,8 +410,7 @@ export const PERMISSIONS: Permission[] = [
     name: 'Manage Roles',
     description: 'Assign and manage user roles',
     category: PERMISSION_CATEGORIES[4],
-    level: 'write',
-    isSystemLevel: true
+    level: 'write'
   },
   {
     id: 'admin.settings.read',
@@ -438,8 +438,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   company_admin: {
     role: 'company_admin',
-    permissions: PERMISSIONS.filter(p => !p.isSystemLevel).map(p => p.id),
-    canAssignRoles: ['manager', 'sales_agent', 'employee']
+    permissions: PERMISSIONS.map(p => p.id), // Company Admin has all permissions within their company scope
+    canAssignRoles: ['manager', 'sales_agent', 'employee'],
+    companyScoped: true
   },
   manager: {
     role: 'manager',
