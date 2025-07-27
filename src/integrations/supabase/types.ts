@@ -3537,6 +3537,85 @@ export type Database = {
           },
         ]
       }
+      vehicle_activity_log: {
+        Row: {
+          activity_date: string
+          activity_time: string | null
+          activity_type: string
+          company_id: string
+          cost_amount: number | null
+          cost_center_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          mileage: number | null
+          notes: string | null
+          performed_by: string | null
+          reference_document: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_time?: string | null
+          activity_type: string
+          company_id: string
+          cost_amount?: number | null
+          cost_center_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          mileage?: number | null
+          notes?: string | null
+          performed_by?: string | null
+          reference_document?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          activity_date?: string
+          activity_time?: string | null
+          activity_type?: string
+          company_id?: string
+          cost_amount?: number | null
+          cost_center_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          mileage?: number | null
+          notes?: string | null
+          performed_by?: string | null
+          reference_document?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_activity_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_activity_log_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_activity_log_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_categories: {
         Row: {
           company_id: string
@@ -3679,6 +3758,117 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      vehicle_inspections: {
+        Row: {
+          ac_condition: string | null
+          battery_condition: string | null
+          brake_condition: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          engine_condition: string | null
+          estimated_repair_cost: number | null
+          exterior_condition: string | null
+          id: string
+          identified_issues: string[] | null
+          inspection_certificate_url: string | null
+          inspection_date: string
+          inspection_type: string
+          inspector_name: string
+          interior_condition: string | null
+          is_passed: boolean | null
+          lights_condition: string | null
+          mileage_at_inspection: number | null
+          next_inspection_due: string | null
+          notes: string | null
+          overall_condition: string
+          photos: Json | null
+          repair_recommendations: string[] | null
+          safety_equipment_status: string | null
+          tire_condition: string | null
+          transmission_condition: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          ac_condition?: string | null
+          battery_condition?: string | null
+          brake_condition?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          engine_condition?: string | null
+          estimated_repair_cost?: number | null
+          exterior_condition?: string | null
+          id?: string
+          identified_issues?: string[] | null
+          inspection_certificate_url?: string | null
+          inspection_date: string
+          inspection_type?: string
+          inspector_name: string
+          interior_condition?: string | null
+          is_passed?: boolean | null
+          lights_condition?: string | null
+          mileage_at_inspection?: number | null
+          next_inspection_due?: string | null
+          notes?: string | null
+          overall_condition?: string
+          photos?: Json | null
+          repair_recommendations?: string[] | null
+          safety_equipment_status?: string | null
+          tire_condition?: string | null
+          transmission_condition?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          ac_condition?: string | null
+          battery_condition?: string | null
+          brake_condition?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          engine_condition?: string | null
+          estimated_repair_cost?: number | null
+          exterior_condition?: string | null
+          id?: string
+          identified_issues?: string[] | null
+          inspection_certificate_url?: string | null
+          inspection_date?: string
+          inspection_type?: string
+          inspector_name?: string
+          interior_condition?: string | null
+          is_passed?: boolean | null
+          lights_condition?: string | null
+          mileage_at_inspection?: number | null
+          next_inspection_due?: string | null
+          notes?: string | null
+          overall_condition?: string
+          photos?: Json | null
+          repair_recommendations?: string[] | null
+          safety_equipment_status?: string | null
+          tire_condition?: string | null
+          transmission_condition?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_inspections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_inspections_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_insurance: {
         Row: {
