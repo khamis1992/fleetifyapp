@@ -147,7 +147,7 @@ export const AuthForm: React.FC = () => {
         </Card>
 
         <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>© 2024 Fleetify - جميع الحقوق محفوظة</p>
+          <p>© 2025 Fleetify - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </div>
