@@ -380,19 +380,120 @@ export const useCustomerFinancialSummary = (customerId: string) => {
   });
 };
 
-export const useCustomerDiagnostics = (customerId: string) => {
+export const useCustomerDiagnostics = () => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['customer-diagnostics', customerId],
+    queryKey: ['customer-diagnostics'],
     queryFn: async () => {
-      // Mock diagnostics data
-      return {
-        hasAccount: false,
-        hasContracts: false,
-        hasPayments: false,
-        lastActivity: null,
-        issues: []
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      
+      // Run diagnostics checks
+      const diagnostics = {
+        userInfo: {
+          id: user?.id || 'غير متاح',
+          email: user?.email || 'غير متاح',
+          roles: user?.roles || [],
+          hasProfile: !!user?.profile,
+          profileCompanyId: user?.profile?.company_id || null,
+          userCompanyId: user?.company?.id || null
+        },
+        permissions: {
+          isSuperAdmin: user?.roles?.includes('super_admin') || false,
+          isCompanyAdmin: user?.roles?.includes('company_admin') || false,
+          isManager: user?.roles?.includes('manager') || false,
+          isSalesAgent: user?.roles?.includes('sales_agent') || false,
+          companyId: companyId || null,
+          canCreateCustomers: !!(
+            user?.roles?.includes('super_admin') ||
+            user?.roles?.includes('company_admin') ||
+            user?.roles?.includes('manager') ||
+            user?.roles?.includes('sales_agent')
+          )
+        },
+        database: {
+          companyExists: null,
+          canAccessCustomers: null,
+          canInsertCustomers: null,
+          error: null
+        }
       };
+
+      // Test database access if we have a company ID
+      if (companyId) {
+        try {
+          // Check if company exists
+          const { data: companyData, error: companyError } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('id', companyId)
+            .single();
+
+          if (companyError && companyError.code !== 'PGRST116') {
+            diagnostics.database.error = companyError.message;
+          } else {
+            diagnostics.database.companyExists = !!companyData;
+          }
+
+          // Test customer access
+          const { data: customerData, error: customerError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('company_id', companyId)
+            .limit(1);
+
+          if (customerError) {
+            diagnostics.database.canAccessCustomers = false;
+            if (!diagnostics.database.error) {
+              diagnostics.database.error = customerError.message;
+            }
+          } else {
+            diagnostics.database.canAccessCustomers = true;
+          }
+
+          // Test customer insertion (dry run)
+          const testCustomer = {
+            company_id: companyId,
+            customer_type: 'individual' as const,
+            first_name: 'Test',
+            last_name: 'User',
+            phone: '12345678',
+            is_active: true,
+            is_blacklisted: false,
+            credit_limit: 0,
+            city: 'Kuwait City',
+            country: 'Kuwait'
+          };
+
+          const { error: insertError } = await supabase
+            .from('customers')
+            .insert([testCustomer])
+            .select()
+            .single();
+
+          if (insertError) {
+            diagnostics.database.canInsertCustomers = false;
+            if (!diagnostics.database.error) {
+              diagnostics.database.error = insertError.message;
+            }
+          } else {
+            diagnostics.database.canInsertCustomers = true;
+            
+            // Clean up test customer
+            await supabase
+              .from('customers')
+              .delete()
+              .eq('phone', '12345678')
+              .eq('company_id', companyId);
+          }
+
+        } catch (error: any) {
+          diagnostics.database.error = error.message;
+        }
+      }
+
+      return diagnostics;
     },
-    enabled: !!customerId
+    enabled: !!user
   });
 };

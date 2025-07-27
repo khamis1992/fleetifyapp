@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,19 +89,19 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                   <div>
                     <p className="text-sm font-medium">معرف المستخدم:</p>
                     <p className="text-sm text-muted-foreground">
-                      {diagnostics?.userInfo.id || 'غير متاح'}
+                      {diagnostics?.userInfo?.id || 'غير متاح'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">البريد الإلكتروني:</p>
                     <p className="text-sm text-muted-foreground">
-                      {diagnostics?.userInfo.email || 'غير متاح'}
+                      {diagnostics?.userInfo?.email || 'غير متاح'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">الأدوار:</p>
                     <div className="flex gap-1 flex-wrap">
-                      {diagnostics?.userInfo.roles?.map((role) => (
+                      {diagnostics?.userInfo?.roles?.map((role) => (
                         <Badge key={role} variant="outline" className="text-xs">
                           {role}
                         </Badge>
@@ -109,20 +110,20 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-medium">لديه ملف شخصي:</p>
-                    <Badge variant={diagnostics?.userInfo.hasProfile ? "default" : "destructive"}>
-                      {diagnostics?.userInfo.hasProfile ? "نعم" : "لا"}
+                    <Badge variant={diagnostics?.userInfo?.hasProfile ? "default" : "destructive"}>
+                      {diagnostics?.userInfo?.hasProfile ? "نعم" : "لا"}
                     </Badge>
                   </div>
                   <div>
                     <p className="text-sm font-medium">معرف الشركة (من الملف الشخصي):</p>
                     <p className="text-sm text-muted-foreground font-mono">
-                      {diagnostics?.userInfo.profileCompanyId || 'غير متاح'}
+                      {diagnostics?.userInfo?.profileCompanyId || 'غير متاح'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">معرف الشركة (من المستخدم):</p>
                     <p className="text-sm text-muted-foreground font-mono">
-                      {diagnostics?.userInfo.userCompanyId || 'غير متاح'}
+                      {diagnostics?.userInfo?.userCompanyId || 'غير متاح'}
                     </p>
                   </div>
                 </div>
@@ -141,38 +142,38 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">مدير عام:</span>
-                    <Badge variant={diagnostics?.permissions.isSuperAdmin ? "default" : "secondary"}>
-                      {diagnostics?.permissions.isSuperAdmin ? "نعم" : "لا"}
+                    <Badge variant={diagnostics?.permissions?.isSuperAdmin ? "default" : "secondary"}>
+                      {diagnostics?.permissions?.isSuperAdmin ? "نعم" : "لا"}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">مدير شركة:</span>
-                    <Badge variant={diagnostics?.permissions.isCompanyAdmin ? "default" : "secondary"}>
-                      {diagnostics?.permissions.isCompanyAdmin ? "نعم" : "لا"}
+                    <Badge variant={diagnostics?.permissions?.isCompanyAdmin ? "default" : "secondary"}>
+                      {diagnostics?.permissions?.isCompanyAdmin ? "نعم" : "لا"}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">مدير:</span>
-                    <Badge variant={diagnostics?.permissions.isManager ? "default" : "secondary"}>
-                      {diagnostics?.permissions.isManager ? "نعم" : "لا"}
+                    <Badge variant={diagnostics?.permissions?.isManager ? "default" : "secondary"}>
+                      {diagnostics?.permissions?.isManager ? "نعم" : "لا"}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">مندوب مبيعات:</span>
-                    <Badge variant={diagnostics?.permissions.isSalesAgent ? "default" : "secondary"}>
-                      {diagnostics?.permissions.isSalesAgent ? "نعم" : "لا"}
+                    <Badge variant={diagnostics?.permissions?.isSalesAgent ? "default" : "secondary"}>
+                      {diagnostics?.permissions?.isSalesAgent ? "نعم" : "لا"}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">معرف الشركة المستخدم:</span>
                     <span className="text-sm font-mono text-muted-foreground">
-                      {diagnostics?.permissions.companyId || 'غير متاح'}
+                      {diagnostics?.permissions?.companyId || 'غير متاح'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">يمكن إضافة العملاء:</span>
-                    <Badge variant={diagnostics?.permissions.canCreateCustomers ? "default" : "destructive"}>
-                      {diagnostics?.permissions.canCreateCustomers ? "نعم" : "لا"}
+                    <Badge variant={diagnostics?.permissions?.canCreateCustomers ? "default" : "destructive"}>
+                      {diagnostics?.permissions?.canCreateCustomers ? "نعم" : "لا"}
                     </Badge>
                   </div>
                 </div>
@@ -192,33 +193,33 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">الشركة موجودة:</span>
                     <div className="flex items-center gap-2">
-                      {getStatusIcon(diagnostics?.database.companyExists, diagnostics?.database.error)}
-                      <Badge variant={getStatusVariant(diagnostics?.database.companyExists, diagnostics?.database.error) as any}>
-                        {getStatusText(diagnostics?.database.companyExists, diagnostics?.database.error)}
+                      {getStatusIcon(diagnostics?.database?.companyExists, diagnostics?.database?.error)}
+                      <Badge variant={getStatusVariant(diagnostics?.database?.companyExists, diagnostics?.database?.error) as any}>
+                        {getStatusText(diagnostics?.database?.companyExists, diagnostics?.database?.error)}
                       </Badge>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">يمكن قراءة العملاء:</span>
                     <div className="flex items-center gap-2">
-                      {getStatusIcon(diagnostics?.database.canAccessCustomers, diagnostics?.database.error)}
-                      <Badge variant={getStatusVariant(diagnostics?.database.canAccessCustomers, diagnostics?.database.error) as any}>
-                        {getStatusText(diagnostics?.database.canAccessCustomers, diagnostics?.database.error)}
+                      {getStatusIcon(diagnostics?.database?.canAccessCustomers, diagnostics?.database?.error)}
+                      <Badge variant={getStatusVariant(diagnostics?.database?.canAccessCustomers, diagnostics?.database?.error) as any}>
+                        {getStatusText(diagnostics?.database?.canAccessCustomers, diagnostics?.database?.error)}
                       </Badge>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">يمكن إضافة العملاء:</span>
                     <div className="flex items-center gap-2">
-                      {getStatusIcon(diagnostics?.database.canInsertCustomers, diagnostics?.database.error)}
-                      <Badge variant={getStatusVariant(diagnostics?.database.canInsertCustomers, diagnostics?.database.error) as any}>
-                        {getStatusText(diagnostics?.database.canInsertCustomers, diagnostics?.database.error)}
+                      {getStatusIcon(diagnostics?.database?.canInsertCustomers, diagnostics?.database?.error)}
+                      <Badge variant={getStatusVariant(diagnostics?.database?.canInsertCustomers, diagnostics?.database?.error) as any}>
+                        {getStatusText(diagnostics?.database?.canInsertCustomers, diagnostics?.database?.error)}
                       </Badge>
                     </div>
                   </div>
                 </div>
 
-                {diagnostics?.database.error && (
+                {diagnostics?.database?.error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
@@ -236,7 +237,7 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {!diagnostics?.permissions.companyId && (
+                  {!diagnostics?.permissions?.companyId && (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
@@ -247,7 +248,7 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                     </Alert>
                   )}
 
-                  {!diagnostics?.permissions.canCreateCustomers && (
+                  {!diagnostics?.permissions?.canCreateCustomers && (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
@@ -258,7 +259,7 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                     </Alert>
                   )}
 
-                  {!diagnostics?.database.companyExists && diagnostics?.permissions.companyId && (
+                  {!diagnostics?.database?.companyExists && diagnostics?.permissions?.companyId && (
                     <Alert variant="destructive">
                       <XCircle className="h-4 w-4" />
                       <AlertDescription>
@@ -269,7 +270,7 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                     </Alert>
                   )}
 
-                  {!diagnostics?.database.canAccessCustomers && (
+                  {!diagnostics?.database?.canAccessCustomers && (
                     <Alert variant="destructive">
                       <XCircle className="h-4 w-4" />
                       <AlertDescription>
@@ -280,7 +281,7 @@ export const CustomerDiagnostics: React.FC<CustomerDiagnosticsProps> = ({
                     </Alert>
                   )}
 
-                  {diagnostics?.permissions.canCreateCustomers && diagnostics?.database.canInsertCustomers && (
+                  {diagnostics?.permissions?.canCreateCustomers && diagnostics?.database?.canInsertCustomers && (
                     <Alert>
                       <CheckCircle2 className="h-4 w-4" />
                       <AlertDescription>
