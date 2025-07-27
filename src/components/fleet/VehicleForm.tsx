@@ -28,9 +28,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // Backup state for problematic input fields
-  const [modelBackup, setModelBackup] = useState("")
-  const [colorBackup, setColorBackup] = useState("")
+  // Form submission state
+  // Removed backup state as it was causing value handling issues
   
   const form = useForm({
     defaultValues: {
@@ -70,8 +69,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
   useEffect(() => {
     if (vehicle) {
-      setModelBackup(vehicle.model || "")
-      setColorBackup(vehicle.color || "")
       form.reset({
         plate_number: vehicle.plate_number,
         make: vehicle.make,
@@ -99,8 +96,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         cost_center_id: vehicle.cost_center_id || "",
       })
     } else {
-      setModelBackup("")
-      setColorBackup("")
       form.reset()
     }
   }, [vehicle, form])
@@ -111,17 +106,17 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
     console.log("🚀 [VEHICLE_FORM] Starting form submission");
     console.log("📋 [VEHICLE_FORM] Form data received:", data);
     console.log("🔄 [VEHICLE_FORM] Form values from react-hook-form:", form.getValues());
-    console.log("💾 [VEHICLE_FORM] Backup states - Model:", modelBackup, "Color:", colorBackup);
     
     try {
-      // Use backup values if form values are empty
+      // Use form data directly - no backup logic needed
       const finalData = {
         ...data,
-        model: data.model || modelBackup || "",
-        color: data.color || colorBackup || ""
+        // Ensure model and color have proper string values
+        model: data.model || "",
+        color: data.color || ""
       };
       
-      console.log("🔧 [VEHICLE_FORM] Final data after backup merge:", finalData);
+      console.log("🔧 [VEHICLE_FORM] Final data prepared:", finalData);
       
       // Validate required fields
       if (!finalData.plate_number || !finalData.plate_number.trim()) {
@@ -233,8 +228,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Reset form and close dialog
       form.reset()
-      setModelBackup("")
-      setColorBackup("")
       onOpenChange(false)
       
       // Force refetch vehicles data
@@ -334,27 +327,18 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                     <FormField
                       control={form.control}
                       name="model"
-                      render={({ field }) => {
-                        
-                        return (
-                          <FormItem>
-                            <FormLabel>الطراز *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="مثال: كامري"
-                                value={field.value || modelBackup}
-                                 onChange={(e) => {
-                                   setModelBackup(e.target.value)
-                                   field.onChange(e)
-                                 }}
-                                 onBlur={field.onBlur}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )
-                      }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الطراز *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              placeholder="مثال: كامري"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
 
                     <FormField
@@ -381,12 +365,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <Input 
                               {...field} 
                               placeholder="مثال: أبيض"
-                              value={field.value || colorBackup}
-                              onChange={(e) => {
-                                setColorBackup(e.target.value)
-                                field.onChange(e)
-                              }}
-                              onBlur={field.onBlur}
                             />
                           </FormControl>
                           <FormMessage />
