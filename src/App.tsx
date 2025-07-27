@@ -26,7 +26,7 @@ import TrafficViolations from "./pages/fleet/TrafficViolations";
 import TrafficViolationPayments from "./pages/fleet/TrafficViolationPayments";
 import FleetReports from "./pages/fleet/FleetReports";
 import Employees from "./pages/hr/Employees";
-import Permissions from "./pages/settings/Permissions";
+import UserManagement from "./pages/hr/UserManagement";
 import Attendance from "./pages/hr/Attendance";
 import LeaveManagement from "./pages/hr/LeaveManagement";
 import LocationSettings from "./pages/hr/LocationSettings";
@@ -69,7 +69,7 @@ const App = () => (
               <Route path="quotations" element={<Quotations />} />
               <Route path="finance/*" element={<Finance />} />
               <Route path="hr/employees" element={<Employees />} />
-              <Route path="settings/permissions" element={<Permissions />} />
+              <Route path="hr/user-management" element={<UserManagement />} />
               <Route path="hr/attendance" element={<Attendance />} />
               <Route path="hr/leave-management" element={<LeaveManagement />} />
               <Route path="hr/location-settings" element={<LocationSettings />} />
