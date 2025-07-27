@@ -4937,17 +4937,17 @@ export type Database = {
       }
       create_customer_financial_account: {
         Args:
-          | {
-              company_id_param: string
-              customer_id_param: string
-              customer_name_param: string
-              customer_name_ar_param?: string
-            }
           | { customer_id_param: string; company_id_param: string }
           | {
               customer_id_param: string
               customer_name_param: string
               company_id_param: string
+            }
+          | {
+              p_company_id: string
+              p_customer_id: string
+              p_customer_name: string
+              p_customer_name_ar?: string
             }
         Returns: string
       }
