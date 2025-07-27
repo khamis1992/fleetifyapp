@@ -110,6 +110,19 @@ export interface VehiclePricing {
   effective_from: string
   effective_to?: string
   is_active: boolean
+  created_at: string
+  updated_at: string
+  // Enhanced pricing fields from migration
+  mileage_limit_daily?: number
+  mileage_limit_weekly?: number
+  mileage_limit_monthly?: number
+  excess_mileage_rate?: number
+  late_return_hourly_rate?: number
+  cleaning_fee?: number
+  fuel_policy?: string
+  cancellation_fee?: number
+  peak_season_multiplier?: number
+  weekend_multiplier?: number
 }
 
 export interface VehicleInsurance {

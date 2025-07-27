@@ -63,6 +63,7 @@ export function EnhancedVehiclePricingPanel({ vehicleId }: EnhancedVehiclePricin
       ...data,
       vehicle_id: vehicleId,
       is_active: true,
+      currency: 'KWD', // Default currency
     });
     
     reset();
