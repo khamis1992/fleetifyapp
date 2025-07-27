@@ -150,10 +150,23 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         notes: vehicle.notes || "",
         cost_center_id: vehicle.cost_center_id || "",
       })
-    } else {
-      form.reset()
     }
   }, [vehicle, form])
+
+  // Reset form when dialog closes and reopens for new vehicle
+  useEffect(() => {
+    if (open && !vehicle) {
+      // Only reset if the form has been used before (has dirty fields)
+      const formValues = form.getValues()
+      const hasBeenUsed = Object.values(formValues).some(value => 
+        value !== "" && value !== null && value !== undefined && 
+        value !== new Date().getFullYear() && value !== 5 && value !== 10
+      )
+      if (hasBeenUsed) {
+        form.reset()
+      }
+    }
+  }, [open, vehicle, form])
 
 
   const onSubmit = async (data: any) => {
