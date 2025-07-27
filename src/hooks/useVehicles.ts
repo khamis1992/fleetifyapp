@@ -83,6 +83,9 @@ export interface Vehicle {
   fixed_asset_id?: string
   cost_center_id?: string
   last_maintenance_date?: string
+  // Additional financial integration fields
+  journal_entry_id?: string
+  salvage_value?: number
 }
 
 export interface VehiclePricing {

@@ -2,3 +2,6 @@ project_id = "qwhunliohlkkahbspfiu"
 
 [functions.send-account-invitation]
 verify_jwt = false
+
+[functions.process-monthly-depreciation]
+verify_jwt = false

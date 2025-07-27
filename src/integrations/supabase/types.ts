@@ -5007,6 +5007,10 @@ export type Database = {
         Args: { payment_id_param: string }
         Returns: string
       }
+      create_vehicle_fixed_asset_entry: {
+        Args: { vehicle_id_param: string }
+        Returns: string
+      }
       create_vehicle_purchase_journal_entry: {
         Args: { vehicle_id_param: string }
         Returns: string
@@ -5241,6 +5245,10 @@ export type Database = {
         Returns: number
       }
       process_vehicle_depreciation: {
+        Args: { company_id_param: string; depreciation_date_param?: string }
+        Returns: number
+      }
+      process_vehicle_depreciation_monthly: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
       }

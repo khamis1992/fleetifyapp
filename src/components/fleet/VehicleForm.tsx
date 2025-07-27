@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
 import { useCostCenters } from "@/hooks/useCostCenters"
@@ -253,6 +254,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         notes: finalData.notes?.trim() || null,
         cost_center_id: finalData.cost_center_id || null,
         depreciation_method: finalData.depreciation_method || "straight_line",
+        salvage_value: finalData.salvage_value ? parseFloat(finalData.salvage_value) : null,
       }
 
       console.log("📤 [VEHICLE_FORM] Prepared vehicle data:", vehicleData);
@@ -993,9 +995,124 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
+                     />
                   </CardContent>
                 </Card>
+                
+                {/* Enhanced Financial Integration Status */}
+                {vehicle && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        حالة التكامل المالي
+                        {vehicle.fixed_asset_id && (
+                          <Badge variant="secondary" className="text-xs">
+                            مربوط بسجل الأصول الثابتة
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        حالة ربط المركبة مع الأنظمة المالية الأخرى
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {/* Fixed Asset Integration */}
+                        <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {vehicle.fixed_asset_id ? (
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            ) : (
+                              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                            )}
+                            <div>
+                              <p className="font-medium">سجل الأصول الثابتة</p>
+                              <p className="text-sm text-muted-foreground">
+                                {vehicle.fixed_asset_id 
+                                  ? "مربوط بسجل الأصول الثابتة" 
+                                  : "غير مربوط (أضف تكلفة الشراء للربط)"}
+                              </p>
+                            </div>
+                          </div>
+                          {vehicle.fixed_asset_id && (
+                            <Badge variant="outline" className="text-xs">
+                              ID: {vehicle.fixed_asset_id.slice(-8)}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Journal Entry Integration */}
+                        <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {vehicle.journal_entry_id ? (
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            ) : (
+                              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                            )}
+                            <div>
+                              <p className="font-medium">دفتر اليومية العام</p>
+                              <p className="text-sm text-muted-foreground">
+                                {vehicle.journal_entry_id 
+                                  ? "مسجل قيد الشراء في دفتر اليومية" 
+                                  : "لم يتم تسجيل قيد الشراء"}
+                              </p>
+                            </div>
+                          </div>
+                          {vehicle.journal_entry_id && (
+                            <Badge variant="outline" className="text-xs">
+                              Entry: {vehicle.journal_entry_id.slice(-8)}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Cost Center Integration */}
+                        <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {vehicle.cost_center_id ? (
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            ) : (
+                              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                            )}
+                            <div>
+                              <p className="font-medium">مركز التكلفة</p>
+                              <p className="text-sm text-muted-foreground">
+                                {vehicle.cost_center_id 
+                                  ? "مخصص لمركز تكلفة" 
+                                  : "غير مخصص لمركز تكلفة"}
+                              </p>
+                            </div>
+                          </div>
+                          {vehicle.cost_center_id && (
+                            <Badge variant="outline" className="text-xs">
+                              Cost Center
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Depreciation Status */}
+                        {vehicle.purchase_cost && vehicle.useful_life_years && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="font-medium text-blue-900">معلومات الإهلاك</p>
+                            <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                              <div>
+                                <span className="text-blue-700">الإهلاك الشهري:</span>
+                                <span className="font-medium"> {
+                                  ((vehicle.purchase_cost - (vehicle.salvage_value || 0)) / (vehicle.useful_life_years * 12)).toFixed(3)
+                                } د.ك</span>
+                              </div>
+                              <div>
+                                <span className="text-blue-700">الإهلاك السنوي:</span>
+                                <span className="font-medium"> {
+                                  ((vehicle.purchase_cost - (vehicle.salvage_value || 0)) / vehicle.useful_life_years).toFixed(3)
+                                } د.ك</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="operational" className="space-y-4">
