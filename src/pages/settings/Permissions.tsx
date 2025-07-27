@@ -418,17 +418,19 @@ export default function Permissions() {
       </Tabs>
 
       {/* Dialogs */}
-      <UserAccountForm
-        employee={selectedEmployee}
-        open={showAccountForm}
-        onOpenChange={setShowAccountForm}
-        onSuccess={() => {
-          setShowAccountForm(false);
-          setSelectedEmployee(null);
-          queryClient.invalidateQueries({ queryKey: ['employees-without-access'] });
-          queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
-        }}
-      />
+      {selectedEmployee && (
+        <UserAccountForm
+          employee={selectedEmployee}
+          open={showAccountForm}
+          onOpenChange={setShowAccountForm}
+          onSuccess={() => {
+            setShowAccountForm(false);
+            setSelectedEmployee(null);
+            queryClient.invalidateQueries({ queryKey: ['employees-without-access'] });
+            queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
+          }}
+        />
+      )}
 
       <UserPermissionsDialog
         open={showPermissionsDialog}
