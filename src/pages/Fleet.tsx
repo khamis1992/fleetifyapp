@@ -76,6 +76,40 @@ export default function Fleet() {
         />
       )}
 
+      {/* Vehicle Alerts Summary */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="border-l-4 border-l-red-500">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-red-600">
+              {/* Will be populated with actual alert counts */}
+              0
+            </div>
+            <p className="text-sm text-muted-foreground">تنبيهات حرجة</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-amber-600">0</div>
+            <p className="text-sm text-muted-foreground">تنبيهات عالية الأولوية</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">0</div>
+            <p className="text-sm text-muted-foreground">صيانة مستحقة</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">0</div>
+            <p className="text-sm text-muted-foreground">تأمينات تنتهي قريباً</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Fleet Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

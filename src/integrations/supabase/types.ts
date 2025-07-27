@@ -421,6 +421,54 @@ export type Database = {
         }
         Relationships: []
       }
+      branches: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          branch_code: string
+          branch_name: string
+          branch_name_ar: string | null
+          company_id: string
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          manager_id: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          branch_code: string
+          branch_name: string
+          branch_name_ar?: string | null
+          company_id: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          manager_id?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          branch_code?: string
+          branch_name?: string
+          branch_name_ar?: string | null
+          company_id?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          manager_id?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       budget_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -3616,6 +3664,57 @@ export type Database = {
           },
         ]
       }
+      vehicle_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_message: string
+          alert_title: string
+          alert_type: string
+          auto_generated: boolean | null
+          company_id: string
+          created_at: string | null
+          due_date: string | null
+          id: string
+          is_acknowledged: boolean | null
+          priority: string | null
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_message: string
+          alert_title: string
+          alert_type: string
+          auto_generated?: boolean | null
+          company_id: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          priority?: string | null
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_message?: string
+          alert_title?: string
+          alert_type?: string
+          auto_generated?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          priority?: string | null
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       vehicle_categories: {
         Row: {
           company_id: string
@@ -3936,6 +4035,81 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_insurance_policies: {
+        Row: {
+          agent_email: string | null
+          agent_name: string | null
+          agent_phone: string | null
+          auto_renew: boolean | null
+          company_id: string
+          coverage_amount: number
+          coverage_details: Json | null
+          created_at: string | null
+          deductible_amount: number | null
+          documents: Json | null
+          effective_date: string
+          expiry_date: string
+          id: string
+          insurance_company: string
+          is_active: boolean | null
+          policy_number: string
+          policy_type: string
+          premium_amount: number
+          premium_frequency: string | null
+          renewal_notice_days: number | null
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          agent_email?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
+          auto_renew?: boolean | null
+          company_id: string
+          coverage_amount?: number
+          coverage_details?: Json | null
+          created_at?: string | null
+          deductible_amount?: number | null
+          documents?: Json | null
+          effective_date: string
+          expiry_date: string
+          id?: string
+          insurance_company: string
+          is_active?: boolean | null
+          policy_number: string
+          policy_type: string
+          premium_amount?: number
+          premium_frequency?: string | null
+          renewal_notice_days?: number | null
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          agent_email?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
+          auto_renew?: boolean | null
+          company_id?: string
+          coverage_amount?: number
+          coverage_details?: Json | null
+          created_at?: string | null
+          deductible_amount?: number | null
+          documents?: Json | null
+          effective_date?: string
+          expiry_date?: string
+          id?: string
+          insurance_company?: string
+          is_active?: boolean | null
+          policy_number?: string
+          policy_type?: string
+          premium_amount?: number
+          premium_frequency?: string | null
+          renewal_notice_days?: number | null
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       vehicle_maintenance: {
         Row: {
           actual_cost: number | null
@@ -4079,6 +4253,8 @@ export type Database = {
           annual_rate: number
           annual_rate_max: number | null
           annual_rate_min: number | null
+          cancellation_fee: number | null
+          cleaning_fee: number | null
           created_at: string | null
           currency: string | null
           daily_rate: number
@@ -4086,19 +4262,27 @@ export type Database = {
           daily_rate_min: number | null
           effective_from: string | null
           effective_to: string | null
+          excess_mileage_rate: number | null
           extra_km_charge: number | null
+          fuel_policy: string | null
           id: string
           included_km_annual: number | null
           included_km_daily: number | null
           included_km_monthly: number | null
           included_km_weekly: number | null
           is_active: boolean | null
+          late_return_hourly_rate: number | null
+          mileage_limit_daily: number | null
+          mileage_limit_monthly: number | null
+          mileage_limit_weekly: number | null
           monthly_rate: number
           monthly_rate_max: number | null
           monthly_rate_min: number | null
+          peak_season_multiplier: number | null
           security_deposit: number | null
           updated_at: string | null
           vehicle_id: string
+          weekend_multiplier: number | null
           weekly_rate: number
           weekly_rate_max: number | null
           weekly_rate_min: number | null
@@ -4107,6 +4291,8 @@ export type Database = {
           annual_rate?: number
           annual_rate_max?: number | null
           annual_rate_min?: number | null
+          cancellation_fee?: number | null
+          cleaning_fee?: number | null
           created_at?: string | null
           currency?: string | null
           daily_rate?: number
@@ -4114,19 +4300,27 @@ export type Database = {
           daily_rate_min?: number | null
           effective_from?: string | null
           effective_to?: string | null
+          excess_mileage_rate?: number | null
           extra_km_charge?: number | null
+          fuel_policy?: string | null
           id?: string
           included_km_annual?: number | null
           included_km_daily?: number | null
           included_km_monthly?: number | null
           included_km_weekly?: number | null
           is_active?: boolean | null
+          late_return_hourly_rate?: number | null
+          mileage_limit_daily?: number | null
+          mileage_limit_monthly?: number | null
+          mileage_limit_weekly?: number | null
           monthly_rate?: number
           monthly_rate_max?: number | null
           monthly_rate_min?: number | null
+          peak_season_multiplier?: number | null
           security_deposit?: number | null
           updated_at?: string | null
           vehicle_id: string
+          weekend_multiplier?: number | null
           weekly_rate?: number
           weekly_rate_max?: number | null
           weekly_rate_min?: number | null
@@ -4135,6 +4329,8 @@ export type Database = {
           annual_rate?: number
           annual_rate_max?: number | null
           annual_rate_min?: number | null
+          cancellation_fee?: number | null
+          cleaning_fee?: number | null
           created_at?: string | null
           currency?: string | null
           daily_rate?: number
@@ -4142,22 +4338,87 @@ export type Database = {
           daily_rate_min?: number | null
           effective_from?: string | null
           effective_to?: string | null
+          excess_mileage_rate?: number | null
           extra_km_charge?: number | null
+          fuel_policy?: string | null
           id?: string
           included_km_annual?: number | null
           included_km_daily?: number | null
           included_km_monthly?: number | null
           included_km_weekly?: number | null
           is_active?: boolean | null
+          late_return_hourly_rate?: number | null
+          mileage_limit_daily?: number | null
+          mileage_limit_monthly?: number | null
+          mileage_limit_weekly?: number | null
           monthly_rate?: number
           monthly_rate_max?: number | null
           monthly_rate_min?: number | null
+          peak_season_multiplier?: number | null
           security_deposit?: number | null
           updated_at?: string | null
           vehicle_id?: string
+          weekend_multiplier?: number | null
           weekly_rate?: number
           weekly_rate_max?: number | null
           weekly_rate_min?: number | null
+        }
+        Relationships: []
+      }
+      vehicle_transfers: {
+        Row: {
+          approved_by: string | null
+          company_id: string
+          completed_date: string | null
+          condition_notes: string | null
+          created_at: string | null
+          from_branch_id: string | null
+          fuel_level: number | null
+          id: string
+          odometer_reading: number | null
+          requested_by: string | null
+          status: string | null
+          to_branch_id: string
+          transfer_date: string
+          transfer_reason: string | null
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          company_id: string
+          completed_date?: string | null
+          condition_notes?: string | null
+          created_at?: string | null
+          from_branch_id?: string | null
+          fuel_level?: number | null
+          id?: string
+          odometer_reading?: number | null
+          requested_by?: string | null
+          status?: string | null
+          to_branch_id: string
+          transfer_date?: string
+          transfer_reason?: string | null
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          company_id?: string
+          completed_date?: string | null
+          condition_notes?: string | null
+          created_at?: string | null
+          from_branch_id?: string | null
+          fuel_level?: number | null
+          id?: string
+          odometer_reading?: number | null
+          requested_by?: string | null
+          status?: string | null
+          to_branch_id?: string
+          transfer_date?: string
+          transfer_reason?: string | null
+          updated_at?: string | null
+          vehicle_id?: string
         }
         Relationships: []
       }
@@ -4166,8 +4427,12 @@ export type Database = {
           accumulated_depreciation: number | null
           additional_features: string[] | null
           annual_depreciation_rate: number | null
+          asset_classification: string | null
+          asset_code: string | null
+          assigned_driver_id: string | null
           body_type: string | null
           book_value: number | null
+          branch_id: string | null
           cargo_capacity: number | null
           category_id: string | null
           color: string | null
@@ -4183,10 +4448,13 @@ export type Database = {
           engine_number: string | null
           engine_size: string | null
           features: Json | null
+          financing_type: string | null
           fixed_asset_id: string | null
           fuel_capacity: number | null
+          fuel_card_number: string | null
           fuel_level: number | null
           fuel_type: string | null
+          gps_device_id: string | null
           id: string
           images: Json | null
           insurance_end_date: string | null
@@ -4198,12 +4466,17 @@ export type Database = {
           insurance_start_date: string | null
           is_active: boolean | null
           last_maintenance_date: string | null
+          last_service_date: string | null
           last_service_mileage: number | null
           license_expiry: string | null
+          loan_amount: number | null
           location: string | null
           make: string
+          manufacturer: string | null
           model: string
+          monthly_payment: number | null
           monthly_rate: number | null
+          next_service_due: string | null
           next_service_mileage: number | null
           notes: string | null
           odometer_reading: number | null
@@ -4211,13 +4484,16 @@ export type Database = {
           purchase_cost: number | null
           purchase_date: string | null
           purchase_invoice_number: string | null
+          purchase_source: string | null
           registration_date: string | null
           registration_expiry: string | null
           registration_fees: number | null
           registration_number: string | null
           residual_value: number | null
           safety_features: string[] | null
+          salvage_value: number | null
           seating_capacity: number | null
+          service_interval_km: number | null
           status: Database["public"]["Enums"]["vehicle_status"] | null
           total_insurance_cost: number | null
           total_maintenance_cost: number | null
@@ -4232,6 +4508,7 @@ export type Database = {
           vin: string | null
           vin_number: string | null
           warranty_end_date: string | null
+          warranty_expiry: string | null
           warranty_provider: string | null
           warranty_start_date: string | null
           weekly_rate: number | null
@@ -4241,8 +4518,12 @@ export type Database = {
           accumulated_depreciation?: number | null
           additional_features?: string[] | null
           annual_depreciation_rate?: number | null
+          asset_classification?: string | null
+          asset_code?: string | null
+          assigned_driver_id?: string | null
           body_type?: string | null
           book_value?: number | null
+          branch_id?: string | null
           cargo_capacity?: number | null
           category_id?: string | null
           color?: string | null
@@ -4258,10 +4539,13 @@ export type Database = {
           engine_number?: string | null
           engine_size?: string | null
           features?: Json | null
+          financing_type?: string | null
           fixed_asset_id?: string | null
           fuel_capacity?: number | null
+          fuel_card_number?: string | null
           fuel_level?: number | null
           fuel_type?: string | null
+          gps_device_id?: string | null
           id?: string
           images?: Json | null
           insurance_end_date?: string | null
@@ -4273,12 +4557,17 @@ export type Database = {
           insurance_start_date?: string | null
           is_active?: boolean | null
           last_maintenance_date?: string | null
+          last_service_date?: string | null
           last_service_mileage?: number | null
           license_expiry?: string | null
+          loan_amount?: number | null
           location?: string | null
           make: string
+          manufacturer?: string | null
           model: string
+          monthly_payment?: number | null
           monthly_rate?: number | null
+          next_service_due?: string | null
           next_service_mileage?: number | null
           notes?: string | null
           odometer_reading?: number | null
@@ -4286,13 +4575,16 @@ export type Database = {
           purchase_cost?: number | null
           purchase_date?: string | null
           purchase_invoice_number?: string | null
+          purchase_source?: string | null
           registration_date?: string | null
           registration_expiry?: string | null
           registration_fees?: number | null
           registration_number?: string | null
           residual_value?: number | null
           safety_features?: string[] | null
+          salvage_value?: number | null
           seating_capacity?: number | null
+          service_interval_km?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"] | null
           total_insurance_cost?: number | null
           total_maintenance_cost?: number | null
@@ -4307,6 +4599,7 @@ export type Database = {
           vin?: string | null
           vin_number?: string | null
           warranty_end_date?: string | null
+          warranty_expiry?: string | null
           warranty_provider?: string | null
           warranty_start_date?: string | null
           weekly_rate?: number | null
@@ -4316,8 +4609,12 @@ export type Database = {
           accumulated_depreciation?: number | null
           additional_features?: string[] | null
           annual_depreciation_rate?: number | null
+          asset_classification?: string | null
+          asset_code?: string | null
+          assigned_driver_id?: string | null
           body_type?: string | null
           book_value?: number | null
+          branch_id?: string | null
           cargo_capacity?: number | null
           category_id?: string | null
           color?: string | null
@@ -4333,10 +4630,13 @@ export type Database = {
           engine_number?: string | null
           engine_size?: string | null
           features?: Json | null
+          financing_type?: string | null
           fixed_asset_id?: string | null
           fuel_capacity?: number | null
+          fuel_card_number?: string | null
           fuel_level?: number | null
           fuel_type?: string | null
+          gps_device_id?: string | null
           id?: string
           images?: Json | null
           insurance_end_date?: string | null
@@ -4348,12 +4648,17 @@ export type Database = {
           insurance_start_date?: string | null
           is_active?: boolean | null
           last_maintenance_date?: string | null
+          last_service_date?: string | null
           last_service_mileage?: number | null
           license_expiry?: string | null
+          loan_amount?: number | null
           location?: string | null
           make?: string
+          manufacturer?: string | null
           model?: string
+          monthly_payment?: number | null
           monthly_rate?: number | null
+          next_service_due?: string | null
           next_service_mileage?: number | null
           notes?: string | null
           odometer_reading?: number | null
@@ -4361,13 +4666,16 @@ export type Database = {
           purchase_cost?: number | null
           purchase_date?: string | null
           purchase_invoice_number?: string | null
+          purchase_source?: string | null
           registration_date?: string | null
           registration_expiry?: string | null
           registration_fees?: number | null
           registration_number?: string | null
           residual_value?: number | null
           safety_features?: string[] | null
+          salvage_value?: number | null
           seating_capacity?: number | null
+          service_interval_km?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"] | null
           total_insurance_cost?: number | null
           total_maintenance_cost?: number | null
@@ -4382,12 +4690,27 @@ export type Database = {
           vin?: string | null
           vin_number?: string | null
           warranty_end_date?: string | null
+          warranty_expiry?: string | null
           warranty_provider?: string | null
           warranty_start_date?: string | null
           weekly_rate?: number | null
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_vehicles_assigned_driver"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_vehicles_branch"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vehicles_category_id_fkey"
             columns: ["category_id"]
@@ -4748,6 +5071,10 @@ export type Database = {
       generate_traffic_payment_number: {
         Args: { company_id_param: string }
         Returns: string
+      }
+      generate_vehicle_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       get_account_balances: {
         Args: {

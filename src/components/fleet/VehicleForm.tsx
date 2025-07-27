@@ -85,6 +85,20 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       deposit_amount: "",
       status: "available",
       
+      // Enhanced Fields
+      manufacturer: "",
+      purchase_source: "",
+      asset_code: "",
+      asset_classification: "vehicle",
+      financing_type: "cash",
+      loan_amount: "",
+      monthly_payment: "",
+      warranty_expiry: "",
+      service_interval_km: 10000,
+      last_service_date: "",
+      fuel_card_number: "",
+      gps_device_id: "",
+      
       // Additional Information
       notes: "",
       cost_center_id: "",
@@ -336,51 +350,121 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                     <CardTitle>المعلومات الأساسية للمركبة</CardTitle>
                     <CardDescription>التفاصيل الأساسية حول المركبة</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="plate_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>رقم اللوحة *</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="أدخل رقم اللوحة" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                   <CardContent className="space-y-4">
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <FormField
+                         control={form.control}
+                         name="manufacturer"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>الشركة المصنعة</FormLabel>
+                             <FormControl>
+                               <Input {...field} placeholder="مثال: Toyota Motors" />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                       
+                       <FormField
+                         control={form.control}
+                         name="make"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>الماركة *</FormLabel>
+                             <FormControl>
+                               <Input {...field} placeholder="مثال: تويوتا" />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                       
+                       <FormField
+                         control={form.control}
+                         name="model"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>الطراز *</FormLabel>
+                             <FormControl>
+                               <Input {...field} placeholder="مثال: كامري" />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="make"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>الشركة المصنعة *</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="مثال: تويوتا" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <FormField
+                         control={form.control}
+                         name="asset_code"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>رمز الأصل</FormLabel>
+                             <FormControl>
+                               <Input {...field} placeholder="مثال: VEH-001" />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                       
+                       <FormField
+                         control={form.control}
+                         name="purchase_source"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>مصدر الشراء</FormLabel>
+                             <FormControl>
+                               <Input {...field} placeholder="مثال: وكالة، معرض، مزاد" />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                       
+                       <FormField
+                         control={form.control}
+                         name="financing_type"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>نوع التمويل</FormLabel>
+                             <FormControl>
+                               <Select onValueChange={field.onChange} value={field.value}>
+                                 <SelectTrigger>
+                                   <SelectValue placeholder="اختر نوع التمويل" />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value="cash">نقدي</SelectItem>
+                                   <SelectItem value="loan">قرض</SelectItem>
+                                   <SelectItem value="lease">إيجار تمويلي</SelectItem>
+                                   <SelectItem value="installment">تقسيط</SelectItem>
+                                 </SelectContent>
+                               </Select>
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="model"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>الطراز *</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              placeholder="مثال: كامري"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <FormField
+                         control={form.control}
+                         name="plate_number"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>رقم اللوحة *</FormLabel>
+                             <FormControl>
+                               <Input {...field} placeholder="أدخل رقم اللوحة" />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </div>
+
 
                     <FormField
                       control={form.control}
