@@ -1524,6 +1524,105 @@ export type Database = {
           },
         ]
       }
+      fleet_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_scheduled: boolean | null
+          last_generated_at: string | null
+          report_config: Json
+          report_name: string
+          report_name_ar: string | null
+          report_type: string
+          schedule_config: Json | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_scheduled?: boolean | null
+          last_generated_at?: string | null
+          report_config?: Json
+          report_name: string
+          report_name_ar?: string | null
+          report_type: string
+          schedule_config?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_scheduled?: boolean | null
+          last_generated_at?: string | null
+          report_config?: Json
+          report_name?: string
+          report_name_ar?: string | null
+          report_type?: string
+          schedule_config?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fuel_records: {
+        Row: {
+          company_id: string
+          cost_per_liter: number
+          created_at: string
+          created_by: string | null
+          fuel_date: string
+          fuel_station: string | null
+          fuel_type: string
+          id: string
+          notes: string | null
+          odometer_reading: number | null
+          quantity_liters: number
+          receipt_number: string | null
+          total_cost: number
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          company_id: string
+          cost_per_liter: number
+          created_at?: string
+          created_by?: string | null
+          fuel_date?: string
+          fuel_station?: string | null
+          fuel_type?: string
+          id?: string
+          notes?: string | null
+          odometer_reading?: number | null
+          quantity_liters: number
+          receipt_number?: string | null
+          total_cost: number
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          company_id?: string
+          cost_per_liter?: number
+          created_at?: string
+          created_by?: string | null
+          fuel_date?: string
+          fuel_station?: string | null
+          fuel_type?: string
+          id?: string
+          notes?: string | null
+          odometer_reading?: number | null
+          quantity_liters?: number
+          receipt_number?: string | null
+          total_cost?: number
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       hr_settings: {
         Row: {
           allow_negative_balance: boolean
@@ -2195,6 +2294,42 @@ export type Database = {
           sms_notifications?: boolean | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      odometer_readings: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          odometer_reading: number
+          reading_date: string
+          reading_type: string
+          recorded_by: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          odometer_reading: number
+          reading_date?: string
+          reading_type?: string
+          recorded_by?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          odometer_reading?: number
+          reading_date?: string
+          reading_type?: string
+          recorded_by?: string | null
+          vehicle_id?: string
         }
         Relationships: []
       }
@@ -3701,6 +3836,54 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_operating_costs: {
+        Row: {
+          amount: number
+          company_id: string
+          cost_center_id: string | null
+          cost_date: string
+          cost_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          journal_entry_id: string | null
+          receipt_number: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          cost_center_id?: string | null
+          cost_date?: string
+          cost_type: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          receipt_number?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          cost_center_id?: string | null
+          cost_date?: string
+          cost_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          receipt_number?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       vehicle_pricing: {
         Row: {
           annual_rate: number
@@ -4161,6 +4344,20 @@ export type Database = {
           late_days: number
           absent_days: number
           overtime_hours: number
+        }[]
+      }
+      calculate_fuel_efficiency: {
+        Args: {
+          vehicle_id_param: string
+          start_date?: string
+          end_date?: string
+        }
+        Returns: {
+          total_fuel_liters: number
+          total_distance_km: number
+          fuel_efficiency_km_per_liter: number
+          average_cost_per_liter: number
+          total_fuel_cost: number
         }[]
       }
       calculate_vehicle_total_costs: {

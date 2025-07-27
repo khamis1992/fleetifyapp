@@ -6,6 +6,7 @@ import { FleetAnalyticsDashboard } from "@/components/fleet/FleetAnalyticsDashbo
 import { FleetMaintenancePanel } from "@/components/fleet/FleetMaintenancePanel"
 import { FleetFinancialPanel } from "@/components/fleet/FleetFinancialPanel"
 import { VehicleManagementPanel } from "@/components/fleet/VehicleManagementPanel"
+import { FuelManagementPanel } from "@/components/fleet/FuelManagementPanel"
 
 export default function FleetDashboard() {
   return (
@@ -22,10 +23,11 @@ export default function FleetDashboard() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
           <TabsTrigger value="vehicles">إدارة المركبات</TabsTrigger>
           <TabsTrigger value="maintenance">الصيانة</TabsTrigger>
+          <TabsTrigger value="fuel">الوقود</TabsTrigger>
           <TabsTrigger value="analytics">التحليلات</TabsTrigger>
           <TabsTrigger value="financial">المالية</TabsTrigger>
         </TabsList>
@@ -40,6 +42,10 @@ export default function FleetDashboard() {
 
         <TabsContent value="maintenance" className="space-y-6">
           <FleetMaintenancePanel />
+        </TabsContent>
+
+        <TabsContent value="fuel" className="space-y-6">
+          <FuelManagementPanel />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
