@@ -15,6 +15,7 @@ import { AlertCircle, CheckCircle2, Building2, User, Phone, Mail, MapPin } from 
 import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerFormProps {
   open: boolean;
@@ -48,6 +49,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const createCustomerMutation = useCreateCustomer();
   const updateCustomerMutation = useUpdateCustomer();
   const isSuperAdmin = user?.roles?.includes('super_admin');
+  const { toast } = useToast();
 
   console.log('👤 CustomerForm render:', { 
     open, 
@@ -106,6 +108,76 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
       setSelectedCompanyId('');
     }
   }, [open, customer, mode, reset]);
+
+  // Fill dummy data function
+  const fillDummyData = () => {
+    const randomId = Math.floor(Math.random() * 1000)
+    
+    // Generate dummy data for individual customer
+    const dummyDataIndividual = {
+      customer_type: 'individual' as const,
+      first_name: 'أحمد',
+      last_name: 'محمد',
+      first_name_ar: 'أحمد',
+      last_name_ar: 'محمد',
+      email: `ahmed.mohamed${randomId}@example.com`,
+      phone: `+965 ${20000000 + randomId}`,
+      alternative_phone: `+965 ${50000000 + randomId}`,
+      national_id: `${290000000000 + randomId}`,
+      passport_number: `K${String(randomId).padStart(7, '0')}`,
+      license_number: `L${String(randomId).padStart(8, '0')}`,
+      address: 'شارع الخليج العربي، قطعة 3، منزل 15',
+      address_ar: 'شارع الخليج العربي، قطعة 3، منزل 15',
+      city: 'Kuwait City',
+      country: 'Kuwait',
+      date_of_birth: '1990-05-15',
+      credit_limit: 5000,
+      emergency_contact_name: 'فاطمة أحمد',
+      emergency_contact_phone: `+965 ${60000000 + randomId}`,
+      notes: 'عميل موثوق، يدفع في الموعد المحدد، يفضل التعامل صباحاً.'
+    }
+
+    // Generate dummy data for corporate customer
+    const dummyDataCorporate = {
+      customer_type: 'corporate' as const,
+      first_name: '',
+      last_name: '',
+      first_name_ar: '',
+      last_name_ar: '',
+      company_name: 'شركة التجارة المتقدمة',
+      company_name_ar: 'شركة التجارة المتقدمة',
+      email: `info${randomId}@tradingcompany.com`,
+      phone: `+965 ${22000000 + randomId}`,
+      alternative_phone: `+965 ${55000000 + randomId}`,
+      national_id: '',
+      passport_number: '',
+      license_number: `CR${String(randomId).padStart(8, '0')}`,
+      address: 'شارع أحمد الجابر، برج التجارة، الطابق العاشر، مكتب 1005',
+      address_ar: 'شارع أحمد الجابر، برج التجارة، الطابق العاشر، مكتب 1005',
+      city: 'Kuwait City',
+      country: 'Kuwait',
+      date_of_birth: '',
+      credit_limit: 25000,
+      emergency_contact_name: 'مدير المبيعات',
+      emergency_contact_phone: `+965 ${66000000 + randomId}`,
+      notes: 'شركة رائدة في مجال التجارة، تتعامل بمبالغ كبيرة، دورة دفع شهرية.'
+    }
+
+    // Use current customer type or default to individual
+    const currentType = customerType || 'individual'
+    const dummyData = currentType === 'individual' ? dummyDataIndividual : dummyDataCorporate
+    
+    // Fill form with dummy data
+    Object.entries(dummyData).forEach(([key, value]) => {
+      setValue(key as any, value)
+    })
+    
+    // Show success message
+    toast({
+      title: "تم تعبئة البيانات",
+      description: "تم ملء النموذج ببيانات تجريبية. يمكنك تعديلها حسب الحاجة.",
+    })
+  }
 
   const onSubmit = async (data: CustomerFormData) => {
     setIsSubmitting(true);
@@ -457,22 +529,37 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end gap-3 pt-6 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
-              إلغاء
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading || (isSuperAdmin && mode === 'create' && !selectedCompanyId)}
-            >
-              {isLoading && <LoadingSpinner size="sm" className="ml-2" />}
-              {mode === 'create' ? 'إضافة العميل' : 'حفظ التغييرات'}
-            </Button>
+          <div className="flex justify-between items-center pt-6 border-t">
+            {/* Dummy data button - only show when adding new customer */}
+            {mode === 'create' && (
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={fillDummyData}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                تعبئة بيانات تجريبية
+              </Button>
+            )}
+            
+            <div className="flex gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                disabled={isLoading}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isLoading || (isSuperAdmin && mode === 'create' && !selectedCompanyId)}
+              >
+                {isLoading && <LoadingSpinner size="sm" className="ml-2" />}
+                {mode === 'create' ? 'إضافة العميل' : 'حفظ التغييرات'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
