@@ -9,88 +9,89 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Executive Dashboard - Premium Business Base */
-    --background: 240 249 255; /* Crisp ice blue background */
-    --background-soft: 248 250 252; /* Premium surface */
-    --foreground: 15 23 42; /* Professional slate gray text */
+    /* Primary Kuwait Business Blue - Professional and trustworthy */
+    --primary: 210 100% 12%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 210 100% 20%;
+    --primary-glow: 210 100% 25%;
     
-    /* Executive Glass Card System */
-    --card: 255 255 255; /* Pure white cards */
-    --card-foreground: 15 23 42;
-    --card-hover: 219 95 97; /* Subtle blue hover */
-    --card-glass: 255 255 255 / 0.8; /* Glass morphism */
+    /* Kuwait Gold Accent - Luxury and prosperity */
+    --accent: 45 85% 50%;
+    --accent-foreground: 210 100% 12%;
+    --accent-light: 45 85% 60%;
+    --accent-muted: 45 85% 95%;
     
-    /* Executive Navy Primary - Strategic and Authoritative */
-    --primary: 219 78 19; /* Executive navy blue */
-    --primary-foreground: 248 250 252; /* Clean white text */
-    --primary-dark: 219 70 15; /* Deep navy for depth */
-    --primary-light: 219 85 35; /* Lighter executive blue */
-    --primary-glow: 219 78 19 / 0.25;
+    /* Professional Secondary Colors */
+    --secondary: 220 15% 95%;
+    --secondary-foreground: 210 100% 12%;
+    --secondary-dark: 220 15% 85%;
     
-    /* Premium Corporate Gold Accent System */
-    --accent: 45 93 47; /* Premium gold accent */
-    --accent-foreground: 15 23 42; /* Dark text on accent */
-    --accent-light: 48 96 65; /* Bright gold highlights */
-    --accent-muted: 50 80 95; /* Subtle gold tint */
+    /* Background System */
+    --background: 0 0% 100%;
+    --background-soft: 220 15% 98%;
+    --foreground: 220 25% 10%;
     
-    /* Platinum Elegance Secondary */
-    --secondary: 214 32 91; /* Sophisticated platinum */
-    --secondary-foreground: 15 23 42; /* Dark text on secondary */
-    --secondary-dark: 210 20 78; /* Darker platinum */
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+    --card-hover: 220 15% 98%;
     
     /* Interactive Elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 25 25% 15%;
+    --popover-foreground: 220 25% 10%;
     
-    /* Executive Muted Elements */
-    --muted: 241 245 249; /* Refined muted background */
-    --muted-foreground: 100 116 139; /* Professional muted text */
+    /* Muted Elements */
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 15% 45%;
     
-    /* Executive Status Colors - Professional Indicators */
-    --success: 142 71 24; /* Confident emerald */
-    --success-foreground: 248 250 252;
-    --warning: 32 95 44; /* Alert amber */
-    --warning-foreground: 15 23 42;
-    --destructive: 0 72 51; /* Critical red */
-    --destructive-foreground: 248 250 252;
+    /* Status Colors */
+    --success: 140 70% 35%;
+    --success-foreground: 0 0% 98%;
+    --warning: 35 100% 50%;
+    --warning-foreground: 220 25% 10%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
     
-    /* Premium Borders and Inputs */
-    --border: 226 232 240; /* Clean border */
-    --input: 226 232 240;
-    --ring: 219 78 19; /* Executive focus ring */
+    /* Borders and Inputs */
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 210 100% 12%;
     
-    /* Executive Gradient System */
+    /* Professional Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
-    --gradient-executive: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--background)), hsl(var(--background-soft)));
-    --gradient-glass: linear-gradient(145deg, hsl(var(--card) / 0.8), hsl(var(--background-soft) / 0.9));
-    --gradient-surface: linear-gradient(145deg, hsl(var(--card)), hsl(var(--muted)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-light)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-muted: linear-gradient(180deg, hsl(var(--muted)) 0%, hsl(var(--secondary)) 100%);
+    --gradient-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     
-    /* Premium Shadow System */
-    --shadow-subtle: 0 2px 12px -2px hsl(var(--primary) / 0.08);
-    --shadow-card: 0 8px 32px -8px hsl(var(--primary) / 0.12);
-    --shadow-elevated: 0 20px 60px -12px hsl(var(--primary) / 0.18);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow));
-    --shadow-glass: 0 8px 32px 0 hsl(var(--primary) / 0.08);
+    /* Professional Shadows */
+    --shadow-card: 0 4px 12px -2px hsl(var(--primary) / 0.08);
+    --shadow-elevated: 0 8px 24px -4px hsl(var(--primary) / 0.12);
+    --shadow-accent: 0 4px 16px -2px hsl(var(--accent) / 0.25);
+    --shadow-glow: 0 0 32px hsl(var(--primary-glow) / 0.15);
+    --shadow-float: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.12);
     
-    /* Executive Motion System */
+/* Animation System */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    --transition-glass: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --transition-executive: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-fast: all 0.15s ease-out;
+    --transition-glow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     
     --radius: 0.75rem;
 
-    /* Executive Sidebar Variables */
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 15 23 42;
-    --sidebar-primary: 219 78 19;
-    --sidebar-primary-foreground: 248 250 252;
-    --sidebar-accent: 214 32 91;
-    --sidebar-accent-foreground: 15 23 42;
-    --sidebar-border: 226 232 240;
-    --sidebar-ring: 219 78 19;
+    /* Sidebar Variables */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
@@ -268,16 +269,8 @@ All colors MUST be HSL.
     background: var(--gradient-card);
   }
   
-  .bg-gradient-glass {
-    background: var(--gradient-glass);
-  }
-  
-  .bg-gradient-surface {
-    background: var(--gradient-surface);
-  }
-  
-  .bg-gradient-executive {
-    background: var(--gradient-executive);
+  .bg-gradient-muted {
+    background: var(--gradient-muted);
   }
   
   /* Custom shadow utilities */
@@ -295,10 +288,6 @@ All colors MUST be HSL.
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
-  }
-  
-  .shadow-glass {
-    box-shadow: var(--shadow-glass);
   }
   
   .transition-smooth {

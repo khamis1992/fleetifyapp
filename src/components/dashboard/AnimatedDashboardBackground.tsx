@@ -1,18 +1,21 @@
 import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { Suspense } from 'react';
+import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
 
 function AnimatedSphere() {
   return (
-    <mesh scale={2}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial
-        color="#6366f1"
-        transparent
-        opacity={0.1}
+    <Sphere visible args={[1, 100, 200]} scale={2}>
+      <MeshDistortMaterial
+        color="hsl(var(--primary))"
+        attach="material"
+        distort={0.3}
+        speed={1.5}
         roughness={0}
+        opacity={0.1}
+        transparent
       />
-    </mesh>
+    </Sphere>
   );
 }
 
@@ -22,6 +25,7 @@ function Scene() {
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
       <AnimatedSphere />
+      <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
     </>
   );
 }
@@ -71,8 +75,8 @@ export function AnimatedDashboardBackground() {
         ))}
       </div>
 
-      {/* Simplified 3D Scene */}
-      <div className="absolute inset-0 opacity-20">
+      {/* 3D Scene */}
+      <div className="absolute inset-0 opacity-30">
         <Canvas camera={{ position: [0, 0, 5] }}>
           <Suspense fallback={null}>
             <Scene />

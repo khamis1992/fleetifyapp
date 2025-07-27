@@ -5,13 +5,37 @@ import { useEnhancedDashboardStats } from '@/hooks/useEnhancedDashboardStats';
 import { useEnhancedRecentActivities } from '@/hooks/useEnhancedRecentActivities';
 import { useSmartAlerts } from '@/hooks/useSmartAlerts';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
-import ModernBackground from '@/components/dashboard/ModernBackground';
-import ExecutiveDashboardCard from '@/components/dashboard/ExecutiveDashboardCard';
-import AdminMetricsGrid from '@/components/dashboard/AdminMetricsGrid';
-import SmartInsightsPanel from '@/components/dashboard/SmartInsightsPanel';
-import QuickActionsPanel from '@/components/dashboard/QuickActionsPanel';
-import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
-import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Crown, Shield } from 'lucide-react';
+import { AnimatedDashboardBackground } from '@/components/dashboard/AnimatedDashboardBackground';
+import { Enhanced3DStatsGrid } from '@/components/dashboard/Enhanced3DStatsGrid';
+import { ParallaxRecentActivities } from '@/components/dashboard/ParallaxRecentActivities';
+import { InteractiveDashboardCard } from '@/components/dashboard/InteractiveDashboardCard';
+import { SmartAlertsPanel } from '@/components/dashboard/SmartAlertsPanel';
+import { FinancialOverviewCard } from '@/components/dashboard/FinancialOverviewCard';
+import { 
+  Car, 
+  FileText, 
+  Users, 
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
+  Calendar,
+  Plus,
+  Activity,
+  ArrowRight,
+  Zap,
+  Sparkles
+} from 'lucide-react';
+
+// Helper function to get icon component by name
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    FileText,
+    AlertTriangle,
+    Users,
+    Activity
+  };
+  return iconMap[iconName] || Activity;
+};
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -20,36 +44,11 @@ const Dashboard: React.FC = () => {
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
 
-  // Convert financial overview data to the format expected by SmartMetricsPanel
-  const smartMetricsData = financialOverview ? {
-    totalRevenue: financialOverview.totalRevenue || 0,
-    monthlyRevenue: financialOverview.monthlyTrend?.[financialOverview.monthlyTrend.length - 1]?.revenue || 0,
-    totalProfit: financialOverview.netIncome || 0,
-    profitMargin: financialOverview.profitMargin || 0,
-    monthlyGrowth: 0, // Calculate based on monthly trend if needed
-    activeContracts: 0, // This would need to come from a different source
-    pendingPayments: 0, // This would need to come from a different source
-    overduePayments: 0, // This would need to come from a different source
-  } : undefined;
-
-  // Convert smart alerts to the format expected by MinimalAlertSystem
-  const convertedAlerts = smartAlerts?.map(alert => ({
-    id: alert.id,
-    title: alert.title,
-    message: alert.message,
-    type: alert.type,
-    priority: alert.priority,
-    timestamp: new Date(alert.created_at).toLocaleDateString('ar-EG', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }),
-    action: alert.action ? {
-      label: alert.action,
-      onClick: () => window.location.href = alert.actionUrl || '#'
-    } : undefined
-  })) || [];
+  // Check if this is a new company with no data
+  const isNewCompany = !statsLoading && enhancedStats && 
+    enhancedStats.totalVehicles === 0 && 
+    enhancedStats.totalCustomers === 0 && 
+    enhancedStats.activeContracts === 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -58,167 +57,189 @@ const Dashboard: React.FC = () => {
     return "مساء الخير";
   };
 
-  // Executive KPI Configuration
-  const executiveKPIs = [
-    {
-      title: 'إجمالي المركبات',
-      value: String(enhancedStats?.totalVehicles || 0),
-      change: String(enhancedStats?.vehiclesChange || '+0%'),
-      changeType: 'positive' as const,
-      icon: Car,
-      trend: 'up' as const,
-      description: 'مركبة في الأسطول النشط'
-    },
-    {
-      title: 'العملاء النشطين',
-      value: String(enhancedStats?.totalCustomers || 0),
-      change: String(enhancedStats?.customersChange || '+0%'),
-      changeType: 'positive' as const,
-      icon: Users,
-      trend: 'up' as const,
-      description: 'عميل مسجل ونشط'
-    },
-    {
-      title: 'العقود النشطة',
-      value: String(enhancedStats?.activeContracts || 0),
-      change: String(enhancedStats?.contractsChange || '+0%'),
-      changeType: 'neutral' as const,
-      icon: FileText,
-      trend: 'neutral' as const,
-      description: 'عقد ساري المفعول'
-    },
-    {
-      title: 'الإيرادات الشهرية',
-      value: `${enhancedStats?.monthlyRevenue || 0} د.ك`,
-      change: String(enhancedStats?.revenueChange || '+0%'),
-      changeType: 'positive' as const,
-      icon: DollarSign,
-      trend: 'up' as const,
-      description: 'الأداء المالي الحالي'
-    }
-  ];
 
   return (
     <>
-      <ModernBackground />
+      <AnimatedDashboardBackground />
       <div className="relative z-10 space-y-8">
-        {/* Executive Command Center Header */}
+        {/* Enhanced Hero Welcome Section */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-gradient-glass backdrop-blur-sm border-0 rounded-2xl p-8 shadow-glass"
+          transition={{ duration: 0.8 }}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card/80 via-card/60 to-background/80 border border-primary/20 backdrop-blur-xl shadow-2xl"
         >
-          <div className="flex items-center justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-3 rounded-xl bg-gradient-executive text-primary-foreground shadow-glow">
-                    <Crown size={24} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Shield size={16} className="text-primary" />
-                    <span className="text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                      لوحة التحكم التنفيذية
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h1 className="text-5xl font-bold text-foreground mb-3 arabic-heading-lg">
-                  {getGreeting()}، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المدير التنفيذي'}
-                </h1>
-                <p className="text-muted-foreground text-xl arabic-body-lg">
-                  إدارة استراتيجية شاملة لعمليات الشركة والمؤشرات الرئيسية
-                </p>
-              </div>
-            </div>
-            
-            <motion.div
-              className="hidden lg:flex items-center gap-4"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">آخر تحديث</div>
-                <div className="text-lg font-semibold text-foreground">
-                  {new Date().toLocaleDateString('ar-EG', { 
-                    month: 'long', 
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
-              </div>
+          {/* Dynamic background elements */}
+          <motion.div
+            className="absolute inset-0"
+            animate={{
+              background: [
+                'radial-gradient(circle at 20% 50%, hsl(var(--primary))/20, transparent 50%)',
+                'radial-gradient(circle at 80% 50%, hsl(var(--accent))/20, transparent 50%)',
+                'radial-gradient(circle at 50% 20%, hsl(var(--primary))/20, transparent 50%)',
+              ],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          />
+          
+          {/* Floating particles */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 3 }).map((_, i) => (
               <motion.div
-                animate={{ 
-                  rotate: [0, 360],
-                  scale: [1, 1.1, 1]
+                key={i}
+                className="absolute w-2 h-2 bg-primary/30 rounded-full"
+                animate={{
+                  x: [0, 100, 0],
+                  y: [0, -50, 0],
+                  opacity: [0, 1, 0],
+                  scale: [0, 1, 0],
                 }}
-                transition={{ 
-                  duration: 15, 
-                  repeat: Infinity, 
-                  ease: "linear" 
+                transition={{
+                  duration: 8 + i * 2,
+                  repeat: Infinity,
+                  delay: i * 2,
+                  ease: 'easeInOut',
                 }}
+                style={{
+                  left: `${20 + i * 30}%`,
+                  top: `${50 + i * 10}%`,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="relative p-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-6 flex-1">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 px-4 py-2 rounded-full border border-primary/20"
+                >
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">لوحة تحكم متقدمة</span>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
+                  <p className="text-xl text-muted-foreground font-medium mb-2">
+                    {getGreeting()}، {user?.profile?.first_name_ar || user?.profile?.first_name || user?.email?.split('@')[0] || 'الضيف'}! 👋
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                >
+                  <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-primary/90 to-accent bg-clip-text text-transparent leading-tight">
+                    لوحة التحكم
+                  </h1>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                >
+                  <p className="text-muted-foreground text-xl max-w-2xl leading-relaxed">
+                    نظرة شاملة على أداء شركتك وآخر التطورات في نظام إدارة الأسطول
+                  </p>
+                </motion.div>
+              </div>
+
+              {/* Interactive 3D Element */}
+              <motion.div 
+                className="hidden lg:block relative"
+                initial={{ opacity: 0, scale: 0.8, rotateY: -45 }}
+                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                transition={{ duration: 1, delay: 0.6 }}
               >
-                <div className="w-20 h-20 bg-gradient-executive text-primary-foreground rounded-2xl flex items-center justify-center shadow-glow">
-                  <Zap size={36} />
-                </div>
+                <motion.div
+                  className="relative"
+                  animate={{ 
+                    rotateY: [0, 360],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ 
+                    duration: 20, 
+                    repeat: Infinity, 
+                    ease: 'linear'
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl"></div>
+                  <div className="relative bg-gradient-to-br from-primary/20 to-accent/20 backdrop-blur-sm rounded-full p-12 border border-primary/30">
+                    <Activity className="h-16 w-16 text-primary" />
+                  </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
+            </div>
           </div>
         </motion.div>
 
-        {/* Executive KPI Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {executiveKPIs.map((kpi, index) => (
-            <ExecutiveDashboardCard
-              key={kpi.title}
-              title={kpi.title}
-              value={kpi.value}
-              change={kpi.change}
-              changeType={kpi.changeType}
-              icon={kpi.icon}
-              trend={kpi.trend}
-              description={kpi.description}
-              index={index}
-            />
-          ))}
-        </div>
+        {/* Enhanced 3D Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+        >
+          <Enhanced3DStatsGrid stats={enhancedStats} loading={statsLoading} />
+        </motion.div>
 
-        {/* Advanced Analytics Grid */}
-        <div className="space-y-8">
-          <AdminMetricsGrid 
-            metrics={[]}
-            loading={statsLoading} 
-          />
-        </div>
-
-        {/* Strategic Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Analytics Panel */}
-          <div className="lg:col-span-3 space-y-6">
-            <CleanActivityFeed 
+        {/* Main Content Grid with Parallax Effects */}
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1 }}
+        >
+          {/* Enhanced Recent Activities with Parallax */}
+          <div className="lg:col-span-2">
+            <ParallaxRecentActivities 
               activities={recentActivities} 
               loading={activitiesLoading} 
             />
           </div>
 
-          {/* Executive Sidebar */}
+          {/* Enhanced Sidebar with Interactive Cards */}
           <div className="space-y-6">
-            <QuickActionsPanel 
-              actions={[]}
-              loading={false} 
-            />
-            
-            <SmartInsightsPanel 
-              insights={[]} 
-              loading={alertsLoading} 
-            />
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 1.2 }}
+            >
+              <InteractiveDashboardCard
+                title="التنبيهات الذكية"
+                description="تنبيهات مهمة تحتاج لانتباهك"
+                icon={AlertTriangle}
+                glowColor="hsl(var(--warning))"
+                gradient
+              >
+                <SmartAlertsPanel alerts={smartAlerts || []} loading={alertsLoading} />
+              </InteractiveDashboardCard>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 1.4 }}
+            >
+              <InteractiveDashboardCard
+                title="النظرة المالية"
+                description="ملخص الوضع المالي للشركة"
+                icon={DollarSign}
+                glowColor="hsl(var(--success))"
+                gradient
+              >
+                <FinancialOverviewCard data={financialOverview} loading={financialLoading} />
+              </InteractiveDashboardCard>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </>
   );
