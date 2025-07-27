@@ -1,17 +1,25 @@
 import { useState } from "react"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench } from "lucide-react"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { VehicleForm } from "@/components/fleet/VehicleForm"
 import { VehicleCard } from "@/components/fleet/VehicleCard"
+import { VehicleGroupManagement } from "@/components/fleet/VehicleGroupManagement"
+import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
 import { useVehicles } from "@/hooks/useVehicles"
+import { useSmartAlerts } from "@/hooks/useSmartAlerts"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Fleet() {
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
+  const [showGroupManagement, setShowGroupManagement] = useState(false)
   
+  const { user } = useAuth()
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles()
+  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
 
   const availableVehicles = vehicles?.filter(v => v.status === 'available') || []
   const rentedVehicles = vehicles?.filter(v => v.status === 'rented') || []
@@ -36,11 +44,37 @@ export default function Fleet() {
             إدارة أسطول المركبات والصيانة والعمليات
           </p>
         </div>
-        <Button onClick={() => setShowVehicleForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          إضافة مركبة
-        </Button>
+        <div className="flex items-center gap-2">
+          <Dialog open={showGroupManagement} onOpenChange={setShowGroupManagement}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Layers3 className="h-4 w-4 mr-2" />
+                مجموعات المركبات
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>إدارة مجموعات المركبات</DialogTitle>
+              </DialogHeader>
+              {user?.profile?.company_id && (
+                <VehicleGroupManagement companyId={user.profile.company_id} />
+              )}
+            </DialogContent>
+          </Dialog>
+          <Button onClick={() => setShowVehicleForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            إضافة مركبة
+          </Button>
+        </div>
       </div>
+
+      {/* Smart Alerts Panel */}
+      {smartAlerts && smartAlerts.length > 0 && (
+        <SmartAlertsPanel 
+          alerts={smartAlerts} 
+          loading={alertsLoading}
+        />
+      )}
 
       {/* Fleet Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

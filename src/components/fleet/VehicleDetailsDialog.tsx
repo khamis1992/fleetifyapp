@@ -3,13 +3,18 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
 import { Vehicle } from "@/hooks/useVehicles"
-import { Car, Wrench, FileText, DollarSign, Calendar, Gauge } from "lucide-react"
+import { Car, Wrench, FileText, DollarSign, Calendar, Gauge, Edit } from "lucide-react"
+import { VehicleInsurancePanel } from "@/components/fleet/VehicleInsurancePanel"
+import { VehicleDocumentsPanel } from "@/components/fleet/VehicleDocumentsPanel"
+import { VehiclePricingPanel } from "@/components/fleet/VehiclePricingPanel"
 
 interface VehicleDetailsDialogProps {
   vehicle: Vehicle
   open: boolean
   onOpenChange: (open: boolean) => void
+  onEdit?: (vehicle: Vehicle) => void
 }
 
 const statusColors = {
@@ -28,8 +33,13 @@ const statusLabels = {
   reserved: "محجوزة"
 }
 
-export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDetailsDialogProps) {
+export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: VehicleDetailsDialogProps) {
   const status = vehicle.status || 'available'
+
+  const handleDocumentAdd = (document: any) => {
+    // Handle document addition logic
+    console.log('Document added:', document)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,18 +55,27 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
                 تفاصيل ومعلومات المركبة
               </DialogDescription>
             </div>
-            <Badge className={statusColors[status]}>
-              {statusLabels[status]}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={statusColors[status]}>
+                {statusLabels[status]}
+              </Badge>
+              {onEdit && (
+                <Button variant="outline" size="sm" onClick={() => onEdit(vehicle)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  تعديل
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger value="specifications">المواصفات</TabsTrigger>
             <TabsTrigger value="financial">المالية</TabsTrigger>
-            <TabsTrigger value="maintenance">الصيانة</TabsTrigger>
+            <TabsTrigger value="pricing">التسعير</TabsTrigger>
+            <TabsTrigger value="insurance">التأمين</TabsTrigger>
             <TabsTrigger value="documents">الوثائق</TabsTrigger>
           </TabsList>
 
@@ -307,77 +326,19 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange }: VehicleDet
             </Card>
           </TabsContent>
 
-          <TabsContent value="maintenance" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4" />
-                  Maintenance History
-                </CardTitle>
-                <CardDescription>Recent maintenance activities and schedule</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center text-muted-foreground py-8">
-                  <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Maintenance history will be displayed here</p>
-                  <p className="text-sm">This feature is under development</p>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="pricing" className="space-y-4">
+            <VehiclePricingPanel vehicleId={vehicle.id} />
+          </TabsContent>
+
+          <TabsContent value="insurance" className="space-y-4">
+            <VehicleInsurancePanel vehicleId={vehicle.id} />
           </TabsContent>
 
           <TabsContent value="documents" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Vehicle Documents
-                </CardTitle>
-                <CardDescription>Insurance, registration, and other documents</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-semibold mb-2">Insurance Information</h4>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Policy:</span>
-                          <span>{vehicle.insurance_policy || 'Not specified'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Expires:</span>
-                          <span>
-                            {vehicle.insurance_expiry 
-                              ? new Date(vehicle.insurance_expiry).toLocaleDateString()
-                              : 'Not specified'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-semibold mb-2">License Information</h4>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Expires:</span>
-                          <span>
-                            {vehicle.license_expiry 
-                              ? new Date(vehicle.license_expiry).toLocaleDateString()
-                              : 'Not specified'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-center text-muted-foreground py-4">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Document management system coming soon</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <VehicleDocumentsPanel 
+              vehicleId={vehicle.id}
+              onDocumentAdd={handleDocumentAdd}
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -128,6 +128,51 @@ export const useSmartAlerts = () => {
         });
       }
 
+      // Check for vehicle registration expiry  
+      try {
+        const { data: vehiclesWithExpiringRegistration } = await supabase
+          .from('vehicles')
+          .select('id, plate_number, license_expiry')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .not('license_expiry', 'is', null)
+          .lte('license_expiry', nextMonth.toISOString().split('T')[0]);
+
+        if (vehiclesWithExpiringRegistration && vehiclesWithExpiringRegistration.length > 0) {
+          const urgentRegistrations = vehiclesWithExpiringRegistration.filter(vehicle => 
+            vehicle.license_expiry && new Date(vehicle.license_expiry) <= nextWeek
+          );
+          
+          if (urgentRegistrations.length > 0) {
+            alerts.push({
+              id: 'urgent-registration-expiry',
+              type: 'error',
+              title: 'رخص مركبات تنتهي خلال أسبوع',
+              message: `${urgentRegistrations.length} رخصة تنتهي خلال أسبوع`,
+              action: 'تجديد فوري',
+              actionUrl: '/fleet',
+              priority: 'high',
+              count: urgentRegistrations.length,
+              created_at: new Date().toISOString()
+            });
+          } else {
+            alerts.push({
+              id: 'expiring-registration',
+              type: 'warning',
+              title: 'رخص مركبات قاربت على الانتهاء',
+              message: `${vehiclesWithExpiringRegistration.length} رخصة تنتهي قريباً`,
+              action: 'تجديد الرخص',
+              actionUrl: '/fleet',
+              priority: 'medium',
+              count: vehiclesWithExpiringRegistration.length,
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking registration expiry:', error);
+      }
+
       // Check for low cash flow
       const { data: recentPayments } = await supabase
         .from('payments')

@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Car, MoreVertical, Wrench, Edit, Trash2, Eye } from "lucide-react"
 import { Vehicle } from "@/hooks/useVehicles"
-import { VehicleDetailsDialog } from "./VehicleDetailsDialog"
+import { EnhancedVehicleDetailsDialog } from "./EnhancedVehicleDetailsDialog"
 import { VehicleForm } from "./VehicleForm"
 
 interface VehicleCardProps {
@@ -115,10 +115,11 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         </CardFooter>
       </Card>
 
-      <VehicleDetailsDialog 
+      <EnhancedVehicleDetailsDialog 
         vehicle={vehicle}
         open={showDetails}
         onOpenChange={setShowDetails}
+        onEdit={() => setShowEditForm(true)}
       />
       
       <VehicleForm 
