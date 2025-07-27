@@ -9,42 +9,42 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Professional Light Cream Base */
-    --background: 45 50% 96%;
-    --background-soft: 45 40% 98%;
-    --foreground: 45 15% 15%;
+    /* Professional Deep Gray Base */
+    --background: 222 15% 7%;
+    --background-soft: 222 15% 9%;
+    --foreground: 210 20% 98%;
     
     /* Glass Morphism Card System */
-    --card: 45 60% 98%;
-    --card-foreground: 45 15% 15%;
-    --card-hover: 45 70% 99%;
-    --card-glass: 45 60% 98% / 0.9;
+    --card: 224 15% 9%;
+    --card-foreground: 210 20% 98%;
+    --card-hover: 224 15% 11%;
+    --card-glass: 224 15% 9% / 0.8;
     
-    /* Warm Amber Primary - Professional and Elegant */
-    --primary: 45 85% 50%;
-    --primary-foreground: 45 60% 98%;
-    --primary-dark: 45 85% 40%;
-    --primary-light: 45 85% 65%;
-    --primary-glow: 45 85% 50% / 0.2;
+    /* Calm Blue Primary - Professional and Trustworthy */
+    --primary: 215 100% 60%;
+    --primary-foreground: 210 20% 98%;
+    --primary-dark: 215 100% 45%;
+    --primary-light: 215 100% 70%;
+    --primary-glow: 215 100% 60% / 0.3;
     
     /* Minimal Accent System */
-    --accent: 180 40% 70%;
-    --accent-foreground: 45 15% 15%;
-    --accent-light: 180 40% 80%;
-    --accent-muted: 180 40% 70% / 0.1;
+    --accent: 215 100% 60%;
+    --accent-foreground: 210 20% 98%;
+    --accent-light: 215 100% 70%;
+    --accent-muted: 215 100% 60% / 0.1;
     
     /* Subtle Secondary Colors */
-    --secondary: 45 30% 92%;
-    --secondary-foreground: 45 15% 15%;
-    --secondary-dark: 45 30% 88%;
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 210 20% 98%;
+    --secondary-dark: 220 13% 12%;
     
     /* Interactive Elements */
-    --popover: 45 60% 98%;
-    --popover-foreground: 45 15% 15%;
+    --popover: 224 15% 9%;
+    --popover-foreground: 210 20% 98%;
     
     /* Muted Elements */
-    --muted: 45 30% 90%;
-    --muted-foreground: 45 20% 45%;
+    --muted: 220 13% 12%;
+    --muted-foreground: 215 20.2% 65.1%;
     
     /* Status Colors - Clean and Minimal */
     --success: 142 76% 36%;
