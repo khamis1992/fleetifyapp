@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface ExecutiveDashboardCardProps {
   title: string;
-  value: string | number;
+  value: string;
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
