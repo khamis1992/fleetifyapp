@@ -7,7 +7,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react"
+import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
+import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
 
 const statusColors = {
@@ -56,6 +58,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 export default function Maintenance() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
   const { data: maintenanceRecords, isLoading } = useVehicleMaintenance()
+  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
 
   const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
   const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
@@ -176,6 +179,14 @@ export default function Maintenance() {
           جدولة صيانة
         </Button>
       </div>
+
+      {/* Smart Alerts Panel */}
+      {smartAlerts && smartAlerts.length > 0 && (
+        <SmartAlertsPanel 
+          alerts={smartAlerts} 
+          loading={alertsLoading}
+        />
+      )}
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-4">

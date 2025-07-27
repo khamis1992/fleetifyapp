@@ -7,9 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { VehicleForm } from "@/components/fleet/VehicleForm"
 import { VehicleCard } from "@/components/fleet/VehicleCard"
 import { VehicleGroupManagement } from "@/components/fleet/VehicleGroupManagement"
-import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
 import { useVehicles } from "@/hooks/useVehicles"
-import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function Fleet() {
@@ -19,7 +17,6 @@ export default function Fleet() {
   
   const { user } = useAuth()
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles()
-  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
 
   const availableVehicles = vehicles?.filter(v => v.status === 'available') || []
   const rentedVehicles = vehicles?.filter(v => v.status === 'rented') || []
@@ -67,14 +64,6 @@ export default function Fleet() {
           </Button>
         </div>
       </div>
-
-      {/* Smart Alerts Panel */}
-      {smartAlerts && smartAlerts.length > 0 && (
-        <SmartAlertsPanel 
-          alerts={smartAlerts} 
-          loading={alertsLoading}
-        />
-      )}
 
       {/* Vehicle Alerts Summary */}
       <div className="grid gap-4 md:grid-cols-4">
