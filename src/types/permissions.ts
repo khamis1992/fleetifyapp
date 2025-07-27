@@ -217,6 +217,13 @@ export const PERMISSIONS: Permission[] = [
     level: 'read'
   },
   {
+    id: 'finance.cost_centers.view',
+    name: 'View Cost Centers (Alternative)',
+    description: 'View cost center information (alternative naming)',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
     id: 'finance.costcenters.write',
     name: 'Manage Cost Centers',
     description: 'Create and manage cost centers',
@@ -287,6 +294,13 @@ export const PERMISSIONS: Permission[] = [
     level: 'read'
   },
   {
+    id: 'finance.invoices.view',
+    name: 'View Invoices (Alternative)',
+    description: 'View invoice information (alternative naming)',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
     id: 'finance.invoices.write',
     name: 'Manage Invoices',
     description: 'Create, update, delete invoices',
@@ -297,6 +311,13 @@ export const PERMISSIONS: Permission[] = [
     id: 'finance.payments.read',
     name: 'View Payments',
     description: 'View payment information',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.payments.view',
+    name: 'View Payments (Alternative)',
+    description: 'View payment information (alternative naming)',
     category: PERMISSION_CATEGORIES[1],
     level: 'read'
   },
