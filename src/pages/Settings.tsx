@@ -59,7 +59,7 @@ const Settings: React.FC = () => {
       title: "الصلاحيات",
       description: "عرض صلاحياتك في النظام",
       icon: Lock,
-      action: () => navigate('/hr/user-management'),
+      action: () => navigate('/settings/permissions'),
       available: true
     }
   ];
