@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { 
@@ -20,6 +20,10 @@ import { useFinancialSummary } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { PayrollIntegrationCard } from "@/components/finance/PayrollIntegrationCard"
 import { UnifiedFinancialDashboard } from "@/components/finance/UnifiedFinancialDashboard"
+import { usePermissionCheck } from "@/hooks/usePermissionCheck"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { useEffect } from "react"
 import ChartOfAccounts from "./finance/ChartOfAccounts"
 import Ledger from "./finance/Ledger"
 import Treasury from "./finance/Treasury"
@@ -180,57 +184,69 @@ const FinanceModules = () => {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الإيرادات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {financialSummary?.totalRevenue?.toFixed(3) || '0.000'} د.ك
-              </div>
-              <p className="text-xs text-muted-foreground">هذا الشهر</p>
-            </CardContent>
-          </Card>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الإيرادات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {financialSummary?.totalRevenue?.toFixed(3) || '0.000'} د.ك
+                </div>
+                <p className="text-xs text-muted-foreground">هذا الشهر</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المصروفات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {financialSummary?.totalExpenses?.toFixed(3) || '0.000'} د.ك
+                </div>
+                <p className="text-xs text-muted-foreground">هذا الشهر</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">صافي الربح</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  (financialSummary?.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {financialSummary?.netIncome?.toFixed(3) || '0.000'} د.ك
+                </div>
+                <p className="text-xs text-muted-foreground">هذا الشهر</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">المعاملات المعلقة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {financialSummary?.pendingTransactions || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">تحتاج مراجعة</p>
+              </CardContent>
+            </Card>
+          </div>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المصروفات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {financialSummary?.totalExpenses?.toFixed(3) || '0.000'} د.ك
-              </div>
-              <p className="text-xs text-muted-foreground">هذا الشهر</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">صافي الربح</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${
-                (financialSummary?.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {financialSummary?.netIncome?.toFixed(3) || '0.000'} د.ك
-              </div>
-              <p className="text-xs text-muted-foreground">هذا الشهر</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">المعاملات المعلقة</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {financialSummary?.pendingTransactions || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">تحتاج مراجعة</p>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Quick Access to Dashboard */}
+          <div className="flex justify-center">
+            <Link to="/finance/dashboard">
+              <Button size="lg" className="bg-gradient-primary hover:bg-gradient-primary/90">
+                <TrendingUp className="h-5 w-5 mr-2" />
+                الانتقال إلى لوحة التحكم المتقدمة
+              </Button>
+            </Link>
+          </div>
+        </>
       )}
 
       {/* Payroll Integration Section */}
@@ -239,22 +255,167 @@ const FinanceModules = () => {
   )
 }
 
+// Protected Route Component
+const ProtectedFinanceRoute = ({ children, permission }: { children: React.ReactNode, permission?: string }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const permissionCheck = usePermissionCheck(permission || 'finance.view');
+
+  useEffect(() => {
+    if (!user) {
+      console.log('[Finance] User not authenticated');
+    } else if (!user.user_metadata?.company_id) {
+      console.log('[Finance] User missing company_id:', user);
+      toast({
+        title: "خطأ في البيانات",
+        description: "لا توجد بيانات شركة مرتبطة بحسابك. يرجى التواصل مع المدير.",
+        variant: "destructive",
+      });
+    } else {
+      console.log('[Finance] User authenticated with company:', user.user_metadata.company_id);
+    }
+  }, [user, toast]);
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!user.user_metadata?.company_id) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <p className="text-destructive font-medium">خطأ في البيانات</p>
+        <p className="text-muted-foreground text-center">
+          لا توجد بيانات شركة مرتبطة بحسابك.<br />
+          يرجى التواصل مع المدير لحل هذه المشكلة.
+        </p>
+      </div>
+    );
+  }
+
+  if (permission && permissionCheck.isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (permission && permissionCheck.data && !permissionCheck.data.hasPermission) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <p className="text-destructive font-medium">غير مخول</p>
+        <p className="text-muted-foreground text-center">
+          {permissionCheck.data.reason || 'ليس لديك صلاحية للوصول لهذه الصفحة'}
+        </p>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 const Finance = () => {
   return (
     <Routes>
-      <Route index element={<FinanceModules />} />
-      <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
-      <Route path="ledger" element={<Ledger />} />
-      <Route path="treasury" element={<Treasury />} />
-      <Route path="cost-centers" element={<CostCenters />} />
-      <Route path="invoices" element={<Invoices />} />
-      <Route path="payments" element={<Payments />} />
-      <Route path="reports" element={<Reports />} />
-      <Route path="assets" element={<FixedAssets />} />
-      <Route path="budgets" element={<Budgets />} />
-      <Route path="vendors" element={<Vendors />} />
-      <Route path="analysis" element={<FinancialAnalysis />} />
-      <Route path="dashboard" element={<UnifiedFinancialDashboard />} />
+      {/* Redirect from /finance to /finance/dashboard */}
+      <Route index element={<Navigate to="/finance/dashboard" replace />} />
+      <Route path="modules" element={<FinanceModules />} />
+      <Route 
+        path="dashboard" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <UnifiedFinancialDashboard />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="chart-of-accounts" 
+        element={
+          <ProtectedFinanceRoute permission="finance.accounts.view">
+            <ChartOfAccounts />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="ledger" 
+        element={
+          <ProtectedFinanceRoute permission="finance.ledger.view">
+            <Ledger />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="treasury" 
+        element={
+          <ProtectedFinanceRoute permission="finance.treasury.view">
+            <Treasury />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="cost-centers" 
+        element={
+          <ProtectedFinanceRoute permission="finance.cost_centers.view">
+            <CostCenters />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="invoices" 
+        element={
+          <ProtectedFinanceRoute permission="finance.invoices.view">
+            <Invoices />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="payments" 
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <Payments />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="reports" 
+        element={
+          <ProtectedFinanceRoute permission="finance.reports.view">
+            <Reports />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="assets" 
+        element={
+          <ProtectedFinanceRoute permission="finance.assets.view">
+            <FixedAssets />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="budgets" 
+        element={
+          <ProtectedFinanceRoute permission="finance.budgets.view">
+            <Budgets />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="vendors" 
+        element={
+          <ProtectedFinanceRoute permission="finance.vendors.view">
+            <Vendors />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="analysis" 
+        element={
+          <ProtectedFinanceRoute permission="finance.analysis.view">
+            <FinancialAnalysis />
+          </ProtectedFinanceRoute>
+        } 
+      />
     </Routes>
   )
 }

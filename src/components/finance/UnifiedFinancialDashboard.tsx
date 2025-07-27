@@ -80,7 +80,18 @@ export const UnifiedFinancialDashboard = () => {
   const { user } = useAuth();
   const companyId = user?.user_metadata?.company_id;
   
-  const { data: overview, isLoading } = useEnhancedFinancialOverview(companyId);
+  console.log('[UnifiedFinancialDashboard] Rendering with user:', user?.id, 'companyId:', companyId);
+  
+  const { data: overview, isLoading, error } = useEnhancedFinancialOverview(companyId);
+  
+  React.useEffect(() => {
+    if (error) {
+      console.error('[UnifiedFinancialDashboard] Error loading financial data:', error);
+    }
+    if (overview) {
+      console.log('[UnifiedFinancialDashboard] Financial data loaded successfully:', overview);
+    }
+  }, [overview, error]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KW', {
@@ -108,10 +119,38 @@ export const UnifiedFinancialDashboard = () => {
     );
   }
 
+  if (error) {
+    console.error('[UnifiedFinancialDashboard] Error state:', error);
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-destructive mb-2">خطأ في تحميل البيانات المالية</h3>
+          <p className="text-muted-foreground mb-4">
+            {error instanceof Error ? error.message : 'حدث خطأ غير متوقع'}
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-primary hover:underline"
+          >
+            إعادة تحميل الصفحة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!overview) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Unable to load financial data</p>
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="text-center">
+          <h3 className="text-lg font-medium mb-2">لا توجد بيانات مالية</h3>
+          <p className="text-muted-foreground mb-4">
+            لم يتم العثور على بيانات مالية لشركتك. قد تحتاج إلى إضافة بعض المعاملات المالية أولاً.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Company ID: {companyId || 'غير محدد'}
+          </p>
+        </div>
       </div>
     );
   }

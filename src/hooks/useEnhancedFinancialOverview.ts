@@ -43,7 +43,10 @@ export const useEnhancedFinancialOverview = (companyId?: string) => {
   return useQuery({
     queryKey: ["enhanced-financial-overview", companyId],
     queryFn: async () => {
+      console.log('[useEnhancedFinancialOverview] Starting query with companyId:', companyId);
+      
       if (!companyId) {
+        console.error('[useEnhancedFinancialOverview] No company ID provided');
         return {
           healthScore: {
             profitability_score: 0,
@@ -72,10 +75,17 @@ export const useEnhancedFinancialOverview = (companyId?: string) => {
       }
 
       // Get financial health score
-      const { data: healthData } = await supabase.rpc(
+      console.log('[useEnhancedFinancialOverview] Fetching financial health score...');
+      const { data: healthData, error: healthError } = await supabase.rpc(
         'calculate_financial_health_score',
         { company_id_param: companyId }
       );
+      
+      if (healthError) {
+        console.error('[useEnhancedFinancialOverview] Health score error:', healthError);
+      } else {
+        console.log('[useEnhancedFinancialOverview] Health score fetched:', healthData);
+      }
       
       const healthScore = healthData?.[0] || {
         profitability_score: 0,
@@ -86,10 +96,17 @@ export const useEnhancedFinancialOverview = (companyId?: string) => {
       };
 
       // Get cash flow analysis
-      const { data: cashFlowData } = await supabase.rpc(
+      console.log('[useEnhancedFinancialOverview] Fetching cash flow analysis...');
+      const { data: cashFlowData, error: cashFlowError } = await supabase.rpc(
         'generate_cash_flow_analysis',
         { company_id_param: companyId }
       );
+      
+      if (cashFlowError) {
+        console.error('[useEnhancedFinancialOverview] Cash flow error:', cashFlowError);
+      } else {
+        console.log('[useEnhancedFinancialOverview] Cash flow fetched:', cashFlowData);
+      }
       
       const cashFlow = cashFlowData?.[0] || {
         total_inflow: 0,
@@ -101,10 +118,17 @@ export const useEnhancedFinancialOverview = (companyId?: string) => {
       };
 
       // Get monthly trends
-      const { data: trendsData } = await supabase.rpc(
+      console.log('[useEnhancedFinancialOverview] Fetching monthly trends...');
+      const { data: trendsData, error: trendsError } = await supabase.rpc(
         'generate_monthly_trends',
         { company_id_param: companyId, months_back: 6 }
       );
+      
+      if (trendsError) {
+        console.error('[useEnhancedFinancialOverview] Monthly trends error:', trendsError);
+      } else {
+        console.log('[useEnhancedFinancialOverview] Monthly trends fetched:', trendsData);
+      }
       
       const monthlyTrends = trendsData || [];
 
@@ -114,16 +138,28 @@ export const useEnhancedFinancialOverview = (companyId?: string) => {
       const netIncome = totalRevenue - totalExpenses;
       const profitMargin = totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0;
 
+      console.log('[useEnhancedFinancialOverview] Calculated metrics:', {
+        totalRevenue,
+        totalExpenses, 
+        netIncome,
+        profitMargin
+      });
+
       // Get simple counts
+      console.log('[useEnhancedFinancialOverview] Fetching active contracts...');
       const contractsResponse = await supabase
         .from("contracts")
         .select("id")
         .eq("company_id", companyId)
         .eq("status", "active");
 
+      if (contractsResponse.error) {
+        console.warn('[useEnhancedFinancialOverview] Contracts count error (non-critical):', contractsResponse.error);
+      }
+
       const activeContracts = contractsResponse.data?.length || 0;
 
-      return {
+      const result = {
         healthScore,
         cashFlow,
         monthlyTrends,
@@ -135,8 +171,15 @@ export const useEnhancedFinancialOverview = (companyId?: string) => {
         pendingPayments: 0, // Simplified for now
         overduePayments: 0, // Simplified for now
       };
+
+      console.log('[useEnhancedFinancialOverview] Final result:', result);
+      return result;
     },
     enabled: !!companyId,
     staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      console.error(`[useEnhancedFinancialOverview] Retry ${failureCount}:`, error);
+      return failureCount < 2; // Retry up to 2 times
+    },
   });
 };
