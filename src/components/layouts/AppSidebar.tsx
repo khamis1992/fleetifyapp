@@ -183,11 +183,6 @@ const hrSubItems = [
     icon: Users
   },
   {
-    name: 'إدارة المستخدمين',
-    href: '/hr/user-management',
-    icon: UserCog
-  },
-  {
     name: 'الحضور والانصراف',
     href: '/hr/attendance',
     icon: Clock
