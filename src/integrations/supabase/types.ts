@@ -4536,6 +4536,16 @@ export type Database = {
           overtime_hours: number
         }[]
       }
+      calculate_financial_health_score: {
+        Args: { company_id_param: string }
+        Returns: {
+          profitability_score: number
+          liquidity_score: number
+          efficiency_score: number
+          solvency_score: number
+          overall_score: number
+        }[]
+      }
       calculate_fuel_efficiency: {
         Args: {
           vehicle_id_param: string
@@ -4557,6 +4567,10 @@ export type Database = {
       check_budget_overruns: {
         Args: { budget_id_param: string }
         Returns: number
+      }
+      check_budget_variances: {
+        Args: { company_id_param: string }
+        Returns: undefined
       }
       check_rate_limit: {
         Args: {
@@ -4690,6 +4704,21 @@ export type Database = {
         }
         Returns: string
       }
+      generate_cash_flow_analysis: {
+        Args: {
+          company_id_param: string
+          start_date_param?: string
+          end_date_param?: string
+        }
+        Returns: {
+          total_inflow: number
+          total_outflow: number
+          net_cash_flow: number
+          operating_cash_flow: number
+          investing_cash_flow: number
+          financing_cash_flow: number
+        }[]
+      }
       generate_employee_account_number: {
         Args: { company_id_param: string }
         Returns: string
@@ -4701,6 +4730,16 @@ export type Database = {
       generate_maintenance_number: {
         Args: { company_id_param: string }
         Returns: string
+      }
+      generate_monthly_trends: {
+        Args: { company_id_param: string; months_back?: number }
+        Returns: {
+          month_year: string
+          total_revenue: number
+          total_expenses: number
+          net_profit: number
+          profit_margin: number
+        }[]
       }
       generate_secure_password: {
         Args: Record<PropertyKey, never>

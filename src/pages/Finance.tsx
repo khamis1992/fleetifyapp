@@ -19,6 +19,7 @@ import { Link } from "react-router-dom"
 import { useFinancialSummary } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { PayrollIntegrationCard } from "@/components/finance/PayrollIntegrationCard"
+import { UnifiedFinancialDashboard } from "@/components/finance/UnifiedFinancialDashboard"
 import ChartOfAccounts from "./finance/ChartOfAccounts"
 import Ledger from "./finance/Ledger"
 import Treasury from "./finance/Treasury"
@@ -122,6 +123,14 @@ const FinanceModules = () => {
       icon: PieChart,
       path: "/finance/analysis",
       color: "bg-gradient-to-br from-pink-500 to-pink-600"
+    },
+    {
+      title: "لوحة التحكم المتقدمة",
+      titleEn: "Advanced Dashboard",
+      description: "لوحة تحكم شاملة مع التحليلات المتقدمة",
+      icon: TrendingUp,
+      path: "/finance/dashboard",
+      color: "bg-gradient-to-br from-cyan-500 to-cyan-600"
     }
   ]
 
@@ -245,6 +254,7 @@ const Finance = () => {
       <Route path="budgets" element={<Budgets />} />
       <Route path="vendors" element={<Vendors />} />
       <Route path="analysis" element={<FinancialAnalysis />} />
+      <Route path="dashboard" element={<UnifiedFinancialDashboard />} />
     </Routes>
   )
 }
