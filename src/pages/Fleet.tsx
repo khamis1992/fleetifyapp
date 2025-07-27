@@ -3,7 +3,7 @@ import { Plus, Car, AlertTriangle, TrendingUp, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { VehicleForm } from "@/components/fleet/VehicleForm"
+import { EnhancedVehicleForm } from "@/components/fleet/EnhancedVehicleForm"
 import { VehicleCard } from "@/components/fleet/VehicleCard"
 import { useVehicles } from "@/hooks/useVehicles"
 
@@ -156,7 +156,7 @@ export default function Fleet() {
 
       {/* Vehicle Form Dialog */}
       {showVehicleForm && (
-        <VehicleForm 
+        <EnhancedVehicleForm 
           open={showVehicleForm} 
           onOpenChange={setShowVehicleForm}
         />
