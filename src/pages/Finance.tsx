@@ -35,6 +35,7 @@ import FixedAssets from "./finance/FixedAssets"
 import Budgets from "./finance/Budgets"
 import Vendors from "./finance/Vendors"
 import FinancialAnalysis from "./finance/FinancialAnalysis"
+import AccountMappings from "./finance/AccountMappings"
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()
@@ -135,6 +136,14 @@ const FinanceModules = () => {
       icon: TrendingUp,
       path: "/finance/dashboard",
       color: "bg-gradient-to-br from-cyan-500 to-cyan-600"
+    },
+    {
+      title: "ربط الحسابات",
+      titleEn: "Account Mappings",
+      description: "ربط أنواع الحسابات الافتراضية مع دليل الحسابات",
+      icon: Settings,
+      path: "/finance/account-mappings",
+      color: "bg-gradient-to-br from-slate-500 to-slate-600"
     }
   ]
 
@@ -413,6 +422,14 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.analysis.view">
             <FinancialAnalysis />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="account-mappings" 
+        element={
+          <ProtectedFinanceRoute permission="finance.accounts.view">
+            <AccountMappings />
           </ProtectedFinanceRoute>
         } 
       />

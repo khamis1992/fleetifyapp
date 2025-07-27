@@ -79,6 +79,61 @@ export type Database = {
           },
         ]
       }
+      account_mappings: {
+        Row: {
+          chart_of_accounts_id: string
+          company_id: string
+          created_at: string
+          default_account_type_id: string
+          id: string
+          is_active: boolean | null
+          mapped_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          chart_of_accounts_id: string
+          company_id: string
+          created_at?: string
+          default_account_type_id: string
+          id?: string
+          is_active?: boolean | null
+          mapped_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chart_of_accounts_id?: string
+          company_id?: string
+          created_at?: string
+          default_account_type_id?: string
+          id?: string
+          is_active?: boolean | null
+          mapped_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_mappings_chart_of_accounts_id_fkey"
+            columns: ["chart_of_accounts_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_mappings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_mappings_default_account_type_id_fkey"
+            columns: ["default_account_type_id"]
+            isOneToOne: false
+            referencedRelation: "default_account_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounting_periods: {
         Row: {
           company_id: string
@@ -1226,6 +1281,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      default_account_types: {
+        Row: {
+          account_category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_system: boolean | null
+          type_code: string
+          type_name: string
+          type_name_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          type_code: string
+          type_name: string
+          type_name_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          type_code?: string
+          type_name?: string
+          type_name_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       default_chart_of_accounts: {
         Row: {
@@ -5167,6 +5258,10 @@ export type Database = {
       }
       get_maintenance_cost_center: {
         Args: { company_id_param: string }
+        Returns: string
+      }
+      get_mapped_account_id: {
+        Args: { company_id_param: string; account_type_code: string }
         Returns: string
       }
       get_payment_analytics: {
