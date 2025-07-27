@@ -5,12 +5,13 @@ import { useEnhancedDashboardStats } from '@/hooks/useEnhancedDashboardStats';
 import { useEnhancedRecentActivities } from '@/hooks/useEnhancedRecentActivities';
 import { useSmartAlerts } from '@/hooks/useSmartAlerts';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
-import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
-import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
+import ModernBackground from '@/components/dashboard/ModernBackground';
+import ExecutiveDashboardCard from '@/components/dashboard/ExecutiveDashboardCard';
+import AdminMetricsGrid from '@/components/dashboard/AdminMetricsGrid';
+import SmartInsightsPanel from '@/components/dashboard/SmartInsightsPanel';
+import QuickActionsPanel from '@/components/dashboard/QuickActionsPanel';
 import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
-import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-import MinimalAlertSystem from '@/components/dashboard/MinimalAlertSystem';
-import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Crown, Shield } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -57,28 +58,31 @@ const Dashboard: React.FC = () => {
     return "مساء الخير";
   };
 
-  // Modern stats configuration
-  const statsConfig = [
+  // Executive KPI Configuration
+  const executiveKPIs = [
     {
       title: 'إجمالي المركبات',
       value: String(enhancedStats?.totalVehicles || 0),
-      change: String(enhancedStats?.vehiclesChange || '+0%'),
+      change: enhancedStats?.vehiclesChange || '+0%',
+      changeType: 'positive' as const,
       icon: Car,
       trend: 'up' as const,
-      description: 'مركبة في الأسطول'
+      description: 'مركبة في الأسطول النشط'
     },
     {
       title: 'العملاء النشطين',
       value: String(enhancedStats?.totalCustomers || 0),
-      change: String(enhancedStats?.customersChange || '+0%'),
+      change: enhancedStats?.customersChange || '+0%',
+      changeType: 'positive' as const,
       icon: Users,
       trend: 'up' as const,
-      description: 'عميل مسجل'
+      description: 'عميل مسجل ونشط'
     },
     {
       title: 'العقود النشطة',
       value: String(enhancedStats?.activeContracts || 0),
-      change: String(enhancedStats?.contractsChange || '+0%'),
+      change: enhancedStats?.contractsChange || '+0%',
+      changeType: 'neutral' as const,
       icon: FileText,
       trend: 'neutral' as const,
       description: 'عقد ساري المفعول'
@@ -86,90 +90,131 @@ const Dashboard: React.FC = () => {
     {
       title: 'الإيرادات الشهرية',
       value: `${enhancedStats?.monthlyRevenue || 0} د.ك`,
-      change: String(enhancedStats?.revenueChange || '+0%'),
+      change: enhancedStats?.revenueChange || '+0%',
+      changeType: 'positive' as const,
       icon: DollarSign,
       trend: 'up' as const,
-      description: 'هذا الشهر'
+      description: 'الأداء المالي الحالي'
     }
   ];
 
   return (
     <>
-      <ProfessionalBackground />
+      <ModernBackground />
       <div className="relative z-10 space-y-8">
-        {/* Professional Hero Section */}
+        {/* Executive Command Center Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-8"
+          className="bg-gradient-glass backdrop-blur-sm border-0 rounded-2xl p-8 shadow-glass"
         >
           <div className="flex items-center justify-between">
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <Target size={20} />
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-3 rounded-xl bg-gradient-executive text-primary-foreground shadow-glow">
+                    <Crown size={24} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Shield size={16} className="text-primary" />
+                    <span className="text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
+                      لوحة التحكم التنفيذية
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-medium text-primary">لوحة التحكم المهنية</span>
               </div>
               
               <div>
-                <h1 className="text-4xl font-bold text-foreground mb-2">
-                  {getGreeting()}، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
+                <h1 className="text-5xl font-bold text-foreground mb-3 arabic-heading-lg">
+                  {getGreeting()}، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المدير التنفيذي'}
                 </h1>
-                <p className="text-muted-foreground text-lg">
-                  نظرة شاملة على أداء شركتك وآخر التطورات
+                <p className="text-muted-foreground text-xl arabic-body-lg">
+                  إدارة استراتيجية شاملة لعمليات الشركة والمؤشرات الرئيسية
                 </p>
               </div>
             </div>
             
             <motion.div
-              className="hidden lg:block"
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="hidden lg:flex items-center gap-4"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                <Zap size={32} />
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground">آخر تحديث</div>
+                <div className="text-lg font-semibold text-foreground">
+                  {new Date().toLocaleDateString('ar-EG', { 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
               </div>
+              <motion.div
+                animate={{ 
+                  rotate: [0, 360],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  duration: 15, 
+                  repeat: Infinity, 
+                  ease: "linear" 
+                }}
+              >
+                <div className="w-20 h-20 bg-gradient-executive text-primary-foreground rounded-2xl flex items-center justify-center shadow-glow">
+                  <Zap size={36} />
+                </div>
+              </motion.div>
             </motion.div>
           </div>
         </motion.div>
 
-        {/* Modern Stats Grid */}
+        {/* Executive KPI Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statsConfig.map((stat, index) => (
-            <ModernStatsCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              change={stat.change}
-              icon={stat.icon}
-              trend={stat.trend}
-              description={stat.description}
+          {executiveKPIs.map((kpi, index) => (
+            <ExecutiveDashboardCard
+              key={kpi.title}
+              title={kpi.title}
+              value={kpi.value}
+              change={kpi.change}
+              changeType={kpi.changeType}
+              icon={kpi.icon}
+              trend={kpi.trend}
+              description={kpi.description}
               index={index}
             />
           ))}
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Activities */}
-          <div className="lg:col-span-2">
+        {/* Advanced Analytics Grid */}
+        <div className="space-y-8">
+          <AdminMetricsGrid 
+            metrics={[]}
+            loading={statsLoading} 
+          />
+        </div>
+
+        {/* Strategic Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Analytics Panel */}
+          <div className="lg:col-span-3 space-y-6">
             <CleanActivityFeed 
               activities={recentActivities} 
               loading={activitiesLoading} 
             />
           </div>
 
-          {/* Sidebar */}
+          {/* Executive Sidebar */}
           <div className="space-y-6">
-            <SmartMetricsPanel 
-              financialData={smartMetricsData} 
-              loading={financialLoading} 
+            <QuickActionsPanel 
+              actions={[]}
+              loading={false} 
             />
             
-            <MinimalAlertSystem 
-              alerts={convertedAlerts} 
+            <SmartInsightsPanel 
+              insights={[]} 
               loading={alertsLoading} 
             />
           </div>

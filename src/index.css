@@ -9,87 +9,88 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Light Cream Professional Base */
-    --background: 45 23% 97%;
-    --background-soft: 45 20% 95%;
-    --foreground: 25 25% 15%;
+    /* Executive Dashboard - Premium Business Base */
+    --background: 240 249 255; /* Crisp ice blue background */
+    --background-soft: 248 250 252; /* Premium surface */
+    --foreground: 15 23 42; /* Professional slate gray text */
     
-    /* Warm Card System */
-    --card: 0 0% 100%;
-    --card-foreground: 25 25% 15%;
-    --card-hover: 45 15% 98%;
-    --card-glass: 0 0% 100% / 0.9;
+    /* Executive Glass Card System */
+    --card: 255 255 255; /* Pure white cards */
+    --card-foreground: 15 23 42;
+    --card-hover: 219 95 97; /* Subtle blue hover */
+    --card-glass: 255 255 255 / 0.8; /* Glass morphism */
     
-    /* Warm Amber Primary - Professional and Inviting */
-    --primary: 45 86% 58%;
-    --primary-foreground: 0 0% 100%;
-    --primary-dark: 45 86% 48%;
-    --primary-light: 45 86% 68%;
-    --primary-glow: 45 86% 58% / 0.2;
+    /* Executive Navy Primary - Strategic and Authoritative */
+    --primary: 219 78 19; /* Executive navy blue */
+    --primary-foreground: 248 250 252; /* Clean white text */
+    --primary-dark: 219 70 15; /* Deep navy for depth */
+    --primary-light: 219 85 35; /* Lighter executive blue */
+    --primary-glow: 219 78 19 / 0.25;
     
-    /* Elegant Accent System */
-    --accent: 48 88% 92%;
-    --accent-foreground: 25 25% 15%;
-    --accent-light: 48 88% 95%;
-    --accent-muted: 48 88% 85%;
+    /* Premium Corporate Gold Accent System */
+    --accent: 45 93 47; /* Premium gold accent */
+    --accent-foreground: 15 23 42; /* Dark text on accent */
+    --accent-light: 48 96 65; /* Bright gold highlights */
+    --accent-muted: 50 80 95; /* Subtle gold tint */
     
-    /* Sophisticated Secondary */
-    --secondary: 210 11% 85%;
-    --secondary-foreground: 25 25% 15%;
-    --secondary-dark: 210 11% 80%;
+    /* Platinum Elegance Secondary */
+    --secondary: 214 32 91; /* Sophisticated platinum */
+    --secondary-foreground: 15 23 42; /* Dark text on secondary */
+    --secondary-dark: 210 20 78; /* Darker platinum */
     
     /* Interactive Elements */
     --popover: 0 0% 100%;
     --popover-foreground: 25 25% 15%;
     
-    /* Muted Elements */
-    --muted: 48 16% 92%;
-    --muted-foreground: 25 15% 45%;
+    /* Executive Muted Elements */
+    --muted: 241 245 249; /* Refined muted background */
+    --muted-foreground: 100 116 139; /* Professional muted text */
     
-    /* Status Colors - Harmonious with Theme */
-    --success: 142 56% 42%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 82% 55%;
-    --warning-foreground: 0 0% 100%;
-    --destructive: 0 74% 60%;
-    --destructive-foreground: 0 0% 100%;
+    /* Executive Status Colors - Professional Indicators */
+    --success: 142 71 24; /* Confident emerald */
+    --success-foreground: 248 250 252;
+    --warning: 32 95 44; /* Alert amber */
+    --warning-foreground: 15 23 42;
+    --destructive: 0 72 51; /* Critical red */
+    --destructive-foreground: 248 250 252;
     
-    /* Refined Borders and Inputs */
-    --border: 48 16% 88%;
-    --input: 48 16% 96%;
-    --ring: 45 86% 58%;
+    /* Premium Borders and Inputs */
+    --border: 226 232 240; /* Clean border */
+    --input: 226 232 240;
+    --ring: 219 78 19; /* Executive focus ring */
     
-    /* Elegant Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
-    --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 50%, hsl(var(--accent-light)) 100%);
-    --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
+    /* Executive Gradient System */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-executive: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--background)), hsl(var(--background-soft)));
+    --gradient-glass: linear-gradient(145deg, hsl(var(--card) / 0.8), hsl(var(--background-soft) / 0.9));
+    --gradient-surface: linear-gradient(145deg, hsl(var(--card)), hsl(var(--muted)));
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
     
-    /* Refined Shadows */
-    --shadow-subtle: 0 1px 3px 0 hsl(25 25% 15% / 0.08), 0 1px 2px -1px hsl(25 25% 15% / 0.08);
-    --shadow-card: 0 4px 6px -1px hsl(25 25% 15% / 0.08), 0 2px 4px -2px hsl(25 25% 15% / 0.08);
-    --shadow-elevated: 0 10px 15px -3px hsl(25 25% 15% / 0.1), 0 4px 6px -4px hsl(25 25% 15% / 0.1);
-    --shadow-glow: 0 0 20px hsl(var(--primary-glow));
-    --shadow-glass: 0 8px 32px hsl(25 25% 15% / 0.06);
+    /* Premium Shadow System */
+    --shadow-subtle: 0 2px 12px -2px hsl(var(--primary) / 0.08);
+    --shadow-card: 0 8px 32px -8px hsl(var(--primary) / 0.12);
+    --shadow-elevated: 0 20px 60px -12px hsl(var(--primary) / 0.18);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow));
+    --shadow-glass: 0 8px 32px 0 hsl(var(--primary) / 0.08);
     
-    /* Smooth Professional Transitions */
+    /* Executive Motion System */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --transition-micro: all 0.15s ease-out;
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-glass: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-executive: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     
     --radius: 0.75rem;
 
-    /* Light Sidebar Variables */
-    --sidebar-background: 45 23% 98%;
-    --sidebar-foreground: 25 25% 15%;
-    --sidebar-primary: 45 86% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 48 88% 95%;
-    --sidebar-accent-foreground: 25 25% 15%;
-    --sidebar-border: 48 16% 90%;
-    --sidebar-ring: 45 86% 58%;
+    /* Executive Sidebar Variables */
+    --sidebar-background: 255 255 255;
+    --sidebar-foreground: 15 23 42;
+    --sidebar-primary: 219 78 19;
+    --sidebar-primary-foreground: 248 250 252;
+    --sidebar-accent: 214 32 91;
+    --sidebar-accent-foreground: 15 23 42;
+    --sidebar-border: 226 232 240;
+    --sidebar-ring: 219 78 19;
   }
 
   .dark {
@@ -267,8 +268,16 @@ All colors MUST be HSL.
     background: var(--gradient-card);
   }
   
-  .bg-gradient-muted {
-    background: var(--gradient-muted);
+  .bg-gradient-glass {
+    background: var(--gradient-glass);
+  }
+  
+  .bg-gradient-surface {
+    background: var(--gradient-surface);
+  }
+  
+  .bg-gradient-executive {
+    background: var(--gradient-executive);
   }
   
   /* Custom shadow utilities */
@@ -286,6 +295,10 @@ All colors MUST be HSL.
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-glass {
+    box-shadow: var(--shadow-glass);
   }
   
   .transition-smooth {
