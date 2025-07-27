@@ -289,7 +289,109 @@ export const useCustomer = (customerId: string) => {
         throw error;
       }
 
+      // Add contracts as empty array for now since we don't have contract data in the query
+      return { ...data, contracts: [] };
+    },
+    enabled: !!customerId
+  });
+};
+
+export const useCustomerNotes = (customerId: string) => {
+  return useQuery({
+    queryKey: ['customer-notes', customerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching customer notes:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!customerId
+  });
+};
+
+export const useCreateCustomerNote = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ customerId, noteData }: { 
+      customerId: string; 
+      noteData: {
+        note_type: string;
+        title: string;
+        content: string;
+        is_important: boolean;
+      }
+    }) => {
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .insert([{
+          customer_id: customerId,
+          company_id: companyId,
+          created_by: user?.id,
+          ...noteData
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
       return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-notes', variables.customerId] });
+      toast.success('تم إضافة الملاحظة بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error creating customer note:', error);
+      toast.error('حدث خطأ أثناء إضافة الملاحظة');
+    }
+  });
+};
+
+export const useCustomerFinancialSummary = (customerId: string) => {
+  return useQuery({
+    queryKey: ['customer-financial-summary', customerId],
+    queryFn: async () => {
+      // Mock data for financial summary - in a real app, this would be calculated from actual data
+      return {
+        currentBalance: 0,
+        totalContracts: 0,
+        totalPayments: 0,
+        outstandingBalance: 0,
+        totalInvoices: 0,
+        totalInvoicesOutstanding: 0,
+        totalInvoicesPaid: 0,
+        invoicesCount: 0,
+        activeContracts: 0,
+        contractsCount: 0
+      };
+    },
+    enabled: !!customerId
+  });
+};
+
+export const useCustomerDiagnostics = (customerId: string) => {
+  return useQuery({
+    queryKey: ['customer-diagnostics', customerId],
+    queryFn: async () => {
+      // Mock diagnostics data
+      return {
+        hasAccount: false,
+        hasContracts: false,
+        hasPayments: false,
+        lastActivity: null,
+        issues: []
+      };
     },
     enabled: !!customerId
   });
