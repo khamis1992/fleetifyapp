@@ -1524,105 +1524,6 @@ export type Database = {
           },
         ]
       }
-      fleet_reports: {
-        Row: {
-          company_id: string
-          created_at: string
-          created_by: string | null
-          id: string
-          is_scheduled: boolean | null
-          last_generated_at: string | null
-          report_config: Json
-          report_name: string
-          report_name_ar: string | null
-          report_type: string
-          schedule_config: Json | null
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_scheduled?: boolean | null
-          last_generated_at?: string | null
-          report_config?: Json
-          report_name: string
-          report_name_ar?: string | null
-          report_type: string
-          schedule_config?: Json | null
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_scheduled?: boolean | null
-          last_generated_at?: string | null
-          report_config?: Json
-          report_name?: string
-          report_name_ar?: string | null
-          report_type?: string
-          schedule_config?: Json | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      fuel_records: {
-        Row: {
-          company_id: string
-          cost_per_liter: number
-          created_at: string
-          created_by: string | null
-          fuel_date: string
-          fuel_station: string | null
-          fuel_type: string
-          id: string
-          notes: string | null
-          odometer_reading: number | null
-          quantity_liters: number
-          receipt_number: string | null
-          total_cost: number
-          updated_at: string
-          vehicle_id: string
-        }
-        Insert: {
-          company_id: string
-          cost_per_liter: number
-          created_at?: string
-          created_by?: string | null
-          fuel_date?: string
-          fuel_station?: string | null
-          fuel_type?: string
-          id?: string
-          notes?: string | null
-          odometer_reading?: number | null
-          quantity_liters: number
-          receipt_number?: string | null
-          total_cost: number
-          updated_at?: string
-          vehicle_id: string
-        }
-        Update: {
-          company_id?: string
-          cost_per_liter?: number
-          created_at?: string
-          created_by?: string | null
-          fuel_date?: string
-          fuel_station?: string | null
-          fuel_type?: string
-          id?: string
-          notes?: string | null
-          odometer_reading?: number | null
-          quantity_liters?: number
-          receipt_number?: string | null
-          total_cost?: number
-          updated_at?: string
-          vehicle_id?: string
-        }
-        Relationships: []
-      }
       hr_settings: {
         Row: {
           allow_negative_balance: boolean
@@ -2294,42 +2195,6 @@ export type Database = {
           sms_notifications?: boolean | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      odometer_readings: {
-        Row: {
-          company_id: string
-          created_at: string
-          id: string
-          notes: string | null
-          odometer_reading: number
-          reading_date: string
-          reading_type: string
-          recorded_by: string | null
-          vehicle_id: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          id?: string
-          notes?: string | null
-          odometer_reading: number
-          reading_date?: string
-          reading_type?: string
-          recorded_by?: string | null
-          vehicle_id: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          id?: string
-          notes?: string | null
-          odometer_reading?: number
-          reading_date?: string
-          reading_type?: string
-          recorded_by?: string | null
-          vehicle_id?: string
         }
         Relationships: []
       }
@@ -3635,51 +3500,6 @@ export type Database = {
         }
         Relationships: []
       }
-      vehicle_groups: {
-        Row: {
-          company_id: string
-          created_at: string
-          default_cost_center_id: string | null
-          default_depreciation_rate: number | null
-          default_useful_life_years: number | null
-          description: string | null
-          group_color: string | null
-          group_name: string
-          group_name_ar: string | null
-          id: string
-          is_active: boolean | null
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          default_cost_center_id?: string | null
-          default_depreciation_rate?: number | null
-          default_useful_life_years?: number | null
-          description?: string | null
-          group_color?: string | null
-          group_name: string
-          group_name_ar?: string | null
-          id?: string
-          is_active?: boolean | null
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          default_cost_center_id?: string | null
-          default_depreciation_rate?: number | null
-          default_useful_life_years?: number | null
-          description?: string | null
-          group_color?: string | null
-          group_name?: string
-          group_name_ar?: string | null
-          id?: string
-          is_active?: boolean | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       vehicle_insurance: {
         Row: {
           contact_email: string | null
@@ -3836,54 +3656,6 @@ export type Database = {
         }
         Relationships: []
       }
-      vehicle_operating_costs: {
-        Row: {
-          amount: number
-          company_id: string
-          cost_center_id: string | null
-          cost_date: string
-          cost_type: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          journal_entry_id: string | null
-          receipt_number: string | null
-          updated_at: string
-          vehicle_id: string
-        }
-        Insert: {
-          amount: number
-          company_id: string
-          cost_center_id?: string | null
-          cost_date?: string
-          cost_type: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          journal_entry_id?: string | null
-          receipt_number?: string | null
-          updated_at?: string
-          vehicle_id: string
-        }
-        Update: {
-          amount?: number
-          company_id?: string
-          cost_center_id?: string | null
-          cost_date?: string
-          cost_type?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          journal_entry_id?: string | null
-          receipt_number?: string | null
-          updated_at?: string
-          vehicle_id?: string
-        }
-        Relationships: []
-      }
       vehicle_pricing: {
         Row: {
           annual_rate: number
@@ -3974,11 +3746,9 @@ export type Database = {
       vehicles: {
         Row: {
           accumulated_depreciation: number | null
-          additional_features: string[] | null
           annual_depreciation_rate: number | null
           body_type: string | null
           book_value: number | null
-          cargo_capacity: number | null
           category_id: string | null
           color: string | null
           color_ar: string | null
@@ -3989,23 +3759,15 @@ export type Database = {
           daily_rate: number | null
           deposit_amount: number | null
           depreciation_method: string | null
-          depreciation_rate: number | null
           engine_number: string | null
-          engine_size: string | null
           features: Json | null
           fixed_asset_id: string | null
-          fuel_capacity: number | null
           fuel_level: number | null
           fuel_type: string | null
           id: string
           images: Json | null
-          insurance_end_date: string | null
           insurance_expiry: string | null
           insurance_policy: string | null
-          insurance_policy_number: string | null
-          insurance_premium_amount: number | null
-          insurance_provider: string | null
-          insurance_start_date: string | null
           is_active: boolean | null
           last_maintenance_date: string | null
           last_service_mileage: number | null
@@ -4020,40 +3782,23 @@ export type Database = {
           plate_number: string
           purchase_cost: number | null
           purchase_date: string | null
-          purchase_invoice_number: string | null
-          registration_date: string | null
-          registration_expiry: string | null
-          registration_fees: number | null
           registration_number: string | null
           residual_value: number | null
-          safety_features: string[] | null
           seating_capacity: number | null
           status: Database["public"]["Enums"]["vehicle_status"] | null
-          total_insurance_cost: number | null
-          total_maintenance_cost: number | null
-          total_operating_cost: number | null
           transmission: string | null
-          transmission_type: string | null
           updated_at: string
           useful_life_years: number | null
-          vehicle_group_id: string | null
-          vehicle_weight: number | null
-          vendor_id: string | null
           vin: string | null
           vin_number: string | null
-          warranty_end_date: string | null
-          warranty_provider: string | null
-          warranty_start_date: string | null
           weekly_rate: number | null
           year: number
         }
         Insert: {
           accumulated_depreciation?: number | null
-          additional_features?: string[] | null
           annual_depreciation_rate?: number | null
           body_type?: string | null
           book_value?: number | null
-          cargo_capacity?: number | null
           category_id?: string | null
           color?: string | null
           color_ar?: string | null
@@ -4064,23 +3809,15 @@ export type Database = {
           daily_rate?: number | null
           deposit_amount?: number | null
           depreciation_method?: string | null
-          depreciation_rate?: number | null
           engine_number?: string | null
-          engine_size?: string | null
           features?: Json | null
           fixed_asset_id?: string | null
-          fuel_capacity?: number | null
           fuel_level?: number | null
           fuel_type?: string | null
           id?: string
           images?: Json | null
-          insurance_end_date?: string | null
           insurance_expiry?: string | null
           insurance_policy?: string | null
-          insurance_policy_number?: string | null
-          insurance_premium_amount?: number | null
-          insurance_provider?: string | null
-          insurance_start_date?: string | null
           is_active?: boolean | null
           last_maintenance_date?: string | null
           last_service_mileage?: number | null
@@ -4095,40 +3832,23 @@ export type Database = {
           plate_number: string
           purchase_cost?: number | null
           purchase_date?: string | null
-          purchase_invoice_number?: string | null
-          registration_date?: string | null
-          registration_expiry?: string | null
-          registration_fees?: number | null
           registration_number?: string | null
           residual_value?: number | null
-          safety_features?: string[] | null
           seating_capacity?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"] | null
-          total_insurance_cost?: number | null
-          total_maintenance_cost?: number | null
-          total_operating_cost?: number | null
           transmission?: string | null
-          transmission_type?: string | null
           updated_at?: string
           useful_life_years?: number | null
-          vehicle_group_id?: string | null
-          vehicle_weight?: number | null
-          vendor_id?: string | null
           vin?: string | null
           vin_number?: string | null
-          warranty_end_date?: string | null
-          warranty_provider?: string | null
-          warranty_start_date?: string | null
           weekly_rate?: number | null
           year: number
         }
         Update: {
           accumulated_depreciation?: number | null
-          additional_features?: string[] | null
           annual_depreciation_rate?: number | null
           body_type?: string | null
           book_value?: number | null
-          cargo_capacity?: number | null
           category_id?: string | null
           color?: string | null
           color_ar?: string | null
@@ -4139,23 +3859,15 @@ export type Database = {
           daily_rate?: number | null
           deposit_amount?: number | null
           depreciation_method?: string | null
-          depreciation_rate?: number | null
           engine_number?: string | null
-          engine_size?: string | null
           features?: Json | null
           fixed_asset_id?: string | null
-          fuel_capacity?: number | null
           fuel_level?: number | null
           fuel_type?: string | null
           id?: string
           images?: Json | null
-          insurance_end_date?: string | null
           insurance_expiry?: string | null
           insurance_policy?: string | null
-          insurance_policy_number?: string | null
-          insurance_premium_amount?: number | null
-          insurance_provider?: string | null
-          insurance_start_date?: string | null
           is_active?: boolean | null
           last_maintenance_date?: string | null
           last_service_mileage?: number | null
@@ -4170,30 +3882,15 @@ export type Database = {
           plate_number?: string
           purchase_cost?: number | null
           purchase_date?: string | null
-          purchase_invoice_number?: string | null
-          registration_date?: string | null
-          registration_expiry?: string | null
-          registration_fees?: number | null
           registration_number?: string | null
           residual_value?: number | null
-          safety_features?: string[] | null
           seating_capacity?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"] | null
-          total_insurance_cost?: number | null
-          total_maintenance_cost?: number | null
-          total_operating_cost?: number | null
           transmission?: string | null
-          transmission_type?: string | null
           updated_at?: string
           useful_life_years?: number | null
-          vehicle_group_id?: string | null
-          vehicle_weight?: number | null
-          vendor_id?: string | null
           vin?: string | null
           vin_number?: string | null
-          warranty_end_date?: string | null
-          warranty_provider?: string | null
-          warranty_start_date?: string | null
           weekly_rate?: number | null
           year?: number
         }
@@ -4346,24 +4043,6 @@ export type Database = {
           overtime_hours: number
         }[]
       }
-      calculate_fuel_efficiency: {
-        Args: {
-          vehicle_id_param: string
-          start_date?: string
-          end_date?: string
-        }
-        Returns: {
-          total_fuel_liters: number
-          total_distance_km: number
-          fuel_efficiency_km_per_liter: number
-          average_cost_per_liter: number
-          total_fuel_cost: number
-        }[]
-      }
-      calculate_vehicle_total_costs: {
-        Args: { vehicle_id_param: string }
-        Returns: undefined
-      }
       check_budget_overruns: {
         Args: { budget_id_param: string }
         Returns: number
@@ -4478,10 +4157,6 @@ export type Database = {
       }
       create_traffic_payment_journal_entry: {
         Args: { payment_id_param: string }
-        Returns: string
-      }
-      create_vehicle_purchase_journal_entry: {
-        Args: { vehicle_id_param: string }
         Returns: string
       }
       decrypt_sensitive_data: {
