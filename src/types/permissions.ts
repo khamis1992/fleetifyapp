@@ -161,6 +161,125 @@ export const PERMISSIONS: Permission[] = [
 
   // Finance Permissions
   {
+    id: 'finance.view',
+    name: 'View Finance Section',
+    description: 'Access to finance dashboard and overview',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.accounts.view',
+    name: 'View Chart of Accounts',
+    description: 'View chart of accounts',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.accounts.write',
+    name: 'Manage Chart of Accounts',
+    description: 'Create, update, delete accounts',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.ledger.view',
+    name: 'View General Ledger',
+    description: 'View general ledger entries',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.ledger.write',
+    name: 'Manage General Ledger',
+    description: 'Create and manage journal entries',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.treasury.view',
+    name: 'View Treasury',
+    description: 'View treasury and bank information',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.treasury.write',
+    name: 'Manage Treasury',
+    description: 'Manage bank accounts and transactions',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.costcenters.view',
+    name: 'View Cost Centers',
+    description: 'View cost center information',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.costcenters.write',
+    name: 'Manage Cost Centers',
+    description: 'Create and manage cost centers',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.reports.view',
+    name: 'View Financial Reports',
+    description: 'View financial reports and analytics',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.assets.view',
+    name: 'View Fixed Assets',
+    description: 'View fixed assets information',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.assets.write',
+    name: 'Manage Fixed Assets',
+    description: 'Create and manage fixed assets',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.budgets.view',
+    name: 'View Budgets',
+    description: 'View budget information',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.budgets.write',
+    name: 'Manage Budgets',
+    description: 'Create and manage budgets',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.vendors.view',
+    name: 'View Vendors',
+    description: 'View vendor information',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
+    id: 'finance.vendors.write',
+    name: 'Manage Vendors',
+    description: 'Create and manage vendors',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.analysis.view',
+    name: 'View Financial Analysis',
+    description: 'View financial analysis and insights',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
+  {
     id: 'finance.invoices.read',
     name: 'View Invoices',
     description: 'View invoice information',
@@ -185,20 +304,6 @@ export const PERMISSIONS: Permission[] = [
     id: 'finance.payments.write',
     name: 'Manage Payments',
     description: 'Process payments and receipts',
-    category: PERMISSION_CATEGORIES[1],
-    level: 'write'
-  },
-  {
-    id: 'finance.budget.read',
-    name: 'View Budget',
-    description: 'View budget information',
-    category: PERMISSION_CATEGORIES[1],
-    level: 'read'
-  },
-  {
-    id: 'finance.budget.write',
-    name: 'Manage Budget',
-    description: 'Create and manage budgets',
     category: PERMISSION_CATEGORIES[1],
     level: 'write'
   },
