@@ -238,20 +238,20 @@ export function AppSidebar() {
 
   const isActive = (href: string) => location.pathname.startsWith(href);
   const getNavClassName = ({ isActive: active }: { isActive: boolean }) => 
-    active ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
+    active ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/60";
 
   return (
-    <Sidebar side="right" className="border-l border-border bg-card/50 backdrop-blur-sm">
+    <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
       {/* Header */}
-      <SidebarHeader className="border-b border-border/50 p-6">
+      <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <Building2 className="h-5 w-5" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-foreground">Fleetify</h1>
-              <p className="text-xs text-muted-foreground">نظام إدارة تأجير السيارات</p>
+              <h1 className="text-lg font-bold text-sidebar-foreground">Fleetify</h1>
+              <p className="text-xs text-sidebar-foreground/60">نظام إدارة تأجير السيارات</p>
             </div>
           )}
         </div>
@@ -260,7 +260,7 @@ export function AppSidebar() {
       {/* Navigation */}
       <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground mb-2">
+          <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
             القائمة الرئيسية
           </SidebarGroupLabel>
           <SidebarGroupContent>

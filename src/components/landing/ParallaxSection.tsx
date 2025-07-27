@@ -17,12 +17,12 @@ export function ParallaxSection({ children, offset = 50, className = '' }: Paral
   const y = useTransform(scrollYProgress, [0, 1], [0, offset]);
 
   return (
-    <div ref={ref} className={className}>
-      <motion.div
-        style={{ y }}
-      >
-        {children}
-      </motion.div>
-    </div>
+    <motion.div
+      ref={ref}
+      style={{ y }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }

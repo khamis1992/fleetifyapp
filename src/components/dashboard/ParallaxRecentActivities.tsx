@@ -106,9 +106,8 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
   }
 
   return (
-    <div ref={ref}>
-      <motion.div style={{ y, opacity }}>
-        <InteractiveDashboardCard
+    <motion.div ref={ref} style={{ y, opacity }}>
+      <InteractiveDashboardCard
         title="الأنشطة الأخيرة"
         description="آخر التحديثات في نظامك"
         icon={Calendar}
@@ -212,7 +211,6 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
           </Button>
         </motion.div>
       </InteractiveDashboardCard>
-      </motion.div>
-    </div>
+    </motion.div>
   );
 }

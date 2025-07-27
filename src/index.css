@@ -9,89 +9,87 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Primary Kuwait Business Blue - Professional and trustworthy */
-    --primary: 210 100% 12%;
-    --primary-foreground: 0 0% 98%;
-    --primary-light: 210 100% 20%;
-    --primary-glow: 210 100% 25%;
+    /* Light Cream Professional Base */
+    --background: 45 23% 97%;
+    --background-soft: 45 20% 95%;
+    --foreground: 25 25% 15%;
     
-    /* Kuwait Gold Accent - Luxury and prosperity */
-    --accent: 45 85% 50%;
-    --accent-foreground: 210 100% 12%;
-    --accent-light: 45 85% 60%;
-    --accent-muted: 45 85% 95%;
-    
-    /* Professional Secondary Colors */
-    --secondary: 220 15% 95%;
-    --secondary-foreground: 210 100% 12%;
-    --secondary-dark: 220 15% 85%;
-    
-    /* Background System */
-    --background: 0 0% 100%;
-    --background-soft: 220 15% 98%;
-    --foreground: 220 25% 10%;
-    
-    /* Card System */
+    /* Warm Card System */
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
-    --card-hover: 220 15% 98%;
+    --card-foreground: 25 25% 15%;
+    --card-hover: 45 15% 98%;
+    --card-glass: 0 0% 100% / 0.9;
+    
+    /* Warm Amber Primary - Professional and Inviting */
+    --primary: 45 86% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 45 86% 48%;
+    --primary-light: 45 86% 68%;
+    --primary-glow: 45 86% 58% / 0.2;
+    
+    /* Elegant Accent System */
+    --accent: 48 88% 92%;
+    --accent-foreground: 25 25% 15%;
+    --accent-light: 48 88% 95%;
+    --accent-muted: 48 88% 85%;
+    
+    /* Sophisticated Secondary */
+    --secondary: 210 11% 85%;
+    --secondary-foreground: 25 25% 15%;
+    --secondary-dark: 210 11% 80%;
     
     /* Interactive Elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 25 25% 15%;
     
     /* Muted Elements */
-    --muted: 220 15% 96%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 48 16% 92%;
+    --muted-foreground: 25 15% 45%;
     
-    /* Status Colors */
-    --success: 140 70% 35%;
-    --success-foreground: 0 0% 98%;
-    --warning: 35 100% 50%;
-    --warning-foreground: 220 25% 10%;
-    --destructive: 0 75% 55%;
-    --destructive-foreground: 0 0% 98%;
+    /* Status Colors - Harmonious with Theme */
+    --success: 142 56% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 82% 55%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 74% 60%;
+    --destructive-foreground: 0 0% 100%;
     
-    /* Borders and Inputs */
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 210 100% 12%;
+    /* Refined Borders and Inputs */
+    --border: 48 16% 88%;
+    --input: 48 16% 96%;
+    --ring: 45 86% 58%;
     
-    /* Professional Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-light)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--accent)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
-    --gradient-muted: linear-gradient(180deg, hsl(var(--muted)) 0%, hsl(var(--secondary)) 100%);
-    --gradient-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    /* Elegant Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
+    --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 50%, hsl(var(--accent-light)) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
     
-    /* Professional Shadows */
-    --shadow-card: 0 4px 12px -2px hsl(var(--primary) / 0.08);
-    --shadow-elevated: 0 8px 24px -4px hsl(var(--primary) / 0.12);
-    --shadow-accent: 0 4px 16px -2px hsl(var(--accent) / 0.25);
-    --shadow-glow: 0 0 32px hsl(var(--primary-glow) / 0.15);
-    --shadow-float: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.12);
+    /* Refined Shadows */
+    --shadow-subtle: 0 1px 3px 0 hsl(25 25% 15% / 0.08), 0 1px 2px -1px hsl(25 25% 15% / 0.08);
+    --shadow-card: 0 4px 6px -1px hsl(25 25% 15% / 0.08), 0 2px 4px -2px hsl(25 25% 15% / 0.08);
+    --shadow-elevated: 0 10px 15px -3px hsl(25 25% 15% / 0.1), 0 4px 6px -4px hsl(25 25% 15% / 0.1);
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow));
+    --shadow-glass: 0 8px 32px hsl(25 25% 15% / 0.06);
     
-/* Animation System */
+    /* Smooth Professional Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --transition-fast: all 0.15s ease-out;
-    --transition-glow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-micro: all 0.15s ease-out;
     
     --radius: 0.75rem;
 
-    /* Sidebar Variables */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Light Sidebar Variables */
+    --sidebar-background: 45 23% 98%;
+    --sidebar-foreground: 25 25% 15%;
+    --sidebar-primary: 45 86% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 48 88% 95%;
+    --sidebar-accent-foreground: 25 25% 15%;
+    --sidebar-border: 48 16% 90%;
+    --sidebar-ring: 45 86% 58%;
   }
 
   .dark {

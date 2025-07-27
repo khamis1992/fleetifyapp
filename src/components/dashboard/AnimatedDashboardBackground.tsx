@@ -1,4 +1,30 @@
 import { motion } from 'framer-motion';
+import { Canvas } from '@react-three/fiber';
+import { Suspense } from 'react';
+
+function AnimatedSphere() {
+  return (
+    <mesh scale={2}>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshStandardMaterial
+        color="#6366f1"
+        transparent
+        opacity={0.1}
+        roughness={0}
+      />
+    </mesh>
+  );
+}
+
+function Scene() {
+  return (
+    <>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[10, 10, 5]} intensity={1} />
+      <AnimatedSphere />
+    </>
+  );
+}
 
 export function AnimatedDashboardBackground() {
   return (
@@ -45,29 +71,13 @@ export function AnimatedDashboardBackground() {
         ))}
       </div>
 
-      {/* Geometric shapes for visual interest */}
-      <div className="absolute inset-0 opacity-10">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-32 h-32 border border-primary/20 rounded-full"
-            animate={{
-              scale: [1, 1.2, 1],
-              rotate: [0, 360],
-              opacity: [0.1, 0.3, 0.1],
-            }}
-            transition={{
-              duration: 15 + i * 3,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 2,
-            }}
-            style={{
-              left: `${30 + i * 25}%`,
-              top: `${20 + i * 20}%`,
-            }}
-          />
-        ))}
+      {/* Simplified 3D Scene */}
+      <div className="absolute inset-0 opacity-20">
+        <Canvas camera={{ position: [0, 0, 5] }}>
+          <Suspense fallback={null}>
+            <Scene />
+          </Suspense>
+        </Canvas>
       </div>
 
       {/* Gradient overlays */}
