@@ -82,6 +82,7 @@ export interface CustomerFormData {
   national_id?: string;
   passport_number?: string;
   license_number?: string;
+  license_expiry?: string;
   address?: string;
   address_ar?: string;
   city?: string;
@@ -319,7 +320,14 @@ export const useCreateCustomer = () => {
         is_blacklisted: false,
         credit_limit: customerDataWithoutCompany.credit_limit || 0,
         city: customerDataWithoutCompany.city || 'Kuwait City',
-        country: customerDataWithoutCompany.country || 'Kuwait'
+        country: customerDataWithoutCompany.country || 'Kuwait',
+        // Handle date fields - convert empty strings to null
+        date_of_birth: customerDataWithoutCompany.date_of_birth && customerDataWithoutCompany.date_of_birth.trim() !== '' 
+          ? customerDataWithoutCompany.date_of_birth 
+          : null,
+        license_expiry: customerDataWithoutCompany.license_expiry && customerDataWithoutCompany.license_expiry.trim() !== '' 
+          ? customerDataWithoutCompany.license_expiry 
+          : null
       };
       
       console.log('📝 [useCreateCustomer] Final customer data:', finalCustomerData);

@@ -47,7 +47,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
       address_ar: customer?.address_ar || '',
       city: customer?.city || 'Kuwait City',
       country: customer?.country || 'Kuwait',
-      date_of_birth: customer?.date_of_birth || '',
+      date_of_birth: customer?.date_of_birth || undefined,
       credit_limit: customer?.credit_limit || 0,
       emergency_contact_name: customer?.emergency_contact_name || '',
       emergency_contact_phone: customer?.emergency_contact_phone || '',
@@ -102,6 +102,18 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
     // التحقق من البريد الإلكتروني إذا تم إدخاله
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.push('عنوان البريد الإلكتروني غير صحيح');
+    }
+
+    // التحقق من تاريخ الميلاد إذا تم إدخاله
+    if (data.date_of_birth) {
+      const birthDate = new Date(data.date_of_birth);
+      const today = new Date();
+      
+      if (isNaN(birthDate.getTime())) {
+        errors.push('تاريخ الميلاد غير صحيح');
+      } else if (birthDate > today) {
+        errors.push('تاريخ الميلاد لا يمكن أن يكون في المستقبل');
+      }
     }
 
     // التحقق من اختيار الشركة للمدير العام
@@ -429,14 +441,17 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                       <Label>رقم رخصة القيادة</Label>
                       <Input {...register('license_number')} placeholder="DL123456" dir="ltr" />
                     </div>
-                    <div className="space-y-2">
-                      <Label>تاريخ الميلاد</Label>
-                      <Input 
-                        type="date" 
-                        {...register('date_of_birth')} 
-                        max={new Date().toISOString().split('T')[0]}
-                      />
-                    </div>
+                     <div className="space-y-2">
+                       <Label>تاريخ الميلاد (اختياري)</Label>
+                       <Input 
+                         type="date" 
+                         {...register('date_of_birth')} 
+                         max={new Date().toISOString().split('T')[0]}
+                       />
+                       <p className="text-xs text-muted-foreground">
+                         هذا الحقل اختياري ويمكن تركه فارغاً
+                       </p>
+                     </div>
                   </div>
                 </CardContent>
               </Card>
