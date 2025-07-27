@@ -4941,6 +4941,7 @@ export type Database = {
               company_id_param: string
               customer_id_param: string
               customer_name_param: string
+              customer_name_ar_param?: string
             }
           | { customer_id_param: string; company_id_param: string }
           | {
