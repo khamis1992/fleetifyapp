@@ -354,46 +354,46 @@ const FinancialAnalysis = () => {
                         <div className="text-4xl font-bold text-primary">
                           {advancedAnalytics.financialHealthScore.score.toFixed(0)}
                         </div>
-                        <Badge 
-                          variant={
-                            advancedAnalytics.financialHealthScore.rating === 'Excellent' ? 'default' :
-                            advancedAnalytics.financialHealthScore.rating === 'Good' ? 'secondary' :
-                            advancedAnalytics.financialHealthScore.rating === 'Average' ? 'outline' :
-                            'destructive'
-                          }
-                          className="text-lg px-4 py-2"
-                        >
-                          {advancedAnalytics.financialHealthScore.rating === 'Excellent' ? 'ممتاز' :
-                           advancedAnalytics.financialHealthScore.rating === 'Good' ? 'جيد' :
-                           advancedAnalytics.financialHealthScore.rating === 'Average' ? 'متوسط' :
-                           advancedAnalytics.financialHealthScore.rating === 'Poor' ? 'ضعيف' : 'خطير'}
-                        </Badge>
+                         <Badge 
+                           variant={
+                             advancedAnalytics.financialHealthScore.score >= 80 ? 'default' :
+                             advancedAnalytics.financialHealthScore.score >= 60 ? 'secondary' :
+                             advancedAnalytics.financialHealthScore.score >= 40 ? 'outline' :
+                             'destructive'
+                           }
+                           className="text-lg px-4 py-2"
+                         >
+                           {advancedAnalytics.financialHealthScore.score >= 80 ? 'ممتاز' :
+                            advancedAnalytics.financialHealthScore.score >= 60 ? 'جيد' :
+                            advancedAnalytics.financialHealthScore.score >= 40 ? 'متوسط' :
+                            advancedAnalytics.financialHealthScore.score >= 20 ? 'ضعيف' : 'خطير'}
+                         </Badge>
                       </div>
                       
                       <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">السيولة</span>
-                          <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.liquidity.toFixed(0)}</span>
-                        </div>
-                        <Progress value={advancedAnalytics.financialHealthScore.factors.liquidity} />
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">الربحية</span>
-                          <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.profitability.toFixed(0)}</span>
-                        </div>
-                        <Progress value={advancedAnalytics.financialHealthScore.factors.profitability} />
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">الكفاءة</span>
-                          <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.efficiency.toFixed(0)}</span>
-                        </div>
-                        <Progress value={advancedAnalytics.financialHealthScore.factors.efficiency} />
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">الرافعة المالية</span>
-                          <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.leverage.toFixed(0)}</span>
-                        </div>
-                        <Progress value={advancedAnalytics.financialHealthScore.factors.leverage} />
+                         <div className="flex justify-between items-center">
+                           <span className="text-sm">السيولة</span>
+                           <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.liquidityScore.toFixed(0)}</span>
+                         </div>
+                         <Progress value={advancedAnalytics.financialHealthScore.factors.liquidityScore} />
+                         
+                         <div className="flex justify-between items-center">
+                           <span className="text-sm">الربحية</span>
+                           <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.profitabilityScore.toFixed(0)}</span>
+                         </div>
+                         <Progress value={advancedAnalytics.financialHealthScore.factors.profitabilityScore} />
+                         
+                         <div className="flex justify-between items-center">
+                           <span className="text-sm">الكفاءة</span>
+                           <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.efficiencyScore.toFixed(0)}</span>
+                         </div>
+                         <Progress value={advancedAnalytics.financialHealthScore.factors.efficiencyScore} />
+                         
+                         <div className="flex justify-between items-center">
+                           <span className="text-sm">الملاءة المالية</span>
+                           <span className="font-bold">{advancedAnalytics.financialHealthScore.factors.solvencyScore.toFixed(0)}</span>
+                         </div>
+                         <Progress value={advancedAnalytics.financialHealthScore.factors.solvencyScore} />
                       </div>
                     </div>
                   </CardContent>
@@ -464,9 +464,9 @@ const FinancialAnalysis = () => {
                         <div key={index} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start mb-3">
                             <h3 className="font-semibold">{center.centerName}</h3>
-                            <Badge variant={center.efficiency >= 80 ? "default" : center.efficiency >= 60 ? "secondary" : "destructive"}>
-                              {center.efficiency.toFixed(0)}% كفاءة
-                            </Badge>
+                             <Badge variant={center.variancePercentage <= 10 ? "default" : center.variancePercentage <= 20 ? "secondary" : "destructive"}>
+                               {center.variancePercentage.toFixed(1)}% انحراف
+                             </Badge>
                           </div>
                           
                           <div className="grid grid-cols-3 gap-4 text-sm">
@@ -486,9 +486,9 @@ const FinancialAnalysis = () => {
                             </div>
                           </div>
                           
-                          <div className="mt-3">
-                            <Progress value={center.efficiency} className="h-2" />
-                          </div>
+                           <div className="mt-3">
+                             <Progress value={Math.min(100, (center.actualAmount / center.budgetAmount) * 100)} className="h-2" />
+                           </div>
                         </div>
                       ))}
                     </div>

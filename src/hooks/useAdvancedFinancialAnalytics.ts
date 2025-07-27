@@ -1,165 +1,73 @@
-import { useQuery } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/contexts/AuthContext"
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns"
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-export interface CostCenterPerformance {
-  costCenterId: string
-  centerName: string
-  budgetAmount: number
-  actualAmount: number
-  variance: number
-  variancePercentage: number
-  efficiency: number
+interface CostCenterPerformance {
+  centerName: string;
+  centerCode: string;
+  budgetAmount: number;
+  actualAmount: number;
+  variance: number;
+  variancePercentage: number;
 }
 
-export interface CashFlowAnalysis {
-  operatingCashFlow: number
-  investingCashFlow: number
-  financingCashFlow: number
-  netCashFlow: number
-  cashFlowRatio: number
+interface CashFlowAnalysis {
+  totalInflow: number;
+  totalOutflow: number;
+  netCashFlow: number;
+  operatingCashFlow: number;
+  investingCashFlow: number;
+  financingCashFlow: number;
 }
 
-export interface FinancialHealthScore {
-  score: number
-  rating: 'Excellent' | 'Good' | 'Average' | 'Poor' | 'Critical'
+interface FinancialHealthScore {
+  score: number;
   factors: {
-    liquidity: number
-    profitability: number
-    efficiency: number
-    leverage: number
-  }
+    profitabilityScore: number;
+    liquidityScore: number;
+    efficiencyScore: number;
+    solvencyScore: number;
+  };
 }
 
-export interface MonthlyTrend {
-  month: string
-  revenue: number
-  expenses: number
-  netIncome: number
-  marginPercentage: number
+interface MonthlyTrend {
+  month: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  profitMargin: number;
+}
+
+interface AdvancedFinancialAnalytics {
+  monthlyTrends: MonthlyTrend[];
+  costCenterPerformance: CostCenterPerformance[];
+  cashFlowAnalysis: CashFlowAnalysis;
+  financialHealthScore: FinancialHealthScore;
 }
 
 export const useAdvancedFinancialAnalytics = () => {
-  const { user } = useAuth()
+  const { user } = useAuth();
   
   return useQuery({
-    queryKey: ["advancedFinancialAnalytics", user?.profile?.company_id],
-    queryFn: async () => {
-      if (!user?.profile?.company_id) throw new Error("Company ID required")
+    queryKey: ["advanced-financial-analytics", user?.id],
+    queryFn: async (): Promise<AdvancedFinancialAnalytics> => {
+      if (!user?.user_metadata?.company_id) {
+        return getEmptyAnalytics();
+      }
 
-      // Get cost center performance
+      const companyId = user.user_metadata.company_id;
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      // جلب بيانات مراكز التكلفة
       const { data: costCenters } = await supabase
         .from("cost_centers")
         .select("*")
-        .eq("company_id", user.profile.company_id)
-        .eq("is_active", true)
+        .eq("company_id", companyId)
+        .eq("is_active", true);
 
-      // Get journal entries with cost center information
-      const { data: journalEntriesWithCostCenters } = await supabase
-        .from("journal_entry_lines")
-        .select(`
-          *,
-          cost_center_id,
-          debit_amount,
-          credit_amount,
-          journal_entries (
-            entry_date,
-            status,
-            company_id
-          ),
-          cost_centers (
-            id,
-            center_name,
-            budget_amount
-          )
-        `)
-        .eq("journal_entries.company_id", user.profile.company_id)
-        .eq("journal_entries.status", "posted")
-        .not("cost_center_id", "is", null)
-
-      // Get monthly trends for the last 12 months
-      const monthlyTrends: MonthlyTrend[] = []
-      for (let i = 11; i >= 0; i--) {
-        const monthStart = startOfMonth(subMonths(new Date(), i))
-        const monthEnd = endOfMonth(subMonths(new Date(), i))
-        
-        const { data: monthlyJournalEntries } = await supabase
-          .from("journal_entries")
-          .select(`
-            *,
-            journal_entry_lines (
-              *,
-              chart_of_accounts (
-                account_type
-              )
-            )
-          `)
-          .eq("company_id", user.profile.company_id)
-          .gte("entry_date", format(monthStart, 'yyyy-MM-dd'))
-          .lte("entry_date", format(monthEnd, 'yyyy-MM-dd'))
-          .eq("status", "posted")
-
-        const monthlyRevenue = monthlyJournalEntries?.reduce((total, entry) => {
-          return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-            if (line.chart_of_accounts?.account_type === 'revenue') {
-              return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
-            }
-            return lineTotal
-          }, 0) || 0)
-        }, 0) || 0
-
-        const monthlyExpenses = monthlyJournalEntries?.reduce((total, entry) => {
-          return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-            if (line.chart_of_accounts?.account_type === 'expenses') {
-              return lineTotal + Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
-            }
-            return lineTotal
-          }, 0) || 0)
-        }, 0) || 0
-
-        const monthlyNetIncome = monthlyRevenue - monthlyExpenses
-        const marginPercentage = monthlyRevenue > 0 ? (monthlyNetIncome / monthlyRevenue) * 100 : 0
-
-        monthlyTrends.push({
-          month: format(monthStart, 'yyyy-MM'),
-          revenue: monthlyRevenue,
-          expenses: monthlyExpenses,
-          netIncome: monthlyNetIncome,
-          marginPercentage
-        })
-      }
-
-      // Calculate cost center performance
-      const costCenterPerformance: CostCenterPerformance[] = costCenters?.map(center => {
-        // Find all journal entries for this cost center
-        const centerJournalEntries = journalEntriesWithCostCenters?.filter(
-          entry => entry.cost_center_id === center.id
-        ) || []
-
-        const actualAmount = centerJournalEntries.reduce((total, line) => {
-          return total + Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
-        }, 0)
-
-        const budgetAmount = Number(center.budget_amount || 0)
-        const variance = actualAmount - budgetAmount
-        const variancePercentage = budgetAmount > 0 ? (variance / budgetAmount) * 100 : 0
-        const efficiency = budgetAmount > 0 ? Math.max(0, 100 - Math.abs(variancePercentage)) : 0
-
-        return {
-          costCenterId: center.id,
-          centerName: center.center_name,
-          budgetAmount,
-          actualAmount,
-          variance,
-          variancePercentage,
-          efficiency
-        }
-      }) || []
-
-      // Calculate cash flow analysis (simplified)
-      const currentYear = new Date().getFullYear()
-      const { data: currentYearEntries } = await supabase
+      // جلب القيود اليومية للأشهر الستة الماضية
+      const { data: journalEntries } = await supabase
         .from("journal_entries")
         .select(`
           *,
@@ -167,90 +75,226 @@ export const useAdvancedFinancialAnalytics = () => {
             *,
             chart_of_accounts (
               account_type,
-              account_subtype
+              account_name
+            ),
+            cost_centers (
+              center_name,
+              center_code
             )
           )
         `)
-        .eq("company_id", user.profile.company_id)
-        .gte("entry_date", `${currentYear}-01-01`)
-        .lte("entry_date", `${currentYear}-12-31`)
+        .eq("company_id", companyId)
         .eq("status", "posted")
+        .gte("entry_date", sixMonthsAgo.toISOString().split('T')[0]);
 
-      const operatingCashFlow = currentYearEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_type === 'revenue' || 
-              line.chart_of_accounts?.account_type === 'expenses') {
-            return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
+      // جلب المدفوعات والعمليات البنكية
+      const { data: payments } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("status", "completed")
+        .gte("payment_date", sixMonthsAgo.toISOString().split('T')[0]);
 
-      const investingCashFlow = currentYearEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_subtype === 'fixed_assets') {
-            return lineTotal - Number(line.debit_amount || 0) + Number(line.credit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
+      const { data: bankTransactions } = await supabase
+        .from("bank_transactions")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("status", "completed")
+        .gte("transaction_date", sixMonthsAgo.toISOString().split('T')[0]);
 
-      const financingCashFlow = currentYearEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_subtype === 'long_term_liabilities' ||
-              line.chart_of_accounts?.account_type === 'equity') {
-            return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
-
-      const netCashFlow = operatingCashFlow + investingCashFlow + financingCashFlow
-      const cashFlowRatio = operatingCashFlow > 0 ? netCashFlow / operatingCashFlow : 0
-
-      const cashFlowAnalysis: CashFlowAnalysis = {
-        operatingCashFlow,
-        investingCashFlow,
-        financingCashFlow,
-        netCashFlow,
-        cashFlowRatio
-      }
-
-      // Calculate financial health score
-      const latestTrend = monthlyTrends[monthlyTrends.length - 1]
-      const avgMargin = monthlyTrends.reduce((sum, trend) => sum + trend.marginPercentage, 0) / monthlyTrends.length
+      // حساب الاتجاهات الشهرية
+      const monthlyTrends = calculateMonthlyTrends(journalEntries || [], payments || []);
       
-      const liquidityScore = Math.min(100, Math.max(0, 60 + (cashFlowRatio * 20)))
-      const profitabilityScore = Math.min(100, Math.max(0, avgMargin * 5))
-      const efficiencyScore = costCenterPerformance.reduce((sum, center) => sum + center.efficiency, 0) / Math.max(1, costCenterPerformance.length)
-      const leverageScore = Math.min(100, Math.max(0, 80 - Math.abs(avgMargin - 15)))
-
-      const overallScore = (liquidityScore + profitabilityScore + efficiencyScore + leverageScore) / 4
-
-      let rating: FinancialHealthScore['rating'] = 'Critical'
-      if (overallScore >= 80) rating = 'Excellent'
-      else if (overallScore >= 65) rating = 'Good'
-      else if (overallScore >= 50) rating = 'Average'
-      else if (overallScore >= 35) rating = 'Poor'
-
-      const financialHealthScore: FinancialHealthScore = {
-        score: overallScore,
-        rating,
-        factors: {
-          liquidity: liquidityScore,
-          profitability: profitabilityScore,
-          efficiency: efficiencyScore,
-          leverage: leverageScore
-        }
-      }
+      // حساب أداء مراكز التكلفة
+      const costCenterPerformance = calculateCostCenterPerformance(
+        costCenters || [],
+        journalEntries || []
+      );
+      
+      // تحليل التدفق النقدي
+      const cashFlowAnalysis = calculateCashFlowAnalysis(
+        payments || [],
+        bankTransactions || []
+      );
+      
+      // حساب درجة الصحة المالية
+      const financialHealthScore = calculateFinancialHealthScore(
+        monthlyTrends,
+        cashFlowAnalysis
+      );
 
       return {
         monthlyTrends,
         costCenterPerformance,
         cashFlowAnalysis,
-        financialHealthScore
-      }
+        financialHealthScore,
+      };
     },
-    enabled: !!user?.profile?.company_id
-  })
+    enabled: !!user?.user_metadata?.company_id,
+  });
+};
+
+function calculateMonthlyTrends(journalEntries: any[], payments: any[]): MonthlyTrend[] {
+  const monthlyData: { [key: string]: { revenue: number; expenses: number } } = {};
+  
+  // تجميع البيانات حسب الشهر
+  journalEntries.forEach(entry => {
+    const month = new Date(entry.entry_date).toLocaleDateString('ar-EG', { 
+      year: 'numeric', 
+      month: 'long' 
+    });
+    
+    if (!monthlyData[month]) {
+      monthlyData[month] = { revenue: 0, expenses: 0 };
+    }
+    
+    entry.journal_entry_lines?.forEach((line: any) => {
+      if (line.chart_of_accounts?.account_type === 'revenue') {
+        monthlyData[month].revenue += line.credit_amount || 0;
+      } else if (line.chart_of_accounts?.account_type === 'expenses') {
+        monthlyData[month].expenses += line.debit_amount || 0;
+      }
+    });
+  });
+
+  return Object.entries(monthlyData).map(([month, data]) => ({
+    month,
+    revenue: data.revenue,
+    expenses: data.expenses,
+    profit: data.revenue - data.expenses,
+    profitMargin: data.revenue > 0 ? ((data.revenue - data.expenses) / data.revenue) * 100 : 0,
+  })).slice(-6); // آخر 6 أشهر فقط
+}
+
+function calculateCostCenterPerformance(
+  costCenters: any[],
+  journalEntries: any[]
+): CostCenterPerformance[] {
+  return costCenters.map(center => {
+    let actualAmount = 0;
+    
+    journalEntries.forEach(entry => {
+      entry.journal_entry_lines?.forEach((line: any) => {
+        if (line.cost_center_id === center.id) {
+          actualAmount += line.debit_amount || 0;
+        }
+      });
+    });
+
+    const variance = actualAmount - (center.budget_amount || 0);
+    const variancePercentage = center.budget_amount > 0 
+      ? (variance / center.budget_amount) * 100 
+      : 0;
+
+    return {
+      centerName: center.center_name,
+      centerCode: center.center_code,
+      budgetAmount: center.budget_amount || 0,
+      actualAmount,
+      variance,
+      variancePercentage,
+    };
+  });
+}
+
+function calculateCashFlowAnalysis(
+  payments: any[],
+  bankTransactions: any[]
+): CashFlowAnalysis {
+  let totalInflow = 0;
+  let totalOutflow = 0;
+
+  // حساب التدفقات من المدفوعات
+  payments.forEach(payment => {
+    if (payment.payment_type === 'receipt') {
+      totalInflow += payment.amount;
+    } else {
+      totalOutflow += payment.amount;
+    }
+  });
+
+  // حساب التدفقات من العمليات البنكية
+  bankTransactions.forEach(transaction => {
+    if (transaction.transaction_type === 'deposit') {
+      totalInflow += transaction.amount;
+    } else {
+      totalOutflow += transaction.amount;
+    }
+  });
+
+  const netCashFlow = totalInflow - totalOutflow;
+
+  return {
+    totalInflow,
+    totalOutflow,
+    netCashFlow,
+    operatingCashFlow: netCashFlow * 0.8, // تقدير
+    investingCashFlow: netCashFlow * 0.1, // تقدير
+    financingCashFlow: netCashFlow * 0.1, // تقدير
+  };
+}
+
+function calculateFinancialHealthScore(
+  monthlyTrends: MonthlyTrend[],
+  cashFlowAnalysis: CashFlowAnalysis
+): FinancialHealthScore {
+  // حساب درجة الربحية
+  const avgProfitMargin = monthlyTrends.length > 0
+    ? monthlyTrends.reduce((sum, trend) => sum + trend.profitMargin, 0) / monthlyTrends.length
+    : 0;
+  const profitabilityScore = Math.min(100, Math.max(0, avgProfitMargin * 5));
+
+  // حساب درجة السيولة
+  const liquidityScore = cashFlowAnalysis.netCashFlow > 0 ? 80 : 40;
+
+  // حساب درجة الكفاءة
+  const revenueGrowth = monthlyTrends.length >= 2
+    ? ((monthlyTrends[monthlyTrends.length - 1].revenue - monthlyTrends[0].revenue) / monthlyTrends[0].revenue) * 100
+    : 0;
+  const efficiencyScore = Math.min(100, Math.max(0, 50 + revenueGrowth));
+
+  // حساب درجة الملاءة المالية
+  const solvencyScore = cashFlowAnalysis.totalInflow > cashFlowAnalysis.totalOutflow ? 85 : 50;
+
+  // حساب الدرجة الإجمالية
+  const score = Math.round(
+    (profitabilityScore * 0.3) +
+    (liquidityScore * 0.25) +
+    (efficiencyScore * 0.25) +
+    (solvencyScore * 0.2)
+  );
+
+  return {
+    score,
+    factors: {
+      profitabilityScore: Math.round(profitabilityScore),
+      liquidityScore: Math.round(liquidityScore),
+      efficiencyScore: Math.round(efficiencyScore),
+      solvencyScore: Math.round(solvencyScore),
+    },
+  };
+}
+
+function getEmptyAnalytics(): AdvancedFinancialAnalytics {
+  return {
+    monthlyTrends: [],
+    costCenterPerformance: [],
+    cashFlowAnalysis: {
+      totalInflow: 0,
+      totalOutflow: 0,
+      netCashFlow: 0,
+      operatingCashFlow: 0,
+      investingCashFlow: 0,
+      financingCashFlow: 0,
+    },
+    financialHealthScore: {
+      score: 0,
+      factors: {
+        profitabilityScore: 0,
+        liquidityScore: 0,
+        efficiencyScore: 0,
+        solvencyScore: 0,
+      },
+    },
+  };
 }
