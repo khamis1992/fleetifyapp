@@ -63,7 +63,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'إجمالي المركبات',
       value: String(enhancedStats?.totalVehicles || 0),
-      change: enhancedStats?.vehiclesChange || '+0%',
+      change: String(enhancedStats?.vehiclesChange || '+0%'),
       changeType: 'positive' as const,
       icon: Car,
       trend: 'up' as const,
@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'العملاء النشطين',
       value: String(enhancedStats?.totalCustomers || 0),
-      change: enhancedStats?.customersChange || '+0%',
+      change: String(enhancedStats?.customersChange || '+0%'),
       changeType: 'positive' as const,
       icon: Users,
       trend: 'up' as const,
@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'العقود النشطة',
       value: String(enhancedStats?.activeContracts || 0),
-      change: enhancedStats?.contractsChange || '+0%',
+      change: String(enhancedStats?.contractsChange || '+0%'),
       changeType: 'neutral' as const,
       icon: FileText,
       trend: 'neutral' as const,
@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
     {
       title: 'الإيرادات الشهرية',
       value: `${enhancedStats?.monthlyRevenue || 0} د.ك`,
-      change: enhancedStats?.revenueChange || '+0%',
+      change: String(enhancedStats?.revenueChange || '+0%'),
       changeType: 'positive' as const,
       icon: DollarSign,
       trend: 'up' as const,
