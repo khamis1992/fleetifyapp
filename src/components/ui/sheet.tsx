@@ -129,3 +129,5 @@ export {
   SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetOverlay, SheetPortal, SheetTitle, SheetTrigger
 }
 
+export { VisuallyHidden } from "@/components/ui/visually-hidden"
+
