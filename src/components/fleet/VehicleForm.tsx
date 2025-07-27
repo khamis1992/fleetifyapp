@@ -168,6 +168,94 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
     }
   }, [open, vehicle, form])
 
+  // Fill dummy data function
+  const fillDummyData = () => {
+    const currentYear = new Date().getFullYear()
+    const randomId = Math.floor(Math.random() * 1000)
+    
+    const dummyData = {
+      // Basic Information
+      plate_number: `أ ب ج ${1000 + randomId}`,
+      make: "تويوتا",
+      model: "كامري",
+      year: currentYear - Math.floor(Math.random() * 5), // Random year within last 5 years
+      color: "أبيض",
+      vin: `JH4DB1540NS${String(randomId).padStart(6, '0')}`,
+      
+      // Technical Information
+      engine_number: `ENG${String(randomId).padStart(8, '0')}`,
+      chassis_number: `CH${String(randomId).padStart(10, '0')}`,
+      fuel_capacity: "65",
+      transmission_type: "automatic",
+      drive_type: "front_wheel",
+      vehicle_category: "sedan",
+      fuel_type: "gasoline",
+      seating_capacity: 5,
+      vehicle_condition: "excellent",
+      
+      // Registration & Documentation
+      registration_date: "2023-01-15",
+      registration_expiry: "2025-01-15",
+      inspection_due_date: "2024-12-31",
+      warranty_start_date: "2023-01-15",
+      warranty_end_date: "2026-01-15",
+      
+      // Location & Tracking
+      current_location: "الرياض - مكتب الشركة الرئيسي",
+      gps_tracking_device: `GPS${String(randomId).padStart(6, '0')}`,
+      
+      // Ownership Information
+      ownership_status: "owned",
+      lease_start_date: "",
+      lease_end_date: "",
+      monthly_lease_amount: "",
+      lease_company: "",
+      
+      // Financial Information
+      purchase_date: "2023-01-15",
+      purchase_cost: "85000",
+      useful_life_years: 10,
+      residual_value: "25000",
+      depreciation_method: "straight_line",
+      
+      // Operational Information
+      current_mileage: String(10000 + randomId * 10),
+      daily_rate: "150",
+      weekly_rate: "900",
+      monthly_rate: "3000",
+      deposit_amount: "2000",
+      status: "available",
+      
+      // Enhanced Fields
+      manufacturer: "شركة تويوتا العالمية",
+      purchase_source: "معرض السيارات الرئيسي",
+      asset_code: `VEH-${String(randomId).padStart(4, '0')}`,
+      asset_classification: "vehicle",
+      financing_type: "cash",
+      loan_amount: "",
+      monthly_payment: "",
+      warranty_expiry: "2026-01-15",
+      service_interval_km: 10000,
+      last_service_date: "2024-06-15",
+      fuel_card_number: `FC${String(randomId).padStart(8, '0')}`,
+      gps_device_id: `GPS${String(randomId).padStart(6, '0')}`,
+      
+      // Additional Information
+      notes: "مركبة جديدة في حالة ممتازة، تم شراؤها من معرض معتمد مع ضمان شامل.",
+      cost_center_id: "",
+    }
+    
+    // Fill form with dummy data
+    Object.entries(dummyData).forEach(([key, value]) => {
+      form.setValue(key as any, value)
+    })
+    
+    // Show success message
+    toast({
+      title: "تم تعبئة البيانات",
+      description: "تم ملء النموذج ببيانات تجريبية. يمكنك تعديلها حسب الحاجة.",
+    })
+  }
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true)
@@ -1262,29 +1350,44 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end space-x-2 rtl:space-x-reverse">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
-              >
-                إلغاء
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
-                className="min-w-[120px]"
-              >
-                {isSubmitting || createVehicle.isPending || updateVehicle.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <LoadingSpinner size="sm" />
-                    جاري الحفظ...
-                  </div>
-                ) : (
-                  vehicle ? "حفظ التغييرات" : "حفظ المركبة"
-                )}
-              </Button>
+            <div className="flex justify-between items-center">
+              {/* Dummy data button - only show when adding new vehicle */}
+              {!vehicle && (
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={fillDummyData}
+                  disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+                  className="flex items-center gap-2"
+                >
+                  تعبئة بيانات تجريبية
+                </Button>
+              )}
+              
+              <div className="flex space-x-2 rtl:space-x-reverse">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+                >
+                  إلغاء
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+                  className="min-w-[120px]"
+                >
+                  {isSubmitting || createVehicle.isPending || updateVehicle.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      جاري الحفظ...
+                    </div>
+                  ) : (
+                    vehicle ? "حفظ التغييرات" : "حفظ المركبة"
+                  )}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
