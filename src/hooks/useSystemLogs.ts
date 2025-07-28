@@ -44,10 +44,7 @@ export const useSystemLogs = (filters?: {
 
       let query = supabase
         .from('system_logs')
-        .select(`
-          *,
-          user_profile:profiles(first_name, last_name, email)
-        `)
+        .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(500);

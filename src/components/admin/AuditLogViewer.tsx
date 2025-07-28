@@ -276,7 +276,7 @@ export const AuditLogViewer: React.FC = () => {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          مستخدم النظام
+                          {log.user_id ? `المستخدم: ${log.user_id.substring(0, 8)}...` : 'النظام'}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
