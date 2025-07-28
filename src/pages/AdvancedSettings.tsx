@@ -30,12 +30,12 @@ export default function AdvancedSettings() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-primary/10 rounded-lg">
-              <Settings className="h-8 w-8 text-primary" />
+              <Palette className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">الإعدادات المتقدمة</h1>
+              <h1 className="text-3xl font-bold text-foreground">إعدادات الهوية البصرية</h1>
               <p className="text-muted-foreground">
-                تخصيص وتكوين جميع جوانب النظام
+                تخصيص الشعار والألوان والعناصر البصرية للنظام
               </p>
             </div>
           </div>
