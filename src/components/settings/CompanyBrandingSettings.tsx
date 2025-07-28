@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Palette, Upload, RotateCcw, Save, Eye, Settings, Type, Image, 
-  Info, CheckCircle, AlertCircle
+  Info, CheckCircle, AlertCircle, Menu
 } from 'lucide-react';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 import { useAuth } from '@/contexts/AuthContext';
@@ -431,6 +431,158 @@ export const CompanyBrandingSettings = () => {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">يُستخدم للتنبيهات والعناصر المهمة</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sidebar Colors Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Menu className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle className="text-lg">ألوان الشريط الجانبي</CardTitle>
+              <CardDescription>تخصيص ألوان الشريط الجانبي للتنقل</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Sidebar Presets */}
+          <div>
+            <Label className="text-base font-medium">قوالب الشريط الجانبي</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+              <Button
+                variant="outline"
+                className="h-auto p-3 flex flex-col items-center gap-2"
+                onClick={() => {
+                  handleSettingChange('sidebar_background_color', '#ffffff');
+                  handleSettingChange('sidebar_foreground_color', '#1f2937');
+                  handleSettingChange('sidebar_accent_color', '#2563eb');
+                  handleSettingChange('sidebar_border_color', '#e5e7eb');
+                }}
+              >
+                <div className="w-8 h-6 rounded border bg-white border-gray-300"></div>
+                <span className="text-xs">فاتح</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto p-3 flex flex-col items-center gap-2"
+                onClick={() => {
+                  handleSettingChange('sidebar_background_color', '#1f2937');
+                  handleSettingChange('sidebar_foreground_color', '#ffffff');
+                  handleSettingChange('sidebar_accent_color', '#3b82f6');
+                  handleSettingChange('sidebar_border_color', '#374151');
+                }}
+              >
+                <div className="w-8 h-6 rounded bg-gray-800 border border-gray-600"></div>
+                <span className="text-xs">داكن</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto p-3 flex flex-col items-center gap-2"
+                onClick={() => {
+                  handleSettingChange('sidebar_background_color', localSettings.primary_color);
+                  handleSettingChange('sidebar_foreground_color', '#ffffff');
+                  handleSettingChange('sidebar_accent_color', '#ffffff');
+                  handleSettingChange('sidebar_border_color', 'rgba(255,255,255,0.2)');
+                }}
+              >
+                <div 
+                  className="w-8 h-6 rounded border"
+                  style={{ backgroundColor: localSettings.primary_color }}
+                ></div>
+                <span className="text-xs">ملون</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto p-3 flex flex-col items-center gap-2"
+                onClick={() => {
+                  handleSettingChange('sidebar_background_color', 'rgba(255,255,255,0.8)');
+                  handleSettingChange('sidebar_foreground_color', '#1f2937');
+                  handleSettingChange('sidebar_accent_color', localSettings.primary_color);
+                  handleSettingChange('sidebar_border_color', 'rgba(0,0,0,0.1)');
+                }}
+              >
+                <div className="w-8 h-6 rounded border bg-white/80 border-black/10"></div>
+                <span className="text-xs">شفاف</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Individual Sidebar Colors */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="sidebar_background_color">خلفية الشريط</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="sidebar_background_color"
+                  type="color"
+                  value={localSettings.sidebar_background_color}
+                  onChange={(e) => handleSettingChange('sidebar_background_color', e.target.value)}
+                  className="w-12 h-10 p-1 border rounded"
+                />
+                <Input
+                  value={localSettings.sidebar_background_color}
+                  onChange={(e) => handleSettingChange('sidebar_background_color', e.target.value)}
+                  className="flex-1"
+                  placeholder="#ffffff"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sidebar_foreground_color">لون النص</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="sidebar_foreground_color"
+                  type="color"
+                  value={localSettings.sidebar_foreground_color}
+                  onChange={(e) => handleSettingChange('sidebar_foreground_color', e.target.value)}
+                  className="w-12 h-10 p-1 border rounded"
+                />
+                <Input
+                  value={localSettings.sidebar_foreground_color}
+                  onChange={(e) => handleSettingChange('sidebar_foreground_color', e.target.value)}
+                  className="flex-1"
+                  placeholder="#1f2937"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sidebar_accent_color">لون التمييز</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="sidebar_accent_color"
+                  type="color"
+                  value={localSettings.sidebar_accent_color}
+                  onChange={(e) => handleSettingChange('sidebar_accent_color', e.target.value)}
+                  className="w-12 h-10 p-1 border rounded"
+                />
+                <Input
+                  value={localSettings.sidebar_accent_color}
+                  onChange={(e) => handleSettingChange('sidebar_accent_color', e.target.value)}
+                  className="flex-1"
+                  placeholder="#2563eb"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sidebar_border_color">لون الحدود</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="sidebar_border_color"
+                  type="color"
+                  value={localSettings.sidebar_border_color}
+                  onChange={(e) => handleSettingChange('sidebar_border_color', e.target.value)}
+                  className="w-12 h-10 p-1 border rounded"
+                />
+                <Input
+                  value={localSettings.sidebar_border_color}
+                  onChange={(e) => handleSettingChange('sidebar_border_color', e.target.value)}
+                  className="flex-1"
+                  placeholder="#e5e7eb"
+                />
               </div>
             </div>
           </div>

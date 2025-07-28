@@ -18,6 +18,10 @@ export interface BrandingSettings {
   font_family: string;
   theme_preset: string;
   custom_css?: string;
+  sidebar_background_color: string;
+  sidebar_foreground_color: string;
+  sidebar_accent_color: string;
+  sidebar_border_color: string;
 }
 
 export const useCompanyBranding = () => {
@@ -31,7 +35,11 @@ export const useCompanyBranding = () => {
     background_color: '#ffffff',
     text_color: '#1f2937',
     font_family: 'cairo',
-    theme_preset: 'default'
+    theme_preset: 'default',
+    sidebar_background_color: '#ffffff',
+    sidebar_foreground_color: '#1f2937',
+    sidebar_accent_color: '#2563eb',
+    sidebar_border_color: '#e5e7eb'
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -145,6 +153,12 @@ export const useCompanyBranding = () => {
     root.style.setProperty('--secondary', hexToHsl(brandingSettings.secondary_color));
     root.style.setProperty('--accent', hexToHsl(brandingSettings.accent_color));
     
+    // Apply sidebar colors
+    root.style.setProperty('--sidebar-background', hexToHsl(brandingSettings.sidebar_background_color));
+    root.style.setProperty('--sidebar-foreground', hexToHsl(brandingSettings.sidebar_foreground_color));
+    root.style.setProperty('--sidebar-accent', hexToHsl(brandingSettings.sidebar_accent_color));
+    root.style.setProperty('--sidebar-border', hexToHsl(brandingSettings.sidebar_border_color));
+    
     // Apply font family
     if (brandingSettings.font_family) {
       root.style.setProperty('--font-sans', brandingSettings.font_family);
@@ -175,7 +189,11 @@ export const useCompanyBranding = () => {
       system_name_ar: '',
       logo_url: '',
       favicon_url: '',
-      custom_css: ''
+      custom_css: '',
+      sidebar_background_color: '#ffffff',
+      sidebar_foreground_color: '#1f2937',
+      sidebar_accent_color: '#2563eb',
+      sidebar_border_color: '#e5e7eb'
     };
 
     return await saveBrandingSettings(defaultSettings);
