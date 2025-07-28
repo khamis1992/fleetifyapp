@@ -2,7 +2,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHasCompanyAdminAccess, useHasGlobalAccess } from '@/hooks/useCompanyScope';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { 
   Car, 
   FileText, 
@@ -253,8 +253,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
-  const hasCompanyAdminAccess = useHasCompanyAdminAccess();
-  const hasGlobalAccess = useHasGlobalAccess();
+  const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
   
   // Check if finance section should be open
   const isFinanceActive = location.pathname.startsWith('/finance');
