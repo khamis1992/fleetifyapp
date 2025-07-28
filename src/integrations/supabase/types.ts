@@ -2530,6 +2530,140 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_case_account_mappings: {
+        Row: {
+          auto_create_journal_entries: boolean | null
+          case_type: string
+          client_retainer_liability_account_id: string | null
+          company_id: string
+          consultation_revenue_account_id: string | null
+          court_fees_expense_account_id: string | null
+          created_at: string
+          created_by: string | null
+          expert_witness_expense_account_id: string | null
+          id: string
+          is_active: boolean | null
+          legal_expenses_account_id: string | null
+          legal_fees_receivable_account_id: string | null
+          legal_fees_revenue_account_id: string | null
+          legal_research_expense_account_id: string | null
+          settlements_expense_account_id: string | null
+          settlements_payable_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_create_journal_entries?: boolean | null
+          case_type: string
+          client_retainer_liability_account_id?: string | null
+          company_id: string
+          consultation_revenue_account_id?: string | null
+          court_fees_expense_account_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expert_witness_expense_account_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_expenses_account_id?: string | null
+          legal_fees_receivable_account_id?: string | null
+          legal_fees_revenue_account_id?: string | null
+          legal_research_expense_account_id?: string | null
+          settlements_expense_account_id?: string | null
+          settlements_payable_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_create_journal_entries?: boolean | null
+          case_type?: string
+          client_retainer_liability_account_id?: string | null
+          company_id?: string
+          consultation_revenue_account_id?: string | null
+          court_fees_expense_account_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expert_witness_expense_account_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_expenses_account_id?: string | null
+          legal_fees_receivable_account_id?: string | null
+          legal_fees_revenue_account_id?: string | null
+          legal_research_expense_account_id?: string | null
+          settlements_expense_account_id?: string | null
+          settlements_payable_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_account_mappings_client_retainer_liability_acco_fkey"
+            columns: ["client_retainer_liability_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_consultation_revenue_account_i_fkey"
+            columns: ["consultation_revenue_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_court_fees_expense_account_id_fkey"
+            columns: ["court_fees_expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_expert_witness_expense_account_fkey"
+            columns: ["expert_witness_expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_legal_expenses_account_id_fkey"
+            columns: ["legal_expenses_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_legal_fees_receivable_account__fkey"
+            columns: ["legal_fees_receivable_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_legal_fees_revenue_account_id_fkey"
+            columns: ["legal_fees_revenue_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_legal_research_expense_account_fkey"
+            columns: ["legal_research_expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_settlements_expense_account_id_fkey"
+            columns: ["settlements_expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_account_mappings_settlements_payable_account_id_fkey"
+            columns: ["settlements_payable_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_case_activities: {
         Row: {
           activity_date: string | null
@@ -6033,6 +6167,14 @@ export type Database = {
           profile_company_id: string
           role_count: number
         }[]
+      }
+      get_legal_account_mapping: {
+        Args: {
+          company_id_param: string
+          case_type_param: string
+          account_type_param: string
+        }
+        Returns: string
       }
       get_maintenance_cost_center: {
         Args: { company_id_param: string }
