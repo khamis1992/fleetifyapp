@@ -4813,6 +4813,72 @@ export type Database = {
           },
         ]
       }
+      vehicle_condition_reports: {
+        Row: {
+          company_id: string
+          condition_items: Json
+          created_at: string
+          customer_signature: string | null
+          damage_items: Json | null
+          dispatch_permit_id: string
+          fuel_level: number | null
+          id: string
+          inspection_date: string
+          inspection_type: string
+          inspector_id: string
+          inspector_signature: string | null
+          mileage_reading: number | null
+          notes: string | null
+          overall_condition: string
+          photos: Json | null
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          company_id: string
+          condition_items?: Json
+          created_at?: string
+          customer_signature?: string | null
+          damage_items?: Json | null
+          dispatch_permit_id: string
+          fuel_level?: number | null
+          id?: string
+          inspection_date?: string
+          inspection_type?: string
+          inspector_id: string
+          inspector_signature?: string | null
+          mileage_reading?: number | null
+          notes?: string | null
+          overall_condition?: string
+          photos?: Json | null
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          company_id?: string
+          condition_items?: Json
+          created_at?: string
+          customer_signature?: string | null
+          damage_items?: Json | null
+          dispatch_permit_id?: string
+          fuel_level?: number | null
+          id?: string
+          inspection_date?: string
+          inspection_type?: string
+          inspector_id?: string
+          inspector_signature?: string | null
+          mileage_reading?: number | null
+          notes?: string | null
+          overall_condition?: string
+          photos?: Json | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       vehicle_dispatch_permits: {
         Row: {
           actual_km: number | null
@@ -6091,6 +6157,10 @@ export type Database = {
       }
       create_bank_transaction_journal_entry: {
         Args: { transaction_id_param: string }
+        Returns: string
+      }
+      create_condition_report_for_permit: {
+        Args: { permit_id_param: string; inspection_type_param?: string }
         Returns: string
       }
       create_contract_cancellation_journal_entry: {

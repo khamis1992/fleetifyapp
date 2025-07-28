@@ -13,7 +13,8 @@ import {
   MessageSquare,
   Edit,
   CheckCheck,
-  X
+  X,
+  ClipboardCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -26,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useDispatchPermits, useUpdatePermitStatus } from "@/hooks/useDispatchPermits";
 import { useToast } from "@/hooks/use-toast";
+import { VehicleConditionReportDialog } from "./VehicleConditionReportDialog";
 
 interface DispatchPermitDetailsDialogProps {
   permitId: string;
@@ -87,6 +89,7 @@ export function DispatchPermitDetailsDialog({
 }: DispatchPermitDetailsDialogProps) {
   const [showApprovalActions, setShowApprovalActions] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showConditionReport, setShowConditionReport] = useState(false);
   const { toast } = useToast();
 
   const { data: permits } = useDispatchPermits();
@@ -430,8 +433,16 @@ export function DispatchPermitDetailsDialog({
 
           {/* Action Buttons */}
           <div className="space-y-4">
-            {permit.status === 'pending' && (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowConditionReport(true)}
+                variant="outline"
+              >
+                <ClipboardCheck className="h-4 w-4 mr-1" />
+                Vehicle Condition Report
+              </Button>
+              
+              {permit.status === 'pending' && (
                 <Button 
                   onClick={() => setShowApprovalActions(!showApprovalActions)}
                   variant="outline"
@@ -439,8 +450,8 @@ export function DispatchPermitDetailsDialog({
                   <Edit className="h-4 w-4 mr-1" />
                   إجراءات الموافقة
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
 
             {permit.status === 'approved' && (
               <Button onClick={handleStartProgress} disabled={updateStatus.isPending}>
@@ -500,6 +511,15 @@ export function DispatchPermitDetailsDialog({
           </div>
         </div>
       </DialogContent>
+
+      {/* Vehicle Condition Report Dialog */}
+      <VehicleConditionReportDialog
+        open={showConditionReport}
+        onOpenChange={setShowConditionReport}
+        permitId={permit.id}
+        vehicleId={permit.vehicle_id}
+        vehicleName={`${permit.vehicle?.plate_number} - ${permit.vehicle?.make} ${permit.vehicle?.model}`}
+      />
     </Dialog>
   );
 }
