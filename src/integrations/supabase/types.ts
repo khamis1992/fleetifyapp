@@ -2530,6 +2530,398 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_case_activities: {
+        Row: {
+          activity_date: string | null
+          activity_description: string | null
+          activity_title: string
+          activity_type: string
+          case_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          related_correspondence_id: string | null
+          related_document_id: string | null
+          related_payment_id: string | null
+        }
+        Insert: {
+          activity_date?: string | null
+          activity_description?: string | null
+          activity_title: string
+          activity_type: string
+          case_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          related_correspondence_id?: string | null
+          related_document_id?: string | null
+          related_payment_id?: string | null
+        }
+        Update: {
+          activity_date?: string | null
+          activity_description?: string | null
+          activity_title?: string
+          activity_type?: string
+          case_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          related_correspondence_id?: string | null
+          related_document_id?: string | null
+          related_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_activities_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_case_correspondence: {
+        Row: {
+          attachments: Json | null
+          case_id: string
+          communication_date: string | null
+          company_id: string
+          content: string | null
+          correspondence_type: string
+          created_at: string
+          created_by: string | null
+          direction: string
+          id: string
+          is_confidential: boolean | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          requires_response: boolean | null
+          response_deadline: string | null
+          sender_email: string | null
+          sender_name: string | null
+          sender_phone: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          case_id: string
+          communication_date?: string | null
+          company_id: string
+          content?: string | null
+          correspondence_type: string
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          id?: string
+          is_confidential?: boolean | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          requires_response?: boolean | null
+          response_deadline?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          case_id?: string
+          communication_date?: string | null
+          company_id?: string
+          content?: string | null
+          correspondence_type?: string
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          id?: string
+          is_confidential?: boolean | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          requires_response?: boolean | null
+          response_deadline?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_correspondence_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_case_documents: {
+        Row: {
+          access_level: string | null
+          case_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          document_date: string | null
+          document_title: string
+          document_title_ar: string | null
+          document_type: string
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          is_confidential: boolean | null
+          is_original: boolean | null
+          parent_document_id: string | null
+          updated_at: string
+          version_number: number | null
+        }
+        Insert: {
+          access_level?: string | null
+          case_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_date?: string | null
+          document_title: string
+          document_title_ar?: string | null
+          document_type: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          is_original?: boolean | null
+          parent_document_id?: string | null
+          updated_at?: string
+          version_number?: number | null
+        }
+        Update: {
+          access_level?: string | null
+          case_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_date?: string | null
+          document_title?: string
+          document_title_ar?: string | null
+          document_type?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          is_original?: boolean | null
+          parent_document_id?: string | null
+          updated_at?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_case_payments: {
+        Row: {
+          amount: number
+          case_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string
+          due_date: string | null
+          id: string
+          invoice_id: string | null
+          journal_entry_id: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_status: string | null
+          payment_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          case_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          payment_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          case_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          payment_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_payments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_cases: {
+        Row: {
+          billing_status: string | null
+          case_number: string
+          case_reference: string | null
+          case_status: string
+          case_title: string
+          case_title_ar: string | null
+          case_type: string
+          case_value: number | null
+          client_email: string | null
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          company_id: string
+          court_fees: number | null
+          court_name: string | null
+          court_name_ar: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          filing_date: string | null
+          hearing_date: string | null
+          id: string
+          is_confidential: boolean | null
+          legal_fees: number | null
+          legal_team: Json | null
+          notes: string | null
+          other_expenses: number | null
+          primary_lawyer_id: string | null
+          priority: string
+          statute_limitations: string | null
+          tags: Json | null
+          total_costs: number | null
+          updated_at: string
+        }
+        Insert: {
+          billing_status?: string | null
+          case_number: string
+          case_reference?: string | null
+          case_status?: string
+          case_title: string
+          case_title_ar?: string | null
+          case_type?: string
+          case_value?: number | null
+          client_email?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          company_id: string
+          court_fees?: number | null
+          court_name?: string | null
+          court_name_ar?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filing_date?: string | null
+          hearing_date?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          legal_fees?: number | null
+          legal_team?: Json | null
+          notes?: string | null
+          other_expenses?: number | null
+          primary_lawyer_id?: string | null
+          priority?: string
+          statute_limitations?: string | null
+          tags?: Json | null
+          total_costs?: number | null
+          updated_at?: string
+        }
+        Update: {
+          billing_status?: string | null
+          case_number?: string
+          case_reference?: string | null
+          case_status?: string
+          case_title?: string
+          case_title_ar?: string | null
+          case_type?: string
+          case_value?: number | null
+          client_email?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          company_id?: string
+          court_fees?: number | null
+          court_name?: string | null
+          court_name_ar?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filing_date?: string | null
+          hearing_date?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          legal_fees?: number | null
+          legal_team?: Json | null
+          notes?: string | null
+          other_expenses?: number | null
+          primary_lawyer_id?: string | null
+          priority?: string
+          statute_limitations?: string | null
+          tags?: Json | null
+          total_costs?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       maintenance_checklist: {
         Row: {
           completed_at: string | null
@@ -5525,6 +5917,10 @@ export type Database = {
         Returns: string
       }
       generate_journal_entry_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
+      generate_legal_case_number: {
         Args: { company_id_param: string }
         Returns: string
       }

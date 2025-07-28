@@ -39,6 +39,7 @@ import LocationSettings from "./pages/hr/LocationSettings";
 import Payroll from "./pages/hr/Payroll";
 import HRReports from "./pages/hr/Reports";
 import HRSettings from "./pages/hr/Settings";
+import Legal from "./pages/Legal";
 
 const queryClient = new QueryClient();
 
@@ -88,7 +89,7 @@ const App = () => (
               <Route path="hr/reports" element={<HRReports />} />
               <Route path="hr/settings" element={<HRSettings />} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">صفحة التقارير - قيد التطوير</div>} />
-              <Route path="legal" element={<div className="p-8 text-center text-muted-foreground">الشؤون القانونية - قيد التطوير</div>} />
+              <Route path="legal" element={<Legal />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
