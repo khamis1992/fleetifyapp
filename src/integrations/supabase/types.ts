@@ -5279,6 +5279,10 @@ export type Database = {
       }
     }
     Functions: {
+      analyze_system_performance: {
+        Args: { company_id_param: string; hours_back?: number }
+        Returns: Json
+      }
       calculate_account_level: {
         Args: { account_id: string }
         Returns: number
@@ -5340,6 +5344,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: undefined
       }
+      check_company_quotas: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           operation_type: string
@@ -5354,6 +5362,10 @@ export type Database = {
       }
       cleanup_inactive_accounts: {
         Args: { target_company_id: string; days_old?: number }
+        Returns: number
+      }
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
         Returns: number
       }
       copy_default_accounts_to_company: {
@@ -5730,6 +5742,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      prepare_company_backup: {
+        Args: { company_id_param: string; backup_type_param?: string }
+        Returns: string
+      }
       process_monthly_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
@@ -5763,6 +5779,10 @@ export type Database = {
       soft_delete_account: {
         Args: { account_id_param: string }
         Returns: boolean
+      }
+      system_health_check: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       update_account_levels_manually: {
         Args: { company_id_param: string }
