@@ -101,11 +101,6 @@ const adminItems = [
     icon: CheckSquare
   },
   {
-    name: 'إدارة الاشتراك',
-    href: '/subscription',
-    icon: Crown
-  },
-  {
     name: 'النسخ الاحتياطية',
     href: '/backup',
     icon: Database
