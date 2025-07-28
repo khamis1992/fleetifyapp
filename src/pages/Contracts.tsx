@@ -88,10 +88,7 @@ export default function Contracts() {
       case 'weekly_rental': return 'إيجار أسبوعي'
       case 'monthly_rental': return 'إيجار شهري'
       case 'yearly_rental': return 'إيجار سنوي'
-      case 'service': return 'عقد خدمات'
-      case 'maintenance': return 'عقد صيانة'
-      case 'sales': return 'عقد مبيعات'
-      default: return 'عقد'
+      default: return 'إيجار'
     }
   }
 

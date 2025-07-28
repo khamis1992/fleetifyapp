@@ -168,9 +168,6 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                     <SelectItem value="weekly_rental">إيجار أسبوعي</SelectItem>
                     <SelectItem value="monthly_rental">إيجار شهري</SelectItem>
                     <SelectItem value="yearly_rental">إيجار سنوي</SelectItem>
-                    <SelectItem value="service">خدمة</SelectItem>
-                    <SelectItem value="maintenance">صيانة</SelectItem>
-                    <SelectItem value="sales">مبيعات</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
