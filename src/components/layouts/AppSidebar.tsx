@@ -3,6 +3,8 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { AdminOnly, SuperAdminOnly } from '@/components/common/PermissionGuard';
+import { usePermissions } from '@/hooks/usePermissions';
 import { 
   Car, 
   FileText, 
@@ -337,73 +339,77 @@ export function AppSidebar() {
                  </Collapsible>
                </SidebarMenuItem>
                
-               {/* Finance Section with Submenu */}
-              <SidebarMenuItem>
-                <Collapsible defaultOpen={isFinanceActive}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="h-10">
-                      <DollarSign className="h-4 w-4" />
-                      {!collapsed && (
-                        <>
-                          <span className="font-medium">المالية</span>
-                          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {financeSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.href}>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to={subItem.href} className={getNavClassName}>
-                              <subItem.icon className="h-4 w-4" />
-                              {!collapsed && <span>{subItem.name}</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
+                {/* Finance Section with Submenu */}
+                <AdminOnly hideIfNoAccess>
+                  <SidebarMenuItem>
+                    <Collapsible defaultOpen={isFinanceActive}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="h-10">
+                          <DollarSign className="h-4 w-4" />
+                          {!collapsed && (
+                            <>
+                              <span className="font-medium">المالية</span>
+                              <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {financeSubItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                              <SidebarMenuSubButton asChild>
+                                <NavLink to={subItem.href} className={getNavClassName}>
+                                  <subItem.icon className="h-4 w-4" />
+                                  {!collapsed && <span>{subItem.name}</span>}
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SidebarMenuItem>
+                </AdminOnly>
 
-              {/* HR Section with Submenu */}
-              <SidebarMenuItem>
-                <Collapsible defaultOpen={isHRActive}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="h-10">
-                      <UserCheck className="h-4 w-4" />
-                      {!collapsed && (
-                        <>
-                          <span className="font-medium">الموارد البشرية</span>
-                          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {hrSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.href}>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to={subItem.href} className={getNavClassName}>
-                              <subItem.icon className="h-4 w-4" />
-                              {!collapsed && <span>{subItem.name}</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
+               {/* HR Section with Submenu */}
+                <AdminOnly hideIfNoAccess>
+                  <SidebarMenuItem>
+                    <Collapsible defaultOpen={isHRActive}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="h-10">
+                          <UserCheck className="h-4 w-4" />
+                          {!collapsed && (
+                            <>
+                              <span className="font-medium">الموارد البشرية</span>
+                              <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {hrSubItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                              <SidebarMenuSubButton asChild>
+                                <NavLink to={subItem.href} className={getNavClassName}>
+                                  <subItem.icon className="h-4 w-4" />
+                                  {!collapsed && <span>{subItem.name}</span>}
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SidebarMenuItem>
+                </AdminOnly>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {/* Admin Section */}
-        {hasCompanyAdminAccess && (
+        <AdminOnly hideIfNoAccess>
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
               الإدارة
@@ -412,8 +418,19 @@ export function AppSidebar() {
               <SidebarMenu>
                 {adminItems.map((item) => {
                   // Filter admin items based on permissions
-                  if (item.href === '/backup' && !hasGlobalAccess) {
-                    return null;
+                  if (item.href === '/backup') {
+                    return (
+                      <SuperAdminOnly key={item.href} hideIfNoAccess>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton asChild className="h-10">
+                            <NavLink to={item.href} className={getNavClassName}>
+                              <item.icon className="h-4 w-4" />
+                              {!collapsed && <span className="font-medium">{item.name}</span>}
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      </SuperAdminOnly>
+                    );
                   }
                   
                   return (
@@ -430,7 +447,7 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
+        </AdminOnly>
       </SidebarContent>
     </Sidebar>
   );

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
+import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -68,32 +69,104 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="subscription" element={<SubscriptionPage />} />
               
-              <Route path="backup" element={<BackupPage />} />
-              <Route path="audit" element={<AuditPage />} />
+              <Route path="backup" element={
+                <SuperAdminRoute>
+                  <BackupPage />
+                </SuperAdminRoute>
+              } />
+              <Route path="audit" element={
+                <AdminRoute>
+                  <AuditPage />
+                </AdminRoute>
+              } />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
               <Route path="settings/advanced" element={<AdvancedSettings />} />
-              <Route path="fleet" element={<Fleet />} />
-              <Route path="fleet/dispatch-permits" element={<DispatchPermits />} />
-              <Route path="fleet/maintenance" element={<Maintenance />} />
-              <Route path="fleet/traffic-violations" element={<TrafficViolations />} />
-              <Route path="fleet/traffic-violation-payments" element={<TrafficViolationPayments />} />
-              <Route path="fleet/reports" element={<FleetReports />} />
+              <Route path="fleet" element={
+                <AdminRoute>
+                  <Fleet />
+                </AdminRoute>
+              } />
+              <Route path="fleet/dispatch-permits" element={
+                <AdminRoute>
+                  <DispatchPermits />
+                </AdminRoute>
+              } />
+              <Route path="fleet/maintenance" element={
+                <AdminRoute>
+                  <Maintenance />
+                </AdminRoute>
+              } />
+              <Route path="fleet/traffic-violations" element={
+                <AdminRoute>
+                  <TrafficViolations />
+                </AdminRoute>
+              } />
+              <Route path="fleet/traffic-violation-payments" element={
+                <AdminRoute>
+                  <TrafficViolationPayments />
+                </AdminRoute>
+              } />
+              <Route path="fleet/reports" element={
+                <AdminRoute>
+                  <FleetReports />
+                </AdminRoute>
+              } />
               <Route path="contracts" element={<Contracts />} />
               <Route path="customers" element={<Customers />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="finance/*" element={<Finance />} />
-              <Route path="hr/employees" element={<Employees />} />
-              <Route path="hr/user-management" element={<UserManagement />} />
-              <Route path="hr/attendance" element={<Attendance />} />
-              <Route path="hr/leave-management" element={<LeaveManagement />} />
-              <Route path="hr/location-settings" element={<LocationSettings />} />
-              <Route path="hr/payroll" element={<Payroll />} />
-              <Route path="hr/reports" element={<HRReports />} />
-              <Route path="hr/settings" element={<HRSettings />} />
+              <Route path="hr/employees" element={
+                <AdminRoute>
+                  <Employees />
+                </AdminRoute>
+              } />
+              <Route path="hr/user-management" element={
+                <AdminRoute>
+                  <UserManagement />
+                </AdminRoute>
+              } />
+              <Route path="hr/attendance" element={
+                <AdminRoute>
+                  <Attendance />
+                </AdminRoute>
+              } />
+              <Route path="hr/leave-management" element={
+                <AdminRoute>
+                  <LeaveManagement />
+                </AdminRoute>
+              } />
+              <Route path="hr/location-settings" element={
+                <AdminRoute>
+                  <LocationSettings />
+                </AdminRoute>
+              } />
+              <Route path="hr/payroll" element={
+                <AdminRoute>
+                  <Payroll />
+                </AdminRoute>
+              } />
+              <Route path="hr/reports" element={
+                <AdminRoute>
+                  <HRReports />
+                </AdminRoute>
+              } />
+              <Route path="hr/settings" element={
+                <AdminRoute>
+                  <HRSettings />
+                </AdminRoute>
+              } />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">صفحة التقارير - قيد التطوير</div>} />
-              <Route path="legal" element={<Legal />} />
-              <Route path="approvals" element={<ApprovalSystem />} />
+              <Route path="legal" element={
+                <AdminRoute>
+                  <Legal />
+                </AdminRoute>
+              } />
+              <Route path="approvals" element={
+                <AdminRoute>
+                  <ApprovalSystem />
+                </AdminRoute>
+              } />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
