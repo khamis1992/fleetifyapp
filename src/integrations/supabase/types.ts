@@ -1587,6 +1587,91 @@ export type Database = {
           },
         ]
       }
+      dispatch_permit_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          permit_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          permit_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          permit_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_permit_attachments_permit_id_fkey"
+            columns: ["permit_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_dispatch_permits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_permit_tracking: {
+        Row: {
+          change_reason: string | null
+          changed_by: string
+          created_at: string
+          id: string
+          location: string | null
+          odometer_reading: number | null
+          permit_id: string
+          status_changed_from: string | null
+          status_changed_to: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          odometer_reading?: number | null
+          permit_id: string
+          status_changed_from?: string | null
+          status_changed_to: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          odometer_reading?: number | null
+          permit_id?: string
+          status_changed_from?: string | null
+          status_changed_to?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_permit_tracking_permit_id_fkey"
+            columns: ["permit_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_dispatch_permits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           account_status: string | null
@@ -4728,6 +4813,108 @@ export type Database = {
           },
         ]
       }
+      vehicle_dispatch_permits: {
+        Row: {
+          actual_km: number | null
+          approval_signature: string | null
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          destination: string
+          destination_ar: string | null
+          driver_license: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          end_date: string
+          end_time: string | null
+          estimated_km: number | null
+          fuel_allowance: number | null
+          id: string
+          notes: string | null
+          permit_number: string
+          priority: string
+          purpose: string
+          purpose_ar: string | null
+          rejection_reason: string | null
+          request_type: string
+          requested_by: string
+          start_date: string
+          start_time: string | null
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          actual_km?: number | null
+          approval_signature?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          destination: string
+          destination_ar?: string | null
+          driver_license?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          end_date: string
+          end_time?: string | null
+          estimated_km?: number | null
+          fuel_allowance?: number | null
+          id?: string
+          notes?: string | null
+          permit_number: string
+          priority?: string
+          purpose: string
+          purpose_ar?: string | null
+          rejection_reason?: string | null
+          request_type: string
+          requested_by: string
+          start_date: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          actual_km?: number | null
+          approval_signature?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          destination?: string
+          destination_ar?: string | null
+          driver_license?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          end_date?: string
+          end_time?: string | null
+          estimated_km?: number | null
+          fuel_allowance?: number | null
+          id?: string
+          notes?: string | null
+          permit_number?: string
+          priority?: string
+          purpose?: string
+          purpose_ar?: string | null
+          rejection_reason?: string | null
+          request_type?: string
+          requested_by?: string
+          start_date?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       vehicle_documents: {
         Row: {
           created_at: string | null
@@ -6046,6 +6233,10 @@ export type Database = {
           financing_cash_flow: number
         }[]
       }
+      generate_dispatch_permit_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       generate_employee_account_number: {
         Args: { company_id_param: string }
         Returns: string
@@ -6336,6 +6527,16 @@ export type Database = {
       }
       update_company_usage_stats: {
         Args: { company_id_param: string }
+        Returns: undefined
+      }
+      update_dispatch_permit_status: {
+        Args: {
+          permit_id_param: string
+          new_status: string
+          change_reason?: string
+          location?: string
+          odometer_reading?: number
+        }
         Returns: undefined
       }
       user_belongs_to_company: {
