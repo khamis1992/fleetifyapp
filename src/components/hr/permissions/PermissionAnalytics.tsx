@@ -270,7 +270,7 @@ export default function PermissionAnalytics() {
                 <div key={role} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">{roleLabels[role as UserRole]}</span>
-                    <Badge variant="outline">{count}</Badge>
+                    <Badge variant="outline">{count as number}</Badge>
                   </div>
                   <Progress value={percentage} className="h-2" />
                   <p className="text-xs text-muted-foreground">

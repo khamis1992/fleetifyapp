@@ -29,22 +29,24 @@ import { UserRole } from '@/types/permissions';
 
 interface PermissionRequest {
   id: string;
+  company_id: string;
   employee_id: string;
   requested_by: string;
-  request_type: 'role_change' | 'permission_add' | 'permission_remove' | 'access_level_change';
-  current_roles?: UserRole[];
-  requested_roles?: UserRole[];
-  current_permissions?: string[];
-  requested_permissions?: string[];
+  request_type: string; // Database returns string, we'll handle the typing
+  current_roles: string[] | null;
+  requested_roles: string[] | null;
+  current_permissions: string[] | null;
+  requested_permissions: string[] | null;
   reason: string;
-  justification?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  rejection_reason?: string;
+  status: string;
   created_at: string;
+  updated_at: string;
   expires_at: string;
-  processed_at?: string;
-  processed_by?: string;
-  approval_notes?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  // Extended fields we add in the component
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   employee?: {
     id: string;
     first_name: string;
@@ -87,10 +89,6 @@ export default function ApprovalWorkflow() {
         query = query.eq('status', statusFilter);
       }
 
-      if (priorityFilter !== 'all') {
-        query = query.eq('priority', priorityFilter);
-      }
-
       const { data, error } = await query;
       if (error) throw error;
 
@@ -108,7 +106,7 @@ export default function ApprovalWorkflow() {
 
       return data?.map(req => ({
         ...req,
-        priority: req.priority || 'medium',
+        priority: 'medium' as const, // Default priority since it's not in the database
         employee: req.employees,
         requester: requestersData.find(r => r.user_id === req.requested_by)
       })) || [];
@@ -122,9 +120,9 @@ export default function ApprovalWorkflow() {
         .from('permission_change_requests')
         .update({
           status: 'approved',
-          processed_at: new Date().toISOString(),
-          processed_by: (await supabase.auth.getUser()).data.user?.id,
-          approval_notes: notes
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          rejection_reason: notes
         })
         .eq('id', requestId);
       
@@ -148,9 +146,9 @@ export default function ApprovalWorkflow() {
         .from('permission_change_requests')
         .update({
           status: 'rejected',
-          processed_at: new Date().toISOString(),
-          processed_by: (await supabase.auth.getUser()).data.user?.id,
-          approval_notes: notes
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          rejection_reason: notes
         })
         .eq('id', requestId);
       
@@ -332,9 +330,9 @@ export default function ApprovalWorkflow() {
                       <strong>السبب:</strong> {request.reason}
                     </p>
 
-                    {request.justification && (
+                    {request.rejection_reason && (
                       <p className="text-sm text-muted-foreground">
-                        <strong>التبرير:</strong> {request.justification}
+                        <strong>سبب الرفض:</strong> {request.rejection_reason}
                       </p>
                     )}
 
@@ -434,17 +432,10 @@ export default function ApprovalWorkflow() {
                     <p className="p-3 bg-muted rounded text-sm">{selectedRequest.reason}</p>
                   </div>
                   
-                  {selectedRequest.justification && (
+                  {selectedRequest.rejection_reason && (
                     <div>
-                      <Label>التبرير</Label>
-                      <p className="p-3 bg-muted rounded text-sm">{selectedRequest.justification}</p>
-                    </div>
-                  )}
-
-                  {selectedRequest.approval_notes && (
-                    <div>
-                      <Label>ملاحظات الموافقة</Label>
-                      <p className="p-3 bg-muted rounded text-sm">{selectedRequest.approval_notes}</p>
+                      <Label>سبب الرفض</Label>
+                      <p className="p-3 bg-muted rounded text-sm">{selectedRequest.rejection_reason}</p>
                     </div>
                   )}
                 </div>
