@@ -100,11 +100,6 @@ const adminItems = [
     icon: Crown
   },
   {
-    name: 'مراقبة الأداء',
-    href: '/performance',
-    icon: Activity
-  },
-  {
     name: 'النسخ الاحتياطية',
     href: '/backup',
     icon: Database
