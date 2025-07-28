@@ -779,6 +779,7 @@ export type Database = {
           country: string | null
           created_at: string
           currency: string | null
+          current_plan_id: string | null
           email: string | null
           id: string
           license_number: string | null
@@ -806,6 +807,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           currency?: string | null
+          current_plan_id?: string | null
           email?: string | null
           id?: string
           license_number?: string | null
@@ -833,6 +835,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           currency?: string | null
+          current_plan_id?: string | null
           email?: string | null
           id?: string
           license_number?: string | null
@@ -850,7 +853,62 @@ export type Database = {
           work_end_time?: string | null
           work_start_time?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_usage: {
+        Row: {
+          api_calls_count: number | null
+          company_id: string
+          contracts_count: number | null
+          created_at: string | null
+          customers_count: number | null
+          id: string
+          storage_used_mb: number | null
+          usage_date: string
+          users_count: number | null
+          vehicles_count: number | null
+        }
+        Insert: {
+          api_calls_count?: number | null
+          company_id: string
+          contracts_count?: number | null
+          created_at?: string | null
+          customers_count?: number | null
+          id?: string
+          storage_used_mb?: number | null
+          usage_date?: string
+          users_count?: number | null
+          vehicles_count?: number | null
+        }
+        Update: {
+          api_calls_count?: number | null
+          company_id?: string
+          contracts_count?: number | null
+          created_at?: string | null
+          customers_count?: number | null
+          id?: string
+          storage_used_mb?: number | null
+          usage_date?: string
+          users_count?: number | null
+          vehicles_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_usage_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contract_approval_steps: {
         Row: {
@@ -1054,6 +1112,13 @@ export type Database = {
             columns: ["cost_center_id"]
             isOneToOne: false
             referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_contracts_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1275,6 +1340,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_customers_company"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -1564,6 +1636,47 @@ export type Database = {
           termination_date?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_employees_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_gates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          feature_code: string
+          feature_name: string
+          id: string
+          is_active: boolean | null
+          required_plans: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          feature_code: string
+          feature_name: string
+          id?: string
+          is_active?: boolean | null
+          required_plans?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          feature_code?: string
+          feature_name?: string
+          id?: string
+          is_active?: boolean | null
+          required_plans?: string[] | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -3188,10 +3301,16 @@ export type Database = {
           is_active: boolean | null
           is_default: boolean | null
           max_companies: number | null
+          max_contracts: number | null
+          max_customers: number | null
           max_users: number | null
+          max_vehicles: number | null
           name: string
           name_ar: string | null
+          plan_code: string | null
           price: number
+          price_monthly: number | null
+          price_yearly: number | null
           storage_limit_gb: number | null
           updated_at: string | null
         }
@@ -3204,10 +3323,16 @@ export type Database = {
           is_active?: boolean | null
           is_default?: boolean | null
           max_companies?: number | null
+          max_contracts?: number | null
+          max_customers?: number | null
           max_users?: number | null
+          max_vehicles?: number | null
           name: string
           name_ar?: string | null
+          plan_code?: string | null
           price?: number
+          price_monthly?: number | null
+          price_yearly?: number | null
           storage_limit_gb?: number | null
           updated_at?: string | null
         }
@@ -3220,10 +3345,16 @@ export type Database = {
           is_active?: boolean | null
           is_default?: boolean | null
           max_companies?: number | null
+          max_contracts?: number | null
+          max_customers?: number | null
           max_users?: number | null
+          max_vehicles?: number | null
           name?: string
           name_ar?: string | null
+          plan_code?: string | null
           price?: number
+          price_monthly?: number | null
+          price_yearly?: number | null
           storage_limit_gb?: number | null
           updated_at?: string | null
         }
@@ -4895,7 +5026,15 @@ export type Database = {
           outstanding_amount: number | null
           total_paid: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_contracts_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payroll_financial_analysis: {
         Row: {
@@ -5305,6 +5444,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_company_secure: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       handle_incomplete_user_account: {
         Args: {
           p_user_id: string
@@ -5313,6 +5456,10 @@ export type Database = {
           p_roles: string[]
         }
         Returns: Json
+      }
+      has_feature_access: {
+        Args: { company_id_param: string; feature_code_param: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -5379,6 +5526,10 @@ export type Database = {
       }
       update_budget_actual_amounts: {
         Args: { budget_id_param: string }
+        Returns: undefined
+      }
+      update_company_usage_stats: {
+        Args: { company_id_param: string }
         Returns: undefined
       }
       user_belongs_to_company: {
