@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Palette, Upload, RotateCcw, Save, Eye, Settings, Type, Image
+  Palette, Upload, RotateCcw, Save, Eye, Settings, Type, Image, 
+  Info, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const THEME_PRESETS = [
   {
     name: 'الافتراضي',
+    description: 'الألوان الأساسية للنظام',
     value: 'default',
     colors: {
       primary: '#2563eb',
@@ -24,6 +27,7 @@ const THEME_PRESETS = [
   },
   {
     name: 'المحيط',
+    description: 'ألوان زرقاء هادئة',
     value: 'ocean',
     colors: {
       primary: '#0ea5e9',
@@ -33,6 +37,7 @@ const THEME_PRESETS = [
   },
   {
     name: 'الغابة',
+    description: 'ألوان خضراء طبيعية',
     value: 'forest',
     colors: {
       primary: '#059669',
@@ -42,11 +47,32 @@ const THEME_PRESETS = [
   },
   {
     name: 'الغروب',
+    description: 'ألوان دافئة وحيوية',
     value: 'sunset',
     colors: {
       primary: '#ea580c',
       secondary: '#f59e0b',
       accent: '#dc2626'
+    }
+  },
+  {
+    name: 'البنفسجي',
+    description: 'ألوان أنيقة ومميزة',
+    value: 'purple',
+    colors: {
+      primary: '#7c3aed',
+      secondary: '#a855f7',
+      accent: '#ec4899'
+    }
+  },
+  {
+    name: 'الوردي',
+    description: 'ألوان ناعمة ومريحة',
+    value: 'rose',
+    colors: {
+      primary: '#e11d48',
+      secondary: '#f43f5e',
+      accent: '#06b6d4'
     }
   }
 ];
@@ -71,14 +97,18 @@ export const CompanyBrandingSettings = () => {
 
   const [localSettings, setLocalSettings] = React.useState(settings);
   const [isPreviewMode, setIsPreviewMode] = React.useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   React.useEffect(() => {
     setLocalSettings(settings);
+    setHasUnsavedChanges(false);
   }, [settings]);
 
   const handleSettingChange = (key: string, value: string) => {
     const newSettings = { ...localSettings, [key]: value };
     setLocalSettings(newSettings);
+    setHasUnsavedChanges(true);
     
     if (isPreviewMode) {
       previewChanges(newSettings);
@@ -94,6 +124,7 @@ export const CompanyBrandingSettings = () => {
       accent_color: preset.colors.accent
     };
     setLocalSettings(newSettings);
+    setHasUnsavedChanges(true);
     
     if (isPreviewMode) {
       previewChanges(newSettings);
@@ -103,6 +134,8 @@ export const CompanyBrandingSettings = () => {
   const handleSave = async () => {
     try {
       await saveBrandingSettings(localSettings);
+      setHasUnsavedChanges(false);
+      setIsPreviewMode(false);
     } catch (error) {
       console.error('Error saving settings:', error);
     }
@@ -112,6 +145,7 @@ export const CompanyBrandingSettings = () => {
     try {
       await resetToDefaults();
       setIsPreviewMode(false);
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error('Error resetting settings:', error);
     }
@@ -141,8 +175,16 @@ export const CompanyBrandingSettings = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Header Info */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          يمكنك تخصيص ألوان النظام واسمه من هنا. استخدم زر المعاينة لرؤية التغييرات قبل الحفظ.
+        </AlertDescription>
+      </Alert>
+
       {/* Action Buttons */}
-      <div className="flex items-center gap-3 justify-start">
+      <div className="flex items-center gap-3 justify-start flex-wrap">
         <Button 
           onClick={togglePreview}
           variant={isPreviewMode ? "default" : "outline"}
@@ -154,8 +196,9 @@ export const CompanyBrandingSettings = () => {
         
         <Button 
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !hasUnsavedChanges}
           size="sm"
+          className={hasUnsavedChanges ? 'bg-green-600 hover:bg-green-700' : ''}
         >
           <Save className="h-4 w-4 ml-2" />
           {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
@@ -170,9 +213,17 @@ export const CompanyBrandingSettings = () => {
           إعادة تعيين
         </Button>
         
-        {isPreviewMode && (
-          <Badge variant="secondary">وضع المعاينة مفعل</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {isPreviewMode && (
+            <Badge variant="secondary">وضع المعاينة مفعل</Badge>
+          )}
+          {hasUnsavedChanges && (
+            <Badge variant="outline" className="text-orange-600 border-orange-600">
+              <AlertCircle className="h-3 w-3 ml-1" />
+              تغييرات غير محفوظة
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* System Name Section */}
@@ -217,20 +268,20 @@ export const CompanyBrandingSettings = () => {
             <Palette className="h-5 w-5 text-primary" />
             <div>
               <CardTitle className="text-lg">قوالب الألوان</CardTitle>
-              <CardDescription>اختر من القوالب الجاهزة أو خصص الألوان يدوياً</CardDescription>
+              <CardDescription>اختر من القوالب الجاهزة لتغيير ألوان النظام بنقرة واحدة</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {THEME_PRESETS.map((preset) => (
               <div
                 key={preset.value}
                 className={`
-                  border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md
+                  border rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg
                   ${localSettings.theme_preset === preset.value 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/50'
+                    ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
+                    : 'border-border hover:border-primary/50 hover:bg-accent/5'
                   }
                 `}
                 onClick={() => handleThemePresetChange(preset)}
@@ -238,19 +289,30 @@ export const CompanyBrandingSettings = () => {
                 <div className="text-center space-y-3">
                   <div className="flex justify-center gap-2">
                     <div 
-                      className="w-6 h-6 rounded-full border"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                       style={{ backgroundColor: preset.colors.primary }}
+                      title="اللون الأساسي"
                     ></div>
                     <div 
-                      className="w-6 h-6 rounded-full border"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                       style={{ backgroundColor: preset.colors.secondary }}
+                      title="اللون الثانوي"
                     ></div>
                     <div 
-                      className="w-6 h-6 rounded-full border"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                       style={{ backgroundColor: preset.colors.accent }}
+                      title="لون التمييز"
                     ></div>
                   </div>
-                  <p className="text-sm font-medium">{preset.name}</p>
+                  <div>
+                    <p className="text-sm font-medium">{preset.name}</p>
+                    <p className="text-xs text-muted-foreground">{preset.description}</p>
+                  </div>
+                  {localSettings.theme_preset === preset.value && (
+                    <div className="flex items-center justify-center text-primary">
+                      <CheckCircle className="h-4 w-4" />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -260,60 +322,115 @@ export const CompanyBrandingSettings = () => {
 
           {/* Custom Colors */}
           <div className="space-y-4">
-            <h4 className="font-medium">تخصيص الألوان</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="primary_color">اللون الأساسي (الأزرق)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="primary_color"
-                    type="color"
-                    value={localSettings.primary_color}
-                    onChange={(e) => handleSettingChange('primary_color', e.target.value)}
-                    className="w-16 h-10 p-1 border rounded"
-                  />
-                  <Input
-                    value={localSettings.primary_color}
-                    onChange={(e) => handleSettingChange('primary_color', e.target.value)}
-                    placeholder="#2563eb"
-                  />
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">تخصيص الألوان بدقة</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                {showAdvanced ? 'إخفاء' : 'عرض'} التفاصيل
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="primary_color" className="text-sm font-medium">
+                  اللون الأساسي
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex gap-3 items-center">
+                    <Input
+                      id="primary_color"
+                      type="color"
+                      value={localSettings.primary_color}
+                      onChange={(e) => handleSettingChange('primary_color', e.target.value)}
+                      className="w-16 h-16 p-1 border rounded-lg cursor-pointer"
+                      title="اختر اللون الأساسي"
+                    />
+                    <div className="flex-1">
+                      <div 
+                        className="w-full h-8 rounded border"
+                        style={{ backgroundColor: localSettings.primary_color }}
+                      ></div>
+                    </div>
+                  </div>
+                  {showAdvanced && (
+                    <Input
+                      value={localSettings.primary_color}
+                      onChange={(e) => handleSettingChange('primary_color', e.target.value)}
+                      placeholder="#2563eb"
+                      className="font-mono text-xs"
+                    />
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground">يُستخدم للأزرار والروابط الرئيسية</p>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="secondary_color">اللون الثانوي (الأصفر)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="secondary_color"
-                    type="color"
-                    value={localSettings.secondary_color}
-                    onChange={(e) => handleSettingChange('secondary_color', e.target.value)}
-                    className="w-16 h-10 p-1 border rounded"
-                  />
-                  <Input
-                    value={localSettings.secondary_color}
-                    onChange={(e) => handleSettingChange('secondary_color', e.target.value)}
-                    placeholder="#f59e0b"
-                  />
+              <div className="space-y-3">
+                <Label htmlFor="secondary_color" className="text-sm font-medium">
+                  اللون الثانوي
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex gap-3 items-center">
+                    <Input
+                      id="secondary_color"
+                      type="color"
+                      value={localSettings.secondary_color}
+                      onChange={(e) => handleSettingChange('secondary_color', e.target.value)}
+                      className="w-16 h-16 p-1 border rounded-lg cursor-pointer"
+                      title="اختر اللون الثانوي"
+                    />
+                    <div className="flex-1">
+                      <div 
+                        className="w-full h-8 rounded border"
+                        style={{ backgroundColor: localSettings.secondary_color }}
+                      ></div>
+                    </div>
+                  </div>
+                  {showAdvanced && (
+                    <Input
+                      value={localSettings.secondary_color}
+                      onChange={(e) => handleSettingChange('secondary_color', e.target.value)}
+                      placeholder="#f59e0b"
+                      className="font-mono text-xs"
+                    />
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground">يُستخدم للعناصر المساعدة والتحديدات</p>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="accent_color">لون التمييز (الأحمر)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="accent_color"
-                    type="color"
-                    value={localSettings.accent_color}
-                    onChange={(e) => handleSettingChange('accent_color', e.target.value)}
-                    className="w-16 h-10 p-1 border rounded"
-                  />
-                  <Input
-                    value={localSettings.accent_color}
-                    onChange={(e) => handleSettingChange('accent_color', e.target.value)}
-                    placeholder="#dc2626"
-                  />
+              <div className="space-y-3">
+                <Label htmlFor="accent_color" className="text-sm font-medium">
+                  لون التمييز
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex gap-3 items-center">
+                    <Input
+                      id="accent_color"
+                      type="color"
+                      value={localSettings.accent_color}
+                      onChange={(e) => handleSettingChange('accent_color', e.target.value)}
+                      className="w-16 h-16 p-1 border rounded-lg cursor-pointer"
+                      title="اختر لون التمييز"
+                    />
+                    <div className="flex-1">
+                      <div 
+                        className="w-full h-8 rounded border"
+                        style={{ backgroundColor: localSettings.accent_color }}
+                      ></div>
+                    </div>
+                  </div>
+                  {showAdvanced && (
+                    <Input
+                      value={localSettings.accent_color}
+                      onChange={(e) => handleSettingChange('accent_color', e.target.value)}
+                      placeholder="#dc2626"
+                      className="font-mono text-xs"
+                    />
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground">يُستخدم للتنبيهات والعناصر المهمة</p>
               </div>
             </div>
           </div>
@@ -385,31 +502,39 @@ export const CompanyBrandingSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Advanced CSS Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <Settings className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle className="text-lg">CSS مخصص</CardTitle>
-              <CardDescription>للمستخدمين المتقدمين - إضافة أكواد CSS مخصصة</CardDescription>
+      {/* Advanced CSS Section - Only show if advanced mode is enabled */}
+      {showAdvanced && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Settings className="h-5 w-5 text-primary" />
+              <div>
+                <CardTitle className="text-lg">CSS مخصص</CardTitle>
+                <CardDescription>للمستخدمين المتقدمين - إضافة أكواد CSS مخصصة</CardDescription>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="custom_css">كود CSS مخصص</Label>
-            <Textarea
-              id="custom_css"
-              value={localSettings.custom_css || ''}
-              onChange={(e) => handleSettingChange('custom_css', e.target.value)}
-              placeholder="/* أدخل كود CSS المخصص هنا */"
-              rows={6}
-              className="font-mono text-sm"
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                تحذير: استخدام CSS مخصص قد يؤثر على مظهر النظام. تأكد من المعاينة قبل الحفظ.
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="custom_css">كود CSS مخصص</Label>
+              <Textarea
+                id="custom_css"
+                value={localSettings.custom_css || ''}
+                onChange={(e) => handleSettingChange('custom_css', e.target.value)}
+                placeholder="/* أدخل كود CSS المخصص هنا */"
+                rows={6}
+                className="font-mono text-sm"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
