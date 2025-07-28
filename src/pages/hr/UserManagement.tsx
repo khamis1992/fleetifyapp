@@ -486,42 +486,7 @@ export default function UserManagement() {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                نظرة عامة
-              </TabsTrigger>
-              <TabsTrigger value="templates">
-                <FileText className="w-4 h-4 mr-2" />
-                القوالب
-              </TabsTrigger>
-              <TabsTrigger value="analytics">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                التحليلات
-              </TabsTrigger>
-              <TabsTrigger value="approvals">
-                <Clock className="w-4 h-4 mr-2" />
-                الموافقات
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview">
-              <PermissionsDashboard />
-            </TabsContent>
-
-            <TabsContent value="templates">
-              <AdvancedPermissionTemplates />
-            </TabsContent>
-
-            <TabsContent value="analytics">
-              <PermissionAnalytics />
-            </TabsContent>
-
-            <TabsContent value="approvals">
-              <ApprovalWorkflow />
-            </TabsContent>
-          </Tabs>
+          <PermissionsDashboard />
         </TabsContent>
 
         <TabsContent value="permissions">
