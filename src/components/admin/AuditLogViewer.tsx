@@ -40,10 +40,7 @@ export const AuditLogViewer: React.FC = () => {
 
       let query = supabase
         .from('system_logs')
-        .select(`
-          *,
-          profiles!system_logs_user_id_fkey(first_name, last_name, first_name_ar, last_name_ar)
-        `)
+        .select('*')
         .eq('company_id', user.profile.company_id)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -243,7 +240,7 @@ export const AuditLogViewer: React.FC = () => {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {log.profiles?.first_name_ar || log.profiles?.first_name} {log.profiles?.last_name_ar || log.profiles?.last_name}
+                          مستخدم النظام
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />

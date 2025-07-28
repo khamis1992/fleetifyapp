@@ -98,7 +98,7 @@ export const SubscriptionManagement: React.FC = () => {
               </div>
               
               <p className="text-sm text-muted-foreground">
-                {currentPlan?.description_ar || currentPlan?.description}
+                {currentPlan?.description}
               </p>
 
               {currentPlan?.price && currentPlan.price > 0 && (
@@ -167,7 +167,7 @@ export const SubscriptionManagement: React.FC = () => {
               {features.map((feature) => (
                 <div key={feature.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">{feature.description_ar || feature.description}</span>
+                  <span className="text-sm">{feature.description}</span>
                 </div>
               ))}
             </div>
@@ -191,7 +191,7 @@ export const SubscriptionManagement: React.FC = () => {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">{plan.name_ar || plan.name}</CardTitle>
                     <CardDescription className="text-sm">
-                      {plan.description_ar || plan.description}
+                      {plan.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

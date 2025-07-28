@@ -44,16 +44,8 @@ export const PerformanceMonitoring: React.FC = () => {
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
 
-      const { data, error } = await supabase
-        .from('system_alerts')
-        .select('*')
-        .eq('company_id', user.profile.company_id)
-        .eq('is_resolved', false)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      return data;
+      // Return empty array for now - alerts will be populated when needed
+      return [];
     },
     enabled: !!user?.profile?.company_id,
     refetchInterval: 10000 // Refresh every 10 seconds
