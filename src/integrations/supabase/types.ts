@@ -4981,6 +4981,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_dispatch_permits_approved_by"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_dispatch_permits_requested_by"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fk_vehicle_dispatch_permits_vehicle_id"
             columns: ["vehicle_id"]
             isOneToOne: false
