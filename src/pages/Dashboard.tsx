@@ -4,12 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useSmartAlerts } from '@/hooks/useSmartAlerts';
+import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
 import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-import MinimalAlertSystem from '@/components/dashboard/MinimalAlertSystem';
+import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
+import { AlertsNotificationBell } from '@/components/dashboard/AlertsNotificationBell';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -17,6 +19,7 @@ const Dashboard: React.FC = () => {
   const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts();
+  const { alerts: realTimeAlerts, totalAlerts, isLoading: realTimeLoading } = useRealTimeAlerts();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
 
   // Convert financial overview data to the format expected by SmartMetricsPanel
@@ -31,24 +34,8 @@ const Dashboard: React.FC = () => {
     overduePayments: 0, // This would need to come from a different source
   } : undefined;
 
-  // Convert smart alerts to the format expected by MinimalAlertSystem
-  const convertedAlerts = smartAlerts?.map(alert => ({
-    id: alert.id,
-    title: alert.title,
-    message: alert.message,
-    type: alert.type,
-    priority: alert.priority,
-    timestamp: new Date(alert.created_at).toLocaleDateString('ar-EG', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }),
-    action: alert.action ? {
-      label: alert.action,
-      onClick: () => window.location.href = alert.actionUrl || '#'
-    } : undefined
-  })) || [];
+  // Convert real-time alerts to the format expected by EnhancedAlertsSystem
+  const hasAlerts = totalAlerts > 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -97,41 +84,32 @@ const Dashboard: React.FC = () => {
     <>
       <ProfessionalBackground />
       <div className="relative z-10 space-y-8">
-        {/* Professional Hero Section */}
-        <motion.div
+        {/* Professional Hero Section with Alerts Bell */}
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-8"
+          className="relative"
         >
-          <div className="flex items-center justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <Target size={20} />
-                </div>
-                <span className="text-sm font-medium text-primary">لوحة التحكم المهنية</span>
-              </div>
-              
-              <div>
-                <h1 className="text-4xl font-bold text-foreground mb-2">
-                  {getGreeting()}، {user?.profile?.first_name_ar || user?.profile?.first_name || 'المستخدم'}
-                </h1>
-                <p className="text-muted-foreground text-lg">
-                  نظرة شاملة على أداء شركتك وآخر التطورات
-                </p>
-              </div>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground mb-2">
+                {getGreeting()}, {user?.profile?.first_name_ar || user?.profile?.first_name || 'أهلاً وسهلاً'}
+              </h1>
+              <p className="text-lg text-muted-foreground">نظرة عامة على أداء شركتك اليوم</p>
             </div>
-            
-            <motion.div
-              className="hidden lg:block"
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                <Zap size={32} />
-              </div>
-            </motion.div>
+            <div className="flex items-center gap-4">
+              <AlertsNotificationBell />
+              {hasAlerts && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-sm text-muted-foreground"
+                >
+                  {totalAlerts} تنبيه جديد
+                </motion.div>
+              )}
+            </div>
           </div>
         </motion.div>
 
@@ -151,29 +129,42 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Main Content Grid */}
+        {/* Enhanced Alerts and Performance Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Activities */}
-          <div className="lg:col-span-2">
-            <CleanActivityFeed 
-              activities={recentActivities} 
-              loading={activitiesLoading} 
-            />
-          </div>
+          {/* Enhanced Alerts System */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="lg:col-span-2"
+          >
+            <EnhancedAlertsSystem />
+          </motion.div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar Performance Metrics */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+          >
             <SmartMetricsPanel 
               financialData={smartMetricsData} 
               loading={financialLoading} 
             />
-            
-            <MinimalAlertSystem 
-              alerts={convertedAlerts} 
-              loading={alertsLoading} 
-            />
-          </div>
+          </motion.div>
         </div>
+
+        {/* Recent Activities Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.0 }}
+        >
+          <CleanActivityFeed 
+            activities={recentActivities} 
+            loading={activitiesLoading} 
+          />
+        </motion.div>
       </div>
     </>
   );
