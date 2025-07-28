@@ -170,6 +170,162 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_notifications: {
+        Row: {
+          id: string
+          is_read: boolean | null
+          message: string
+          notification_type: string
+          read_at: string | null
+          recipient_id: string
+          request_id: string
+          sent_at: string | null
+        }
+        Insert: {
+          id?: string
+          is_read?: boolean | null
+          message: string
+          notification_type: string
+          read_at?: string | null
+          recipient_id: string
+          request_id: string
+          sent_at?: string | null
+        }
+        Update: {
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          notification_type?: string
+          read_at?: string | null
+          recipient_id?: string
+          request_id?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_requests: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          current_step_order: number | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          priority: Database["public"]["Enums"]["approval_priority"] | null
+          request_number: string
+          requested_by: string
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["request_source"]
+          status: Database["public"]["Enums"]["approval_status"] | null
+          title: string
+          total_amount: number | null
+          updated_at: string | null
+          workflow_id: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_step_order?: number | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["approval_priority"] | null
+          request_number: string
+          requested_by: string
+          source_id?: string | null
+          source_type: Database["public"]["Enums"]["request_source"]
+          status?: Database["public"]["Enums"]["approval_status"] | null
+          title: string
+          total_amount?: number | null
+          updated_at?: string | null
+          workflow_id: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_step_order?: number | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["approval_priority"] | null
+          request_number?: string
+          requested_by?: string
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["request_source"]
+          status?: Database["public"]["Enums"]["approval_status"] | null
+          title?: string
+          total_amount?: number | null
+          updated_at?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_steps: {
+        Row: {
+          approved_at: string | null
+          approver_id: string | null
+          approver_type: string
+          approver_value: string
+          comments: string | null
+          created_at: string | null
+          id: string
+          request_id: string
+          status: Database["public"]["Enums"]["approval_status"] | null
+          step_order: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approver_id?: string | null
+          approver_type: string
+          approver_value: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          request_id: string
+          status?: Database["public"]["Enums"]["approval_status"] | null
+          step_order: number
+        }
+        Update: {
+          approved_at?: string | null
+          approver_id?: string | null
+          approver_type?: string
+          approver_value?: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          request_id?: string
+          status?: Database["public"]["Enums"]["approval_status"] | null
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_steps_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_templates: {
         Row: {
           company_id: string
@@ -206,6 +362,51 @@ export type Database = {
           steps?: Json
           template_name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      approval_workflows: {
+        Row: {
+          company_id: string
+          conditions: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          source_type: Database["public"]["Enums"]["request_source"]
+          steps: Json
+          updated_at: string | null
+          workflow_name: string
+          workflow_name_ar: string | null
+        }
+        Insert: {
+          company_id: string
+          conditions?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          source_type: Database["public"]["Enums"]["request_source"]
+          steps?: Json
+          updated_at?: string | null
+          workflow_name: string
+          workflow_name_ar?: string | null
+        }
+        Update: {
+          company_id?: string
+          conditions?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          source_type?: Database["public"]["Enums"]["request_source"]
+          steps?: Json
+          updated_at?: string | null
+          workflow_name?: string
+          workflow_name_ar?: string | null
         }
         Relationships: []
       }
@@ -6028,6 +6229,50 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_configurations: {
+        Row: {
+          auto_assign_enabled: boolean | null
+          company_id: string
+          created_at: string | null
+          default_workflow_id: string | null
+          escalation_rules: Json | null
+          id: string
+          notification_settings: Json | null
+          source_type: Database["public"]["Enums"]["request_source"]
+          updated_at: string | null
+        }
+        Insert: {
+          auto_assign_enabled?: boolean | null
+          company_id: string
+          created_at?: string | null
+          default_workflow_id?: string | null
+          escalation_rules?: Json | null
+          id?: string
+          notification_settings?: Json | null
+          source_type: Database["public"]["Enums"]["request_source"]
+          updated_at?: string | null
+        }
+        Update: {
+          auto_assign_enabled?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          default_workflow_id?: string | null
+          escalation_rules?: Json | null
+          id?: string
+          notification_settings?: Json | null
+          source_type?: Database["public"]["Enums"]["request_source"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_configurations_default_workflow_id_fkey"
+            columns: ["default_workflow_id"]
+            isOneToOne: false
+            referencedRelation: "approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       contract_payment_summary: {
@@ -6308,6 +6553,10 @@ export type Database = {
           export_format?: string
           filters?: Json
         }
+        Returns: string
+      }
+      generate_approval_request_number: {
+        Args: { company_id_param: string }
         Returns: string
       }
       generate_cash_flow_analysis: {
@@ -6613,6 +6862,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: number
       }
+      update_approval_request_status: {
+        Args: { request_id_param: string }
+        Returns: undefined
+      }
       update_budget_actual_amounts: {
         Args: { budget_id_param: string }
         Returns: undefined
@@ -6645,10 +6898,22 @@ export type Database = {
       }
     }
     Enums: {
+      approval_priority: "low" | "medium" | "high" | "urgent"
+      approval_status: "pending" | "approved" | "rejected" | "cancelled"
       customer_type: "individual" | "corporate"
       insurance_status: "active" | "expired" | "cancelled" | "pending"
       maintenance_priority: "low" | "medium" | "high" | "urgent"
       maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
+      request_source:
+        | "payroll"
+        | "contract"
+        | "payment"
+        | "expense"
+        | "purchase"
+        | "leave_request"
+        | "vehicle_maintenance"
+        | "budget"
+        | "other"
       user_role:
         | "super_admin"
         | "company_admin"
@@ -6790,10 +7055,23 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      approval_priority: ["low", "medium", "high", "urgent"],
+      approval_status: ["pending", "approved", "rejected", "cancelled"],
       customer_type: ["individual", "corporate"],
       insurance_status: ["active", "expired", "cancelled", "pending"],
       maintenance_priority: ["low", "medium", "high", "urgent"],
       maintenance_status: ["pending", "in_progress", "completed", "cancelled"],
+      request_source: [
+        "payroll",
+        "contract",
+        "payment",
+        "expense",
+        "purchase",
+        "leave_request",
+        "vehicle_maintenance",
+        "budget",
+        "other",
+      ],
       user_role: [
         "super_admin",
         "company_admin",
