@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 import { useAuth } from '@/contexts/AuthContext';
+import { ImageUploadField } from './ImageUploadField';
 
 const THEME_PRESETS = [
   {
@@ -631,25 +632,26 @@ export const CompanyBrandingSettings = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="logo_url">رابط الشعار</Label>
-              <Input
-                id="logo_url"
-                value={localSettings.logo_url || ''}
-                onChange={(e) => handleSettingChange('logo_url', e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="favicon_url">رابط أيقونة الموقع</Label>
-              <Input
-                id="favicon_url"
-                value={localSettings.favicon_url || ''}
-                onChange={(e) => handleSettingChange('favicon_url', e.target.value)}
-                placeholder="https://example.com/favicon.ico"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ImageUploadField
+              label="شعار الشركة"
+              value={localSettings.logo_url || ''}
+              onChange={(url) => handleSettingChange('logo_url', url)}
+              placeholder="اسحب صورة الشعار هنا أو انقر للاختيار"
+              folder="logos"
+              aspectRatio="auto"
+              maxWidth={250}
+            />
+            
+            <ImageUploadField
+              label="أيقونة الموقع (Favicon)"
+              value={localSettings.favicon_url || ''}
+              onChange={(url) => handleSettingChange('favicon_url', url)}
+              placeholder="اسحب أيقونة الموقع هنا أو انقر للاختيار"
+              folder="favicons"
+              aspectRatio="square"
+              maxWidth={150}
+            />
           </div>
         </CardContent>
       </Card>

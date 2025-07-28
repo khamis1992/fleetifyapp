@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanyScope } from './useCompanyScope';
+import { useImageUpload } from './useImageUpload';
 
 export interface BrandingSettings {
   id?: string;
@@ -28,6 +29,7 @@ export const useCompanyBranding = () => {
   const { user } = useAuth();
   const { companyId } = useCompanyScope();
   const { toast } = useToast();
+  const { deleteImage } = useImageUpload();
   const [settings, setSettings] = useState<BrandingSettings>({
     primary_color: '#2563eb',
     secondary_color: '#f59e0b',
@@ -84,6 +86,21 @@ export const useCompanyBranding = () => {
     try {
       setSaving(true);
       const updatedSettings = { ...settings, ...newSettings };
+
+      // Delete old images if they were replaced with new uploads
+      if (settings?.logo_url && 
+          newSettings.logo_url && 
+          settings.logo_url !== newSettings.logo_url &&
+          settings.logo_url.includes('supabase')) {
+        await deleteImage(settings.logo_url);
+      }
+      
+      if (settings?.favicon_url && 
+          newSettings.favicon_url && 
+          settings.favicon_url !== newSettings.favicon_url &&
+          settings.favicon_url.includes('supabase')) {
+        await deleteImage(settings.favicon_url);
+      }
 
       const { data, error } = await supabase
         .from('company_branding_settings')
