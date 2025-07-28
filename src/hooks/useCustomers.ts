@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useSystemLogger } from "@/hooks/useSystemLogger";
 
 export interface Customer {
   id: string;
@@ -132,6 +133,7 @@ export const useCustomers = (filters?: {
 export const useCreateCustomer = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { log } = useSystemLogger();
 
   return useMutation({
     mutationFn: async (customerData: CustomerFormData) => {
@@ -204,6 +206,22 @@ export const useCreateCustomer = () => {
       }
 
       console.log('✅ Customer created successfully:', data);
+      
+      // Log the customer creation
+      const customerName = data.customer_type === 'individual' 
+        ? `${data.first_name} ${data.last_name}`
+        : data.company_name;
+      
+      log.info('customers', 'create', `تم إنشاء العميل ${customerName}`, {
+        resource_type: 'customer',
+        resource_id: data.id,
+        metadata: {
+          customer_type: data.customer_type,
+          name: customerName,
+          phone: data.phone
+        }
+      });
+      
       return data;
     },
     onSuccess: (data) => {

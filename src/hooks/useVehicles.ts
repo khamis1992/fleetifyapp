@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
+import { useSystemLogger } from "@/hooks/useSystemLogger"
 
 export interface Vehicle {
   id: string
@@ -341,6 +342,7 @@ export const useCreateVehicle = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { user } = useAuth()
+  const { log } = useSystemLogger()
   
   return useMutation({
     mutationFn: async (vehicleData: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) => {
@@ -413,6 +415,20 @@ export const useCreateVehicle = () => {
       }
       
       console.log("✅ [USE_CREATE_VEHICLE] Vehicle created successfully:", data);
+      
+      // Log the vehicle creation
+      log.info('fleet', 'create', `تم إنشاء مركبة جديدة ${data.plate_number}`, {
+        resource_type: 'vehicle',
+        resource_id: data.id,
+        metadata: {
+          plate_number: data.plate_number,
+          make: data.make,
+          model: data.model,
+          year: data.year,
+          status: data.status
+        }
+      });
+      
       return data
     },
     onSuccess: (data) => {

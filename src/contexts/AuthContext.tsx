@@ -74,11 +74,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    return authService.signIn(email, password);
+    const result = await authService.signIn(email, password);
+    
+    if (!result.error) {
+      // Log successful login
+      setTimeout(() => {
+        supabase.from('system_logs').insert({
+          level: 'info',
+          category: 'authentication',
+          action: 'login',
+          message: `تسجيل دخول للمستخدم ${email}`,
+          metadata: { email }
+        });
+      }, 1000);
+    }
+    
+    return result;
   };
 
   const signOut = async () => {
-    return authService.signOut();
+    const email = user?.email;
+    const result = await authService.signOut();
+    
+    if (!result.error && email) {
+      // Log successful logout
+      setTimeout(() => {
+        supabase.from('system_logs').insert({
+          level: 'info',
+          category: 'authentication',
+          action: 'logout',
+          message: `تسجيل خروج للمستخدم ${email}`,
+          metadata: { email }
+        });
+      }, 500);
+    }
+    
+    return result;
   };
 
   const updateProfile = async (updates: any) => {
