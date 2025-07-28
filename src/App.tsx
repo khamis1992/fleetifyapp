@@ -19,7 +19,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AdvancedSettings from "./pages/AdvancedSettings";
 import SubscriptionPage from "./pages/SubscriptionPage";
-import PerformancePage from "./pages/PerformancePage";
+
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
 import Fleet from "./pages/Fleet";
@@ -64,7 +64,7 @@ const App = () => (
             <Route path="/*" element={<DashboardLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="subscription" element={<SubscriptionPage />} />
-              <Route path="performance" element={<PerformancePage />} />
+              
               <Route path="backup" element={<BackupPage />} />
               <Route path="audit" element={<AuditPage />} />
               <Route path="profile" element={<Profile />} />
