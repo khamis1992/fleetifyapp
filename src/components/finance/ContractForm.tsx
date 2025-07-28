@@ -78,7 +78,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!contractData.contract_number || !contractData.customer_id) {
+    if (!contractData.customer_id) {
       toast.error('يرجى ملء جميع الحقول المطلوبة')
       return
     }
@@ -140,14 +140,16 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contract_number">رقم العقد *</Label>
+                <Label htmlFor="contract_number">رقم العقد</Label>
                 <Input
                   id="contract_number"
                   value={contractData.contract_number}
                   onChange={(e) => setContractData({...contractData, contract_number: e.target.value})}
-                  placeholder="رقم العقد"
-                  required
+                  placeholder="سيتم توليده تلقائياً إذا ترك فارغاً"
                 />
+                <p className="text-xs text-muted-foreground">
+                  اتركه فارغاً لتوليد رقم تلقائي
+                </p>
               </div>
               
               <div className="space-y-2">

@@ -162,7 +162,7 @@ export const useRealTimeAlerts = () => {
       vehicleChannel.unsubscribe();
       setIsSubscribed(false);
     };
-  }, [user?.profile?.company_id, queryClient, toast, isSubscribed]);
+  }, [user?.profile?.company_id, queryClient, toast]);
 
   // Statistics
   const totalAlerts = alerts.length;
