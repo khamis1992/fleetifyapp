@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useSystemLogger } from "@/hooks/useSystemLogger";
 
 // Types
 export interface PayrollRecord {
@@ -198,6 +199,7 @@ export function useEmployeePayrollHistory(employeeId: string) {
 export function useCreatePayroll() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { log } = useSystemLogger();
 
   return useMutation({
     mutationFn: async (payrollData: CreatePayrollData) => {
@@ -256,6 +258,18 @@ export function useCreatePayroll() {
         .single();
 
       if (error) throw error;
+      
+      // Log the payroll creation
+      log.info('hr', 'create', `تم إنشاء راتب جديد برقم ${payrollNumber}`, {
+        resource_type: 'payroll',
+        resource_id: data.id,
+        metadata: {
+          payroll_number: payrollNumber,
+          employee_id: payrollData.employee_id,
+          net_amount
+        }
+      });
+      
       return data;
     },
     onSuccess: () => {

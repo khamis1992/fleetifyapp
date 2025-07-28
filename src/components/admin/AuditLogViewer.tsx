@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSystemLogs, useSystemLogStats } from '@/hooks/useSystemLogs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Search, 
   Filter, 
@@ -19,58 +22,38 @@ import {
   Database,
   Settings,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  Car,
+  Building2,
+  CreditCard,
+  BarChart3,
+  Archive,
+  CheckCircle,
+  Info,
+  XCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 
 export const AuditLogViewer: React.FC = () => {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedLog, setSelectedLog] = useState<any>(null);
 
-  const { data: auditLogs, isLoading, refetch } = useQuery({
-    queryKey: ['audit-logs', user?.profile?.company_id, searchTerm, levelFilter, categoryFilter, dateRange],
-    queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
-
-      let query = supabase
-        .from('system_logs')
-        .select('*')
-        .eq('company_id', user.profile.company_id)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (searchTerm) {
-        query = query.or(`message.ilike.%${searchTerm}%,action.ilike.%${searchTerm}%`);
-      }
-
-      if (levelFilter !== 'all') {
-        query = query.eq('level', levelFilter);
-      }
-
-      if (categoryFilter !== 'all') {
-        query = query.eq('category', categoryFilter);
-      }
-
-      if (dateRange?.from) {
-        query = query.gte('created_at', dateRange.from.toISOString());
-      }
-
-      if (dateRange?.to) {
-        query = query.lte('created_at', dateRange.to.toISOString());
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.profile?.company_id
+  // Use the new hooks
+  const { data: auditLogs, isLoading, refetch } = useSystemLogs({
+    level: levelFilter !== 'all' ? levelFilter : undefined,
+    category: categoryFilter !== 'all' ? categoryFilter : undefined,
+    start_date: dateRange?.from?.toISOString(),
+    end_date: dateRange?.to?.toISOString(),
+    search: searchTerm || undefined
   });
+
+  const { data: stats } = useSystemLogStats();
 
   const getLevelIcon = (level: string) => {
     switch (level) {
@@ -138,6 +121,59 @@ export const AuditLogViewer: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">إجمالي السجلات</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">سجلات اليوم</p>
+                  <p className="text-2xl font-bold">{stats.today}</p>
+                </div>
+                <Activity className="h-8 w-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">أخطاء</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.errors}</p>
+                </div>
+                <XCircle className="h-8 w-8 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">تحذيرات</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.warnings}</p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Filters */}
       <Card>
         <CardHeader>
