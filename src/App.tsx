@@ -16,6 +16,7 @@ import SuperAdminUsers from "./pages/super-admin/Users";
 import Finance from "./pages/Finance";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import AdvancedSettings from "./pages/AdvancedSettings";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import PerformancePage from "./pages/PerformancePage";
 import BackupPage from "./pages/BackupPage";
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="audit" element={<AuditPage />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="settings/advanced" element={<AdvancedSettings />} />
               <Route path="fleet" element={<Fleet />} />
               <Route path="fleet/maintenance" element={<Maintenance />} />
               <Route path="fleet/traffic-violations" element={<TrafficViolations />} />

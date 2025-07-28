@@ -43,11 +43,11 @@ const Settings: React.FC = () => {
       available: true
     },
     {
-      title: "المظهر",
-      description: "تخصيص مظهر التطبيق والسمات",
+      title: "الإعدادات المتقدمة",
+      description: "إعدادات النظام والقوالب والهوية البصرية",
       icon: Palette,
-      action: () => {},
-      available: false
+      action: () => navigate('/settings/advanced'),
+      available: true
     },
     {
       title: "اللغة والمنطقة",

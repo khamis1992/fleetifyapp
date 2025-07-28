@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { QuickSearch } from '@/components/navigation/QuickSearch';
+import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 
 export const DashboardLayout: React.FC = () => {
   const { user, loading, signOut } = useAuth();
@@ -49,6 +51,7 @@ export const DashboardLayout: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <QuickSearch />
               {/* Attendance Button */}
               <HeaderAttendanceButton />
               
@@ -98,6 +101,7 @@ export const DashboardLayout: React.FC = () => {
             <Outlet />
           </main>
         </div>
+        <KeyboardShortcuts />
       </div>
     </SidebarProvider>
   );
