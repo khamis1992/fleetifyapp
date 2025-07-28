@@ -4143,6 +4143,7 @@ export type Database = {
           id: string
           insurance_company: string
           is_active: boolean | null
+          journal_entry_id: string | null
           policy_number: string
           policy_type: string
           premium_amount: number
@@ -4167,6 +4168,7 @@ export type Database = {
           id?: string
           insurance_company: string
           is_active?: boolean | null
+          journal_entry_id?: string | null
           policy_number: string
           policy_type: string
           premium_amount?: number
@@ -4191,6 +4193,7 @@ export type Database = {
           id?: string
           insurance_company?: string
           is_active?: boolean | null
+          journal_entry_id?: string | null
           policy_number?: string
           policy_type?: string
           premium_amount?: number
@@ -5063,6 +5066,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_insurance_journal_entry: {
+        Args: { policy_id_param: string }
+        Returns: string
+      }
       create_invoice_discount_journal_entry: {
         Args: {
           invoice_id_param: string
@@ -5261,7 +5268,9 @@ export type Database = {
         Returns: string
       }
       get_mapped_account_id: {
-        Args: { company_id_param: string; account_type_code: string }
+        Args:
+          | { company_id_param: string; account_type_code: string }
+          | { company_id_param: string; account_type_code: string }
         Returns: string
       }
       get_payment_analytics: {
