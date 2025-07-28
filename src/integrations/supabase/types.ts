@@ -4979,7 +4979,15 @@ export type Database = {
           updated_at?: string
           vehicle_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_vehicle_dispatch_permits_vehicle_id"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_documents: {
         Row: {
