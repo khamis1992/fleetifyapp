@@ -6649,6 +6649,10 @@ export type Database = {
           financing_cash_flow: number
         }[]
       }
+      generate_contract_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       generate_dispatch_permit_number: {
         Args: { company_id_param: string }
         Returns: string
