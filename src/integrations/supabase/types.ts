@@ -1117,6 +1117,69 @@ export type Database = {
           },
         ]
       }
+      company_branding_settings: {
+        Row: {
+          accent_color: string | null
+          background_color: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          custom_css: string | null
+          favicon_url: string | null
+          font_family: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          system_name: string | null
+          system_name_ar: string | null
+          text_color: string | null
+          theme_preset: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          background_color?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_css?: string | null
+          favicon_url?: string | null
+          font_family?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          system_name?: string | null
+          system_name_ar?: string | null
+          text_color?: string | null
+          theme_preset?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          background_color?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_css?: string | null
+          favicon_url?: string | null
+          font_family?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          system_name?: string | null
+          system_name_ar?: string | null
+          text_color?: string | null
+          theme_preset?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       company_usage: {
         Row: {
           api_calls_count: number | null
