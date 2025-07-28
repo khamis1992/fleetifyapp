@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, Users, UserPlus, Shield, History, Search, Settings, BarChart3, Save, X } from 'lucide-react';
+import { AlertCircle, Users, UserPlus, Shield, History, Search, Settings, BarChart3, Save, X, FileText, TrendingUp, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import UserAccountForm from '@/components/hr/UserAccountForm';
@@ -18,6 +18,10 @@ import UserAuditLog from '@/components/hr/UserAuditLog';
 import PermissionsDashboard from '@/components/hr/permissions/PermissionsDashboard';
 import UserPermissionsDialog from '@/components/hr/permissions/UserPermissionsDialog';
 import PermissionsMatrix from '@/components/hr/permissions/PermissionsMatrix';
+import AdvancedPermissionTemplates from '@/components/hr/permissions/AdvancedPermissionTemplates';
+import PermissionAnalytics from '@/components/hr/permissions/PermissionAnalytics';
+import ApprovalWorkflow from '@/components/hr/permissions/ApprovalWorkflow';
+import SmartPermissionSuggestions from '@/components/hr/permissions/SmartPermissionSuggestions';
 import { useUpdateUserPermissions, useUpdateUserRoles } from '@/hooks/useUserPermissions';
 import { UserRole } from '@/types/permissions';
 
@@ -482,7 +486,42 @@ export default function UserManagement() {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <PermissionsDashboard />
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                نظرة عامة
+              </TabsTrigger>
+              <TabsTrigger value="templates">
+                <FileText className="w-4 h-4 mr-2" />
+                القوالب
+              </TabsTrigger>
+              <TabsTrigger value="analytics">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                التحليلات
+              </TabsTrigger>
+              <TabsTrigger value="approvals">
+                <Clock className="w-4 h-4 mr-2" />
+                الموافقات
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview">
+              <PermissionsDashboard />
+            </TabsContent>
+
+            <TabsContent value="templates">
+              <AdvancedPermissionTemplates />
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <PermissionAnalytics />
+            </TabsContent>
+
+            <TabsContent value="approvals">
+              <ApprovalWorkflow />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="permissions">
