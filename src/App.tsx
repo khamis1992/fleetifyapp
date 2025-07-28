@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/super-admin/Dashboard";
 import SuperAdminCompanies from "./pages/super-admin/Companies";
 import SuperAdminUsers from "./pages/super-admin/Users";
+import SuperAdminSettings from "./pages/super-admin/Settings";
 import Finance from "./pages/Finance";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -58,7 +59,7 @@ const App = () => (
               <Route path="users" element={<SuperAdminUsers />} />
               <Route path="payments" element={<div className="p-8 text-center text-muted-foreground">المدفوعات - قيد التطوير</div>} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">تقارير النظام - قيد التطوير</div>} />
-              <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">إعدادات النظام - قيد التطوير</div>} />
+              <Route path="settings" element={<SuperAdminSettings />} />
             </Route>
             <Route path="/*" element={<DashboardLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
