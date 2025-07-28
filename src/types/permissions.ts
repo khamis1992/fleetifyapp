@@ -97,13 +97,22 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     order: 4
   },
   {
+    id: 'legal',
+    name: 'Legal Department',
+    nameAr: 'القسم القانوني',
+    description: 'Legal cases, documents, correspondence',
+    icon: 'Scale',
+    color: 'indigo',
+    order: 5
+  },
+  {
     id: 'admin',
     name: 'System Administration',
     nameAr: 'إدارة النظام',
     description: 'System settings, user management',
     icon: 'Shield',
     color: 'red',
-    order: 5
+    order: 6
   }
 ];
 
@@ -383,47 +392,112 @@ export const PERMISSIONS: Permission[] = [
     level: 'read'
   },
 
+  // Legal Permissions
+  {
+    id: 'legal.cases.read',
+    name: 'View Legal Cases',
+    description: 'View legal case information',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'read'
+  },
+  {
+    id: 'legal.cases.write',
+    name: 'Manage Legal Cases',
+    description: 'Create, update, delete legal cases',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'write'
+  },
+  {
+    id: 'legal.documents.read',
+    name: 'View Legal Documents',
+    description: 'View legal case documents',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'read'
+  },
+  {
+    id: 'legal.documents.write',
+    name: 'Manage Legal Documents',
+    description: 'Upload, update, delete legal documents',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'write'
+  },
+  {
+    id: 'legal.correspondence.read',
+    name: 'View Legal Correspondence',
+    description: 'View legal correspondence',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'read'
+  },
+  {
+    id: 'legal.correspondence.write',
+    name: 'Manage Legal Correspondence',
+    description: 'Create and manage legal correspondence',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'write'
+  },
+  {
+    id: 'legal.payments.read',
+    name: 'View Legal Payments',
+    description: 'View legal case payments and billing',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'read'
+  },
+  {
+    id: 'legal.payments.write',
+    name: 'Manage Legal Payments',
+    description: 'Process legal fees and expenses',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'write'
+  },
+  {
+    id: 'legal.reports.read',
+    name: 'View Legal Reports',
+    description: 'View legal department reports',
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'legal')!,
+    level: 'read'
+  },
+
   // Admin Permissions
   {
     id: 'admin.users.read',
     name: 'View Users',
     description: 'View user accounts',
-    category: PERMISSION_CATEGORIES[4],
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'admin')!,
     level: 'read'
   },
   {
     id: 'admin.users.write',
     name: 'Manage Users',
     description: 'Create, update, delete user accounts',
-    category: PERMISSION_CATEGORIES[4],
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'admin')!,
     level: 'write'
   },
   {
     id: 'admin.roles.read',
     name: 'View Roles',
     description: 'View role assignments',
-    category: PERMISSION_CATEGORIES[4],
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'admin')!,
     level: 'read'
   },
   {
     id: 'admin.roles.write',
     name: 'Manage Roles',
     description: 'Assign and manage user roles',
-    category: PERMISSION_CATEGORIES[4],
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'admin')!,
     level: 'write'
   },
   {
     id: 'admin.settings.read',
     name: 'View Settings',
     description: 'View system settings',
-    category: PERMISSION_CATEGORIES[4],
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'admin')!,
     level: 'read'
   },
   {
     id: 'admin.settings.write',
     name: 'Manage Settings',
     description: 'Modify system settings',
-    category: PERMISSION_CATEGORIES[4],
+    category: PERMISSION_CATEGORIES.find(c => c.id === 'admin')!,
     level: 'write',
     isSystemLevel: true
   }
@@ -458,6 +532,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       p.id.includes('finance.invoices') ||
       p.id.includes('finance.payments') ||
       p.id.includes('reports.operations') ||
+      p.id.includes('legal.cases.read') ||
+      p.id.includes('legal.correspondence.read') ||
       p.id === 'attendance.clock_in'
     ).map(p => p.id),
     canAssignRoles: []
