@@ -98,6 +98,36 @@ export const BackupManagement: React.FC = () => {
     }
   });
 
+  const downloadBackupMutation = useMutation({
+    mutationFn: async (backup: any) => {
+      // Simulate download process - in real implementation, this would download the actual backup file
+      const blob = new Blob(['Backup data simulation'], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup-${backup.backup_type}-${backup.created_at.split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم بدء التحميل",
+        description: "تم بدء تحميل النسخة الاحتياطية بنجاح",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ في التحميل",
+        description: "حدث خطأ أثناء تحميل النسخة الاحتياطية",
+        variant: "destructive",
+      });
+    }
+  });
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -284,6 +314,8 @@ export const BackupManagement: React.FC = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
+                          onClick={() => downloadBackupMutation.mutate(backup)}
+                          disabled={downloadBackupMutation.isPending}
                           className="flex items-center gap-1"
                         >
                           <Download className="h-3 w-3" />
