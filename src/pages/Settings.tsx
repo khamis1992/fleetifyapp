@@ -12,7 +12,8 @@ import {
   Palette, 
   Globe,
   Lock,
-  ChevronRight
+  ChevronRight,
+  Crown
 } from 'lucide-react';
 
 const Settings: React.FC = () => {
@@ -60,6 +61,13 @@ const Settings: React.FC = () => {
       description: "عرض صلاحياتك في النظام",
       icon: Lock,
       action: () => navigate('/hr/user-management'),
+      available: true
+    },
+    {
+      title: "إدارة الاشتراك",
+      description: "إدارة خطة الاشتراك والميزات",
+      icon: Crown,
+      action: () => navigate('/subscription'),
       available: true
     }
   ];

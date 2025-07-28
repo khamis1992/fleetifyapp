@@ -2,6 +2,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHasCompanyAdminAccess, useHasGlobalAccess } from '@/hooks/useCompanyScope';
 import { 
   Car, 
   FileText, 
@@ -29,7 +30,10 @@ import {
   Calendar,
   Wrench,
   AlertTriangle,
-  Link
+  Link,
+  Crown,
+  Activity,
+  Database
 } from 'lucide-react';
 import {
   Sidebar,
@@ -87,6 +91,29 @@ const navigationItems = [
     href: '/legal', 
     icon: Shield 
   },
+];
+
+const adminItems = [
+  {
+    name: 'إدارة الاشتراك',
+    href: '/subscription',
+    icon: Crown
+  },
+  {
+    name: 'مراقبة الأداء',
+    href: '/performance',
+    icon: Activity
+  },
+  {
+    name: 'النسخ الاحتياطية',
+    href: '/backup',
+    icon: Database
+  },
+  {
+    name: 'سجل العمليات',
+    href: '/audit',
+    icon: FileText
+  }
 ];
 
 const financeSubItems = [
@@ -225,6 +252,8 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
+  const hasCompanyAdminAccess = useHasCompanyAdminAccess();
+  const hasGlobalAccess = useHasGlobalAccess();
   
   // Check if finance section should be open
   const isFinanceActive = location.pathname.startsWith('/finance');
@@ -367,11 +396,41 @@ export function AppSidebar() {
                       ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
+                  </Collapsible>
+                </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin Section */}
+        {hasCompanyAdminAccess && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
+              الإدارة
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => {
+                  // Filter admin items based on permissions
+                  if (item.href === '/backup' && !hasGlobalAccess) {
+                    return null;
+                  }
+                  
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton asChild className="h-10">
+                        <NavLink to={item.href} className={getNavClassName}>
+                          <item.icon className="h-4 w-4" />
+                          {!collapsed && <span className="font-medium">{item.name}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );
