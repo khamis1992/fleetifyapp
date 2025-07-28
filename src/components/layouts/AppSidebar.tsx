@@ -33,7 +33,8 @@ import {
   Link,
   Crown,
   Activity,
-  Database
+  Database,
+  CheckSquare
 } from 'lucide-react';
 import {
   Sidebar,
@@ -60,6 +61,12 @@ const navigationItems = [
     name_en: 'Dashboard',
     href: '/dashboard', 
     icon: Home 
+  },
+  { 
+    name: 'نظام الموافقات', 
+    name_en: 'Approvals',
+    href: '/approvals', 
+    icon: CheckSquare 
   },
   { 
     name: 'العقود', 
