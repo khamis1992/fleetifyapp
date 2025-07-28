@@ -131,14 +131,14 @@ export const ApprovalRequestsList: React.FC<ApprovalRequestsListProps> = ({
           </div>
           
           <Select 
-            value={filters.status} 
-            onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as ApprovalStatus }))}
+            value={filters.status || 'all'} 
+            onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value as ApprovalStatus }))}
           >
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="الحالة" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">جميع الحالات</SelectItem>
+              <SelectItem value="all">جميع الحالات</SelectItem>
               {Object.entries(STATUS_LABELS).map(([status, label]) => (
                 <SelectItem key={status} value={status}>
                   {label.ar}
@@ -148,14 +148,14 @@ export const ApprovalRequestsList: React.FC<ApprovalRequestsListProps> = ({
           </Select>
 
           <Select 
-            value={filters.source_type} 
-            onValueChange={(value) => setFilters(prev => ({ ...prev, source_type: value as RequestSource }))}
+            value={filters.source_type || 'all'} 
+            onValueChange={(value) => setFilters(prev => ({ ...prev, source_type: value === 'all' ? '' : value as RequestSource }))}
           >
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="نوع العملية" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">جميع الأنواع</SelectItem>
+              <SelectItem value="all">جميع الأنواع</SelectItem>
               {Object.entries(REQUEST_SOURCE_LABELS).map(([source, label]) => (
                 <SelectItem key={source} value={source}>
                   {label}
