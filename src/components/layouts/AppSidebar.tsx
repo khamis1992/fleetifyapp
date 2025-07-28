@@ -182,6 +182,11 @@ const fleetSubItems = [
     icon: Car
   },
   {
+    name: 'تصاريح الحركة',
+    href: '/fleet/dispatch-permits',
+    icon: FileText
+  },
+  {
     name: 'الصيانة',
     href: '/fleet/maintenance',
     icon: Wrench
