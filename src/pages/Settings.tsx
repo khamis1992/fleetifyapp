@@ -43,8 +43,8 @@ const Settings: React.FC = () => {
       available: true
     },
     {
-      title: "الإعدادات المتقدمة",
-      description: "إعدادات النظام والقوالب والهوية البصرية",
+      title: "إعدادات الهوية البصرية",
+      description: "تخصيص الشعار والألوان والعناصر البصرية",
       icon: Palette,
       action: () => navigate('/settings/advanced'),
       available: true
