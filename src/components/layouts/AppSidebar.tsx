@@ -63,12 +63,6 @@ const navigationItems = [
     icon: Home 
   },
   { 
-    name: 'نظام الموافقات', 
-    name_en: 'Approvals',
-    href: '/approvals', 
-    icon: CheckSquare 
-  },
-  { 
     name: 'العقود', 
     name_en: 'Contracts',
     href: '/contracts', 
@@ -101,6 +95,11 @@ const navigationItems = [
 ];
 
 const adminItems = [
+  {
+    name: 'نظام الموافقات',
+    href: '/approvals',
+    icon: CheckSquare
+  },
   {
     name: 'إدارة الاشتراك',
     href: '/subscription',
