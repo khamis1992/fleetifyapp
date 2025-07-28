@@ -431,18 +431,36 @@ export function DispatchPermitDetailsDialog({
             </Card>
           )}
 
-          {/* Action Buttons */}
-          <div className="space-y-4">
-            <div className="flex gap-2">
+          {/* Vehicle Condition Report - Prominent Section */}
+          <Card className="border-2 border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2 text-primary">
+                <ClipboardCheck className="h-5 w-5" />
+                تقرير حالة المركبة
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                يمكنك عرض وإدارة تقارير حالة المركبة قبل وبعد التنفيذ من خلال النقر على الزر أدناه
+              </p>
+            </CardHeader>
+            <CardContent>
               <Button 
                 onClick={() => setShowConditionReport(true)}
-                variant="outline"
+                size="lg"
+                className="w-full"
               >
-                <ClipboardCheck className="h-4 w-4 mr-1" />
-                Vehicle Condition Report
+                <ClipboardCheck className="h-5 w-5 mr-2" />
+                عرض تقرير حالة المركبة
               </Button>
-              
-              {permit.status === 'pending' && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                يتضمن فحص ما قبل التنفيذ وما بعد التنفيذ
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="space-y-4">
+            {permit.status === 'pending' && (
+              <div className="flex gap-2">
                 <Button 
                   onClick={() => setShowApprovalActions(!showApprovalActions)}
                   variant="outline"
@@ -450,8 +468,8 @@ export function DispatchPermitDetailsDialog({
                   <Edit className="h-4 w-4 mr-1" />
                   إجراءات الموافقة
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             {permit.status === 'approved' && (
               <Button onClick={handleStartProgress} disabled={updateStatus.isPending}>
