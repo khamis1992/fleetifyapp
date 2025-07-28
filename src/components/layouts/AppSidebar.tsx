@@ -28,7 +28,8 @@ import {
   UserCog,
   Calendar,
   Wrench,
-  AlertTriangle
+  AlertTriangle,
+  Link
 } from 'lucide-react';
 import {
   Sidebar,
@@ -93,6 +94,11 @@ const financeSubItems = [
     name: 'دليل الحسابات',
     href: '/finance/chart-of-accounts',
     icon: BookOpen
+  },
+  {
+    name: 'ربط الحسابات',
+    href: '/finance/account-mappings',
+    icon: Link
   },
   {
     name: 'دفتر الأستاذ',
