@@ -332,6 +332,59 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_logs: {
+        Row: {
+          backup_type: string
+          company_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          file_path: string | null
+          file_size_bytes: number | null
+          id: string
+          metadata: Json | null
+          records_count: number | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          backup_type: string
+          company_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          metadata?: Json | null
+          records_count?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          backup_type?: string
+          company_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          metadata?: Json | null
+          records_count?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_transactions: {
         Row: {
           amount: number
@@ -3065,6 +3118,47 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_metrics: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          id: string
+          metric_name: string
+          metric_unit: string | null
+          metric_value: number
+          recorded_at: string | null
+          tags: Json | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          metric_name: string
+          metric_unit?: string | null
+          metric_value: number
+          recorded_at?: string | null
+          tags?: Json | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          metric_name?: string
+          metric_unit?: string | null
+          metric_value?: number
+          recorded_at?: string | null
+          tags?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permission_change_requests: {
         Row: {
           company_id: string
@@ -3411,6 +3505,62 @@ export type Database = {
         }
         Relationships: []
       }
+      system_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          company_id: string | null
+          created_at: string | null
+          details: Json | null
+          expires_at: string | null
+          id: string
+          message: string
+          resolved_at: string | null
+          severity: string
+          status: string | null
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          company_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string | null
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          company_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_analytics: {
         Row: {
           category: string
@@ -3446,6 +3596,68 @@ export type Database = {
           time_period?: string | null
         }
         Relationships: []
+      }
+      system_logs: {
+        Row: {
+          action: string
+          category: string
+          company_id: string | null
+          created_at: string | null
+          duration_ms: number | null
+          id: string
+          ip_address: unknown | null
+          level: string
+          message: string
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          category: string
+          company_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          ip_address?: unknown | null
+          level?: string
+          message: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          category?: string
+          company_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          ip_address?: unknown | null
+          level?: string
+          message?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_notifications: {
         Row: {
@@ -5241,6 +5453,18 @@ export type Database = {
         Args: { penalty_id_param: string }
         Returns: string
       }
+      create_system_alert: {
+        Args: {
+          company_id_param: string
+          alert_type_param: string
+          severity_param: string
+          title_param: string
+          message_param: string
+          details_param?: Json
+          expires_hours?: number
+        }
+        Returns: string
+      }
       create_traffic_payment_journal_entry: {
         Args: { payment_id_param: string }
         Returns: string
@@ -5481,6 +5705,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_system_event: {
+        Args: {
+          company_id_param: string
+          user_id_param: string
+          level_param: string
+          category_param: string
+          action_param: string
+          message_param: string
+          metadata_param?: Json
+          resource_type_param?: string
+          resource_id_param?: string
+        }
+        Returns: string
+      }
       log_user_account_action: {
         Args: {
           employee_id_param: string
@@ -5503,6 +5741,16 @@ export type Database = {
       process_vehicle_depreciation_monthly: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
+      }
+      record_performance_metric: {
+        Args: {
+          company_id_param: string
+          metric_name_param: string
+          metric_value_param: number
+          metric_unit_param?: string
+          tags_param?: Json
+        }
+        Returns: string
       }
       reverse_journal_entry: {
         Args: {
