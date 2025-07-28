@@ -80,6 +80,21 @@ export default function Contracts() {
     }
   }
 
+  const getContractTypeLabel = (type: string) => {
+    switch (type) {
+      case 'rent_to_own': return 'إيجار حتى التملك'
+      case 'rental': return 'إيجار'
+      case 'daily_rental': return 'إيجار يومي'
+      case 'weekly_rental': return 'إيجار أسبوعي'
+      case 'monthly_rental': return 'إيجار شهري'
+      case 'yearly_rental': return 'إيجار سنوي'
+      case 'service': return 'عقد خدمات'
+      case 'maintenance': return 'عقد صيانة'
+      case 'sales': return 'عقد مبيعات'
+      default: return 'عقد'
+    }
+  }
+
   const handleContractSubmit = async (contractData: any) => {
     try {
       const { error } = await supabase
@@ -244,7 +259,7 @@ export default function Contracts() {
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        {contract.contract_type === 'rental' ? 'عقد إيجار' : 'عقد خدمات'}
+                         {getContractTypeLabel(contract.contract_type)}
                       </span>
                     </div>
                     
@@ -347,7 +362,7 @@ export default function Contracts() {
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {contract.contract_type === 'rental' ? 'عقد إيجار' : 'عقد خدمات'}
+                             {getContractTypeLabel(contract.contract_type)}
                           </span>
                         </div>
                       </div>
@@ -399,7 +414,7 @@ export default function Contracts() {
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {contract.contract_type === 'rental' ? 'عقد إيجار' : 'عقد خدمات'}
+                             {getContractTypeLabel(contract.contract_type)}
                           </span>
                         </div>
                       </div>
@@ -463,7 +478,7 @@ export default function Contracts() {
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {contract.contract_type === 'rental' ? 'عقد إيجار' : 'عقد خدمات'}
+                            {getContractTypeLabel(contract.contract_type)}
                           </span>
                         </div>
                       </div>
