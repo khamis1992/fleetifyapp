@@ -6913,6 +6913,10 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_company_stats_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       reverse_journal_entry: {
         Args: {
           entry_id: string

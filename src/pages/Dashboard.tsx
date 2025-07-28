@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEnhancedDashboardStats } from '@/hooks/useEnhancedDashboardStats';
-import { useEnhancedRecentActivities } from '@/hooks/useEnhancedRecentActivities';
+import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
+import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useSmartAlerts } from '@/hooks/useSmartAlerts';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
@@ -14,8 +14,8 @@ import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Za
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { data: enhancedStats, isLoading: statsLoading } = useEnhancedDashboardStats();
-  const { data: recentActivities, isLoading: activitiesLoading } = useEnhancedRecentActivities();
+  const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
+  const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
 
