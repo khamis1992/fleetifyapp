@@ -6829,6 +6829,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_company_secure_cached: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       handle_incomplete_user_account: {
         Args: {
           p_user_id: string
@@ -6849,6 +6853,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_cached: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
       initialize_employee_leave_balances: {
         Args: { employee_id_param: string }
         Returns: undefined
@@ -6859,6 +6870,15 @@ export type Database = {
           resource_type: string
           resource_id?: string
           details?: Json
+        }
+        Returns: undefined
+      }
+      log_suspicious_access: {
+        Args: {
+          _user_id: string
+          _table_name: string
+          _company_id: string
+          _access_type: string
         }
         Returns: undefined
       }
@@ -6964,6 +6984,10 @@ export type Database = {
         Returns: undefined
       }
       user_belongs_to_company: {
+        Args: { _user_id: string; _company_id: string }
+        Returns: boolean
+      }
+      validate_company_access_secure: {
         Args: { _user_id: string; _company_id: string }
         Returns: boolean
       }
