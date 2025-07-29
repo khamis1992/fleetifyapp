@@ -128,7 +128,14 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
 
   // Check if condition report is completed
   const preDispatchReport = conditionReports?.find(r => r.inspection_type === 'pre_dispatch');
-  const isConditionReportCompleted = preDispatchReport?.status === 'approved';
+  
+  // Check if report exists and has essential data (regardless of approval status)
+  const hasEssentialReportData = preDispatchReport && 
+    preDispatchReport.overall_condition && 
+    preDispatchReport.mileage_reading && 
+    preDispatchReport.fuel_level;
+    
+  const isConditionReportCompleted = hasEssentialReportData;
 
   return (
     <>
@@ -581,7 +588,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-sm text-muted-foreground">
-                    يجب إكمال فحص حالة المركبة والموافقة عليه قبل إرسال الطلب النهائي للموافقة.
+                    أكمل فحص حالة المركبة مع البيانات الأساسية (الحالة العامة، قراءة العداد، مستوى الوقود) لتمكين إرسال الطلب النهائي.
                   </div>
                   
                   {selectedVehicle && (
@@ -622,18 +629,23 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">حالة الفحص:</span>
                         <span className={`px-2 py-1 rounded text-sm ${
-                          preDispatchReport.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          isConditionReportCompleted ? 'bg-green-100 text-green-800' :
                           preDispatchReport.status === 'requires_attention' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {preDispatchReport.status === 'approved' ? 'تمت الموافقة' :
+                          {isConditionReportCompleted ? 'جاهز للإرسال' :
                            preDispatchReport.status === 'requires_attention' ? 'يتطلب انتباه' :
-                           'في انتظار المراجعة'}
+                           'يحتاج بيانات إضافية'}
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         تم الفحص في: {new Date(preDispatchReport.inspection_date).toLocaleDateString('ar')}
                       </div>
+                      {!isConditionReportCompleted && (
+                        <div className="text-sm text-amber-600 mt-2">
+                          يرجى إكمال: الحالة العامة، قراءة العداد، ومستوى الوقود
+                        </div>
+                      )}
                     </div>
                   )}
 
