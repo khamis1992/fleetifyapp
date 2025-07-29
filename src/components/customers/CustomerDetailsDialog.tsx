@@ -145,7 +145,7 @@ export function CustomerDetailsDialog({
               )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onEdit}>
+              <Button onClick={onEdit}>
                 تعديل
               </Button>
             </div>
