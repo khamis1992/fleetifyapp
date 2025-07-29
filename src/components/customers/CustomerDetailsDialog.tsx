@@ -173,6 +173,81 @@ export function CustomerDetailsDialog({
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Customer Notes */}
+              {customer.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      ملاحظات العميل
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{customer.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Emergency Contact */}
+              {(customer.emergency_contact_name || customer.emergency_contact_phone) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      جهة اتصال الطوارئ
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {customer.emergency_contact_name && (
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{customer.emergency_contact_name}</span>
+                      </div>
+                    )}
+                    {customer.emergency_contact_phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{customer.emergency_contact_phone}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Address Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    معلومات العنوان
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {customer.address && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">العنوان</p>
+                      <p>{customer.address}</p>
+                    </div>
+                  )}
+                  {customer.address_ar && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">العنوان (عربي)</p>
+                      <p>{customer.address_ar}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{customer.city}, {customer.country}</span>
+                  </div>
+                  {customer.date_of_birth && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>تاريخ الميلاد: {new Date(customer.date_of_birth).toLocaleDateString('ar-SA')}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Basic Information */}
               <Card>
                 <CardHeader>
@@ -218,81 +293,6 @@ export function CustomerDetailsDialog({
                   )}
                 </CardContent>
               </Card>
-
-              {/* Address Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    معلومات العنوان
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {customer.address && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">العنوان</p>
-                      <p>{customer.address}</p>
-                    </div>
-                  )}
-                  {customer.address_ar && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">العنوان (عربي)</p>
-                      <p>{customer.address_ar}</p>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{customer.city}, {customer.country}</span>
-                  </div>
-                  {customer.date_of_birth && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>تاريخ الميلاد: {new Date(customer.date_of_birth).toLocaleDateString('ar-SA')}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Emergency Contact */}
-              {(customer.emergency_contact_name || customer.emergency_contact_phone) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      جهة اتصال الطوارئ
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {customer.emergency_contact_name && (
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{customer.emergency_contact_name}</span>
-                      </div>
-                    )}
-                    {customer.emergency_contact_phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{customer.emergency_contact_phone}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Customer Notes */}
-              {customer.notes && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      ملاحظات العميل
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{customer.notes}</p>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </TabsContent>
 
