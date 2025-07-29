@@ -421,4 +421,22 @@ All colors MUST be HSL.
     -webkit-hyphens: none;
     -moz-hyphens: none;
   }
+
+  /* RTL Support for Vehicle Form */
+  [dir="rtl"] .vehicle-form-content * {
+    text-align: right;
+    direction: rtl;
+  }
+
+  [dir="rtl"] .vehicle-form-content input,
+  [dir="rtl"] .vehicle-form-content textarea,
+  [dir="rtl"] .vehicle-form-content select {
+    text-align: right;
+    direction: rtl;
+  }
+
+  [dir="rtl"] .vehicle-form-content label {
+    text-align: right;
+    justify-content: flex-end;
+  }
 }

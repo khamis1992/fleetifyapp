@@ -426,20 +426,20 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogHeader className="text-right">
+          <DialogTitle className="text-right">
             {vehicle ? "تعديل المركبة" : "إضافة مركبة جديدة"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-right">
             {vehicle ? "تحديث معلومات المركبة" : "إضافة مركبة جديدة إلى الأسطول"}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 vehicle-form-content" dir="rtl">
+            <Tabs defaultValue="basic" className="w-full" dir="rtl">
+              <TabsList className="grid w-full grid-cols-5" dir="rtl">
                 <TabsTrigger value="additional">إضافية</TabsTrigger>
                 <TabsTrigger value="operational">التشغيلية</TabsTrigger>
                 <TabsTrigger value="financial">المالية</TabsTrigger>
@@ -447,25 +447,25 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                 <TabsTrigger value="basic">الأساسية</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4">
+              <TabsContent value="basic" className="space-y-4" dir="rtl">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>المعلومات الأساسية للمركبة</CardTitle>
-                    <CardDescription>التفاصيل الأساسية حول المركبة</CardDescription>
+                  <CardHeader className="text-right">
+                    <CardTitle className="text-right">المعلومات الأساسية للمركبة</CardTitle>
+                    <CardDescription className="text-right">التفاصيل الأساسية حول المركبة</CardDescription>
                   </CardHeader>
-                   <CardContent className="space-y-4">
+                   <CardContent className="space-y-4" dir="rtl">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                        <FormField
                          control={form.control}
                          name="manufacturer"
                          render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>الشركة المصنعة</FormLabel>
-                             <FormControl>
-                               <Input {...field} placeholder="مثال: Toyota Motors" />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">الشركة المصنعة</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="مثال: Toyota Motors" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
                          )}
                        />
                        
@@ -473,13 +473,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                          control={form.control}
                          name="make"
                          render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>الماركة *</FormLabel>
-                             <FormControl>
-                               <Input {...field} placeholder="مثال: تويوتا" />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">الماركة *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="مثال: تويوتا" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
                          )}
                        />
                        
@@ -487,13 +487,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                          control={form.control}
                          name="model"
                          render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>الطراز *</FormLabel>
-                             <FormControl>
-                               <Input {...field} placeholder="مثال: كامري" />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">الطراز *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="مثال: كامري" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
                          )}
                        />
                      </div>
@@ -720,13 +720,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="technical" className="space-y-4">
+              <TabsContent value="technical" className="space-y-4" dir="rtl">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>المواصفات التقنية المتقدمة</CardTitle>
-                    <CardDescription>تفاصيل تقنية وتسجيل المركبة</CardDescription>
+                  <CardHeader className="text-right">
+                    <CardTitle className="text-right">المواصفات التقنية المتقدمة</CardTitle>
+                    <CardDescription className="text-right">تفاصيل تقنية وتسجيل المركبة</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
                     <FormField
                       control={form.control}
                       name="chassis_number"
@@ -988,13 +988,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="financial" className="space-y-4">
+              <TabsContent value="financial" className="space-y-4" dir="rtl">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>المعلومات المالية</CardTitle>
-                    <CardDescription>تفاصيل الشراء ومعلومات الإهلاك</CardDescription>
+                  <CardHeader className="text-right">
+                    <CardTitle className="text-right">المعلومات المالية</CardTitle>
+                    <CardDescription className="text-right">تفاصيل الشراء ومعلومات الإهلاك</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
                     <FormField
                       control={form.control}
                       name="purchase_date"
@@ -1216,13 +1216,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                 )}
               </TabsContent>
 
-              <TabsContent value="operational" className="space-y-4">
+              <TabsContent value="operational" className="space-y-4" dir="rtl">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>المعلومات التشغيلية</CardTitle>
-                    <CardDescription>المسافة المقطوعة والتسعير والحالة التشغيلية</CardDescription>
+                  <CardHeader className="text-right">
+                    <CardTitle className="text-right">المعلومات التشغيلية</CardTitle>
+                    <CardDescription className="text-right">المسافة المقطوعة والتسعير والحالة التشغيلية</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
                     <FormField
                       control={form.control}
                       name="current_mileage"
@@ -1321,13 +1321,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="additional" className="space-y-4">
+              <TabsContent value="additional" className="space-y-4" dir="rtl">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>معلومات إضافية</CardTitle>
-                    <CardDescription>ملاحظات وتفاصيل أخرى</CardDescription>
+                  <CardHeader className="text-right">
+                    <CardTitle className="text-right">معلومات إضافية</CardTitle>
+                    <CardDescription className="text-right">ملاحظات وتفاصيل أخرى</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent dir="rtl">
                     <FormField
                       control={form.control}
                       name="notes"
@@ -1350,7 +1350,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center" dir="rtl">
               {/* Dummy data button - only show when adding new vehicle */}
               {!vehicle && (
                 <Button 
@@ -1366,14 +1366,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               
               <div className="flex space-x-2 rtl:space-x-reverse">
                 <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
-                >
-                  إلغاء
-                </Button>
-                <Button 
                   type="submit" 
                   disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
                   className="min-w-[120px]"
@@ -1386,6 +1378,14 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                   ) : (
                     vehicle ? "حفظ التغييرات" : "حفظ المركبة"
                   )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+                >
+                  إلغاء
                 </Button>
               </div>
             </div>
