@@ -9,14 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Shield, Plus, Search, Filter, Layers, TreePine, Brain, BarChart3 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Shield, Plus, Search, Filter } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts';
 import { useReportingAccounts } from '@/hooks/useReportingAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
-import { ChartOfAccountsTreeView } from './ChartOfAccountsTreeView';
-import { ChartOfAccountsMindMap } from './ChartOfAccountsMindMap';
-import { AccountStatistics } from './AccountStatistics';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -38,7 +35,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [filterType, setFilterType] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   const { data: entryAccounts, isLoading: entryAccountsLoading } = useEntryAllowedAccounts();
@@ -280,38 +276,17 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Enhanced Tabs */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 bg-muted/50 p-1 h-auto">
-          <TabsTrigger value="all" className="flex items-center gap-2 py-3">
-            <Layers className="h-4 w-4" />
-            <span className="hidden sm:inline">جميع الحسابات</span>
-            <span className="sm:hidden">الكل</span>
-          </TabsTrigger>
-          <TabsTrigger value="entry" className="flex items-center gap-2 py-3">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">جميع الحسابات</TabsTrigger>
+          <TabsTrigger value="entry" className="gap-2">
             <CheckCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">المسموحة للقيود</span>
-            <span className="sm:hidden">القيود</span>
+            الحسابات المسموحة للقيود
           </TabsTrigger>
-          <TabsTrigger value="reporting" className="flex items-center gap-2 py-3">
+          <TabsTrigger value="reporting" className="gap-2">
             <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">حسابات التقارير</span>
-            <span className="sm:hidden">التقارير</span>
-          </TabsTrigger>
-          <TabsTrigger value="tree" className="flex items-center gap-2 py-3">
-            <TreePine className="h-4 w-4" />
-            <span className="hidden sm:inline">عرض الشجرة</span>
-            <span className="sm:hidden">الشجرة</span>
-          </TabsTrigger>
-          <TabsTrigger value="mindmap" className="flex items-center gap-2 py-3">
-            <Brain className="h-4 w-4" />
-            <span className="hidden sm:inline">الخريطة الذهنية</span>
-            <span className="sm:hidden">الخريطة</span>
-          </TabsTrigger>
-          <TabsTrigger value="statistics" className="flex items-center gap-2 py-3">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">الإحصائيات</span>
-            <span className="sm:hidden">الإحصاء</span>
+            حسابات التقارير
           </TabsTrigger>
         </TabsList>
 
@@ -461,25 +436,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="tree">
-          <ChartOfAccountsTreeView
-            accounts={allAccounts || []}
-            onAccountSelect={setSelectedAccount}
-            selectedAccountId={selectedAccount?.id}
-          />
-        </TabsContent>
-
-        <TabsContent value="mindmap">
-          <ChartOfAccountsMindMap
-            accounts={allAccounts || []}
-            onAccountSelect={setSelectedAccount}
-          />
-        </TabsContent>
-
-        <TabsContent value="statistics">
-          <AccountStatistics accounts={allAccounts || []} />
         </TabsContent>
       </Tabs>
     </div>
