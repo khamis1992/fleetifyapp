@@ -356,7 +356,7 @@ export default function Customers() {
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="flex items-center gap-2 min-w-0">
                       <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="text-sm truncate">{customer.phone}</span>
+                      <span className="text-sm truncate" dir="ltr">{customer.phone}</span>
                     </div>
                     
                     {customer.email && (
