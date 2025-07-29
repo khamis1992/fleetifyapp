@@ -26,16 +26,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
       
       let query = supabase
         .from('customers')
-        .select(`
-          *,
-          contracts(
-            id,
-            status,
-            contract_amount,
-            start_date,
-            end_date
-          )
-        `)
+        .select('*')
         .eq('company_id', companyId);
       
       if (!includeInactive) {
@@ -74,23 +65,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
         throw error;
       }
       
-      // Transform data to include contract statistics
-      return (data || []).map(customer => {
-        const contracts = customer.contracts || [];
-        const activeContracts = contracts.filter((c: any) => c.status === 'active');
-        const totalRevenue = contracts.reduce((sum: number, c: any) => sum + (c.contract_amount || 0), 0);
-        const lastContract = contracts.sort((a: any, b: any) => 
-          new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-        )[0];
-        
-        return {
-          ...customer,
-          total_contracts: contracts.length,
-          active_contracts: activeContracts.length,
-          total_revenue: totalRevenue,
-          last_contract_date: lastContract?.start_date
-        } as unknown as EnhancedCustomer;
-      });
+      return data || [];
     },
     enabled: !!companyId,
     staleTime: 3 * 60 * 1000, // 3 minutes
@@ -108,16 +83,7 @@ export const useCustomerById = (customerId: string) => {
       
       const { data, error } = await supabase
         .from('customers')
-        .select(`
-          *,
-          contracts(
-            id,
-            status,
-            contract_amount,
-            start_date,
-            end_date
-          )
-        `)
+        .select('*')
         .eq('id', customerId)
         .eq('company_id', companyId)
         .single();
@@ -128,21 +94,7 @@ export const useCustomerById = (customerId: string) => {
         throw error;
       }
       
-      // Transform data similar to useCustomers
-      const contracts = data.contracts || [];
-      const activeContracts = contracts.filter((c: any) => c.status === 'active');
-      const totalRevenue = contracts.reduce((sum: number, c: any) => sum + (c.contract_amount || 0), 0);
-      const lastContract = contracts.sort((a: any, b: any) => 
-        new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-      )[0];
-      
-      return {
-        ...data,
-        total_contracts: contracts.length,
-        active_contracts: activeContracts.length,
-        total_revenue: totalRevenue,
-        last_contract_date: lastContract?.start_date
-      } as unknown as EnhancedCustomer;
+      return data;
     },
     enabled: !!companyId && !!customerId,
     staleTime: 5 * 60 * 1000 // 5 minutes
