@@ -601,8 +601,12 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                   <div className="flex gap-4">
                     <Button 
                       onClick={() => {
+                        console.log('Button clicked!', { createdPermitId, selectedVehicleId, selectedVehicle });
                         if (createdPermitId && selectedVehicleId && selectedVehicle) {
+                          console.log('Opening condition report dialog...');
                           setConditionReportDialogOpen(true);
+                        } else {
+                          console.log('Missing required data:', { createdPermitId, selectedVehicleId, selectedVehicle });
                         }
                       }}
                       className="flex-1"
