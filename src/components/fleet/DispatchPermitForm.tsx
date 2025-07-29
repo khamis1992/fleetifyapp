@@ -16,6 +16,7 @@ import { useCreateDispatchPermit, type CreateDispatchPermitData } from "@/hooks/
 import { useVehicles } from "@/hooks/useVehicles";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateConditionReportForPermit, useVehicleConditionReports } from "@/hooks/useVehicleCondition";
+import { VehicleConditionReportDialog } from "./VehicleConditionReportDialog";
 
 interface DispatchPermitFormProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
   const [conditionReportCompleted, setConditionReportCompleted] = useState(false);
   const [createdPermitId, setCreatedPermitId] = useState<string | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const [conditionReportDialogOpen, setConditionReportDialogOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -600,8 +602,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                     <Button 
                       onClick={() => {
                         if (createdPermitId && selectedVehicleId && selectedVehicle) {
-                          const url = `/fleet/vehicle-condition-check?permitId=${createdPermitId}&vehicleId=${selectedVehicleId}&vehicleName=${encodeURIComponent(`${selectedVehicle.plate_number} - ${selectedVehicle.make} ${selectedVehicle.model}`)}&type=pre_dispatch`;
-                          window.open(url, '_blank');
+                          setConditionReportDialogOpen(true);
                         }
                       }}
                       className="flex-1"
@@ -656,6 +657,16 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
         </DialogContent>
       </Dialog>
 
+      {/* Vehicle Condition Report Dialog */}
+      {createdPermitId && selectedVehicleId && selectedVehicle && (
+        <VehicleConditionReportDialog
+          open={conditionReportDialogOpen}
+          onOpenChange={setConditionReportDialogOpen}
+          permitId={createdPermitId}
+          vehicleId={selectedVehicleId}
+          vehicleName={`${selectedVehicle.plate_number} - ${selectedVehicle.make} ${selectedVehicle.model}`}
+        />
+      )}
     </>
   );
 }
