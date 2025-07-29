@@ -126,6 +126,7 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
                     <VehicleConditionReport 
                       report={report}
                       readonly={report.status === 'approved'}
+                      onClose={() => onOpenChange(false)}
                     />
                   </div>
                 ))}
@@ -170,6 +171,7 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
                     <VehicleConditionReport 
                       report={report}
                       readonly={report.status === 'approved'}
+                      onClose={() => onOpenChange(false)}
                     />
                   </div>
                 ))}

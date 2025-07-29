@@ -14,12 +14,14 @@ interface VehicleConditionReportProps {
   report: VehicleConditionReportType;
   readonly?: boolean;
   onStatusChange?: (status: string) => void;
+  onClose?: () => void;
 }
 
 export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
   report,
   readonly = false,
-  onStatusChange
+  onStatusChange,
+  onClose
 }) => {
   const [formData, setFormData] = useState({
     overall_condition: report.overall_condition,
@@ -55,6 +57,8 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       await updateMutation.mutateAsync({ id: report.id, updates: updateData });
       console.log('Save successful!');
       onStatusChange?.(formData.status);
+      // Close the dialog after successful save
+      onClose?.();
     } catch (error) {
       console.error('Save failed:', error);
       // The mutation will handle retries automatically via react-query
