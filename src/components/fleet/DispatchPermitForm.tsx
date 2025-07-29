@@ -158,25 +158,6 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">
-              {/* Test Data Button */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium text-blue-900">تجربة النظام</h4>
-                    <p className="text-sm text-blue-700">استخدم هذا الزر لملء النموذج ببيانات تجريبية</p>
-                  </div>
-                  <Button 
-                    type="button" 
-                    variant="default" 
-                    size="default"
-                    onClick={fillTestData}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <TestTube className="h-4 w-4" />
-                    تعبئة بيانات تجريبية
-                  </Button>
-                </div>
-              </div>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmitPermitDetails)} className="space-y-6">
@@ -553,6 +534,20 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                       </FormItem>
                     )}
                   />
+
+                  {/* Test Data Button */}
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-4">
+                    <Button 
+                      type="button" 
+                      variant="default" 
+                      size="sm"
+                      onClick={fillTestData}
+                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <TestTube className="h-4 w-4" />
+                      تعبئة بيانات تجريبية لتجربة النظام
+                    </Button>
+                  </div>
 
                   <div className="flex gap-4 pt-4">
                     <Button 
