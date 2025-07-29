@@ -173,7 +173,41 @@ export function CustomerDetailsDialog({
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Basic Information */}
+              {/* Address Information - First */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    معلومات العنوان
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {customer.address && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">العنوان</p>
+                      <p>{customer.address}</p>
+                    </div>
+                  )}
+                  {customer.address_ar && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">العنوان (عربي)</p>
+                      <p>{customer.address_ar}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{customer.city}, {customer.country}</span>
+                  </div>
+                  {customer.date_of_birth && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>تاريخ الميلاد: {new Date(customer.date_of_birth).toLocaleDateString('ar-SA')}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Basic Information - Second */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -219,7 +253,22 @@ export function CustomerDetailsDialog({
                 </CardContent>
               </Card>
 
-              {/* Emergency Contact */}
+              {/* Customer Notes - Third */}
+              {customer.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      ملاحظات العميل
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{customer.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Emergency Contact - Fourth */}
               {(customer.emergency_contact_name || customer.emergency_contact_phone) && (
                 <Card>
                   <CardHeader>
@@ -241,55 +290,6 @@ export function CustomerDetailsDialog({
                         <span>{customer.emergency_contact_phone}</span>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Address Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    معلومات العنوان
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {customer.address && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">العنوان</p>
-                      <p>{customer.address}</p>
-                    </div>
-                  )}
-                  {customer.address_ar && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">العنوان (عربي)</p>
-                      <p>{customer.address_ar}</p>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{customer.city}, {customer.country}</span>
-                  </div>
-                  {customer.date_of_birth && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>تاريخ الميلاد: {new Date(customer.date_of_birth).toLocaleDateString('ar-SA')}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Customer Notes */}
-              {customer.notes && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      ملاحظات العميل
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{customer.notes}</p>
                   </CardContent>
                 </Card>
               )}
