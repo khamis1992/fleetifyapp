@@ -8,7 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, Trash2, Calculator } from 'lucide-react'
-import { useChartOfAccounts, useCreateJournalEntry, useCostCenters } from '@/hooks/useFinance'
+import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
+import { useCreateJournalEntry } from '@/hooks/useFinance'
+import { useCostCenters } from '@/hooks/useFinance'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 
@@ -61,7 +63,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     }
   ])
 
-  const { data: accounts, isLoading: accountsLoading } = useChartOfAccounts()
+  const { data: accounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createJournalEntry = useCreateJournalEntry()
 

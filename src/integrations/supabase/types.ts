@@ -7176,6 +7176,19 @@ export type Database = {
           days_since_expiry: number
         }[]
       }
+      get_entry_allowed_accounts: {
+        Args: { company_id_param: string }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          account_type: string
+          account_level: number
+          balance_type: string
+          parent_account_name: string
+        }[]
+      }
       get_financial_summary: {
         Args: { company_id_param: string; date_from?: string; date_to?: string }
         Returns: {
@@ -7233,6 +7246,19 @@ export type Database = {
           by_bank: Json
         }[]
       }
+      get_reporting_accounts: {
+        Args: { company_id_param: string }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          account_type: string
+          account_level: number
+          balance_type: string
+          parent_account_name: string
+        }[]
+      }
       get_trial_balance: {
         Args: { company_id_param: string; as_of_date?: string }
         Returns: {
@@ -7288,6 +7314,10 @@ export type Database = {
       initialize_employee_leave_balances: {
         Args: { employee_id_param: string }
         Returns: undefined
+      }
+      is_aggregate_account: {
+        Args: { account_id_param: string }
+        Returns: boolean
       }
       log_security_event: {
         Args: {
@@ -7410,6 +7440,10 @@ export type Database = {
       }
       user_belongs_to_company: {
         Args: { _user_id: string; _company_id: string }
+        Returns: boolean
+      }
+      validate_account_level_for_entries: {
+        Args: { account_id_param: string }
         Returns: boolean
       }
       validate_company_access_secure: {

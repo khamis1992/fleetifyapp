@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
-import { useCreateInvoice, useChartOfAccounts, useCostCenters, useFixedAssets } from "@/hooks/useFinance";
+import { useCreateInvoice, useCostCenters, useFixedAssets } from "@/hooks/useFinance";
+import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveContracts } from "@/hooks/useContracts";
 import { toast } from "sonner";
@@ -35,7 +36,7 @@ interface InvoiceFormProps {
 
 export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, contractId }: InvoiceFormProps) {
   const { user } = useAuth();
-  const { data: accounts, isLoading: accountsLoading } = useChartOfAccounts();
+  const { data: accounts, isLoading: accountsLoading } = useEntryAllowedAccounts();
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters();
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const createInvoice = useCreateInvoice();
@@ -184,11 +185,11 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
   }
 
   const revenueAccounts = accounts?.filter(account => 
-    account.account_type === 'revenue' && account.is_active
+    account.account_type === 'revenue'
   ) || [];
 
   const expenseAccounts = accounts?.filter(account => 
-    account.account_type === 'expenses' && account.is_active
+    account.account_type === 'expenses'
   ) || [];
 
   const availableAccounts = type === 'sales' ? revenueAccounts : expenseAccounts;
