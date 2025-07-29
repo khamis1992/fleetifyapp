@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Mock in-memory storage for demo purposes
+const mockReports: Map<string, VehicleConditionReport[]> = new Map();
+
 export interface VehicleConditionReport {
   id: string;
   company_id: string;
@@ -54,9 +57,10 @@ export const useVehicleConditionReports = (permitId?: string) => {
   return useQuery({
     queryKey: ['vehicle-condition-reports', permitId],
     queryFn: async () => {
-      // For demo purposes, return empty array to avoid database errors
+      // For demo purposes, return mock reports from in-memory storage
       // In a real implementation, this would query the actual database
-      return [] as VehicleConditionReport[];
+      if (!permitId) return [];
+      return mockReports.get(permitId) || [];
     },
     enabled: !!permitId,
   });
@@ -107,19 +111,21 @@ export const useUpdateConditionReport = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: UpdateConditionReportData }) => {
-      const { data, error } = await supabase
-        .from('vehicle_condition_reports')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating condition report:', error);
-        throw error;
+      // For demo purposes, update the report in mock storage
+      for (const [permitId, reports] of mockReports.entries()) {
+        const reportIndex = reports.findIndex(r => r.id === id);
+        if (reportIndex !== -1) {
+          const updatedReport = {
+            ...reports[reportIndex],
+            ...updates,
+            updated_at: new Date().toISOString()
+          };
+          reports[reportIndex] = updatedReport;
+          mockReports.set(permitId, [...reports]);
+          return updatedReport;
+        }
       }
-
-      return data;
+      throw new Error('Report not found');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
@@ -140,22 +146,47 @@ export const useCreateConditionReportForPermit = () => {
       permitId: string; 
       inspectionType?: 'pre_dispatch' | 'post_dispatch' 
     }) => {
-      // For now, just return a mock response since the database tables may not exist
-      // This allows the UI to work without database errors
-      return {
+      // Create a new mock report and store it in memory
+      const newReport: VehicleConditionReport = {
         id: 'temp-' + Date.now(),
+        company_id: 'demo-company',
         dispatch_permit_id: permitId,
+        vehicle_id: 'demo-vehicle',
+        inspector_id: 'demo-inspector',
         inspection_type: inspectionType,
-        status: 'pending'
+        overall_condition: 'good',
+        mileage_reading: 0,
+        fuel_level: 100,
+        inspection_date: new Date().toISOString(),
+        notes: '',
+        photos: [],
+        condition_items: {
+          "Engine": { status: "good", notes: "" },
+          "Brakes": { status: "good", notes: "" },
+          "Tires": { status: "good", notes: "" },
+          "Lights": { status: "good", notes: "" },
+          "Interior": { status: "good", notes: "" },
+          "Exterior": { status: "good", notes: "" }
+        },
+        damage_items: [],
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
+
+      // Store in mock storage
+      const existingReports = mockReports.get(permitId) || [];
+      mockReports.set(permitId, [...existingReports, newReport]);
+
+      return newReport;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
-      toast.success('Vehicle condition report dialog opened');
+      toast.success('Vehicle condition report created successfully');
     },
     onError: (error) => {
       console.error('Error creating condition report for permit:', error);
-      toast.error('Failed to initialize condition report');
+      toast.error('Failed to create condition report');
     },
   });
 };
