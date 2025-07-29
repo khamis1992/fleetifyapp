@@ -69,14 +69,14 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: Ve
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="documents" className="w-full">
+        <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="documents">الوثائق</TabsTrigger>
-            <TabsTrigger value="insurance">التأمين</TabsTrigger>
-            <TabsTrigger value="pricing">التسعير</TabsTrigger>
-            <TabsTrigger value="financial">المالية</TabsTrigger>
-            <TabsTrigger value="specifications">المواصفات</TabsTrigger>
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
+            <TabsTrigger value="specifications">المواصفات</TabsTrigger>
+            <TabsTrigger value="financial">المالية</TabsTrigger>
+            <TabsTrigger value="pricing">التسعير</TabsTrigger>
+            <TabsTrigger value="insurance">التأمين</TabsTrigger>
+            <TabsTrigger value="documents">الوثائق</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
