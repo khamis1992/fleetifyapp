@@ -455,13 +455,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <DialogTitle>معاينة الحساب</DialogTitle>
           </DialogHeader>
           {viewingAccount && (
+            <div dir="rtl" className="w-full">
             <Tabs defaultValue="info" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
                 <TabsTrigger value="history">سجل التغييرات</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="info" className="space-y-4">
+              <TabsContent value="info" className="space-y-4 text-right">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>رمز الحساب</Label>
@@ -530,6 +531,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </Button>
               </div>
             </Tabs>
+            </div>
           )}
         </DialogContent>
       </Dialog>
