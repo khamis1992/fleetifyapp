@@ -262,9 +262,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">إدارة دليل الحسابات</h2>
-          <p className="text-muted-foreground">
-            إدارة الحسابات وفقاً لقواعد المحاسبة (القيود مسموحة فقط على المستوى 5 و 6)
-          </p>
         </div>
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild>
