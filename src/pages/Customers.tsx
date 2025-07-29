@@ -298,81 +298,83 @@ export default function Customers() {
           customers?.map((customer) => (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      {customer.customer_type === 'corporate' ? (
-                        <Building className="h-5 w-5 text-purple-600" />
-                      ) : (
-                        <Users className="h-5 w-5 text-green-600" />
-                      )}
-                      <h3 className="font-semibold text-lg">
-                        {customer.customer_type === 'corporate' 
-                          ? customer.company_name 
-                          : `${customer.first_name} ${customer.last_name}`}
-                      </h3>
-                      {customer.is_blacklisted && (
-                        <Badge variant="destructive">
-                          <UserX className="h-3 w-3 mr-1" />
-                          محظور
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{customer.phone}</span>
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {customer.customer_type === 'corporate' ? (
+                          <Building className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                        ) : (
+                          <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-lg truncate">
+                          {customer.customer_type === 'corporate' 
+                            ? customer.company_name 
+                            : `${customer.first_name} ${customer.last_name}`}
+                        </h3>
+                        {customer.is_blacklisted && (
+                          <Badge variant="destructive" className="flex-shrink-0">
+                            <UserX className="h-3 w-3 mr-1" />
+                            محظور
+                          </Badge>
+                        )}
                       </div>
-                      
-                      {customer.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.email}</span>
-                        </div>
-                      )}
-                      
-                      {customer.city && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.city}</span>
-                        </div>
-                      )}
                     </div>
                     
-                    {customer.notes && (
-                      <p className="text-sm text-muted-foreground">{customer.notes}</p>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewCustomer(customer.id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        عرض
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditCustomer(customer)}
+                        disabled={!canAddCustomers}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        تعديل
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleToggleBlacklist(customer.id, !customer.is_blacklisted)}
+                        disabled={!canAddCustomers}
+                      >
+                        <ShieldX className="h-4 w-4 mr-1" />
+                        {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm truncate">{customer.phone}</span>
+                    </div>
+                    
+                    {customer.email && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm truncate">{customer.email}</span>
+                      </div>
+                    )}
+                    
+                    {customer.city && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm truncate">{customer.city}</span>
+                      </div>
                     )}
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleViewCustomer(customer.id)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      عرض
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditCustomer(customer)}
-                      disabled={!canAddCustomers}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      تعديل
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleToggleBlacklist(customer.id, !customer.is_blacklisted)}
-                      disabled={!canAddCustomers}
-                    >
-                      <ShieldX className="h-4 w-4 mr-1" />
-                      {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
-                    </Button>
-                  </div>
+                  {customer.notes && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{customer.notes}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
