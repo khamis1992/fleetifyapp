@@ -2700,6 +2700,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_journal_entries_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_journal_entries_posted_by"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "journal_entries_accounting_period_id_fkey"
             columns: ["accounting_period_id"]
             isOneToOne: false
@@ -2750,6 +2764,13 @@ export type Database = {
           line_number?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_journal_entry_lines_journal_entry"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "journal_entry_lines_account_id_fkey"
             columns: ["account_id"]

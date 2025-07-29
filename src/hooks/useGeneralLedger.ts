@@ -83,13 +83,13 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
       }
       
       try {
-        // First, fetch journal entries with basic relations using left joins
+        // First, fetch journal entries with basic relations using the new foreign keys
         let query = supabase
           .from("journal_entries")
           .select(`
             *,
-            created_by_profile:profiles!left(user_id, first_name, last_name, email),
-            posted_by_profile:profiles!left(user_id, first_name, last_name, email),
+            created_by_profile:profiles!fk_journal_entries_created_by(user_id, first_name, last_name, email),
+            posted_by_profile:profiles!fk_journal_entries_posted_by(user_id, first_name, last_name, email),
             journal_entry_lines(
               *,
               account:chart_of_accounts(*),
@@ -236,7 +236,7 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
         .from("journal_entry_lines")
         .select(`
           *,
-          journal_entry:journal_entries(*)
+          journal_entry:journal_entries!fk_journal_entry_lines_journal_entry(*)
         `)
         .eq("account_id", accountId)
       
@@ -426,7 +426,7 @@ export const useCostCenterAnalysis = (filters?: LedgerFilters) => {
           cost_center_id,
           debit_amount,
           credit_amount,
-          journal_entry:journal_entries(entry_date, status)
+          journal_entry:journal_entries!fk_journal_entry_lines_journal_entry(entry_date, status)
         `)
         .not("cost_center_id", "is", null)
       
