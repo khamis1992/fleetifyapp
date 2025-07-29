@@ -27,7 +27,7 @@ interface CustomerFormProps {
 export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
   const { user } = useAuth();
   const { data: companies } = useCompanies();
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -105,7 +105,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
         });
       }
       setFormErrors([]);
-      setSelectedCompanyId('');
+      setSelectedCompanyId(undefined);
     }
   }, [open, customer, mode, reset]);
 
