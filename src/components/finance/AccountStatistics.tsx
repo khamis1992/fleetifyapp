@@ -1,8 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { BarChart3, PieChart, TrendingUp, Activity } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Building, 
+  TrendingUp, 
+  PieChart, 
+  DollarSign, 
+  Calculator, 
+  BarChart3,
+  Users,
+  Database,
+  Activity,
+  Target,
+  TrendingDown
+} from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 
