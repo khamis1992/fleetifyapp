@@ -6,11 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
+import { AccountBalanceHistory } from './AccountBalanceHistory';
+import { AccountChangeHistory } from './AccountChangeHistory';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -452,52 +455,59 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <DialogTitle>معاينة الحساب</DialogTitle>
           </DialogHeader>
           {viewingAccount && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>رمز الحساب</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.account_code}</div>
-                </div>
-                <div>
-                  <Label>اسم الحساب</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.account_name}</div>
-                </div>
-                <div>
-                  <Label>اسم الحساب بالعربية</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.account_name_ar || '-'}</div>
-                </div>
-                <div>
-                  <Label>نوع الحساب</Label>
-                  <div className="p-2 bg-muted rounded">{getAccountTypeLabel(viewingAccount.account_type)}</div>
-                </div>
-                <div>
-                  <Label>طبيعة الرصيد</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}</div>
-                </div>
-                <div>
-                  <Label>المستوى</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.account_level}</div>
-                </div>
-                <div>
-                  <Label>الحالة</Label>
-                  <div className="p-2 bg-muted rounded">
-                    <Badge variant={viewingAccount.is_active ? 'default' : 'destructive'}>
-                      {viewingAccount.is_active ? 'نشط' : 'غير نشط'}
-                    </Badge>
+            <Tabs defaultValue="info" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
+                <TabsTrigger value="balance">تاريخ الرصيد</TabsTrigger>
+                <TabsTrigger value="history">سجل التغييرات</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>رمز الحساب</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_code}</div>
                   </div>
-                </div>
-                <div>
-                  <Label>حساب إجمالي</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.is_header ? 'نعم' : 'لا'}</div>
-                </div>
-                <div className="col-span-2">
-                  <Label>الوصف</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.description || '-'}</div>
-                </div>
-                <div>
-                  <Label>الرصيد الحالي</Label>
-                  <div className="p-2 bg-muted rounded">{viewingAccount.current_balance?.toFixed(3) || '0.000'} د.ك</div>
-                </div>
+                  <div>
+                    <Label>اسم الحساب</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_name}</div>
+                  </div>
+                  <div>
+                    <Label>اسم الحساب بالعربية</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_name_ar || '-'}</div>
+                  </div>
+                  <div>
+                    <Label>نوع الحساب</Label>
+                    <div className="p-2 bg-muted rounded">{getAccountTypeLabel(viewingAccount.account_type)}</div>
+                  </div>
+                  <div>
+                    <Label>طبيعة الرصيد</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}</div>
+                  </div>
+                  <div>
+                    <Label>المستوى</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_level}</div>
+                  </div>
+                  <div>
+                    <Label>الحالة</Label>
+                    <div className="p-2 bg-muted rounded">
+                      <Badge variant={viewingAccount.is_active ? 'default' : 'destructive'}>
+                        {viewingAccount.is_active ? 'نشط' : 'غير نشط'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>حساب إجمالي</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.is_header ? 'نعم' : 'لا'}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <Label>الوصف</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.description || '-'}</div>
+                  </div>
+                  <div>
+                    <Label>الرصيد الحالي</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.current_balance?.toFixed(3) || '0.000'} د.ك</div>
+                  </div>
                   <div>
                     <Label>تاريخ الإنشاء</Label>
                     <div className="p-2 bg-muted rounded">
@@ -508,13 +518,27 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                       })}
                     </div>
                   </div>
-              </div>
-              <div className="flex justify-end">
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="balance">
+                <AccountBalanceHistory 
+                  accountId={viewingAccount.id}
+                  currentBalance={viewingAccount.current_balance || 0}
+                  accountType={viewingAccount.balance_type}
+                />
+              </TabsContent>
+              
+              <TabsContent value="history">
+                <AccountChangeHistory account={viewingAccount} />
+              </TabsContent>
+              
+              <div className="flex justify-end mt-4">
                 <Button onClick={() => setShowViewDialog(false)}>
                   إغلاق
                 </Button>
               </div>
-            </div>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
