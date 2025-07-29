@@ -425,7 +425,7 @@ const FixedAssets = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الفئات</SelectItem>
-                  {assetCategories.map(category => (
+                  {assetCategories.filter(category => category && category.trim() !== '').map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
                 </SelectContent>
