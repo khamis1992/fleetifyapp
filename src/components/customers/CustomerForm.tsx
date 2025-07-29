@@ -480,7 +480,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
             </TabsContent>
 
             <TabsContent value="additional" className="space-y-4">
-              <Card>
+              <Card dir="rtl">
                 <CardHeader>
                   <CardTitle>بيانات إضافية</CardTitle>
                 </CardHeader>
