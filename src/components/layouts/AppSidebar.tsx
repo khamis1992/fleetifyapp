@@ -36,7 +36,8 @@ import {
   Crown,
   Activity,
   Database,
-  CheckSquare
+  CheckSquare,
+  Headphones
 } from 'lucide-react';
 import {
   Sidebar,

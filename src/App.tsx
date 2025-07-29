@@ -43,6 +43,8 @@ import HRReports from "./pages/hr/Reports";
 import HRSettings from "./pages/hr/Settings";
 import Legal from "./pages/Legal";
 import ApprovalSystem from "./pages/ApprovalSystem";
+import Support from "./pages/Support";
+import SupportTicketDetail from "./pages/SupportTicketDetail";
 
 const queryClient = new QueryClient();
 
@@ -167,6 +169,8 @@ const App = () => (
                   <ApprovalSystem />
                 </AdminRoute>
               } />
+              <Route path="support" element={<Support />} />
+              <Route path="support/ticket/:ticketId" element={<SupportTicketDetail />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
