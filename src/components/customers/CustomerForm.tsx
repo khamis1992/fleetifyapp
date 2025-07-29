@@ -551,12 +551,12 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                       {mode === 'create' && availableAccounts && availableAccounts.length > 0 && (
                         <div className="space-y-2">
                           <Label>اختيار حساب محاسبي مخصص (اختياري)</Label>
-                          <Select value={selectedAccountId || ""} onValueChange={setSelectedAccountId}>
+                          <Select value={selectedAccountId || "auto"} onValueChange={(value) => setSelectedAccountId(value === "auto" ? undefined : value)}>
                             <SelectTrigger>
                               <SelectValue placeholder="اختر حساب محاسبي أو اترك فارغاً للإنشاء التلقائي..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">إنشاء حساب تلقائياً</SelectItem>
+                              <SelectItem value="auto">إنشاء حساب تلقائياً</SelectItem>
                               {availableAccounts
                                 .filter(acc => acc.is_available)
                                 .map((account) => (
@@ -582,7 +582,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                         <Alert>
                           <InfoIcon className="h-4 w-4" />
                           <AlertDescription>
-                            {selectedAccountId 
+                            {selectedAccountId && selectedAccountId !== "auto" 
                               ? "سيتم ربط العميل بالحساب المحاسبي المحدد."
                               : "سيتم إنشاء حساب محاسبي جديد تلقائياً لهذا العميل."}
                           </AlertDescription>

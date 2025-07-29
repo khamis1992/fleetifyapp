@@ -152,12 +152,12 @@ export function CustomerAccountSettings() {
                   name="default_receivables_account_id"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value || ""} onValueChange={field.onChange}>
+                    <Select value={field.value || "default"} onValueChange={(value) => field.onChange(value === "default" ? null : value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الحساب الرئيسي..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">استخدام الافتراضي</SelectItem>
+                        <SelectItem value="default">استخدام الافتراضي</SelectItem>
                         {receivableAccounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
                             {account.account_code} - {account.account_name}
