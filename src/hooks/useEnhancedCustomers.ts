@@ -1,40 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import { toast } from 'sonner';
+import { Customer, CustomerFilters } from '@/types/customer';
 
-export interface EnhancedCustomer {
-  id: string;
-  name: string;
-  name_ar?: string;
-  email?: string;
-  phone?: string;
-  civil_id?: string;
-  is_active: boolean;
-  company_id: string;
-  created_at: string;
-  address?: string | null;
-  notes?: string | null;
-  blacklisted?: boolean;
-  blacklist_reason?: string | null;
-  alternative_phone?: string | null;
-  address_ar?: string | null;
-  total_contracts?: number;
-  active_contracts?: number;
-  total_revenue?: number;
-  last_contract_date?: string;
-  contracts?: any[];
-}
+export type EnhancedCustomer = Customer;
 
-export const useCustomers = (options?: {
-  includeInactive?: boolean;
-  searchTerm?: string;
-  limit?: number;
-}) => {
+export const useCustomers = (filters?: CustomerFilters) => {
   const { companyId, getQueryKey, validateCompanyAccess } = useUnifiedCompanyAccess();
-  const { includeInactive = false, searchTerm, limit } = options || {};
+  const { 
+    includeInactive = false, 
+    searchTerm, 
+    search,
+    limit,
+    customer_type,
+    is_blacklisted 
+  } = filters || {};
   
   return useQuery({
-    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, limit]),
+    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, limit, customer_type, is_blacklisted]),
     queryFn: async (): Promise<EnhancedCustomer[]> => {
       if (!companyId) {
         throw new Error("No company access available");
@@ -44,7 +28,7 @@ export const useCustomers = (options?: {
         .from('customers')
         .select(`
           *,
-          contracts!inner(
+          contracts(
             id,
             status,
             contract_amount,
@@ -58,8 +42,23 @@ export const useCustomers = (options?: {
         query = query.eq('is_active', true);
       }
       
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%, email.ilike.%${searchTerm}%, phone.ilike.%${searchTerm}%`);
+      if (customer_type) {
+        query = query.eq('customer_type', customer_type);
+      }
+
+      if (is_blacklisted !== undefined) {
+        query = query.eq('is_blacklisted', is_blacklisted);
+      }
+      
+      const searchText = searchTerm || search;
+      if (searchText) {
+        query = query.or(
+          `first_name.ilike.%${searchText}%,` +
+          `last_name.ilike.%${searchText}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%`
+        );
       }
       
       if (limit) {
@@ -147,5 +146,36 @@ export const useCustomerById = (customerId: string) => {
     },
     enabled: !!companyId && !!customerId,
     staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+};
+
+export const useToggleCustomerBlacklist = () => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async ({ customerId, isBlacklisted, reason }: { 
+      customerId: string; 
+      isBlacklisted: boolean; 
+      reason?: string 
+    }) => {
+      const { error } = await supabase
+        .from('customers')
+        .update({ 
+          is_blacklisted: isBlacklisted,
+          blacklist_reason: isBlacklisted ? reason : null
+        })
+        .eq('id', customerId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success(variables.isBlacklisted ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
+    },
+    onError: (error) => {
+      console.error('Error toggling customer blacklist:', error);
+      toast.error('حدث خطأ أثناء تحديث حالة العميل');
+    }
   });
 };

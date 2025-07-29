@@ -4,76 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
+import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 
-export interface Customer {
-  id: string;
-  company_id: string;
-  customer_type: 'individual' | 'corporate';
-  first_name?: string;
-  last_name?: string;
-  first_name_ar?: string;
-  last_name_ar?: string;
-  company_name?: string;
-  company_name_ar?: string;
-  email?: string;
-  phone: string;
-  alternative_phone?: string;
-  national_id?: string;
-  passport_number?: string;
-  license_number?: string;
-  address?: string;
-  address_ar?: string;
-  city?: string;
-  country?: string;
-  date_of_birth?: string;
-  license_expiry?: string;
-  credit_limit?: number;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  is_blacklisted?: boolean;
-  blacklist_reason?: string;
-  documents?: any;
-  notes?: string;
-  is_active?: boolean;
-  created_at: string;
-  updated_at: string;
-  contracts_count?: number;
-  contracts?: any[];
-  customer_accounts?: any[];
-}
+// Re-export types for compatibility
+export type { Customer, CustomerFormData, CustomerFilters };
 
-export interface CustomerFormData {
-  customer_type: 'individual' | 'corporate';
-  first_name?: string;
-  last_name?: string;
-  first_name_ar?: string;
-  last_name_ar?: string;
-  company_name?: string;
-  company_name_ar?: string;
-  email?: string;
-  phone: string;
-  alternative_phone?: string;
-  national_id?: string;
-  passport_number?: string;
-  license_number?: string;
-  license_expiry?: string;
-  address?: string;
-  address_ar?: string;
-  city?: string;
-  country?: string;
-  date_of_birth?: string;
-  credit_limit?: number;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  notes?: string;
-  selectedCompanyId?: string;
-}
-
-export const useCustomers = (filters?: {
-  customer_type?: 'individual' | 'corporate';
-  is_blacklisted?: boolean;
-  search?: string;
-}) => {
+export const useCustomers = (filters?: CustomerFilters) => {
   const { user } = useAuth();
   
   return useQuery({
@@ -243,30 +179,65 @@ export const useCreateCustomer = () => {
 
 export const useUpdateCustomer = () => {
   const queryClient = useQueryClient();
+  const { log } = useSystemLogger();
 
   return useMutation({
     mutationFn: async ({ customerId, data }: { customerId: string; data: Partial<CustomerFormData> }) => {
       console.log('🔄 Updating customer:', customerId, data);
       
-      const { error } = await supabase
+      // Clean the data - remove any undefined values and selectedCompanyId
+      const { selectedCompanyId, ...cleanData } = data;
+      const updateData = Object.fromEntries(
+        Object.entries(cleanData).filter(([_, value]) => value !== undefined)
+      );
+      
+      console.log('📤 Sending update data to database:', updateData);
+      
+      const { data: updatedCustomer, error } = await supabase
         .from('customers')
-        .update(data)
-        .eq('id', customerId);
+        .update(updateData)
+        .eq('id', customerId)
+        .select()
+        .single();
 
       if (error) {
         console.error('❌ Error updating customer:', error);
-        throw error;
+        throw new Error(`فشل في تحديث العميل: ${error.message}`);
       }
 
-      console.log('✅ Customer updated successfully');
+      console.log('✅ Customer updated successfully:', updatedCustomer);
+      
+      // Log the customer update
+      const customerName = updatedCustomer.customer_type === 'individual' 
+        ? `${updatedCustomer.first_name} ${updatedCustomer.last_name}`
+        : updatedCustomer.company_name;
+      
+      log.info('customers', 'update', `تم تحديث العميل ${customerName}`, {
+        resource_type: 'customer',
+        resource_id: updatedCustomer.id,
+        metadata: {
+          customer_type: updatedCustomer.customer_type,
+          name: customerName,
+          phone: updatedCustomer.phone
+        }
+      });
+      
+      return updatedCustomer;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🎉 Customer update successful:', data);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast.success('تم تحديث بيانات العميل بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['customer', data.id] });
+      
+      const customerName = data.customer_type === 'individual' 
+        ? `${data.first_name} ${data.last_name}`
+        : data.company_name;
+      
+      toast.success(`تم تحديث بيانات العميل "${customerName}" بنجاح`);
     },
-    onError: (error) => {
-      console.error('❌ Error updating customer:', error);
-      toast.error('حدث خطأ أثناء تحديث بيانات العميل');
+    onError: (error: any) => {
+      console.error('❌ Customer update failed:', error);
+      toast.error(error.message || 'حدث خطأ أثناء تحديث بيانات العميل');
     }
   });
 };
