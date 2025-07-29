@@ -172,7 +172,13 @@ export const useCreateCustomer = () => {
     },
     onError: (error: any) => {
       console.error('💥 Customer creation failed:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إضافة العميل');
+      
+      // التحقق من رسالة العميل المحظور
+      if (error.message && error.message.includes('العميل محظور:')) {
+        toast.error(error.message);
+      } else {
+        toast.error(error.message || 'حدث خطأ أثناء إضافة العميل');
+      }
     }
   });
 };
@@ -237,7 +243,13 @@ export const useUpdateCustomer = () => {
     },
     onError: (error: any) => {
       console.error('❌ Customer update failed:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تحديث بيانات العميل');
+      
+      // التحقق من رسالة العميل المحظور
+      if (error.message && error.message.includes('العميل محظور:')) {
+        toast.error(error.message);
+      } else {
+        toast.error(error.message || 'حدث خطأ أثناء تحديث بيانات العميل');
+      }
     }
   });
 };
