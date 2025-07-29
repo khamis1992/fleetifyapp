@@ -36,7 +36,8 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     customer_id: '',
     vehicle_id: '',
     description: '',
-    terms: ''
+    terms: '',
+    rental_days: 1
   })
 
   // Get user profile with company ID
@@ -75,6 +76,28 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
   // Get available vehicles for contracts (excluding those under maintenance or already rented)
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
 
+  // Function to calculate end date based on start date and rental days
+  const calculateEndDate = (startDate: string, days: number) => {
+    if (!startDate || days <= 0) return ''
+    const start = new Date(startDate)
+    const end = new Date(start)
+    end.setDate(start.getDate() + days - 1) // Subtract 1 because start date is included
+    return end.toISOString().slice(0, 10)
+  }
+
+  // Auto-calculate end date when start date or rental days change
+  const handleStartDateChange = (newStartDate: string) => {
+    const newData = { ...contractData, start_date: newStartDate }
+    newData.end_date = calculateEndDate(newStartDate, contractData.rental_days)
+    setContractData(newData)
+  }
+
+  const handleRentalDaysChange = (days: number) => {
+    const newData = { ...contractData, rental_days: days }
+    newData.end_date = calculateEndDate(contractData.start_date, days)
+    setContractData(newData)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -99,7 +122,8 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
         customer_id: '',
         vehicle_id: '',
         description: '',
-        terms: ''
+        terms: '',
+        rental_days: 1
       })
       onOpenChange(false)
       
@@ -187,8 +211,23 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                   id="start_date"
                   type="date"
                   value={contractData.start_date}
-                  onChange={(e) => setContractData({...contractData, start_date: e.target.value})}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="rental_days">عدد الأيام</Label>
+                <Input
+                  id="rental_days"
+                  type="number"
+                  min="1"
+                  value={contractData.rental_days}
+                  onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
+                  placeholder="عدد أيام الإيجار"
+                />
+                <p className="text-xs text-muted-foreground">
+                  سيتم حساب تاريخ النهاية تلقائياً
+                </p>
               </div>
               
               <div className="space-y-2">
@@ -198,7 +237,11 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                   type="date"
                   value={contractData.end_date}
                   onChange={(e) => setContractData({...contractData, end_date: e.target.value})}
+                  className="bg-muted"
                 />
+                <p className="text-xs text-muted-foreground">
+                  محسوب تلقائياً أو يمكن تعديله يدوياً
+                </p>
               </div>
               
               <div className="space-y-2">
