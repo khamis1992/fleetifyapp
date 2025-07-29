@@ -22,6 +22,8 @@ import { useFinancialOverview } from "@/hooks/useFinancialOverview";
 import { useAdvancedFinancialAnalytics } from "@/hooks/useAdvancedFinancialAnalytics";
 import { useActiveContracts } from "@/hooks/useContracts";
 import { useAuth } from "@/contexts/AuthContext";
+import { useReportingAccounts } from "@/hooks/useReportingAccounts";
+import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 
 interface ReportFilters {
   dateFrom: Date | undefined;
@@ -42,6 +44,7 @@ export function AdvancedFinancialReports() {
   const { data: financialOverview, isLoading: isOverviewLoading } = useFinancialOverview();
   const { data: analytics, isLoading: isAnalyticsLoading } = useAdvancedFinancialAnalytics();
   const { data: contracts } = useActiveContracts(undefined, undefined, user?.user_metadata?.company_id);
+  const { data: reportingAccounts } = useReportingAccounts();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ar-KW', {

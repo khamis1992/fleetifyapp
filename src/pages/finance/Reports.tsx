@@ -15,9 +15,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { formatCurrency } from "@/lib/utils"
+import { EnhancedFinancialReportsViewer } from "@/components/finance/EnhancedFinancialReportsViewer"
 
 const Reports = () => {
-  const [activeTab, setActiveTab] = useState("balance-sheet")
+  const [activeTab, setActiveTab] = useState("enhanced")
   const { data: balanceSheetData, isLoading: balanceLoading } = useBalanceSheet()
   const { data: incomeStatementData, isLoading: incomeLoading } = useIncomeStatement()
 
@@ -255,7 +256,8 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="enhanced">التقارير المحسّنة</TabsTrigger>
           <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
           <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
           <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
@@ -264,6 +266,10 @@ const Reports = () => {
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
           <TabsTrigger value="payroll">الرواتب</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="enhanced" className="space-y-6">
+          <EnhancedFinancialReportsViewer />
+        </TabsContent>
 
 
         <TabsContent value="balance-sheet" className="space-y-6">
