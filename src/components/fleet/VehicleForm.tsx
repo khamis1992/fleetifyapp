@@ -1086,7 +1086,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">بدون حساب</SelectItem>
                               {chartOfAccounts?.filter(account => !account.is_header && account.is_active)?.map((account) => (
                                 <SelectItem key={account.id} value={account.id}>
                                   {account.account_name_ar || account.account_name} ({account.account_code})
