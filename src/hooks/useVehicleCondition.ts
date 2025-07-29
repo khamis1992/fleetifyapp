@@ -2,9 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Mock in-memory storage for demo purposes
-const mockReports: Map<string, VehicleConditionReport[]> = new Map();
-
 export interface VehicleConditionReport {
   id: string;
   company_id: string;
@@ -57,10 +54,20 @@ export const useVehicleConditionReports = (permitId?: string) => {
   return useQuery({
     queryKey: ['vehicle-condition-reports', permitId],
     queryFn: async () => {
-      // For demo purposes, return mock reports from in-memory storage
-      // In a real implementation, this would query the actual database
       if (!permitId) return [];
-      return mockReports.get(permitId) || [];
+      
+      const { data, error } = await supabase
+        .from('vehicle_condition_reports')
+        .select('*')
+        .eq('dispatch_permit_id', permitId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching condition reports:', error);
+        throw error;
+      }
+
+      return (data || []) as VehicleConditionReport[];
     },
     enabled: !!permitId,
   });
@@ -93,7 +100,7 @@ export const useCreateConditionReport = () => {
         throw error;
       }
 
-      return data;
+      return data as VehicleConditionReport;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
@@ -111,21 +118,25 @@ export const useUpdateConditionReport = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: UpdateConditionReportData }) => {
-      // For demo purposes, update the report in mock storage
-      for (const [permitId, reports] of mockReports.entries()) {
-        const reportIndex = reports.findIndex(r => r.id === id);
-        if (reportIndex !== -1) {
-          const updatedReport = {
-            ...reports[reportIndex],
-            ...updates,
-            updated_at: new Date().toISOString()
-          };
-          reports[reportIndex] = updatedReport;
-          mockReports.set(permitId, [...reports]);
-          return updatedReport;
-        }
+      console.log('Updating condition report:', id, updates);
+      
+      const { data, error } = await supabase
+        .from('vehicle_condition_reports')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating condition report:', error);
+        throw error;
       }
-      throw new Error('Report not found');
+
+      console.log('Update successful:', data);
+      return data as VehicleConditionReport;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
@@ -146,39 +157,34 @@ export const useCreateConditionReportForPermit = () => {
       permitId: string; 
       inspectionType?: 'pre_dispatch' | 'post_dispatch' 
     }) => {
-      // Create a new mock report and store it in memory
-      const newReport: VehicleConditionReport = {
-        id: 'temp-' + Date.now(),
-        company_id: 'demo-company',
-        dispatch_permit_id: permitId,
-        vehicle_id: 'demo-vehicle',
-        inspector_id: 'demo-inspector',
-        inspection_type: inspectionType,
-        overall_condition: 'good',
-        mileage_reading: 0,
-        fuel_level: 100,
-        inspection_date: new Date().toISOString(),
-        notes: '',
-        photos: [],
-        condition_items: {
-          "Engine": { status: "good", notes: "" },
-          "Brakes": { status: "good", notes: "" },
-          "Tires": { status: "good", notes: "" },
-          "Lights": { status: "good", notes: "" },
-          "Interior": { status: "good", notes: "" },
-          "Exterior": { status: "good", notes: "" }
-        },
-        damage_items: [],
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      console.log('Creating condition report for permit:', permitId, inspectionType);
+      
+      // Use the database function to create the report
+      const { data, error } = await supabase
+        .rpc('create_condition_report_for_permit', {
+          permit_id_param: permitId,
+          inspection_type_param: inspectionType
+        });
 
-      // Store in mock storage
-      const existingReports = mockReports.get(permitId) || [];
-      mockReports.set(permitId, [...existingReports, newReport]);
+      if (error) {
+        console.error('Error creating condition report for permit:', error);
+        throw error;
+      }
 
-      return newReport;
+      // Fetch the created report
+      const { data: reportData, error: fetchError } = await supabase
+        .from('vehicle_condition_reports')
+        .select('*')
+        .eq('id', data)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching created report:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('Created report:', reportData);
+      return reportData as VehicleConditionReport;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });

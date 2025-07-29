@@ -43,23 +43,25 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
     
     if (readonly) return;
 
-    try {
-      const updateData: UpdateConditionReportData = {
-        overall_condition: formData.overall_condition,
-        mileage_reading: formData.mileage_reading,
-        fuel_level: formData.fuel_level,
-        notes: formData.notes,
-        condition_items: formData.condition_items,
-        damage_items: formData.damage_items,
-        status: formData.status
-      };
+    const updateData: UpdateConditionReportData = {
+      overall_condition: formData.overall_condition,
+      mileage_reading: formData.mileage_reading,
+      fuel_level: formData.fuel_level,
+      notes: formData.notes,
+      condition_items: formData.condition_items,
+      damage_items: formData.damage_items,
+      status: formData.status
+    };
 
-      console.log('Update data:', updateData);
+    console.log('Update data:', updateData);
+    
+    try {
       await updateMutation.mutateAsync({ id: report.id, updates: updateData });
       console.log('Save successful!');
       onStatusChange?.(formData.status);
     } catch (error) {
       console.error('Save failed:', error);
+      // The mutation will handle retries automatically via react-query
     }
   };
 
