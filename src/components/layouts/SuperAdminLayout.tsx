@@ -12,7 +12,8 @@ import {
   Menu,
   BarChart3,
   Shield,
-  Crown
+  Crown,
+  Headphones
 } from 'lucide-react';
 import {
   Sheet,
@@ -40,6 +41,11 @@ const navigationItems = [
     name: 'المدفوعات والاشتراكات', 
     href: '/super-admin/payments', 
     icon: DollarSign 
+  },
+  { 
+    name: 'إدارة الدعم الفني', 
+    href: '/super-admin/support', 
+    icon: Headphones 
   },
   { 
     name: 'تقارير النظام', 
