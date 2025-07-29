@@ -15,7 +15,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
-import { useChartOfAccounts } from "@/hooks/useChartOfAccounts"
+import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts"
+import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 
@@ -27,7 +28,7 @@ interface VehicleFormProps {
 
 export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { user } = useAuth()
-  const { data: chartOfAccounts } = useChartOfAccounts()
+  const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   const createVehicle = useCreateVehicle()
   const updateVehicle = useUpdateVehicle()
   const { toast } = useToast()
@@ -1095,9 +1096,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                   )}
                                 >
                                   {field.value
-                                    ? chartOfAccounts?.find(
+                                    ? entryAllowedAccounts?.find(
                                         (account) => account.id === field.value
-                                      )?.account_name_ar || chartOfAccounts?.find(
+                                      )?.account_name_ar || entryAllowedAccounts?.find(
                                         (account) => account.id === field.value
                                       )?.account_name
                                     : "اختر الحساب"}
@@ -1111,7 +1112,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                 <CommandList>
                                   <CommandEmpty>لا توجد حسابات.</CommandEmpty>
                                   <CommandGroup>
-                                    {chartOfAccounts?.filter(account => !account.is_header && account.is_active)?.map((account) => (
+                                    {entryAllowedAccounts?.map((account) => (
                                       <CommandItem
                                         key={account.id}
                                         value={`${account.account_name_ar || account.account_name} ${account.account_code}`}

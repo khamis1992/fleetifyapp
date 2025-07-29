@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCostCenters, useBanks } from "@/hooks/useTreasury";
 import { useActiveContracts } from "@/hooks/useContracts";
+import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
+import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 
 interface PaymentFormProps {
   open: boolean;
@@ -27,6 +29,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
   const [isLoading, setIsLoading] = useState(false);
   const { data: costCenters } = useCostCenters();
   const { data: banks } = useBanks();
+  const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
 
   // Fetch contracts for the customer/vendor
   const { data: contracts } = useActiveContracts(customerId, vendorId);
@@ -41,6 +44,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     bank_account: '',
     cost_center_id: '',
     bank_id: '',
+    account_id: '',
     currency: 'KWD',
     notes: '',
     contract_id: contractId || '',
@@ -77,6 +81,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         contract_id: paymentData.contract_id || null,
         cost_center_id: paymentData.cost_center_id || null,
         bank_id: paymentData.bank_id || null,
+        account_id: paymentData.account_id || null,
         status: 'completed',
         created_by: user.id,
       });
@@ -97,6 +102,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         bank_account: '',
         cost_center_id: '',
         bank_id: '',
+        account_id: '',
         currency: 'KWD',
         notes: '',
         contract_id: '',
@@ -181,13 +187,40 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="account_id">الحساب المحاسبي</Label>
+                <Select value={paymentData.account_id} onValueChange={(value) => setPaymentData({...paymentData, account_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الحساب المحاسبي" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">بدون حساب</SelectItem>
+                    {entryAllowedAccounts?.filter(account => 
+                      account.account_type === 'assets' || 
+                      account.account_type === 'expenses' ||
+                      account.account_type === 'liabilities'
+                    )?.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{account.account_code} - {account.account_name}</span>
+                          <AccountLevelBadge accountLevel={account.account_level} isHeader={false} />
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  يمكن اختيار الحسابات الفرعية فقط (المستوى 5 أو 6) للقيود المحاسبية
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="cost_center_id">مركز التكلفة</Label>
                 <Select value={paymentData.cost_center_id} onValueChange={(value) => setPaymentData({...paymentData, cost_center_id: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر مركز التكلفة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">بدون مركز تكلفة</SelectItem>
+                    <SelectItem value="">بدون مركز تكلفة</SelectItem>
                     {costCenters?.filter(center => center.id && center.id.trim() !== '').map((center) => (
                       <SelectItem key={center.id} value={center.id}>
                         {center.center_name_ar || center.center_name}

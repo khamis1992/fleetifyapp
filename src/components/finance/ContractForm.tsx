@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { FileText, Plus } from 'lucide-react'
-import { useChartOfAccounts } from '@/hooks/useChartOfAccounts'
+import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
+import { AccountLevelBadge } from '@/components/finance/AccountLevelBadge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -72,7 +73,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     enabled: !!profile?.company_id,
   });
 
-  const { data: chartOfAccounts, isLoading: accountsLoading } = useChartOfAccounts()
+  const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   
   // Get available vehicles for contracts (excluding those under maintenance or already rented)
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
@@ -261,26 +262,32 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="account_id">رقم الحساب</Label>
+                <Label htmlFor="account_id">الحساب المحاسبي</Label>
                 <Select 
                   value={contractData.account_id} 
                   onValueChange={(value) => setContractData({...contractData, account_id: value})}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر رقم الحساب" />
+                    <SelectValue placeholder="اختر الحساب المحاسبي" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">لا يوجد</SelectItem>
-                    {chartOfAccounts?.filter(account => 
+                    <SelectItem value="">لا يوجد</SelectItem>
+                    {entryAllowedAccounts?.filter(account => 
                       account.account_type === 'revenue' || 
                       account.account_type === 'assets'
                     )?.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
-                        {account.account_code} - {account.account_name}
+                        <div className="flex items-center justify-between w-full">
+                          <span>{account.account_code} - {account.account_name}</span>
+                          <AccountLevelBadge accountLevel={account.account_level} isHeader={false} />
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  يمكن اختيار الحسابات الفرعية فقط (المستوى 5 أو 6) للقيود المحاسبية
+                </p>
               </div>
             </CardContent>
           </Card>

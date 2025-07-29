@@ -19,6 +19,8 @@ import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAvailableCustomerAccounts, useCompanyAccountSettings } from "@/hooks/useCustomerAccounts";
+import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
+import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 
 interface CustomerFormProps {
   open: boolean;
@@ -32,6 +34,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const { data: companies } = useCompanies();
   const { data: availableAccounts } = useAvailableCustomerAccounts();
   const { data: accountSettings } = useCompanyAccountSettings();
+  const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
   const [accountSearchOpen, setAccountSearchOpen] = useState(false);
