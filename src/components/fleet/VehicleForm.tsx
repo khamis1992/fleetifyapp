@@ -440,11 +440,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="basic">الأساسية</TabsTrigger>
-                <TabsTrigger value="technical">التقنية</TabsTrigger>
-                <TabsTrigger value="financial">المالية</TabsTrigger>
-                <TabsTrigger value="operational">التشغيلية</TabsTrigger>
                 <TabsTrigger value="additional">إضافية</TabsTrigger>
+                <TabsTrigger value="operational">التشغيلية</TabsTrigger>
+                <TabsTrigger value="financial">المالية</TabsTrigger>
+                <TabsTrigger value="technical">التقنية</TabsTrigger>
+                <TabsTrigger value="basic">الأساسية</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
