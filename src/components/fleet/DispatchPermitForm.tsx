@@ -148,7 +148,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger dir="rtl">
                                 <SelectValue placeholder="اختر المركبة" />
                               </SelectTrigger>
                             </FormControl>
@@ -175,7 +175,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                           <FormLabel>نوع الطلب</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger dir="rtl">
                                 <SelectValue placeholder="اختر نوع الطلب" />
                               </SelectTrigger>
                             </FormControl>
@@ -202,9 +202,10 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>الغرض من الاستخدام</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="اكتب الغرض من استخدام المركبة..."
+                           <FormControl>
+                             <Textarea 
+                               placeholder="اكتب الغرض من استخدام المركبة..."
+                               dir="rtl"
                               {...field}
                             />
                           </FormControl>
@@ -219,9 +220,10 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>الغرض (عربي)</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="الغرض بالعربي..."
+                           <FormControl>
+                             <Textarea 
+                               placeholder="الغرض بالعربي..."
+                               dir="rtl"
                               {...field}
                             />
                           </FormControl>
@@ -243,8 +245,8 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                             <MapPin className="h-4 w-4" />
                             الوجهة
                           </FormLabel>
-                          <FormControl>
-                            <Input placeholder="الوجهة المطلوبة..." {...field} />
+                           <FormControl>
+                             <Input placeholder="الوجهة المطلوبة..." {...field} dir="rtl" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -257,8 +259,8 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>الوجهة (عربي)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="الوجهة بالعربي..." {...field} />
+                           <FormControl>
+                             <Input placeholder="الوجهة بالعربي..." {...field} dir="rtl" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -277,7 +279,8 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
-                            className="w-full justify-start text-left font-normal"
+                            className="w-full justify-start text-right font-normal"
+                            dir="rtl"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {startDate ? format(startDate, "dd/MM/yyyy") : "اختر التاريخ"}
@@ -303,7 +306,8 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
-                            className="w-full justify-start text-left font-normal"
+                            className="w-full justify-start text-right font-normal"
+                            dir="rtl"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {endDate ? format(endDate, "dd/MM/yyyy") : "اختر التاريخ"}
@@ -374,8 +378,8 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>اسم السائق</FormLabel>
-                              <FormControl>
-                                <Input placeholder="اسم السائق..." {...field} />
+                               <FormControl>
+                                 <Input placeholder="اسم السائق..." {...field} dir="rtl" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -402,8 +406,8 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>رقم الرخصة</FormLabel>
-                              <FormControl>
-                                <Input placeholder="رقم رخصة القيادة..." {...field} />
+                               <FormControl>
+                                 <Input placeholder="رقم رخصة القيادة..." {...field} dir="rtl" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -462,7 +466,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                           <FormLabel>الأولوية</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger dir="rtl">
                                 <SelectValue placeholder="اختر الأولوية" />
                               </SelectTrigger>
                             </FormControl>
@@ -486,9 +490,10 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>ملاحظات إضافية</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="أي ملاحظات أو تفاصيل إضافية..."
+                         <FormControl>
+                           <Textarea 
+                             placeholder="أي ملاحظات أو تفاصيل إضافية..."
+                             dir="rtl"
                             {...field}
                           />
                         </FormControl>
