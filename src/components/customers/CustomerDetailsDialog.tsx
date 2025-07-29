@@ -173,20 +173,51 @@ export function CustomerDetailsDialog({
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Customer Notes */}
-              {customer.notes && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      ملاحظات العميل
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{customer.notes}</p>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Basic Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    المعلومات الأساسية
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{customer.phone}</span>
+                  </div>
+                  {customer.alternative_phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{customer.alternative_phone} (بديل)</span>
+                    </div>
+                  )}
+                  {customer.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span>{customer.email}</span>
+                    </div>
+                  )}
+                  {customer.national_id && (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>هوية: {customer.national_id}</span>
+                    </div>
+                  )}
+                  {customer.passport_number && (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>جواز: {customer.passport_number}</span>
+                    </div>
+                  )}
+                  {customer.license_number && (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>رخصة: {customer.license_number}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Emergency Contact */}
               {(customer.emergency_contact_name || customer.emergency_contact_phone) && (
@@ -248,51 +279,20 @@ export function CustomerDetailsDialog({
                 </CardContent>
               </Card>
 
-              {/* Basic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    المعلومات الأساسية
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{customer.phone}</span>
-                  </div>
-                  {customer.alternative_phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{customer.alternative_phone} (بديل)</span>
-                    </div>
-                  )}
-                  {customer.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{customer.email}</span>
-                    </div>
-                  )}
-                  {customer.national_id && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>هوية: {customer.national_id}</span>
-                    </div>
-                  )}
-                  {customer.passport_number && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>جواز: {customer.passport_number}</span>
-                    </div>
-                  )}
-                  {customer.license_number && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>رخصة: {customer.license_number}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              {/* Customer Notes */}
+              {customer.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      ملاحظات العميل
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{customer.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
