@@ -44,10 +44,18 @@ export function CustomerDetailsDialog({
   onCreateInvoice 
 }: CustomerDetailsDialogProps) {
   const [showNoteForm, setShowNoteForm] = useState(false);
-  const { data: customer, isLoading } = useCustomer(customerId);
+  const { data: customer, isLoading, error, isError } = useCustomer(customerId);
   const { data: notes } = useCustomerNotes(customerId);
   const { data: financialSummary } = useCustomerFinancialSummary(customerId);
   const createNoteMutation = useCreateCustomerNote();
+
+  console.log('🔍 CustomerDetailsDialog state:', {
+    customerId,
+    isLoading,
+    isError,
+    error,
+    customer: customer ? 'loaded' : 'not loaded'
+  });
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<NoteFormData>({
     defaultValues: {
@@ -76,13 +84,33 @@ export function CustomerDetailsDialog({
         <DialogContent className="max-w-4xl">
           <div className="flex items-center justify-center p-8">
             <LoadingSpinner size="lg" />
+            <span className="ml-3">جاري تحميل بيانات العميل...</span>
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
-  if (!customer) return null;
+  if (isError || !customer) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
+            <p className="text-gray-600 mb-4">
+              {error?.message || 'لا يمكن العثور على بيانات العميل'}
+            </p>
+            <Button 
+              onClick={() => onOpenChange(false)}
+              variant="outline"
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const customerName = customer.customer_type === 'corporate' 
     ? customer.company_name 

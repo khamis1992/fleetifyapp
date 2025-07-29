@@ -305,26 +305,62 @@ export const useCustomer = (customerId: string) => {
   return useQuery({
     queryKey: ['customer', customerId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customers')
-        .select(`
-          *,
-          customer_accounts:customer_accounts(
-            *,
-            account:chart_of_accounts(*)
-          )
-        `)
-        .eq('id', customerId)
-        .single();
+      console.log('🔍 Fetching customer data for ID:', customerId);
+      
+      try {
+        // First fetch the customer data
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', customerId)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching customer:', error);
+        if (customerError) {
+          console.error('❌ Error fetching customer:', customerError);
+          throw new Error(`Failed to fetch customer: ${customerError.message}`);
+        }
+
+        if (!customerData) {
+          console.error('❌ Customer not found:', customerId);
+          throw new Error('Customer not found');
+        }
+
+        console.log('✅ Customer data fetched successfully:', customerData);
+
+        // Try to fetch customer accounts separately (optional)
+        let customerAccounts = [];
+        try {
+          const { data: accountsData, error: accountsError } = await supabase
+            .from('customer_accounts')
+            .select(`
+              *,
+              account:chart_of_accounts(*)
+            `)
+            .eq('customer_id', customerId);
+
+          if (!accountsError && accountsData) {
+            customerAccounts = accountsData;
+            console.log('✅ Customer accounts fetched:', customerAccounts);
+          } else if (accountsError) {
+            console.warn('⚠️ Could not fetch customer accounts:', accountsError.message);
+          }
+        } catch (accountsErr) {
+          console.warn('⚠️ Error fetching customer accounts (non-critical):', accountsErr);
+        }
+
+        return { 
+          ...customerData, 
+          customer_accounts: customerAccounts,
+          contracts: [] 
+        };
+      } catch (error) {
+        console.error('❌ Critical error in useCustomer:', error);
         throw error;
       }
-
-      return { ...data, contracts: [] };
     },
-    enabled: !!customerId
+    enabled: !!customerId,
+    retry: 3,
+    retryDelay: 1000
   });
 };
 
