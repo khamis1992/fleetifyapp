@@ -237,7 +237,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectValue placeholder="اختر العقد" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون عقد</SelectItem>
+                    <SelectItem value="none">بدون عقد</SelectItem>
                     {contracts?.map(contract => (
                       <SelectItem key={contract.id} value={contract.id}>
                         {contract.contract_number} - {contract.description}

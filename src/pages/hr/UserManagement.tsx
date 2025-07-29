@@ -522,7 +522,7 @@ export default function UserManagement() {
               {/* User Selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">اختيار المستخدم لتعديل صلاحياته:</label>
-                <Select value={selectedUserForMatrix?.user_id || ""} onValueChange={handleUserSelection}>
+                <Select value={selectedUserForMatrix?.user_id || undefined} onValueChange={handleUserSelection}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="اختر مستخدماً..." />
                   </SelectTrigger>
@@ -541,7 +541,7 @@ export default function UserManagement() {
                           </SelectItem>
                         ))
                     ) : (
-                      <SelectItem value="" disabled>
+                      <SelectItem value="no-users" disabled>
                         لا توجد حسابات مستخدمين متاحة
                       </SelectItem>
                     )}

@@ -311,7 +311,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
                       <SelectValue placeholder="اختر العقد" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">بدون عقد</SelectItem>
+                      <SelectItem value="none">بدون عقد</SelectItem>
                       {contracts?.map(contract => (
                         <SelectItem key={contract.id} value={contract.id}>
                           {contract.contract_number} - {contract.description}
@@ -369,7 +369,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
                       </TableCell>
                       <TableCell>
                         <Select 
-                          value={item.account_id || ""} 
+                          value={item.account_id || undefined} 
                           onValueChange={(value) => updateItem(item.id, 'account_id', value)}
                         >
                           <SelectTrigger className="min-w-[150px]">

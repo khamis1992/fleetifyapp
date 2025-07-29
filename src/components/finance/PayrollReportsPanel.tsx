@@ -238,7 +238,7 @@ export const PayrollReportsPanel = () => {
                 <SelectValue placeholder="حالة الراتب" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الحالات</SelectItem>
+                <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="draft">مسودة</SelectItem>
                 <SelectItem value="pending_approval">في انتظار الموافقة</SelectItem>
                 <SelectItem value="approved">معتمد</SelectItem>
