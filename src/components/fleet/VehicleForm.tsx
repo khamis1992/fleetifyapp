@@ -10,6 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts"
 import { useAuth } from "@/contexts/AuthContext"
@@ -1077,22 +1081,61 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       control={form.control}
                       name="account_id"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                           <FormLabel>الحساب المحاسبي</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="اختر الحساب" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {chartOfAccounts?.filter(account => !account.is_header && account.is_active)?.map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                  {account.account_name_ar || account.account_name} ({account.account_code})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between text-right",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value
+                                    ? chartOfAccounts?.find(
+                                        (account) => account.id === field.value
+                                      )?.account_name_ar || chartOfAccounts?.find(
+                                        (account) => account.id === field.value
+                                      )?.account_name
+                                    : "اختر الحساب"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="ابحث عن الحساب..." className="text-right" />
+                                <CommandList>
+                                  <CommandEmpty>لا توجد حسابات.</CommandEmpty>
+                                  <CommandGroup>
+                                    {chartOfAccounts?.filter(account => !account.is_header && account.is_active)?.map((account) => (
+                                      <CommandItem
+                                        key={account.id}
+                                        value={`${account.account_name_ar || account.account_name} ${account.account_code}`}
+                                        onSelect={() => {
+                                          field.onChange(account.id)
+                                        }}
+                                        className="text-right"
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            account.id === field.value
+                                              ? "opacity-100"
+                                              : "opacity-0"
+                                          )}
+                                        />
+                                        {account.account_name_ar || account.account_name} ({account.account_code})
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
