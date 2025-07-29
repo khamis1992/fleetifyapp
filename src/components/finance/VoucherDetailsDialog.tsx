@@ -19,7 +19,13 @@ export const VoucherDetailsDialog: React.FC<VoucherDetailsDialogProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!entry) return null;
+  if (!entry) {
+    console.log('❌ VoucherDetailsDialog: No entry provided');
+    return null;
+  }
+
+  console.log('📋 VoucherDetailsDialog: Entry data:', entry);
+  console.log('📋 VoucherDetailsDialog: Entry lines:', entry.journal_entry_lines);
 
   const totalDebits = entry.journal_entry_lines?.reduce((sum: number, line: any) => sum + (line.debit_amount || 0), 0) || 0;
   const totalCredits = entry.journal_entry_lines?.reduce((sum: number, line: any) => sum + (line.credit_amount || 0), 0) || 0;
@@ -147,57 +153,65 @@ export const VoucherDetailsDialog: React.FC<VoucherDetailsDialogProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {entry.journal_entry_lines?.map((line: any, index: number) => (
-                    <TableRow key={line.id || index}>
-                      <TableCell className="text-right">
-                        <div>
-                          <p className="font-mono text-sm">{line.account?.account_code}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {line.account?.account_name || line.account?.account_name_ar}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {line.cost_center ? (
+                  {entry.journal_entry_lines && entry.journal_entry_lines.length > 0 ? (
+                    entry.journal_entry_lines.map((line: any, index: number) => (
+                      <TableRow key={line.id || index}>
+                        <TableCell className="text-right">
                           <div>
-                            <p className="font-mono text-sm">{line.cost_center.center_code}</p>
+                            <p className="font-mono text-sm">{line.account?.account_code || 'غير محدد'}</p>
                             <p className="text-sm text-muted-foreground">
-                              {line.cost_center.center_name || line.cost_center.center_name_ar}
+                              {line.account?.account_name || line.account?.account_name_ar || 'حساب غير محدد'}
                             </p>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {line.employee_id ? (
-                          <div>
-                            <p className="text-sm">موظف #{line.employee_id.slice(-8)}</p>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {line.asset_id ? (
-                          <div>
-                            <p className="text-sm">أصل #{line.asset_id.slice(-8)}</p>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center font-mono">
-                        {line.debit_amount > 0 ? formatCurrency(line.debit_amount) : '-'}
-                      </TableCell>
-                      <TableCell className="text-center font-mono">
-                        {line.credit_amount > 0 ? formatCurrency(line.credit_amount) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {line.line_description || '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {line.cost_center ? (
+                            <div>
+                              <p className="font-mono text-sm">{line.cost_center.center_code}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {line.cost_center.center_name || line.cost_center.center_name_ar}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {line.employee_id ? (
+                            <div>
+                              <p className="text-sm">موظف #{line.employee_id.slice(-8)}</p>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {line.asset_id ? (
+                            <div>
+                              <p className="text-sm">أصل #{line.asset_id.slice(-8)}</p>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-mono">
+                          {line.debit_amount > 0 ? formatCurrency(line.debit_amount) : '-'}
+                        </TableCell>
+                        <TableCell className="text-center font-mono">
+                          {line.credit_amount > 0 ? formatCurrency(line.credit_amount) : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {line.line_description || line.description || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        لا توجد بنود في هذا القيد
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
 
