@@ -456,7 +456,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </DialogHeader>
           {viewingAccount && (
             <div dir="rtl" className="w-full">
-            <Tabs defaultValue="info" className="w-full">
+            <Tabs defaultValue="info" className="w-full" dir="rtl">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
                 <TabsTrigger value="history">سجل التغييرات</TabsTrigger>
