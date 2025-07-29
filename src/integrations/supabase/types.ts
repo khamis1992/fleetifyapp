@@ -5093,6 +5093,48 @@ export type Database = {
           },
         ]
       }
+      user_notifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: string
+          read_at: string | null
+          related_id: string | null
+          related_type: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           created_at: string
@@ -6137,6 +6179,69 @@ export type Database = {
           weekly_rate?: number
           weekly_rate_max?: number | null
           weekly_rate_min?: number | null
+        }
+        Relationships: []
+      }
+      vehicle_return_forms: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          damages_reported: string | null
+          dispatch_permit_id: string
+          fuel_level_percentage: number | null
+          id: string
+          items_returned: Json | null
+          notes: string | null
+          return_date: string
+          return_location: string | null
+          return_odometer_reading: number | null
+          returned_by: string
+          status: string
+          updated_at: string
+          vehicle_condition: string
+          vehicle_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          damages_reported?: string | null
+          dispatch_permit_id: string
+          fuel_level_percentage?: number | null
+          id?: string
+          items_returned?: Json | null
+          notes?: string | null
+          return_date?: string
+          return_location?: string | null
+          return_odometer_reading?: number | null
+          returned_by: string
+          status?: string
+          updated_at?: string
+          vehicle_condition?: string
+          vehicle_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          damages_reported?: string | null
+          dispatch_permit_id?: string
+          fuel_level_percentage?: number | null
+          id?: string
+          items_returned?: Json | null
+          notes?: string | null
+          return_date?: string
+          return_location?: string | null
+          return_odometer_reading?: number | null
+          returned_by?: string
+          status?: string
+          updated_at?: string
+          vehicle_condition?: string
+          vehicle_id?: string
         }
         Relationships: []
       }
