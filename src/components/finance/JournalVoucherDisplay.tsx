@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Search, Eye, Plus, Calendar, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { useEnhancedJournalEntries, LedgerFilters } from '@/hooks/useGeneralLedger';
+import { useJournalEntryLines, LedgerFilters } from '@/hooks/useGeneralLedger';
 import { formatCurrency } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { JournalEntryForm } from './JournalEntryForm';
@@ -20,9 +20,7 @@ export const JournalVoucherDisplay: React.FC = () => {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showNewEntryDialog, setShowNewEntryDialog] = useState(false);
 
-  const { data: journalEntries, isLoading } = useEnhancedJournalEntries(filters);
-
-  console.log('🔍 JournalVoucherDisplay: Journal entries:', journalEntries);
+  const { data: journalLines, isLoading } = useJournalEntryLines(filters);
 
   const updateFilters = (newFilters: Partial<LedgerFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -67,12 +65,30 @@ export const JournalVoucherDisplay: React.FC = () => {
     }
   };
 
-  const calculateTotalDebits = (lines: any[]) => {
-    return lines?.reduce((sum, line) => sum + (line.debit_amount || 0), 0) || 0;
-  };
+  // Group lines by journal entry
+  const groupedLines = journalLines?.reduce((groups: any, line: any) => {
+    const entryId = line.journal_entry?.id;
+    if (!groups[entryId]) {
+      groups[entryId] = {
+        entry: line.journal_entry,
+        lines: []
+      };
+    }
+    groups[entryId].lines.push(line);
+    return groups;
+  }, {}) || {};
 
-  const calculateTotalCredits = (lines: any[]) => {
-    return lines?.reduce((sum, line) => sum + (line.credit_amount || 0), 0) || 0;
+  // Get account hierarchy display
+  const getAccountHierarchy = (account: any) => {
+    if (!account) return '';
+    
+    const hierarchy = [];
+    if (account.parent_account?.account_name) {
+      hierarchy.push(account.parent_account.account_name);
+    }
+    hierarchy.push(account.account_name);
+    
+    return hierarchy.join(' > ');
   };
 
   if (isLoading) {
@@ -157,75 +173,83 @@ export const JournalVoucherDisplay: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">رقم القيد</TableHead>
-                <TableHead className="text-right">التاريخ</TableHead>
-                <TableHead className="text-right">البيان</TableHead>
-                <TableHead className="text-center">إجمالي المدين</TableHead>
-                <TableHead className="text-center">إجمالي الدائن</TableHead>
-                <TableHead className="text-center">الحالة</TableHead>
-                <TableHead className="text-center">عدد البنود</TableHead>
-                <TableHead className="text-center">إجراءات</TableHead>
+                <TableHead className="text-center">رقم القيد</TableHead>
+                <TableHead className="text-center">تاريخ القيد</TableHead>
+                <TableHead className="text-center">الحساب</TableHead>
+                <TableHead className="text-center">مركز التكلفة</TableHead>
+                <TableHead className="text-center">الأصل</TableHead>
+                <TableHead className="text-center">الموظف</TableHead>
+                <TableHead className="text-center">مدين</TableHead>
+                <TableHead className="text-center">دائن</TableHead>
+                <TableHead className="text-center">البيان</TableHead>
+                <TableHead className="text-center">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {journalEntries?.map((entry) => {
-                const totalDebits = calculateTotalDebits(entry.journal_entry_lines);
-                const totalCredits = calculateTotalCredits(entry.journal_entry_lines);
-                const isBalanced = Math.abs(totalDebits - totalCredits) < 0.01;
-                
-                return (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-mono text-right">
-                      {entry.entry_number}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {new Date(entry.entry_date).toLocaleDateString('ar-SA')}
-                    </TableCell>
-                    <TableCell className="text-right max-w-xs truncate" title={entry.description}>
-                      {entry.description}
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
-                      {formatCurrency(totalDebits)}
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
-                      {formatCurrency(totalCredits)}
+              {Object.values(groupedLines).map((group: any) => 
+                group.lines.map((line: any, lineIndex: number) => (
+                  <TableRow key={`${group.entry.id}-${line.id}`} className="hover:bg-muted/50">
+                    <TableCell className="text-center font-medium">
+                      {lineIndex === 0 ? (group.entry.entry_number || '-') : ''}
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {getStatusIcon(entry.status)}
-                        <Badge variant={getStatusColor(entry.status)}>
-                          {getStatusLabel(entry.status)}
-                        </Badge>
-                        {!isBalanced && (
-                          <Badge variant="destructive" className="ml-2">
-                            غير متوازن
-                          </Badge>
-                        )}
+                      {lineIndex === 0 && group.entry.entry_date 
+                        ? new Date(group.entry.entry_date).toLocaleDateString('ar-SA')
+                        : ''}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">
+                          {line.account?.account_code} - {line.account?.account_name}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {getAccountHierarchy(line.account)}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      {entry.journal_entry_lines?.length || 0}
+                      {line.cost_center?.center_name || '-'}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          console.log('🔍 Selected entry for dialog:', entry);
-                          setSelectedEntry(entry);
-                          setShowDetailsDialog(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      {line.asset?.asset_name || '-'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {line.employee 
+                        ? `${line.employee.first_name} ${line.employee.last_name}` 
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-center text-green-600 font-medium">
+                      {line.debit_amount ? formatCurrency(line.debit_amount) : '-'}
+                    </TableCell>
+                    <TableCell className="text-center text-red-600 font-medium">
+                      {line.credit_amount ? formatCurrency(line.credit_amount) : '-'}
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="truncate text-sm" title={line.line_description || group.entry.description}>
+                        {line.line_description || group.entry.description || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {lineIndex === 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEntry(group.entry);
+                            setShowDetailsDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {(!journalEntries || journalEntries.length === 0) && (
+                ))
+              )}
+              {Object.keys(groupedLines).length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    لا توجد قيود محاسبية مطابقة للمرشحات المحددة
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    لا توجد بنود قيود محاسبية
                   </TableCell>
                 </TableRow>
               )}

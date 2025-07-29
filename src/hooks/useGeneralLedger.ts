@@ -69,6 +69,128 @@ export interface FinancialSummary {
 }
 
 // Enhanced Journal Entries with relations
+// Hook to fetch journal entry lines for voucher display
+export const useJournalEntryLines = (filters?: LedgerFilters) => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["journalEntryLines", user?.profile?.company_id, filters],
+    queryFn: async () => {
+      console.log("Fetching journal entry lines for company:", user?.profile?.company_id)
+      
+      if (!user?.profile?.company_id) {
+        console.log("No company ID available")
+        return []
+      }
+      
+      try {
+        // First get journal entries matching filters
+        let entryQuery = supabase
+          .from("journal_entries")
+          .select("id")
+          .eq("company_id", user.profile.company_id)
+        
+        if (filters?.status && filters.status !== 'all') {
+          entryQuery = entryQuery.eq("status", filters.status)
+        }
+        if (filters?.dateFrom) {
+          entryQuery = entryQuery.gte("entry_date", filters.dateFrom)
+        }
+        if (filters?.dateTo) {
+          entryQuery = entryQuery.lte("entry_date", filters.dateTo)
+        }
+        if (filters?.referenceType) {
+          entryQuery = entryQuery.eq("reference_type", filters.referenceType)
+        }
+        
+        const { data: entryIds, error: entryError } = await entryQuery
+        
+        if (entryError) {
+          console.error("Entry query error:", entryError)
+          throw entryError
+        }
+        
+        if (!entryIds || entryIds.length === 0) {
+          return []
+        }
+        
+        // Get lines for those entries
+        const { data, error } = await supabase
+          .from("journal_entry_lines")
+          .select(`
+            *,
+            journal_entry:journal_entries!journal_entry_id(
+              id,
+              entry_number,
+              entry_date,
+              description,
+              status,
+              reference_type
+            ),
+            account:chart_of_accounts!account_id(
+              id,
+              account_code,
+              account_name,
+              account_name_ar,
+              account_type,
+              account_level,
+              parent_account_id
+            ),
+            cost_center:cost_centers!cost_center_id(
+              id,
+              center_code,
+              center_name,
+              center_name_ar
+            ),
+            employee:employees!employee_id(
+              id,
+              employee_number,
+              first_name,
+              last_name
+            ),
+            asset:fixed_assets!asset_id(
+              id,
+              asset_code,
+              asset_name,
+              asset_name_ar
+            )
+          `)
+          .in("journal_entry_id", entryIds.map(e => e.id))
+          .order("line_number", { ascending: true })
+        
+        if (error) {
+          console.error("Query error:", error)
+          toast.error("خطأ في جلب بنود القيود المحاسبية: " + error.message)
+          throw error
+        }
+        
+        console.log("Query result:", data?.length || 0, "lines found")
+        
+        // Filter by search term if provided
+        let filteredData = data || []
+        if (filters?.searchTerm && filteredData.length > 0) {
+          const searchLower = filters.searchTerm.toLowerCase()
+          filteredData = filteredData.filter(line =>
+            line.journal_entry?.description?.toLowerCase().includes(searchLower) ||
+            line.journal_entry?.entry_number?.toLowerCase().includes(searchLower) ||
+            line.account?.account_name?.toLowerCase().includes(searchLower) ||
+            line.account?.account_name_ar?.toLowerCase().includes(searchLower) ||
+            line.line_description?.toLowerCase().includes(searchLower)
+          )
+        }
+        
+        return filteredData
+        
+      } catch (error) {
+        console.error("Error in useJournalEntryLines:", error)
+        toast.error("خطأ في جلب بنود القيود المحاسبية")
+        return []
+      }
+    },
+    enabled: !!user?.profile?.company_id
+  })
+}
+
 export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
   const { user } = useAuth()
   
