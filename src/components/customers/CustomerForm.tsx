@@ -316,7 +316,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
-              <Card>
+              <Card dir="rtl">
                 <CardHeader>
                   <CardTitle>نوع العميل</CardTitle>
                 </CardHeader>
