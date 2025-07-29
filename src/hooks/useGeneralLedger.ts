@@ -88,8 +88,8 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
           .from("journal_entries")
           .select(`
             *,
-            created_by_profile:profiles!left(user_id, display_name, email),
-            posted_by_profile:profiles!left(user_id, display_name, email),
+            created_by_profile:profiles!left(user_id, first_name, last_name, email),
+            posted_by_profile:profiles!left(user_id, first_name, last_name, email),
             journal_entry_lines(
               *,
               account:chart_of_accounts(*),
