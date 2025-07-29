@@ -560,14 +560,14 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                               {availableAccounts
                                 .filter(acc => acc.is_available)
                                 .map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{account.account_name}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {account.account_code} | {account.parent_account_name}
-                                    </span>
-                                  </div>
-                                </SelectItem>
+                                 <SelectItem key={account.id} value={account.id}>
+                                   <div className="flex flex-col">
+                                     <span className="font-medium">{account.account_name_ar || account.account_name}</span>
+                                     <span className="text-xs text-muted-foreground">
+                                       {account.account_code} | {account.parent_account_name}
+                                     </span>
+                                   </div>
+                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
