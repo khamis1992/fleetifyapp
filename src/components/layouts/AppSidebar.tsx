@@ -304,16 +304,19 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild className="h-10">
-                    <NavLink to={item.href} className={getNavClassName}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span className="font-medium">{item.name}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                 </SidebarMenuItem>
-               ))}
+              {navigationItems.map((item) => {
+                console.log('Navigation item:', item.name, item.href);
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild className="h-10">
+                      <NavLink to={item.href} className={getNavClassName}>
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span className="font-medium">{item.name}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                   </SidebarMenuItem>
+                );
+              })}
                
                {/* Fleet Section with Submenu */}
                <SidebarMenuItem>
