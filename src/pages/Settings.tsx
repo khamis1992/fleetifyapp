@@ -13,7 +13,8 @@ import {
   Globe,
   Lock,
   ChevronRight,
-  Crown
+  Crown,
+  CreditCard
 } from 'lucide-react';
 
 const Settings: React.FC = () => {
@@ -68,6 +69,13 @@ const Settings: React.FC = () => {
       description: "إدارة خطة الاشتراك والميزات",
       icon: Crown,
       action: () => navigate('/subscription'),
+      available: true
+    },
+    {
+      title: "إعدادات الحسابات المحاسبية",
+      description: "إدارة إعدادات الحسابات المحاسبية للعملاء",
+      icon: CreditCard,
+      action: () => navigate('/settings/customer-accounts'),
       available: true
     }
   ];

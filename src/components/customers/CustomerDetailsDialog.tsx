@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useCustomers";
 import { CustomerInvoicesTab } from "./CustomerInvoicesTab";
+import { CustomerAccountSelector } from "./CustomerAccountSelector";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -153,7 +154,8 @@ export function CustomerDetailsDialog({
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="accounting">الحسابات المحاسبية</TabsTrigger>
             <TabsTrigger value="notes">الملاحظات</TabsTrigger>
             <TabsTrigger value="invoices">الفواتير</TabsTrigger>
             <TabsTrigger value="contracts">العقود</TabsTrigger>
@@ -548,6 +550,14 @@ export function CustomerDetailsDialog({
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="accounting" className="space-y-4">
+            <CustomerAccountSelector 
+              customerId={customerId}
+              customerName={customerName}
+              mode="view"
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

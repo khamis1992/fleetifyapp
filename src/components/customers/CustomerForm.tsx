@@ -11,11 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { AlertCircle, CheckCircle2, Building2, User, Phone, Mail, MapPin } from "lucide-react";
+import { AlertCircle, CheckCircle2, Building2, User, Phone, Mail, MapPin, CreditCard, InfoIcon } from "lucide-react";
 import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAvailableCustomerAccounts, useCompanyAccountSettings } from "@/hooks/useCustomerAccounts";
 
 interface CustomerFormProps {
   open: boolean;
@@ -27,7 +28,10 @@ interface CustomerFormProps {
 export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
   const { user } = useAuth();
   const { data: companies } = useCompanies();
+  const { data: availableAccounts } = useAvailableCustomerAccounts();
+  const { data: accountSettings } = useCompanyAccountSettings();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -106,6 +110,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
       }
       setFormErrors([]);
       setSelectedCompanyId(undefined);
+      setSelectedAccountId(undefined);
     }
   }, [open, customer, mode, reset]);
 
@@ -219,7 +224,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
       // إعداد البيانات للإرسال
       const customerData = {
         ...data,
-        ...(isSuperAdmin && selectedCompanyId ? { selectedCompanyId } : {})
+        ...(isSuperAdmin && selectedCompanyId ? { selectedCompanyId } : {}),
+        ...(selectedAccountId ? { selectedAccountId } : {})
       };
 
       console.log('📤 Submitting customer data:', customerData);
@@ -309,7 +315,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           )}
 
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="accounting">الحسابات المحاسبية</TabsTrigger>
               <TabsTrigger value="additional">بيانات إضافية</TabsTrigger>
               <TabsTrigger value="contact">معلومات الاتصال</TabsTrigger>
               <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
@@ -524,6 +531,72 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                       rows={4}
                     />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* تبويب الحسابات المحاسبية */}
+            <TabsContent value="accounting" className="space-y-4">
+              <Card dir="rtl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    الحسابات المحاسبية
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {accountSettings?.enable_account_selection ? (
+                    <div className="space-y-4">
+                      {/* خيار اختيار الحساب المحاسبي */}
+                      {mode === 'create' && availableAccounts && availableAccounts.length > 0 && (
+                        <div className="space-y-2">
+                          <Label>اختيار حساب محاسبي مخصص (اختياري)</Label>
+                          <Select value={selectedAccountId || ""} onValueChange={setSelectedAccountId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="اختر حساب محاسبي أو اترك فارغاً للإنشاء التلقائي..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">إنشاء حساب تلقائياً</SelectItem>
+                              {availableAccounts
+                                .filter(acc => acc.is_available)
+                                .map((account) => (
+                                <SelectItem key={account.id} value={account.id}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{account.account_name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {account.account_code} | {account.parent_account_name}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            إذا لم تختر حساباً، سيتم إنشاء حساب جديد تلقائياً باسم العميل
+                          </p>
+                        </div>
+                      )}
+
+                      {/* معلومات الحساب التلقائي */}
+                      {accountSettings?.auto_create_account && (
+                        <Alert>
+                          <InfoIcon className="h-4 w-4" />
+                          <AlertDescription>
+                            {selectedAccountId 
+                              ? "سيتم ربط العميل بالحساب المحاسبي المحدد."
+                              : "سيتم إنشاء حساب محاسبي جديد تلقائياً لهذا العميل."}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  ) : (
+                    <Alert>
+                      <InfoIcon className="h-4 w-4" />
+                      <AlertDescription>
+                        يتم إنشاء الحسابات المحاسبية تلقائياً للعملاء في هذه الشركة.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

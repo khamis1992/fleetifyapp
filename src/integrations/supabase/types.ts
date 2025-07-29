@@ -1034,6 +1034,7 @@ export type Database = {
           created_at: string
           currency: string | null
           current_plan_id: string | null
+          customer_account_settings: Json | null
           email: string | null
           id: string
           license_number: string | null
@@ -1062,6 +1063,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           current_plan_id?: string | null
+          customer_account_settings?: Json | null
           email?: string | null
           id?: string
           license_number?: string | null
@@ -1090,6 +1092,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           current_plan_id?: string | null
+          customer_account_settings?: Json | null
           email?: string | null
           id?: string
           license_number?: string | null
@@ -6777,6 +6780,11 @@ export type Database = {
       }
       create_customer_financial_account: {
         Args:
+          | {
+              customer_id_param: string
+              company_id_param: string
+              customer_data?: Json
+            }
           | { customer_id_param: string; company_id_param?: string }
           | {
               customer_id_param: string
@@ -6974,6 +6982,17 @@ export type Database = {
           total_debits: number
           total_credits: number
           closing_balance: number
+        }[]
+      }
+      get_available_customer_accounts: {
+        Args: { company_id_param: string }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          parent_account_name: string
+          is_available: boolean
         }[]
       }
       get_available_vehicles_for_contracts: {
