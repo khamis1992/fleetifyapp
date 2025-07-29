@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { VehicleConditionDiagram } from './VehicleConditionDiagram';
 import { useUpdateConditionReport } from '@/hooks/useVehicleCondition';
@@ -28,7 +26,6 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
     mileage_reading: report.mileage_reading || 0,
     fuel_level: report.fuel_level || 100,
     notes: report.notes || '',
-    condition_items: report.condition_items,
     damage_items: report.damage_items,
     status: report.status
   });
@@ -48,7 +45,6 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       mileage_reading: formData.mileage_reading,
       fuel_level: formData.fuel_level,
       notes: formData.notes,
-      condition_items: formData.condition_items,
       damage_items: formData.damage_items,
       status: formData.status
     };
@@ -65,16 +61,6 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
     }
   };
 
-  const handleConditionItemChange = (category: string, item: string, value: any) => {
-    const updatedItems = {
-      ...formData.condition_items,
-      [category]: {
-        ...formData.condition_items[category],
-        [item]: value
-      }
-    };
-    setFormData({ ...formData, condition_items: updatedItems });
-  };
 
   const getConditionIcon = (condition: string) => {
     switch (condition) {
@@ -182,62 +168,6 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
         </CardContent>
       </Card>
 
-      {/* Condition Checklist */}
-      <Card>
-        <CardHeader>
-          <CardTitle>قائمة فحص حالة المركبة</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {Object.entries(formData.condition_items).map(([category, items]: [string, any]) => (
-            <div key={category}>
-              <h4 className="font-medium mb-3 capitalize">
-                {category === 'Engine' ? 'المحرك' :
-                 category === 'Brakes' ? 'المكابح' :
-                 category === 'Tires' ? 'الإطارات' :
-                 category === 'Lights' ? 'الأضواء' :
-                 category === 'Interior' ? 'الداخلية' :
-                 category === 'Exterior' ? 'الخارجية' :
-                 category.replace('_', ' ')}
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(items).map(([item, value]: [string, any]) => (
-                  <div key={item} className="flex items-center justify-between">
-                    <label className="text-sm capitalize">{item.replace('_', ' ')}</label>
-                    {typeof value === 'boolean' ? (
-                      <Checkbox
-                        checked={value}
-                        onCheckedChange={(checked) => handleConditionItemChange(category, item, checked)}
-                        disabled={readonly}
-                      />
-                    ) : (
-                      <Select
-                        value={value}
-                        onValueChange={(newValue) => handleConditionItemChange(category, item, newValue)}
-                        disabled={readonly}
-                      >
-                        <SelectTrigger className="w-24" dir="rtl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="excellent">ممتاز</SelectItem>
-                          <SelectItem value="good">جيد</SelectItem>
-                          <SelectItem value="fair">مقبول</SelectItem>
-                          <SelectItem value="poor">ضعيف</SelectItem>
-                          <SelectItem value="working">يعمل</SelectItem>
-                          <SelectItem value="not_working">لا يعمل</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {category !== Object.keys(formData.condition_items)[Object.keys(formData.condition_items).length - 1] && (
-                <Separator className="mt-4" />
-              )}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
 
       {/* Vehicle Damage Diagram */}
       <Card>
