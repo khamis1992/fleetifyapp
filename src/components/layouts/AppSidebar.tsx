@@ -66,27 +66,21 @@ const navigationItems = [
     icon: Home 
   },
   { 
-    name: 'العقود', 
-    name_en: 'Contracts',
-    href: '/contracts', 
-    icon: FileText 
-  },
-  { 
     name: 'العملاء', 
     name_en: 'Customers',
     href: '/customers', 
     icon: Users 
   },
   { 
-    name: 'الدعم الفني', 
-    name_en: 'Support',
-    href: '/support', 
-    icon: Headphones 
-  },
-  { 
     name: 'عروض الأسعار', 
     name_en: 'Quotations',
     href: '/quotations', 
+    icon: FileText 
+  },
+  { 
+    name: 'العقود', 
+    name_en: 'Contracts',
+    href: '/contracts', 
     icon: FileText 
   },
   { 
@@ -96,11 +90,17 @@ const navigationItems = [
     icon: BarChart3 
   },
   { 
+    name: 'الدعم الفني', 
+    name_en: 'Support',
+    href: '/support', 
+    icon: Headphones 
+  },
+  { 
     name: 'الشؤون القانونية', 
     name_en: 'Legal',
     href: '/legal', 
     icon: Shield 
-  },
+  }
 ];
 
 const adminItems = [
