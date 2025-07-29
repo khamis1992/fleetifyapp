@@ -22,6 +22,8 @@ export const JournalVoucherDisplay: React.FC = () => {
 
   const { data: journalEntries, isLoading } = useEnhancedJournalEntries(filters);
 
+  console.log('🔍 JournalVoucherDisplay: Journal entries:', journalEntries);
+
   const updateFilters = (newFilters: Partial<LedgerFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
@@ -209,6 +211,7 @@ export const JournalVoucherDisplay: React.FC = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => {
+                          console.log('🔍 Selected entry for dialog:', entry);
                           setSelectedEntry(entry);
                           setShowDetailsDialog(true);
                         }}
