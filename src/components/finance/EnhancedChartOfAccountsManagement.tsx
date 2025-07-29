@@ -14,6 +14,9 @@ import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts';
 import { useReportingAccounts } from '@/hooks/useReportingAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
+import { ChartOfAccountsTreeView } from './ChartOfAccountsTreeView';
+import { ChartOfAccountsMindMap } from './ChartOfAccountsMindMap';
+import { AccountStatistics } from './AccountStatistics';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -35,6 +38,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [filterType, setFilterType] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   const { data: entryAccounts, isLoading: entryAccountsLoading } = useEntryAllowedAccounts();
@@ -278,16 +282,19 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="all">جميع الحسابات</TabsTrigger>
           <TabsTrigger value="entry" className="gap-2">
             <CheckCircle className="h-4 w-4" />
-            الحسابات المسموحة للقيود
+            المسموحة للقيود
           </TabsTrigger>
           <TabsTrigger value="reporting" className="gap-2">
             <Shield className="h-4 w-4" />
             حسابات التقارير
           </TabsTrigger>
+          <TabsTrigger value="tree">Tree View</TabsTrigger>
+          <TabsTrigger value="mindmap">Mind Map</TabsTrigger>
+          <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -436,6 +443,25 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="tree">
+          <ChartOfAccountsTreeView
+            accounts={allAccounts || []}
+            onAccountSelect={setSelectedAccount}
+            selectedAccountId={selectedAccount?.id}
+          />
+        </TabsContent>
+
+        <TabsContent value="mindmap">
+          <ChartOfAccountsMindMap
+            accounts={allAccounts || []}
+            onAccountSelect={setSelectedAccount}
+          />
+        </TabsContent>
+
+        <TabsContent value="statistics">
+          <AccountStatistics accounts={allAccounts || []} />
         </TabsContent>
       </Tabs>
     </div>
