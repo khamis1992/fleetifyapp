@@ -20,6 +20,22 @@ interface ChartOfAccountsTreeViewProps {
   selectedAccountId?: string;
 }
 
+const getAccountTypeLabel = (type: string) => {
+  const types = {
+    'assets': 'الأصول',
+    'الأصول': 'الأصول',
+    'liabilities': 'الخصوم', 
+    'الخصوم': 'الخصوم',
+    'equity': 'حقوق الملكية',
+    'حقوق الملكية': 'حقوق الملكية',
+    'revenue': 'الإيرادات',
+    'الإيرادات': 'الإيرادات',
+    'expenses': 'المصروفات',
+    'المصروفات': 'المصروفات'
+  };
+  return types[type.toLowerCase() as keyof typeof types] || type;
+};
+
 const getAccountTypeIcon = (type: string) => {
   switch (type.toLowerCase()) {
     case 'assets':
@@ -148,44 +164,84 @@ export const ChartOfAccountsTreeView: React.FC<ChartOfAccountsTreeViewProps> = (
             className="flex-1 cursor-pointer"
             onClick={() => onAccountSelect?.(node)}
           >
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm text-muted-foreground">
+            <div className="grid grid-cols-6 gap-4 items-center">
+              {/* رمز الحساب */}
+              <div className="font-mono text-sm font-medium">
                 {node.account_code}
-              </span>
-              <span className="font-medium">
-                {node.account_name}
-              </span>
-              {node.account_name_ar && (
-                <span className="text-sm text-muted-foreground">
-                  ({node.account_name_ar})
-                </span>
-              )}
+              </div>
+              
+              {/* اسم الحساب */}
+              <div className="col-span-2">
+                <div className="font-medium">
+                  {node.account_name}
+                </div>
+                {node.account_name_ar && (
+                  <div className="text-sm text-muted-foreground">
+                    {node.account_name_ar}
+                  </div>
+                )}
+              </div>
+              
+              {/* النوع */}
+              <div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant="outline" className="text-xs">
+                        {getAccountTypeLabel(node.account_type)}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>نوع الحساب: {getAccountTypeLabel(node.account_type)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              {/* المستوى */}
+              <div>
+                <Badge variant="secondary" className="text-xs">
+                  المستوى {node.account_level || 1}
+                </Badge>
+              </div>
+              
+              {/* الرصيد الحالي */}
+              <div className="text-right">
+                {node.current_balance !== 0 ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <span className="font-mono text-sm font-medium">
+                          {formatCurrency(node.current_balance || 0)}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>الرصيد الحالي</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
+              </div>
             </div>
             
-            <div className="flex items-center gap-2 mt-1">
+            {/* الحالة */}
+            <div className="flex items-center gap-2 mt-2">
               <AccountLevelBadge 
                 accountLevel={node.account_level || 1} 
                 isHeader={node.is_header || false} 
               />
               
-              {node.current_balance !== 0 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Badge variant="outline" className="text-xs">
-                        {formatCurrency(node.current_balance || 0)}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Current Balance</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              
               {!node.is_active && (
                 <Badge variant="destructive" className="text-xs">
-                  Inactive
+                  غير نشط
+                </Badge>
+              )}
+              
+              {node.is_header && (
+                <Badge variant="outline" className="text-xs">
+                  حساب إجمالي
                 </Badge>
               )}
             </div>
@@ -232,19 +288,28 @@ export const ChartOfAccountsTreeView: React.FC<ChartOfAccountsTreeViewProps> = (
     <Card className="h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Chart of Accounts Tree View</CardTitle>
+          <CardTitle className="text-lg">عرض شجرة الحسابات</CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={expandAll}>
-              Expand All
+              توسيع الكل
             </Button>
             <Button variant="outline" size="sm" onClick={collapseAll}>
-              Collapse All
+              طي الكل
             </Button>
           </div>
         </div>
+        
+        {/* Header row for columns */}
+        <div className="grid grid-cols-6 gap-4 items-center text-sm font-medium text-muted-foreground border-b pb-2 mt-4">
+          <div>رمز الحساب</div>
+          <div className="col-span-2">اسم الحساب</div>
+          <div>النوع</div>
+          <div>المستوى</div>
+          <div className="text-right">الرصيد الحالي</div>
+        </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-1 max-h-[600px] overflow-y-auto">
+        <div className="space-y-1 max-h-[700px] overflow-y-auto">
           {treeData.map(node => renderTreeNode(node))}
         </div>
       </CardContent>
