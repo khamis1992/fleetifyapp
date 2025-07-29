@@ -32,6 +32,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [viewingAccount, setViewingAccount] = useState<any>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -157,7 +161,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               size="sm"
               variant="outline"
               className="h-8 w-8 p-0"
-              onClick={() => console.log('معاينة الحساب', account.id)}
+              onClick={() => {
+                setViewingAccount(account);
+                setShowViewDialog(true);
+              }}
               title="معاينة"
             >
               <Eye className="h-4 w-4" />
@@ -166,7 +173,21 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               size="sm"
               variant="outline"
               className="h-8 w-8 p-0"
-              onClick={() => console.log('تعديل الحساب', account.id)}
+              onClick={() => {
+                setEditingAccount(account);
+                setFormData({
+                  account_code: account.account_code,
+                  account_name: account.account_name,
+                  account_name_ar: account.account_name_ar || '',
+                  account_type: account.account_type,
+                  account_subtype: account.account_subtype || '',
+                  balance_type: account.balance_type,
+                  parent_account_id: account.parent_account_id || '',
+                  is_header: account.is_header,
+                  description: account.description || ''
+                });
+                setShowEditDialog(true);
+              }}
               title="تعديل"
             >
               <Edit className="h-4 w-4" />
@@ -175,7 +196,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               size="sm"
               variant="outline"
               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-              onClick={() => console.log('حذف الحساب', account.id)}
+              onClick={() => {
+                setEditingAccount(account);
+                setShowDeleteDialog(true);
+              }}
               title="حذف"
             >
               <Trash2 className="h-4 w-4" />
@@ -420,6 +444,235 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Account Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>معاينة الحساب</DialogTitle>
+          </DialogHeader>
+          {viewingAccount && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>رمز الحساب</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.account_code}</div>
+                </div>
+                <div>
+                  <Label>اسم الحساب</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.account_name}</div>
+                </div>
+                <div>
+                  <Label>اسم الحساب بالعربية</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.account_name_ar || '-'}</div>
+                </div>
+                <div>
+                  <Label>نوع الحساب</Label>
+                  <div className="p-2 bg-muted rounded">{getAccountTypeLabel(viewingAccount.account_type)}</div>
+                </div>
+                <div>
+                  <Label>طبيعة الرصيد</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}</div>
+                </div>
+                <div>
+                  <Label>المستوى</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.account_level}</div>
+                </div>
+                <div>
+                  <Label>الحالة</Label>
+                  <div className="p-2 bg-muted rounded">
+                    <Badge variant={viewingAccount.is_active ? 'default' : 'destructive'}>
+                      {viewingAccount.is_active ? 'نشط' : 'غير نشط'}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label>حساب إجمالي</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.is_header ? 'نعم' : 'لا'}</div>
+                </div>
+                <div className="col-span-2">
+                  <Label>الوصف</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.description || '-'}</div>
+                </div>
+                <div>
+                  <Label>الرصيد الحالي</Label>
+                  <div className="p-2 bg-muted rounded">{viewingAccount.current_balance?.toFixed(3) || '0.000'} د.ك</div>
+                </div>
+                <div>
+                  <Label>تاريخ الإنشاء</Label>
+                  <div className="p-2 bg-muted rounded">
+                    {new Date(viewingAccount.created_at).toLocaleDateString('ar-SA')}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setShowViewDialog(false)}>
+                  إغلاق
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Account Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تعديل الحساب</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              await updateAccount.mutateAsync({ id: editingAccount.id, updates: formData });
+              setShowEditDialog(false);
+              toast.success('تم تحديث الحساب بنجاح');
+            } catch (error) {
+              toast.error('حدث خطأ في تحديث الحساب');
+            }
+          }} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit_account_code">رمز الحساب</Label>
+                <Input
+                  id="edit_account_code"
+                  value={formData.account_code}
+                  onChange={(e) => setFormData({...formData, account_code: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_account_name">اسم الحساب</Label>
+                <Input
+                  id="edit_account_name"
+                  value={formData.account_name}
+                  onChange={(e) => setFormData({...formData, account_name: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_account_name_ar">اسم الحساب بالعربية</Label>
+                <Input
+                  id="edit_account_name_ar"
+                  value={formData.account_name_ar}
+                  onChange={(e) => setFormData({...formData, account_name_ar: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_account_type">نوع الحساب</Label>
+                <Select
+                  value={formData.account_type}
+                  onValueChange={(value) => setFormData({...formData, account_type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="assets">الأصول</SelectItem>
+                    <SelectItem value="liabilities">الخصوم</SelectItem>
+                    <SelectItem value="equity">حقوق الملكية</SelectItem>
+                    <SelectItem value="revenue">الإيرادات</SelectItem>
+                    <SelectItem value="expenses">المصروفات</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit_balance_type">نوع الرصيد</Label>
+                <Select
+                  value={formData.balance_type}
+                  onValueChange={(value) => setFormData({...formData, balance_type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="debit">مدين</SelectItem>
+                    <SelectItem value="credit">دائن</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit_parent_account">الحساب الأب</Label>
+                <Select
+                  value={formData.parent_account_id}
+                  onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الحساب الأب (اختياري)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allAccounts?.filter(acc => acc.is_header && acc.id !== editingAccount?.id).map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.account_code} - {account.account_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit_is_header"
+                checked={formData.is_header}
+                onCheckedChange={(checked) => setFormData({...formData, is_header: checked})}
+              />
+              <Label htmlFor="edit_is_header">حساب إجمالي (للتقارير فقط)</Label>
+            </div>
+            <div>
+              <Label htmlFor="edit_description">الوصف</Label>
+              <Input
+                id="edit_description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="وصف اختياري للحساب"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={updateAccount.isPending}>
+                {updateAccount.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تأكيد حذف الحساب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>هل أنت متأكد من رغبتك في حذف هذا الحساب؟</p>
+            {editingAccount && (
+              <div className="p-4 bg-muted rounded">
+                <p><strong>رمز الحساب:</strong> {editingAccount.account_code}</p>
+                <p><strong>اسم الحساب:</strong> {editingAccount.account_name}</p>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              ملاحظة: لا يمكن حذف الحسابات النظام أو الحسابات التي تحتوي على معاملات
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                إلغاء
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  toast.info('وظيفة الحذف غير مفعلة حالياً');
+                  setShowDeleteDialog(false);
+                }}
+              >
+                حذف الحساب
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
