@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { CalendarIcon, Clock, FileText, MapPin, Car, User, ClipboardCheck } from "lucide-react";
+import { CalendarIcon, Clock, FileText, MapPin, Car, User, ClipboardCheck, TestTube } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +93,38 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
     setSelectedVehicleId("");
   };
 
+  const fillTestData = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Set dates
+    setStartDate(today);
+    setEndDate(tomorrow);
+    
+    // Fill form with test data
+    form.setValue("vehicle_id", availableVehicles[0]?.id || "");
+    setSelectedVehicleId(availableVehicles[0]?.id || "");
+    form.setValue("request_type", "employee_use");
+    form.setValue("purpose", "نقل موظفين إلى اجتماع عمل مهم في المكتب الرئيسي");
+    form.setValue("purpose_ar", "نقل موظفين إلى اجتماع عمل مهم في المكتب الرئيسي");
+    form.setValue("destination", "المكتب الرئيسي - الرياض");
+    form.setValue("destination_ar", "المكتب الرئيسي - الرياض");
+    form.setValue("start_time", "08:00");
+    form.setValue("end_time", "17:00");
+    form.setValue("driver_name", "أحمد محمد السعيد");
+    form.setValue("driver_phone", "+966501234567");
+    form.setValue("driver_license", "12345678");
+    form.setValue("estimated_km", 120);
+    form.setValue("priority", "normal");
+    form.setValue("notes", "يرجى التأكد من امتلاء خزان الوقود قبل الرحلة والتحقق من حالة الإطارات");
+    
+    toast({
+      title: "تم تعبئة البيانات التجريبية",
+      description: "تم ملء جميع الحقول ببيانات تجريبية لتسهيل التجربة",
+    });
+  };
+
   // Check if condition report is completed
   const preDispatchReport = conditionReports?.find(r => r.inspection_type === 'pre_dispatch');
   const isConditionReportCompleted = preDispatchReport?.status === 'approved';
@@ -126,6 +158,20 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">
+              {/* Test Data Button */}
+              <div className="flex justify-end">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={fillTestData}
+                  className="flex items-center gap-2"
+                >
+                  <TestTube className="h-4 w-4" />
+                  تعبئة بيانات تجريبية
+                </Button>
+              </div>
+              
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmitPermitDetails)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
