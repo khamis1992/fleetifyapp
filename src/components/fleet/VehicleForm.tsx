@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
-import { useCostCenters } from "@/hooks/useCostCenters"
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 
@@ -23,7 +23,7 @@ interface VehicleFormProps {
 
 export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { user } = useAuth()
-  const { data: costCenters } = useCostCenters()
+  const { data: chartOfAccounts } = useChartOfAccounts()
   const createVehicle = useCreateVehicle()
   const updateVehicle = useUpdateVehicle()
   const { toast } = useToast()
@@ -102,7 +102,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Additional Information
       notes: "",
-      cost_center_id: "",
+      account_id: "",
     }
   })
 
@@ -148,7 +148,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         deposit_amount: vehicle.deposit_amount?.toString() || "",
         status: vehicle.status || "available",
         notes: vehicle.notes || "",
-        cost_center_id: vehicle.cost_center_id || "",
+        account_id: vehicle.cost_center_id || "",
       })
     }
   }, [vehicle, form])
@@ -242,7 +242,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Additional Information
       notes: "مركبة جديدة في حالة ممتازة، تم شراؤها من معرض معتمد مع ضمان شامل.",
-      cost_center_id: "",
+      account_id: "",
     }
     
     // Fill form with dummy data
@@ -353,7 +353,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         
         // Additional fields
         notes: finalData.notes?.trim() || null,
-        cost_center_id: finalData.cost_center_id || null,
+        account_id: finalData.account_id || null,
         depreciation_method: finalData.depreciation_method || "straight_line",
         salvage_value: finalData.salvage_value ? parseFloat(finalData.salvage_value) : null,
       }
@@ -1075,20 +1075,21 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
                     <FormField
                       control={form.control}
-                      name="cost_center_id"
+                      name="account_id"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>مركز التكلفة</FormLabel>
+                          <FormLabel>الحساب المحاسبي</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="اختر مركز التكلفة" />
+                                <SelectValue placeholder="اختر الحساب" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {costCenters?.map((center) => (
-                                <SelectItem key={center.id} value={center.id}>
-                                  {center.center_name}
+                              <SelectItem value="">بدون حساب</SelectItem>
+                              {chartOfAccounts?.filter(account => !account.is_header && account.is_active)?.map((account) => (
+                                <SelectItem key={account.id} value={account.id}>
+                                  {account.account_name_ar || account.account_name} ({account.account_code})
                                 </SelectItem>
                               ))}
                             </SelectContent>
