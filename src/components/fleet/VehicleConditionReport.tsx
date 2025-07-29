@@ -36,20 +36,31 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
   const updateMutation = useUpdateConditionReport();
 
   const handleSave = async () => {
+    console.log('Save button clicked!');
+    console.log('Readonly:', readonly);
+    console.log('Report ID:', report.id);
+    console.log('Form data:', formData);
+    
     if (readonly) return;
 
-    const updateData: UpdateConditionReportData = {
-      overall_condition: formData.overall_condition,
-      mileage_reading: formData.mileage_reading,
-      fuel_level: formData.fuel_level,
-      notes: formData.notes,
-      condition_items: formData.condition_items,
-      damage_items: formData.damage_items,
-      status: formData.status
-    };
+    try {
+      const updateData: UpdateConditionReportData = {
+        overall_condition: formData.overall_condition,
+        mileage_reading: formData.mileage_reading,
+        fuel_level: formData.fuel_level,
+        notes: formData.notes,
+        condition_items: formData.condition_items,
+        damage_items: formData.damage_items,
+        status: formData.status
+      };
 
-    await updateMutation.mutateAsync({ id: report.id, updates: updateData });
-    onStatusChange?.(formData.status);
+      console.log('Update data:', updateData);
+      await updateMutation.mutateAsync({ id: report.id, updates: updateData });
+      console.log('Save successful!');
+      onStatusChange?.(formData.status);
+    } catch (error) {
+      console.error('Save failed:', error);
+    }
   };
 
   const handleConditionItemChange = (category: string, item: string, value: any) => {
