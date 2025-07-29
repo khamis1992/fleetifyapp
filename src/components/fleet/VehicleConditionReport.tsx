@@ -82,18 +82,21 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Header */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Vehicle Condition Report
+              تقرير حالة المركبة
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant={getStatusVariant(formData.status)}>
-                {formData.status.replace('_', ' ').toUpperCase()}
+                {formData.status === 'pending' ? 'قيد الانتظار' : 
+                 formData.status === 'approved' ? 'موافق عليه' : 
+                 formData.status === 'requires_attention' ? 'يتطلب انتباه' : 
+                 formData.status}
               </Badge>
               {getConditionIcon(formData.overall_condition)}
             </div>
@@ -102,36 +105,37 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium">Overall Condition</label>
+              <label className="text-sm font-medium">الحالة العامة</label>
               <Select
                 value={formData.overall_condition}
                 onValueChange={(value: any) => setFormData({ ...formData, overall_condition: value })}
                 disabled={readonly}
               >
-                <SelectTrigger>
+                <SelectTrigger dir="rtl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="excellent">Excellent</SelectItem>
-                  <SelectItem value="good">Good</SelectItem>
-                  <SelectItem value="fair">Fair</SelectItem>
-                  <SelectItem value="poor">Poor</SelectItem>
+                  <SelectItem value="excellent">ممتاز</SelectItem>
+                  <SelectItem value="good">جيد</SelectItem>
+                  <SelectItem value="fair">مقبول</SelectItem>
+                  <SelectItem value="poor">ضعيف</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Mileage Reading</label>
+              <label className="text-sm font-medium">قراءة العداد</label>
               <Input
                 type="number"
                 value={formData.mileage_reading}
                 onChange={(e) => setFormData({ ...formData, mileage_reading: parseInt(e.target.value) || 0 })}
                 disabled={readonly}
+                dir="ltr"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Fuel Level (%)</label>
+              <label className="text-sm font-medium">مستوى الوقود (%)</label>
               <Input
                 type="number"
                 min="0"
@@ -139,24 +143,25 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
                 value={formData.fuel_level}
                 onChange={(e) => setFormData({ ...formData, fuel_level: parseInt(e.target.value) || 0 })}
                 disabled={readonly}
+                dir="ltr"
               />
             </div>
           </div>
 
           {!readonly && (
             <div>
-              <label className="text-sm font-medium">Report Status</label>
+              <label className="text-sm font-medium">حالة التقرير</label>
               <Select
                 value={formData.status}
                 onValueChange={(value: any) => setFormData({ ...formData, status: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger dir="rtl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="requires_attention">Requires Attention</SelectItem>
+                  <SelectItem value="pending">قيد الانتظار</SelectItem>
+                  <SelectItem value="approved">موافق عليه</SelectItem>
+                  <SelectItem value="requires_attention">يتطلب انتباه</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -167,12 +172,20 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       {/* Condition Checklist */}
       <Card>
         <CardHeader>
-          <CardTitle>Vehicle Condition Checklist</CardTitle>
+          <CardTitle>قائمة فحص حالة المركبة</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.entries(formData.condition_items).map(([category, items]: [string, any]) => (
             <div key={category}>
-              <h4 className="font-medium mb-3 capitalize">{category.replace('_', ' ')}</h4>
+              <h4 className="font-medium mb-3 capitalize">
+                {category === 'Engine' ? 'المحرك' :
+                 category === 'Brakes' ? 'المكابح' :
+                 category === 'Tires' ? 'الإطارات' :
+                 category === 'Lights' ? 'الأضواء' :
+                 category === 'Interior' ? 'الداخلية' :
+                 category === 'Exterior' ? 'الخارجية' :
+                 category.replace('_', ' ')}
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(items).map(([item, value]: [string, any]) => (
                   <div key={item} className="flex items-center justify-between">
@@ -189,16 +202,16 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
                         onValueChange={(newValue) => handleConditionItemChange(category, item, newValue)}
                         disabled={readonly}
                       >
-                        <SelectTrigger className="w-24">
+                        <SelectTrigger className="w-24" dir="rtl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="excellent">Excellent</SelectItem>
-                          <SelectItem value="good">Good</SelectItem>
-                          <SelectItem value="fair">Fair</SelectItem>
-                          <SelectItem value="poor">Poor</SelectItem>
-                          <SelectItem value="working">Working</SelectItem>
-                          <SelectItem value="not_working">Not Working</SelectItem>
+                          <SelectItem value="excellent">ممتاز</SelectItem>
+                          <SelectItem value="good">جيد</SelectItem>
+                          <SelectItem value="fair">مقبول</SelectItem>
+                          <SelectItem value="poor">ضعيف</SelectItem>
+                          <SelectItem value="working">يعمل</SelectItem>
+                          <SelectItem value="not_working">لا يعمل</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -216,7 +229,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       {/* Vehicle Damage Diagram */}
       <Card>
         <CardHeader>
-          <CardTitle>Vehicle Damage Points</CardTitle>
+          <CardTitle>نقاط أضرار المركبة</CardTitle>
         </CardHeader>
         <CardContent>
           <VehicleConditionDiagram
@@ -229,15 +242,16 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       {/* Notes */}
       <Card>
         <CardHeader>
-          <CardTitle>Additional Notes</CardTitle>
+          <CardTitle>ملاحظات إضافية</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Add any additional notes about the vehicle condition..."
+            placeholder="أضف أي ملاحظات إضافية حول حالة المركبة..."
             rows={4}
             disabled={readonly}
+            dir="rtl"
           />
         </CardContent>
       </Card>
@@ -246,10 +260,10 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       {!readonly && (
         <div className="flex gap-2">
           <Button onClick={handleSave} disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? 'Saving...' : 'Save Report'}
+            {updateMutation.isPending ? 'جاري الحفظ...' : 'حفظ التقرير'}
           </Button>
           <Button variant="outline">
-            Generate PDF
+            إنشاء ملف PDF
           </Button>
         </div>
       )}

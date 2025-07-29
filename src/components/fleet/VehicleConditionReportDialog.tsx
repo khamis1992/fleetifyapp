@@ -47,10 +47,10 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading condition reports...</span>
+            <span className="ml-2">جاري تحميل تقارير حالة المركبة...</span>
           </div>
         </DialogContent>
       </Dialog>
@@ -59,11 +59,11 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Vehicle Condition Reports - {vehicleName}
+            تقارير حالة المركبة - {vehicleName}
           </DialogTitle>
         </DialogHeader>
 
@@ -71,7 +71,7 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pre" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Pre-Dispatch Inspection
+              فحص ما قبل الإرسال
               {preDispatchReports.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {preDispatchReports.length}
@@ -80,7 +80,7 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
             </TabsTrigger>
             <TabsTrigger value="post" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Post-Dispatch Inspection
+              فحص ما بعد الإرسال
               {postDispatchReports.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {postDispatchReports.length}
@@ -91,14 +91,14 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
 
           <TabsContent value="pre" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Pre-Dispatch Inspection</h3>
+              <h3 className="text-lg font-medium">فحص ما قبل الإرسال</h3>
               {preDispatchReports.length === 0 && (
                 <Button 
                   onClick={() => handleCreateReport('pre_dispatch')}
                   disabled={createReportMutation.isPending}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Pre-Dispatch Report
+                  إنشاء تقرير ما قبل الإرسال
                 </Button>
               )}
             </div>
@@ -106,8 +106,8 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
             {preDispatchReports.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg mb-2">No Pre-Dispatch Report</p>
-                <p>Create a condition report before dispatching the vehicle.</p>
+                <p className="text-lg mb-2">لا يوجد تقرير ما قبل الإرسال</p>
+                <p>أنشئ تقرير حالة قبل إرسال المركبة.</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -135,14 +135,14 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
 
           <TabsContent value="post" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Post-Dispatch Inspection</h3>
+              <h3 className="text-lg font-medium">فحص ما بعد الإرسال</h3>
               {postDispatchReports.length === 0 && (
                 <Button 
                   onClick={() => handleCreateReport('post_dispatch')}
                   disabled={createReportMutation.isPending}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Post-Dispatch Report
+                  إنشاء تقرير ما بعد الإرسال
                 </Button>
               )}
             </div>
@@ -150,8 +150,8 @@ export const VehicleConditionReportDialog: React.FC<VehicleConditionReportDialog
             {postDispatchReports.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg mb-2">No Post-Dispatch Report</p>
-                <p>Create a condition report when the vehicle returns.</p>
+                <p className="text-lg mb-2">لا يوجد تقرير ما بعد الإرسال</p>
+                <p>أنشئ تقرير حالة عند عودة المركبة.</p>
               </div>
             ) : (
               <div className="space-y-6">
