@@ -310,9 +310,9 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
 
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
-              <TabsTrigger value="contact">معلومات الاتصال</TabsTrigger>
               <TabsTrigger value="additional">بيانات إضافية</TabsTrigger>
+              <TabsTrigger value="contact">معلومات الاتصال</TabsTrigger>
+              <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
