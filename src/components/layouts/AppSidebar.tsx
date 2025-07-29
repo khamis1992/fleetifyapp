@@ -77,6 +77,12 @@ const navigationItems = [
     icon: Users 
   },
   { 
+    name: 'الدعم الفني', 
+    name_en: 'Support',
+    href: '/support', 
+    icon: Headphones 
+  },
+  { 
     name: 'عروض الأسعار', 
     name_en: 'Quotations',
     href: '/quotations', 
