@@ -90,7 +90,7 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
             *,
             created_by_profile:profiles!fk_journal_entries_created_by(user_id, first_name, last_name, email),
             posted_by_profile:profiles!fk_journal_entries_posted_by(user_id, first_name, last_name, email),
-            journal_entry_lines(
+            journal_entry_lines!fk_journal_entry_lines_journal_entry(
               *,
               account:chart_of_accounts(*),
               cost_center:cost_centers(*)
