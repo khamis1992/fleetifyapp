@@ -498,12 +498,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                   <Label>الرصيد الحالي</Label>
                   <div className="p-2 bg-muted rounded">{viewingAccount.current_balance?.toFixed(3) || '0.000'} د.ك</div>
                 </div>
-                <div>
-                  <Label>تاريخ الإنشاء</Label>
-                  <div className="p-2 bg-muted rounded">
-                    {new Date(viewingAccount.created_at).toLocaleDateString('ar-SA')}
+                  <div>
+                    <Label>تاريخ الإنشاء</Label>
+                    <div className="p-2 bg-muted rounded">
+                      {new Date(viewingAccount.created_at).toLocaleDateString('en-GB', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                      })}
+                    </div>
                   </div>
-                </div>
               </div>
               <div className="flex justify-end">
                 <Button onClick={() => setShowViewDialog(false)}>
