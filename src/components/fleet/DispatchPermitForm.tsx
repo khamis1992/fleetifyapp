@@ -16,7 +16,6 @@ import { useCreateDispatchPermit, type CreateDispatchPermitData } from "@/hooks/
 import { useVehicles } from "@/hooks/useVehicles";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateConditionReportForPermit, useVehicleConditionReports } from "@/hooks/useVehicleCondition";
-import { VehicleConditionReportDialog } from "./VehicleConditionReportDialog";
 
 interface DispatchPermitFormProps {
   open: boolean;
@@ -30,7 +29,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
   const [conditionReportCompleted, setConditionReportCompleted] = useState(false);
   const [createdPermitId, setCreatedPermitId] = useState<string | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
-  const [showConditionReportDialog, setShowConditionReportDialog] = useState(false);
+  
   const { toast } = useToast();
 
   const form = useForm<CreateDispatchPermitData>();
@@ -599,7 +598,12 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
 
                   <div className="flex gap-4">
                     <Button 
-                      onClick={() => setShowConditionReportDialog(true)}
+                      onClick={() => {
+                        if (createdPermitId && selectedVehicleId && selectedVehicle) {
+                          const url = `/fleet/vehicle-condition-check?permitId=${createdPermitId}&vehicleId=${selectedVehicleId}&vehicleName=${encodeURIComponent(`${selectedVehicle.plate_number} - ${selectedVehicle.make} ${selectedVehicle.model}`)}&type=pre_dispatch`;
+                          window.open(url, '_blank');
+                        }
+                      }}
                       className="flex-1"
                       disabled={!createdPermitId}
                     >
@@ -652,16 +656,6 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
         </DialogContent>
       </Dialog>
 
-      {/* Vehicle Condition Report Dialog */}
-      {showConditionReportDialog && createdPermitId && selectedVehicleId && selectedVehicle && (
-        <VehicleConditionReportDialog
-          open={showConditionReportDialog}
-          onOpenChange={setShowConditionReportDialog}
-          permitId={createdPermitId}
-          vehicleId={selectedVehicleId}
-          vehicleName={`${selectedVehicle.plate_number} - ${selectedVehicle.make} ${selectedVehicle.model}`}
-        />
-      )}
     </>
   );
 }

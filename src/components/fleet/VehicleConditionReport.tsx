@@ -222,7 +222,6 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
           <VehicleConditionDiagram
             damagePoints={formData.damage_items}
             onDamagePointsChange={(points) => setFormData({ ...formData, damage_items: points })}
-            readonly={readonly}
           />
         </CardContent>
       </Card>
