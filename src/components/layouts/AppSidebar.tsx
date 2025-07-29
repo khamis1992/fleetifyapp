@@ -70,36 +70,6 @@ const navigationItems = [
     name_en: 'Customers',
     href: '/customers', 
     icon: Users 
-  },
-  { 
-    name: 'عروض الأسعار', 
-    name_en: 'Quotations',
-    href: '/quotations', 
-    icon: FileText 
-  },
-  { 
-    name: 'العقود', 
-    name_en: 'Contracts',
-    href: '/contracts', 
-    icon: FileText 
-  },
-  { 
-    name: 'الشؤون القانونية', 
-    name_en: 'Legal',
-    href: '/legal', 
-    icon: Shield 
-  },
-  { 
-    name: 'التقارير', 
-    name_en: 'Reports',
-    href: '/reports', 
-    icon: BarChart3 
-  },
-  { 
-    name: 'الدعم الفني', 
-    name_en: 'Support',
-    href: '/support', 
-    icon: Headphones 
   }
 ];
 
@@ -348,6 +318,26 @@ export function AppSidebar() {
                    </CollapsibleContent>
                  </Collapsible>
                </SidebarMenuItem>
+
+               {/* Quotations */}
+               <SidebarMenuItem>
+                 <SidebarMenuButton asChild className="h-10">
+                   <NavLink to="/quotations" className={getNavClassName}>
+                     <FileText className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">عروض الأسعار</span>}
+                   </NavLink>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
+
+               {/* Contracts */}
+               <SidebarMenuItem>
+                 <SidebarMenuButton asChild className="h-10">
+                   <NavLink to="/contracts" className={getNavClassName}>
+                     <FileText className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">العقود</span>}
+                   </NavLink>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
                
                 {/* Finance Section with Submenu */}
                 <AdminOnly hideIfNoAccess>
@@ -414,6 +404,36 @@ export function AppSidebar() {
                     </Collapsible>
                   </SidebarMenuItem>
                 </AdminOnly>
+
+               {/* Legal */}
+               <SidebarMenuItem>
+                 <SidebarMenuButton asChild className="h-10">
+                   <NavLink to="/legal" className={getNavClassName}>
+                     <Shield className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">الشؤون القانونية</span>}
+                   </NavLink>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
+
+               {/* Reports */}
+               <SidebarMenuItem>
+                 <SidebarMenuButton asChild className="h-10">
+                   <NavLink to="/reports" className={getNavClassName}>
+                     <BarChart3 className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">التقارير</span>}
+                   </NavLink>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
+
+               {/* Support */}
+               <SidebarMenuItem>
+                 <SidebarMenuButton asChild className="h-10">
+                   <NavLink to="/support" className={getNavClassName}>
+                     <Headphones className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">الدعم الفني</span>}
+                   </NavLink>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
