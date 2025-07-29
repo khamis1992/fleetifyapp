@@ -25,9 +25,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDispatchPermits, useUpdatePermitStatus } from "@/hooks/useDispatchPermits";
 import { useToast } from "@/hooks/use-toast";
 import { VehicleConditionReportDialog } from "./VehicleConditionReportDialog";
+import { VehicleReturnForm } from "./VehicleReturnForm";
 
 interface DispatchPermitDetailsDialogProps {
   permitId: string;
@@ -212,9 +214,17 @@ export function DispatchPermitDetailsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Status and Priority */}
-          <div className="flex items-center justify-between">
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">تفاصيل التصريح</TabsTrigger>
+            <TabsTrigger value="return" disabled={permit.status !== 'completed' && permit.status !== 'in_progress'}>
+              استمارة الإرجاع
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="space-y-6">
+            {/* Status and Priority */}
+            <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant={statusInfo?.variant || "secondary"} className="px-3 py-1">
                 <StatusIcon className="h-4 w-4 mr-1" />
@@ -527,7 +537,16 @@ export function DispatchPermitDetailsDialog({
               </Card>
             )}
           </div>
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="return" className="space-y-6">
+            <VehicleReturnForm
+              permitId={permit.id}
+              vehicleId={permit.vehicle_id}
+              vehicleName={`${permit.vehicle?.plate_number} - ${permit.vehicle?.make} ${permit.vehicle?.model}`}
+            />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
 
       {/* Vehicle Condition Report Dialog */}
