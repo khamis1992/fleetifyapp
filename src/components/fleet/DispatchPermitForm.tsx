@@ -159,13 +159,15 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
 
             <TabsContent value="details" className="space-y-6">
               {/* Test Data Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">تفاصيل التصريح</h3>
                 <Button 
                   type="button" 
                   variant="outline" 
                   size="sm"
                   onClick={fillTestData}
                   className="flex items-center gap-2"
+                  disabled={availableVehicles.length === 0}
                 >
                   <TestTube className="h-4 w-4" />
                   تعبئة بيانات تجريبية
