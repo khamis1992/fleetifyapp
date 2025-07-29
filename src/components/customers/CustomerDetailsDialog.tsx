@@ -148,10 +148,6 @@ export function CustomerDetailsDialog({
               <Button variant="outline" onClick={onEdit}>
                 تعديل
               </Button>
-              <Button onClick={onCreateContract}>
-                <Plus className="h-4 w-4 mr-2" />
-                عقد جديد
-              </Button>
             </div>
           </div>
         </DialogHeader>
