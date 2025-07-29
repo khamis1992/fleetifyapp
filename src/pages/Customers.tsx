@@ -47,7 +47,9 @@ export default function Customers() {
   const activeCustomers = allCustomers.filter(c => c.is_active)
 
   const handleViewCustomer = (customerId: string) => {
+    console.log('👁️ View customer clicked:', customerId)
     setSelectedCustomerId(customerId)
+    console.log('📝 Selected customer ID set to:', customerId)
   }
 
   const handleEditCustomer = (customer: any) => {
@@ -421,26 +423,33 @@ export default function Customers() {
         onOpenChange={setShowDiagnostics}
       />
 
-      {selectedCustomerId && (
-        <CustomerDetailsDialog
-          open={!!selectedCustomerId}
-          onOpenChange={(open) => !open && setSelectedCustomerId(null)}
-          customerId={selectedCustomerId}
-          onEdit={() => {
-            const customer = customers?.find(c => c.id === selectedCustomerId)
-            if (customer) {
-              handleEditCustomer(customer)
-              setSelectedCustomerId(null)
-            }
-          }}
-          onCreateContract={handleCreateContract}
-          onCreateInvoice={() => {
-            if (selectedCustomerId) {
-              handleCreateInvoice(selectedCustomerId)
-            }
-          }}
-        />
-      )}
+      {(() => {
+        console.log('🔍 Checking selectedCustomerId:', selectedCustomerId)
+        console.log('🔍 Boolean check:', !!selectedCustomerId)
+        return selectedCustomerId && (
+          <CustomerDetailsDialog
+            open={!!selectedCustomerId}
+            onOpenChange={(open) => {
+              console.log('📝 Dialog onOpenChange called with:', open)
+              if (!open) setSelectedCustomerId(null)
+            }}
+            customerId={selectedCustomerId}
+            onEdit={() => {
+              const customer = customers?.find(c => c.id === selectedCustomerId)
+              if (customer) {
+                handleEditCustomer(customer)
+                setSelectedCustomerId(null)
+              }
+            }}
+            onCreateContract={handleCreateContract}
+            onCreateInvoice={() => {
+              if (selectedCustomerId) {
+                handleCreateInvoice(selectedCustomerId)
+              }
+            }}
+          />
+        )
+      })()}
 
       <InvoiceForm
         open={showInvoiceForm}
