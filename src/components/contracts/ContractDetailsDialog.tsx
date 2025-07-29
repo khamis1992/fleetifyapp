@@ -74,18 +74,18 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     enabled: !!contract?.vehicle_id
   });
 
-  const { data: costCenter } = useQuery({
-    queryKey: ['cost-center', contract?.cost_center_id],
+  const { data: chartOfAccount } = useQuery({
+    queryKey: ['chart-of-account', contract?.account_id],
     queryFn: async () => {
-      if (!contract?.cost_center_id) return null;
+      if (!contract?.account_id) return null;
       const { data } = await supabase
-        .from('cost_centers')
+        .from('chart_of_accounts')
         .select('*')
-        .eq('id', contract.cost_center_id)
+        .eq('id', contract.account_id)
         .single();
       return data;
     },
-    enabled: !!contract?.cost_center_id
+    enabled: !!contract?.account_id
   });
 
   const { data: invoices } = useQuery({
@@ -158,7 +158,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       monthly_amount: contract.monthly_amount,
       status: contract.status,
       vehicle_plate: vehicle?.plate_number,
-      cost_center: costCenter?.center_name
+      account: chartOfAccount ? `${chartOfAccount.account_code} - ${chartOfAccount.account_name}` : null
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
@@ -397,6 +397,34 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <span className="font-medium">{customer.email}</span>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Account Information */}
+              {chartOfAccount && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      معلومات الحساب
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">رقم الحساب</span>
+                      <span className="font-medium">{chartOfAccount.account_code}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">اسم الحساب</span>
+                      <span className="font-medium">{chartOfAccount.account_name}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">نوع الحساب</span>
+                      <span className="font-medium">{chartOfAccount.account_type}</span>
+                    </div>
                   </CardContent>
                 </Card>
               )}

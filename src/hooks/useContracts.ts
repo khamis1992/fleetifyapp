@@ -17,6 +17,7 @@ interface Contract {
   customer_id?: string;
   vehicle_id?: string;
   cost_center_id?: string;
+  account_id?: string;
   created_at: string;
   updated_at: string;
 }

@@ -1361,6 +1361,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          account_id: string | null
           auto_renew_enabled: boolean | null
           company_id: string
           contract_amount: number
@@ -1386,6 +1387,7 @@ export type Database = {
           vehicle_returned: boolean | null
         }
         Insert: {
+          account_id?: string | null
           auto_renew_enabled?: boolean | null
           company_id: string
           contract_amount?: number
@@ -1411,6 +1413,7 @@ export type Database = {
           vehicle_returned?: boolean | null
         }
         Update: {
+          account_id?: string | null
           auto_renew_enabled?: boolean | null
           company_id?: string
           contract_amount?: number
@@ -1436,6 +1439,13 @@ export type Database = {
           vehicle_returned?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contracts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contracts_cost_center_id_fkey"
             columns: ["cost_center_id"]

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { FileText, Plus } from 'lucide-react'
-import { useCostCenters } from '@/hooks/useFinance'
+import { useChartOfAccounts } from '@/hooks/useChartOfAccounts'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
@@ -32,7 +32,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     contract_amount: 0,
     monthly_amount: 0,
     contract_type: 'rental',
-    cost_center_id: '',
+    account_id: '',
     customer_id: '',
     vehicle_id: '',
     description: '',
@@ -71,7 +71,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     enabled: !!profile?.company_id,
   });
 
-  const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
+  const { data: chartOfAccounts, isLoading: accountsLoading } = useChartOfAccounts()
   
   // Get available vehicles for contracts (excluding those under maintenance or already rented)
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
@@ -118,7 +118,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
         contract_amount: 0,
         monthly_amount: 0,
         contract_type: 'rental',
-        cost_center_id: '',
+        account_id: '',
         customer_id: '',
         vehicle_id: '',
         description: '',
@@ -133,7 +133,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     }
   }
 
-  if (costCentersLoading) {
+  if (accountsLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl">
@@ -245,19 +245,22 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="cost_center_id">مركز التكلفة</Label>
+                <Label htmlFor="account_id">رقم الحساب</Label>
                 <Select 
-                  value={contractData.cost_center_id} 
-                  onValueChange={(value) => setContractData({...contractData, cost_center_id: value})}
+                  value={contractData.account_id} 
+                  onValueChange={(value) => setContractData({...contractData, account_id: value})}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر مركز التكلفة (اختياري)" />
+                    <SelectValue placeholder="اختر رقم الحساب" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">لا يوجد</SelectItem>
-                    {costCenters?.map((costCenter) => (
-                      <SelectItem key={costCenter.id} value={costCenter.id}>
-                        {costCenter.center_code} - {costCenter.center_name}
+                    {chartOfAccounts?.filter(account => 
+                      account.account_type === 'revenue' || 
+                      account.account_type === 'assets'
+                    )?.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.account_code} - {account.account_name}
                       </SelectItem>
                     ))}
                   </SelectContent>

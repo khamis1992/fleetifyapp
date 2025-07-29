@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle } from "lucide-react"
+import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,7 +38,28 @@ export default function Contracts() {
       
       const { data, error } = await supabase
         .from('contracts')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            company_name,
+            phone,
+            email
+          ),
+          vehicles (
+            plate_number,
+            make,
+            model,
+            year
+          ),
+          chart_of_accounts (
+            account_code,
+            account_name,
+            account_name_ar
+          )
+        `)
         .eq('company_id', user.profile.company_id)
         .order('created_at', { ascending: false })
 
@@ -245,11 +266,16 @@ export default function Contracts() {
                     </Badge>
                   </div>
                   
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        عقد رقم {contract.contract_number}
+                        {(() => {
+                          const customer = Array.isArray(contract.customers) ? contract.customers[0] : contract.customers;
+                          return customer?.company_name || 
+                                 `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 
+                                 'غير محدد';
+                        })()}
                       </span>
                     </div>
                     
@@ -271,6 +297,13 @@ export default function Contracts() {
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium">
                         {contract.contract_amount?.toFixed(3)} د.ك
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {contract.chart_of_accounts?.account_code} - {contract.chart_of_accounts?.account_name || 'غير محدد'}
                       </span>
                     </div>
                   </div>
