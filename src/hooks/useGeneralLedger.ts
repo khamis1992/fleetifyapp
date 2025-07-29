@@ -75,52 +75,89 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
   return useQuery({
     queryKey: ["enhancedJournalEntries", user?.profile?.company_id, filters],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
+      console.log("Fetching journal entries for company:", user?.profile?.company_id)
       
-      let query = supabase
-        .from("journal_entries")
-        .select(`
-          *,
-          created_by_profile:profiles!inner(user_id),
-          posted_by_profile:profiles!left(user_id),
-          journal_entry_lines(
+      if (!user?.profile?.company_id) {
+        console.log("No company ID available")
+        return []
+      }
+      
+      try {
+        // First, fetch journal entries with basic relations using left joins
+        let query = supabase
+          .from("journal_entries")
+          .select(`
             *,
-            account:chart_of_accounts(*),
-            cost_center:cost_centers(*)
+            created_by_profile:profiles!left(user_id, display_name, email),
+            posted_by_profile:profiles!left(user_id, display_name, email),
+            journal_entry_lines(
+              *,
+              account:chart_of_accounts(*),
+              cost_center:cost_centers(*)
+            )
+          `)
+          .eq("company_id", user.profile.company_id)
+          .order("entry_date", { ascending: false })
+          .order("entry_number", { ascending: false })
+      
+        if (filters?.status && filters.status !== 'all') {
+          query = query.eq("status", filters.status)
+        }
+        if (filters?.dateFrom) {
+          query = query.gte("entry_date", filters.dateFrom)
+        }
+        if (filters?.dateTo) {
+          query = query.lte("entry_date", filters.dateTo)
+        }
+        if (filters?.referenceType) {
+          query = query.eq("reference_type", filters.referenceType)
+        }
+        
+        console.log("Executing query...")
+        const { data, error } = await query
+        
+        if (error) {
+          console.error("Query error:", error)
+          toast.error("خطأ في جلب القيود المحاسبية: " + error.message)
+          throw error
+        }
+        
+        console.log("Query result:", data?.length || 0, "entries found")
+        
+        // If no data found, try a simpler query without relations
+        if (!data || data.length === 0) {
+          console.log("Trying simplified query without relations...")
+          const { data: simpleData, error: simpleError } = await supabase
+            .from("journal_entries")
+            .select("*")
+            .eq("company_id", user.profile.company_id)
+            .order("entry_date", { ascending: false })
+            .limit(10)
+          
+          if (simpleError) {
+            console.error("Simple query error:", simpleError)
+          } else {
+            console.log("Simple query result:", simpleData?.length || 0, "entries found")
+          }
+        }
+        
+        // Filter by search term if provided
+        let filteredData = data || []
+        if (filters?.searchTerm && filteredData.length > 0) {
+          const searchLower = filters.searchTerm.toLowerCase()
+          filteredData = filteredData.filter(entry =>
+            entry.description?.toLowerCase().includes(searchLower) ||
+            entry.entry_number?.toLowerCase().includes(searchLower)
           )
-        `)
-        .eq("company_id", user.profile.company_id)
-        .order("entry_date", { ascending: false })
-        .order("entry_number", { ascending: false })
-      
-      if (filters?.status && filters.status !== 'all') {
-        query = query.eq("status", filters.status)
+        }
+        
+        return filteredData
+        
+      } catch (error) {
+        console.error("Error in useEnhancedJournalEntries:", error)
+        toast.error("خطأ في جلب القيود المحاسبية")
+        return []
       }
-      if (filters?.dateFrom) {
-        query = query.gte("entry_date", filters.dateFrom)
-      }
-      if (filters?.dateTo) {
-        query = query.lte("entry_date", filters.dateTo)
-      }
-      if (filters?.referenceType) {
-        query = query.eq("reference_type", filters.referenceType)
-      }
-      
-      const { data, error } = await query
-      
-      if (error) throw error
-      
-      // Filter by search term if provided
-      let filteredData = data
-      if (filters?.searchTerm) {
-        const searchLower = filters.searchTerm.toLowerCase()
-        filteredData = data.filter(entry =>
-          entry.description.toLowerCase().includes(searchLower) ||
-          entry.entry_number.toLowerCase().includes(searchLower)
-        )
-      }
-      
-      return filteredData
     },
     enabled: !!user?.profile?.company_id
   })
@@ -133,44 +170,57 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
   return useQuery({
     queryKey: ["accountBalances", user?.profile?.company_id, filters],
     queryFn: async () => {
-      let query = supabase
-        .from("chart_of_accounts")
-        .select(`
-          id,
-          account_code,
-          account_name,
-          account_name_ar,
-          account_type,
-          balance_type,
-          current_balance
-        `)
-        .eq("is_active", true)
-        .order("account_code")
+      if (!user?.profile?.company_id) return []
       
-      if (filters?.accountType) {
-        query = query.eq("account_type", filters.accountType)
+      try {
+        let query = supabase
+          .from("chart_of_accounts")
+          .select(`
+            id,
+            account_code,
+            account_name,
+            account_name_ar,
+            account_type,
+            balance_type,
+            current_balance
+          `)
+          .eq("company_id", user.profile.company_id)
+          .eq("is_active", true)
+          .order("account_code")
+        
+        if (filters?.accountType) {
+          query = query.eq("account_type", filters.accountType)
+        }
+        
+        const { data: accounts, error } = await query
+        
+        if (error) {
+          console.error("Account balances query error:", error)
+          throw error
+        }
+        
+        // For now, return simplified account balances
+        // In a full implementation, we would calculate running balances with journal entries
+        const accountBalances: AccountBalance[] = (accounts || []).map(account => ({
+          account_id: account.id,
+          account_code: account.account_code,
+          account_name: account.account_name,
+          account_name_ar: account.account_name_ar,
+          account_type: account.account_type,
+          balance_type: account.balance_type as 'debit' | 'credit',
+          opening_balance: account.current_balance || 0,
+          total_debits: 0,
+          total_credits: 0,
+          closing_balance: account.current_balance || 0
+        }))
+        
+        return accountBalances
+        
+      } catch (error) {
+        console.error("Error in useAccountBalances:", error)
+        toast.error("خطأ في جلب أرصدة الحسابات")
+        return []
       }
-      
-      const { data: accounts, error } = await query
-      
-      if (error) throw error
-      
-      // For now, return simplified account balances
-      // In a full implementation, we would calculate running balances with journal entries
-      const accountBalances: AccountBalance[] = accounts.map(account => ({
-        account_id: account.id,
-        account_code: account.account_code,
-        account_name: account.account_name,
-        account_name_ar: account.account_name_ar,
-        account_type: account.account_type,
-        balance_type: account.balance_type as 'debit' | 'credit',
-        opening_balance: account.current_balance,
-        total_debits: 0,
-        total_credits: 0,
-        closing_balance: account.current_balance
-      }))
-      
-      return accountBalances
     },
     enabled: !!user?.profile?.company_id
   })
