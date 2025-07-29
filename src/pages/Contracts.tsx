@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +22,8 @@ import { useAutoRenewContracts } from "@/hooks/useContractRenewal"
 export default function Contracts() {
   const [showContractForm, setShowContractForm] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
+  const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | null>(null)
+  const location = useLocation()
   const [showRenewalDialog, setShowRenewalDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
@@ -29,6 +32,14 @@ export default function Contracts() {
   const [filters, setFilters] = useState<any>({})
   const { user } = useAuth()
   const autoRenewContracts = useAutoRenewContracts()
+
+  // Handle pre-selected customer from navigation
+  useEffect(() => {
+    if (location.state?.selectedCustomerId) {
+      setPreselectedCustomerId(location.state.selectedCustomerId)
+      setShowContractForm(true)
+    }
+  }, [location.state])
 
   // Fetch contracts
   const { data: contracts, isLoading, refetch } = useQuery({
@@ -127,6 +138,8 @@ export default function Contracts() {
       
       refetch()
       setShowContractForm(false)
+      // Clear preselected customer after successful creation
+      setPreselectedCustomerId(null)
     } catch (error) {
       console.error('Error creating contract:', error)
     }
@@ -173,7 +186,10 @@ export default function Contracts() {
             <RefreshCw className="h-4 w-4 mr-2" />
             {autoRenewContracts.isPending ? 'جاري التجديد...' : 'تجديد تلقائي'}
           </Button>
-          <Button onClick={() => setShowContractForm(true)}>
+          <Button onClick={() => {
+            setPreselectedCustomerId(null)
+            setShowContractForm(true)
+          }}>
             <Plus className="h-4 w-4 mr-2" />
             عقد جديد
           </Button>
@@ -545,6 +561,7 @@ export default function Contracts() {
         open={showContractForm} 
         onOpenChange={setShowContractForm}
         onSubmit={handleContractSubmit}
+        preselectedCustomerId={preselectedCustomerId}
       />
       
       <ContractRenewalDialog

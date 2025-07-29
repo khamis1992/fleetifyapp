@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,9 +19,10 @@ interface ContractFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit?: (contractData: any) => void
+  preselectedCustomerId?: string | null
 }
 
-export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, onSubmit }) => {
+export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, onSubmit, preselectedCustomerId }) => {
   const { user } = useAuth()
   
   const [contractData, setContractData] = useState({
@@ -75,6 +76,16 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
   
   // Get available vehicles for contracts (excluding those under maintenance or already rented)
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
+
+  // Pre-select customer when form opens with preselectedCustomerId
+  useEffect(() => {
+    if (preselectedCustomerId && open) {
+      setContractData(prev => ({
+        ...prev,
+        customer_id: preselectedCustomerId
+      }))
+    }
+  }, [preselectedCustomerId, open])
 
   // Function to calculate end date based on start date and rental days
   const calculateEndDate = (startDate: string, days: number) => {
@@ -152,6 +163,11 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             إنشاء عقد جديد
+            {preselectedCustomerId && (
+              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                عميل محدد مسبقاً
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
