@@ -152,12 +152,6 @@ export function CustomerDetailsDialog({
                 <Plus className="h-4 w-4 mr-2" />
                 عقد جديد
               </Button>
-              {onCreateInvoice && (
-                <Button onClick={onCreateInvoice} variant="outline">
-                  <FileText className="h-4 w-4 mr-2" />
-                  فاتورة جديدة
-                </Button>
-              )}
             </div>
           </div>
         </DialogHeader>
