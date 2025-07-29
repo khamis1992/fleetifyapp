@@ -452,7 +452,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>معاينة الحساب</DialogTitle>
+            <DialogTitle className="text-right">معاينة الحساب</DialogTitle>
           </DialogHeader>
           {viewingAccount && (
             <div dir="rtl" className="w-full">
