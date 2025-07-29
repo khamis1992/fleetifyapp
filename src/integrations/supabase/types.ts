@@ -2765,6 +2765,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_journal_entry_lines_account"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_journal_entry_lines_cost_center"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_journal_entry_lines_journal_entry"
             columns: ["journal_entry_id"]
             isOneToOne: false

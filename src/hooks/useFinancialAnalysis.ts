@@ -83,12 +83,12 @@ export const useFinancialAnalysis = () => {
         .from("journal_entries")
         .select(`
           *,
-          journal_entry_lines (
+          journal_entry_lines!fk_journal_entry_lines_journal_entry (
             *,
             account_id,
             debit_amount,
             credit_amount,
-            chart_of_accounts (
+            chart_of_accounts!fk_journal_entry_lines_account (
               account_type,
               account_subtype,
               account_name
@@ -105,12 +105,12 @@ export const useFinancialAnalysis = () => {
         .from("journal_entries")
         .select(`
           *,
-          journal_entry_lines (
+          journal_entry_lines!fk_journal_entry_lines_journal_entry (
             *,
             account_id,
             debit_amount,
             credit_amount,
-            chart_of_accounts (
+            chart_of_accounts!fk_journal_entry_lines_account (
               account_type,
               account_subtype,
               account_name

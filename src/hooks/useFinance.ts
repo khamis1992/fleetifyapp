@@ -448,7 +448,7 @@ export const useJournalEntryLines = (journalEntryId: string) => {
         .from("journal_entry_lines")
         .select(`
           *,
-          account:chart_of_accounts(*)
+          account:chart_of_accounts!fk_journal_entry_lines_account(*)
         `)
         .eq("journal_entry_id", journalEntryId)
         .order("line_number")
