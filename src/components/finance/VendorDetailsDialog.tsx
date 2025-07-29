@@ -88,7 +88,7 @@ export const VendorDetailsDialog = ({ vendor, open, onOpenChange }: VendorDetail
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">رقم الهاتف</label>
-                      <p className="font-medium">{vendor.phone}</p>
+                      <p className="font-medium" dir="ltr">{vendor.phone}</p>
                     </div>
                   </div>
                 )}

@@ -186,7 +186,7 @@ export function EnhancedVehicleInsurancePanel({ vehicleId }: EnhancedVehicleInsu
 
                 <div className="space-y-2">
                   <Label htmlFor="agent_phone">هاتف الوكيل</Label>
-                  <Input {...register('agent_phone')} />
+                  <Input {...register('agent_phone')} dir="ltr" />
                 </div>
 
                 <div className="space-y-2">

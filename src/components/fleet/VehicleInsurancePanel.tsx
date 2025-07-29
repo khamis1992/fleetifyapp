@@ -174,6 +174,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     <Input
                       id="contact_phone"
                       {...form.register("contact_phone")}
+                      dir="ltr"
                     />
                   </div>
                 </div>
@@ -269,7 +270,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                   <p><span className="font-medium">الاسم:</span> {activeInsurance.contact_person}</p>
                   {activeInsurance.contact_phone && (
-                    <p><span className="font-medium">الهاتف:</span> {activeInsurance.contact_phone}</p>
+                    <p><span className="font-medium">الهاتف:</span> <span dir="ltr">{activeInsurance.contact_phone}</span></p>
                   )}
                   {activeInsurance.contact_email && (
                     <p><span className="font-medium">البريد:</span> {activeInsurance.contact_email}</p>

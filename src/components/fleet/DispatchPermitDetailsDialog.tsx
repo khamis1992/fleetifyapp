@@ -345,7 +345,7 @@ export function DispatchPermitDetailsDialog({
                   {permit.driver_phone && (
                     <div>
                       <p className="font-medium mb-1">رقم الهاتف</p>
-                      <p className="text-sm text-muted-foreground">{permit.driver_phone}</p>
+                      <p className="text-sm text-muted-foreground" dir="ltr">{permit.driver_phone}</p>
                     </div>
                   )}
                   

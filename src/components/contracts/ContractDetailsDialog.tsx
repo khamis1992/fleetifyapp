@@ -388,7 +388,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">رقم الهاتف</span>
-                      <span className="font-medium">{customer.phone}</span>
+                      <span className="font-medium" dir="ltr">{customer.phone}</span>
                     </div>
                     
                     {customer.email && (

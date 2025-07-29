@@ -208,12 +208,12 @@ export function CustomerDetailsDialog({
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{customer.phone}</span>
+                    <span dir="ltr">{customer.phone}</span>
                   </div>
                   {customer.alternative_phone && (
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{customer.alternative_phone} (بديل)</span>
+                      <span dir="ltr">{customer.alternative_phone} (بديل)</span>
                     </div>
                   )}
                   {customer.email && (
@@ -277,7 +277,7 @@ export function CustomerDetailsDialog({
                     {customer.emergency_contact_phone && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{customer.emergency_contact_phone}</span>
+                        <span dir="ltr">{customer.emergency_contact_phone}</span>
                       </div>
                     )}
                   </CardContent>

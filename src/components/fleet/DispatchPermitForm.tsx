@@ -389,7 +389,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                             <FormItem>
                               <FormLabel>رقم الهاتف</FormLabel>
                               <FormControl>
-                                <Input placeholder="رقم هاتف السائق..." {...field} />
+                                <Input placeholder="رقم هاتف السائق..." {...field} dir="ltr" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
