@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, FileText, Filter, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { DispatchPermitForm } from "@/components/fleet/DispatchPermitForm";
 import { DispatchPermitsList } from "@/components/fleet/DispatchPermitsList";
 import { useDispatchPermits } from "@/hooks/useDispatchPermits";
@@ -101,134 +101,7 @@ export default function DispatchPermits() {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="permits" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="permits">قائمة التصاريح</TabsTrigger>
-          <TabsTrigger value="analytics">التحليلات</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="permits" className="space-y-4">
-          <DispatchPermitsList />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>تحليلات التصاريح</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Status Distribution */}
-                  <div>
-                    <h4 className="font-medium mb-3">توزيع الحالات</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">قيد الانتظار</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-gray-200 rounded">
-                            <div 
-                              className="h-full bg-yellow-500 rounded"
-                              style={{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground">{stats.pending}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">موافق عليها</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-gray-200 rounded">
-                            <div 
-                              className="h-full bg-green-500 rounded"
-                              style={{ width: `${stats.total > 0 ? (stats.approved / stats.total) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground">{stats.approved}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">قيد التنفيذ</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-gray-200 rounded">
-                            <div 
-                              className="h-full bg-blue-500 rounded"
-                              style={{ width: `${stats.total > 0 ? (stats.in_progress / stats.total) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground">{stats.in_progress}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">مكتملة</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-gray-200 rounded">
-                            <div 
-                              className="h-full bg-emerald-500 rounded"
-                              style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground">{stats.completed}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">مرفوضة</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-gray-200 rounded">
-                            <div 
-                              className="h-full bg-red-500 rounded"
-                              style={{ width: `${stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground">{stats.rejected}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick Stats */}
-                  <div>
-                    <h4 className="font-medium mb-3">إحصائيات سريعة</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm">معدل الموافقة</span>
-                        <span className="text-sm font-medium">
-                          {stats.total > 0 ? Math.round(((stats.approved + stats.completed) / stats.total) * 100) : 0}%
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-sm">معدل الرفض</span>
-                        <span className="text-sm font-medium">
-                          {stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0}%
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-sm">التصاريح المعلقة</span>
-                        <span className="text-sm font-medium">
-                          {stats.pending + stats.in_progress}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {stats.total === 0 && (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">لا توجد بيانات لعرض التحليلات</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <DispatchPermitsList />
 
       {/* Permit Form Dialog */}
       {showPermitForm && (
