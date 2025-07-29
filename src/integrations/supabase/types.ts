@@ -2753,6 +2753,65 @@ export type Database = {
           },
         ]
       }
+      knowledge_base_articles: {
+        Row: {
+          category_id: string | null
+          content: string
+          content_ar: string
+          created_at: string | null
+          created_by: string
+          helpful_count: number | null
+          id: string
+          is_published: boolean | null
+          not_helpful_count: number | null
+          tags: string[] | null
+          title: string
+          title_ar: string
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          content: string
+          content_ar: string
+          created_at?: string | null
+          created_by: string
+          helpful_count?: number | null
+          id?: string
+          is_published?: boolean | null
+          not_helpful_count?: number | null
+          tags?: string[] | null
+          title: string
+          title_ar: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          content?: string
+          content_ar?: string
+          created_at?: string | null
+          created_by?: string
+          helpful_count?: number | null
+          id?: string
+          is_published?: boolean | null
+          not_helpful_count?: number | null
+          tags?: string[] | null
+          title?: string
+          title_ar?: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           created_at: string | null
@@ -4272,6 +4331,53 @@ export type Database = {
         }
         Relationships: []
       }
+      service_ratings: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          feedback: string | null
+          id: string
+          rated_by: string
+          rating: number
+          resolution_quality_rating: number | null
+          response_time_rating: number | null
+          staff_helpfulness_rating: number | null
+          ticket_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          rated_by: string
+          rating: number
+          resolution_quality_rating?: number | null
+          response_time_rating?: number | null
+          staff_helpfulness_rating?: number | null
+          ticket_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          rated_by?: string
+          rating?: number
+          resolution_quality_rating?: number | null
+          response_time_rating?: number | null
+          staff_helpfulness_rating?: number | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_ratings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           billing_cycle: string
@@ -4391,6 +4497,148 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      support_ticket_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          name_ar: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_ar: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_ar?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      support_ticket_replies: {
+        Row: {
+          attachments: Json | null
+          created_at: string | null
+          id: string
+          is_internal: boolean | null
+          message: string
+          ticket_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string | null
+          id?: string
+          is_internal?: boolean | null
+          message: string
+          ticket_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string | null
+          id?: string
+          is_internal?: boolean | null
+          message?: string
+          ticket_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category_id: string
+          closed_at: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string
+          description: string
+          first_response_at: string | null
+          id: string
+          priority: string
+          resolved_at: string | null
+          satisfaction_feedback: string | null
+          satisfaction_rating: number | null
+          status: string
+          ticket_number: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          category_id: string
+          closed_at?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by: string
+          description: string
+          first_response_at?: string | null
+          id?: string
+          priority?: string
+          resolved_at?: string | null
+          satisfaction_feedback?: string | null
+          satisfaction_rating?: number | null
+          status?: string
+          ticket_number: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          category_id?: string
+          closed_at?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string
+          first_response_at?: string | null
+          id?: string
+          priority?: string
+          resolved_at?: string | null
+          satisfaction_feedback?: string | null
+          satisfaction_rating?: number | null
+          status?: string
+          ticket_number?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_alerts: {
         Row: {
@@ -6684,6 +6932,10 @@ export type Database = {
         }[]
       }
       generate_secure_password: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
