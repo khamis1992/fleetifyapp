@@ -7,12 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Shield, Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
-import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts';
-import { useReportingAccounts } from '@/hooks/useReportingAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
@@ -30,15 +27,12 @@ interface AccountFormData {
 }
 
 export const EnhancedChartOfAccountsManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
-  const { data: entryAccounts, isLoading: entryAccountsLoading } = useEntryAllowedAccounts();
-  const { data: reportingAccounts, isLoading: reportingAccountsLoading } = useReportingAccounts();
   
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
@@ -276,168 +270,54 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">جميع الحسابات</TabsTrigger>
-          <TabsTrigger value="entry" className="gap-2">
-            <CheckCircle className="h-4 w-4" />
-            الحسابات المسموحة للقيود
-          </TabsTrigger>
-          <TabsTrigger value="reporting" className="gap-2">
-            <Shield className="h-4 w-4" />
-            حسابات التقارير
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all">
-          <Card>
-            <CardHeader>
-              <CardTitle>جميع الحسابات</CardTitle>
-              <CardDescription>
-                عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>رمز الحساب</TableHead>
-                    <TableHead>اسم الحساب</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>المستوى</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>الرصيد الحالي</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filterAccounts(allAccounts || []).map((account) => (
-                    <TableRow key={account.id}>
-                      <TableCell className="font-mono">{account.account_code}</TableCell>
-                      <TableCell>{account.account_name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {getAccountTypeLabel(account.account_type)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">المستوى {account.account_level}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <AccountLevelBadge 
-                          accountLevel={account.account_level} 
-                          isHeader={account.is_header} 
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {account.current_balance?.toFixed(3)} د.ك
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="entry">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                الحسابات المسموحة للقيود
-              </CardTitle>
-              <CardDescription>
-                الحسابات التي يمكن استخدامها في القيود المحاسبية (المستوى 5 و 6 فقط)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {entryAccountsLoading ? (
-                <LoadingSpinner />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>رمز الحساب</TableHead>
-                      <TableHead>اسم الحساب</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>الحساب الأب</TableHead>
-                      <TableHead>نوع الرصيد</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filterAccounts(entryAccounts || []).map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-mono">{account.account_code}</TableCell>
-                        <TableCell>{account.account_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {getAccountTypeLabel(account.account_type)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{account.parent_account_name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={account.balance_type === 'debit' ? 'default' : 'secondary'}>
-                            {account.balance_type === 'debit' ? 'مدين' : 'دائن'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reporting">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-600" />
-                حسابات التقارير
-              </CardTitle>
-              <CardDescription>
-                الحسابات الإجمالية المستخدمة للتقارير فقط (غير مسموحة للقيود)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {reportingAccountsLoading ? (
-                <LoadingSpinner />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>رمز الحساب</TableHead>
-                      <TableHead>اسم الحساب</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>المستوى</TableHead>
-                      <TableHead>الحساب الأب</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filterAccounts(reportingAccounts || []).map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-mono">{account.account_code}</TableCell>
-                        <TableCell>{account.account_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {getAccountTypeLabel(account.account_type)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">المستوى {account.account_level}</Badge>
-                        </TableCell>
-                        <TableCell>{account.parent_account_name || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* All Accounts */}
+      <Card>
+        <CardHeader>
+          <CardTitle>جميع الحسابات</CardTitle>
+          <CardDescription>
+            عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>رمز الحساب</TableHead>
+                <TableHead>اسم الحساب</TableHead>
+                <TableHead>النوع</TableHead>
+                <TableHead>المستوى</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead>الرصيد الحالي</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filterAccounts(allAccounts || []).map((account) => (
+                <TableRow key={account.id}>
+                  <TableCell className="font-mono">{account.account_code}</TableCell>
+                  <TableCell>{account.account_name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {getAccountTypeLabel(account.account_type)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">المستوى {account.account_level}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <AccountLevelBadge 
+                      accountLevel={account.account_level} 
+                      isHeader={account.is_header} 
+                    />
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    {account.current_balance?.toFixed(3)} د.ك
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };
