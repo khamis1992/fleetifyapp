@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -152,15 +152,33 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </Badge>
         </TableCell>
         <TableCell className="text-center">
-          <div className="flex gap-1 justify-center">
-            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
-              أصول
+          <div className="flex gap-2 justify-center">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => console.log('معاينة الحساب', account.id)}
+              title="معاينة"
+            >
+              <Eye className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
-              مدين
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => console.log('تعديل الحساب', account.id)}
+              title="تعديل"
+            >
+              <Edit className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="destructive" className="h-6 px-2 text-xs">
-              نشط
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              onClick={() => console.log('حذف الحساب', account.id)}
+              title="حذف"
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </TableCell>
