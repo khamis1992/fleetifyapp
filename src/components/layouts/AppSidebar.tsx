@@ -84,6 +84,12 @@ const navigationItems = [
     icon: FileText 
   },
   { 
+    name: 'الشؤون القانونية', 
+    name_en: 'Legal',
+    href: '/legal', 
+    icon: Shield 
+  },
+  { 
     name: 'التقارير', 
     name_en: 'Reports',
     href: '/reports', 
@@ -94,12 +100,6 @@ const navigationItems = [
     name_en: 'Support',
     href: '/support', 
     icon: Headphones 
-  },
-  { 
-    name: 'الشؤون القانونية', 
-    name_en: 'Legal',
-    href: '/legal', 
-    icon: Shield 
   }
 ];
 
