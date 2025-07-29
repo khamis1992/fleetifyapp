@@ -456,9 +456,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </DialogHeader>
           {viewingAccount && (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
-                <TabsTrigger value="balance">تاريخ الرصيد</TabsTrigger>
                 <TabsTrigger value="history">سجل التغييرات</TabsTrigger>
               </TabsList>
               
@@ -519,14 +518,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="balance">
-                <AccountBalanceHistory 
-                  accountId={viewingAccount.id}
-                  currentBalance={viewingAccount.current_balance || 0}
-                  accountType={viewingAccount.balance_type}
-                />
               </TabsContent>
               
               <TabsContent value="history">
