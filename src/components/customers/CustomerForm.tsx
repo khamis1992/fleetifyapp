@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { AlertCircle, CheckCircle2, Building2, User, Phone, Mail, MapPin, CreditCard, InfoIcon } from "lucide-react";
+import { AlertCircle, CheckCircle2, Building2, User, Phone, Mail, MapPin, CreditCard, InfoIcon, Search, Check, ChevronsUpDown } from "lucide-react";
 import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +34,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
   const { data: accountSettings } = useCompanyAccountSettings();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
+  const [accountSearchOpen, setAccountSearchOpen] = useState(false);
+  const [accountSearchValue, setAccountSearchValue] = useState("");
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -547,35 +551,119 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                 <CardContent className="space-y-4">
                   {accountSettings?.enable_account_selection ? (
                     <div className="space-y-4">
-                      {/* خيار اختيار الحساب المحاسبي */}
-                      {mode === 'create' && availableAccounts && availableAccounts.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>اختيار حساب محاسبي مخصص (اختياري)</Label>
-                          <Select value={selectedAccountId || "auto"} onValueChange={(value) => setSelectedAccountId(value === "auto" ? undefined : value)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="اختر حساب محاسبي أو اترك فارغاً للإنشاء التلقائي..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="auto">إنشاء حساب تلقائياً</SelectItem>
-                              {availableAccounts
-                                .filter(acc => acc.is_available)
-                                .map((account) => (
-                                 <SelectItem key={account.id} value={account.id}>
-                                   <div className="flex flex-col">
-                                     <span className="font-medium">{account.account_name_ar || account.account_name}</span>
+                       {/* خيار اختيار الحساب المحاسبي */}
+                       {mode === 'create' && availableAccounts && availableAccounts.length > 0 && (
+                         <div className="space-y-2">
+                           <Label>اختيار حساب محاسبي مخصص (اختياري)</Label>
+                           <Popover open={accountSearchOpen} onOpenChange={setAccountSearchOpen}>
+                             <PopoverTrigger asChild>
+                               <Button
+                                 variant="outline"
+                                 role="combobox"
+                                 aria-expanded={accountSearchOpen}
+                                 className="w-full justify-between h-auto min-h-[2.5rem] text-right"
+                               >
+                                 {selectedAccountId && selectedAccountId !== "auto" ? (
+                                   <div className="flex flex-col items-start">
+                                     <span className="font-medium">
+                                       {availableAccounts.find(acc => acc.id === selectedAccountId)?.account_name_ar || 
+                                        availableAccounts.find(acc => acc.id === selectedAccountId)?.account_name}
+                                     </span>
                                      <span className="text-xs text-muted-foreground">
-                                       {account.account_code} | {account.parent_account_name}
+                                       {availableAccounts.find(acc => acc.id === selectedAccountId)?.account_code} | 
+                                       {availableAccounts.find(acc => acc.id === selectedAccountId)?.parent_account_name}
                                      </span>
                                    </div>
-                                 </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground">
-                            إذا لم تختر حساباً، سيتم إنشاء حساب جديد تلقائياً باسم العميل
-                          </p>
-                        </div>
-                      )}
+                                 ) : (
+                                   <span>اختر حساب محاسبي أو اترك فارغاً للإنشاء التلقائي...</span>
+                                 )}
+                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                               </Button>
+                             </PopoverTrigger>
+                             <PopoverContent className="w-full p-0" align="start">
+                               <Command>
+                                 <CommandInput 
+                                   placeholder="البحث في الحسابات..." 
+                                   value={accountSearchValue}
+                                   onValueChange={setAccountSearchValue}
+                                 />
+                                 <CommandList>
+                                   <CommandEmpty>لا توجد حسابات مطابقة للبحث.</CommandEmpty>
+                                   <CommandGroup>
+                                     <CommandItem
+                                       value="auto"
+                                       onSelect={() => {
+                                         setSelectedAccountId(undefined);
+                                         setAccountSearchOpen(false);
+                                         setAccountSearchValue("");
+                                       }}
+                                     >
+                                       <Check
+                                         className={`mr-2 h-4 w-4 ${
+                                           !selectedAccountId || selectedAccountId === "auto" ? "opacity-100" : "opacity-0"
+                                         }`}
+                                       />
+                                       <div className="flex flex-col">
+                                         <span className="font-medium">إنشاء حساب تلقائياً</span>
+                                         <span className="text-xs text-muted-foreground">
+                                           سيتم إنشاء حساب جديد باسم العميل
+                                         </span>
+                                       </div>
+                                     </CommandItem>
+                                     {availableAccounts
+                                       .filter(account => {
+                                         if (!accountSearchValue) return true;
+                                         const searchLower = accountSearchValue.toLowerCase();
+                                         return (
+                                           account.account_name.toLowerCase().includes(searchLower) ||
+                                           (account.account_name_ar && account.account_name_ar.includes(accountSearchValue)) ||
+                                           account.account_code.toLowerCase().includes(searchLower) ||
+                                           account.parent_account_name.toLowerCase().includes(searchLower)
+                                         );
+                                       })
+                                       .map((account) => (
+                                         <CommandItem
+                                           key={account.id}
+                                           value={account.id}
+                                           onSelect={() => {
+                                             setSelectedAccountId(account.id);
+                                             setAccountSearchOpen(false);
+                                             setAccountSearchValue("");
+                                           }}
+                                           className={!account.is_available ? "opacity-60" : ""}
+                                         >
+                                           <Check
+                                             className={`mr-2 h-4 w-4 ${
+                                               selectedAccountId === account.id ? "opacity-100" : "opacity-0"
+                                             }`}
+                                           />
+                                           <div className="flex flex-col flex-1">
+                                             <div className="flex items-center gap-2">
+                                               <span className="font-medium">
+                                                 {account.account_name_ar || account.account_name}
+                                               </span>
+                                               {!account.is_available && (
+                                                 <span className="text-xs bg-orange-100 text-orange-700 px-1 rounded">
+                                                   مستخدم
+                                                 </span>
+                                               )}
+                                             </div>
+                                             <span className="text-xs text-muted-foreground">
+                                               {account.account_code} | {account.parent_account_name}
+                                             </span>
+                                           </div>
+                                         </CommandItem>
+                                       ))}
+                                   </CommandGroup>
+                                 </CommandList>
+                               </Command>
+                             </PopoverContent>
+                           </Popover>
+                           <p className="text-xs text-muted-foreground">
+                             إذا لم تختر حساباً، سيتم إنشاء حساب جديد تلقائياً باسم العميل
+                           </p>
+                         </div>
+                       )}
 
                       {/* معلومات الحساب التلقائي */}
                       {accountSettings?.auto_create_account && (
