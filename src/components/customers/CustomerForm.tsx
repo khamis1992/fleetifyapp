@@ -410,7 +410,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
             </TabsContent>
 
             <TabsContent value="contact" className="space-y-4">
-              <Card>
+              <Card dir="rtl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
