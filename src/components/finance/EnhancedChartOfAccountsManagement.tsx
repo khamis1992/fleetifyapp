@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -31,6 +31,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [filterType, setFilterType] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -71,6 +72,109 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       console.error('Error creating account:', error);
       toast.error('حدث خطأ في إنشاء الحساب');
     }
+  };
+
+  const toggleNode = (accountId: string) => {
+    const newExpanded = new Set(expandedNodes);
+    if (newExpanded.has(accountId)) {
+      newExpanded.delete(accountId);
+    } else {
+      newExpanded.add(accountId);
+    }
+    setExpandedNodes(newExpanded);
+  };
+
+  const buildAccountTree = (accounts: any[]) => {
+    if (!accounts) return [];
+    
+    // Filter accounts first
+    const filtered = filterAccounts(accounts);
+    
+    // Group by parent-child relationship
+    const accountMap = new Map();
+    const rootAccounts: any[] = [];
+    
+    filtered.forEach(account => {
+      accountMap.set(account.id, { ...account, children: [] });
+    });
+    
+    filtered.forEach(account => {
+      if (account.parent_account_id && accountMap.has(account.parent_account_id)) {
+        accountMap.get(account.parent_account_id).children.push(accountMap.get(account.id));
+      } else {
+        rootAccounts.push(accountMap.get(account.id));
+      }
+    });
+    
+    return rootAccounts;
+  };
+
+  const renderAccountRow = (account: any, level: number = 0): JSX.Element[] => {
+    const hasChildren = account.children && account.children.length > 0;
+    const isExpanded = expandedNodes.has(account.id);
+    const paddingLeft = level * 24;
+
+    const rows: JSX.Element[] = [
+      <TableRow key={account.id} className={level > 0 ? "bg-muted/30" : ""}>
+        <TableCell>
+          <div className="flex items-center" style={{ paddingLeft }}>
+            {hasChildren ? (
+              <button
+                onClick={() => toggleNode(account.id)}
+                className="mr-2 p-1 hover:bg-accent rounded"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+            ) : (
+              <div className="w-6 mr-2" />
+            )}
+            <span className="font-mono text-left">{account.account_code}</span>
+          </div>
+        </TableCell>
+        <TableCell className="text-right">{account.account_name}</TableCell>
+        <TableCell className="text-center">
+          <Badge variant="outline">
+            {getAccountTypeLabel(account.account_type)}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <Badge variant={account.balance_type === 'debit' ? 'default' : 'secondary'}>
+            {account.balance_type === 'debit' ? 'مدين' : 'دائن'}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <Badge variant={account.is_active ? 'default' : 'destructive'}>
+            {account.is_active ? 'نشط' : 'غير نشط'}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <div className="flex gap-1 justify-center">
+            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+              أصول
+            </Button>
+            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+              مدين
+            </Button>
+            <Button size="sm" variant="destructive" className="h-6 px-2 text-xs">
+              نشط
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    ];
+
+    // Add children if expanded
+    if (hasChildren && isExpanded) {
+      account.children.forEach((child: any) => {
+        rows.push(...renderAccountRow(child, level + 1));
+      });
+    }
+
+    return rows;
   };
 
   const filterAccounts = (accounts: any[]) => {
@@ -282,38 +386,18 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>رمز الحساب</TableHead>
-                <TableHead>اسم الحساب</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>المستوى</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الرصيد الحالي</TableHead>
+                <TableHead className="text-right">كود الحساب</TableHead>
+                <TableHead className="text-right">اسم الحساب</TableHead>
+                <TableHead className="text-center">نوع الحساب</TableHead>
+                <TableHead className="text-center">طبيعة الرصيد</TableHead>
+                <TableHead className="text-center">الحالة</TableHead>
+                <TableHead className="text-center">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filterAccounts(allAccounts || []).map((account) => (
-                <TableRow key={account.id}>
-                  <TableCell className="font-mono">{account.account_code}</TableCell>
-                  <TableCell>{account.account_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {getAccountTypeLabel(account.account_type)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">المستوى {account.account_level}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <AccountLevelBadge 
-                      accountLevel={account.account_level} 
-                      isHeader={account.is_header} 
-                    />
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    {account.current_balance?.toFixed(3)} د.ك
-                  </TableCell>
-                </TableRow>
-              ))}
+              {buildAccountTree(allAccounts || []).map((account) => (
+                renderAccountRow(account)
+              )).flat()}
             </TableBody>
           </Table>
         </CardContent>
