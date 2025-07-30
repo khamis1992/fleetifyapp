@@ -116,11 +116,11 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
                   <div className="space-y-1">
                     <div className="font-medium text-sm">{line.account?.account_code}</div>
                     <div className="text-xs text-muted-foreground">
-                      {line.account?.account_name}
+                      {line.account?.account_name_ar || line.account?.account_name}
                     </div>
-                    {line.account?.account_name_ar && (
-                      <div className="text-xs text-muted-foreground">
-                        {line.account.account_name_ar}
+                    {line.account?.account_name_ar && line.account?.account_name && (
+                      <div className="text-xs text-muted-foreground opacity-70">
+                        {line.account.account_name}
                       </div>
                     )}
                   </div>

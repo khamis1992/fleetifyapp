@@ -391,7 +391,7 @@ export default function Ledger() {
                                   {line.line_description || '-'}
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
-                                  {line.account?.account_name}
+                                  {line.account?.account_name_ar || line.account?.account_name}
                                 </TableCell>
                                 <TableCell className="text-center font-mono text-sm">
                                   {line.account?.account_code || '-'}
