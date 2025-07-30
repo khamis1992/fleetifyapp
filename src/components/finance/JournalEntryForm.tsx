@@ -52,6 +52,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
 
   const [accountSearchOpen, setAccountSearchOpen] = useState<{[key: string]: boolean}>({})
   const [costCenterSearchOpen, setCostCenterSearchOpen] = useState<{[key: string]: boolean}>({})
+  const [assetSearchOpen, setAssetSearchOpen] = useState<{[key: string]: boolean}>({})
 
   const [lines, setLines] = useState<JournalEntryLine[]>([
     { 
@@ -433,22 +434,56 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                         </Popover>
                       </TableCell>
                       <TableCell className="w-48">
-                        <Select
-                          value={line.asset_id || 'none'}
-                          onValueChange={(value) => updateLine(line.id, 'asset_id', value === 'none' ? '' : value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="الأصل" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">لا يوجد</SelectItem>
-                            {assets?.map((asset) => (
-                              <SelectItem key={asset.id} value={asset.id}>
-                                {asset.asset_code} - {asset.asset_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover open={assetSearchOpen[line.id]} onOpenChange={(open) => setAssetSearchOpen({...assetSearchOpen, [line.id]: open})}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={assetSearchOpen[line.id]}
+                              className="w-full justify-between"
+                              disabled={assetsLoading}
+                            >
+                              {line.asset_name || "الأصل"}
+                              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-0">
+                            <Command>
+                              <CommandInput placeholder="البحث في الأصول..." />
+                              <CommandList>
+                                <CommandEmpty>لا توجد أصول</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    keywords={['لا يوجد', 'none']}
+                                    onSelect={() => {
+                                      updateLine(line.id, 'asset_id', '')
+                                      setAssetSearchOpen({...assetSearchOpen, [line.id]: false})
+                                    }}
+                                  >
+                                    لا يوجد
+                                  </CommandItem>
+                                  {assets?.map((asset) => (
+                                    <CommandItem
+                                      key={asset.id}
+                                      keywords={[asset.asset_code, asset.asset_name, asset.asset_name_ar || '']}
+                                      onSelect={() => {
+                                        updateLine(line.id, 'asset_id', asset.id)
+                                        setAssetSearchOpen({...assetSearchOpen, [line.id]: false})
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{asset.asset_code} - {asset.asset_name}</span>
+                                        {asset.asset_name_ar && (
+                                          <span className="text-sm text-muted-foreground">{asset.asset_name_ar}</span>
+                                        )}
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </TableCell>
                       <TableCell className="w-48">
                         <Select
