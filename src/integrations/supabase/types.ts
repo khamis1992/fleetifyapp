@@ -6922,6 +6922,12 @@ export type Database = {
         Args: { transaction_id_param: string }
         Returns: string
       }
+      create_bank_transaction_journal_entry_from_record: {
+        Args: {
+          transaction_record: Database["public"]["Tables"]["bank_transactions"]["Row"]
+        }
+        Returns: string
+      }
       create_condition_report_for_permit: {
         Args: { permit_id_param: string; inspection_type_param?: string }
         Returns: string
