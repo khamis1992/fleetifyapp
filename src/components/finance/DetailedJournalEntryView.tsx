@@ -49,47 +49,33 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
         <Table className="border border-border">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="text-center border-r border-border font-bold">الحساب</TableHead>
-              <TableHead className="text-center border-r border-border font-bold">مركز التكلفة</TableHead>
-              <TableHead className="text-center border-r border-border font-bold">الأصل</TableHead>
-              <TableHead className="text-center border-r border-border font-bold">الموظف</TableHead>
-              <TableHead className="text-center border-r border-border font-bold">مدين</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">التفاصيل</TableHead>
               <TableHead className="text-center border-r border-border font-bold">دائن</TableHead>
-              <TableHead className="text-center font-bold">التفاصيل</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">مدين</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">الموظف</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">الأصل</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">مركز التكلفة</TableHead>
+              <TableHead className="text-center font-bold">الحساب</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {entryLines?.map((line, index) => (
               <TableRow key={line.id} className="border-b border-border">
                 <TableCell className="border-r border-border text-right">
-                  <div className="space-y-1">
-                    <div className="font-medium text-sm">{line.account?.account_code}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {line.account?.account_name}
-                    </div>
-                    {line.account?.account_name_ar && (
-                      <div className="text-xs text-muted-foreground">
-                        {line.account.account_name_ar}
-                      </div>
-                    )}
+                  <div className="text-xs">
+                    {line.line_description || entry.description}
                   </div>
                 </TableCell>
-                <TableCell className="border-r border-border text-center">
-                  {line.cost_center ? (
-                    <div className="text-xs">
-                      <div className="font-medium">{line.cost_center.center_code}</div>
-                      <div className="text-muted-foreground">{line.cost_center.center_name}</div>
-                    </div>
+                <TableCell className="border-r border-border text-center font-medium">
+                  {line.credit_amount > 0 ? (
+                    <span className="text-red-600">{line.credit_amount.toFixed(3)}</span>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
-                <TableCell className="border-r border-border text-center">
-                  {line.asset ? (
-                    <div className="text-xs">
-                      <div className="font-medium">{line.asset.asset_code}</div>
-                      <div className="text-muted-foreground">{line.asset.asset_name}</div>
-                    </div>
+                <TableCell className="border-r border-border text-center font-medium">
+                  {line.debit_amount > 0 ? (
+                    <span className="text-green-600">{line.debit_amount.toFixed(3)}</span>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
@@ -106,23 +92,37 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
-                <TableCell className="border-r border-border text-center font-medium">
-                  {line.debit_amount > 0 ? (
-                    <span className="text-green-600">{line.debit_amount.toFixed(3)}</span>
+                <TableCell className="border-r border-border text-center">
+                  {line.asset ? (
+                    <div className="text-xs">
+                      <div className="font-medium">{line.asset.asset_code}</div>
+                      <div className="text-muted-foreground">{line.asset.asset_name}</div>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
-                <TableCell className="border-r border-border text-center font-medium">
-                  {line.credit_amount > 0 ? (
-                    <span className="text-red-600">{line.credit_amount.toFixed(3)}</span>
+                <TableCell className="border-r border-border text-center">
+                  {line.cost_center ? (
+                    <div className="text-xs">
+                      <div className="font-medium">{line.cost_center.center_code}</div>
+                      <div className="text-muted-foreground">{line.cost_center.center_name}</div>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="text-xs">
-                    {line.line_description || entry.description}
+                  <div className="space-y-1">
+                    <div className="font-medium text-sm">{line.account?.account_code}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {line.account?.account_name}
+                    </div>
+                    {line.account?.account_name_ar && (
+                      <div className="text-xs text-muted-foreground">
+                        {line.account.account_name_ar}
+                      </div>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -130,16 +130,7 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
             
             {/* Totals Row */}
             <TableRow className="bg-muted/30 font-bold border-t-2 border-border">
-              <TableCell colSpan={4} className="text-center border-r border-border">
-                الإجمالي
-              </TableCell>
-              <TableCell className="text-center border-r border-border text-green-600">
-                {entry.total_debit.toFixed(3)}
-              </TableCell>
-              <TableCell className="text-center border-r border-border text-red-600">
-                {entry.total_credit.toFixed(3)}
-              </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center border-r border-border">
                 {entry.total_debit === entry.total_credit ? (
                   <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
                     متوازن
@@ -149,6 +140,15 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
                     غير متوازن
                   </Badge>
                 )}
+              </TableCell>
+              <TableCell className="text-center border-r border-border text-red-600">
+                {entry.total_credit.toFixed(3)}
+              </TableCell>
+              <TableCell className="text-center border-r border-border text-green-600">
+                {entry.total_debit.toFixed(3)}
+              </TableCell>
+              <TableCell colSpan={4} className="text-center">
+                الإجمالي
               </TableCell>
             </TableRow>
           </TableBody>
