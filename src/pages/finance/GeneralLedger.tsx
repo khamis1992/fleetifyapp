@@ -19,6 +19,7 @@ import {
   useCostCenterAnalysis,
   usePostJournalEntry,
   useReverseJournalEntry,
+  useDeleteJournalEntry,
   useExportLedgerData,
   type LedgerFilters 
 } from "@/hooks/useGeneralLedger";
@@ -56,6 +57,7 @@ export default function Ledger() {
   // Actions
   const postEntry = usePostJournalEntry();
   const reverseEntry = useReverseJournalEntry();
+  const deleteEntry = useDeleteJournalEntry();
   const exportData = useExportLedgerData();
 
   const updateFilters = (newFilters: Partial<LedgerFilters>) => {
@@ -93,6 +95,14 @@ export default function Ledger() {
       await reverseEntry.mutateAsync({ entryId, reason: 'Manual reversal' });
     } catch (error) {
       console.error('Error reversing entry:', error);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    try {
+      await deleteEntry.mutateAsync(entryId);
+    } catch (error) {
+      console.error('Error deleting entry:', error);
     }
   };
 
@@ -318,6 +328,33 @@ export default function Ledger() {
                                       disabled={reverseEntry.isPending}
                                     >
                                       تأكيد العكس
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                            {entry.status === 'draft' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                    حذف
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>تأكيد حذف القيد</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      هل أنت متأكد من رغبتك في حذف هذا القيد نهائياً؟ هذا الإجراء لا يمكن التراجع عنه. يمكن حذف المسودات فقط.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteEntry(entry.id)}
+                                      disabled={deleteEntry.isPending}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      تأكيد الحذف
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>

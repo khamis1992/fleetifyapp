@@ -599,6 +599,45 @@ export const useReverseJournalEntry = () => {
   })
 }
 
+// Delete Journal Entry
+export const useDeleteJournalEntry = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (entryId: string) => {
+      // First delete journal entry lines
+      const { error: linesError } = await supabase
+        .from("journal_entry_lines")
+        .delete()
+        .eq("journal_entry_id", entryId)
+      
+      if (linesError) throw linesError
+      
+      // Then delete the journal entry
+      const { data, error } = await supabase
+        .from("journal_entries")
+        .delete()
+        .eq("id", entryId)
+        .eq("status", "draft") // Only allow deletion of draft entries
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enhancedJournalEntries"] })
+      queryClient.invalidateQueries({ queryKey: ["accountBalances"] })
+      queryClient.invalidateQueries({ queryKey: ["trialBalance"] })
+      queryClient.invalidateQueries({ queryKey: ["financialSummary"] })
+      toast.success("تم حذف القيد بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في حذف القيد: " + error.message)
+    }
+  })
+}
+
 // Export data functionality
 export const useExportLedgerData = () => {
   const { user } = useAuth()
