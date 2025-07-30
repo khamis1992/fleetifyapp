@@ -2,8 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
-interface Contract {
+export interface Contract {
   id: string;
+  company_id: string;
+  customer_id: string;
+  vehicle_id?: string;
   contract_number: string;
   contract_date: string;
   start_date: string;
@@ -14,12 +17,64 @@ interface Contract {
   contract_type: string;
   description?: string;
   terms?: string;
-  customer_id?: string;
-  vehicle_id?: string;
-  cost_center_id?: string;
-  account_id?: string;
   created_at: string;
   updated_at: string;
+  cost_center_id?: string;
+  account_id?: string;
+  journal_entry_id?: string;
+  auto_renew_enabled?: boolean;
+  renewal_terms?: any;
+  vehicle_returned?: boolean;
+  last_renewal_check?: string;
+  created_by?: string;
+}
+
+export const useContracts = (customerId?: string, vehicleId?: string, overrideCompanyId?: string) => {
+  const { companyId, validateCompanyAccess, getQueryKey } = useUnifiedCompanyAccess()
+  
+  // Use provided company ID or fall back to user's company
+  const targetCompanyId = overrideCompanyId || companyId
+  
+  return useQuery({
+    queryKey: getQueryKey(["contracts"], [targetCompanyId, customerId, vehicleId]),
+    queryFn: async () => {
+      if (!targetCompanyId) {
+        throw new Error("No company access available")
+      }
+      
+      // Validate access to the target company
+      if (overrideCompanyId) {
+        validateCompanyAccess(overrideCompanyId)
+      }
+
+      let query = supabase
+        .from("contracts")
+        .select("*")
+        .eq("company_id", targetCompanyId)
+        .order("created_at", { ascending: false })
+
+      // Apply filters if provided
+      if (customerId) {
+        query = query.eq("customer_id", customerId)
+      }
+      
+      if (vehicleId) {
+        query = query.eq("vehicle_id", vehicleId)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error("Error fetching contracts:", error)
+        throw error
+      }
+
+      return data || []
+    },
+    enabled: !!targetCompanyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000 // 10 minutes
+  })
 }
 
 export const useActiveContracts = (customerId?: string, vendorId?: string, overrideCompanyId?: string) => {

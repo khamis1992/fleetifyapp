@@ -14,6 +14,8 @@ import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { InvoiceIntegrationPanel } from "@/components/finance/InvoiceIntegrationPanel"
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog"
 import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog"
+import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions"
+import { DepartmentIntegrationSummary } from "@/components/finance/DepartmentIntegrationSummary"
 
 const Invoices = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -175,11 +177,17 @@ const Invoices = () => {
 
       {/* لوحة التكامل */}
       {showIntegrationPanel && (
-        <InvoiceIntegrationPanel 
-          invoiceId={selectedInvoice?.id}
-          costCenterId={selectedInvoice?.cost_center_id}
-          fixedAssetId={selectedInvoice?.fixed_asset_id}
-        />
+        <div className="space-y-6">
+          <InvoiceIntegrationPanel 
+            invoiceId={selectedInvoice?.id}
+            costCenterId={selectedInvoice?.cost_center_id}
+            fixedAssetId={selectedInvoice?.fixed_asset_id}
+            customerId={selectedInvoice?.customer_id}
+            contractId={selectedInvoice?.contract_id}
+            vehicleId={selectedInvoice?.vehicle_id}
+          />
+          <DepartmentIntegrationSummary />
+        </div>
       )}
 
       {/* Invoices Table */}
@@ -257,37 +265,20 @@ const Invoices = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                         <Button 
-                           variant="ghost" 
-                           size="sm"
-                           onClick={() => {
-                             setSelectedInvoice(invoice);
-                             setIsPreviewOpen(true);
-                           }}
-                           title="معاينة الفاتورة"
-                         >
-                           <Eye className="h-4 w-4" />
-                         </Button>
-                         <Button 
-                           variant="ghost" 
-                           size="sm"
-                           onClick={() => {
-                             setEditingInvoice(invoice);
-                           }}
-                           title="تعديل الفاتورة"
-                         >
-                           <Edit className="h-4 w-4" />
-                         </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        {invoice.fixed_asset_id && (
-                          <Button variant="ghost" size="sm" title="مرتبطة بأصل ثابت">
-                            <Package className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                      <EnhancedInvoiceActions
+                        invoice={invoice}
+                        onPreview={() => {
+                          setSelectedInvoice(invoice);
+                          setIsPreviewOpen(true);
+                        }}
+                        onEdit={() => {
+                          setEditingInvoice(invoice);
+                        }}
+                        onDelete={() => {
+                          // TODO: Implement delete functionality
+                          console.log('Delete invoice:', invoice.id);
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
