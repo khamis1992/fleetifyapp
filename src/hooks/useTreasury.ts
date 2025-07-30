@@ -153,18 +153,32 @@ export const useCreateBankTransaction = () => {
 
   return useMutation({
     mutationFn: async (transactionData: Omit<BankTransaction, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
+      // First, insert the transaction
+      const { data: transaction, error: transactionError } = await supabase
         .from('bank_transactions')
         .insert([transactionData])
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (transactionError) throw transactionError;
+
+      // Then, update the bank balance
+      const { error: bankUpdateError } = await supabase
+        .from('banks')
+        .update({
+          current_balance: transactionData.balance_after,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', transactionData.bank_id);
+
+      if (bankUpdateError) throw bankUpdateError;
+
+      return transaction;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
       toast.success('تم إنشاء المعاملة بنجاح');
     },
     onError: (error) => {
