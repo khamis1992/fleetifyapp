@@ -113,7 +113,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                   <div className="space-y-1 text-sm">
                     <p className="font-medium">شركة النقل المتطورة</p>
                     <p>الكويت، حولي</p>
-                    <p>هاتف: +965 12345678</p>
+                    <p>هاتف: <span dir="ltr">+965 12345678</span></p>
                     <p>info@transport.com</p>
                   </div>
                 </div>
