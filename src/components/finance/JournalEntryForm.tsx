@@ -245,7 +245,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
@@ -307,23 +307,24 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>الحساب</TableHead>
-                    <TableHead>مركز التكلفة</TableHead>
-                    <TableHead>الأصل</TableHead>
-                    <TableHead>الموظف</TableHead>
-                    <TableHead>الوصف</TableHead>
-                    <TableHead>مدين</TableHead>
-                    <TableHead>دائن</TableHead>
-                    <TableHead className="w-20">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[1200px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[280px]">الحساب</TableHead>
+                      <TableHead className="min-w-[180px]">مركز التكلفة</TableHead>
+                      <TableHead className="min-w-[180px]">الأصل</TableHead>
+                      <TableHead className="min-w-[180px]">الموظف</TableHead>
+                      <TableHead className="min-w-[200px]">الوصف</TableHead>
+                      <TableHead className="min-w-[120px]">مدين</TableHead>
+                      <TableHead className="min-w-[120px]">دائن</TableHead>
+                      <TableHead className="w-20">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {lines.map((line) => (
                     <TableRow key={line.id}>
-                      <TableCell className="w-64">
+                      <TableCell>
                         <Popover 
                           open={accountSearchOpen[line.id] || false}
                           onOpenChange={(open) => setAccountSearchOpen({...accountSearchOpen, [line.id]: open})}
@@ -370,7 +371,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           </PopoverContent>
                         </Popover>
                       </TableCell>
-                      <TableCell className="w-48">
+                      <TableCell>
                         <Popover 
                           open={costCenterSearchOpen[line.id] || false}
                           onOpenChange={(open) => setCostCenterSearchOpen({...costCenterSearchOpen, [line.id]: open})}
@@ -433,7 +434,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           </PopoverContent>
                         </Popover>
                       </TableCell>
-                      <TableCell className="w-48">
+                      <TableCell>
                         <Popover open={assetSearchOpen[line.id]} onOpenChange={(open) => setAssetSearchOpen({...assetSearchOpen, [line.id]: open})}>
                           <PopoverTrigger asChild>
                             <Button
@@ -485,12 +486,12 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           </PopoverContent>
                         </Popover>
                       </TableCell>
-                      <TableCell className="w-48">
+                      <TableCell>
                         <Select
                           value={line.employee_id || 'none'}
                           onValueChange={(value) => updateLine(line.id, 'employee_id', value === 'none' ? '' : value)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="الموظف" />
                           </SelectTrigger>
                           <SelectContent>
@@ -544,7 +545,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
 
               {/* Totals */}
               <div className="mt-4 space-y-2">
