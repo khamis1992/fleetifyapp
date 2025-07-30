@@ -77,7 +77,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                تحميل PDF
+                تحميل الفاتورة
               </Button>
             </div>
           </div>
