@@ -14,12 +14,14 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { TrendingUp, TrendingDown, Banknote, CreditCard, Plus, Search, Building2, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, Bank } from "@/hooks/useTreasury";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateBankDialogOpen, setIsCreateBankDialogOpen] = useState(false);
   const [isCreateTransactionDialogOpen, setIsCreateTransactionDialogOpen] = useState(false);
   
+  const { user } = useAuth();
   const { data: banks, isLoading: banksLoading, error: banksError } = useBanks();
   const { data: transactions, isLoading: transactionsLoading } = useBankTransactions();
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
@@ -37,11 +39,11 @@ export default function Treasury() {
   });
 
   const handleCreateBank = async () => {
-    if (!newBank.bank_name || !newBank.account_number) return;
+    if (!newBank.bank_name || !newBank.account_number || !user?.profile?.company_id) return;
 
     await createBank.mutateAsync({
       ...newBank,
-      company_id: '1', // This would come from auth context
+      company_id: user.profile.company_id,
     } as Omit<Bank, 'id' | 'created_at' | 'updated_at'>);
 
     setNewBank({
@@ -84,7 +86,8 @@ export default function Treasury() {
     }
   };
 
-  if (banksLoading || summaryLoading) {
+  // Show loading if user is not loaded yet
+  if (!user || banksLoading || summaryLoading) {
     return (
       <div className="flex items-center justify-center h-48">
         <LoadingSpinner />
