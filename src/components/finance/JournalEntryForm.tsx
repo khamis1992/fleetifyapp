@@ -144,11 +144,11 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
           updatedLine.account_name = selectedAccount?.account_name || ''
         }
         
-        // If cost_center_id changes, update cost_center_name
-        if (field === 'cost_center_id') {
-          const selectedCostCenter = costCenters?.find(cc => cc.id === value)
-          updatedLine.cost_center_name = selectedCostCenter?.center_name || ''
-        }
+         // If cost_center_id changes, update cost_center_name
+         if (field === 'cost_center_id') {
+           const selectedCostCenter = costCenters?.find(cc => cc.id === value)
+           updatedLine.cost_center_name = selectedCostCenter?.center_name_ar || selectedCostCenter?.center_name || ''
+         }
         
         // If asset_id changes, update asset_name
         if (field === 'asset_id') {
@@ -342,11 +342,11 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">لا يوجد</SelectItem>
-                            {costCenters?.map((costCenter) => (
-                              <SelectItem key={costCenter.id} value={costCenter.id}>
-                                {costCenter.center_code} - {costCenter.center_name}
-                              </SelectItem>
-                            ))}
+                             {costCenters?.map((costCenter) => (
+                               <SelectItem key={costCenter.id} value={costCenter.id}>
+                                 {costCenter.center_code} - {costCenter.center_name_ar || costCenter.center_name}
+                               </SelectItem>
+                             ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
