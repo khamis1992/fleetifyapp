@@ -101,7 +101,7 @@ async function fetchStatsMultiQuery(companyId: string): Promise<OptimizedDashboa
       .eq('company_id', companyId).in('status', ['pending', 'in_progress']),
     
     supabase.from('payments').select('amount')
-      .eq('company_id', companyId).eq('status', 'pending'),
+      .eq('company_id', companyId).eq('payment_status', 'pending'),
     
     supabase.from('contracts').select('*', { count: 'exact', head: true })
       .eq('company_id', companyId).eq('status', 'active')

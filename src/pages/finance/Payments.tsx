@@ -271,8 +271,8 @@ const Payments = () => {
                               {payment.payment_number}
                             </TableCell>
                                <TableCell>
-                                 <Badge className={getTypeColor((payment as any).payment_type || (payment as any).transaction_type)}>
-                                   {getTypeLabel((payment as any).payment_type || (payment as any).transaction_type)}
+                                 <Badge className={getTypeColor((payment as any).transaction_type)}>
+                                   {getTypeLabel((payment as any).transaction_type)}
                                  </Badge>
                                </TableCell>
                             <TableCell>

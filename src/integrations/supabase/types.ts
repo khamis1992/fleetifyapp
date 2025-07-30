@@ -3676,6 +3676,7 @@ export type Database = {
           payment_status: string
           payment_type: string
           reference_number: string | null
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           vendor_id: string | null
         }
@@ -3702,6 +3703,7 @@ export type Database = {
           payment_status?: string
           payment_type: string
           reference_number?: string | null
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           vendor_id?: string | null
         }
@@ -3728,6 +3730,7 @@ export type Database = {
           payment_status?: string
           payment_type?: string
           reference_number?: string | null
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           vendor_id?: string | null
         }
@@ -7514,6 +7517,13 @@ export type Database = {
       insurance_status: "active" | "expired" | "cancelled" | "pending"
       maintenance_priority: "low" | "medium" | "high" | "urgent"
       maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
+      payment_method:
+        | "cash"
+        | "check"
+        | "bank_transfer"
+        | "credit_card"
+        | "debit_card"
+      payment_status: "pending" | "completed" | "cancelled" | "failed"
       request_source:
         | "payroll"
         | "contract"
@@ -7524,6 +7534,7 @@ export type Database = {
         | "vehicle_maintenance"
         | "budget"
         | "other"
+      transaction_type: "payment" | "receipt"
       user_role:
         | "super_admin"
         | "company_admin"
@@ -7671,6 +7682,14 @@ export const Constants = {
       insurance_status: ["active", "expired", "cancelled", "pending"],
       maintenance_priority: ["low", "medium", "high", "urgent"],
       maintenance_status: ["pending", "in_progress", "completed", "cancelled"],
+      payment_method: [
+        "cash",
+        "check",
+        "bank_transfer",
+        "credit_card",
+        "debit_card",
+      ],
+      payment_status: ["pending", "completed", "cancelled", "failed"],
       request_source: [
         "payroll",
         "contract",
@@ -7682,6 +7701,7 @@ export const Constants = {
         "budget",
         "other",
       ],
+      transaction_type: ["payment", "receipt"],
       user_role: [
         "super_admin",
         "company_admin",
