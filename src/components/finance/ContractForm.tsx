@@ -34,7 +34,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
     contract_amount: 0,
     monthly_amount: 0,
     contract_type: 'rental',
-    account_id: '',
+        account_id: 'none',
     customer_id: '',
     vehicle_id: '',
     description: '',
@@ -130,7 +130,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
         contract_amount: 0,
         monthly_amount: 0,
         contract_type: 'rental',
-        account_id: '',
+        account_id: 'none',
         customer_id: '',
         vehicle_id: '',
         description: '',
@@ -271,7 +271,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                     <SelectValue placeholder="اختر الحساب المحاسبي" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">لا يوجد</SelectItem>
+                    <SelectItem value="none">لا يوجد</SelectItem>
                     {entryAllowedAccounts?.filter(account => 
                       account.account_type === 'revenue' || 
                       account.account_type === 'assets'

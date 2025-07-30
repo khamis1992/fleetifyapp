@@ -42,9 +42,9 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     reference_number: '',
     check_number: '',
     bank_account: '',
-    cost_center_id: '',
-    bank_id: '',
-    account_id: '',
+    cost_center_id: 'none',
+    bank_id: 'none',
+    account_id: 'none',
     currency: 'KWD',
     notes: '',
     contract_id: contractId || '',
@@ -78,10 +78,10 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         customer_id: type === 'receipt' ? customerId : null,
         vendor_id: type === 'payment' ? vendorId : null,
         invoice_id: invoiceId,
-        contract_id: paymentData.contract_id || null,
-        cost_center_id: paymentData.cost_center_id || null,
-        bank_id: paymentData.bank_id || null,
-        account_id: paymentData.account_id || null,
+        contract_id: paymentData.contract_id === 'none' || !paymentData.contract_id ? null : paymentData.contract_id,
+        cost_center_id: paymentData.cost_center_id === 'none' ? null : paymentData.cost_center_id,
+        bank_id: paymentData.bank_id === 'none' ? null : paymentData.bank_id,
+        account_id: paymentData.account_id === 'none' ? null : paymentData.account_id,
         status: 'completed',
         created_by: user.id,
       });
@@ -100,12 +100,12 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         reference_number: '',
         check_number: '',
         bank_account: '',
-        cost_center_id: '',
-        bank_id: '',
-        account_id: '',
+        cost_center_id: 'none',
+        bank_id: 'none',
+        account_id: 'none',
         currency: 'KWD',
         notes: '',
-        contract_id: '',
+        contract_id: 'none',
       });
     } catch (error) {
       console.error('Error creating payment:', error);
@@ -193,7 +193,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectValue placeholder="اختر الحساب المحاسبي" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون حساب</SelectItem>
+                    <SelectItem value="none">بدون حساب</SelectItem>
                     {entryAllowedAccounts?.filter(account => 
                       account.account_type === 'assets' || 
                       account.account_type === 'expenses' ||
@@ -220,7 +220,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectValue placeholder="اختر مركز التكلفة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون مركز تكلفة</SelectItem>
+                    <SelectItem value="none">بدون مركز تكلفة</SelectItem>
                     {costCenters?.filter(center => center.id && center.id.trim() !== '').map((center) => (
                       <SelectItem key={center.id} value={center.id}>
                         {center.center_name_ar || center.center_name}
