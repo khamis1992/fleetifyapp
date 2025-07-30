@@ -510,9 +510,27 @@ export const useCreateJournalEntry = () => {
         return trimmed
       }
 
+      // Generate entry number if not provided
+      let entryNumber = entryData.entry.entry_number?.trim()
+      if (!entryNumber) {
+        // Generate unique entry number using database function
+        const { data: generatedNumber, error: numberError } = await supabase
+          .rpc('generate_journal_entry_number', {
+            company_id_param: user.profile.company_id
+          })
+        
+        if (numberError) {
+          console.error('Error generating entry number:', numberError)
+          throw new Error('خطأ في توليد رقم القيد')
+        }
+        
+        entryNumber = generatedNumber
+        console.log('Generated entry number:', entryNumber)
+      }
+
       // Sanitize entry data before inserting
       const sanitizedEntryData = {
-        entry_number: entryData.entry.entry_number,
+        entry_number: entryNumber,
         entry_date: entryData.entry.entry_date,
         description: entryData.entry.description,
         accounting_period_id: sanitizeEntryUuid(entryData.entry.accounting_period_id),

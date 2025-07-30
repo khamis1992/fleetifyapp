@@ -330,8 +330,11 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                   id="entry_number"
                   value={entryData.entry_number}
                   onChange={(e) => setEntryData({...entryData, entry_number: e.target.value})}
-                  placeholder="سيتم إنشاؤه تلقائياً"
+                  placeholder="سيتم إنشاؤه تلقائياً إذا ترك فارغاً"
                 />
+                <p className="text-sm text-muted-foreground">
+                  اتركه فارغاً لتوليد رقم تلقائي أو أدخل رقماً مخصصاً
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="entry_date">تاريخ القيد</Label>
