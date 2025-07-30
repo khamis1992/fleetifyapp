@@ -174,7 +174,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       return
     }
 
-    if (lines.some(line => !line.account_id)) {
+    if (lines.some(line => !line.account_id || line.account_id.trim() === '')) {
       toast.error('يجب اختيار حساب لكل بند')
       return
     }
@@ -187,11 +187,11 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
           total_credit: totalCredits
         },
         lines: lines.map(line => ({
-          account_id: line.account_id,
+          account_id: line.account_id || null,
           cost_center_id: line.cost_center_id || null,
           asset_id: line.asset_id || null,
           employee_id: line.employee_id || null,
-          line_description: line.description,
+          line_description: line.description || '',
           debit_amount: line.debit_amount || 0,
           credit_amount: line.credit_amount || 0
         }))
