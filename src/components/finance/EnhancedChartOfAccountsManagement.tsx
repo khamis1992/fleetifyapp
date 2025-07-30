@@ -142,7 +142,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <span className="font-mono text-left">{account.account_code}</span>
           </div>
         </TableCell>
-        <TableCell className="text-right">{account.account_name}</TableCell>
+        <TableCell className="text-right">{account.account_name_ar || account.account_name}</TableCell>
         <TableCell className="text-center">
           <Badge variant="outline">
             {getAccountTypeLabel(account.account_type)}
