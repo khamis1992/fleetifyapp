@@ -79,10 +79,6 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                 <Download className="h-4 w-4 mr-2" />
                 تحميل PDF
               </Button>
-              <Button variant="outline" size="sm">
-                <Printer className="h-4 w-4 mr-2" />
-                طباعة
-              </Button>
             </div>
           </div>
         </DialogHeader>
