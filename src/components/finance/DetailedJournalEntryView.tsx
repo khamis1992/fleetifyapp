@@ -49,33 +49,19 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
         <Table className="border border-border">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="text-center border-r border-border font-bold text-red-700">دائن</TableHead>
-              <TableHead className="text-center border-r border-border font-bold text-green-700">مدين</TableHead>
-              <TableHead className="text-center border-r border-border font-bold">البيان</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">رمز الحساب</TableHead>
               <TableHead className="text-center border-r border-border font-bold">اسم الحساب</TableHead>
-              <TableHead className="text-center font-bold">رمز الحساب</TableHead>
+              <TableHead className="text-center border-r border-border font-bold">البيان</TableHead>
+              <TableHead className="text-center border-r border-border font-bold text-green-700">مدين</TableHead>
+              <TableHead className="text-center font-bold text-red-700">دائن</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {entryLines?.map((line, index) => (
               <TableRow key={line.id} className="border-b border-border">
-                <TableCell className="border-r border-border text-center font-medium">
-                  {line.credit_amount > 0 ? (
-                    <span className="text-red-600">{line.credit_amount.toFixed(3)}</span>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell className="border-r border-border text-center font-medium">
-                  {line.debit_amount > 0 ? (
-                    <span className="text-green-600">{line.debit_amount.toFixed(3)}</span>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell className="border-r border-border text-right">
-                  <div className="text-sm">
-                    {line.line_description || entry.description || '-'}
+                <TableCell className="text-center border-r border-border">
+                  <div className="font-mono text-sm">
+                    {line.account?.account_code || '-'}
                   </div>
                 </TableCell>
                 <TableCell className="border-r border-border text-right">
@@ -90,23 +76,31 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-center">
-                  <div className="font-mono text-sm">
-                    {line.account?.account_code || '-'}
+                <TableCell className="border-r border-border text-right">
+                  <div className="text-sm">
+                    {line.line_description || entry.description || '-'}
                   </div>
+                </TableCell>
+                <TableCell className="border-r border-border text-center font-medium">
+                  {line.debit_amount > 0 ? (
+                    <span className="text-green-600">{line.debit_amount.toFixed(3)}</span>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-center font-medium">
+                  {line.credit_amount > 0 ? (
+                    <span className="text-red-600">{line.credit_amount.toFixed(3)}</span>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
             
             {/* Totals Row */}
             <TableRow className="bg-muted/30 font-bold border-t-2 border-border">
-              <TableCell className="text-center border-r border-border text-red-600">
-                {entry.total_credit.toFixed(3)}
-              </TableCell>
-              <TableCell className="text-center border-r border-border text-green-600">
-                {entry.total_debit.toFixed(3)}
-              </TableCell>
-              <TableCell colSpan={3} className="text-center">
+              <TableCell colSpan={3} className="text-center border-r border-border">
                 <div className="flex items-center justify-center gap-2">
                   <span>المجموع</span>
                   {entry.total_debit === entry.total_credit ? (
@@ -119,6 +113,12 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
                     </Badge>
                   )}
                 </div>
+              </TableCell>
+              <TableCell className="text-center border-r border-border text-green-600">
+                {entry.total_debit.toFixed(3)}
+              </TableCell>
+              <TableCell className="text-center text-red-600">
+                {entry.total_credit.toFixed(3)}
               </TableCell>
             </TableRow>
           </TableBody>
