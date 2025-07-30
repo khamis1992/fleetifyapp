@@ -3654,6 +3654,7 @@ export type Database = {
       }
       payments: {
         Row: {
+          account_id: string | null
           amount: number
           bank_account: string | null
           bank_id: string | null
@@ -3679,6 +3680,7 @@ export type Database = {
           vendor_id: string | null
         }
         Insert: {
+          account_id?: string | null
           amount: number
           bank_account?: string | null
           bank_id?: string | null
@@ -3704,6 +3706,7 @@ export type Database = {
           vendor_id?: string | null
         }
         Update: {
+          account_id?: string | null
           amount?: number
           bank_account?: string | null
           bank_id?: string | null
@@ -3741,6 +3744,13 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
             referencedColumns: ["id"]
           },
           {
