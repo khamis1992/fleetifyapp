@@ -157,7 +157,7 @@ const Invoices = () => {
                 <SelectItem value="all">جميع المراكز</SelectItem>
                 {costCenters?.map(center => (
                   <SelectItem key={center.id} value={center.id}>
-                    {center.center_name}
+                    {center.center_name_ar || center.center_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -238,7 +238,7 @@ const Invoices = () => {
                         <div className="flex items-center gap-1">
                           <Building2 className="h-3 w-3" />
                           <span className="text-sm">
-                            {costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد'}
+                            {costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name_ar || costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد'}
                           </span>
                         </div>
                       ) : (
