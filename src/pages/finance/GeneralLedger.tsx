@@ -336,7 +336,7 @@ export default function Ledger() {
                               </div>
                               <div className="flex items-center justify-between w-full">
                                 <span className="text-lg font-semibold">{entry.entry_number}</span>
-                                <h3 className="text-lg font-semibold">سند قيد رقم:</h3>
+                                <h3 className="text-lg font-semibold">سند قيد رقم</h3>
                               </div>
                             </div>
                             <div className="flex items-center gap-6 text-sm text-muted-foreground">
