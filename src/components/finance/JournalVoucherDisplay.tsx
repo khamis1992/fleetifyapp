@@ -1,177 +1,288 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { formatCurrency } from "@/lib/utils"
-import { useJournalEntryLines } from "@/hooks/useGeneralLedger"
-import { format } from "date-fns"
-import { ar } from "date-fns/locale"
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Search, Eye, Plus, Calendar, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useJournalEntryLines, LedgerFilters } from '@/hooks/useGeneralLedger';
+import { formatCurrency } from '@/lib/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { JournalEntryForm } from './JournalEntryForm';
+import { VoucherDetailsDialog } from './VoucherDetailsDialog';
+import { toast } from 'sonner';
 
-interface JournalVoucherDisplayProps {
-  entry: {
-    id: string
-    entry_number: string
-    entry_date: string
-    description: string
-    status: string
-    total_debit: number
-    total_credit: number
-    reference_type?: string
-    reference_id?: string
-    created_by_profile?: {
-      first_name?: string
-      last_name?: string
+export const JournalVoucherDisplay: React.FC = () => {
+  const [filters, setFilters] = useState<LedgerFilters>({});
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showNewEntryDialog, setShowNewEntryDialog] = useState(false);
+
+  const { data: journalLines, isLoading } = useJournalEntryLines(filters);
+
+  const updateFilters = (newFilters: Partial<LedgerFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'posted':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'draft':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'reversed':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-400" />;
     }
-  }
-}
+  };
 
-export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
-  const { data: entryLines = [] } = useJournalEntryLines(entry.id)
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'posted':
+        return 'default';
+      case 'draft':
+        return 'secondary';
+      case 'reversed':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'posted': return 'مرحل'
-      case 'draft': return 'مسودة'
-      case 'reversed': return 'ملغي'
-      default: return status
+      case 'posted':
+        return 'مرحل';
+      case 'draft':
+        return 'مسودة';
+      case 'reversed':
+        return 'عكس';
+      default:
+        return status;
     }
-  }
+  };
 
-  const getStatusColor = (status: string): "default" | "destructive" | "outline" | "secondary" => {
-    switch (status) {
-      case 'posted': return 'default'
-      case 'draft': return 'secondary'
-      case 'reversed': return 'destructive'
-      default: return 'secondary'
+  // Group lines by journal entry
+  const groupedLines = journalLines?.reduce((groups: any, line: any) => {
+    const entryId = line.journal_entry?.id;
+    if (!groups[entryId]) {
+      groups[entryId] = {
+        entry: line.journal_entry,
+        lines: []
+      };
     }
+    groups[entryId].lines.push(line);
+    return groups;
+  }, {}) || {};
+
+  // Get account hierarchy display
+  const getAccountHierarchy = (account: any) => {
+    if (!account) return '';
+    
+    const hierarchy = [];
+    if (account.parent_account?.account_name) {
+      hierarchy.push(account.parent_account.account_name);
+    }
+    hierarchy.push(account.account_name);
+    
+    return hierarchy.join(' > ');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-white shadow-lg">
-      {/* Voucher Header */}
-      <CardHeader className="text-center border-b-2 border-gray-800 pb-4">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-800">سند قيد محاسبي</h1>
-          <div className="flex justify-between items-center">
-            <div className="text-right">
-              <p className="text-sm text-gray-600">رقم القيد: <span className="font-bold">{entry.entry_number}</span></p>
-              <p className="text-sm text-gray-600">
-                التاريخ: <span className="font-bold">
-                  {format(new Date(entry.entry_date), "dd/MM/yyyy", { locale: ar })}
-                </span>
-              </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">دليل الحسابات - القيود المحاسبية</h2>
+          <p className="text-muted-foreground">
+            عرض وإدارة القيود المحاسبية بتنسيق السندات المحاسبية
+          </p>
+        </div>
+        <Button onClick={() => setShowNewEntryDialog(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          قيد جديد
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث في القيود..."
+                value={filters.searchTerm || ''}
+                onChange={(e) => updateFilters({ searchTerm: e.target.value })}
+                className="pl-10"
+              />
             </div>
-            <div className="text-left">
-              <Badge variant={getStatusColor(entry.status)} className="text-sm">
-                {getStatusLabel(entry.status)}
-              </Badge>
-              {entry.reference_type && (
-                <p className="text-sm text-gray-600 mt-1">
-                  النوع: <span className="font-bold">{entry.reference_type}</span>
-                </p>
+            
+            <Select value={filters.status || 'all'} onValueChange={(value) => updateFilters({ status: value === 'all' ? undefined : value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="draft">مسودة</SelectItem>
+                <SelectItem value="posted">مرحل</SelectItem>
+                <SelectItem value="reversed">معكوس</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              placeholder="من تاريخ"
+              value={filters.dateFrom || ''}
+              onChange={(e) => updateFilters({ dateFrom: e.target.value })}
+            />
+
+            <Input
+              type="date"
+              placeholder="إلى تاريخ"
+              value={filters.dateTo || ''}
+              onChange={(e) => updateFilters({ dateTo: e.target.value })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Journal Entries Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            القيود المحاسبية
+          </CardTitle>
+          <CardDescription>
+            قائمة بالقيود المحاسبية بتفاصيل السندات المحاسبية
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-center">رقم القيد</TableHead>
+                <TableHead className="text-center">تاريخ القيد</TableHead>
+                <TableHead className="text-center">الحساب</TableHead>
+                <TableHead className="text-center">مركز التكلفة</TableHead>
+                <TableHead className="text-center">مدين</TableHead>
+                <TableHead className="text-center">دائن</TableHead>
+                <TableHead className="text-center">البيان</TableHead>
+                <TableHead className="text-center">الحالة</TableHead>
+                <TableHead className="text-center">الإجراءات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.values(groupedLines).map((group: any) => 
+                group.lines.map((line: any, lineIndex: number) => (
+                  <TableRow key={`${group.entry.id}-${line.id}`} className="hover:bg-muted/50">
+                    <TableCell className="text-center font-medium">
+                      {lineIndex === 0 ? (group.entry.entry_number || '-') : ''}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {lineIndex === 0 && group.entry.entry_date 
+                        ? new Date(group.entry.entry_date).toLocaleDateString('ar-SA')
+                        : ''}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">
+                          {line.account?.account_code} - {line.account?.account_name}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {getAccountHierarchy(line.account)}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {line.cost_center?.center_name || '-'}
+                    </TableCell>
+                    <TableCell className="text-center text-green-600 font-medium">
+                      {line.debit_amount ? formatCurrency(line.debit_amount) : '-'}
+                    </TableCell>
+                    <TableCell className="text-center text-red-600 font-medium">
+                      {line.credit_amount ? formatCurrency(line.credit_amount) : '-'}
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="truncate text-sm" title={line.line_description || group.entry.description}>
+                        {line.line_description || group.entry.description || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {lineIndex === 0 && (
+                        <Badge variant={getStatusColor(group.entry.status)}>
+                          {getStatusIcon(group.entry.status)}
+                          <span className="mr-1">{getStatusLabel(group.entry.status)}</span>
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {lineIndex === 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEntry(group.entry);
+                            setShowDetailsDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-            </div>
-          </div>
-        </div>
-      </CardHeader>
+              {Object.keys(groupedLines).length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    لا توجد بنود قيود محاسبية
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <CardContent className="p-6">
-        {/* Voucher Description */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">البيان:</h3>
-          <p className="text-gray-700">{entry.description}</p>
-        </div>
+      {/* Details Dialog */}
+      <VoucherDetailsDialog
+        entry={selectedEntry}
+        isOpen={showDetailsDialog}
+        onClose={() => {
+          setShowDetailsDialog(false);
+          setSelectedEntry(null);
+        }}
+      />
 
-        {/* Voucher Table */}
-        <div className="border-2 border-gray-800 rounded-lg overflow-hidden">
-          {/* Table Header */}
-          <div className="bg-gray-100 border-b-2 border-gray-800">
-            <div className="grid grid-cols-12 gap-2 p-4 font-bold text-gray-800">
-              <div className="col-span-2 text-center">رمز الحساب</div>
-              <div className="col-span-4 text-center">اسم الحساب</div>
-              <div className="col-span-2 text-center">مركز التكلفة</div>
-              <div className="col-span-2 text-center">مدين</div>
-              <div className="col-span-2 text-center">دائن</div>
-            </div>
-          </div>
-
-          {/* Table Body */}
-          <div className="divide-y divide-gray-300">
-            {entryLines.map((line: any, index: number) => (
-              <div key={line.id} className={`grid grid-cols-12 gap-2 p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                <div className="col-span-2 text-center font-mono">
-                  {line.account?.account_code}
-                </div>
-                <div className="col-span-4 text-right">
-                  <div className="font-semibold">{line.account?.account_name_ar || line.account?.account_name}</div>
-                  {line.line_description && (
-                    <div className="text-sm text-gray-600 mt-1">{line.line_description}</div>
-                  )}
-                </div>
-                <div className="col-span-2 text-center text-sm">
-                  {line.cost_center?.center_name_ar || line.cost_center?.center_name || '-'}
-                </div>
-                <div className="col-span-2 text-center font-bold text-green-700">
-                  {line.debit_amount > 0 ? formatCurrency(line.debit_amount) : '-'}
-                </div>
-                <div className="col-span-2 text-center font-bold text-red-700">
-                  {line.credit_amount > 0 ? formatCurrency(line.credit_amount) : '-'}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Table Footer - Totals */}
-          <div className="bg-gray-200 border-t-2 border-gray-800">
-            <div className="grid grid-cols-12 gap-2 p-4 font-bold text-gray-800">
-              <div className="col-span-8 text-right text-lg">الإجمالي:</div>
-              <div className="col-span-2 text-center text-lg text-green-700">
-                {formatCurrency(entry.total_debit)}
-              </div>
-              <div className="col-span-2 text-center text-lg text-red-700">
-                {formatCurrency(entry.total_credit)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Voucher Footer */}
-        <div className="mt-8 grid grid-cols-3 gap-8 text-center">
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">أعد بواسطة</p>
-            <div className="border-t border-gray-400 pt-2">
-              <p className="font-semibold">
-                {entry.created_by_profile?.first_name && entry.created_by_profile?.last_name
-                  ? `${entry.created_by_profile.first_name} ${entry.created_by_profile.last_name}`
-                  : 'غير محدد'
-                }
-              </p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">راجع بواسطة</p>
-            <div className="border-t border-gray-400 pt-2">
-              <p className="font-semibold">________________</p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">اعتمد بواسطة</p>
-            <div className="border-t border-gray-400 pt-2">
-              <p className="font-semibold">________________</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Balance Check */}
-        {Math.abs(entry.total_debit - entry.total_credit) > 0.001 && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 font-semibold text-center">
-              تحذير: القيد غير متوازن - الفرق: {formatCurrency(Math.abs(entry.total_debit - entry.total_credit))}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
+      {/* New Entry Dialog */}
+      <Dialog open={showNewEntryDialog} onOpenChange={setShowNewEntryDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إضافة قيد محاسبي جديد</DialogTitle>
+          </DialogHeader>
+          <JournalEntryForm 
+            open={showNewEntryDialog}
+            onOpenChange={setShowNewEntryDialog}
+            onSuccess={() => {
+              setShowNewEntryDialog(false);
+              toast.success('تم إنشاء القيد بنجاح');
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
