@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountMovementsDialog } from "@/components/finance/AccountMovementsDialog";
-import { DetailedJournalEntryView } from "@/components/finance/DetailedJournalEntryView";
 import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus, Calculator, BarChart3, Target, Users, Calendar, AlertCircle } from "lucide-react";
 import { 
   useEnhancedJournalEntries, 
@@ -316,11 +315,11 @@ export default function Ledger() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>
-                                  <DialogTitle>عرض القيد المحاسبي - النمط التقليدي</DialogTitle>
+                                  <DialogTitle>عرض القيد المحاسبي</DialogTitle>
                                 </DialogHeader>
-                                <DetailedJournalEntryView entry={entry} />
+                                <JournalVoucherDisplay entry={entry} />
                               </DialogContent>
                             </Dialog>
                             {entry.status === 'draft' && (
@@ -620,19 +619,14 @@ export default function Ledger() {
       {/* Entry Details Dialog */}
       {selectedEntryId && (
         <Dialog open={!!selectedEntryId} onOpenChange={() => setSelectedEntryId(null)}>
-          <DialogContent className="max-w-6xl">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>تفاصيل القيد المحاسبي</DialogTitle>
               <DialogDescription>
-                عرض تفاصيل بنود القيد المحاسبي المحدد بالتفصيل
+                عرض تفاصيل بنود القيد المحاسبي المحدد
               </DialogDescription>
             </DialogHeader>
-            {journalEntries?.find(e => e.id === selectedEntryId) && (
-              <DetailedJournalEntryView 
-                entry={journalEntries.find(e => e.id === selectedEntryId)!} 
-                showAsCard={false}
-              />
-            )}
+            {/* Add detailed journal entry view here */}
           </DialogContent>
         </Dialog>
       )}
