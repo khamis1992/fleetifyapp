@@ -210,11 +210,11 @@ export default function Ledger() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="entries">القيود المحاسبية</TabsTrigger>
-          <TabsTrigger value="balances">أرصدة الحسابات</TabsTrigger>
-          <TabsTrigger value="trial">ميزان المراجعة</TabsTrigger>
-          <TabsTrigger value="costcenters">مراكز التكلفة</TabsTrigger>
           <TabsTrigger value="analysis">التحليل المالي</TabsTrigger>
+          <TabsTrigger value="costcenters">مراكز التكلفة</TabsTrigger>
+          <TabsTrigger value="trial">ميزان المراجعة</TabsTrigger>
+          <TabsTrigger value="balances">أرصدة الحسابات</TabsTrigger>
+          <TabsTrigger value="entries">القيود المحاسبية</TabsTrigger>
         </TabsList>
 
         {/* Journal Entries Tab */}
