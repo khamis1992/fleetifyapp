@@ -68,20 +68,6 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       description: '', 
       debit_amount: 0, 
       credit_amount: 0 
-    },
-    { 
-      id: '2', 
-      account_id: '', 
-      account_name: '',
-      cost_center_id: '',
-      cost_center_name: '',
-      asset_id: '',
-      asset_name: '',
-      employee_id: '',
-      employee_name: '',
-      description: '', 
-      debit_amount: 0, 
-      credit_amount: 0 
     }
   ])
 
@@ -136,7 +122,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
   }
 
   const removeLine = (id: string) => {
-    if (lines.length > 2) {
+    if (lines.length > 1) {
       setLines(lines.filter(line => line.id !== id))
     }
   }
@@ -220,8 +206,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         reference_id: ''
       })
       setLines([
-        { id: '1', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', asset_id: '', asset_name: '', employee_id: '', employee_name: '', description: '', debit_amount: 0, credit_amount: 0 },
-        { id: '2', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', asset_id: '', asset_name: '', employee_id: '', employee_name: '', description: '', debit_amount: 0, credit_amount: 0 }
+        { id: '1', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', asset_id: '', asset_name: '', employee_id: '', employee_name: '', description: '', debit_amount: 0, credit_amount: 0 }
       ])
       onOpenChange?.(false)
       onSuccess?.()
@@ -537,7 +522,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           variant="ghost"
                           size="sm"
                           onClick={() => removeLine(line.id)}
-                          disabled={lines.length <= 2}
+                          disabled={lines.length <= 1}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
