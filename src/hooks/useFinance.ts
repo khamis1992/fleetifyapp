@@ -52,6 +52,9 @@ export interface JournalEntryLine {
   id: string
   journal_entry_id: string
   account_id: string
+  cost_center_id?: string | null
+  asset_id?: string | null
+  employee_id?: string | null
   line_description?: string
   debit_amount: number
   credit_amount: number
@@ -478,8 +481,10 @@ export const useCreateJournalEntry = () => {
         status?: 'draft' | 'posted' | 'reversed'
       }
       lines: {
-        account_id: string
+        account_id: string | null
         cost_center_id?: string | null
+        asset_id?: string | null
+        employee_id?: string | null
         line_description?: string
         debit_amount?: number
         credit_amount?: number
@@ -508,16 +513,25 @@ export const useCreateJournalEntry = () => {
       
       if (entryError) throw entryError
       
-      // Insert lines
-      const lines = entryData.lines.map((line, index) => ({
-        journal_entry_id: entry.id,
-        account_id: line.account_id,
-        cost_center_id: line.cost_center_id || null,
-        line_description: line.line_description,
-        debit_amount: line.debit_amount || 0,
-        credit_amount: line.credit_amount || 0,
-        line_number: index + 1
-      }))
+      // Insert lines with validation
+      const lines = entryData.lines.map((line, index) => {
+        // Validate account_id
+        if (!line.account_id) {
+          throw new Error(`Account is required for line ${index + 1}`)
+        }
+        
+        return {
+          journal_entry_id: entry.id,
+          account_id: line.account_id,
+          cost_center_id: line.cost_center_id || null,
+          asset_id: line.asset_id || null,
+          employee_id: line.employee_id || null,
+          line_description: line.line_description,
+          debit_amount: line.debit_amount || 0,
+          credit_amount: line.credit_amount || 0,
+          line_number: index + 1
+        }
+      })
       
       const { error: linesError } = await supabase
         .from("journal_entry_lines")
