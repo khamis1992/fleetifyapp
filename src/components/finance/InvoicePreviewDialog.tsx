@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Mail, Printer } from "lucide-react";
+import { FileText, Download } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface InvoicePreviewDialogProps {
 }
 
 export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePreviewDialogProps) {
+  const invoiceRef = useRef<HTMLDivElement>(null);
+  
   if (!invoice) return null;
 
   const getStatusColor = (status: string) => {
@@ -65,6 +68,267 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
     }
   ];
 
+  const downloadInvoicePDF = async () => {
+    if (!invoiceRef.current) return;
+
+    const invoiceContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>فاتورة ${invoice.invoice_number}</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            color: #333;
+            direction: rtl;
+          }
+          .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 30px;
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+          }
+          .company-info {
+            text-align: right;
+          }
+          .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+          }
+          .invoice-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1f2937;
+          }
+          .invoice-number {
+            font-size: 16px;
+            color: #666;
+            margin-top: 5px;
+          }
+          .invoice-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+          }
+          .detail-section h4 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1f2937;
+          }
+          .detail-section p {
+            margin: 5px 0;
+            font-size: 14px;
+            line-height: 1.4;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+          }
+          .items-table th,
+          .items-table td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+          }
+          .items-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #1f2937;
+          }
+          .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+          }
+          .totals-table {
+            width: 300px;
+          }
+          .totals-table tr td {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+          }
+          .totals-table tr:last-child td {
+            border-bottom: 2px solid #333;
+            font-weight: bold;
+            font-size: 18px;
+          }
+          .phone-ltr {
+            direction: ltr;
+            display: inline-block;
+          }
+          .terms-notes {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+          }
+          .terms-notes h4 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1f2937;
+          }
+          .terms-notes p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+          }
+          @media print {
+            body { margin: 0; padding: 0; }
+            .invoice-container { box-shadow: none; margin: 0; padding: 20px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-container">
+          <div class="header">
+            <div class="company-info">
+              <div class="company-name">شركة النقل المتطورة</div>
+              <div>الكويت، حولي</div>
+              <div>هاتف: <span class="phone-ltr">+965 12345678</span></div>
+              <div>info@transport.com</div>
+            </div>
+            <div>
+              <div class="invoice-title">فاتورة ${getTypeLabel(invoice.invoice_type)}</div>
+              <div class="invoice-number">رقم الفاتورة: ${invoice.invoice_number}</div>
+            </div>
+          </div>
+
+          <div class="invoice-details">
+            <div class="detail-section">
+              <h4>معلومات الفاتورة</h4>
+              <p><strong>التاريخ:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</p>
+              <p><strong>تاريخ الاستحقاق:</strong> ${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-GB') : 'غير محدد'}</p>
+              <p><strong>العملة:</strong> ${invoice.currency || 'KWD'}</p>
+            </div>
+            
+            <div class="detail-section">
+              <h4>من</h4>
+              <p><strong>شركة النقل المتطورة</strong></p>
+              <p>الكويت، حولي</p>
+              <p>هاتف: <span class="phone-ltr">+965 12345678</span></p>
+              <p>info@transport.com</p>
+            </div>
+
+            <div class="detail-section">
+              <h4>إلى</h4>
+              <p><strong>العميل</strong></p>
+              <p>العنوان غير متوفر</p>
+              <p>الهاتف غير متوفر</p>
+            </div>
+          </div>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>الوصف</th>
+                <th>الكمية</th>
+                <th>سعر الوحدة</th>
+                <th>الضريبة</th>
+                <th>المجموع</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sampleItems.map(item => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td>${item.quantity}</td>
+                  <td>${item.unit_price.toFixed(3)} د.ك</td>
+                  <td>${item.tax_rate}%</td>
+                  <td>${item.total.toFixed(3)} د.ك</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals-section">
+            <table class="totals-table">
+              <tr>
+                <td>المجموع الفرعي:</td>
+                <td>${(invoice.subtotal || 225.5).toFixed(3)} د.ك</td>
+              </tr>
+              <tr>
+                <td>الضريبة:</td>
+                <td>${(invoice.tax_amount || 11.275).toFixed(3)} د.ك</td>
+              </tr>
+              <tr>
+                <td>الخصم:</td>
+                <td>-${(invoice.discount_amount || 0).toFixed(3)} د.ك</td>
+              </tr>
+              <tr>
+                <td><strong>المجموع الإجمالي:</strong></td>
+                <td><strong>${invoice.total_amount.toFixed(3)} د.ك</strong></td>
+              </tr>
+            </table>
+          </div>
+
+          ${(invoice.terms || invoice.notes) ? `
+            <div class="terms-notes">
+              ${invoice.terms ? `
+                <h4>شروط الدفع</h4>
+                <p>${invoice.terms}</p>
+              ` : ''}
+              ${invoice.notes ? `
+                <h4>ملاحظات</h4>
+                <p>${invoice.notes}</p>
+              ` : ''}
+            </div>
+          ` : ''}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const opt = {
+      margin: 1,
+      filename: `فاتورة_${invoice.invoice_number}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        direction: 'rtl'
+      },
+      jsPDF: { 
+        unit: 'in', 
+        format: 'a4', 
+        orientation: 'portrait',
+        putOnlyUsedFonts: true
+      }
+    };
+
+    // Create a temporary element to hold the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = invoiceContent;
+    document.body.appendChild(tempDiv);
+
+    try {
+      await html2pdf().set(opt).from(tempDiv).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -75,7 +339,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
               معاينة الفاتورة #{invoice.invoice_number}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={downloadInvoicePDF}>
                 <Download className="h-4 w-4 mr-2" />
                 تحميل الفاتورة
               </Button>
