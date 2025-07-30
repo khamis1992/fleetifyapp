@@ -12,6 +12,7 @@ import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, B
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { InvoiceIntegrationPanel } from "@/components/finance/InvoiceIntegrationPanel"
+import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog"
 
 const Invoices = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -20,6 +21,7 @@ const Invoices = () => {
   const [filterCostCenter, setFilterCostCenter] = useState("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
 
   const { data: invoices, isLoading, error } = useInvoices()
@@ -254,13 +256,17 @@ const Invoices = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setSelectedInvoice(invoice)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                         <Button 
+                           variant="ghost" 
+                           size="sm"
+                           onClick={() => {
+                             setSelectedInvoice(invoice);
+                             setIsPreviewOpen(true);
+                           }}
+                           title="معاينة الفاتورة"
+                         >
+                           <Eye className="h-4 w-4" />
+                         </Button>
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -281,6 +287,13 @@ const Invoices = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Invoice Preview Dialog */}
+      <InvoicePreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        invoice={selectedInvoice}
+      />
     </div>
   )
 }
