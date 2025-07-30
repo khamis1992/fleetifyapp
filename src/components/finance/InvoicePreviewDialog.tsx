@@ -69,7 +69,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
   ];
 
   const downloadInvoiceHTML = () => {
-    console.log('تحميل الفاتورة - بدء العملية');
+    console.log('فتح الفاتورة في تبويب جديد');
     
     if (!invoice) {
       console.error('البيانات غير متوفرة');
@@ -93,18 +93,49 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             direction: rtl;
             line-height: 1.6;
           }
+          .controls {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+          }
+          .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background-color 0.2s ease;
+          }
+          .btn:hover {
+            background: #2563eb;
+          }
+          .btn.secondary {
+            background: #6b7280;
+          }
+          .btn.secondary:hover {
+            background: #4b5563;
+          }
           .invoice-container {
             max-width: 800px;
             margin: 0 auto;
             background: white;
             padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 8px;
           }
           .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid #e5e7eb;
             padding-bottom: 20px;
           }
           .company-info {
@@ -197,6 +228,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             color: #666;
           }
           @media print {
+            .controls { display: none !important; }
             body { 
               margin: 0; 
               padding: 0; 
@@ -206,6 +238,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
               margin: 0; 
               padding: 20px; 
               box-shadow: none;
+              border-radius: 0;
             }
             .header {
               margin-bottom: 20px;
@@ -237,6 +270,11 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
         </style>
       </head>
       <body>
+        <div class="controls">
+          <button class="btn" onclick="window.print()">طباعة</button>
+          <button class="btn secondary" onclick="window.close()">إغلاق</button>
+        </div>
+
         <div class="invoice-container">
           <div class="header">
             <div class="company-info">
@@ -337,27 +375,19 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
     `;
 
     try {
-      // Create a blob with the HTML content
-      const blob = new Blob([invoiceContent], { type: 'text/html;charset=utf-8' });
-      
-      // Create a download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `فاتورة_${invoice.invoice_number}.html`;
-      
-      // Trigger the download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the URL
-      URL.revokeObjectURL(url);
-      
-      console.log('تم تحميل الفاتورة بنجاح');
+      // Open the invoice in a new tab
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(invoiceContent);
+        newWindow.document.close();
+        console.log('تم فتح الفاتورة في تبويب جديد');
+      } else {
+        console.error('فشل في فتح تبويب جديد');
+        alert('فشل في فتح الفاتورة. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+      }
     } catch (error) {
-      console.error('خطأ في تحميل الفاتورة:', error);
-      alert('حدث خطأ أثناء تحميل الفاتورة. يرجى المحاولة مرة أخرى.');
+      console.error('خطأ في فتح الفاتورة:', error);
+      alert('حدث خطأ أثناء فتح الفاتورة. يرجى المحاولة مرة أخرى.');
     }
   };
 
