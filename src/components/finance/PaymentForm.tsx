@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,13 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCostCenters, useBanks } from "@/hooks/useTreasury";
 import { useActiveContracts } from "@/hooks/useContracts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
-import { TestTube } from "lucide-react";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { usePermissions } from "@/hooks/usePermissions";
+import { TestTube, AlertTriangle, Info } from "lucide-react";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 
 interface PaymentFormProps {
@@ -28,6 +31,16 @@ interface PaymentFormProps {
 export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceId, contractId, type }: PaymentFormProps) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  
+  // Access control and company validation
+  const { companyId, hasCompanyAdminAccess, filter } = useUnifiedCompanyAccess();
+  const { hasAccess: canCreatePayments, isLoading: permissionsLoading, reason: permissionReason } = usePermissions({
+    permissions: ['payments.create'],
+    requireCompanyAdmin: false
+  });
+  
+  // Data hooks
   const { data: costCenters } = useCostCenters();
   const { data: banks } = useBanks();
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
@@ -51,11 +64,58 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     contract_id: contractId || '',
   });
 
+  // Debug user roles and permissions on component mount
+  useEffect(() => {
+    if (user && open) {
+      const debug = {
+        userId: user.id,
+        userEmail: user.email,
+        companyId: user.profile?.company_id,
+        userRoles: user.roles || [],
+        hasCompanyAdminAccess,
+        canCreatePayments,
+        permissionReason,
+        permissionsLoading,
+        costCentersCount: costCenters?.length || 0,
+        banksCount: banks?.length || 0,
+        accountsCount: entryAllowedAccounts?.length || 0
+      };
+      
+      console.log('PaymentForm Debug Info:', debug);
+      setDebugInfo(debug);
+    }
+  }, [user, open, hasCompanyAdminAccess, canCreatePayments, permissionReason, permissionsLoading, costCenters, banks, entryAllowedAccounts]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user?.profile?.company_id) {
-      toast.error("User company not found");
+    // Enhanced validation with detailed error messages
+    console.log('Starting payment submission...', {
+      user: user?.id,
+      companyId: user?.profile?.company_id,
+      type,
+      paymentData
+    });
+
+    if (!user) {
+      console.error('User not authenticated');
+      toast.error("المستخدم غير مسجل الدخول");
+      return;
+    }
+
+    if (!user.profile?.company_id) {
+      console.error('User company not found', user);
+      toast.error("لم يتم العثور على شركة المستخدم");
+      return;
+    }
+
+    if (!canCreatePayments && !permissionsLoading) {
+      console.error('User lacks payment creation permissions', { 
+        canCreatePayments, 
+        permissionReason,
+        userRoles: user.roles 
+      });
+      toast.error(`ليس لديك صلاحية إنشاء الدفعات: ${permissionReason || 'غير محدد'}`);
       return;
     }
 
@@ -69,10 +129,29 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
       return;
     }
 
+    // Validate foreign key references
+    if (paymentData.cost_center_id !== 'none' && !costCenters?.find(cc => cc.id === paymentData.cost_center_id)) {
+      console.error('Invalid cost center selected', paymentData.cost_center_id);
+      toast.error("مركز التكلفة المحدد غير صالح");
+      return;
+    }
+
+    if (paymentData.bank_id !== 'none' && !banks?.find(bank => bank.id === paymentData.bank_id)) {
+      console.error('Invalid bank selected', paymentData.bank_id);
+      toast.error("البنك المحدد غير صالح");
+      return;
+    }
+
+    if (paymentData.account_id !== 'none' && !entryAllowedAccounts?.find(acc => acc.id === paymentData.account_id)) {
+      console.error('Invalid account selected', paymentData.account_id);
+      toast.error("الحساب المحاسبي المحدد غير صالح");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.from('payments').insert({
+      const insertData = {
         ...paymentData,
         company_id: user.profile.company_id,
         payment_type: type,
@@ -85,10 +164,23 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         account_id: paymentData.account_id === 'none' ? null : paymentData.account_id,
         status: 'completed',
         created_by: user.id,
-      });
+      };
 
-      if (error) throw error;
+      console.log('Inserting payment data:', insertData);
 
+      const { data, error } = await supabase.from('payments').insert(insertData).select();
+
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+
+      console.log('Payment created successfully:', data);
       toast.success(`تم إنشاء ${type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف'} بنجاح`);
       onOpenChange(false);
       
@@ -108,9 +200,23 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         notes: '',
         contract_id: 'none',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating payment:', error);
-      toast.error("حدث خطأ في إنشاء الدفعة");
+      
+      // Provide more specific error messages
+      let errorMessage = "حدث خطأ في إنشاء الدفعة";
+      
+      if (error?.code === 'PGRST116') {
+        errorMessage = "ليس لديك صلاحية لإنشاء الدفعات";
+      } else if (error?.code === '23503') {
+        errorMessage = "خطأ في البيانات المرجعية - تأكد من صحة البيانات المحددة";
+      } else if (error?.code === '23505') {
+        errorMessage = "رقم الدفعة موجود مسبقاً";
+      } else if (error?.message) {
+        errorMessage = `خطأ: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -149,6 +255,39 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
             }
           </DialogDescription>
         </DialogHeader>
+
+        {/* Permission and validation alerts */}
+        {!canCreatePayments && !permissionsLoading && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              ليس لديك صلاحية إنشاء الدفعات. السبب: {permissionReason || 'غير محدد'}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!user?.profile?.company_id && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              لم يتم ربط حسابك بشركة. يرجى التواصل مع المشرف.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {debugInfo && process.env.NODE_ENV === 'development' && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <details>
+                <summary>معلومات التشخيص (للمطورين)</summary>
+                <pre className="text-xs mt-2 whitespace-pre-wrap">
+                  {JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </details>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
