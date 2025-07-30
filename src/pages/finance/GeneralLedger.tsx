@@ -24,6 +24,7 @@ import {
 import { useChartOfAccounts, useCostCenters } from "@/hooks/useFinance";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
+import { JournalVoucherDisplay } from "@/components/finance/JournalVoucherDisplay";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -304,13 +305,19 @@ export default function Ledger() {
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setSelectedEntryId(entry.id)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>عرض القيد المحاسبي</DialogTitle>
+                                </DialogHeader>
+                                <JournalVoucherDisplay entry={entry} />
+                              </DialogContent>
+                            </Dialog>
                             {entry.status === 'draft' && (
                               <Button 
                                 variant="ghost" 

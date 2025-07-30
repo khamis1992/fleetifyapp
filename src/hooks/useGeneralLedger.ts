@@ -68,6 +68,52 @@ export interface FinancialSummary {
   unbalanced_entries_count: number
 }
 
+// Journal Entry Lines Hook
+export const useJournalEntryLines = (entryId: string) => {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: ["journalEntryLines", entryId],
+    queryFn: async () => {
+      if (!entryId) return []
+      
+      try {
+        const { data, error } = await supabase
+          .from("journal_entry_lines")
+          .select(`
+            *,
+            account:chart_of_accounts!fk_journal_entry_lines_account(
+              id,
+              account_code,
+              account_name,
+              account_name_ar,
+              account_type
+            ),
+            cost_center:cost_centers!fk_journal_entry_lines_cost_center(
+              id,
+              center_code,
+              center_name,
+              center_name_ar
+            )
+          `)
+          .eq("journal_entry_id", entryId)
+          .order("line_number")
+        
+        if (error) {
+          console.error("Error fetching journal entry lines:", error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error("Error in useJournalEntryLines:", error)
+        return []
+      }
+    },
+    enabled: !!entryId
+  })
+}
+
 // Enhanced Journal Entries with relations
 export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
   const { user } = useAuth()
