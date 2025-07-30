@@ -64,7 +64,8 @@ const Payments = () => {
       case 'cash': return 'نقدي';
       case 'check': return 'شيك';
       case 'bank_transfer': return 'حوالة بنكية';
-      case 'card': return 'بطاقة';
+      case 'credit_card': return 'بطاقة ائتمان';
+      case 'debit_card': return 'بطاقة خصم';
       default: return method;
     }
   };
@@ -201,8 +202,9 @@ const Payments = () => {
                       <SelectItem value="all">جميع الطرق</SelectItem>
                       <SelectItem value="cash">نقدي</SelectItem>
                       <SelectItem value="check">شيك</SelectItem>
-                      <SelectItem value="bank_transfer">حوالة بنكية</SelectItem>
-                      <SelectItem value="card">بطاقة</SelectItem>
+                       <SelectItem value="bank_transfer">حوالة بنكية</SelectItem>
+                       <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
+                       <SelectItem value="debit_card">بطاقة خصم</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -268,11 +270,11 @@ const Payments = () => {
                             <TableCell className="font-medium">
                               {payment.payment_number}
                             </TableCell>
-                            <TableCell>
-                              <Badge className={getTypeColor(payment.payment_type)}>
-                                {getTypeLabel(payment.payment_type)}
-                              </Badge>
-                            </TableCell>
+                               <TableCell>
+                                 <Badge className={getTypeColor((payment as any).payment_type || (payment as any).transaction_type)}>
+                                   {getTypeLabel((payment as any).payment_type || (payment as any).transaction_type)}
+                                 </Badge>
+                               </TableCell>
                             <TableCell>
                               {new Date(payment.payment_date).toLocaleDateString('en-GB')}
                             </TableCell>
