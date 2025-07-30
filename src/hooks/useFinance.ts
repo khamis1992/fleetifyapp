@@ -513,24 +513,65 @@ export const useCreateJournalEntry = () => {
       
       if (entryError) throw entryError
       
-      // Insert lines with validation
+      // Enhanced validation and sanitization for journal entry lines
       const lines = entryData.lines.map((line, index) => {
-        // Validate account_id
-        if (!line.account_id) {
-          throw new Error(`Account is required for line ${index + 1}`)
+        // Enhanced validation for account_id
+        if (!line.account_id || line.account_id.trim() === '') {
+          throw new Error(`Account is required for line ${index + 1} - حساب مطلوب للبند رقم ${index + 1}`)
         }
         
-        return {
+        // UUID sanitization function for backend
+        const sanitizeUuidBackend = (value: string | null | undefined): string | null => {
+          if (!value || typeof value !== 'string' || value.trim() === '') {
+            return null
+          }
+          const trimmed = value.trim()
+          if (trimmed.toLowerCase() === 'none' || trimmed.toLowerCase() === 'null') {
+            return null
+          }
+          // Basic UUID validation
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+          if (!uuidRegex.test(trimmed)) {
+            console.warn(`Invalid UUID format detected: ${trimmed}`)
+            return null
+          }
+          return trimmed
+        }
+        
+        const sanitizedLine = {
           journal_entry_id: entry.id,
-          account_id: line.account_id,
-          cost_center_id: line.cost_center_id || null,
-          asset_id: line.asset_id || null,
-          employee_id: line.employee_id || null,
-          line_description: line.line_description,
-          debit_amount: line.debit_amount || 0,
-          credit_amount: line.credit_amount || 0,
+          account_id: sanitizeUuidBackend(line.account_id),
+          cost_center_id: sanitizeUuidBackend(line.cost_center_id),
+          asset_id: sanitizeUuidBackend(line.asset_id),
+          employee_id: sanitizeUuidBackend(line.employee_id),
+          line_description: line.line_description || '',
+          debit_amount: Number(line.debit_amount) || 0,
+          credit_amount: Number(line.credit_amount) || 0,
           line_number: index + 1
         }
+        
+        // Final validation after sanitization
+        if (!sanitizedLine.account_id) {
+          throw new Error(`Invalid account for line ${index + 1} - الحساب غير صحيح للبند رقم ${index + 1}`)
+        }
+        
+        // Debug logging for troubleshooting
+        console.log(`Line ${index + 1} data:`, {
+          original: {
+            account_id: line.account_id,
+            cost_center_id: line.cost_center_id,
+            asset_id: line.asset_id,
+            employee_id: line.employee_id
+          },
+          sanitized: {
+            account_id: sanitizedLine.account_id,
+            cost_center_id: sanitizedLine.cost_center_id,
+            asset_id: sanitizedLine.asset_id,
+            employee_id: sanitizedLine.employee_id
+          }
+        })
+        
+        return sanitizedLine
       })
       
       const { error: linesError } = await supabase
@@ -546,7 +587,22 @@ export const useCreateJournalEntry = () => {
       toast.success("تم إنشاء القيد المحاسبي بنجاح")
     },
     onError: (error) => {
-      toast.error("خطأ في إنشاء القيد: " + error.message)
+      console.error("Journal entry creation error:", error)
+      
+      // Enhanced error messages in Arabic
+      let errorMessage = "خطأ في إنشاء القيد المحاسبي"
+      
+      if (error.message.includes('invalid input syntax for type uuid')) {
+        errorMessage = "خطأ في تنسيق البيانات - يرجى التأكد من اختيار الحسابات بشكل صحيح"
+      } else if (error.message.includes('account_id')) {
+        errorMessage = "خطأ في بيانات الحساب - يرجى اختيار حساب صحيح"
+      } else if (error.message.includes('Required')) {
+        errorMessage = "يرجى ملء جميع الحقول المطلوبة"
+      } else {
+        errorMessage = "خطأ في إنشاء القيد: " + error.message
+      }
+      
+      toast.error(errorMessage)
     }
   })
 }

@@ -20,12 +20,31 @@ import { supabase } from '@/integrations/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 
-// Helper function to sanitize UUID values
+// Enhanced helper function to sanitize UUID values - handles all edge cases
 const sanitizeUuid = (value: string | undefined | null): string | null => {
-  if (!value || value.trim() === '' || value.toLowerCase() === 'none') {
+  // Handle null, undefined, empty strings, whitespace-only strings
+  if (!value || typeof value !== 'string' || value.trim() === '') {
     return null
   }
-  return value.trim()
+  
+  const trimmedValue = value.trim().toLowerCase()
+  
+  // Handle common "empty" values
+  if (trimmedValue === 'none' || trimmedValue === 'null' || trimmedValue === 'undefined') {
+    return null
+  }
+  
+  // Return the original trimmed value if it looks like a valid UUID
+  const originalTrimmed = value.trim()
+  
+  // Basic UUID format check (36 characters with hyphens in right places)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(originalTrimmed)) {
+    return originalTrimmed
+  }
+  
+  // If it doesn't look like a UUID, return null
+  return null
 }
 
 interface JournalEntryLine {
@@ -177,40 +196,67 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Enhanced validation before submission
+    console.log('=== Journal Entry Form Submission Started ===')
+    console.log('Entry data:', entryData)
+    console.log('Lines data:', lines)
+    
     if (!isBalanced) {
       toast.error('يجب أن تتوازن مبالغ المدين والدائن')
       return
     }
 
-    if (lines.some(line => !line.account_id || line.account_id.trim() === '')) {
-      toast.error('يجب اختيار حساب لكل بند')
+    // Enhanced validation for accounts
+    const invalidLines = lines.filter(line => !line.account_id || line.account_id.trim() === '')
+    if (invalidLines.length > 0) {
+      toast.error(`يجب اختيار حساب لكل بند - البنود غير الصحيحة: ${invalidLines.map((_, index) => index + 1).join(', ')}`)
+      return
+    }
+
+    // Check if at least one line has an amount
+    const hasAmounts = lines.some(line => (line.debit_amount > 0) || (line.credit_amount > 0))
+    if (!hasAmounts) {
+      toast.error('يجب إدخال مبلغ مدين أو دائن واحد على الأقل')
       return
     }
 
     try {
-      // Prepare the data with proper UUID sanitization
-      const sanitizedLines = lines.map(line => {
+      // Enhanced data preparation with comprehensive sanitization
+      const sanitizedLines = lines.map((line, index) => {
+        // Enhanced account validation
+        const accountId = sanitizeUuid(line.account_id)
+        if (!accountId) {
+          throw new Error(`Invalid account for line ${index + 1} - الحساب غير صحيح للبند رقم ${index + 1}`)
+        }
+
         const sanitizedLine = {
-          account_id: sanitizeUuid(line.account_id),
+          account_id: accountId,
           cost_center_id: sanitizeUuid(line.cost_center_id),
           asset_id: sanitizeUuid(line.asset_id),
           employee_id: sanitizeUuid(line.employee_id),
           line_description: line.description || '',
-          debit_amount: line.debit_amount || 0,
-          credit_amount: line.credit_amount || 0
+          debit_amount: Number(line.debit_amount) || 0,
+          credit_amount: Number(line.credit_amount) || 0
         }
         
-        // Debug logging
+        // Comprehensive logging for debugging
+        console.log(`=== Line ${index + 1} Processing ===`)
         console.log('Original line data:', {
           account_id: line.account_id,
           cost_center_id: line.cost_center_id,
           asset_id: line.asset_id,
-          employee_id: line.employee_id
+          employee_id: line.employee_id,
+          description: line.description,
+          debit_amount: line.debit_amount,
+          credit_amount: line.credit_amount
         })
         console.log('Sanitized line data:', sanitizedLine)
         
         return sanitizedLine
       })
+
+      console.log('=== Final sanitized lines ready for submission ===')
+      console.log('Sanitized lines:', sanitizedLines)
 
       await createJournalEntry.mutateAsync({
         entry: {
