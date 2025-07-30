@@ -87,7 +87,7 @@ export const PaymentAnalyticsCard = ({ startDate, endDate }: PaymentAnalyticsCar
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {analytics.by_payment_method?.length || 0}
+              {analytics.by_payment_type?.length || 0}
             </div>
             <p className="text-xs text-muted-foreground">طريقة مختلفة</p>
           </CardContent>
@@ -121,21 +121,22 @@ export const PaymentAnalyticsCard = ({ startDate, endDate }: PaymentAnalyticsCar
       )}
 
       {/* تحليل طرق الدفع */}
-      {analytics.by_payment_method && analytics.by_payment_method.length > 0 && (
+      {analytics.by_payment_type && analytics.by_payment_type.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>التحليل حسب طريقة الدفع</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {analytics.by_payment_method.map((method, index) => (
+              {analytics.by_payment_type.map((method, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div>
                     <p className="font-medium">
-                      {method.payment_method === 'cash' && 'نقدي'}
-                      {method.payment_method === 'check' && 'شيك'}
-                      {method.payment_method === 'bank_transfer' && 'حوالة بنكية'}
-                      {method.payment_method === 'card' && 'بطاقة'}
+                      {method.payment_type === 'cash' && 'نقدي'}
+                      {method.payment_type === 'check' && 'شيك'}
+                      {method.payment_type === 'bank_transfer' && 'حوالة بنكية'}
+                      {method.payment_type === 'credit_card' && 'بطاقة ائتمان'}
+                      {method.payment_type === 'online_transfer' && 'تحويل إلكتروني'}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {method.transaction_count} معاملة

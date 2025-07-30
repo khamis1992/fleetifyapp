@@ -11,8 +11,8 @@ export interface PaymentAnalytics {
     total_amount: number;
     transaction_count: number;
   }>;
-  by_payment_method: Array<{
-    payment_method: string;
+  by_payment_type: Array<{
+    payment_type: string;
     total_amount: number;
     transaction_count: number;
   }>;

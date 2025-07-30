@@ -154,7 +154,8 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
       const insertData = {
         ...paymentData,
         company_id: user.profile.company_id,
-        payment_type: type, // حفظ مؤقت للتوافق مع types.ts القديم
+        payment_method: type === 'receipt' ? 'received' : 'made', // النوع الجديد للعملية
+        payment_type: paymentData.payment_method, // طريقة الدفع الفعلية
         transaction_type: type,
         customer_id: type === 'receipt' ? customerId : null,
         vendor_id: type === 'payment' ? vendorId : null,
