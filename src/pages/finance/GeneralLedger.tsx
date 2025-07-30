@@ -222,7 +222,7 @@ export default function Ledger() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
+                <div className="text-right">
                   <CardTitle>القيود المحاسبية</CardTitle>
                   <CardDescription>قائمة جميع القيود المحاسبية مع إمكانيات البحث والتصفية المتقدمة</CardDescription>
                 </div>
