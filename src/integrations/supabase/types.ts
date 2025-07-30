@@ -7462,6 +7462,16 @@ export type Database = {
         Args: { _user_id: string; _company_id: string }
         Returns: boolean
       }
+      validate_account_for_transactions: {
+        Args: { account_id_param: string }
+        Returns: {
+          is_valid: boolean
+          error_message: string
+          error_message_ar: string
+          account_level: number
+          is_header: boolean
+        }[]
+      }
       validate_account_level_for_entries: {
         Args: { account_id_param: string }
         Returns: boolean
