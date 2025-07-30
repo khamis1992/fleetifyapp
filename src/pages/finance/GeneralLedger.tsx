@@ -537,18 +537,27 @@ export default function Ledger() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رمز الحساب</TableHead>
-                      <TableHead>اسم الحساب</TableHead>
-                      <TableHead>نوع الحساب</TableHead>
-                      <TableHead>المستوى</TableHead>
-                      <TableHead>الرصيد المدين</TableHead>
                       <TableHead>الرصيد الدائن</TableHead>
+                      <TableHead>الرصيد المدين</TableHead>
+                      <TableHead>المستوى</TableHead>
+                      <TableHead>نوع الحساب</TableHead>
+                      <TableHead>اسم الحساب</TableHead>
+                      <TableHead>رمز الحساب</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {trialBalance?.map((item) => (
                       <TableRow key={item.account_id}>
-                        <TableCell className="font-medium">{item.account_code}</TableCell>
+                        <TableCell className="text-red-600 font-medium">
+                          {item.credit_balance > 0 ? `${item.credit_balance.toFixed(3)} د.ك` : '-'}
+                        </TableCell>
+                        <TableCell className="text-green-600 font-medium">
+                          {item.debit_balance > 0 ? `${item.debit_balance.toFixed(3)} د.ك` : '-'}
+                        </TableCell>
+                        <TableCell>{item.account_level}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.account_type}</Badge>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div>{item.account_name}</div>
@@ -557,16 +566,7 @@ export default function Ledger() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{item.account_type}</Badge>
-                        </TableCell>
-                        <TableCell>{item.account_level}</TableCell>
-                        <TableCell className="text-green-600 font-medium">
-                          {item.debit_balance > 0 ? `${item.debit_balance.toFixed(3)} د.ك` : '-'}
-                        </TableCell>
-                        <TableCell className="text-red-600 font-medium">
-                          {item.credit_balance > 0 ? `${item.credit_balance.toFixed(3)} د.ك` : '-'}
-                        </TableCell>
+                        <TableCell className="font-medium">{item.account_code}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -590,18 +590,23 @@ export default function Ledger() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رمز المركز</TableHead>
-                      <TableHead>اسم المركز</TableHead>
-                      <TableHead>إجمالي المدين</TableHead>
-                      <TableHead>إجمالي الدائن</TableHead>
-                      <TableHead>صافي المبلغ</TableHead>
                       <TableHead>عدد القيود</TableHead>
+                      <TableHead>صافي المبلغ</TableHead>
+                      <TableHead>إجمالي الدائن</TableHead>
+                      <TableHead>إجمالي المدين</TableHead>
+                      <TableHead>اسم المركز</TableHead>
+                      <TableHead>رمز المركز</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {costCenterAnalysis?.map((center) => (
                       <TableRow key={center.cost_center_id}>
-                        <TableCell className="font-medium">{center.center_code}</TableCell>
+                        <TableCell>{center.entry_count}</TableCell>
+                        <TableCell className={center.net_amount >= 0 ? "text-green-600" : "text-red-600"}>
+                          {center.net_amount.toFixed(3)} د.ك
+                        </TableCell>
+                        <TableCell className="text-red-600">{center.total_credits.toFixed(3)} د.ك</TableCell>
+                        <TableCell className="text-green-600">{center.total_debits.toFixed(3)} د.ك</TableCell>
                         <TableCell>
                           <div>
                             <div>{center.center_name}</div>
@@ -610,12 +615,7 @@ export default function Ledger() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-green-600">{center.total_debits.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="text-red-600">{center.total_credits.toFixed(3)} د.ك</TableCell>
-                        <TableCell className={center.net_amount >= 0 ? "text-green-600" : "text-red-600"}>
-                          {center.net_amount.toFixed(3)} د.ك
-                        </TableCell>
-                        <TableCell>{center.entry_count}</TableCell>
+                        <TableCell className="font-medium">{center.center_code}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
