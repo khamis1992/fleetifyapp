@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, TestTube } from "lucide-react";
 import { useCreateInvoice, useCostCenters, useFixedAssets } from "@/hooks/useFinance";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -170,6 +170,69 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
     }
   };
 
+  const fillSampleData = () => {
+    const sampleInvoiceData = {
+      invoice_number: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+      invoice_date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+      terms: type === 'sales' ? 'الدفع خلال 30 يوماً من تاريخ الفاتورة' : 'شروط الدفع حسب الاتفاق',
+      notes: type === 'sales' ? 'شكراً لثقتكم في خدماتنا' : 'فاتورة مشتريات تجريبية',
+      currency: 'KWD',
+      discount_amount: type === 'sales' ? 50 : 25,
+      cost_center_id: costCenters?.[0]?.id || '',
+      fixed_asset_id: '',
+      contract_id: '',
+    };
+
+    const sampleItems: InvoiceItem[] = type === 'sales' ? [
+      {
+        id: '1',
+        description: 'خدمة استشارية',
+        quantity: 2,
+        unit_price: 150.000,
+        tax_rate: 5,
+        account_id: availableAccounts[0]?.id || '',
+      },
+      {
+        id: '2',
+        description: 'رسوم إدارية',
+        quantity: 1,
+        unit_price: 75.500,
+        tax_rate: 5,
+        account_id: availableAccounts[0]?.id || '',
+      },
+      {
+        id: '3',
+        description: 'خدمة صيانة',
+        quantity: 3,
+        unit_price: 100.250,
+        tax_rate: 5,
+        account_id: availableAccounts[0]?.id || '',
+      }
+    ] : [
+      {
+        id: '1',
+        description: 'مواد خام',
+        quantity: 10,
+        unit_price: 25.750,
+        tax_rate: 5,
+        account_id: availableAccounts[0]?.id || '',
+      },
+      {
+        id: '2',
+        description: 'معدات مكتبية',
+        quantity: 2,
+        unit_price: 180.000,
+        tax_rate: 5,
+        account_id: availableAccounts[0]?.id || '',
+      }
+    ];
+
+    setInvoiceData(sampleInvoiceData);
+    setItems(sampleItems);
+    toast.success("تم ملء البيانات التجريبية بنجاح");
+  };
+
   const { subtotal, totalTax, total } = calculateTotals();
 
   if (accountsLoading) {
@@ -198,15 +261,29 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {type === 'sales' ? 'إنشاء فاتورة مبيعات جديدة' : 'إنشاء فاتورة مشتريات جديدة'}
-          </DialogTitle>
-          <DialogDescription>
-            {type === 'sales' 
-              ? 'أدخل تفاصيل فاتورة المبيعات والأصناف' 
-              : 'أدخل تفاصيل فاتورة المشتريات والأصناف'
-            }
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>
+                {type === 'sales' ? 'إنشاء فاتورة مبيعات جديدة' : 'إنشاء فاتورة مشتريات جديدة'}
+              </DialogTitle>
+              <DialogDescription>
+                {type === 'sales' 
+                  ? 'أدخل تفاصيل فاتورة المبيعات والأصناف' 
+                  : 'أدخل تفاصيل فاتورة المشتريات والأصناف'
+                }
+              </DialogDescription>
+            </div>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={fillSampleData}
+              className="gap-2"
+            >
+              <TestTube className="h-4 w-4" />
+              بيانات تجريبية
+            </Button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
