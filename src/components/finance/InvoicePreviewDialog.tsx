@@ -69,7 +69,12 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
   ];
 
   const downloadInvoicePDF = async () => {
-    if (!invoiceRef.current) return;
+    console.log('تحميل الفاتورة - بدء العملية');
+    
+    if (!invoice) {
+      console.error('البيانات غير متوفرة');
+      return;
+    }
 
     const invoiceContent = `
       <!DOCTYPE html>
@@ -315,17 +320,39 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
       }
     };
 
-    // Create a temporary element to hold the HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = invoiceContent;
-    document.body.appendChild(tempDiv);
+    console.log('إعدادات PDF:', opt);
+    console.log('المحتوى جاهز، بدء إنشاء PDF...');
 
     try {
-      await html2pdf().set(opt).from(tempDiv).save();
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
+      // Check if html2pdf is available
+      if (typeof html2pdf === 'undefined') {
+        console.error('مكتبة html2pdf غير متوفرة');
+        alert('خطأ: مكتبة تحويل PDF غير متوفرة');
+        return;
+      }
+
+      // Create a temporary element to hold the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = invoiceContent;
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      document.body.appendChild(tempDiv);
+
+      console.log('عنصر مؤقت تم إنشاؤه، بدء تحويل PDF...');
+      
+      const pdfGenerator = html2pdf()
+        .set(opt)
+        .from(tempDiv);
+        
+      await pdfGenerator.save();
+      console.log('تم تحميل الفاتورة بنجاح');
+      
+      // Clean up
       document.body.removeChild(tempDiv);
+    } catch (error) {
+      console.error('خطأ في إنشاء PDF:', error);
+      alert('حدث خطأ أثناء تحميل الفاتورة. يرجى المحاولة مرة أخرى.');
     }
   };
 
