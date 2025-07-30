@@ -348,7 +348,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                                   {accounts?.map((account) => (
                                     <CommandItem
                                       key={account.id}
-                                      value={`${account.account_code} ${account.account_name} ${account.account_name_ar || ''}`}
+                                      keywords={[account.account_code, account.account_name, account.account_name_ar || '']}
                                       onSelect={() => {
                                         updateLine(line.id, 'account_id', account.id)
                                         setAccountSearchOpen({...accountSearchOpen, [line.id]: false})
@@ -411,7 +411,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                                   {costCenters?.map((costCenter) => (
                                     <CommandItem
                                       key={costCenter.id}
-                                      value={`${costCenter.center_code} ${costCenter.center_name_ar || ''} ${costCenter.center_name || ''}`}
+                                      keywords={[costCenter.center_code, costCenter.center_name_ar || '', costCenter.center_name || '']}
                                       onSelect={() => {
                                         updateLine(line.id, 'cost_center_id', costCenter.id)
                                         setCostCenterSearchOpen({...costCenterSearchOpen, [line.id]: false})
