@@ -13,6 +13,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { InvoiceIntegrationPanel } from "@/components/finance/InvoiceIntegrationPanel"
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog"
+import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog"
 
 const Invoices = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -22,6 +23,7 @@ const Invoices = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [editingInvoice, setEditingInvoice] = useState<any>(null)
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
 
   const { data: invoices, isLoading, error } = useInvoices()
@@ -267,9 +269,16 @@ const Invoices = () => {
                          >
                            <Eye className="h-4 w-4" />
                          </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                         <Button 
+                           variant="ghost" 
+                           size="sm"
+                           onClick={() => {
+                             setEditingInvoice(invoice);
+                           }}
+                           title="تعديل الفاتورة"
+                         >
+                           <Edit className="h-4 w-4" />
+                         </Button>
                         <Button variant="ghost" size="sm">
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -293,6 +302,17 @@ const Invoices = () => {
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
         invoice={selectedInvoice}
+      />
+
+      {/* Invoice Edit Dialog */}
+      <InvoiceEditDialog
+        open={!!editingInvoice}
+        onOpenChange={(open) => !open && setEditingInvoice(null)}
+        invoice={editingInvoice}
+        onSave={(updatedInvoice) => {
+          console.log('Invoice updated:', updatedInvoice);
+          setEditingInvoice(null);
+        }}
       />
     </div>
   )
