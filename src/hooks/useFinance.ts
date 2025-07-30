@@ -492,22 +492,47 @@ export const useCreateJournalEntry = () => {
     }) => {
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
+      // UUID sanitization function for main entry fields
+      const sanitizeEntryUuid = (value: string | null | undefined): string | null => {
+        if (!value || typeof value !== 'string' || value.trim() === '') {
+          return null
+        }
+        const trimmed = value.trim()
+        if (trimmed.toLowerCase() === 'none' || trimmed.toLowerCase() === 'null') {
+          return null
+        }
+        // Basic UUID validation
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        if (!uuidRegex.test(trimmed)) {
+          console.warn(`Invalid UUID format detected for entry field: ${trimmed}`)
+          return null
+        }
+        return trimmed
+      }
+
+      // Sanitize entry data before inserting
+      const sanitizedEntryData = {
+        entry_number: entryData.entry.entry_number,
+        entry_date: entryData.entry.entry_date,
+        description: entryData.entry.description,
+        accounting_period_id: sanitizeEntryUuid(entryData.entry.accounting_period_id),
+        reference_type: entryData.entry.reference_type,
+        reference_id: sanitizeEntryUuid(entryData.entry.reference_id),
+        total_debit: entryData.entry.total_debit || 0,
+        total_credit: entryData.entry.total_credit || 0,
+        status: entryData.entry.status || 'draft',
+        company_id: user.profile.company_id,
+        created_by: user.id
+      }
+
+      console.log('=== Entry data sanitization ===')
+      console.log('Original entry data:', entryData.entry)
+      console.log('Sanitized entry data:', sanitizedEntryData)
+
       // Start transaction
       const { data: entry, error: entryError } = await supabase
         .from("journal_entries")
-        .insert({
-          entry_number: entryData.entry.entry_number,
-          entry_date: entryData.entry.entry_date,
-          description: entryData.entry.description,
-          accounting_period_id: entryData.entry.accounting_period_id,
-          reference_type: entryData.entry.reference_type,
-          reference_id: entryData.entry.reference_id,
-          total_debit: entryData.entry.total_debit || 0,
-          total_credit: entryData.entry.total_credit || 0,
-          status: entryData.entry.status || 'draft',
-          company_id: user.profile.company_id,
-          created_by: user.id
-        })
+        .insert(sanitizedEntryData)
         .select()
         .single()
       

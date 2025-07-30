@@ -258,12 +258,20 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       console.log('=== Final sanitized lines ready for submission ===')
       console.log('Sanitized lines:', sanitizedLines)
 
+      // Sanitize the main entry data, especially UUID fields
+      const sanitizedEntryData = {
+        ...entryData,
+        reference_id: sanitizeUuid(entryData.reference_id), // Apply sanitization to reference_id
+        total_debit: totalDebits,
+        total_credit: totalCredits
+      }
+
+      console.log('=== Sanitized entry data ===')
+      console.log('Original entry data:', entryData)
+      console.log('Sanitized entry data:', sanitizedEntryData)
+
       await createJournalEntry.mutateAsync({
-        entry: {
-          ...entryData,
-          total_debit: totalDebits,
-          total_credit: totalCredits
-        },
+        entry: sanitizedEntryData,
         lines: sanitizedLines
       })
 
