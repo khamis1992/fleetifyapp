@@ -7283,7 +7283,7 @@ export type Database = {
           total_payments: number
           net_cash_flow: number
           by_cost_center: Json
-          by_payment_method: Json
+          by_payment_type: Json
           by_bank: Json
         }[]
       }
