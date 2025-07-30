@@ -80,10 +80,6 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                 تحميل PDF
               </Button>
               <Button variant="outline" size="sm">
-                <Mail className="h-4 w-4 mr-2" />
-                إرسال بالإيميل
-              </Button>
-              <Button variant="outline" size="sm">
                 <Printer className="h-4 w-4 mr-2" />
                 طباعة
               </Button>
