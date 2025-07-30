@@ -287,8 +287,8 @@ export default function Ledger() {
                                 <Calendar className="h-4 w-4" />
                                 <span>التاريخ: {new Date(entry.entry_date).toLocaleDateString('ar-SA')}</span>
                               </div>
-                              <div>إجمالي المدين: {entry.total_debit.toFixed(3)} د.ك</div>
                               <div>إجمالي الدائن: {entry.total_credit.toFixed(3)} د.ك</div>
+                              <div>إجمالي المدين: {entry.total_debit.toFixed(3)} د.ك</div>
                             </div>
                           </div>
                           <div className="flex space-x-1">
