@@ -339,7 +339,7 @@ export default function Ledger() {
                             <div className="flex items-center gap-6 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>التاريخ: {new Date(entry.entry_date).toLocaleDateString('ar-SA')}</span>
+                                <span>التاريخ: {new Date(entry.entry_date).toLocaleDateString('en-GB')}</span>
                               </div>
                               <div>إجمالي الدائن: {entry.total_credit.toFixed(3)} د.ك</div>
                               <div>إجمالي المدين: {entry.total_debit.toFixed(3)} د.ك</div>
