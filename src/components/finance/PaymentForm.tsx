@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCostCenters, useBanks } from "@/hooks/useTreasury";
 import { useActiveContracts } from "@/hooks/useContracts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
+import { TestTube } from "lucide-react";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 
 interface PaymentFormProps {
@@ -113,6 +114,25 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fillTestData = () => {
+    setPaymentData({
+      payment_number: `PAY-${Date.now()}`,
+      payment_date: new Date().toISOString().split('T')[0],
+      amount: 1500.00,
+      payment_method: 'bank_transfer',
+      reference_number: `REF-${Math.floor(Math.random() * 10000)}`,
+      check_number: '',
+      bank_account: '1234567890',
+      cost_center_id: costCenters?.[0]?.id || 'none',
+      bank_id: banks?.[0]?.id || 'none',
+      account_id: entryAllowedAccounts?.[0]?.id || 'none',
+      currency: 'KWD',
+      notes: 'هذه بيانات تجريبية للاختبار',
+      contract_id: contracts?.[0]?.id || 'none'
+    });
+    toast.success("تم تعبئة البيانات التجريبية");
   };
 
   return (
@@ -327,13 +347,25 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
             </CardContent>
           </Card>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
+          <div className="flex justify-between items-center">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={fillTestData}
+              className="flex items-center gap-2"
+            >
+              <TestTube className="h-4 w-4" />
+              بيانات تجريبية
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "جاري الحفظ..." : "حفظ الإيصال"}
-            </Button>
+            
+            <div className="flex space-x-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "جاري الحفظ..." : "حفظ الإيصال"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
