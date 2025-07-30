@@ -94,6 +94,18 @@ export const useJournalEntryLines = (entryId: string) => {
               center_code,
               center_name,
               center_name_ar
+            ),
+            asset:fixed_assets(
+              id,
+              asset_code,
+              asset_name,
+              asset_name_ar
+            ),
+            employee:employees(
+              id,
+              employee_number,
+              first_name,
+              last_name
             )
           `)
           .eq("journal_entry_id", entryId)

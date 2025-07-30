@@ -85,35 +85,44 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
         <div className="border-2 border-gray-800 rounded-lg overflow-hidden">
           {/* Table Header */}
           <div className="bg-gray-100 border-b-2 border-gray-800">
-            <div className="grid grid-cols-12 gap-2 p-4 font-bold text-gray-800">
+            <div className="grid grid-cols-16 gap-1 p-3 font-bold text-gray-800 text-sm">
               <div className="col-span-2 text-center">رمز الحساب</div>
-              <div className="col-span-4 text-center">اسم الحساب</div>
+              <div className="col-span-3 text-center">اسم الحساب</div>
+              <div className="col-span-3 text-center">البيان</div>
               <div className="col-span-2 text-center">مركز التكلفة</div>
-              <div className="col-span-2 text-center">مدين</div>
-              <div className="col-span-2 text-center">دائن</div>
+              <div className="col-span-2 text-center">الأصل</div>
+              <div className="col-span-2 text-center">الموظف</div>
+              <div className="col-span-1 text-center">مدين</div>
+              <div className="col-span-1 text-center">دائن</div>
             </div>
           </div>
 
           {/* Table Body */}
           <div className="divide-y divide-gray-300">
             {entryLines.map((line: any, index: number) => (
-              <div key={line.id} className={`grid grid-cols-12 gap-2 p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                <div className="col-span-2 text-center font-mono">
+              <div key={line.id} className={`grid grid-cols-16 gap-1 p-3 text-sm ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <div className="col-span-2 text-center font-mono text-xs">
                   {line.account?.account_code}
                 </div>
-                <div className="col-span-4 text-right">
-                  <div className="font-semibold">{line.account?.account_name_ar || line.account?.account_name}</div>
-                  {line.line_description && (
-                    <div className="text-sm text-gray-600 mt-1">{line.line_description}</div>
-                  )}
+                <div className="col-span-3 text-right">
+                  <div className="font-semibold text-xs">{line.account?.account_name_ar || line.account?.account_name}</div>
                 </div>
-                <div className="col-span-2 text-center text-sm">
+                <div className="col-span-3 text-right">
+                  <div className="text-xs">{line.line_description || '-'}</div>
+                </div>
+                <div className="col-span-2 text-center text-xs">
                   {line.cost_center?.center_name_ar || line.cost_center?.center_name || '-'}
                 </div>
-                <div className="col-span-2 text-center font-bold text-green-700">
+                <div className="col-span-2 text-center text-xs">
+                  {line.asset?.asset_name_ar || line.asset?.asset_name || '-'}
+                </div>
+                <div className="col-span-2 text-center text-xs">
+                  {line.employee ? `${line.employee.first_name} ${line.employee.last_name}` : '-'}
+                </div>
+                <div className="col-span-1 text-center font-bold text-green-700 text-xs">
                   {line.debit_amount > 0 ? formatCurrency(line.debit_amount) : '-'}
                 </div>
-                <div className="col-span-2 text-center font-bold text-red-700">
+                <div className="col-span-1 text-center font-bold text-red-700 text-xs">
                   {line.credit_amount > 0 ? formatCurrency(line.credit_amount) : '-'}
                 </div>
               </div>
@@ -122,12 +131,12 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
 
           {/* Table Footer - Totals */}
           <div className="bg-gray-200 border-t-2 border-gray-800">
-            <div className="grid grid-cols-12 gap-2 p-4 font-bold text-gray-800">
-              <div className="col-span-8 text-right text-lg">الإجمالي:</div>
-              <div className="col-span-2 text-center text-lg text-green-700">
+            <div className="grid grid-cols-16 gap-1 p-3 font-bold text-gray-800">
+              <div className="col-span-14 text-right text-base">الإجمالي:</div>
+              <div className="col-span-1 text-center text-base text-green-700">
                 {formatCurrency(entry.total_debit)}
               </div>
-              <div className="col-span-2 text-center text-lg text-red-700">
+              <div className="col-span-1 text-center text-base text-red-700">
                 {formatCurrency(entry.total_credit)}
               </div>
             </div>

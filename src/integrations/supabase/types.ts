@@ -2732,10 +2732,12 @@ export type Database = {
       journal_entry_lines: {
         Row: {
           account_id: string
+          asset_id: string | null
           cost_center_id: string | null
           created_at: string
           credit_amount: number | null
           debit_amount: number | null
+          employee_id: string | null
           id: string
           journal_entry_id: string
           line_description: string | null
@@ -2743,10 +2745,12 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          asset_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           credit_amount?: number | null
           debit_amount?: number | null
+          employee_id?: string | null
           id?: string
           journal_entry_id: string
           line_description?: string | null
@@ -2754,10 +2758,12 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          asset_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           credit_amount?: number | null
           debit_amount?: number | null
+          employee_id?: string | null
           id?: string
           journal_entry_id?: string
           line_description?: string | null
@@ -2772,10 +2778,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_journal_entry_lines_asset"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_journal_entry_lines_cost_center"
             columns: ["cost_center_id"]
             isOneToOne: false
             referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_journal_entry_lines_employee"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {

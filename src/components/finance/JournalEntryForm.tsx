@@ -11,6 +11,8 @@ import { Plus, Trash2, Calculator } from 'lucide-react'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useCreateJournalEntry } from '@/hooks/useFinance'
 import { useCostCenters } from '@/hooks/useFinance'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 
@@ -20,6 +22,10 @@ interface JournalEntryLine {
   account_name?: string
   cost_center_id?: string
   cost_center_name?: string
+  asset_id?: string
+  asset_name?: string
+  employee_id?: string
+  employee_name?: string
   description: string
   debit_amount: number
   credit_amount: number
@@ -47,6 +53,10 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       account_name: '',
       cost_center_id: '',
       cost_center_name: '',
+      asset_id: '',
+      asset_name: '',
+      employee_id: '',
+      employee_name: '',
       description: '', 
       debit_amount: 0, 
       credit_amount: 0 
@@ -57,6 +67,10 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       account_name: '',
       cost_center_id: '',
       cost_center_name: '',
+      asset_id: '',
+      asset_name: '',
+      employee_id: '',
+      employee_name: '',
       description: '', 
       debit_amount: 0, 
       credit_amount: 0 
@@ -67,6 +81,34 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createJournalEntry = useCreateJournalEntry()
 
+  // Fetch fixed assets
+  const { data: assets, isLoading: assetsLoading } = useQuery({
+    queryKey: ['fixed-assets'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('fixed_assets')
+        .select('id, asset_code, asset_name, asset_name_ar')
+        .eq('is_active', true)
+        .order('asset_code');
+      if (error) throw error;
+      return data || [];
+    }
+  })
+
+  // Fetch employees
+  const { data: employees, isLoading: employeesLoading } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, employee_number, first_name, last_name')
+        .eq('is_active', true)
+        .order('employee_number');
+      if (error) throw error;
+      return data || [];
+    }
+  })
+
   const addLine = () => {
     const newLine: JournalEntryLine = {
       id: Date.now().toString(),
@@ -74,6 +116,10 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       account_name: '',
       cost_center_id: '',
       cost_center_name: '',
+      asset_id: '',
+      asset_name: '',
+      employee_id: '',
+      employee_name: '',
       description: '',
       debit_amount: 0,
       credit_amount: 0
@@ -102,6 +148,18 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         if (field === 'cost_center_id') {
           const selectedCostCenter = costCenters?.find(cc => cc.id === value)
           updatedLine.cost_center_name = selectedCostCenter?.center_name || ''
+        }
+        
+        // If asset_id changes, update asset_name
+        if (field === 'asset_id') {
+          const selectedAsset = assets?.find(asset => asset.id === value)
+          updatedLine.asset_name = selectedAsset?.asset_name || ''
+        }
+        
+        // If employee_id changes, update employee_name
+        if (field === 'employee_id') {
+          const selectedEmployee = employees?.find(emp => emp.id === value)
+          updatedLine.employee_name = selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : ''
         }
         
         return updatedLine
@@ -137,6 +195,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         lines: lines.map(line => ({
           account_id: line.account_id,
           cost_center_id: line.cost_center_id || null,
+          asset_id: line.asset_id || null,
+          employee_id: line.employee_id || null,
           line_description: line.description,
           debit_amount: line.debit_amount || 0,
           credit_amount: line.credit_amount || 0
@@ -152,8 +212,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         reference_id: ''
       })
       setLines([
-        { id: '1', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', description: '', debit_amount: 0, credit_amount: 0 },
-        { id: '2', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', description: '', debit_amount: 0, credit_amount: 0 }
+        { id: '1', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', asset_id: '', asset_name: '', employee_id: '', employee_name: '', description: '', debit_amount: 0, credit_amount: 0 },
+        { id: '2', account_id: '', account_name: '', cost_center_id: '', cost_center_name: '', asset_id: '', asset_name: '', employee_id: '', employee_name: '', description: '', debit_amount: 0, credit_amount: 0 }
       ])
       onOpenChange?.(false)
       onSuccess?.()
@@ -163,7 +223,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     }
   }
 
-  if (accountsLoading || costCentersLoading) {
+  if (accountsLoading || costCentersLoading || assetsLoading || employeesLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl">
@@ -244,6 +304,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                   <TableRow>
                     <TableHead>الحساب</TableHead>
                     <TableHead>مركز التكلفة</TableHead>
+                    <TableHead>الأصل</TableHead>
+                    <TableHead>الموظف</TableHead>
                     <TableHead>الوصف</TableHead>
                     <TableHead>مدين</TableHead>
                     <TableHead>دائن</TableHead>
@@ -270,19 +332,55 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="w-64">
+                      <TableCell className="w-48">
                         <Select
                           value={line.cost_center_id || ''}
                           onValueChange={(value) => updateLine(line.id, 'cost_center_id', value || '')}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="اختر مركز التكلفة (اختياري)" />
+                            <SelectValue placeholder="مركز التكلفة" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">لا يوجد</SelectItem>
+                            <SelectItem value="">لا يوجد</SelectItem>
                             {costCenters?.map((costCenter) => (
                               <SelectItem key={costCenter.id} value={costCenter.id}>
                                 {costCenter.center_code} - {costCenter.center_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="w-48">
+                        <Select
+                          value={line.asset_id || ''}
+                          onValueChange={(value) => updateLine(line.id, 'asset_id', value || '')}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="الأصل" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">لا يوجد</SelectItem>
+                            {assets?.map((asset) => (
+                              <SelectItem key={asset.id} value={asset.id}>
+                                {asset.asset_code} - {asset.asset_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="w-48">
+                        <Select
+                          value={line.employee_id || ''}
+                          onValueChange={(value) => updateLine(line.id, 'employee_id', value || '')}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="الموظف" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">لا يوجد</SelectItem>
+                            {employees?.map((employee) => (
+                              <SelectItem key={employee.id} value={employee.id}>
+                                {employee.employee_number} - {employee.first_name} {employee.last_name}
                               </SelectItem>
                             ))}
                           </SelectContent>
