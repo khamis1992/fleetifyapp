@@ -354,10 +354,10 @@ export default function Treasury() {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="banks" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="banks">الحسابات المصرفية</TabsTrigger>
-          <TabsTrigger value="transactions">المعاملات</TabsTrigger>
+      <Tabs defaultValue="banks" className="space-y-4" dir="rtl">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="banks" className="text-right">الحسابات المصرفية</TabsTrigger>
+          <TabsTrigger value="transactions" className="text-right">المعاملات</TabsTrigger>
         </TabsList>
 
         <TabsContent value="banks" className="space-y-4">
