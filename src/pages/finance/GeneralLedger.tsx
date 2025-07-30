@@ -272,6 +272,7 @@ export default function Ledger() {
                       <TableHead>التاريخ</TableHead>
                       <TableHead>الوصف</TableHead>
                       <TableHead>النوع</TableHead>
+                      <TableHead>عدد البنود</TableHead>
                       <TableHead>إجمالي المدين</TableHead>
                       <TableHead>إجمالي الدائن</TableHead>
                       <TableHead>الحالة</TableHead>
@@ -291,6 +292,9 @@ export default function Ledger() {
                           {entry.reference_type && (
                             <Badge variant="outline">{entry.reference_type}</Badge>
                           )}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {entry.journal_entry_lines?.length || 0} بند
                         </TableCell>
                         <TableCell className="text-green-600 font-medium">
                           {entry.total_debit.toFixed(3)} د.ك
