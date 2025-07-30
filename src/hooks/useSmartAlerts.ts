@@ -81,7 +81,7 @@ export const useSmartAlerts = () => {
         .from('payments')
         .select('id, amount, payment_date')
         .eq('company_id', companyId)
-        .eq('status', 'pending')
+        .eq('payment_status', 'pending')
         .lt('payment_date', today.toISOString().split('T')[0]);
 
       if (overduePayments && overduePayments.length > 0) {
@@ -178,7 +178,7 @@ export const useSmartAlerts = () => {
         .from('payments')
         .select('amount, payment_type')
         .eq('company_id', companyId)
-        .eq('status', 'completed')
+        .eq('payment_status', 'completed')
         .gte('created_at', new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
       if (recentPayments) {

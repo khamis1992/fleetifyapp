@@ -162,7 +162,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         cost_center_id: paymentData.cost_center_id === 'none' ? null : paymentData.cost_center_id,
         bank_id: paymentData.bank_id === 'none' ? null : paymentData.bank_id,
         account_id: paymentData.account_id === 'none' ? null : paymentData.account_id,
-        status: 'completed',
+        payment_status: 'completed',
         created_by: user.id,
       };
 

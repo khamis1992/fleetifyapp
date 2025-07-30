@@ -36,7 +36,7 @@ const Payments = () => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !filterStatus || filterStatus === "all" || payment.status === filterStatus;
+    const matchesStatus = !filterStatus || filterStatus === "all" || payment.payment_status === filterStatus;
     const matchesMethod = !filterMethod || filterMethod === "all" || payment.payment_method === filterMethod;
     return matchesSearch && matchesStatus && matchesMethod;
   }) || [];
@@ -289,8 +289,8 @@ const Payments = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge className={getStatusColor(payment.status)}>
-                                {getStatusLabel(payment.status)}
+                              <Badge className={getStatusColor(payment.payment_status)}>
+                                {getStatusLabel(payment.payment_status)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-muted-foreground">

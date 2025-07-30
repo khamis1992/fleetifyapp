@@ -107,7 +107,7 @@ export interface Payment {
   bank_account?: string
   check_number?: string
   notes?: string
-  status: 'pending' | 'cleared' | 'bounced' | 'cancelled'
+  payment_status: 'pending' | 'cleared' | 'bounced' | 'cancelled'
   journal_entry_id?: string
   created_by?: string
   created_at: string
@@ -823,7 +823,7 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
         query = query.eq("payment_method", filters.method)
       }
       if (filters?.status) {
-        query = query.eq("status", filters.status)
+        query = query.eq("payment_status", filters.status)
       }
       
       const { data, error } = await query

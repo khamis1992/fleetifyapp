@@ -3673,9 +3673,9 @@ export type Database = {
           payment_date: string
           payment_method: string
           payment_number: string
+          payment_status: string
           payment_type: string
           reference_number: string | null
-          status: string
           updated_at: string
           vendor_id: string | null
         }
@@ -3699,9 +3699,9 @@ export type Database = {
           payment_date: string
           payment_method: string
           payment_number: string
+          payment_status?: string
           payment_type: string
           reference_number?: string | null
-          status?: string
           updated_at?: string
           vendor_id?: string | null
         }
@@ -3725,9 +3725,9 @@ export type Database = {
           payment_date?: string
           payment_method?: string
           payment_number?: string
+          payment_status?: string
           payment_type?: string
           reference_number?: string | null
-          status?: string
           updated_at?: string
           vendor_id?: string | null
         }

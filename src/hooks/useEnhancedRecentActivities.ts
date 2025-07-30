@@ -140,7 +140,7 @@ export const useEnhancedRecentActivities = () => {
       const { data: payments } = await supabase
         .from('payments')
         .select(`
-          id, payment_number, amount, payment_type, status, created_at,
+          id, payment_number, amount, payment_type, payment_status, created_at,
           customers!inner(first_name, last_name, first_name_ar, last_name_ar)
         `)
         .eq('company_id', companyId)
@@ -163,7 +163,7 @@ export const useEnhancedRecentActivities = () => {
           priority: 'high',
           created_at: payment.created_at,
           amount: payment.amount,
-          status: payment.status
+          status: payment.payment_status
         });
       });
 
