@@ -272,25 +272,6 @@ export default function Ledger() {
                       {/* Header */}
                       <CardHeader className="bg-muted/30 pb-3">
                         <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-4">
-                              <h3 className="text-lg font-semibold">سند قيد رقم: {entry.entry_number}</h3>
-                              <Badge variant={getStatusColor(entry.status)}>
-                                {getStatusLabel(entry.status)}
-                              </Badge>
-                              {entry.reference_type && (
-                                <Badge variant="outline">{entry.reference_type}</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>التاريخ: {new Date(entry.entry_date).toLocaleDateString('ar-SA')}</span>
-                              </div>
-                              <div>إجمالي الدائن: {entry.total_credit.toFixed(3)} د.ك</div>
-                              <div>إجمالي المدين: {entry.total_debit.toFixed(3)} د.ك</div>
-                            </div>
-                          </div>
                           <div className="flex space-x-1">
                             <Dialog>
                               <DialogTrigger asChild>
@@ -342,6 +323,25 @@ export default function Ledger() {
                                 </AlertDialogContent>
                               </AlertDialog>
                             )}
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-4">
+                              <h3 className="text-lg font-semibold">سند قيد رقم: {entry.entry_number}</h3>
+                              <Badge variant={getStatusColor(entry.status)}>
+                                {getStatusLabel(entry.status)}
+                              </Badge>
+                              {entry.reference_type && (
+                                <Badge variant="outline">{entry.reference_type}</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>التاريخ: {new Date(entry.entry_date).toLocaleDateString('ar-SA')}</span>
+                              </div>
+                              <div>إجمالي الدائن: {entry.total_credit.toFixed(3)} د.ك</div>
+                              <div>إجمالي المدين: {entry.total_debit.toFixed(3)} د.ك</div>
+                            </div>
                           </div>
                         </div>
                       </CardHeader>
