@@ -15,6 +15,7 @@ import { TrendingUp, TrendingDown, Banknote, CreditCard, Plus, Search, Building2
 import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCreateBankTransaction, Bank, BankTransaction } from "@/hooks/useTreasury";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,14 +70,32 @@ export default function Treasury() {
   };
 
   const handleCreateTransaction = async () => {
-    if (!newTransaction.description || !newTransaction.bank_id || !user?.profile?.company_id) return;
+    if (!newTransaction.description) {
+      toast.error('يرجى إدخال وصف المعاملة');
+      return;
+    }
+    if (!newTransaction.bank_id) {
+      toast.error('يرجى اختيار البنك');
+      return;
+    }
+    if (!newTransaction.amount || newTransaction.amount <= 0) {
+      toast.error('يرجى إدخال مبلغ صحيح');
+      return;
+    }
+    if (!user?.profile?.company_id) {
+      toast.error('خطأ في بيانات المستخدم');
+      return;
+    }
 
     // Generate transaction number
     const transactionNumber = `TRX-${Date.now()}`;
     
     // Get selected bank details for balance calculation
     const selectedBank = banks?.find(bank => bank.id === newTransaction.bank_id);
-    if (!selectedBank) return;
+    if (!selectedBank) {
+      toast.error('البنك المحدد غير موجود');
+      return;
+    }
 
     const balanceAfter = newTransaction.transaction_type === 'deposit' 
       ? selectedBank.current_balance + newTransaction.amount
