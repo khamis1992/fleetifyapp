@@ -7021,7 +7021,9 @@ export type Database = {
         Returns: string
       }
       create_payment_journal_entry: {
-        Args: { payment_id_param: string }
+        Args:
+          | { payment_id_param: string }
+          | { payment_record: Record<string, unknown> }
         Returns: string
       }
       create_payroll_journal_entry: {
