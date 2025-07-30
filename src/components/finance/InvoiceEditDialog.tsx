@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, TestTube } from "lucide-react";
-import { useCostCenters, useFixedAssets } from "@/hooks/useFinance";
+import { useCostCenters, useFixedAssets, useUpdateInvoice } from "@/hooks/useFinance";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
   const { data: accounts, isLoading: accountsLoading } = useEntryAllowedAccounts();
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters();
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
+  const updateInvoice = useUpdateInvoice();
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: '',
@@ -158,9 +159,25 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
     const { subtotal, totalTax, total } = calculateTotals();
 
     try {
-      // Here you would call an update mutation instead of create
-      // For now, we'll just show success and close dialog
-      toast.success("تم تحديث الفاتورة بنجاح");
+      await updateInvoice.mutateAsync({
+        invoiceId: invoice.id,
+        invoiceData: {
+          invoice_number: invoiceData.invoice_number,
+          invoice_date: invoiceData.invoice_date,
+          due_date: invoiceData.due_date || undefined,
+          terms: invoiceData.terms || undefined,
+          notes: invoiceData.notes || undefined,
+          currency: invoiceData.currency,
+          discount_amount: invoiceData.discount_amount,
+          cost_center_id: invoiceData.cost_center_id || undefined,
+          fixed_asset_id: invoiceData.fixed_asset_id || undefined,
+          contract_id: invoiceData.contract_id || undefined,
+          subtotal,
+          tax_amount: totalTax,
+          total_amount: total,
+        }
+      });
+
       onOpenChange(false);
       
       if (onSave) {
@@ -286,7 +303,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
                   <SelectContent>
                     {costCenters?.map(center => (
                       <SelectItem key={center.id} value={center.id}>
-                        {center.center_name}
+                        {center.center_name_ar || center.center_name}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -743,6 +743,70 @@ export const useCreateInvoice = () => {
   })
 }
 
+export const useUpdateInvoice = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async ({ invoiceId, invoiceData }: {
+      invoiceId: string
+      invoiceData: {
+        invoice_number?: string
+        invoice_date?: string
+        invoice_type?: 'sales' | 'purchase' | 'service'
+        due_date?: string
+        customer_id?: string
+        vendor_id?: string
+        subtotal?: number
+        tax_amount?: number
+        discount_amount?: number
+        total_amount?: number
+        currency?: string
+        status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+        payment_status?: 'unpaid' | 'partial' | 'paid'
+        notes?: string
+        terms?: string
+        contract_id?: string
+        cost_center_id?: string
+        fixed_asset_id?: string
+      }
+    }) => {
+      if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
+      
+      const updateData: any = {
+        ...invoiceData,
+        balance_due: invoiceData.total_amount ? invoiceData.total_amount - (invoiceData.subtotal || 0) : undefined,
+        updated_at: new Date().toISOString()
+      }
+      
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key]
+        }
+      })
+      
+      const { data, error } = await supabase
+        .from("invoices")
+        .update(updateData)
+        .eq('id', invoiceId)
+        .eq('company_id', user.profile.company_id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] })
+      toast.success("تم تحديث الفاتورة بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في تحديث الفاتورة: " + error.message)
+    }
+  })
+}
+
 // Payments Hooks
 export const usePayments = (filters?: { method?: string; status?: string }) => {
   const { user } = useAuth()
