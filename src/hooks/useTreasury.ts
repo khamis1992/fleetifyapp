@@ -188,6 +188,31 @@ export const useCreateBankTransaction = () => {
   });
 };
 
+export const useDeleteBankTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (transactionId: string) => {
+      const { error } = await supabase
+        .from('bank_transactions')
+        .delete()
+        .eq('id', transactionId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+      toast.success('تم حذف المعاملة بنجاح');
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ في حذف المعاملة');
+      console.error('Bank transaction deletion error:', error);
+    },
+  });
+};
+
 // Cost Centers hooks
 export const useCostCenters = () => {
   return useQuery({

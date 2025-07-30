@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { TrendingUp, TrendingDown, Banknote, CreditCard, Plus, Search, Building2, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCreateBankTransaction, Bank, BankTransaction } from "@/hooks/useTreasury";
+import { TrendingUp, TrendingDown, Banknote, CreditCard, Plus, Search, Building2, ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
+import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCreateBankTransaction, useDeleteBankTransaction, Bank, BankTransaction } from "@/hooks/useTreasury";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,6 +29,7 @@ export default function Treasury() {
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
   const createBank = useCreateBank();
   const createTransaction = useCreateBankTransaction();
+  const deleteTransaction = useDeleteBankTransaction();
 
   const [newBank, setNewBank] = useState<Partial<Bank>>({
     bank_name: '',
@@ -542,44 +544,74 @@ export default function Treasury() {
                   <LoadingSpinner />
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>رقم المعاملة</TableHead>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>المبلغ</TableHead>
-                      <TableHead>الوصف</TableHead>
-                      <TableHead>الحالة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions?.slice(0, 10).map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="font-medium">{transaction.transaction_number}</TableCell>
-                        <TableCell>{new Date(transaction.transaction_date).toLocaleDateString('en-GB')}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            {getTransactionIcon(transaction.transaction_type)}
-                            <span className={getTransactionColor(transaction.transaction_type)}>
-                              {transaction.transaction_type === 'deposit' && 'إيداع'}
-                              {transaction.transaction_type === 'withdrawal' && 'سحب'}
-                              {transaction.transaction_type === 'transfer' && 'تحويل'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className={getTransactionColor(transaction.transaction_type)}>
-                          {transaction.transaction_type === 'deposit' ? '+' : '-'}{transaction.amount.toFixed(3)} د.ك
-                        </TableCell>
-                        <TableCell>{transaction.description}</TableCell>
-                        <TableCell>
-                          <Badge variant={transaction.status === 'completed' ? "default" : "secondary"}>
-                            {transaction.status === 'completed' ? 'مكتملة' : 'معلقة'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>رقم المعاملة</TableHead>
+                       <TableHead>التاريخ</TableHead>
+                       <TableHead>النوع</TableHead>
+                       <TableHead>المبلغ</TableHead>
+                       <TableHead>الوصف</TableHead>
+                       <TableHead>الحالة</TableHead>
+                       <TableHead>الإجراءات</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {transactions?.slice(0, 10).map((transaction) => (
+                       <TableRow key={transaction.id}>
+                         <TableCell className="font-medium">{transaction.transaction_number}</TableCell>
+                         <TableCell>{new Date(transaction.transaction_date).toLocaleDateString('en-GB')}</TableCell>
+                         <TableCell>
+                           <div className="flex items-center space-x-2">
+                             {getTransactionIcon(transaction.transaction_type)}
+                             <span className={getTransactionColor(transaction.transaction_type)}>
+                               {transaction.transaction_type === 'deposit' && 'إيداع'}
+                               {transaction.transaction_type === 'withdrawal' && 'سحب'}
+                               {transaction.transaction_type === 'transfer' && 'تحويل'}
+                             </span>
+                           </div>
+                         </TableCell>
+                         <TableCell className={getTransactionColor(transaction.transaction_type)}>
+                           {transaction.transaction_type === 'deposit' ? '+' : '-'}{transaction.amount.toFixed(3)} د.ك
+                         </TableCell>
+                         <TableCell>{transaction.description}</TableCell>
+                         <TableCell>
+                           <Badge variant={transaction.status === 'completed' ? "default" : "secondary"}>
+                             {transaction.status === 'completed' ? 'مكتملة' : 'معلقة'}
+                           </Badge>
+                         </TableCell>
+                         <TableCell>
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>تأكيد حذف المعاملة</AlertDialogTitle>
+                                 <AlertDialogDescription>
+                                   هل أنت متأكد من حذف المعاملة رقم {transaction.transaction_number}؟
+                                   <br />
+                                   هذا الإجراء لا يمكن التراجع عنه.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                 <AlertDialogAction
+                                   onClick={() => deleteTransaction.mutate(transaction.id)}
+                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                   disabled={deleteTransaction.isPending}
+                                 >
+                                   {deleteTransaction.isPending ? "جاري الحذف..." : "حذف"}
+                                 </AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
+                         </TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
                 </Table>
               )}
               {transactions?.length === 0 && (
