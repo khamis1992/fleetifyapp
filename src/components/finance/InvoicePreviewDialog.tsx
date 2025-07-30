@@ -68,7 +68,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
     }
   ];
 
-  const downloadInvoicePDF = async () => {
+  const downloadInvoiceHTML = () => {
     console.log('تحميل الفاتورة - بدء العملية');
     
     if (!invoice) {
@@ -91,12 +91,12 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             background: white;
             color: #333;
             direction: rtl;
+            line-height: 1.6;
           }
           .invoice-container {
             max-width: 800px;
             margin: 0 auto;
             background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             padding: 30px;
           }
           .header {
@@ -197,8 +197,42 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             color: #666;
           }
           @media print {
-            body { margin: 0; padding: 0; }
-            .invoice-container { box-shadow: none; margin: 0; padding: 20px; }
+            body { 
+              margin: 0; 
+              padding: 0; 
+              font-size: 12pt;
+            }
+            .invoice-container { 
+              margin: 0; 
+              padding: 20px; 
+              box-shadow: none;
+            }
+            .header {
+              margin-bottom: 20px;
+              padding-bottom: 15px;
+            }
+            .invoice-details {
+              margin-bottom: 20px;
+              gap: 20px;
+            }
+            .items-table {
+              margin-bottom: 20px;
+            }
+            .items-table th,
+            .items-table td {
+              padding: 8px;
+            }
+            .totals-section {
+              margin-bottom: 20px;
+            }
+            .terms-notes {
+              margin-top: 20px;
+              padding-top: 15px;
+            }
+            @page {
+              margin: 1cm;
+              size: A4;
+            }
           }
         </style>
       </head>
@@ -302,56 +336,27 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
       </html>
     `;
 
-    const opt = {
-      margin: 1,
-      filename: `فاتورة_${invoice.invoice_number}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        letterRendering: true,
-        direction: 'rtl'
-      },
-      jsPDF: { 
-        unit: 'in', 
-        format: 'a4', 
-        orientation: 'portrait',
-        putOnlyUsedFonts: true
-      }
-    };
-
-    console.log('إعدادات PDF:', opt);
-    console.log('المحتوى جاهز، بدء إنشاء PDF...');
-
     try {
-      // Check if html2pdf is available
-      if (typeof html2pdf === 'undefined') {
-        console.error('مكتبة html2pdf غير متوفرة');
-        alert('خطأ: مكتبة تحويل PDF غير متوفرة');
-        return;
-      }
-
-      // Create a temporary element to hold the HTML
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = invoiceContent;
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '-9999px';
-      document.body.appendChild(tempDiv);
-
-      console.log('عنصر مؤقت تم إنشاؤه، بدء تحويل PDF...');
+      // Create a blob with the HTML content
+      const blob = new Blob([invoiceContent], { type: 'text/html;charset=utf-8' });
       
-      const pdfGenerator = html2pdf()
-        .set(opt)
-        .from(tempDiv);
-        
-      await pdfGenerator.save();
+      // Create a download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `فاتورة_${invoice.invoice_number}.html`;
+      
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      URL.revokeObjectURL(url);
+      
       console.log('تم تحميل الفاتورة بنجاح');
-      
-      // Clean up
-      document.body.removeChild(tempDiv);
     } catch (error) {
-      console.error('خطأ في إنشاء PDF:', error);
+      console.error('خطأ في تحميل الفاتورة:', error);
       alert('حدث خطأ أثناء تحميل الفاتورة. يرجى المحاولة مرة أخرى.');
     }
   };
@@ -366,7 +371,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
               معاينة الفاتورة #{invoice.invoice_number}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={downloadInvoicePDF}>
+              <Button variant="outline" size="sm" onClick={downloadInvoiceHTML}>
                 <Download className="h-4 w-4 mr-2" />
                 تحميل الفاتورة
               </Button>
