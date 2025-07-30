@@ -20,6 +20,14 @@ import { supabase } from '@/integrations/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 
+// Helper function to sanitize UUID values
+const sanitizeUuid = (value: string | undefined | null): string | null => {
+  if (!value || value.trim() === '' || value.toLowerCase() === 'none') {
+    return null
+  }
+  return value.trim()
+}
+
 interface JournalEntryLine {
   id: string
   account_id: string
@@ -180,21 +188,37 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     }
 
     try {
+      // Prepare the data with proper UUID sanitization
+      const sanitizedLines = lines.map(line => {
+        const sanitizedLine = {
+          account_id: sanitizeUuid(line.account_id),
+          cost_center_id: sanitizeUuid(line.cost_center_id),
+          asset_id: sanitizeUuid(line.asset_id),
+          employee_id: sanitizeUuid(line.employee_id),
+          line_description: line.description || '',
+          debit_amount: line.debit_amount || 0,
+          credit_amount: line.credit_amount || 0
+        }
+        
+        // Debug logging
+        console.log('Original line data:', {
+          account_id: line.account_id,
+          cost_center_id: line.cost_center_id,
+          asset_id: line.asset_id,
+          employee_id: line.employee_id
+        })
+        console.log('Sanitized line data:', sanitizedLine)
+        
+        return sanitizedLine
+      })
+
       await createJournalEntry.mutateAsync({
         entry: {
           ...entryData,
           total_debit: totalDebits,
           total_credit: totalCredits
         },
-        lines: lines.map(line => ({
-          account_id: line.account_id || null,
-          cost_center_id: line.cost_center_id || null,
-          asset_id: line.asset_id || null,
-          employee_id: line.employee_id || null,
-          line_description: line.description || '',
-          debit_amount: line.debit_amount || 0,
-          credit_amount: line.credit_amount || 0
-        }))
+        lines: sanitizedLines
       })
 
       // Reset form
