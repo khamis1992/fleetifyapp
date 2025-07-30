@@ -359,24 +359,24 @@ export default function Ledger() {
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-slate-100">
-                              <TableHead className="text-center font-semibold">رمز الحساب</TableHead>
-                              <TableHead className="text-center font-semibold">اسم الحساب</TableHead>
-                              <TableHead className="text-center font-semibold">البيان</TableHead>
-                              <TableHead className="text-center font-semibold text-green-700">مدين</TableHead>
                               <TableHead className="text-center font-semibold text-red-700">دائن</TableHead>
+                              <TableHead className="text-center font-semibold text-green-700">مدين</TableHead>
+                              <TableHead className="text-center font-semibold">البيان</TableHead>
+                              <TableHead className="text-center font-semibold">اسم الحساب</TableHead>
+                              <TableHead className="text-center font-semibold">رمز الحساب</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {entry.journal_entry_lines?.map((line, index) => (
                               <TableRow key={index} className="hover:bg-slate-50">
-                                <TableCell className="text-center font-mono text-sm">
-                                  {line.account?.account_code || '-'}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  {line.account?.account_name}
-                                </TableCell>
-                                <TableCell className="text-right text-sm">
-                                  {line.line_description || '-'}
+                                <TableCell className="text-center">
+                                  {line.credit_amount > 0 ? (
+                                    <span className="text-red-700 font-semibold">
+                                      {line.credit_amount.toFixed(3)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-center">
                                   {line.debit_amount > 0 ? (
@@ -387,28 +387,28 @@ export default function Ledger() {
                                     <span className="text-gray-400">-</span>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-center">
-                                  {line.credit_amount > 0 ? (
-                                    <span className="text-red-700 font-semibold">
-                                      {line.credit_amount.toFixed(3)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
+                                <TableCell className="text-right text-sm">
+                                  {line.line_description || '-'}
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {line.account?.account_name}
+                                </TableCell>
+                                <TableCell className="text-center font-mono text-sm">
+                                  {line.account?.account_code || '-'}
                                 </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
                           <TableHeader>
                             <TableRow className="bg-slate-200 border-t-2 border-slate-300">
-                              <TableHead colSpan={3} className="text-center font-bold">
-                                المجموع
+                              <TableHead className="text-center font-bold text-red-700">
+                                {entry.total_credit.toFixed(3)}
                               </TableHead>
                               <TableHead className="text-center font-bold text-green-700">
                                 {entry.total_debit.toFixed(3)}
                               </TableHead>
-                              <TableHead className="text-center font-bold text-red-700">
-                                {entry.total_credit.toFixed(3)}
+                              <TableHead colSpan={3} className="text-center font-bold">
+                                المجموع
                               </TableHead>
                             </TableRow>
                           </TableHeader>
