@@ -70,22 +70,33 @@ export default function Treasury() {
   };
 
   const handleCreateTransaction = async () => {
+    console.log('🔄 handleCreateTransaction called');
+    console.log('📝 Transaction data:', newTransaction);
+    console.log('👤 User data:', user?.profile);
+    console.log('🏦 Banks data:', banks);
+
     if (!newTransaction.description) {
+      console.log('❌ Missing description');
       toast.error('يرجى إدخال وصف المعاملة');
       return;
     }
     if (!newTransaction.bank_id) {
+      console.log('❌ Missing bank_id');
       toast.error('يرجى اختيار البنك');
       return;
     }
     if (!newTransaction.amount || newTransaction.amount <= 0) {
+      console.log('❌ Invalid amount:', newTransaction.amount);
       toast.error('يرجى إدخال مبلغ صحيح');
       return;
     }
     if (!user?.profile?.company_id) {
+      console.log('❌ Missing company_id');
       toast.error('خطأ في بيانات المستخدم');
       return;
     }
+
+    console.log('✅ All validations passed');
 
     // Generate transaction number
     const transactionNumber = `TRX-${Date.now()}`;
@@ -93,36 +104,54 @@ export default function Treasury() {
     // Get selected bank details for balance calculation
     const selectedBank = banks?.find(bank => bank.id === newTransaction.bank_id);
     if (!selectedBank) {
+      console.log('❌ Bank not found:', newTransaction.bank_id);
       toast.error('البنك المحدد غير موجود');
       return;
     }
+
+    console.log('🏦 Selected bank:', selectedBank);
 
     const balanceAfter = newTransaction.transaction_type === 'deposit' 
       ? selectedBank.current_balance + newTransaction.amount
       : selectedBank.current_balance - newTransaction.amount;
 
-    await createTransaction.mutateAsync({
-      company_id: user.profile.company_id,
-      bank_id: newTransaction.bank_id,
-      transaction_number: transactionNumber,
-      transaction_date: new Date().toISOString().split('T')[0],
-      transaction_type: newTransaction.transaction_type,
+    console.log('💰 Balance calculation:', {
+      current: selectedBank.current_balance,
       amount: newTransaction.amount,
-      balance_after: balanceAfter,
-      description: newTransaction.description,
-      reference_number: newTransaction.reference_number,
-      status: 'completed',
-      reconciled: false
-    } as Omit<BankTransaction, 'id' | 'created_at' | 'updated_at'>);
-
-    setNewTransaction({
-      transaction_type: 'deposit',
-      amount: 0,
-      description: '',
-      reference_number: '',
-      bank_id: ''
+      type: newTransaction.transaction_type,
+      after: balanceAfter
     });
-    setIsCreateTransactionDialogOpen(false);
+
+    try {
+      console.log('🚀 Starting transaction creation...');
+      await createTransaction.mutateAsync({
+        company_id: user.profile.company_id,
+        bank_id: newTransaction.bank_id,
+        transaction_number: transactionNumber,
+        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_type: newTransaction.transaction_type,
+        amount: newTransaction.amount,
+        balance_after: balanceAfter,
+        description: newTransaction.description,
+        reference_number: newTransaction.reference_number,
+        status: 'completed',
+        reconciled: false
+      } as Omit<BankTransaction, 'id' | 'created_at' | 'updated_at'>);
+
+      console.log('✅ Transaction created successfully');
+      
+      setNewTransaction({
+        transaction_type: 'deposit',
+        amount: 0,
+        description: '',
+        reference_number: '',
+        bank_id: ''
+      });
+      setIsCreateTransactionDialogOpen(false);
+    } catch (error) {
+      console.error('❌ Transaction creation failed:', error);
+      toast.error('حدث خطأ في إنشاء المعاملة: ' + (error as Error).message);
+    }
   };
 
   const filteredBanks = banks?.filter(bank =>
