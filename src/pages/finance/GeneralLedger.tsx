@@ -478,13 +478,13 @@ export default function Ledger() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رمز الحساب</TableHead>
-                      <TableHead>اسم الحساب</TableHead>
-                      <TableHead>نوع الحساب</TableHead>
-                      <TableHead>الرصيد الافتتاحي</TableHead>
-                      <TableHead>إجمالي المدين</TableHead>
-                      <TableHead>إجمالي الدائن</TableHead>
                       <TableHead>الرصيد الختامي</TableHead>
+                      <TableHead>إجمالي الدائن</TableHead>
+                      <TableHead>إجمالي المدين</TableHead>
+                      <TableHead>الرصيد الافتتاحي</TableHead>
+                      <TableHead>نوع الحساب</TableHead>
+                      <TableHead>اسم الحساب</TableHead>
+                      <TableHead>رمز الحساب</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -498,7 +498,13 @@ export default function Ledger() {
                           name: balance.account_name
                         })}
                       >
-                        <TableCell className="font-medium">{balance.account_code}</TableCell>
+                        <TableCell className="font-medium">{balance.closing_balance.toFixed(3)} د.ك</TableCell>
+                        <TableCell className="text-red-600">{balance.total_credits.toFixed(3)} د.ك</TableCell>
+                        <TableCell className="text-green-600">{balance.total_debits.toFixed(3)} د.ك</TableCell>
+                        <TableCell>{balance.opening_balance.toFixed(3)} د.ك</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{balance.account_type}</Badge>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div>{balance.account_name}</div>
@@ -507,13 +513,7 @@ export default function Ledger() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{balance.account_type}</Badge>
-                        </TableCell>
-                        <TableCell>{balance.opening_balance.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="text-green-600">{balance.total_debits.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="text-red-600">{balance.total_credits.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="font-medium">{balance.closing_balance.toFixed(3)} د.ك</TableCell>
+                        <TableCell className="font-medium">{balance.account_code}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
