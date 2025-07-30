@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { TrendingUp, TrendingDown, Banknote, CreditCard, Plus, Search, Building2, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, Bank } from "@/hooks/useTreasury";
+import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCreateBankTransaction, Bank, BankTransaction } from "@/hooks/useTreasury";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,6 +26,7 @@ export default function Treasury() {
   const { data: transactions, isLoading: transactionsLoading } = useBankTransactions();
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
   const createBank = useCreateBank();
+  const createTransaction = useCreateBankTransaction();
 
   const [newBank, setNewBank] = useState<Partial<Bank>>({
     bank_name: '',
@@ -36,6 +37,14 @@ export default function Treasury() {
     opening_balance: 0,
     is_active: true,
     is_primary: false
+  });
+
+  const [newTransaction, setNewTransaction] = useState({
+    transaction_type: 'deposit',
+    amount: 0,
+    description: '',
+    reference_number: '',
+    bank_id: ''
   });
 
   const handleCreateBank = async () => {
@@ -57,6 +66,44 @@ export default function Treasury() {
       is_primary: false
     });
     setIsCreateBankDialogOpen(false);
+  };
+
+  const handleCreateTransaction = async () => {
+    if (!newTransaction.description || !newTransaction.bank_id || !user?.profile?.company_id) return;
+
+    // Generate transaction number
+    const transactionNumber = `TRX-${Date.now()}`;
+    
+    // Get selected bank details for balance calculation
+    const selectedBank = banks?.find(bank => bank.id === newTransaction.bank_id);
+    if (!selectedBank) return;
+
+    const balanceAfter = newTransaction.transaction_type === 'deposit' 
+      ? selectedBank.current_balance + newTransaction.amount
+      : selectedBank.current_balance - newTransaction.amount;
+
+    await createTransaction.mutateAsync({
+      company_id: user.profile.company_id,
+      bank_id: newTransaction.bank_id,
+      transaction_number: transactionNumber,
+      transaction_date: new Date().toISOString().split('T')[0],
+      transaction_type: newTransaction.transaction_type,
+      amount: newTransaction.amount,
+      balance_after: balanceAfter,
+      description: newTransaction.description,
+      reference_number: newTransaction.reference_number,
+      status: 'completed',
+      reconciled: false
+    } as Omit<BankTransaction, 'id' | 'created_at' | 'updated_at'>);
+
+    setNewTransaction({
+      transaction_type: 'deposit',
+      amount: 0,
+      description: '',
+      reference_number: '',
+      bank_id: ''
+    });
+    setIsCreateTransactionDialogOpen(false);
   };
 
   const filteredBanks = banks?.filter(bank =>
@@ -351,10 +398,94 @@ export default function Treasury() {
                   <CardTitle>المعاملات المصرفية</CardTitle>
                   <CardDescription>تاريخ جميع المعاملات المصرفية</CardDescription>
                 </div>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  معاملة جديدة
-                </Button>
+                <Dialog open={isCreateTransactionDialogOpen} onOpenChange={setIsCreateTransactionDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      معاملة جديدة
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>إنشاء معاملة مصرفية جديدة</DialogTitle>
+                      <DialogDescription>
+                        أدخل تفاصيل المعاملة المصرفية الجديدة
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="bankSelect">البنك</Label>
+                        <Select
+                          value={newTransaction.bank_id}
+                          onValueChange={(value) => setNewTransaction({ ...newTransaction, bank_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر البنك" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {banks?.map((bank) => (
+                              <SelectItem key={bank.id} value={bank.id}>
+                                {bank.bank_name} - {bank.account_number}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="transactionType">نوع المعاملة</Label>
+                        <Select
+                          value={newTransaction.transaction_type}
+                          onValueChange={(value) => setNewTransaction({ ...newTransaction, transaction_type: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="deposit">إيداع</SelectItem>
+                            <SelectItem value="withdrawal">سحب</SelectItem>
+                            <SelectItem value="transfer">تحويل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="amount">المبلغ</Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          value={newTransaction.amount}
+                          onChange={(e) => setNewTransaction({ ...newTransaction, amount: Number(e.target.value) })}
+                          placeholder="0.000"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">الوصف</Label>
+                        <Textarea
+                          id="description"
+                          value={newTransaction.description}
+                          onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                          placeholder="وصف المعاملة"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="referenceNumber">رقم المرجع (اختياري)</Label>
+                        <Input
+                          id="referenceNumber"
+                          value={newTransaction.reference_number}
+                          onChange={(e) => setNewTransaction({ ...newTransaction, reference_number: e.target.value })}
+                          placeholder="رقم المرجع"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleCreateTransaction} 
+                        className="w-full" 
+                        disabled={createTransaction.isPending}
+                      >
+                        {createTransaction.isPending ? "جاري الإنشاء..." : "إنشاء المعاملة"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
