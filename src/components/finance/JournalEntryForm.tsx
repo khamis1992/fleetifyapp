@@ -334,14 +334,14 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                       </TableCell>
                       <TableCell className="w-48">
                         <Select
-                          value={line.cost_center_id || ''}
-                          onValueChange={(value) => updateLine(line.id, 'cost_center_id', value || '')}
+                          value={line.cost_center_id || 'none'}
+                          onValueChange={(value) => updateLine(line.id, 'cost_center_id', value === 'none' ? '' : value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="مركز التكلفة" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">لا يوجد</SelectItem>
+                            <SelectItem value="none">لا يوجد</SelectItem>
                             {costCenters?.map((costCenter) => (
                               <SelectItem key={costCenter.id} value={costCenter.id}>
                                 {costCenter.center_code} - {costCenter.center_name}
@@ -352,14 +352,14 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                       </TableCell>
                       <TableCell className="w-48">
                         <Select
-                          value={line.asset_id || ''}
-                          onValueChange={(value) => updateLine(line.id, 'asset_id', value || '')}
+                          value={line.asset_id || 'none'}
+                          onValueChange={(value) => updateLine(line.id, 'asset_id', value === 'none' ? '' : value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="الأصل" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">لا يوجد</SelectItem>
+                            <SelectItem value="none">لا يوجد</SelectItem>
                             {assets?.map((asset) => (
                               <SelectItem key={asset.id} value={asset.id}>
                                 {asset.asset_code} - {asset.asset_name}
@@ -370,14 +370,14 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                       </TableCell>
                       <TableCell className="w-48">
                         <Select
-                          value={line.employee_id || ''}
-                          onValueChange={(value) => updateLine(line.id, 'employee_id', value || '')}
+                          value={line.employee_id || 'none'}
+                          onValueChange={(value) => updateLine(line.id, 'employee_id', value === 'none' ? '' : value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="الموظف" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">لا يوجد</SelectItem>
+                            <SelectItem value="none">لا يوجد</SelectItem>
                             {employees?.map((employee) => (
                               <SelectItem key={employee.id} value={employee.id}>
                                 {employee.employee_number} - {employee.first_name} {employee.last_name}
