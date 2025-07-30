@@ -326,13 +326,15 @@ export default function Ledger() {
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <Badge variant={getStatusColor(entry.status)}>
+                                  {getStatusLabel(entry.status)}
+                                </Badge>
+                                {entry.reference_type && (
+                                  <Badge variant="outline">{entry.reference_type}</Badge>
+                                )}
+                              </div>
                               <h3 className="text-lg font-semibold">سند قيد رقم: {entry.entry_number}</h3>
-                              <Badge variant={getStatusColor(entry.status)}>
-                                {getStatusLabel(entry.status)}
-                              </Badge>
-                              {entry.reference_type && (
-                                <Badge variant="outline">{entry.reference_type}</Badge>
-                              )}
                             </div>
                             <div className="flex items-center gap-6 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
