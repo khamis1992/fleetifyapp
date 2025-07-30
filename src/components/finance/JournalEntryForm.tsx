@@ -4,6 +4,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Check, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -45,6 +49,9 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     reference_type: '',
     reference_id: ''
   })
+
+  const [accountSearchOpen, setAccountSearchOpen] = useState<{[key: string]: boolean}>({})
+  const [costCenterSearchOpen, setCostCenterSearchOpen] = useState<{[key: string]: boolean}>({})
 
   const [lines, setLines] = useState<JournalEntryLine[]>([
     { 
@@ -316,39 +323,114 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                   {lines.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell className="w-64">
-                        <Select
-                          value={line.account_id}
-                          onValueChange={(value) => updateLine(line.id, 'account_id', value)}
+                        <Popover 
+                          open={accountSearchOpen[line.id] || false}
+                          onOpenChange={(open) => setAccountSearchOpen({...accountSearchOpen, [line.id]: open})}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر الحساب" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {accounts?.map((account) => (
-                              <SelectItem key={account.id} value={account.id}>
-                                {account.account_code} - {account.account_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-between"
+                            >
+                              {line.account_id
+                                ? accounts?.find((account) => account.id === line.account_id)?.account_name || 'اختر الحساب'
+                                : 'اختر الحساب'}
+                              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput placeholder="البحث عن الحساب..." />
+                              <CommandList>
+                                <CommandEmpty>لم يتم العثور على حساب.</CommandEmpty>
+                                <CommandGroup>
+                                  {accounts?.map((account) => (
+                                    <CommandItem
+                                      key={account.id}
+                                      value={`${account.account_code} ${account.account_name} ${account.account_name_ar || ''}`}
+                                      onSelect={() => {
+                                        updateLine(line.id, 'account_id', account.id)
+                                        setAccountSearchOpen({...accountSearchOpen, [line.id]: false})
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          line.account_id === account.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {account.account_code} - {account.account_name_ar || account.account_name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </TableCell>
                       <TableCell className="w-48">
-                        <Select
-                          value={line.cost_center_id || 'none'}
-                          onValueChange={(value) => updateLine(line.id, 'cost_center_id', value === 'none' ? '' : value)}
+                        <Popover 
+                          open={costCenterSearchOpen[line.id] || false}
+                          onOpenChange={(open) => setCostCenterSearchOpen({...costCenterSearchOpen, [line.id]: open})}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="مركز التكلفة" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">لا يوجد</SelectItem>
-                             {costCenters?.map((costCenter) => (
-                               <SelectItem key={costCenter.id} value={costCenter.id}>
-                                 {costCenter.center_code} - {costCenter.center_name_ar || costCenter.center_name}
-                               </SelectItem>
-                             ))}
-                          </SelectContent>
-                        </Select>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-between"
+                            >
+                              {line.cost_center_id
+                                ? costCenters?.find((cc) => cc.id === line.cost_center_id)?.center_name_ar || 
+                                  costCenters?.find((cc) => cc.id === line.cost_center_id)?.center_name || 'مركز التكلفة'
+                                : 'مركز التكلفة'}
+                              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput placeholder="البحث عن مركز التكلفة..." />
+                              <CommandList>
+                                <CommandEmpty>لم يتم العثور على مركز تكلفة.</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value=""
+                                    onSelect={() => {
+                                      updateLine(line.id, 'cost_center_id', '')
+                                      setCostCenterSearchOpen({...costCenterSearchOpen, [line.id]: false})
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !line.cost_center_id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    لا يوجد
+                                  </CommandItem>
+                                  {costCenters?.map((costCenter) => (
+                                    <CommandItem
+                                      key={costCenter.id}
+                                      value={`${costCenter.center_code} ${costCenter.center_name_ar || ''} ${costCenter.center_name || ''}`}
+                                      onSelect={() => {
+                                        updateLine(line.id, 'cost_center_id', costCenter.id)
+                                        setCostCenterSearchOpen({...costCenterSearchOpen, [line.id]: false})
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          line.cost_center_id === costCenter.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {costCenter.center_code} - {costCenter.center_name_ar || costCenter.center_name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </TableCell>
                       <TableCell className="w-48">
                         <Select
