@@ -110,8 +110,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                 <div>
                   <h4 className="font-semibold mb-2">معلومات الفاتورة</h4>
                   <div className="space-y-1 text-sm">
-                    <p><span className="font-medium">التاريخ:</span> {new Date(invoice.invoice_date).toLocaleDateString('ar-SA')}</p>
-                    <p><span className="font-medium">تاريخ الاستحقاق:</span> {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('ar-SA') : 'غير محدد'}</p>
+                    <p><span className="font-medium">التاريخ:</span> {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</p>
+                    <p><span className="font-medium">تاريخ الاستحقاق:</span> {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-GB') : 'غير محدد'}</p>
                     <p><span className="font-medium">العملة:</span> {invoice.currency || 'KWD'}</p>
                   </div>
                 </div>
