@@ -44,8 +44,10 @@ const Payments = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-success/10 text-success border-success/20';
+      case 'cleared': return 'bg-success/10 text-success border-success/20';
       case 'pending': return 'bg-warning/10 text-warning border-warning/20';
       case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'bounced': return 'bg-destructive/10 text-destructive border-destructive/20';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -53,8 +55,10 @@ const Payments = () => {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed': return 'مكتملة';
+      case 'cleared': return 'مقاصة';
       case 'pending': return 'معلقة';
       case 'cancelled': return 'ملغاة';
+      case 'bounced': return 'مرتدة';
       default: return status;
     }
   };

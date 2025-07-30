@@ -164,9 +164,16 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         cost_center_id: paymentData.cost_center_id === 'none' ? null : paymentData.cost_center_id,
         bank_id: paymentData.bank_id === 'none' ? null : paymentData.bank_id,
         account_id: paymentData.account_id === 'none' ? null : paymentData.account_id,
-        payment_status: 'completed',
+        payment_status: 'completed', // تم تحديث قاعدة البيانات لتقبل 'completed'
         created_by: user.id,
       };
+
+      console.log('🔧 Debug: Final payment data being sent:', {
+        payment_method: insertData.payment_method,
+        payment_type: insertData.payment_type,
+        payment_status: insertData.payment_status,
+        fullData: insertData
+      });
 
       console.log('Inserting payment data:', insertData);
 

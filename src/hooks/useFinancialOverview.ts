@@ -60,19 +60,19 @@ export const useFinancialOverview = () => {
       // Get revenue data from contracts and payments
       const { data: revenueData } = await supabase
         .from('payments')
-        .select('amount, payment_date, payment_type')
+        .select('amount, payment_date, payment_method')
         .eq('company_id', companyId)
-        .eq('payment_type', 'receipt')
-        .eq('status', 'completed')
+        .eq('payment_method', 'received')
+        .eq('payment_status', 'completed')
         .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
 
       // Get expense data from payments and maintenance
       const { data: expenseData } = await supabase
         .from('payments')
-        .select('amount, payment_date, payment_type')
+        .select('amount, payment_date, payment_method')
         .eq('company_id', companyId)
-        .eq('payment_type', 'payment')
-        .eq('status', 'completed')
+        .eq('payment_method', 'made')
+        .eq('payment_status', 'completed')
         .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
 
       // Get maintenance costs
