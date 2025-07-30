@@ -89,12 +89,20 @@ const Invoices = () => {
             <p className="text-muted-foreground">إدارة فواتير المبيعات والمشتريات</p>
           </div>
         </div>
-        <InvoiceForm 
-          open={isCreateDialogOpen} 
-          onOpenChange={setIsCreateDialogOpen}
-          type="sales"
-        />
+        <Button 
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          إنشاء فاتورة جديدة
+        </Button>
       </div>
+
+      <InvoiceForm 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        type="sales"
+      />
 
       {/* Filters */}
       <Card>
