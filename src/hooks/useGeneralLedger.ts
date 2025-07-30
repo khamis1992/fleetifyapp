@@ -141,18 +141,6 @@ export const useJournalEntryLines = (filters?: LedgerFilters) => {
               center_code,
               center_name,
               center_name_ar
-            ),
-            employee:employees!employee_id(
-              id,
-              employee_number,
-              first_name,
-              last_name
-            ),
-            asset:fixed_assets!asset_id(
-              id,
-              asset_code,
-              asset_name,
-              asset_name_ar
             )
           `)
           .in("journal_entry_id", entryIds.map(e => e.id))

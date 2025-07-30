@@ -177,11 +177,10 @@ export const JournalVoucherDisplay: React.FC = () => {
                 <TableHead className="text-center">تاريخ القيد</TableHead>
                 <TableHead className="text-center">الحساب</TableHead>
                 <TableHead className="text-center">مركز التكلفة</TableHead>
-                <TableHead className="text-center">الأصل</TableHead>
-                <TableHead className="text-center">الموظف</TableHead>
                 <TableHead className="text-center">مدين</TableHead>
                 <TableHead className="text-center">دائن</TableHead>
                 <TableHead className="text-center">البيان</TableHead>
+                <TableHead className="text-center">الحالة</TableHead>
                 <TableHead className="text-center">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -210,14 +209,6 @@ export const JournalVoucherDisplay: React.FC = () => {
                     <TableCell className="text-center">
                       {line.cost_center?.center_name || '-'}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {line.asset?.asset_name || '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {line.employee 
-                        ? `${line.employee.first_name} ${line.employee.last_name}` 
-                        : '-'}
-                    </TableCell>
                     <TableCell className="text-center text-green-600 font-medium">
                       {line.debit_amount ? formatCurrency(line.debit_amount) : '-'}
                     </TableCell>
@@ -228,6 +219,14 @@ export const JournalVoucherDisplay: React.FC = () => {
                       <div className="truncate text-sm" title={line.line_description || group.entry.description}>
                         {line.line_description || group.entry.description || '-'}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {lineIndex === 0 && (
+                        <Badge variant={getStatusColor(group.entry.status)}>
+                          {getStatusIcon(group.entry.status)}
+                          <span className="mr-1">{getStatusLabel(group.entry.status)}</span>
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       {lineIndex === 0 && (
@@ -248,7 +247,7 @@ export const JournalVoucherDisplay: React.FC = () => {
               )}
               {Object.keys(groupedLines).length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     لا توجد بنود قيود محاسبية
                   </TableCell>
                 </TableRow>
