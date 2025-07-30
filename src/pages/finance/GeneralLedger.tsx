@@ -266,54 +266,37 @@ export default function Ledger() {
               {entriesLoading ? (
                 <LoadingSpinner />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>رقم القيد</TableHead>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>الوصف</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>عدد البنود</TableHead>
-                      <TableHead>إجمالي المدين</TableHead>
-                      <TableHead>إجمالي الدائن</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead>الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {journalEntries?.map((entry) => (
-                      <TableRow 
-                        key={entry.id}
-                        className={selectedEntryId === entry.id ? "bg-muted/50" : ""}
-                      >
-                        <TableCell className="font-medium">{entry.entry_number}</TableCell>
-                        <TableCell>{new Date(entry.entry_date).toLocaleDateString('en-GB')}</TableCell>
-                        <TableCell>{entry.description}</TableCell>
-                        <TableCell>
-                          {entry.reference_type && (
-                            <Badge variant="outline">{entry.reference_type}</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center text-sm">
-                          {entry.journal_entry_lines?.length || 0} بند
-                        </TableCell>
-                        <TableCell className="text-green-600 font-medium">
-                          {entry.total_debit.toFixed(3)} د.ك
-                        </TableCell>
-                        <TableCell className="text-red-600 font-medium">
-                          {entry.total_credit.toFixed(3)} د.ك
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusColor(entry.status)}>
-                            {getStatusLabel(entry.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
+                <div className="space-y-6">
+                  {journalEntries?.map((entry) => (
+                    <Card key={entry.id} className="border-l-4 border-l-primary">
+                      {/* Header */}
+                      <CardHeader className="bg-muted/30 pb-3">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-4">
+                              <h3 className="text-lg font-semibold">سند قيد رقم: {entry.entry_number}</h3>
+                              <Badge variant={getStatusColor(entry.status)}>
+                                {getStatusLabel(entry.status)}
+                              </Badge>
+                              {entry.reference_type && (
+                                <Badge variant="outline">{entry.reference_type}</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>التاريخ: {new Date(entry.entry_date).toLocaleDateString('ar-SA')}</span>
+                              </div>
+                              <div>إجمالي المدين: {entry.total_debit.toFixed(3)} د.ك</div>
+                              <div>إجمالي الدائن: {entry.total_credit.toFixed(3)} د.ك</div>
+                            </div>
+                          </div>
                           <div className="flex space-x-1">
                             <Dialog>
                               <DialogTrigger asChild>
                                 <Button variant="ghost" size="sm">
                                   <Eye className="h-4 w-4" />
+                                  معاينة
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -360,11 +343,80 @@ export default function Ledger() {
                               </AlertDialog>
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </CardHeader>
+
+                      {/* الوصف */}
+                      {entry.description && (
+                        <div className="px-6 py-3 bg-slate-50 border-b">
+                          <div className="text-sm text-muted-foreground mb-1">البيان:</div>
+                          <div className="text-sm">{entry.description}</div>
+                        </div>
+                      )}
+
+                      {/* جدول القيود */}
+                      <CardContent className="p-0">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-slate-100">
+                              <TableHead className="text-center font-semibold">رمز الحساب</TableHead>
+                              <TableHead className="text-center font-semibold">اسم الحساب</TableHead>
+                              <TableHead className="text-center font-semibold">البيان</TableHead>
+                              <TableHead className="text-center font-semibold text-green-700">مدين</TableHead>
+                              <TableHead className="text-center font-semibold text-red-700">دائن</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {entry.journal_entry_lines?.map((line, index) => (
+                              <TableRow key={index} className="hover:bg-slate-50">
+                                <TableCell className="text-center font-mono text-sm">
+                                  {line.account?.account_code || '-'}
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {line.account?.account_name}
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {line.line_description || '-'}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {line.debit_amount > 0 ? (
+                                    <span className="text-green-700 font-semibold">
+                                      {line.debit_amount.toFixed(3)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {line.credit_amount > 0 ? (
+                                    <span className="text-red-700 font-semibold">
+                                      {line.credit_amount.toFixed(3)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                          <TableHeader>
+                            <TableRow className="bg-slate-200 border-t-2 border-slate-300">
+                              <TableHead colSpan={3} className="text-center font-bold">
+                                المجموع
+                              </TableHead>
+                              <TableHead className="text-center font-bold text-green-700">
+                                {entry.total_debit.toFixed(3)}
+                              </TableHead>
+                              <TableHead className="text-center font-bold text-red-700">
+                                {entry.total_credit.toFixed(3)}
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
