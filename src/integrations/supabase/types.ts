@@ -7423,6 +7423,10 @@ export type Database = {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
       }
+      recalculate_bank_balance: {
+        Args: { bank_id_param: string }
+        Returns: number
+      }
       record_performance_metric: {
         Args: {
           company_id_param: string
@@ -7443,6 +7447,10 @@ export type Database = {
           reversal_reason: string
           reversed_by_user: string
         }
+        Returns: string
+      }
+      reverse_payment_bank_transaction: {
+        Args: { payment_id_param: string }
         Returns: string
       }
       soft_delete_account: {
