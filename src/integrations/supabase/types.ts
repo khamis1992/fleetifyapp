@@ -7130,6 +7130,10 @@ export type Database = {
           profit_margin: number
         }[]
       }
+      generate_payment_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       generate_secure_password: {
         Args: Record<PropertyKey, never>
         Returns: string
