@@ -16,6 +16,7 @@ import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts"
+import { useCostCenters } from "@/hooks/useCostCenters"
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
@@ -29,6 +30,7 @@ interface VehicleFormProps {
 export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { user } = useAuth()
   const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
+  const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createVehicle = useCreateVehicle()
   const updateVehicle = useUpdateVehicle()
   const { toast } = useToast()
@@ -107,7 +109,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Additional Information
       notes: "",
-      account_id: "",
+      cost_center_id: "",
     }
   })
 
@@ -153,7 +155,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         deposit_amount: vehicle.deposit_amount?.toString() || "",
         status: vehicle.status || "available",
         notes: vehicle.notes || "",
-        account_id: vehicle.cost_center_id || "",
+        cost_center_id: vehicle.cost_center_id || "",
       })
     }
   }, [vehicle, form])
@@ -247,7 +249,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Additional Information
       notes: "مركبة جديدة في حالة ممتازة، تم شراؤها من معرض معتمد مع ضمان شامل.",
-      account_id: "",
+      cost_center_id: "",
     }
     
     // Fill form with dummy data
@@ -358,7 +360,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         
         // Additional fields
         notes: finalData.notes?.trim() || null,
-        account_id: finalData.account_id || null,
+        cost_center_id: finalData.cost_center_id || null,
         depreciation_method: finalData.depreciation_method || "straight_line",
         salvage_value: finalData.salvage_value ? parseFloat(finalData.salvage_value) : null,
       }
@@ -1080,10 +1082,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
                     <FormField
                       control={form.control}
-                      name="account_id"
+                      name="cost_center_id"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>الحساب المحاسبي</FormLabel>
+                          <FormLabel>مركز التكلفة</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1096,40 +1098,40 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                   )}
                                 >
                                   {field.value
-                                    ? entryAllowedAccounts?.find(
-                                        (account) => account.id === field.value
-                                      )?.account_name_ar || entryAllowedAccounts?.find(
-                                        (account) => account.id === field.value
-                                      )?.account_name
-                                    : "اختر الحساب"}
+                                    ? costCenters?.find(
+                                        (center) => center.id === field.value
+                                      )?.center_name_ar || costCenters?.find(
+                                        (center) => center.id === field.value
+                                      )?.center_name
+                                    : "اختر مركز التكلفة"}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent className="w-full p-0" align="start">
                               <Command>
-                                <CommandInput placeholder="ابحث عن الحساب..." className="text-right" />
+                                <CommandInput placeholder="ابحث عن مركز التكلفة..." className="text-right" />
                                 <CommandList>
-                                  <CommandEmpty>لا توجد حسابات.</CommandEmpty>
+                                  <CommandEmpty>لا توجد مراكز تكلفة.</CommandEmpty>
                                   <CommandGroup>
-                                    {entryAllowedAccounts?.map((account) => (
+                                    {costCenters?.map((center) => (
                                       <CommandItem
-                                        key={account.id}
-                                        value={`${account.account_name_ar || account.account_name} ${account.account_code}`}
+                                        key={center.id}
+                                        value={`${center.center_name_ar || center.center_name} ${center.center_code}`}
                                         onSelect={() => {
-                                          field.onChange(account.id)
+                                          field.onChange(center.id)
                                         }}
                                         className="text-right"
                                       >
                                         <Check
                                           className={cn(
                                             "mr-2 h-4 w-4",
-                                            account.id === field.value
+                                            center.id === field.value
                                               ? "opacity-100"
                                               : "opacity-0"
                                           )}
                                         />
-                                        {account.account_name_ar || account.account_name} ({account.account_code})
+                                        {center.center_name_ar || center.center_name} ({center.center_code})
                                       </CommandItem>
                                     ))}
                                   </CommandGroup>
