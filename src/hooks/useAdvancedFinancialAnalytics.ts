@@ -92,7 +92,7 @@ export const useAdvancedFinancialAnalytics = () => {
         .from("payments")
         .select("*")
         .eq("company_id", companyId)
-        .eq("status", "completed")
+        .eq("payment_status", "completed")
         .gte("payment_date", sixMonthsAgo.toISOString().split('T')[0]);
 
       const { data: bankTransactions } = await supabase

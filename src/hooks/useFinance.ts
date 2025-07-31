@@ -817,6 +817,7 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
       let query = supabase
         .from("payments")
         .select("*")
+        .eq("company_id", user.profile.company_id)
         .order("payment_date", { ascending: false })
       
       if (filters?.method) {
