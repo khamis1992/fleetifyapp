@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Settings } from "lucide-react"
+import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,6 @@ import { useCustomers, useToggleCustomerBlacklist } from "@/hooks/useCustomers"
 import { useDebounce } from "@/hooks/useDebounce"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
-import { CustomerDiagnostics } from "@/components/customers/CustomerDiagnostics"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
@@ -22,7 +21,6 @@ export default function Customers() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [showCustomerForm, setShowCustomerForm] = useState(false)
-  const [showDiagnostics, setShowDiagnostics] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
   const [showInvoiceForm, setShowInvoiceForm] = useState(false)
@@ -127,24 +125,14 @@ export default function Customers() {
             إدارة وتتبع معلومات العملاء
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => setShowDiagnostics(true)}
-            className="flex items-center gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            تشخيص المشاكل
-          </Button>
-          <Button 
-            onClick={() => setShowCustomerForm(true)}
-            disabled={!canAddCustomers}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            إضافة عميل جديد
-          </Button>
-        </div>
+        <Button 
+          onClick={() => setShowCustomerForm(true)}
+          disabled={!canAddCustomers}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          إضافة عميل جديد
+        </Button>
       </div>
 
       {/* رسالة عدم وجود صلاحيات */}
@@ -418,10 +406,6 @@ export default function Customers() {
         mode={editingCustomer ? 'edit' : 'create'}
       />
 
-      <CustomerDiagnostics
-        open={showDiagnostics}
-        onOpenChange={setShowDiagnostics}
-      />
 
       {(() => {
         console.log('🔍 Checking selectedCustomerId:', selectedCustomerId)
