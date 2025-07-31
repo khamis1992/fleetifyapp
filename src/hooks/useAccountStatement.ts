@@ -113,11 +113,22 @@ export const useAccountStatement = ({
         .gte('journal_entries.entry_date', dateFrom)
         .lte('journal_entries.entry_date', dateTo)
         .eq('journal_entries.status', 'posted')
-        .eq('journal_entries.company_id', companyId)
-        .order('journal_entries.entry_date', { ascending: true })
-        .order('journal_entries.entry_number', { ascending: true });
+        .eq('journal_entries.company_id', companyId);
 
       if (transError) throw transError;
+
+      // Sort transactions by entry date and entry number
+      const sortedTransactions = (transactions || []).sort((a, b) => {
+        const dateA = new Date(a.journal_entries.entry_date);
+        const dateB = new Date(b.journal_entries.entry_date);
+        
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        
+        // If dates are equal, sort by entry number
+        return a.journal_entries.entry_number.localeCompare(b.journal_entries.entry_number);
+      });
 
       // Calculate running balances and prepare statement transactions
       let running_balance = opening_balance;
@@ -125,7 +136,7 @@ export const useAccountStatement = ({
       let total_debits = 0;
       let total_credits = 0;
 
-      (transactions || []).forEach((trans) => {
+      sortedTransactions.forEach((trans) => {
         const debit_amount = trans.debit_amount || 0;
         const credit_amount = trans.credit_amount || 0;
         
