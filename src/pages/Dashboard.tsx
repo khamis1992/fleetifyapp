@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
@@ -9,11 +9,13 @@ import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
 import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem';
+import { EnhancedContractStats } from '@/components/dashboard/EnhancedContractStats';
+import { DraftContractsNotification } from '@/components/contracts/DraftContractsNotification';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
+  const { data: enhancedStats, isLoading: statsLoading } = useDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
 
@@ -61,7 +63,7 @@ const Dashboard: React.FC = () => {
       change: String(enhancedStats?.contractsChange || '+0%'),
       icon: FileText,
       trend: 'neutral' as const,
-      description: 'عقد ساري المفعول'
+      description: `ساري المفعول (${enhancedStats?.totalContracts || 0} إجمالي)`
     },
     {
       title: 'الإيرادات الشهرية',
@@ -130,6 +132,12 @@ const Dashboard: React.FC = () => {
             />
           ))}
         </div>
+
+        {/* Draft Contracts Notification */}
+        <DraftContractsNotification />
+
+        {/* Enhanced Contract Statistics */}
+        <EnhancedContractStats />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
