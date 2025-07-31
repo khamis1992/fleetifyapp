@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye } from "lucide-react"
+import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search } from "lucide-react"
 import { useBudgets, useCreateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -280,9 +280,7 @@ const Budgets = () => {
                 <TableHead>صافي الدخل</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>تاريخ الإنشاء</TableHead>
-                <TableHead className="text-center">
-                  <Eye className="h-4 w-4 mx-auto" />
-                </TableHead>
+                <TableHead>الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -309,17 +307,9 @@ const Budgets = () => {
                     <TableCell>
                       {new Date(budget.created_at).toLocaleDateString('en-GB')}
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          // Navigate to budget details or open budget details dialog
-                          console.log('View budget:', budget.id)
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">عرض</Button>
+                      <Button variant="ghost" size="sm">تعديل</Button>
                     </TableCell>
                   </TableRow>
                 )
