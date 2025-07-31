@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/lib/utils";
 
 interface ExportOptions {
   reportId: string;
@@ -21,21 +23,23 @@ export const useReportExport = () => {
     try {
       const htmlContent = await generateReportHTML(options);
       
-      // Create and download the HTML file
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${options.title}-${new Date().toISOString().split('T')[0]}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: "تم تصدير التقرير بنجاح",
-        description: "تم تنزيل ملف HTML للتقرير",
-      });
+      // Open in new tab like financial reports
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(htmlContent);
+        newWindow.document.close();
+        
+        toast({
+          title: "تم فتح التقرير",
+          description: "تم فتح التقرير في نافذة جديدة للطباعة",
+        });
+      } else {
+        toast({
+          title: "تعذر فتح التقرير",
+          description: "يرجى السماح بالنوافذ المنبثقة لفتح التقرير",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Export failed:', error);
       toast({
@@ -408,34 +412,327 @@ export const useReportExport = () => {
             justify-content: center;
             margin: 2rem 0;
         }
+
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .data-section {
+            margin: 2rem 0;
+        }
+
+        .data-section h3 {
+            margin-bottom: 1rem;
+            color: #495057;
+            font-size: 1.2rem;
+        }
+
+        .table-note {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin-top: 1rem;
+        }
     }
   `;
 
   const generateReportContent = (options: ExportOptions, data: any) => {
-    // This would generate specific content based on report type
+    if (!data || !data.summary) {
+      return `
+        <div class="summary-cards">
+          <div class="summary-card">
+            <h4>إجمالي السجلات</h4>
+            <div class="value">0</div>
+            <div class="change">لا توجد بيانات متاحة حالياً</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Generate summary cards based on data
+    const summaryCards = Object.entries(data.summary)
+      .map(([key, value]) => {
+        const label = getSummaryLabel(key);
+        const formattedValue = typeof value === 'number' && key.includes('Amount') 
+          ? formatCurrency(value) 
+          : value?.toString() || '0';
+        
+        return `
+          <div class="summary-card">
+            <h4>${label}</h4>
+            <div class="value">${formattedValue}</div>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Generate data table
+    const tableContent = generateDataTable(data.data, options.moduleType);
+
     return `
       <div class="summary-cards">
-        <div class="summary-card">
-          <h4>إجمالي السجلات</h4>
-          <div class="value">0</div>
-          <div class="change">لا توجد بيانات متاحة حالياً</div>
-        </div>
+        ${summaryCards}
       </div>
       
-      <div class="report-placeholder">
-        <h3>محتوى التقرير</h3>
-        <p>سيتم عرض بيانات التقرير هنا بناءً على النوع المحدد: ${options.reportId}</p>
-        <p>القسم: ${getModuleTitle(options.moduleType)}</p>
+      ${tableContent}
+    `;
+  };
+
+  const getSummaryLabel = (key: string): string => {
+    const labels: Record<string, string> = {
+      totalEmployees: 'إجمالي الموظفين',
+      activeEmployees: 'الموظفون النشطون',
+      departments: 'عدد الأقسام',
+      totalPayroll: 'إجمالي الرواتب',
+      employeesPaid: 'الموظفون المدفوعة رواتبهم',
+      totalVehicles: 'إجمالي المركبات',
+      availableVehicles: 'المركبات المتاحة',
+      rentedVehicles: 'المركبات المؤجرة',
+      maintenanceVehicles: 'مركبات تحت الصيانة',
+      totalCustomers: 'إجمالي العملاء',
+      activeCustomers: 'العملاء النشطون',
+      newCustomers: 'العملاء الجدد',
+      totalCases: 'إجمالي القضايا',
+      activeCases: 'القضايا النشطة',
+      closedCases: 'القضايا المغلقة',
+      totalInvoices: 'إجمالي الفواتير',
+      totalAmount: 'إجمالي المبلغ',
+      paidInvoices: 'الفواتير المدفوعة',
+      totalPayments: 'إجمالي المدفوعات'
+    };
+    return labels[key] || key;
+  };
+
+  const generateDataTable = (data: any[], moduleType: string): string => {
+    if (!data || data.length === 0) {
+      return `
+        <div class="no-data">
+          <h3>لا توجد بيانات للعرض</h3>
+          <p>لا توجد سجلات متاحة للفترة المحددة</p>
+        </div>
+      `;
+    }
+
+    // Generate table headers based on module type
+    const headers = getTableHeaders(moduleType);
+    const headerRow = headers.map(header => `<th>${header}</th>`).join('');
+
+    // Generate table rows
+    const rows = data.slice(0, 50).map((item, index) => { // Limit to 50 rows for performance
+      const cells = getTableCells(item, moduleType);
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    return `
+      <div class="data-section">
+        <h3>بيانات التقرير</h3>
+        <table class="data-table">
+          <thead>
+            <tr>${headerRow}</tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+        ${data.length > 50 ? `<p class="table-note">تم عرض أول 50 سجل من أصل ${data.length} سجل</p>` : ''}
       </div>
     `;
   };
 
+  const getTableHeaders = (moduleType: string): string[] => {
+    switch (moduleType) {
+      case 'hr':
+        return ['الاسم', 'القسم', 'المنصب', 'تاريخ التوظيف'];
+      case 'fleet':
+        return ['رقم المركبة', 'النوع', 'الحالة', 'السنة'];
+      case 'customers':
+        return ['اسم العميل', 'الهاتف', 'البريد الإلكتروني', 'المدينة'];
+      case 'legal':
+        return ['رقم القضية', 'العنوان', 'الحالة', 'تاريخ الإنشاء'];
+      case 'finance':
+        return ['الرقم', 'التاريخ', 'المبلغ', 'الحالة'];
+      default:
+        return ['البيانات'];
+    }
+  };
+
+  const getTableCells = (item: any, moduleType: string): string => {
+    switch (moduleType) {
+      case 'hr':
+        return `
+          <td>${item.full_name || 'غير محدد'}</td>
+          <td>${item.department || 'غير محدد'}</td>
+          <td>${item.position || 'غير محدد'}</td>
+          <td>${new Date(item.created_at).toLocaleDateString('ar-SA')}</td>
+        `;
+      case 'fleet':
+        return `
+          <td>${item.plate_number || 'غير محدد'}</td>
+          <td>${item.vehicle_type || 'غير محدد'}</td>
+          <td>${item.status || 'غير محدد'}</td>
+          <td>${item.year || 'غير محدد'}</td>
+        `;
+      case 'customers':
+        return `
+          <td>${item.company_name || 'غير محدد'}</td>
+          <td>${item.phone || 'غير محدد'}</td>
+          <td>${item.email || 'غير محدد'}</td>
+          <td>${item.city || 'غير محدد'}</td>
+        `;
+      case 'legal':
+        return `
+          <td>${item.case_number || 'غير محدد'}</td>
+          <td>${item.case_title || 'غير محدد'}</td>
+          <td>${item.case_status || 'غير محدد'}</td>
+          <td>${new Date(item.created_at).toLocaleDateString('ar-SA')}</td>
+        `;
+      case 'finance':
+        return `
+          <td>${item.invoice_number || item.id || 'غير محدد'}</td>
+          <td>${new Date(item.created_at).toLocaleDateString('ar-SA')}</td>
+          <td>${formatCurrency(item.total_amount || item.amount || 0)}</td>
+          <td>${item.status || 'غير محدد'}</td>
+        `;
+      default:
+        return `<td>${JSON.stringify(item)}</td>`;
+    }
+  };
+
   const fetchReportData = async (options: ExportOptions) => {
-    // This would fetch actual report data from the database
-    // For now, returning placeholder data
+    
+    try {
+      // Fetch data based on module type
+      switch (options.moduleType) {
+        case 'hr':
+          return await fetchHRData(options, companyId);
+        case 'fleet':
+          return await fetchFleetData(options, companyId);
+        case 'customers':
+          return await fetchCustomersData(options, companyId);
+        case 'legal':
+          return await fetchLegalData(options, companyId);
+        case 'finance':
+          return await fetchFinanceData(options, companyId);
+        default:
+          return { data: [], summary: {} };
+      }
+    } catch (error) {
+      console.error('Error fetching report data:', error);
+      return { data: [], summary: {} };
+    }
+  };
+
+  const fetchHRData = async (options: ExportOptions, companyId: string) => {
+    let query = supabase.from('employees').select('*').eq('company_id', companyId);
+    
+    if (options.filters?.startDate) {
+      query = query.gte('created_at', options.filters.startDate);
+    }
+    if (options.filters?.endDate) {
+      query = query.lte('created_at', options.filters.endDate);
+    }
+
+    const { data: employees } = await query;
+    
     return {
-      data: [],
-      summary: {}
+      data: employees || [],
+      summary: {
+        totalEmployees: employees?.length || 0,
+        activeEmployees: employees?.filter(emp => emp.account_status === 'active').length || 0,
+        departments: [...new Set(employees?.map(emp => emp.department))].length || 0
+      }
+    };
+  };
+
+  const fetchFleetData = async (options: ExportOptions, companyId: string) => {
+    let query = supabase.from('vehicles').select('*').eq('company_id', companyId);
+    
+    if (options.filters?.startDate) {
+      query = query.gte('created_at', options.filters.startDate);
+    }
+    if (options.filters?.endDate) {
+      query = query.lte('created_at', options.filters.endDate);
+    }
+
+    const { data: vehicles } = await query;
+    
+    return {
+      data: vehicles || [],
+      summary: {
+        totalVehicles: vehicles?.length || 0,
+        availableVehicles: vehicles?.filter(v => v.status === 'available').length || 0,
+        rentedVehicles: vehicles?.filter(v => v.status === 'rented').length || 0
+      }
+    };
+  };
+
+  const fetchCustomersData = async (options: ExportOptions, companyId: string) => {
+    let query = supabase.from('customers').select('*').eq('company_id', companyId);
+    
+    if (options.filters?.startDate) {
+      query = query.gte('created_at', options.filters.startDate);
+    }
+    if (options.filters?.endDate) {
+      query = query.lte('created_at', options.filters.endDate);
+    }
+
+    const { data: customers } = await query;
+    
+    return {
+      data: customers || [],
+      summary: {
+        totalCustomers: customers?.length || 0,
+        activeCustomers: customers?.filter(c => c.is_active === true).length || 0
+      }
+    };
+  };
+
+  const fetchLegalData = async (options: ExportOptions, companyId: string) => {
+    let query = supabase.from('legal_cases').select('*').eq('company_id', companyId);
+    
+    if (options.filters?.startDate) {
+      query = query.gte('created_at', options.filters.startDate);
+    }
+    if (options.filters?.endDate) {
+      query = query.lte('created_at', options.filters.endDate);
+    }
+
+    const { data: cases } = await query;
+    
+    return {
+      data: cases || [],
+      summary: {
+        totalCases: cases?.length || 0,
+        activeCases: cases?.filter(c => c.case_status === 'active').length || 0,
+        closedCases: cases?.filter(c => c.case_status === 'closed').length || 0
+      }
+    };
+  };
+
+  const fetchFinanceData = async (options: ExportOptions, companyId: string) => {
+    let query = supabase.from('invoices').select('*').eq('company_id', companyId);
+    
+    if (options.filters?.startDate) {
+      query = query.gte('created_at', options.filters.startDate);
+    }
+    if (options.filters?.endDate) {
+      query = query.lte('created_at', options.filters.endDate);
+    }
+
+    const { data: invoices } = await query;
+    
+    return {
+      data: invoices || [],
+      summary: {
+        totalInvoices: invoices?.length || 0,
+        totalAmount: invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
+        paidInvoices: invoices?.filter(inv => inv.status === 'paid').length || 0
+      }
     };
   };
 
