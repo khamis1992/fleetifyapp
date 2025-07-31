@@ -150,17 +150,14 @@ export default function Ledger() {
             <Plus className="h-4 w-4 mr-2" />
             قيد جديد
           </Button>
-          <Select onValueChange={(value) => handleExport(value as any)}>
-            <SelectTrigger className="w-[180px]">
-              <Download className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="تصدير" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="csv">CSV</SelectItem>
-              <SelectItem value="excel">Excel</SelectItem>
-              <SelectItem value="pdf">PDF</SelectItem>
-            </SelectContent>
-          </Select>
+          <Button 
+            onClick={() => handleExport('pdf')}
+            variant="outline"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            إنشاء تقرير
+          </Button>
         </div>
       </div>
 
