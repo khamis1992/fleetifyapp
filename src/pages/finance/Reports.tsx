@@ -257,14 +257,14 @@ const Reports = () => {
       {/* Financial Reports Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
-          <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
-          <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
-          <TabsTrigger value="payables">الدائنة</TabsTrigger>
-          <TabsTrigger value="receivables">المدينة</TabsTrigger>
-          <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
-          <TabsTrigger value="payroll">الرواتب</TabsTrigger>
           <TabsTrigger value="enhanced">التقارير المحسّنة</TabsTrigger>
+          <TabsTrigger value="payroll">الرواتب</TabsTrigger>
+          <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
+          <TabsTrigger value="receivables">المدينة</TabsTrigger>
+          <TabsTrigger value="payables">الدائنة</TabsTrigger>
+          <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
+          <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
+          <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
         </TabsList>
 
         <TabsContent value="enhanced" className="space-y-6">
