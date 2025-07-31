@@ -93,15 +93,15 @@ const FinancialAnalysis = () => {
       </div>
 
       {/* Analysis Tabs */}
-      <Tabs defaultValue="ratios" className="space-y-6">
+      <Tabs defaultValue="trends" className="space-y-6">
         <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="ratios">النسب المالية</TabsTrigger>
           <TabsTrigger value="trends">الاتجاهات</TabsTrigger>
           <TabsTrigger value="performance">الأداء</TabsTrigger>
           <TabsTrigger value="budget">مقارنة الميزانية</TabsTrigger>
           <TabsTrigger value="analytics">التحليل المتقدم</TabsTrigger>
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
           <TabsTrigger value="forecast">التنبؤات</TabsTrigger>
+          <TabsTrigger value="ratios">النسب المالية</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ratios" className="space-y-6">
