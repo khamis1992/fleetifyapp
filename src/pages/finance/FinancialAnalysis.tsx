@@ -62,7 +62,7 @@ const FinancialAnalysis = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
