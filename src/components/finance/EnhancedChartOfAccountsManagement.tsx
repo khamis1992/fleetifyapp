@@ -326,7 +326,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
                       <SelectItem value="assets">الأصول</SelectItem>
                       <SelectItem value="liabilities">الخصوم</SelectItem>
                       <SelectItem value="equity">حقوق الملكية</SelectItem>
@@ -344,7 +344,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
                       <SelectItem value="debit">مدين</SelectItem>
                       <SelectItem value="credit">دائن</SelectItem>
                     </SelectContent>
@@ -359,7 +359,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الحساب الأب (اختياري)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
                       {allAccounts?.filter(acc => acc.is_header).map((account) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.account_code} - {account.account_name}
@@ -418,7 +418,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="تصفية حسب النوع" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
                 <SelectItem value="all">جميع الأنواع</SelectItem>
                 <SelectItem value="assets">الأصول</SelectItem>
                 <SelectItem value="liabilities">الخصوم</SelectItem>
