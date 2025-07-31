@@ -107,7 +107,7 @@ const FinancialAnalysis = () => {
         <TabsContent value="ratios" className="space-y-6">
           <div className="grid gap-6">
             {ratioCategories.map((category, index) => (
-              <Card key={index}>
+              <Card key={index} dir="rtl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calculator className="h-5 w-5" />
@@ -139,7 +139,7 @@ const FinancialAnalysis = () => {
         </TabsContent>
 
         <TabsContent value="trends" className="space-y-6">
-          <Card>
+          <Card dir="rtl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
@@ -176,7 +176,7 @@ const FinancialAnalysis = () => {
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          <Card>
+          <Card dir="rtl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -237,7 +237,7 @@ const FinancialAnalysis = () => {
         </TabsContent>
 
         <TabsContent value="budget" className="space-y-6">
-          <Card>
+          <Card dir="rtl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />
@@ -338,7 +338,7 @@ const FinancialAnalysis = () => {
             <>
               {/* Financial Health Score */}
               {advancedAnalytics?.financialHealthScore && (
-                <Card>
+                <Card dir="rtl">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Activity className="h-5 w-5" />
@@ -402,7 +402,7 @@ const FinancialAnalysis = () => {
 
               {/* Cash Flow Analysis */}
               {advancedAnalytics?.cashFlowAnalysis && (
-                <Card>
+                <Card dir="rtl">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
@@ -448,7 +448,7 @@ const FinancialAnalysis = () => {
 
               {/* Cost Center Performance */}
               {advancedAnalytics?.costCenterPerformance && advancedAnalytics.costCenterPerformance.length > 0 && (
-                <Card>
+                <Card dir="rtl">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Target className="h-5 w-5" />
@@ -504,7 +504,7 @@ const FinancialAnalysis = () => {
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-6">
-          <Card>
+          <Card dir="rtl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
@@ -575,7 +575,7 @@ const FinancialAnalysis = () => {
           
           {/* Historical Comparison */}
           {analysisData?.historicalComparison && (
-            <Card>
+            <Card dir="rtl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
@@ -628,7 +628,7 @@ const FinancialAnalysis = () => {
       </Tabs>
 
       {/* Under Development Notice */}
-      <Card>
+      <Card dir="rtl">
         <CardContent className="py-12">
           <div className="text-center">
             <PieChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
