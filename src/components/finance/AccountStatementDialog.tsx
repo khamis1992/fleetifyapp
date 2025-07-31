@@ -81,13 +81,13 @@ export const AccountStatementDialog = ({
     refetch();
   };
 
-  const handleExport = async (format: 'pdf' | 'excel') => {
+  const handleExport = async (format: 'pdf') => {
     if (!statementData) return;
     
     // TODO: Implement export functionality
     toast({
       title: "قيد التطوير",
-      description: `سيتم إضافة تصدير ${format === 'pdf' ? 'PDF' : 'Excel'} قريباً`,
+      description: "سيتم إضافة تصدير PDF قريباً",
     });
   };
 
@@ -197,10 +197,6 @@ export const AccountStatementDialog = ({
                 <Button variant="outline" onClick={() => handleExport('pdf')}>
                   <Download className="h-4 w-4 mr-2" />
                   PDF
-                </Button>
-                <Button variant="outline" onClick={() => handleExport('excel')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Excel
                 </Button>
               </div>
             )}
