@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface DashboardStats {
   totalVehicles: number;
-  activeContracts: number;
+  activeContracts: number; // Now includes all contracts, not just active
   totalCustomers: number;
   monthlyRevenue: number;
   vehiclesChange: string;
@@ -39,12 +39,11 @@ export const useDashboardStats = () => {
         .eq('company_id', user.profile.company_id)
         .eq('is_active', true);
 
-      // Get active contracts count
+      // Get all contracts count (active, draft, etc.)
       const { count: contractsCount } = await supabase
         .from('contracts')
         .select('*', { count: 'exact', head: true })
-        .eq('company_id', user.profile.company_id)
-        .eq('status', 'active');
+        .eq('company_id', user.profile.company_id);
 
       // Get customers count
       const { count: customersCount } = await supabase
@@ -53,15 +52,15 @@ export const useDashboardStats = () => {
         .eq('company_id', user.profile.company_id)
         .eq('is_active', true);
 
-      // Get monthly revenue from active contracts
+      // Get monthly revenue from all contracts (active and draft)
       const currentMonth = new Date();
       const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       
       const { data: monthlyContracts } = await supabase
         .from('contracts')
-        .select('monthly_amount')
+        .select('monthly_amount, status')
         .eq('company_id', user.profile.company_id)
-        .eq('status', 'active')
+        .in('status', ['active', 'draft']) // Include both active and draft contracts
         .gte('start_date', firstDayOfMonth.toISOString().split('T')[0]);
 
       const monthlyRevenue = monthlyContracts?.reduce((sum, contract) => sum + (contract.monthly_amount || 0), 0) || 0;
