@@ -130,12 +130,23 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
   const preDispatchReport = conditionReports?.find(r => r.inspection_type === 'pre_dispatch');
   
   // Check if report exists and has essential data (regardless of approval status)
+  // Note: mileage_reading can be 0, so we check for !== null and !== undefined
   const hasEssentialReportData = preDispatchReport && 
     preDispatchReport.overall_condition && 
-    preDispatchReport.mileage_reading && 
+    (preDispatchReport.mileage_reading !== null && preDispatchReport.mileage_reading !== undefined) && 
     preDispatchReport.fuel_level;
     
   const isConditionReportCompleted = hasEssentialReportData;
+  
+  // Add detailed logging for debugging
+  console.log('🔍 Condition Report Status:', {
+    preDispatchReport: !!preDispatchReport,
+    overall_condition: preDispatchReport?.overall_condition,
+    mileage_reading: preDispatchReport?.mileage_reading,
+    fuel_level: preDispatchReport?.fuel_level,
+    hasEssentialReportData,
+    isConditionReportCompleted
+  });
 
   return (
     <>
@@ -643,7 +654,12 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                       </div>
                       {!isConditionReportCompleted && (
                         <div className="text-sm text-amber-600 mt-2">
-                          يرجى إكمال: الحالة العامة، قراءة العداد، ومستوى الوقود
+                          <div className="font-medium">البيانات المطلوبة للمتابعة:</div>
+                          <ul className="list-disc list-inside mt-1 space-y-1">
+                            {!preDispatchReport?.overall_condition && <li>الحالة العامة للمركبة</li>}
+                            {(preDispatchReport?.mileage_reading === null || preDispatchReport?.mileage_reading === undefined) && <li>قراءة عداد المسافات (يمكن أن تكون صفر)</li>}
+                            {!preDispatchReport?.fuel_level && <li>مستوى الوقود</li>}
+                          </ul>
                         </div>
                       )}
                     </div>
