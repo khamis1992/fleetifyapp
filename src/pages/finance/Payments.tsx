@@ -19,12 +19,15 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Plus, Search, Filter, BarChart3, CreditCard, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterMethod, setFilterMethod] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""
@@ -303,7 +306,14 @@ const Payments = () => {
                               {payment.reference_number || '-'}
                             </TableCell>
                             <TableCell>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPayment(payment);
+                                  setIsPreviewDialogOpen(true);
+                                }}
+                              >
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </TableCell>
@@ -324,6 +334,91 @@ const Payments = () => {
           onOpenChange={setIsCreateDialogOpen}
           type="payment"
         />
+
+        {/* مكون معاينة تفاصيل الدفعة */}
+        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>تفاصيل الدفعة</DialogTitle>
+            </DialogHeader>
+            {selectedPayment && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">رقم الدفعة</label>
+                    <p className="font-medium">{selectedPayment.payment_number}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">نوع الدفعة</label>
+                    <Badge className={getTypeColor((selectedPayment as any).transaction_type)}>
+                      {getTypeLabel((selectedPayment as any).transaction_type)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">تاريخ الدفعة</label>
+                    <p className="font-medium">
+                      {new Date(selectedPayment.payment_date).toLocaleDateString('ar-SA', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">المبلغ</label>
+                    <p className="font-medium text-lg font-mono">
+                      {new Intl.NumberFormat('ar-KW', {
+                        style: 'currency',
+                        currency: selectedPayment.currency || 'KWD',
+                        minimumFractionDigits: 3
+                      }).format(selectedPayment.amount)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">طريقة الدفع</label>
+                    <p className="font-medium">{getMethodLabel(selectedPayment.payment_method)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">الحالة</label>
+                    <Badge className={getStatusColor(selectedPayment.payment_status)}>
+                      {getStatusLabel(selectedPayment.payment_status)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">رقم المرجع</label>
+                    <p className="font-medium">{selectedPayment.reference_number || 'غير متوفر'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">رقم الحساب البنكي</label>
+                    <p className="font-medium font-mono">{selectedPayment.bank_account || 'غير متوفر'}</p>
+                  </div>
+                </div>
+                
+                {selectedPayment.notes && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">ملاحظات</label>
+                    <p className="text-sm bg-muted p-3 rounded-md mt-1">
+                      {selectedPayment.notes}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="pt-4 border-t">
+                  <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                    <div>
+                      <span>تاريخ الإنشاء: </span>
+                      {new Date(selectedPayment.created_at).toLocaleString('ar-SA')}
+                    </div>
+                    <div>
+                      <span>آخر تحديث: </span>
+                      {new Date(selectedPayment.updated_at).toLocaleString('ar-SA')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
