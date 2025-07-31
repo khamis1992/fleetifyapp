@@ -264,7 +264,9 @@ const Payments = () => {
                     <Table>
                        <TableHeader>
                          <TableRow>
-                           <TableHead>الإجراءات</TableHead>
+                            <TableHead className="text-center w-16">
+                              <Eye className="h-4 w-4 mx-auto" />
+                            </TableHead>
                            <TableHead>رقم المرجع</TableHead>
                            <TableHead>الحالة</TableHead>
                            <TableHead>طريقة الدفع</TableHead>
@@ -277,18 +279,20 @@ const Payments = () => {
                       <TableBody>
                         {filteredPayments.map((payment) => (
                            <TableRow key={payment.id}>
-                             <TableCell>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm"
-                                 onClick={() => {
-                                   setSelectedPayment(payment);
-                                   setIsPreviewDialogOpen(true);
-                                 }}
-                               >
-                                 <Eye className="h-4 w-4" />
-                               </Button>
-                             </TableCell>
+                              <TableCell className="text-center">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="w-8 h-8 p-0 hover:bg-primary/10 hover:text-primary"
+                                  onClick={() => {
+                                    setSelectedPayment(payment);
+                                    setIsPreviewDialogOpen(true);
+                                  }}
+                                  title="عرض تفاصيل الدفعة"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
                              <TableCell className="text-muted-foreground">
                                {payment.reference_number || '-'}
                              </TableCell>
