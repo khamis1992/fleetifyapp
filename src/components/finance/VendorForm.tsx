@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useCreateVendor, useUpdateVendor, type Vendor } from "@/hooks/useFinance"
+import { TestTube } from "lucide-react"
 
 const vendorSchema = z.object({
   vendor_code: z.string().min(1, "كود المورد مطلوب"),
@@ -75,8 +76,74 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
     }
   }
 
+  const fillSampleData = () => {
+    const sampleVendors = [
+      {
+        vendor_code: 'VEN001',
+        vendor_name: 'Al-Salam Trading Company',
+        vendor_name_ar: 'شركة السلام التجارية',
+        contact_person: 'أحمد محمد الأحمد',
+        email: 'info@alsalam-trading.com',
+        phone: '+965 2245-8899',
+        address: 'Block 1, Sharq Area, Kuwait City',
+        address_ar: 'قطعة 1، منطقة شرق، مدينة الكويت',
+        tax_number: 'TAX-KW-001234',
+        payment_terms: 30,
+        credit_limit: 5000,
+        notes: 'مورد موثوق للمعدات المكتبية'
+      },
+      {
+        vendor_code: 'VEN002',
+        vendor_name: 'Kuwait Office Supplies',
+        vendor_name_ar: 'أدوات المكاتب الكويتية',
+        contact_person: 'فاطمة عبدالله',
+        email: 'sales@kw-office.com',
+        phone: '+965 2234-5677',
+        address: 'Hawally, Building 15, Floor 2',
+        address_ar: 'حولي، مبنى 15، الطابق الثاني',
+        tax_number: 'TAX-KW-005678',
+        payment_terms: 15,
+        credit_limit: 3000,
+        notes: 'متخصص في القرطاسية والأجهزة المكتبية'
+      },
+      {
+        vendor_code: 'VEN003',
+        vendor_name: 'Gulf Technology Solutions',
+        vendor_name_ar: 'حلول التكنولوجيا الخليجية',
+        contact_person: 'خالد الراشد',
+        email: 'contact@gulf-tech.com',
+        phone: '+965 2298-7654',
+        address: 'Salmiya, Saeed Complex, Office 301',
+        address_ar: 'السالمية، مجمع سعيد، مكتب 301',
+        tax_number: 'TAX-KW-009876',
+        payment_terms: 45,
+        credit_limit: 10000,
+        notes: 'مورد للأجهزة التقنية والحاسوبية'
+      }
+    ]
+    
+    const randomVendor = sampleVendors[Math.floor(Math.random() * sampleVendors.length)]
+    
+    // Reset the form with sample data
+    form.reset(randomVendor)
+  }
+
   return (
     <Form {...form}>
+      {!vendor && (
+        <div className="mb-4">
+          <Button 
+            type="button"
+            variant="outline" 
+            size="sm" 
+            onClick={fillSampleData}
+            className="text-xs"
+          >
+            <TestTube className="h-3 w-3 mr-1" />
+            ملء بيانات تجريبية
+          </Button>
+        </div>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
