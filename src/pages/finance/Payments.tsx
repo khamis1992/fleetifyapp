@@ -124,15 +124,15 @@ const Payments = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="list" className="w-full">
+         <Tabs defaultValue="list" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              قائمة المدفوعات
-            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               التحليلات والتقارير
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              قائمة المدفوعات
             </TabsTrigger>
           </TabsList>
 
