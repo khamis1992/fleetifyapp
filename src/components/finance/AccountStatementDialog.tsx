@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { FileText, Download, Printer, Calendar, Filter } from "lucide-react";
@@ -50,6 +50,11 @@ export const AccountStatementDialog = ({
   });
   const [dateTo, setDateTo] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [statementType, setStatementType] = useState<'detailed' | 'summary'>('detailed');
+
+  // Sync selectedAccountId with accountId prop
+  useEffect(() => {
+    setSelectedAccountId(accountId);
+  }, [accountId]);
 
   const {
     data: statementData,
