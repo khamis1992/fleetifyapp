@@ -405,8 +405,8 @@ export default function Customers() {
         customer={editingCustomer}
         mode={editingCustomer ? 'edit' : 'create'}
       />
-
-
+      
+      {/* Customer Details Dialog */}
       {(() => {
         console.log('🔍 Checking selectedCustomerId:', selectedCustomerId)
         console.log('🔍 Boolean check:', !!selectedCustomerId)
