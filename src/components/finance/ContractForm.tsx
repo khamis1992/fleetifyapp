@@ -334,25 +334,6 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="status">حالة العقد</Label>
-                <Select 
-                  value={contractData.status} 
-                  onValueChange={(value) => setContractData({...contractData, status: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر حالة العقد" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-700 z-50">
-                    <SelectItem value="active">نشط - جاهز للتنفيذ</SelectItem>
-                    <SelectItem value="draft">مسودة - يحتاج مراجعة</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  اختر "نشط" للعقود الجاهزة للتنفيذ أو "مسودة" للمراجعة لاحقاً
-                </p>
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="account_id">الحساب المحاسبي</Label>
                 <Select 
                   value={contractData.account_id} 

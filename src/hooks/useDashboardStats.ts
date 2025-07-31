@@ -4,9 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface DashboardStats {
   totalVehicles: number;
-  totalContracts: number; // Total contracts (all statuses)
-  activeContracts: number; // Active contracts only
-  draftContracts: number; // Draft contracts only
+  activeContracts: number; // Now includes all contracts, not just active
   totalCustomers: number;
   monthlyRevenue: number;
   vehiclesChange: string;
@@ -24,9 +22,7 @@ export const useDashboardStats = () => {
       if (!user?.profile?.company_id) {
         return {
           totalVehicles: 0,
-          totalContracts: 0,
           activeContracts: 0,
-          draftContracts: 0,
           totalCustomers: 0,
           monthlyRevenue: 0,
           vehiclesChange: '+0',
@@ -43,25 +39,11 @@ export const useDashboardStats = () => {
         .eq('company_id', user.profile.company_id)
         .eq('is_active', true);
 
-      // Get all contracts count
-      const { count: totalContractsCount } = await supabase
+      // Get all contracts count (active, draft, etc.)
+      const { count: contractsCount } = await supabase
         .from('contracts')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', user.profile.company_id);
-
-      // Get active contracts count
-      const { count: activeContractsCount } = await supabase
-        .from('contracts')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', user.profile.company_id)
-        .eq('status', 'active');
-
-      // Get draft contracts count
-      const { count: draftContractsCount } = await supabase
-        .from('contracts')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', user.profile.company_id)
-        .eq('status', 'draft');
 
       // Get customers count
       const { count: customersCount } = await supabase
@@ -87,9 +69,7 @@ export const useDashboardStats = () => {
       // In a real implementation, you'd calculate these based on previous period data
       return {
         totalVehicles: vehiclesCount || 0,
-        totalContracts: totalContractsCount || 0,
-        activeContracts: activeContractsCount || 0,
-        draftContracts: draftContractsCount || 0,
+        activeContracts: contractsCount || 0,
         totalCustomers: customersCount || 0,
         monthlyRevenue,
         vehiclesChange: '+0',
