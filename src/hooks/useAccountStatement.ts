@@ -137,55 +137,71 @@ export const useAccountStatement = ({
       let total_credits = 0;
 
       if (statementType === 'summary') {
-        // Group transactions by date for summary
-        const dailyGroups = new Map<string, { 
+        // Group transactions by operation type for summary
+        const operationGroups = new Map<string, { 
           transactions: typeof sortedTransactions, 
-          daily_debit: number, 
-          daily_credit: number 
+          total_debit: number, 
+          total_credit: number 
         }>();
 
         sortedTransactions.forEach((trans) => {
-          const date = trans.journal_entries.entry_date;
           const debit_amount = trans.debit_amount || 0;
           const credit_amount = trans.credit_amount || 0;
+          
+          // Determine operation type based on description or reference type
+          let operationType = 'عمليات أخرى';
+          const journalDescription = trans.journal_entries.description?.toLowerCase() || '';
+          const lineDescription = trans.line_description?.toLowerCase() || '';
+          const referenceType = trans.journal_entries.reference_type || '';
+          const description = `${journalDescription} ${lineDescription}`.toLowerCase();
+          
+          if (description.includes('invoice') || description.includes('فاتورة')) {
+            operationType = 'فواتير الإيجار';
+          } else if (description.includes('payment') || description.includes('دفع') || description.includes('سداد')) {
+            operationType = 'مدفوعات العملاء';
+          } else if (description.includes('discount') || description.includes('خصم') || description.includes('fine') || description.includes('غرامة')) {
+            operationType = 'خصومات وغرامات';
+          } else if (description.includes('contract') || description.includes('عقد')) {
+            operationType = 'عقود الإيجار';
+          }
 
-          if (!dailyGroups.has(date)) {
-            dailyGroups.set(date, { 
+          if (!operationGroups.has(operationType)) {
+            operationGroups.set(operationType, { 
               transactions: [], 
-              daily_debit: 0, 
-              daily_credit: 0 
+              total_debit: 0, 
+              total_credit: 0 
             });
           }
 
-          const group = dailyGroups.get(date)!;
+          const group = operationGroups.get(operationType)!;
           group.transactions.push(trans);
-          group.daily_debit += debit_amount;
-          group.daily_credit += credit_amount;
+          group.total_debit += debit_amount;
+          group.total_credit += credit_amount;
         });
 
-        // Sort dates and create summary entries
-        const sortedDates = Array.from(dailyGroups.keys()).sort();
+        // Sort operation types and create summary entries
+        const sortedOperationTypes = Array.from(operationGroups.keys()).sort();
 
-        sortedDates.forEach((date) => {
-          const group = dailyGroups.get(date)!;
+        sortedOperationTypes.forEach((operationType) => {
+          const group = operationGroups.get(operationType)!;
           
-          total_debits += group.daily_debit;
-          total_credits += group.daily_credit;
+          total_debits += group.total_debit;
+          total_credits += group.total_credit;
 
           // Update running balance based on account type
           if (account.balance_type === 'debit') {
-            running_balance += group.daily_debit - group.daily_credit;
+            running_balance += group.total_debit - group.total_credit;
           } else {
-            running_balance += group.daily_credit - group.daily_debit;
+            running_balance += group.total_credit - group.total_debit;
           }
 
           statementTransactions.push({
-            id: `summary-${date}`,
-            entry_date: date,
+            id: `summary-${operationType}`,
+            entry_date: sortedTransactions[0]?.journal_entries.entry_date || dateFrom,
             entry_number: 'متعدد',
-            description: `إجمالي حركات يوم ${new Date(date).toLocaleDateString('ar-KW')}`,
-            debit_amount: group.daily_debit,
-            credit_amount: group.daily_credit,
+            description: `${operationType} (${group.transactions.length} عملية)`,
+            debit_amount: group.total_debit,
+            credit_amount: group.total_credit,
             running_balance,
             status: 'posted'
           });
