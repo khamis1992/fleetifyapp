@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye } from "lucide-react"
-import { useBudgets, useCreateBudget, Budget } from "@/hooks/useFinance"
+import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye, Edit } from "lucide-react"
+import { useBudgets, useCreateBudget, useUpdateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const Budgets = () => {
@@ -20,9 +20,12 @@ const Budgets = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editBudget, setEditBudget] = useState<Partial<Budget>>({})
 
   const { data: budgets, isLoading, error } = useBudgets()
   const createBudget = useCreateBudget()
+  const updateBudget = useUpdateBudget()
 
   const [newBudget, setNewBudget] = useState<Partial<Budget>>({
     budget_name: '',
@@ -51,6 +54,36 @@ const Budgets = () => {
       notes: ''
     })
     setIsCreateDialogOpen(false)
+  }
+
+  const handleEditBudget = (budget: Budget) => {
+    setEditBudget({
+      id: budget.id,
+      budget_name: budget.budget_name,
+      budget_year: budget.budget_year,
+      total_revenue: budget.total_revenue || 0,
+      total_expenses: budget.total_expenses || 0,
+      notes: budget.notes || '',
+      status: budget.status
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateBudget = async () => {
+    if (!editBudget.id || !editBudget.budget_name || !editBudget.budget_year) return
+
+    await updateBudget.mutateAsync({
+      id: editBudget.id,
+      budget_name: editBudget.budget_name,
+      budget_year: editBudget.budget_year,
+      total_revenue: editBudget.total_revenue,
+      total_expenses: editBudget.total_expenses,
+      notes: editBudget.notes,
+      status: editBudget.status
+    })
+
+    setIsEditDialogOpen(false)
+    setEditBudget({})
   }
 
   const filteredBudgets = budgets?.filter(budget => {
@@ -321,7 +354,13 @@ const Budgets = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">تعديل</Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEditBudget(budget)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 )
@@ -402,6 +441,83 @@ const Budgets = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Budget Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل الموازنة</DialogTitle>
+            <DialogDescription>تعديل تفاصيل الموازنة المالية</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editBudgetName">اسم الموازنة *</Label>
+              <Input
+                id="editBudgetName"
+                value={editBudget.budget_name || ''}
+                onChange={(e) => setEditBudget({ ...editBudget, budget_name: e.target.value })}
+                placeholder="موازنة 2024"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editBudgetYear">السنة المالية *</Label>
+              <Input
+                id="editBudgetYear"
+                type="number"
+                value={editBudget.budget_year || ''}
+                onChange={(e) => setEditBudget({ ...editBudget, budget_year: Number(e.target.value) })}
+                placeholder="2024"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editTotalRevenue">إجمالي الإيرادات المتوقعة</Label>
+              <Input
+                id="editTotalRevenue"
+                type="number"
+                value={editBudget.total_revenue || 0}
+                onChange={(e) => setEditBudget({ ...editBudget, total_revenue: Number(e.target.value) })}
+                placeholder="0.000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editTotalExpenses">إجمالي المصروفات المتوقعة</Label>
+              <Input
+                id="editTotalExpenses"
+                type="number"
+                value={editBudget.total_expenses || 0}
+                onChange={(e) => setEditBudget({ ...editBudget, total_expenses: Number(e.target.value) })}
+                placeholder="0.000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editStatus">الحالة</Label>
+              <Select value={editBudget.status} onValueChange={(value: 'draft' | 'approved' | 'active' | 'closed') => setEditBudget({ ...editBudget, status: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">مسودة</SelectItem>
+                  <SelectItem value="approved">معتمدة</SelectItem>
+                  <SelectItem value="active">نشطة</SelectItem>
+                  <SelectItem value="closed">مغلقة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editNotes">ملاحظات</Label>
+              <Textarea
+                id="editNotes"
+                value={editBudget.notes || ''}
+                onChange={(e) => setEditBudget({ ...editBudget, notes: e.target.value })}
+                placeholder="ملاحظات إضافية"
+              />
+            </div>
+            <Button onClick={handleUpdateBudget} className="w-full" disabled={updateBudget.isPending}>
+              {updateBudget.isPending ? "جاري التحديث..." : "تحديث الموازنة"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

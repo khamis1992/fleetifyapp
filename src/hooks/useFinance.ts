@@ -1452,6 +1452,54 @@ export const useCreateBudget = () => {
   })
 }
 
+export const useUpdateBudget = () => {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (data: {
+      id: string
+      budget_name?: string
+      budget_year?: number
+      total_revenue?: number
+      total_expenses?: number
+      notes?: string
+      status?: 'draft' | 'approved' | 'active' | 'closed'
+    }) => {
+      if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
+      
+      const netIncome = (data.total_revenue || 0) - (data.total_expenses || 0)
+      
+      const { data: updatedBudget, error } = await supabase
+        .from("budgets")
+        .update({
+          budget_name: data.budget_name,
+          budget_year: data.budget_year,
+          total_revenue: data.total_revenue,
+          total_expenses: data.total_expenses,
+          net_income: netIncome,
+          notes: data.notes,
+          status: data.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", data.id)
+        .eq("company_id", user.profile.company_id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return updatedBudget
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgets"] })
+      toast.success("تم تحديث الموازنة بنجاح")
+    },
+    onError: (error) => {
+      toast.error("خطأ في تحديث الموازنة: " + error.message)
+    }
+  })
+}
+
 // Bank Transactions Hooks
 export const useBankTransactions = () => {
   const { user } = useAuth()
