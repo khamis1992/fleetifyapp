@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { FileText, Download, Printer, Calendar, Filter } from "lucide-react";
+import { FileText, Printer, Calendar, Filter } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -79,16 +80,6 @@ export const AccountStatementDialog = ({
       return;
     }
     refetch();
-  };
-
-  const handleExport = async (format: 'pdf') => {
-    if (!statementData) return;
-    
-    // TODO: Implement export functionality
-    toast({
-      title: "قيد التطوير",
-      description: "سيتم إضافة تصدير PDF قريباً",
-    });
   };
 
   const handlePrint = () => {
@@ -193,10 +184,6 @@ export const AccountStatementDialog = ({
                 <Button variant="outline" onClick={handlePrint}>
                   <Printer className="h-4 w-4 mr-2" />
                   طباعة
-                </Button>
-                <Button variant="outline" onClick={() => handleExport('pdf')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF
                 </Button>
               </div>
             )}
