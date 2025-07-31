@@ -46,9 +46,9 @@ export const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ alerts, load
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            التنبيهات الذكية
+            التنبيهات
           </CardTitle>
-          <CardDescription>نظام التنبيهات المتقدم</CardDescription>
+          <CardDescription>تنبيهات النظام</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -71,14 +71,14 @@ export const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ alerts, load
           <div className="p-2 bg-warning/10 rounded-lg">
             <AlertTriangle className="h-5 w-5 text-warning" />
           </div>
-          التنبيهات الذكية
+          التنبيهات
           {alerts.length > 0 && (
             <Badge variant="secondary" className="mr-auto animate-pulse">
               {alerts.length}
             </Badge>
           )}
         </CardTitle>
-        <CardDescription className="text-base">نظام التنبيهات المتقدم</CardDescription>
+        <CardDescription className="text-base">تنبيهات النظام</CardDescription>
       </CardHeader>
       <CardContent>
         {alerts.length === 0 ? (
