@@ -18,6 +18,8 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAutoRenewContracts } from "@/hooks/useContractRenewal"
+import { useToast } from "@/hooks/use-toast"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function Contracts() {
   const [showContractForm, setShowContractForm] = useState(false)
@@ -32,6 +34,8 @@ export default function Contracts() {
   const [filters, setFilters] = useState<any>({})
   const { user } = useAuth()
   const autoRenewContracts = useAutoRenewContracts()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // Handle pre-selected customer from navigation
   useEffect(() => {
@@ -176,8 +180,20 @@ export default function Contracts() {
 
   const handleFixDraftContracts = async () => {
     try {
-      // Update draft contracts with valid data to active status
-      const { error } = await supabase
+      // أولاً، نزيل معرف القيد المحاسبي من العقود المسودة لتجنب مشاكل النظام المحاسبي
+      const { error: updateJournalError } = await supabase
+        .from('contracts')
+        .update({ journal_entry_id: null })
+        .eq('company_id', user?.profile?.company_id)
+        .eq('status', 'draft')
+
+      if (updateJournalError) {
+        console.error('❌ Error removing journal entries:', updateJournalError)
+        throw updateJournalError
+      }
+
+      // ثم نحدث العقود المسودة ذات البيانات الصحيحة إلى حالة نشطة
+      const { data, error } = await supabase
         .from('contracts')
         .update({ 
           status: 'active',
@@ -189,14 +205,31 @@ export default function Contracts() {
         .neq('customer_id', null)
         .neq('start_date', null)
         .neq('end_date', null)
+        .select()
 
       if (error) throw error
 
-      // Refresh the contracts list
+      // عرض رسالة نجاح مع عدد العقود المفعلة
+      const activatedCount = data?.length || 0
+      
+      toast({
+        title: "تم تفعيل العقود بنجاح",
+        description: `تم تفعيل ${activatedCount} عقد من المسودات`,
+      })
+
+      // إعادة تحميل البيانات
+      queryClient.invalidateQueries({ queryKey: ['contracts'] })
       refetch()
-      console.log('✅ Fixed draft contracts status')
+      
+      console.log('✅ تم تفعيل العقود المسودة بنجاح')
     } catch (error) {
-      console.error('❌ Error fixing draft contracts:', error)
+      console.error('❌ خطأ في تفعيل العقود المسودة:', error)
+      
+      toast({
+        title: "خطأ في تفعيل العقود",
+        description: "حدث خطأ أثناء تفعيل العقود المسودة",
+        variant: "destructive",
+      })
     }
   }
 
