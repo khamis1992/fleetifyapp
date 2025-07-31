@@ -4,12 +4,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkflowManager } from '@/components/approval/WorkflowManager';
+import { WorkflowForm } from '@/components/approval/WorkflowForm';
 import { ApprovalRequestsList } from '@/components/approval/ApprovalRequestsList';
 import { useApprovalRequests } from '@/hooks/useApprovalWorkflows';
 
 export default function ApprovalSystem() {
   const [activeTab, setActiveTab] = useState('requests');
+  const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<any>(null);
   
   // جلب إحصائيات سريعة
   const { data: pendingRequests } = useApprovalRequests({ status: 'pending' });
@@ -43,18 +47,22 @@ export default function ApprovalSystem() {
   ];
 
   const handleCreateWorkflow = () => {
-    // TODO: Open workflow creation dialog
-    console.log('Create workflow clicked');
+    setSelectedWorkflow(null);
+    setIsWorkflowDialogOpen(true);
   };
 
   const handleEditWorkflow = (workflowId: string) => {
-    // TODO: Open workflow edit dialog
-    console.log('Edit workflow:', workflowId);
+    setSelectedWorkflow({ id: workflowId });
+    setIsWorkflowDialogOpen(true);
   };
 
   const handleViewRequest = (requestId: string) => {
-    // TODO: Open request details dialog
     console.log('View request:', requestId);
+  };
+
+  const handleWorkflowSuccess = () => {
+    setIsWorkflowDialogOpen(false);
+    setSelectedWorkflow(null);
   };
 
   return (
@@ -161,6 +169,22 @@ export default function ApprovalSystem() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Workflow Form Dialog */}
+      <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedWorkflow ? 'تعديل سير العمل' : 'إنشاء سير عمل جديد'}
+            </DialogTitle>
+          </DialogHeader>
+          <WorkflowForm
+            workflow={selectedWorkflow}
+            onSuccess={handleWorkflowSuccess}
+            onCancel={() => setIsWorkflowDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
