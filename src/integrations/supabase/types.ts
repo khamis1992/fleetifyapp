@@ -7461,6 +7461,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      update_account_balances_from_entries: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_account_levels_manually: {
         Args: { company_id_param: string }
         Returns: undefined

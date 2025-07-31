@@ -435,7 +435,7 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
             )
           `)
           .eq("journal_entry.company_id", user.profile.company_id)
-          .eq("journal_entry.status", "approved")
+          .eq("journal_entry.status", "posted")
         
         if (linesError) {
           console.error("Error fetching journal lines:", linesError)
