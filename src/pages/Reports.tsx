@@ -180,12 +180,12 @@ export default function Reports() {
       {/* Main Content */}
       <Tabs value={selectedModule} onValueChange={setSelectedModule} className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
-          <TabsTrigger value="finance">المالية</TabsTrigger>
-          <TabsTrigger value="hr">الموارد البشرية</TabsTrigger>
-          <TabsTrigger value="fleet">الأسطول</TabsTrigger>
-          <TabsTrigger value="customers">العملاء</TabsTrigger>
           <TabsTrigger value="legal">القانونية</TabsTrigger>
+          <TabsTrigger value="customers">العملاء</TabsTrigger>
+          <TabsTrigger value="fleet">الأسطول</TabsTrigger>
+          <TabsTrigger value="hr">الموارد البشرية</TabsTrigger>
+          <TabsTrigger value="finance">المالية</TabsTrigger>
+          <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
         </TabsList>
 
         {/* Dashboard Tab */}
