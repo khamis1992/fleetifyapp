@@ -126,22 +126,37 @@ export default function Contracts() {
 
   const handleContractSubmit = async (contractData: any) => {
     try {
+      console.log('📋 [CONTRACT_SUBMIT] Raw form data:', contractData)
+      
+      // Remove fields that don't exist in the contracts table
+      const { rental_days, ...contractInsertData } = contractData
+      
+      // Prepare the final data for database insertion
+      const finalData = {
+        ...contractInsertData,
+        company_id: user?.profile?.company_id || user?.company?.id,
+        created_by: user?.id
+      }
+      
+      console.log('💾 [CONTRACT_SUBMIT] Data being sent to database:', finalData)
+      
       const { error } = await supabase
         .from('contracts')
-        .insert([{
-          ...contractData,
-          company_id: user?.profile?.company_id || user?.company?.id,
-          created_by: user?.id
-        }])
+        .insert([finalData])
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [CONTRACT_SUBMIT] Database error:', error)
+        throw error
+      }
       
+      console.log('✅ [CONTRACT_SUBMIT] Contract created successfully')
       refetch()
       setShowContractForm(false)
       // Clear preselected customer after successful creation
       setPreselectedCustomerId(null)
     } catch (error) {
-      console.error('Error creating contract:', error)
+      console.error('❌ [CONTRACT_SUBMIT] Error creating contract:', error)
+      // You could add a toast notification here to inform the user
     }
   }
 
