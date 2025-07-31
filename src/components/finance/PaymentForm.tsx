@@ -15,7 +15,7 @@ import { useActiveContracts } from "@/hooks/useContracts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { usePermissions } from "@/hooks/usePermissions";
-import { TestTube, AlertTriangle, Info } from "lucide-react";
+import { TestTube, AlertTriangle, Info, FileText, Eye, EyeOff } from "lucide-react";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 
 interface PaymentFormProps {
@@ -63,6 +63,10 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     notes: '',
     contract_id: contractId || '',
   });
+  
+  const [showJournalPreview, setShowJournalPreview] = useState(false);
+  const [journalPreview, setJournalPreview] = useState<any>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // Debug user roles and permissions on component mount
   useEffect(() => {
@@ -228,6 +232,93 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const generateJournalPreview = async () => {
+    if (!user?.profile?.company_id || paymentData.amount <= 0) {
+      toast.error("يرجى إدخال المبلغ أولاً");
+      return;
+    }
+
+    setIsPreviewLoading(true);
+    try {
+      // محاكاة إنشاء القيد المحاسبي
+      const preview = {
+        entry_number: `JE-${new Date().getFullYear().toString().slice(-2)}-XXXX`,
+        entry_date: paymentData.payment_date,
+        description: type === 'payment' 
+          ? `Payment #${paymentData.payment_number || 'NEW'}`
+          : `Receipt #${paymentData.payment_number || 'NEW'}`,
+        total_amount: paymentData.amount,
+        lines: []
+      };
+
+      // تحديد الحسابات للقيد
+      const selectedAccount = entryAllowedAccounts?.find(acc => acc.id === paymentData.account_id);
+      const selectedCostCenter = costCenters?.find(cc => cc.id === paymentData.cost_center_id);
+      const selectedBank = banks?.find(b => b.id === paymentData.bank_id);
+
+      // إنشاء سطور القيد حسب النوع
+      if (type === 'payment') {
+        // مدفوعات: مدين المصروف/المورد، دائن النقدية/البنك
+        preview.lines.push({
+          line_number: 1,
+          account_name: selectedAccount?.account_name || 'حساب المصروفات العامة',
+          account_code: selectedAccount?.account_code || '5010',
+          cost_center_name: selectedCostCenter?.center_name || 'الإدارة',
+          description: `Payment - ${paymentData.payment_number || 'NEW'}`,
+          debit_amount: paymentData.amount,
+          credit_amount: 0
+        });
+
+        preview.lines.push({
+          line_number: 2,
+          account_name: paymentData.payment_method === 'cash' 
+            ? 'النقدية' 
+            : selectedBank?.bank_name || 'البنك الرئيسي',
+          account_code: paymentData.payment_method === 'cash' ? '1110' : '1120',
+          cost_center_name: selectedCostCenter?.center_name || 'الإدارة',
+          description: paymentData.payment_method === 'cash' 
+            ? `Cash payment - ${paymentData.payment_number || 'NEW'}`
+            : `Bank payment - ${paymentData.payment_number || 'NEW'}`,
+          debit_amount: 0,
+          credit_amount: paymentData.amount
+        });
+      } else {
+        // مقبوضات: مدين النقدية/البنك، دائن الإيرادات/العملاء
+        preview.lines.push({
+          line_number: 1,
+          account_name: paymentData.payment_method === 'cash' 
+            ? 'النقدية' 
+            : selectedBank?.bank_name || 'البنك الرئيسي',
+          account_code: paymentData.payment_method === 'cash' ? '1110' : '1120',
+          cost_center_name: selectedCostCenter?.center_name || 'الإدارة',
+          description: paymentData.payment_method === 'cash' 
+            ? `Cash receipt - ${paymentData.payment_number || 'NEW'}`
+            : `Bank receipt - ${paymentData.payment_number || 'NEW'}`,
+          debit_amount: paymentData.amount,
+          credit_amount: 0
+        });
+
+        preview.lines.push({
+          line_number: 2,
+          account_name: selectedAccount?.account_name || 'الإيرادات الأخرى',
+          account_code: selectedAccount?.account_code || '4020',
+          cost_center_name: selectedCostCenter?.center_name || 'الإدارة',
+          description: `Receipt - ${paymentData.payment_number || 'NEW'}`,
+          debit_amount: 0,
+          credit_amount: paymentData.amount
+        });
+      }
+
+      setJournalPreview(preview);
+      setShowJournalPreview(true);
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast.error("خطأ في إنشاء المعاينة");
+    } finally {
+      setIsPreviewLoading(false);
     }
   };
 
@@ -495,16 +586,104 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
             </CardContent>
           </Card>
 
+          {/* معاينة القيد المحاسبي */}
+          {showJournalPreview && journalPreview && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  معاينة القيد المحاسبي
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">رقم القيد:</span> {journalPreview.entry_number}
+                    </div>
+                    <div>
+                      <span className="font-medium">تاريخ القيد:</span> {journalPreview.entry_date}
+                    </div>
+                    <div className="col-span-2">
+                      <span className="font-medium">البيان:</span> {journalPreview.description}
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse border border-border">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="border border-border p-2 text-right">رقم الحساب</th>
+                          <th className="border border-border p-2 text-right">اسم الحساب</th>
+                          <th className="border border-border p-2 text-right">مركز التكلفة</th>
+                          <th className="border border-border p-2 text-right">البيان</th>
+                          <th className="border border-border p-2 text-right">مدين</th>
+                          <th className="border border-border p-2 text-right">دائن</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {journalPreview.lines.map((line: any, index: number) => (
+                          <tr key={index}>
+                            <td className="border border-border p-2">{line.account_code}</td>
+                            <td className="border border-border p-2">{line.account_name}</td>
+                            <td className="border border-border p-2">{line.cost_center_name}</td>
+                            <td className="border border-border p-2">{line.description}</td>
+                            <td className="border border-border p-2 text-right">
+                              {line.debit_amount > 0 && `${line.debit_amount.toFixed(3)} ${paymentData.currency}`}
+                            </td>
+                            <td className="border border-border p-2 text-right">
+                              {line.credit_amount > 0 && `${line.credit_amount.toFixed(3)} ${paymentData.currency}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-muted font-medium">
+                          <td colSpan={4} className="border border-border p-2 text-right">الإجمالي:</td>
+                          <td className="border border-border p-2 text-right">
+                            {journalPreview.total_amount.toFixed(3)} {paymentData.currency}
+                          </td>
+                          <td className="border border-border p-2 text-right">
+                            {journalPreview.total_amount.toFixed(3)} {paymentData.currency}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-between items-center">
-            <Button 
-              type="button" 
-              variant="secondary" 
-              onClick={fillTestData}
-              className="flex items-center gap-2"
-            >
-              <TestTube className="h-4 w-4" />
-              بيانات تجريبية
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={fillTestData}
+                className="flex items-center gap-2"
+              >
+                <TestTube className="h-4 w-4" />
+                بيانات تجريبية
+              </Button>
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  if (showJournalPreview) {
+                    setShowJournalPreview(false);
+                  } else {
+                    generateJournalPreview();
+                  }
+                }}
+                disabled={isPreviewLoading || paymentData.amount <= 0}
+                className="flex items-center gap-2"
+              >
+                {showJournalPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {isPreviewLoading ? "جاري التحضير..." : showJournalPreview ? "إخفاء المعاينة" : "معاينة القيد"}
+              </Button>
+            </div>
             
             <div className="flex space-x-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

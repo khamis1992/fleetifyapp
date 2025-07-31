@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -385,13 +385,47 @@ const Payments = () => {
                     </Badge>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">رقم المرجع</label>
-                    <p className="font-medium">{selectedPayment.reference_number || 'غير متوفر'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">العملة</label>
+                    <p className="font-medium">{selectedPayment.currency}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">رقم الحساب البنكي</label>
-                    <p className="font-medium font-mono">{selectedPayment.bank_account || 'غير متوفر'}</p>
-                  </div>
+                  
+                  {/* القيد المحاسبي المرتبط */}
+                  {(selectedPayment as any).journal_entry_id && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">القيد المحاسبي</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                          قيد محاسبي #{(selectedPayment as any).journal_entry_id?.slice(-8)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* تفاصيل بنكية إضافية */}
+                  {(selectedPayment.payment_method === 'bank_transfer' || selectedPayment.payment_method === 'check') && (
+                    <>
+                      {selectedPayment.bank_account && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">الحساب البنكي</label>
+                          <p className="font-medium font-mono">{selectedPayment.bank_account}</p>
+                        </div>
+                      )}
+                      {(selectedPayment as any).check_number && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">رقم الشيك</label>
+                          <p className="font-medium">{(selectedPayment as any).check_number}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {selectedPayment.reference_number && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">رقم المرجع</label>
+                      <p className="font-medium">{selectedPayment.reference_number}</p>
+                    </div>
+                  )}
                 </div>
                 
                 {selectedPayment.notes && (

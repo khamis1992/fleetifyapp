@@ -90,7 +90,7 @@ export const useEnhancedDashboardStats = () => {
         supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
         supabase.from('contracts').select('monthly_amount, contract_amount').eq('company_id', companyId).eq('status', 'active'),
         supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true }).eq('company_id', companyId).in('status', ['pending', 'in_progress']),
-        supabase.from('payments').select('amount').eq('company_id', companyId).eq('status', 'pending'),
+        supabase.from('payments').select('amount').eq('company_id', companyId).eq('payment_status', 'pending'),
         supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active').lt('end_date', nextMonth.toISOString().split('T')[0]),
         
         // Previous period for comparison
