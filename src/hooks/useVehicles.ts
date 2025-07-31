@@ -793,7 +793,7 @@ export const useProcessVehicleDepreciation = () => {
 // Enhanced hook for available vehicles for contracts
 export const useAvailableVehiclesForContracts = (companyId?: string) => {
   return useQuery({
-    queryKey: ["available-vehicles-contracts", companyId, Date.now()], // Add timestamp for fresh data
+    queryKey: ["available-vehicles-contracts", companyId],
     queryFn: async () => {
       if (!companyId) {
         console.log("❌ [AVAILABLE_VEHICLES_CONTRACTS] No company ID provided")
@@ -801,58 +801,46 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       }
 
       console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
-      
-      // Force cache invalidation by adding timestamp
-      const timestamp = Date.now()
-      console.log("🕐 [AVAILABLE_VEHICLES_CONTRACTS] Query timestamp:", timestamp)
 
-      // Query vehicles table directly instead of using the problematic RPC function
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select(`
-          id,
-          plate_number,
-          make,
-          model,
-          year,
-          status,
-          daily_rate,
-          weekly_rate,
-          monthly_rate,
-          purchase_cost,
-          deposit_amount
-        `)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .in('status', ['available', 'reserved'])
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select(`
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            status,
+            daily_rate,
+            weekly_rate,
+            monthly_rate,
+            purchase_cost,
+            deposit_amount
+          `)
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .in('status', ['available', 'reserved'])
 
-      if (error) {
-        console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database error:", error)
+        if (error) {
+          console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database error:", error)
+          throw error
+        }
+
+        const availableVehicles = data || []
+        console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", availableVehicles.length)
+
+        return availableVehicles
+      } catch (error) {
+        console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fetch failed:", error)
         throw error
       }
-
-      const availableVehicles = (data || []).filter(vehicle => {
-        // Additional check: vehicle should not be under maintenance
-        return vehicle.status === 'available' || vehicle.status === 'reserved'
-      })
-
-      console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", availableVehicles?.length || 0)
-      
-      // Log pricing information for debugging
-      availableVehicles.forEach(vehicle => {
-        console.log(`🚗 Vehicle ${vehicle.plate_number}:`, {
-          daily_rate: vehicle.daily_rate,
-          weekly_rate: vehicle.weekly_rate,
-          monthly_rate: vehicle.monthly_rate,
-        })
-      })
-
-      return availableVehicles
     },
     enabled: !!companyId,
-    staleTime: 0, // Disable caching temporarily for debugging
-    gcTime: 0, // Force immediate garbage collection
-    refetchOnMount: 'always', // Always refetch when component mounts
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 }
 
