@@ -136,45 +136,76 @@ export const useAccountStatement = ({
       let total_debits = 0;
       let total_credits = 0;
 
-      sortedTransactions.forEach((trans) => {
-        const debit_amount = trans.debit_amount || 0;
-        const credit_amount = trans.credit_amount || 0;
-        
-        total_debits += debit_amount;
-        total_credits += credit_amount;
+      if (statementType === 'summary') {
+        // Group transactions by date for summary
+        const dailyGroups = new Map<string, { 
+          transactions: typeof sortedTransactions, 
+          daily_debit: number, 
+          daily_credit: number 
+        }>();
 
-        // Update running balance based on account type
-        if (account.balance_type === 'debit') {
-          running_balance += debit_amount - credit_amount;
-        } else {
-          running_balance += credit_amount - debit_amount;
-        }
+        sortedTransactions.forEach((trans) => {
+          const date = trans.journal_entries.entry_date;
+          const debit_amount = trans.debit_amount || 0;
+          const credit_amount = trans.credit_amount || 0;
 
-        // For summary type, group by date
-        if (statementType === 'summary') {
-          const existingEntry = statementTransactions.find(
-            t => t.entry_date === trans.journal_entries.entry_date
-          );
-          
-          if (existingEntry) {
-            existingEntry.debit_amount += debit_amount;
-            existingEntry.credit_amount += credit_amount;
-            existingEntry.running_balance = running_balance;
-          } else {
-            statementTransactions.push({
-              id: trans.id,
-              entry_date: trans.journal_entries.entry_date,
-              entry_number: `متعدد`,
-              description: `إجمالي حركات اليوم`,
-              debit_amount,
-              credit_amount,
-              running_balance,
-              cost_center_name: trans.cost_centers?.center_name,
-              status: trans.journal_entries.status
+          if (!dailyGroups.has(date)) {
+            dailyGroups.set(date, { 
+              transactions: [], 
+              daily_debit: 0, 
+              daily_credit: 0 
             });
           }
-        } else {
-          // Detailed statement
+
+          const group = dailyGroups.get(date)!;
+          group.transactions.push(trans);
+          group.daily_debit += debit_amount;
+          group.daily_credit += credit_amount;
+        });
+
+        // Sort dates and create summary entries
+        const sortedDates = Array.from(dailyGroups.keys()).sort();
+
+        sortedDates.forEach((date) => {
+          const group = dailyGroups.get(date)!;
+          
+          total_debits += group.daily_debit;
+          total_credits += group.daily_credit;
+
+          // Update running balance based on account type
+          if (account.balance_type === 'debit') {
+            running_balance += group.daily_debit - group.daily_credit;
+          } else {
+            running_balance += group.daily_credit - group.daily_debit;
+          }
+
+          statementTransactions.push({
+            id: `summary-${date}`,
+            entry_date: date,
+            entry_number: 'متعدد',
+            description: `إجمالي حركات يوم ${new Date(date).toLocaleDateString('ar-KW')}`,
+            debit_amount: group.daily_debit,
+            credit_amount: group.daily_credit,
+            running_balance,
+            status: 'posted'
+          });
+        });
+      } else {
+        // Detailed statement - show each transaction
+        sortedTransactions.forEach((trans) => {
+          const debit_amount = trans.debit_amount || 0;
+          const credit_amount = trans.credit_amount || 0;
+          
+          total_debits += debit_amount;
+          total_credits += credit_amount;
+
+          // Update running balance based on account type
+          if (account.balance_type === 'debit') {
+            running_balance += debit_amount - credit_amount;
+          } else {
+            running_balance += credit_amount - debit_amount;
+          }
+
           statementTransactions.push({
             id: trans.id,
             entry_date: trans.journal_entries.entry_date,
@@ -188,8 +219,8 @@ export const useAccountStatement = ({
             cost_center_name: trans.cost_centers?.center_name,
             status: trans.journal_entries.status
           });
-        }
-      });
+        });
+      }
 
       const closing_balance = running_balance;
 
