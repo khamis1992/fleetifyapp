@@ -273,17 +273,6 @@ export default function Contracts() {
             <Plus className="h-4 w-4 mr-2" />
             عقد جديد
           </Button>
-          
-          <Button 
-            variant="secondary" 
-            onClick={() => {
-              setPreselectedCustomerId(null)
-              setShowContractForm(true)
-            }}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            تجربة النظام
-          </Button>
         </div>
       </div>
 
