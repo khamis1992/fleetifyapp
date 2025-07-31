@@ -88,6 +88,23 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
   // Get selected vehicle for calculations
   const selectedVehicle = availableVehicles?.find(v => v.id === contractData.vehicle_id) || null
 
+  // Debug logging for vehicle selection
+  useEffect(() => {
+    if (contractData.vehicle_id) {
+      console.log("🚗 [CONTRACT_FORM] Vehicle selected:", {
+        vehicleId: contractData.vehicle_id,
+        availableVehicles: availableVehicles?.length || 0,
+        selectedVehicle: selectedVehicle ? {
+          id: selectedVehicle.id,
+          plate_number: selectedVehicle.plate_number,
+          daily_rate: selectedVehicle.daily_rate,
+          weekly_rate: selectedVehicle.weekly_rate,
+          monthly_rate: selectedVehicle.monthly_rate
+        } : null
+      })
+    }
+  }, [contractData.vehicle_id, availableVehicles, selectedVehicle])
+
   // Calculate financial details automatically
   const calculations = useContractCalculations(selectedVehicle, contractData.contract_type, contractData.rental_days)
 
@@ -406,7 +423,37 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                   <p className="text-sm text-yellow-600">⚠️ لا توجد مركبات متاحة حالياً</p>
                 )}
                 {!vehiclesLoading && availableVehicles && availableVehicles.length > 0 && (
-                  <p className="text-sm text-green-600">✅ {availableVehicles.length} مركبة متاحة</p>
+                  <div className="space-y-1">
+                    <p className="text-sm text-green-600">✅ {availableVehicles.length} مركبة متاحة</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.location.reload()}
+                        className="text-xs h-6"
+                      >
+                        🔄 تحديث البيانات
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          console.log("🔍 [DEBUG] Current vehicle data:", {
+                            selectedVehicle,
+                            availableVehicles,
+                            contractData: contractData.vehicle_id,
+                            calculations
+                          })
+                          alert("تم طباعة البيانات في وحدة التحكم (console)")
+                        }}
+                        className="text-xs h-6"
+                      >
+                        🔍 فحص البيانات
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             </CardContent>

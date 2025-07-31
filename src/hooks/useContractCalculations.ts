@@ -41,7 +41,16 @@ export const useContractCalculations = (
     })
 
     if (!vehicle || !rentalDays || rentalDays <= 0) {
-      console.log("❌ [CONTRACT_CALCULATIONS] Missing required data")
+      console.log("❌ [CONTRACT_CALCULATIONS] Missing required data:", {
+        hasVehicle: !!vehicle,
+        rentalDays,
+        vehicleDetails: vehicle ? {
+          id: vehicle.id,
+          daily_rate: vehicle.daily_rate,
+          weekly_rate: vehicle.weekly_rate,
+          monthly_rate: vehicle.monthly_rate
+        } : null
+      })
       return null
     }
 

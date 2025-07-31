@@ -793,7 +793,7 @@ export const useProcessVehicleDepreciation = () => {
 // Enhanced hook for available vehicles for contracts
 export const useAvailableVehiclesForContracts = (companyId?: string) => {
   return useQuery({
-    queryKey: ["available-vehicles-contracts", companyId],
+    queryKey: ["available-vehicles-contracts", companyId, Date.now()], // Add timestamp for fresh data
     queryFn: async () => {
       if (!companyId) {
         console.log("❌ [AVAILABLE_VEHICLES_CONTRACTS] No company ID provided")
@@ -801,6 +801,10 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       }
 
       console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
+      
+      // Force cache invalidation by adding timestamp
+      const timestamp = Date.now()
+      console.log("🕐 [AVAILABLE_VEHICLES_CONTRACTS] Query timestamp:", timestamp)
 
       // Query vehicles table directly instead of using the problematic RPC function
       const { data, error } = await supabase
@@ -846,8 +850,9 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       return availableVehicles
     },
     enabled: !!companyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 0, // Disable caching temporarily for debugging
+    gcTime: 0, // Force immediate garbage collection
+    refetchOnMount: 'always', // Always refetch when component mounts
   })
 }
 
