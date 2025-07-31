@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
+import { AccountStatementDialog } from './AccountStatementDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -39,6 +40,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showStatementDialog, setShowStatementDialog] = useState(false);
+  const [statementAccount, setStatementAccount] = useState<any>(null);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -171,6 +174,18 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               title="معاينة"
             >
               <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => {
+                setStatementAccount(account);
+                setShowStatementDialog(true);
+              }}
+              title="كشف حساب"
+            >
+              <FileText className="h-4 w-4" />
             </Button>
             <Button
               size="sm"
@@ -691,6 +706,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Account Statement Dialog */}
+      <AccountStatementDialog
+        open={showStatementDialog}
+        onOpenChange={setShowStatementDialog}
+        accountId={statementAccount?.id}
+        accountCode={statementAccount?.account_code}
+        accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
+      />
     </div>
   );
 };
