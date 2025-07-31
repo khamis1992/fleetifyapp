@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search } from "lucide-react"
+import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye } from "lucide-react"
 import { useBudgets, useCreateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -18,6 +18,8 @@ const Budgets = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 
   const { data: budgets, isLoading, error } = useBudgets()
   const createBudget = useCreateBudget()
@@ -308,7 +310,17 @@ const Budgets = () => {
                       {new Date(budget.created_at).toLocaleDateString('en-GB')}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">عرض</Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                          console.log('View budget:', budget.id)
+                          setSelectedBudget(budget)
+                          setIsViewDialogOpen(true)
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="sm">تعديل</Button>
                     </TableCell>
                   </TableRow>
@@ -323,6 +335,75 @@ const Budgets = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* View Budget Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الموازنة</DialogTitle>
+            <DialogDescription>
+              عرض تفاصيل الموازنة المالية
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBudget && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">اسم الموازنة</Label>
+                  <p className="text-lg font-semibold">{selectedBudget.budget_name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">السنة المالية</Label>
+                  <p className="text-lg font-semibold">{selectedBudget.budget_year}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">الإيرادات المتوقعة</Label>
+                  <p className="text-lg font-semibold text-green-600">
+                    {(selectedBudget.total_revenue || 0).toFixed(3)} د.ك
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">المصروفات المتوقعة</Label>
+                  <p className="text-lg font-semibold text-red-600">
+                    {(selectedBudget.total_expenses || 0).toFixed(3)} د.ك
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">صافي الدخل المتوقع</Label>
+                <p className={`text-xl font-bold ${((selectedBudget.total_revenue || 0) - (selectedBudget.total_expenses || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {((selectedBudget.total_revenue || 0) - (selectedBudget.total_expenses || 0)).toFixed(3)} د.ك
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">الحالة</Label>
+                <div className="mt-1">
+                  <Badge variant={getStatusColor(selectedBudget.status)}>
+                    {getStatusLabel(selectedBudget.status)}
+                  </Badge>
+                </div>
+              </div>
+
+              {selectedBudget.notes && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">الملاحظات</Label>
+                  <p className="mt-1 text-sm">{selectedBudget.notes}</p>
+                </div>
+              )}
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">تاريخ الإنشاء</Label>
+                <p className="text-sm">{new Date(selectedBudget.created_at).toLocaleDateString('en-GB')}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
