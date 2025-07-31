@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface RealTimeAlert {
   id: string;
-  type: 'smart' | 'budget' | 'vehicle' | 'system';
+  type: 'smart' | 'budget' | 'vehicle' | 'system' | 'notification';
   severity: 'low' | 'medium' | 'high' | 'critical';
   title: string;
   message: string;
@@ -76,6 +76,31 @@ export const useRealTimeAlerts = () => {
               vehicle_id: alert.vehicle_id,
               alert_type: alert.alert_type,
               due_date: alert.due_date
+            }
+          });
+        });
+      }
+
+      // Fetch notifications
+      const { data: notifications } = await supabase
+        .from('user_notifications')
+        .select('*')
+        .eq('is_read', false)
+        .order('created_at', { ascending: false });
+
+      if (notifications) {
+        notifications.forEach(notification => {
+          allAlerts.push({
+            id: notification.id,
+            type: 'notification',
+            severity: notification.notification_type === 'error' ? 'high' : 'medium',
+            title: notification.title,
+            message: notification.message,
+            created_at: notification.created_at,
+            data: {
+              notification_type: notification.notification_type,
+              related_id: notification.related_id,
+              related_type: notification.related_type
             }
           });
         });
@@ -154,12 +179,42 @@ export const useRealTimeAlerts = () => {
       )
       .subscribe();
 
+    // Subscribe to notifications
+    const notificationChannel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Notification change:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newNotification = payload.new as any;
+            toast({
+              title: "إشعار جديد",
+              description: newNotification.title,
+              variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
+            });
+          }
+          
+          // Invalidate and refetch alerts
+          queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
+        }
+      )
+      .subscribe();
+
     setIsSubscribed(true);
 
     // Cleanup function
     return () => {
       budgetChannel.unsubscribe();
       vehicleChannel.unsubscribe();
+      notificationChannel.unsubscribe();
       setIsSubscribed(false);
     };
   }, [user?.profile?.company_id, queryClient, toast]);
@@ -183,6 +238,11 @@ export const useRealTimeAlerts = () => {
         await supabase
           .from('vehicle_alerts')
           .update({ is_acknowledged: true, acknowledged_at: new Date().toISOString() })
+          .eq('id', alertId);
+      } else if (alertType === 'notification') {
+        await supabase
+          .from('user_notifications')
+          .update({ is_read: true, read_at: new Date().toISOString() })
           .eq('id', alertId);
       }
       
@@ -221,6 +281,12 @@ export const useRealTimeAlerts = () => {
         .update({ is_acknowledged: true, acknowledged_at: new Date().toISOString() })
         .eq('company_id', companyId)
         .eq('is_acknowledged', false);
+
+      // Mark all notifications as read
+      await supabase
+        .from('user_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('is_read', false);
 
       // Refresh alerts
       queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });

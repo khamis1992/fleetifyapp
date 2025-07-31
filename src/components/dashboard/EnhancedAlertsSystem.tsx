@@ -27,6 +27,7 @@ import { useBudgetAlerts } from '@/hooks/useBudgetIntegration';
 import { useVehicleAlerts } from '@/hooks/useVehicleAlerts';
 import { useAcknowledgeBudgetAlert } from '@/hooks/useBudgetIntegration';
 import { useAcknowledgeVehicleAlert } from '@/hooks/useVehicleAlerts';
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, UserNotification } from '@/hooks/useNotifications';
 
 interface EnhancedAlertsSystemProps {
   compact?: boolean;
@@ -45,17 +46,22 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
   const { data: smartAlerts = [], isLoading: smartLoading } = useSmartAlerts();
   const { data: budgetAlerts = [], isLoading: budgetLoading } = useBudgetAlerts();
   const { data: vehicleAlerts = [], isLoading: vehicleLoading } = useVehicleAlerts();
+  const { data: notifications = [], isLoading: notificationsLoading } = useNotifications();
   
   // Acknowledgment mutations
   const acknowledgeBudget = useAcknowledgeBudgetAlert();
   const acknowledgeVehicle = useAcknowledgeVehicleAlert();
+  const markNotificationAsRead = useMarkNotificationAsRead();
+  const markAllNotificationsAsRead = useMarkAllNotificationsAsRead();
 
-  // Combined alerts count
-  const totalAlerts = smartAlerts.length + budgetAlerts.length + vehicleAlerts.length;
+  // Combined alerts count including notifications
+  const unreadNotifications = notifications.filter(n => !n.is_read);
+  const totalAlerts = smartAlerts.length + budgetAlerts.length + vehicleAlerts.length + unreadNotifications.length;
   const highPriorityAlerts = [
     ...smartAlerts.filter(alert => alert.priority === 'high'),
     ...budgetAlerts.filter(alert => alert.alert_type === 'budget_exceeded'),
-    ...vehicleAlerts.filter(alert => alert.priority === 'high')
+    ...vehicleAlerts.filter(alert => alert.priority === 'high'),
+    ...unreadNotifications.filter(n => n.notification_type === 'error')
   ].length;
 
   // Sound management
@@ -90,7 +96,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
     }
   }, [highPriorityAlerts, soundEnabled]);
 
-  const handleDismissAlert = (alertId: string, type: 'smart' | 'budget' | 'vehicle') => {
+  const handleDismissAlert = (alertId: string, type: 'smart' | 'budget' | 'vehicle' | 'notification') => {
     setDismissedAlerts(prev => [...prev, alertId]);
     
     if (type === 'budget') {
@@ -108,6 +114,15 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
           toast({
             title: "تم تأكيد التنبيه", 
             description: "تم تأكيد تنبيه المركبة بنجاح"
+          });
+        }
+      });
+    } else if (type === 'notification') {
+      markNotificationAsRead.mutate(alertId, {
+        onSuccess: () => {
+          toast({
+            title: "تم قراءة الإشعار",
+            description: "تم وضع علامة على الإشعار كمقروء"
           });
         }
       });
@@ -263,7 +278,47 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
     </div>
   );
 
-  const isLoading = smartLoading || budgetLoading || vehicleLoading;
+  const renderNotifications = () => (
+    <div className="space-y-3">
+      {unreadNotifications.filter(notification => !dismissedAlerts.includes(notification.id)).map((notification, index) => {
+        const IconComponent = getAlertIcon(notification.notification_type);
+        return (
+          <motion.div
+            key={notification.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Alert variant={getAlertVariant(notification.notification_type)} className="relative">
+              <IconComponent className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="font-medium">{notification.title}</p>
+                  <p className="text-sm opacity-80 mt-1">{notification.message}</p>
+                  <div className="flex items-center gap-1 mt-2 text-xs">
+                    <Clock className="h-3 w-3" />
+                    <span>{new Date(notification.created_at).toLocaleDateString('ar-EG')}</span>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDismissAlert(notification.id, 'notification')}
+                  disabled={markNotificationAsRead.isPending}
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  قراءة
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+
+  const isLoading = smartLoading || budgetLoading || vehicleLoading || notificationsLoading;
 
   if (compact) {
     return (
@@ -372,7 +427,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
           </div>
         ) : (
           <Tabs defaultValue="smart" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="smart" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 ذكية ({smartAlerts.length})
@@ -384,6 +439,10 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
               <TabsTrigger value="vehicle" className="flex items-center gap-2">
                 <Car className="h-4 w-4" />
                 مركبات ({vehicleAlerts.filter(a => !a.is_acknowledged).length})
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                إشعارات ({unreadNotifications.length})
               </TabsTrigger>
             </TabsList>
             
@@ -419,6 +478,17 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
                     </div>
                   ) : (
                     renderVehicleAlerts()
+                  )}
+                </TabsContent>
+
+                <TabsContent value="notifications" className="mt-0">
+                  {unreadNotifications.length === 0 ? (
+                    <div className="text-center py-6">
+                      <Bell className="h-8 w-8 text-success mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">لا توجد إشعارات جديدة</p>
+                    </div>
+                  ) : (
+                    renderNotifications()
                   )}
                 </TabsContent>
               </AnimatePresence>

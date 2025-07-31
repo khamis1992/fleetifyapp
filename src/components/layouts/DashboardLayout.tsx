@@ -18,7 +18,7 @@ import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
 import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+
 
 export const DashboardLayout: React.FC = () => {
   const { user, loading, signOut } = useAuth();
@@ -62,10 +62,7 @@ export const DashboardLayout: React.FC = () => {
             <div className="flex items-center gap-4">
               <QuickSearch />
               
-              {/* Notifications Bell */}
-              <NotificationBell />
-              
-              {/* Alerts Bell */}
+              {/* Combined Alerts Bell */}
               <Sheet open={alertsOpen} onOpenChange={setAlertsOpen}>
                 <SheetTrigger asChild>
                   <Button
