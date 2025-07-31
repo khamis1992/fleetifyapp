@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useCreateVendor, useUpdateVendor, type Vendor } from "@/hooks/useFinance"
-import { TestTube } from "lucide-react"
+import { TestTube, AlertCircle } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const vendorSchema = z.object({
   vendor_code: z.string().min(1, "كود المورد مطلوب"),
@@ -34,6 +36,7 @@ interface VendorFormProps {
 
 export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { user } = useAuth()
   const createVendor = useCreateVendor()
   const updateVendor = useUpdateVendor()
 
@@ -126,6 +129,18 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
     
     // Reset the form with sample data
     form.reset(randomVendor)
+  }
+
+  // Show authentication warning if user is not logged in or lacks proper role
+  if (!user) {
+    return (
+      <Alert className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          يجب تسجيل الدخول لإضافة موردين جدد. يرجى المحاولة مرة أخرى.
+        </AlertDescription>
+      </Alert>
+    )
   }
 
   return (
