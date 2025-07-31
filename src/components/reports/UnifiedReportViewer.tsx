@@ -9,8 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Download, Printer, X } from 'lucide-react';
+import { Download, Printer, X, AlertCircle } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
+import { useModuleReportData } from '@/hooks/useModuleReportData';
+import { ReportDataDisplay } from './ReportDataDisplay';
 
 interface UnifiedReportViewerProps {
   reportId: string;
@@ -31,6 +33,11 @@ export function UnifiedReportViewer({
   onClose
 }: UnifiedReportViewerProps) {
   const { exportToHTML, isExporting } = useReportExport();
+  const { 
+    data: reportData, 
+    isLoading: isLoadingData, 
+    error: dataError 
+  } = useModuleReportData(reportId, moduleType, filters);
 
   const handleExport = async () => {
     try {
@@ -48,32 +55,32 @@ export function UnifiedReportViewer({
   const getReportTitle = (id: string, module: string) => {
     const reportTitles: Record<string, Record<string, string>> = {
       finance: {
+        invoices_summary: 'ملخص الفواتير',
+        payments_summary: 'ملخص المدفوعات',
         income_statement: 'قائمة الدخل',
         balance_sheet: 'الميزانية العمومية',
         cash_flow: 'تقرير التدفق النقدي',
-        trial_balance: 'ميزان المراجعة',
-        payables: 'تقرير المدفوعات المستحقة',
-        receivables: 'تقرير المبالغ المستحقة'
+        trial_balance: 'ميزان المراجعة'
       },
       hr: {
-        attendance: 'تقرير الحضور',
-        payroll: 'تقرير الرواتب',
-        employees: 'تقرير الموظفين',
+        employees_summary: 'ملخص الموظفين',
+        payroll_summary: 'ملخص الرواتب',
+        attendance_summary: 'ملخص الحضور',
         leave_requests: 'تقرير الإجازات'
       },
       fleet: {
-        vehicles: 'تقرير المركبات',
-        maintenance: 'تقرير الصيانة',
+        vehicles_summary: 'ملخص المركبات',
+        maintenance_summary: 'ملخص الصيانة',
         traffic_violations: 'تقرير المخالفات المرورية',
         fuel_consumption: 'تقرير استهلاك الوقود'
       },
       customers: {
-        customers_list: 'قائمة العملاء',
+        customers_summary: 'ملخص العملاء',
         customer_contracts: 'عقود العملاء',
         customer_invoices: 'فواتير العملاء'
       },
       legal: {
-        legal_cases: 'تقرير القضايا',
+        cases_summary: 'ملخص القضايا',
         legal_correspondence: 'المراسلات القانونية'
       }
     };
@@ -82,8 +89,33 @@ export function UnifiedReportViewer({
   };
 
   const renderReportContent = () => {
-    // This would be dynamically rendered based on reportId and moduleType
-    // For now, showing a placeholder structure
+    if (isLoadingData) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center space-y-3">
+            <LoadingSpinner />
+            <p className="text-muted-foreground">جاري تحميل بيانات التقرير...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (dataError) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center space-y-3">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+            <div>
+              <p className="text-destructive font-medium">حدث خطأ في تحميل البيانات</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {dataError instanceof Error ? dataError.message : 'خطأ غير معروف'}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <Card>
@@ -107,27 +139,16 @@ export function UnifiedReportViewer({
                   </div>
                 </div>
               )}
-
-              {/* Loading state */}
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-3">
-                  <LoadingSpinner />
-                  <p className="text-muted-foreground">جاري تحميل بيانات التقرير...</p>
-                </div>
-              </div>
-
-              {/* Placeholder for actual report data */}
-              <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
-                <p className="text-muted-foreground">
-                  محتوى التقرير سيظهر هنا بناءً على نوع التقرير المحدد
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  النوع: {moduleType} | المعرف: {reportId}
-                </p>
-              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Report Data */}
+        <ReportDataDisplay 
+          data={reportData} 
+          reportId={reportId} 
+          moduleType={moduleType} 
+        />
       </div>
     );
   };

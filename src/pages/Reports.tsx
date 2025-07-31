@@ -42,12 +42,12 @@ export default function Reports() {
       color: 'bg-green-100 text-green-600',
       count: 12,
       reports: [
+        { id: 'invoices_summary', name: 'ملخص الفواتير', type: 'financial' },
+        { id: 'payments_summary', name: 'ملخص المدفوعات', type: 'financial' },
         { id: 'income_statement', name: 'قائمة الدخل', type: 'financial' },
         { id: 'balance_sheet', name: 'الميزانية العمومية', type: 'financial' },
         { id: 'cash_flow', name: 'التدفق النقدي', type: 'financial' },
-        { id: 'trial_balance', name: 'ميزان المراجعة', type: 'financial' },
-        { id: 'payables', name: 'المدفوعات المستحقة', type: 'financial' },
-        { id: 'receivables', name: 'المبالغ المستحقة', type: 'financial' }
+        { id: 'trial_balance', name: 'ميزان المراجعة', type: 'financial' }
       ]
     },
     {
@@ -58,9 +58,9 @@ export default function Reports() {
       color: 'bg-blue-100 text-blue-600',
       count: 8,
       reports: [
-        { id: 'attendance', name: 'تقرير الحضور', type: 'hr' },
-        { id: 'payroll', name: 'تقرير الرواتب', type: 'hr' },
-        { id: 'employees', name: 'تقرير الموظفين', type: 'hr' },
+        { id: 'employees_summary', name: 'ملخص الموظفين', type: 'hr' },
+        { id: 'payroll_summary', name: 'ملخص الرواتب', type: 'hr' },
+        { id: 'attendance_summary', name: 'ملخص الحضور', type: 'hr' },
         { id: 'leave_requests', name: 'تقرير الإجازات', type: 'hr' }
       ]
     },
@@ -72,8 +72,8 @@ export default function Reports() {
       color: 'bg-purple-100 text-purple-600',
       count: 10,
       reports: [
-        { id: 'vehicles', name: 'تقرير المركبات', type: 'fleet' },
-        { id: 'maintenance', name: 'تقرير الصيانة', type: 'fleet' },
+        { id: 'vehicles_summary', name: 'ملخص المركبات', type: 'fleet' },
+        { id: 'maintenance_summary', name: 'ملخص الصيانة', type: 'fleet' },
         { id: 'traffic_violations', name: 'تقرير المخالفات المرورية', type: 'fleet' },
         { id: 'fuel_consumption', name: 'تقرير استهلاك الوقود', type: 'fleet' }
       ]
@@ -86,7 +86,7 @@ export default function Reports() {
       color: 'bg-orange-100 text-orange-600',
       count: 6,
       reports: [
-        { id: 'customers_list', name: 'قائمة العملاء', type: 'customers' },
+        { id: 'customers_summary', name: 'ملخص العملاء', type: 'customers' },
         { id: 'customer_contracts', name: 'عقود العملاء', type: 'customers' },
         { id: 'customer_invoices', name: 'فواتير العملاء', type: 'customers' }
       ]
@@ -99,7 +99,7 @@ export default function Reports() {
       color: 'bg-red-100 text-red-600',
       count: 4,
       reports: [
-        { id: 'legal_cases', name: 'تقرير القضايا', type: 'legal' },
+        { id: 'cases_summary', name: 'ملخص القضايا', type: 'legal' },
         { id: 'legal_correspondence', name: 'المراسلات القانونية', type: 'legal' }
       ]
     }
