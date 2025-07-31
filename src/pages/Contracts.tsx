@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useLocation } from "react-router-dom"
-import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle, Building2 } from "lucide-react"
+import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle, Building2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -127,6 +127,76 @@ export default function Contracts() {
       default: return 'إيجار'
     }
   }
+
+  // Apply filters to contracts
+  const filteredContracts = useMemo(() => {
+    if (!contracts) return []
+    
+    return contracts.filter(contract => {
+      // Search filter - check contract number, customer name, description
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase()
+        const customer = Array.isArray(contract.customers) ? contract.customers[0] : contract.customers
+        const customerName = customer?.company_name || 
+                           `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim()
+        
+        const searchableText = [
+          contract.contract_number,
+          customerName,
+          contract.description || '',
+          contract.terms || ''
+        ].join(' ').toLowerCase()
+        
+        if (!searchableText.includes(searchTerm)) return false
+      }
+
+      // Status filter
+      if (filters.status && filters.status !== 'all') {
+        if (contract.status !== filters.status) return false
+      }
+
+      // Contract type filter
+      if (filters.contract_type && filters.contract_type !== 'all') {
+        if (contract.contract_type !== filters.contract_type) return false
+      }
+
+      // Customer filter
+      if (filters.customer_id && filters.customer_id !== 'all') {
+        if (contract.customer_id !== filters.customer_id) return false
+      }
+
+      // Cost center filter
+      if (filters.cost_center_id && filters.cost_center_id !== 'all') {
+        if (contract.cost_center_id !== filters.cost_center_id) return false
+      }
+
+      // Date range filters
+      if (filters.start_date) {
+        const contractStartDate = new Date(contract.start_date)
+        const filterStartDate = new Date(filters.start_date)
+        if (contractStartDate < filterStartDate) return false
+      }
+
+      if (filters.end_date) {
+        const contractEndDate = new Date(contract.end_date)
+        const filterEndDate = new Date(filters.end_date)
+        if (contractEndDate > filterEndDate) return false
+      }
+
+      // Amount range filters
+      if (filters.min_amount) {
+        const minAmount = parseFloat(filters.min_amount)
+        if (contract.contract_amount < minAmount) return false
+      }
+
+      if (filters.max_amount) {
+        const maxAmount = parseFloat(filters.max_amount)
+        if (contract.contract_amount > maxAmount) return false
+      }
+
+      return true
+    })
+  }, [contracts, filters])
 
   const handleContractSubmit = async (contractData: any) => {
     try {
@@ -342,92 +412,109 @@ export default function Contracts() {
         <TabsContent value="all">
           {/* All Contracts List */}
           <div className="grid gap-4">
-            {contracts?.map((contract) => (
-          <Card key={contract.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
-                    <Badge className={getStatusColor(contract.status)}>
-                      {getStatusIcon(contract.status)}
-                      <span className="mr-1">
-                        {contract.status === 'active' ? 'نشط' :
-                         contract.status === 'draft' ? 'مسودة' :
-                         contract.status === 'expired' ? 'منتهي' :
-                         contract.status === 'suspended' ? 'معلق' :
-                         contract.status === 'cancelled' ? 'ملغي' :
-                         contract.status === 'renewed' ? 'مجدد' : contract.status}
-                      </span>
-                    </Badge>
+            {filteredContracts.map((contract) => (
+              <Card key={contract.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                        <Badge className={getStatusColor(contract.status)}>
+                          {getStatusIcon(contract.status)}
+                          <span className="mr-1">
+                            {contract.status === 'active' ? 'نشط' :
+                             contract.status === 'draft' ? 'مسودة' :
+                             contract.status === 'expired' ? 'منتهي' :
+                             contract.status === 'suspended' ? 'معلق' :
+                             contract.status === 'cancelled' ? 'ملغي' :
+                             contract.status === 'renewed' ? 'مجدد' : contract.status}
+                          </span>
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {(() => {
+                              const customer = Array.isArray(contract.customers) ? contract.customers[0] : contract.customers;
+                              return customer?.company_name || 
+                                     `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 
+                                     'غير محدد';
+                            })()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                             {getContractTypeLabel(contract.contract_type)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {new Date(contract.start_date).toLocaleDateString('ar-SA')} - {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">
+                            {contract.contract_amount?.toFixed(3)} د.ك
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {contract.chart_of_accounts?.account_code} - {contract.chart_of_accounts?.account_name || 'غير محدد'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {contract.description && (
+                        <p className="text-sm text-muted-foreground">{contract.description}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setSelectedContract(contract); setShowDetailsDialog(true); }}>
+                        عرض
+                      </Button>
+                      {contract.status === 'active' && (
+                        <Button variant="outline" size="sm" onClick={() => handleRenewContract(contract)}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          تجديد
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => handleManageStatus(contract)}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        إدارة
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {(() => {
-                          const customer = Array.isArray(contract.customers) ? contract.customers[0] : contract.customers;
-                          return customer?.company_name || 
-                                 `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 
-                                 'غير محدد';
-                        })()}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                         {getContractTypeLabel(contract.contract_type)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {new Date(contract.start_date).toLocaleDateString('ar-SA')} - {new Date(contract.end_date).toLocaleDateString('ar-SA')}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">
-                        {contract.contract_amount?.toFixed(3)} د.ك
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {contract.chart_of_accounts?.account_code} - {contract.chart_of_accounts?.account_name || 'غير محدد'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {contract.description && (
-                    <p className="text-sm text-muted-foreground">{contract.description}</p>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setSelectedContract(contract); setShowDetailsDialog(true); }}>
-                    عرض
-                  </Button>
-                  {contract.status === 'active' && (
-                    <Button variant="outline" size="sm" onClick={() => handleRenewContract(contract)}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      تجديد
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => handleManageStatus(contract)}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    إدارة
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            ))}
+          
+          {/* Show empty state for no results */}
+          {filteredContracts.length === 0 && contracts && contracts.length > 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">لا توجد نتائج</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  لم يتم العثور على عقود تطابق معايير البحث المحددة
+                </p>
+                <Button variant="outline" onClick={() => setFilters({})}>
+                  <X className="h-4 w-4 mr-2" />
+                  مسح جميع الفلاتر
+                </Button>
               </CardContent>
             </Card>
-          ))}
+          )}
           
           {contracts?.length === 0 && (
           <Card>
