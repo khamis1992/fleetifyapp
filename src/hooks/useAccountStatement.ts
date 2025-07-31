@@ -71,7 +71,7 @@ export const useAccountStatement = ({
         .select(`
           debit_amount,
           credit_amount,
-          journal_entries!inner(entry_date, status)
+          journal_entries(entry_date, status)
         `)
         .eq('account_id', accountId)
         .lt('journal_entries.entry_date', dateFrom)
@@ -97,7 +97,7 @@ export const useAccountStatement = ({
           debit_amount,
           credit_amount,
           journal_entry_id,
-          journal_entries!journal_entry_lines_journal_entry_id_fkey(
+          journal_entries(
             id,
             entry_number,
             entry_date,

@@ -65,7 +65,7 @@ export const useCostCenterFinancialData = (costCenterId: string, period: string)
         .from('journal_entry_lines')
         .select(`
           *,
-          journal_entries!inner(
+          journal_entries(
             entry_date,
             company_id
           ),
@@ -217,7 +217,7 @@ export const useCostCenterAnalysis = (costCenterId: string) => {
         .from('journal_entry_lines')
         .select(`
           *,
-          journal_entries!inner(
+          journal_entries(
             entry_date,
             description,
             entry_number

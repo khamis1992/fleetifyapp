@@ -148,10 +148,10 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
             *,
             created_by_profile:profiles!fk_journal_entries_created_by(user_id, first_name, last_name, email),
             posted_by_profile:profiles!fk_journal_entries_posted_by(user_id, first_name, last_name, email),
-            journal_entry_lines!fk_journal_entry_lines_journal_entry(
+            journal_entry_lines(
               *,
-              account:chart_of_accounts!fk_journal_entry_lines_account(*),
-              cost_center:cost_centers!fk_journal_entry_lines_cost_center(*)
+              account:chart_of_accounts!account_id(*),
+              cost_center:cost_centers!cost_center_id(*)
             )
           `)
           .eq("company_id", user.profile.company_id)
@@ -294,7 +294,7 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
         .from("journal_entry_lines")
         .select(`
           *,
-          journal_entry:journal_entries!fk_journal_entry_lines_journal_entry(*)
+          journal_entry:journal_entries(*)
         `)
         .eq("account_id", accountId)
       
@@ -428,7 +428,7 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
             account_id,
             debit_amount,
             credit_amount,
-            journal_entry:journal_entries!fk_journal_entry_lines_journal_entry(
+            journal_entry:journal_entries(
               company_id,
               status,
               entry_date
@@ -587,7 +587,7 @@ export const useCostCenterAnalysis = (filters?: LedgerFilters) => {
           cost_center_id,
           debit_amount,
           credit_amount,
-          journal_entry:journal_entries!fk_journal_entry_lines_journal_entry(entry_date, status)
+          journal_entry:journal_entries(entry_date, status)
         `)
         .not("cost_center_id", "is", null)
       

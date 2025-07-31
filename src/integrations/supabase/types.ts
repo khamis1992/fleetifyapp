@@ -2799,13 +2799,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_journal_entry_lines_journal_entry"
-            columns: ["journal_entry_id"]
-            isOneToOne: false
-            referencedRelation: "journal_entries"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "journal_entry_lines_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
