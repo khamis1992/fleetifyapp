@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/contexts/AuthContext"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { useToast } from "@/hooks/use-toast"
 
 // أنواع البيانات للتكامل
@@ -48,7 +48,7 @@ export interface BudgetExecutionSummary {
 
 // Hook لتحديث المبالغ الفعلية للموازنة
 export const useUpdateBudgetActuals = () => {
-  const { user } = useAuth()
+  const { companyId } = useUnifiedCompanyAccess()
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -81,16 +81,16 @@ export const useUpdateBudgetActuals = () => {
 
 // Hook لتحديث جميع موازنات الشركة
 export const useUpdateAllCompanyBudgets = () => {
-  const { user } = useAuth()
+  const { companyId } = useUnifiedCompanyAccess()
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async () => {
-      if (!user?.company?.id) throw new Error("Company ID is required")
+      if (!companyId) throw new Error("Company ID is required")
 
       const { data, error } = await supabase.rpc('update_all_company_budgets', {
-        company_id_param: user.company.id
+        company_id_param: companyId
       })
 
       if (error) throw error
@@ -116,30 +116,30 @@ export const useUpdateAllCompanyBudgets = () => {
 
 // Hook لجلب تنبيهات الموازنة
 export const useBudgetAlerts = () => {
-  const { user } = useAuth()
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess()
 
   return useQuery({
-    queryKey: ['budget-alerts', user?.company?.id],
+    queryKey: getQueryKey(['budget-alerts']),
     queryFn: async () => {
-      if (!user?.company?.id) return []
+      if (!companyId) return []
 
       const { data, error } = await supabase
         .from('budget_alerts')
         .select('*')
-        .eq('company_id', user.company.id)
+        .eq('company_id', companyId)
         .eq('is_acknowledged', false)
         .order('created_at', { ascending: false })
 
       if (error) throw error
       return data as BudgetAlert[]
     },
-    enabled: !!user?.company?.id,
+    enabled: !!companyId,
   })
 }
 
 // Hook لتأكيد تنبيه الموازنة
 export const useAcknowledgeBudgetAlert = () => {
-  const { user } = useAuth()
+  const { user } = useUnifiedCompanyAccess()
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -169,7 +169,7 @@ export const useAcknowledgeBudgetAlert = () => {
 
 // Hook لفحص تجاوز الموازنة
 export const useCheckBudgetOverruns = () => {
-  const { user } = useAuth()
+  const { companyId } = useUnifiedCompanyAccess()
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -197,7 +197,7 @@ export const useCheckBudgetOverruns = () => {
 
 // Hook لجلب تقرير تباين الموازنة
 export const useBudgetVarianceReport = (budgetId: string) => {
-  const { user } = useAuth()
+  const { companyId } = useUnifiedCompanyAccess()
 
   return useQuery({
     queryKey: ['budget-variance-report', budgetId],
@@ -237,12 +237,12 @@ export const useBudgetVarianceReport = (budgetId: string) => {
 
 // Hook لجلب ملخص تنفيذ الموازنة
 export const useBudgetExecutionSummary = (budgetYear: number) => {
-  const { user } = useAuth()
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess()
 
   return useQuery({
-    queryKey: ['budget-execution-summary', budgetYear, user?.company?.id],
+    queryKey: getQueryKey(['budget-execution-summary', budgetYear.toString()]),
     queryFn: async () => {
-      if (!user?.company?.id) return null
+      if (!companyId) return null
 
       // جلب بيانات الموازنة للسنة المحددة
       const { data: budgets, error: budgetError } = await supabase
@@ -254,7 +254,7 @@ export const useBudgetExecutionSummary = (budgetYear: number) => {
             account:chart_of_accounts(account_type)
           )
         `)
-        .eq('company_id', user.company.id)
+        .eq('company_id', companyId)
         .eq('budget_year', budgetYear)
         .in('status', ['approved', 'active'])
 
@@ -300,13 +300,13 @@ export const useBudgetExecutionSummary = (budgetYear: number) => {
         overall_performance: overallPerformance
       } as BudgetExecutionSummary
     },
-    enabled: !!user?.company?.id && !!budgetYear,
+    enabled: !!companyId && !!budgetYear,
   })
 }
 
 // Hook لجلب تقرير الموازنة حسب مركز التكلفة
 export const useBudgetByCostCenter = (budgetId: string) => {
-  const { user } = useAuth()
+  const { companyId } = useUnifiedCompanyAccess()
 
   return useQuery({
     queryKey: ['budget-by-cost-center', budgetId],

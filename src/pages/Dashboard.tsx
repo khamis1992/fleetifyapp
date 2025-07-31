@@ -3,19 +3,18 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
-import { useSmartAlerts } from '@/hooks/useSmartAlerts';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
 import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
+import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
-  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
 
   // Convert financial overview data to the format expected by SmartMetricsPanel
@@ -30,8 +29,6 @@ const Dashboard: React.FC = () => {
     overduePayments: 0, // This would need to come from a different source
   } : undefined;
 
-  // Convert smart alerts to clean format
-  const alertsCount = smartAlerts?.length || 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -102,11 +99,6 @@ const Dashboard: React.FC = () => {
                     {getGreeting()}, {user?.profile?.first_name_ar || user?.profile?.first_name || 'أهلاً وسهلاً'}
                   </h1>
                   <p className="text-lg text-muted-foreground">نظرة عامة على أداء شركتك اليوم</p>
-                  {alertsCount > 0 && (
-                    <p className="text-sm text-warning mt-2">
-                      لديك {alertsCount} تنبيه في الهيدر العلوي
-                    </p>
-                  )}
                 </div>
               </div>
               
@@ -149,16 +141,18 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Sidebar Performance Metrics */}
+          {/* Sidebar Performance Metrics and Alerts */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
+            className="space-y-6"
           >
             <SmartMetricsPanel 
               financialData={smartMetricsData} 
               loading={financialLoading} 
             />
+            <UnifiedAlertsSystem compact />
           </motion.div>
         </div>
       </div>

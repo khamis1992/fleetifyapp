@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/hooks/use-toast';
 
 export interface RealTimeAlert {
@@ -15,19 +15,18 @@ export interface RealTimeAlert {
 }
 
 export const useRealTimeAlerts = () => {
-  const { user } = useAuth();
+  const { companyId, user, getQueryKey } = useUnifiedCompanyAccess();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Query for fetching all alerts
   const { data: alerts = [], isLoading } = useQuery({
-    queryKey: ['real-time-alerts', user?.profile?.company_id],
+    queryKey: getQueryKey(['real-time-alerts']),
     queryFn: async (): Promise<RealTimeAlert[]> => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) return [];
 
       const allAlerts: RealTimeAlert[] = [];
-      const companyId = user.profile.company_id;
 
       // Fetch budget alerts
       const { data: budgetAlerts } = await supabase
@@ -111,99 +110,72 @@ export const useRealTimeAlerts = () => {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 1000 * 60, // 1 minute
   });
 
   // Real-time subscription
   useEffect(() => {
-    if (!user?.profile?.company_id || isSubscribed) return;
+    if (!companyId || isSubscribed) return;
 
-    const companyId = user.profile.company_id;
-
-    // Subscribe to budget alerts
-    const budgetChannel = supabase
-      .channel('budget-alerts-changes')
+    // Create a unified channel for all alert types to avoid conflicts
+    const alertsChannel = supabase
+      .channel(`company-alerts-${companyId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'budget_alerts',
           filter: `company_id=eq.${companyId}`,
         },
         (payload) => {
           console.log('Budget alert change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newAlert = payload.new as any;
-            toast({
-              title: "تنبيه موازنة جديد",
-              description: newAlert.message_ar || newAlert.message,
-              variant: newAlert.alert_type === 'budget_exceeded' ? 'destructive' : 'default',
-            });
-          }
-          
-          // Invalidate and refetch alerts
-          queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
+          const newAlert = payload.new as any;
+          toast({
+            title: "تنبيه موازنة جديد",
+            description: newAlert.message_ar || newAlert.message,
+            variant: newAlert.alert_type === 'budget_exceeded' ? 'destructive' : 'default',
+          });
+          queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
         }
       )
-      .subscribe();
-
-    // Subscribe to vehicle alerts
-    const vehicleChannel = supabase
-      .channel('vehicle-alerts-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'vehicle_alerts',
           filter: `company_id=eq.${companyId}`,
         },
         (payload) => {
           console.log('Vehicle alert change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newAlert = payload.new as any;
-            toast({
-              title: "تنبيه مركبة جديد",
-              description: newAlert.alert_message,
-              variant: newAlert.priority === 'high' ? 'destructive' : 'default',
-            });
-          }
-          
-          // Invalidate and refetch alerts
-          queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
+          const newAlert = payload.new as any;
+          toast({
+            title: "تنبيه مركبة جديد",
+            description: newAlert.alert_message,
+            variant: newAlert.priority === 'high' ? 'destructive' : 'default',
+          });
+          queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
         }
       )
-      .subscribe();
-
-    // Subscribe to notifications
-    const notificationChannel = supabase
-      .channel('notifications-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'user_notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${user?.id}`,
         },
         (payload) => {
           console.log('Notification change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newNotification = payload.new as any;
-            toast({
-              title: "إشعار جديد",
-              description: newNotification.title,
-              variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
-            });
-          }
-          
-          // Invalidate and refetch alerts
-          queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
+          const newNotification = payload.new as any;
+          toast({
+            title: "إشعار جديد",
+            description: newNotification.title,
+            variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
+          });
+          queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
         }
       )
       .subscribe();
@@ -212,12 +184,10 @@ export const useRealTimeAlerts = () => {
 
     // Cleanup function
     return () => {
-      budgetChannel.unsubscribe();
-      vehicleChannel.unsubscribe();
-      notificationChannel.unsubscribe();
+      alertsChannel.unsubscribe();
       setIsSubscribed(false);
     };
-  }, [user?.profile?.company_id, queryClient, toast]);
+  }, [companyId, queryClient, toast, user?.id, getQueryKey]);
 
   // Statistics
   const totalAlerts = alerts.length;
@@ -265,7 +235,6 @@ export const useRealTimeAlerts = () => {
 
   const markAllAsRead = async () => {
     try {
-      const companyId = user?.profile?.company_id;
       if (!companyId) return;
 
       // Mark all budget alerts as acknowledged

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface SmartAlert {
   id: string;
@@ -16,16 +16,14 @@ export interface SmartAlert {
 }
 
 export const useSmartAlerts = () => {
-  const { user } = useAuth();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['smart-alerts', user?.profile?.company_id],
+    queryKey: getQueryKey(['smart-alerts']),
     queryFn: async (): Promise<SmartAlert[]> => {
-      if (!user?.profile?.company_id) {
+      if (!companyId) {
         return [];
       }
-
-      const companyId = user.profile.company_id;
       const alerts: SmartAlert[] = [];
       const today = new Date();
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -216,7 +214,7 @@ export const useSmartAlerts = () => {
           title: 'موظفون بدون حسابات',
           message: `${employeesWithoutAccess.length} موظف لا يملك حساب في النظام`,
           action: 'إنشاء حسابات',
-          actionUrl: '/hr/user-management',
+          actionUrl: '/hr/employees',
           priority: 'low',
           count: employeesWithoutAccess.length,
           created_at: new Date().toISOString()
@@ -270,7 +268,7 @@ export const useSmartAlerts = () => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       return alerts.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 3 * 60 * 1000, // 3 minutes
   });
 };
