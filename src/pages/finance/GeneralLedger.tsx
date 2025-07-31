@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -149,14 +148,6 @@ export default function Ledger() {
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             قيد جديد
-          </Button>
-          <Button 
-            onClick={() => handleExport('pdf')}
-            variant="outline"
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            إنشاء تقرير
           </Button>
         </div>
       </div>
