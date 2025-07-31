@@ -47,6 +47,7 @@ import ApprovalSystem from "./pages/ApprovalSystem";
 import Support from "./pages/Support";
 import SupportTicketDetail from "./pages/SupportTicketDetail";
 import SuperAdminSupport from "./pages/super-admin/Support";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
 
@@ -166,7 +167,7 @@ const App = () => (
                   <HRSettings />
                 </AdminRoute>
               } />
-              <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">صفحة التقارير - قيد التطوير</div>} />
+              <Route path="reports" element={<Reports />} />
               <Route path="legal" element={
                 <AdminRoute>
                   <Legal />
