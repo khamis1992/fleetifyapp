@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Building, Plus, Calculator, TrendingDown, Settings, Search, Package, Eye, Edit, Trash2 } from "lucide-react"
+import { Building, Plus, Calculator, TrendingDown, Settings, Search, Package, Eye, Edit, Trash2, TestTube } from "lucide-react"
 import { useFixedAssets, useCreateFixedAsset, useUpdateFixedAsset, useDeleteFixedAsset, useChartOfAccounts, FixedAsset } from "@/hooks/useFinance"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
@@ -135,6 +135,59 @@ const FixedAssets = () => {
     await deleteFixedAsset.mutateAsync(assetId)
   }
 
+  const fillSampleData = () => {
+    const sampleAssets = [
+      {
+        asset_code: 'FA001',
+        asset_name: 'كمبيوتر محمول HP EliteBook',
+        asset_name_ar: 'كمبيوتر محمول',
+        category: 'equipment',
+        serial_number: 'HP2024001',
+        location: 'مكتب الإدارة',
+        purchase_date: '2024-01-15',
+        purchase_cost: 800,
+        salvage_value: 100,
+        useful_life_years: 5,
+        depreciation_method: 'straight_line' as const,
+        condition_status: 'excellent' as const,
+        notes: 'جهاز للاستخدام الإداري'
+      },
+      {
+        asset_code: 'FA002', 
+        asset_name: 'طابعة ليزر Canon',
+        asset_name_ar: 'طابعة ليزر',
+        category: 'equipment',
+        serial_number: 'CN2024002',
+        location: 'قسم الموارد البشرية',
+        purchase_date: '2024-02-01',
+        purchase_cost: 450,
+        salvage_value: 50,
+        useful_life_years: 7,
+        depreciation_method: 'straight_line' as const,
+        condition_status: 'good' as const,
+        notes: 'طابعة عالية الجودة'
+      },
+      {
+        asset_code: 'FA003',
+        asset_name: 'مكتب إداري خشبي',
+        asset_name_ar: 'مكتب إداري',
+        category: 'furniture',
+        serial_number: 'DESK2024003',
+        location: 'مكتب المدير العام',
+        purchase_date: '2024-01-10',
+        purchase_cost: 1200,
+        salvage_value: 200,
+        useful_life_years: 10,
+        depreciation_method: 'straight_line' as const,
+        condition_status: 'excellent' as const,
+        notes: 'مكتب تنفيذي فاخر'
+      }
+    ]
+    
+    const randomAsset = sampleAssets[Math.floor(Math.random() * sampleAssets.length)]
+    setNewAsset(randomAsset)
+  }
+
   const filteredAssets = fixedAssets?.filter(asset => {
     const matchesSearch = asset.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          asset.asset_code.includes(searchTerm)
@@ -207,7 +260,21 @@ const FixedAssets = () => {
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>إنشاء أصل ثابت جديد</DialogTitle>
-              <DialogDescription>أدخل تفاصيل الأصل الثابت الجديد</DialogDescription>
+              <DialogDescription>
+                أدخل تفاصيل الأصل الثابت الجديد
+                <div className="mt-2">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm" 
+                    onClick={fillSampleData}
+                    className="text-xs"
+                  >
+                    <TestTube className="h-3 w-3 mr-1" />
+                    ملء بيانات تجريبية
+                  </Button>
+                </div>
+              </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div>
