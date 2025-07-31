@@ -357,7 +357,7 @@ const Payments = () => {
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">تاريخ الدفعة</label>
                     <p className="font-medium">
-                      {new Date(selectedPayment.payment_date).toLocaleDateString('ar-SA', {
+                      {new Date(selectedPayment.payment_date).toLocaleDateString('en-GB', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
@@ -407,11 +407,11 @@ const Payments = () => {
                   <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
                     <div>
                       <span>تاريخ الإنشاء: </span>
-                      {new Date(selectedPayment.created_at).toLocaleString('ar-SA')}
+                      {new Date(selectedPayment.created_at).toLocaleString('en-GB')}
                     </div>
                     <div>
                       <span>آخر تحديث: </span>
-                      {new Date(selectedPayment.updated_at).toLocaleString('ar-SA')}
+                      {new Date(selectedPayment.updated_at).toLocaleString('en-GB')}
                     </div>
                   </div>
                 </div>
