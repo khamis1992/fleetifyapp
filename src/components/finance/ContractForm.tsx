@@ -321,17 +321,16 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                 </Select>
               </div>
               
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <Label htmlFor="vehicle_id">المركبة (للإيجار)</Label>
                 <Select 
                   value={contractData.vehicle_id} 
                   onValueChange={(value) => setContractData({...contractData, vehicle_id: value})}
-                  disabled={vehiclesLoading || contractData.contract_type !== 'rental'}
+                  disabled={vehiclesLoading}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
                       vehiclesLoading ? "جاري التحميل..." :
-                      contractData.contract_type !== 'rental' ? "مخصص لعقود الإيجار فقط" :
                       "اختر المركبة المتاحة"
                     } />
                   </SelectTrigger>
@@ -341,12 +340,20 @@ export const ContractForm: React.FC<ContractFormProps> = ({ open, onOpenChange, 
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
                         {vehicle.daily_rate && ` - ${vehicle.daily_rate} د.ك/يوم`}
+                        {vehicle.weekly_rate && ` - ${vehicle.weekly_rate} د.ك/أسبوع`}
+                        {vehicle.monthly_rate && ` - ${vehicle.monthly_rate} د.ك/شهر`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {contractData.contract_type === 'rental' && (!availableVehicles || availableVehicles.length === 0) && (
-                  <p className="text-sm text-muted-foreground">لا توجد مركبات متاحة حالياً</p>
+                {vehiclesLoading && (
+                  <p className="text-sm text-muted-foreground">🔄 جاري تحميل المركبات المتاحة...</p>
+                )}
+                {!vehiclesLoading && (!availableVehicles || availableVehicles.length === 0) && (
+                  <p className="text-sm text-yellow-600">⚠️ لا توجد مركبات متاحة حالياً</p>
+                )}
+                {!vehiclesLoading && availableVehicles && availableVehicles.length > 0 && (
+                  <p className="text-sm text-green-600">✅ {availableVehicles.length} مركبة متاحة</p>
                 )}
               </div>
             </CardContent>

@@ -795,14 +795,30 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
   return useQuery({
     queryKey: ["available-vehicles-contracts", companyId],
     queryFn: async () => {
-      if (!companyId) throw new Error("Company ID is required")
+      if (!companyId) {
+        console.log("❌ [AVAILABLE_VEHICLES_CONTRACTS] No company ID provided")
+        return []
+      }
+
+      console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
 
       const { data, error } = await supabase.rpc('get_available_vehicles_for_contracts', {
         company_id_param: companyId
       })
 
-      if (error) throw error
-      return data as Array<{
+      if (error) {
+        console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database error:", error)
+        console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        throw error
+      }
+
+      console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", data?.length || 0)
+      return (data || []) as Array<{
         id: string
         plate_number: string
         make: string
@@ -815,6 +831,8 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       }>
     },
     enabled: !!companyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 
