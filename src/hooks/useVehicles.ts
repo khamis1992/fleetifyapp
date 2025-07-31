@@ -802,33 +802,48 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
 
       console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
 
-      const { data, error } = await supabase.rpc('get_available_vehicles_for_contracts', {
-        company_id_param: companyId
-      })
+      // Query vehicles table directly instead of using the problematic RPC function
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select(`
+          id,
+          plate_number,
+          make,
+          model,
+          year,
+          status,
+          daily_rate,
+          weekly_rate,
+          monthly_rate,
+          purchase_cost,
+          deposit_amount
+        `)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .in('status', ['available', 'reserved'])
 
       if (error) {
         console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database error:", error)
-        console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Error details:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        })
         throw error
       }
 
-      console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", data?.length || 0)
-      return (data || []) as Array<{
-        id: string
-        plate_number: string
-        make: string
-        model: string
-        year: number
-        status: string
-        daily_rate?: number
-        weekly_rate?: number
-        monthly_rate?: number
-      }>
+      const availableVehicles = (data || []).filter(vehicle => {
+        // Additional check: vehicle should not be under maintenance
+        return vehicle.status === 'available' || vehicle.status === 'reserved'
+      })
+
+      console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", availableVehicles?.length || 0)
+      
+      // Log pricing information for debugging
+      availableVehicles.forEach(vehicle => {
+        console.log(`🚗 Vehicle ${vehicle.plate_number}:`, {
+          daily_rate: vehicle.daily_rate,
+          weekly_rate: vehicle.weekly_rate,
+          monthly_rate: vehicle.monthly_rate,
+        })
+      })
+
+      return availableVehicles
     },
     enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes

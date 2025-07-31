@@ -29,11 +29,31 @@ export const useContractCalculations = (
   rentalDays: number
 ) => {
   const calculations = useMemo((): ContractCalculation | null => {
-    if (!vehicle || !rentalDays || rentalDays <= 0) return null
+    console.log("💰 [CONTRACT_CALCULATIONS] Calculating for:", {
+      vehicle: vehicle ? {
+        id: vehicle.id,
+        daily_rate: vehicle.daily_rate,
+        weekly_rate: vehicle.weekly_rate,
+        monthly_rate: vehicle.monthly_rate
+      } : null,
+      contractType,
+      rentalDays
+    })
 
-    const dailyRate = vehicle.daily_rate || 0
-    const weeklyRate = vehicle.weekly_rate || 0
-    const monthlyRate = vehicle.monthly_rate || 0
+    if (!vehicle || !rentalDays || rentalDays <= 0) {
+      console.log("❌ [CONTRACT_CALCULATIONS] Missing required data")
+      return null
+    }
+
+    const dailyRate = Number(vehicle.daily_rate) || 0
+    const weeklyRate = Number(vehicle.weekly_rate) || 0
+    const monthlyRate = Number(vehicle.monthly_rate) || 0
+
+    console.log("💰 [CONTRACT_CALCULATIONS] Parsed rates:", {
+      dailyRate,
+      weeklyRate,
+      monthlyRate
+    })
 
     // Calculate total cost for each rate type
     const dailyTotal = dailyRate * rentalDays
@@ -48,6 +68,7 @@ export const useContractCalculations = (
     ].filter(rate => rate.available && rate.total > 0)
 
     if (rates.length === 0) {
+      console.warn("⚠️ [CONTRACT_CALCULATIONS] No rates available for vehicle")
       return {
         totalAmount: 0,
         monthlyAmount: 0,
@@ -78,7 +99,7 @@ export const useContractCalculations = (
       ? dailyTotal - bestRate.total 
       : undefined
 
-    return {
+    const result = {
       totalAmount: bestRate.total,
       monthlyAmount,
       dailyRate,
@@ -92,6 +113,9 @@ export const useContractCalculations = (
         savings
       }
     }
+
+    console.log("✅ [CONTRACT_CALCULATIONS] Final result:", result)
+    return result
   }, [vehicle, contractType, rentalDays])
 
   return calculations
