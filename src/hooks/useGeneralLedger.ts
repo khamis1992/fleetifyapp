@@ -409,56 +409,159 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
   return useQuery({
     queryKey: ["financialSummary", user?.profile?.company_id, filters],
     queryFn: async () => {
-      const { data: accounts, error } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("is_active", true)
+      if (!user?.profile?.company_id) return null
       
-      if (error) throw error
-      
-      // Calculate summary from current balances
-      // In full implementation, would calculate from journal entries within date range
-      let totalAssets = 0
-      let totalLiabilities = 0
-      let totalEquity = 0
-      let totalRevenue = 0
-      let totalExpenses = 0
-      
-      accounts.forEach(account => {
-        const balance = account.current_balance || 0
-        switch (account.account_type) {
-          case 'assets':
-            totalAssets += balance
-            break
-          case 'liabilities':
-            totalLiabilities += balance
-            break
-          case 'equity':
-            totalEquity += balance
-            break
-          case 'revenue':
-            totalRevenue += balance
-            break
-          case 'expenses':
-            totalExpenses += balance
-            break
+      try {
+        // Get all accounts first
+        const { data: accounts, error: accountsError } = await supabase
+          .from("chart_of_accounts")
+          .select("*")
+          .eq("company_id", user.profile.company_id)
+          .eq("is_active", true)
+        
+        if (accountsError) throw accountsError
+        
+        // Get journal entry lines to calculate actual balances
+        const { data: journalLines, error: linesError } = await supabase
+          .from("journal_entry_lines")
+          .select(`
+            account_id,
+            debit_amount,
+            credit_amount,
+            journal_entry:journal_entries!fk_journal_entry_lines_journal_entry(
+              company_id,
+              status,
+              entry_date
+            )
+          `)
+          .eq("journal_entry.company_id", user.profile.company_id)
+          .eq("journal_entry.status", "approved")
+        
+        if (linesError) {
+          console.error("Error fetching journal lines:", linesError)
+          // Fall back to current balances if journal lines fail
+          const summary = calculateSummaryFromCurrentBalances(accounts)
+          return summary
         }
-      })
-      
-      const summary: FinancialSummary = {
-        total_assets: totalAssets,
-        total_liabilities: totalLiabilities,
-        total_equity: totalEquity,
-        total_revenue: totalRevenue,
-        total_expenses: totalExpenses,
-        net_income: totalRevenue - totalExpenses,
-        unbalanced_entries_count: 0 // Would need separate query for this
+        
+        // Calculate actual balances from journal entries
+        const accountBalances = new Map<string, number>()
+        
+        journalLines?.forEach((line: any) => {
+          if (line.journal_entry) {
+            const accountId = line.account_id
+            const currentBalance = accountBalances.get(accountId) || 0
+            const movement = (line.debit_amount || 0) - (line.credit_amount || 0)
+            accountBalances.set(accountId, currentBalance + movement)
+          }
+        })
+        
+        // Calculate summary by account type
+        let totalAssets = 0
+        let totalLiabilities = 0
+        let totalEquity = 0
+        let totalRevenue = 0
+        let totalExpenses = 0
+        
+        accounts?.forEach(account => {
+          const calculatedBalance = accountBalances.get(account.id) || 0
+          
+          switch (account.account_type) {
+            case 'assets':
+              totalAssets += Math.abs(calculatedBalance)
+              break
+            case 'liabilities':
+              totalLiabilities += Math.abs(calculatedBalance)
+              break
+            case 'equity':
+              totalEquity += Math.abs(calculatedBalance)
+              break
+            case 'revenue':
+              totalRevenue += Math.abs(calculatedBalance)
+              break
+            case 'expenses':
+              totalExpenses += Math.abs(calculatedBalance)
+              break
+          }
+        })
+        
+        // Count unbalanced entries by checking if total_debit != total_credit
+        const { data: allEntries, error: entriesError } = await supabase
+          .from("journal_entries")
+          .select("id, total_debit, total_credit")
+          .eq("company_id", user.profile.company_id)
+        
+        const unbalancedEntriesCount = allEntries?.filter(entry => 
+          Number(entry.total_debit) !== Number(entry.total_credit)
+        ).length || 0
+        
+        const summary: FinancialSummary = {
+          total_assets: totalAssets,
+          total_liabilities: totalLiabilities,
+          total_equity: totalEquity,
+          total_revenue: totalRevenue,
+          total_expenses: totalExpenses,
+          net_income: totalRevenue - totalExpenses,
+          unbalanced_entries_count: unbalancedEntriesCount
+        }
+        
+        return summary
+        
+      } catch (error) {
+        console.error("Error in useFinancialSummary:", error)
+        return {
+          total_assets: 0,
+          total_liabilities: 0,
+          total_equity: 0,
+          total_revenue: 0,
+          total_expenses: 0,
+          net_income: 0,
+          unbalanced_entries_count: 0
+        }
       }
-      
-      return summary
     },
     enabled: !!user?.profile?.company_id
   })
+}
+
+// Helper function to calculate from current balances as fallback
+const calculateSummaryFromCurrentBalances = (accounts: any[]): FinancialSummary => {
+  let totalAssets = 0
+  let totalLiabilities = 0
+  let totalEquity = 0
+  let totalRevenue = 0
+  let totalExpenses = 0
+  
+  accounts?.forEach(account => {
+    const balance = account.current_balance || 0
+    switch (account.account_type) {
+      case 'assets':
+        totalAssets += Math.abs(balance)
+        break
+      case 'liabilities':
+        totalLiabilities += Math.abs(balance)
+        break
+      case 'equity':
+        totalEquity += Math.abs(balance)
+        break
+      case 'revenue':
+        totalRevenue += Math.abs(balance)
+        break
+      case 'expenses':
+        totalExpenses += Math.abs(balance)
+        break
+    }
+  })
+  
+  return {
+    total_assets: totalAssets,
+    total_liabilities: totalLiabilities,
+    total_equity: totalEquity,
+    total_revenue: totalRevenue,
+    total_expenses: totalExpenses,
+    net_income: totalRevenue - totalExpenses,
+    unbalanced_entries_count: 0
+  }
 }
 
 // Cost Center Analysis
