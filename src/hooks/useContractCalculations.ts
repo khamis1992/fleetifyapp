@@ -3,6 +3,8 @@ import { useMemo } from 'react'
 export interface ContractCalculation {
   totalAmount: number
   monthlyAmount: number
+  periodAmount: number
+  periodType: 'daily' | 'weekly' | 'monthly'
   dailyRate: number
   weeklyRate: number
   monthlyRate: number
@@ -81,6 +83,8 @@ export const useContractCalculations = (
       return {
         totalAmount: 0,
         monthlyAmount: 0,
+        periodAmount: 0,
+        periodType: 'daily' as const,
         dailyRate,
         weeklyRate,
         monthlyRate,
@@ -98,10 +102,14 @@ export const useContractCalculations = (
       current.total < best.total ? current : best
     )
 
-    // Calculate monthly amount for long-term contracts
+    // Calculate monthly amount for long-term contracts (only if 30+ days)
     const monthlyAmount = rentalDays >= 30 
       ? bestRate.total / Math.ceil(rentalDays / 30)
-      : bestRate.total
+      : 0
+
+    // Calculate period-specific amount based on contract duration
+    const periodAmount = getPeriodAmount(bestRate.type, bestRate.total, rentalDays)
+    const periodType = getPeriodType(rentalDays)
 
     // Calculate savings if using the best rate vs daily rate
     const savings = bestRate.type !== 'daily' && dailyTotal > bestRate.total 
@@ -111,6 +119,8 @@ export const useContractCalculations = (
     const result = {
       totalAmount: bestRate.total,
       monthlyAmount,
+      periodAmount,
+      periodType,
       dailyRate,
       weeklyRate,
       monthlyRate,
@@ -145,5 +155,29 @@ function getRatePeriod(rateType: 'daily' | 'weekly' | 'monthly', rentalDays: num
     case 'weekly': return Math.ceil(rentalDays / 7)
     case 'monthly': return Math.ceil(rentalDays / 30)
     default: return rentalDays
+  }
+}
+
+function getPeriodType(rentalDays: number): 'daily' | 'weekly' | 'monthly' {
+  if (rentalDays >= 30) return 'monthly'
+  if (rentalDays >= 7) return 'weekly'
+  return 'daily'
+}
+
+function getPeriodAmount(rateType: 'daily' | 'weekly' | 'monthly', totalAmount: number, rentalDays: number): number {
+  switch (rateType) {
+    case 'daily': return totalAmount / rentalDays
+    case 'weekly': return totalAmount / Math.ceil(rentalDays / 7)
+    case 'monthly': return totalAmount / Math.ceil(rentalDays / 30)
+    default: return totalAmount
+  }
+}
+
+function getPeriodLabel(periodType: 'daily' | 'weekly' | 'monthly'): string {
+  switch (periodType) {
+    case 'daily': return 'المبلغ اليومي'
+    case 'weekly': return 'المبلغ الأسبوعي'
+    case 'monthly': return 'المبلغ الشهري'
+    default: return 'المبلغ'
   }
 }

@@ -511,8 +511,12 @@ export const FinancialStep: React.FC = () => {
                 <p className="font-medium">{calculations.totalAmount.toFixed(3)} د.ك</p>
               </div>
               <div>
-                <span className="text-green-700">المبلغ الشهري:</span>
-                <p className="font-medium">{calculations.monthlyAmount.toFixed(3)} د.ك</p>
+                <span className="text-green-700">
+                  {calculations.periodType === 'daily' && 'المبلغ اليومي:'}
+                  {calculations.periodType === 'weekly' && 'المبلغ الأسبوعي:'}
+                  {calculations.periodType === 'monthly' && 'المبلغ الشهري:'}
+                </span>
+                <p className="font-medium">{calculations.periodAmount.toFixed(3)} د.ك</p>
               </div>
               {calculations.breakdown.savings && (
                 <div>
@@ -539,17 +543,20 @@ export const FinancialStep: React.FC = () => {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="monthly_amount">المبلغ الشهري</Label>
-            <Input
-              id="monthly_amount"
-              type="number"
-              step="0.001"
-              min="0"
-              value={data.monthly_amount}
-              onChange={(e) => updateData({ monthly_amount: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
+          {/* Only show monthly amount for contracts 30+ days */}
+          {data.rental_days >= 30 && (
+            <div className="space-y-2">
+              <Label htmlFor="monthly_amount">المبلغ الشهري</Label>
+              <Input
+                id="monthly_amount"
+                type="number"
+                step="0.001"
+                min="0"
+                value={data.monthly_amount}
+                onChange={(e) => updateData({ monthly_amount: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="account_id">الحساب المحاسبي</Label>
