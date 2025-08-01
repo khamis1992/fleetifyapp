@@ -412,8 +412,7 @@ export default function Contracts() {
                       </div>
                       
                       <div className="flex-1 space-y-2 mr-4">
-                        <div className="flex items-center gap-2 justify-end flex-row-reverse">
-                          <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                        <div className="flex items-center gap-2 justify-end">
                           <Badge className={getStatusColor(contract.status)}>
                             {getStatusIcon(contract.status)}
                             <span className="mr-1">
@@ -425,6 +424,7 @@ export default function Contracts() {
                                contract.status === 'renewed' ? 'مجدد' : contract.status}
                             </span>
                           </Badge>
+                          <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
                         </div>
                         
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
