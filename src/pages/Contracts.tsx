@@ -307,10 +307,6 @@ export default function Contracts() {
             <FileText className="h-4 w-4 mr-2" />
             تصدير التقرير
           </Button>
-          <Button variant="outline" onClick={handleAutoRenew} disabled={autoRenewContracts.isPending}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {autoRenewContracts.isPending ? 'جاري التجديد...' : 'تجديد تلقائي'}
-          </Button>
           <Button onClick={() => {
             setPreselectedCustomerId(null)
             setShowContractWizard(true)
