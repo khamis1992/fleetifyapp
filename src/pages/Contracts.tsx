@@ -460,10 +460,25 @@ export default function Contracts() {
                           
                           <div className="flex items-center gap-2 justify-end">
                             <span className="text-sm">
-                              {(contract as any).customers?.customer_type === 'individual' 
-                                ? `${(contract as any).customers?.first_name_ar || ''} ${(contract as any).customers?.last_name_ar || ''}`.trim() || 'عميل غير محدد'
-                                : (contract as any).customers?.company_name_ar || 'عميل غير محدد'
-                              }
+                              {(() => {
+                                const customerData = (contract as any).customers;
+                                console.log('🔍 [CONTRACT_CUSTOMER] Contract:', contract.contract_number, 'Customer data:', customerData);
+                                
+                                if (!customerData) {
+                                  console.log('❌ [CONTRACT_CUSTOMER] No customer data for contract:', contract.contract_number);
+                                  return 'عميل غير محدد';
+                                }
+                                
+                                if (customerData.customer_type === 'individual') {
+                                  const fullName = `${customerData.first_name_ar || ''} ${customerData.last_name_ar || ''}`.trim();
+                                  console.log('👤 [CONTRACT_CUSTOMER] Individual customer name:', fullName);
+                                  return fullName || 'عميل غير محدد';
+                                } else {
+                                  const companyName = customerData.company_name_ar;
+                                  console.log('🏢 [CONTRACT_CUSTOMER] Company name:', companyName);
+                                  return companyName || 'عميل غير محدد';
+                                }
+                              })()}
                             </span>
                             <Users className="h-4 w-4 text-muted-foreground" />
                           </div>
