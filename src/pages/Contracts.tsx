@@ -398,7 +398,7 @@ export default function Contracts() {
               filteredContracts.map((contract) => (
                 <Card key={contract.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
-                    <div className="flex items-start justify-between flex-row-reverse">
+                    <div className="flex items-start justify-between">
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => { setSelectedContract(contract); setShowDetailsDialog(true); }}>
                           عرض
@@ -415,7 +415,7 @@ export default function Contracts() {
                         </Button>
                       </div>
                       
-                      <div className="flex-1 space-y-2 ml-4">
+                      <div className="flex-1 space-y-2 mr-4">
                         <div className="flex items-center gap-2 justify-end">
                           <Badge className={getStatusColor(contract.status)}>
                             {getStatusIcon(contract.status)}
