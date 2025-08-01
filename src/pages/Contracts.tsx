@@ -16,12 +16,15 @@ import { ContractDetailsDialog } from "@/components/contracts/ContractDetailsDia
 import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilters"
 import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
+import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAutoRenewContracts } from "@/hooks/useContractRenewal"
+import { useContractCreation } from "@/hooks/useContractCreation"
 import { useToast } from "@/hooks/use-toast"
 import { useQueryClient } from "@tanstack/react-query"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 export default function Contracts() {
   const [showContractWizard, setShowContractWizard] = useState(false)
@@ -40,6 +43,8 @@ export default function Contracts() {
   const manualStatusUpdate = useManualContractStatusUpdate()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
+  const [showCreationProgress, setShowCreationProgress] = useState(false)
 
   // Handle pre-selected customer from navigation
   useEffect(() => {
@@ -241,127 +246,49 @@ export default function Contracts() {
 
   const handleContractSubmit = async (contractData: any) => {
     try {
-      console.log('📋 [CONTRACT_SUBMIT] Starting contract creation process')
-      console.log('📋 [CONTRACT_SUBMIT] Raw form data:', contractData)
+      console.log('📋 [CONTRACT_SUBMIT] Starting new contract creation process with progress tracking')
       
-      // Validate required fields
-      const requiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount', 'monthly_amount']
-      const numericFields = ['contract_amount', 'monthly_amount']
+      // Show progress dialog
+      setShowCreationProgress(true)
+      resetCreationState()
       
-      const missingFields = requiredFields.filter(field => {
-        const value = contractData[field]
-        // For numeric fields, check if value exists and is a valid number (including 0)
-        if (numericFields.includes(field)) {
-          return value === undefined || value === null || value === '' || isNaN(Number(value))
-        }
-        // For other fields, check if value exists and is not empty
-        return !value || (typeof value === 'string' && value.trim() === '')
-      })
-      
-      if (missingFields.length > 0) {
-        const fieldLabels = {
-          'customer_id': 'العميل',
-          'contract_type': 'نوع العقد', 
-          'start_date': 'تاريخ البداية',
-          'end_date': 'تاريخ النهاية',
-          'contract_amount': 'قيمة العقد',
-          'monthly_amount': 'المبلغ الشهري'
-        }
-        const missingFieldLabels = missingFields.map(field => fieldLabels[field] || field)
-        const errorMsg = `حقول مطلوبة مفقودة: ${missingFieldLabels.join(', ')}`
-        console.error('❌ [CONTRACT_SUBMIT] Missing required fields:', missingFields)
-        throw new Error(errorMsg)
-      }
-      
-      // Validate user authentication and company context
-      if (!user?.id) {
-        console.error('❌ [CONTRACT_SUBMIT] User not authenticated')
-        throw new Error('المستخدم غير مصرح له')
-      }
-      
+      // Prepare contract data with user context
       const companyId = user?.profile?.company_id || user?.company?.id
       if (!companyId) {
-        console.error('❌ [CONTRACT_SUBMIT] No company context found')
         throw new Error('لا يمكن تحديد الشركة')
       }
-      
-      console.log('✅ [CONTRACT_SUBMIT] Validation passed - User:', user.id, 'Company:', companyId)
-      
-      // Clean data - keep only database fields
-      const allowedFields = [
-        'customer_id', 'vehicle_id', 'contract_type', 'contract_date', 
-        'start_date', 'end_date', 'contract_amount', 'monthly_amount', 
-        'description', 'terms', 'status', 'cost_center_id', 'account_id',
-        'auto_renew_enabled', 'renewal_terms', 'suspension_reason'
-      ]
-      
-      const cleanedData = Object.keys(contractData).reduce((acc, key) => {
-        if (allowedFields.includes(key) && contractData[key] !== undefined && contractData[key] !== '') {
-          acc[key] = contractData[key]
-        }
-        return acc
-      }, {} as any)
-      
-      // Prepare final data with required system fields
+
       const finalData = {
-        ...cleanedData,
+        ...contractData,
         company_id: companyId,
-        created_by: user.id,
-        // Set defaults for required fields if not provided
-        status: cleanedData.status || 'draft',
-        contract_date: cleanedData.contract_date || new Date().toISOString().split('T')[0]
+        created_by: user?.id,
+        contract_date: contractData.contract_date || new Date().toISOString().split('T')[0],
+        contract_number: contractData.contract_number || `CON-${Date.now()}`
       }
       
-      console.log('💾 [CONTRACT_SUBMIT] Final data for database:', finalData)
-      console.log('💾 [CONTRACT_SUBMIT] Field count - Original:', Object.keys(contractData).length, 'Final:', Object.keys(finalData).length)
+      // Use the new contract creation system
+      createContract(finalData)
       
-      // Insert contract with detailed error handling
-      const { data: insertedData, error } = await supabase
-        .from('contracts')
-        .insert([finalData])
-        .select('*')
-        .single()
-      
-      if (error) {
-        console.error('❌ [CONTRACT_SUBMIT] Database error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        })
-        
-        // Provide user-friendly error messages
-        let userMessage = 'فشل في إنشاء العقد'
-        if (error.message?.includes('foreign key')) {
-          userMessage = 'بيانات العميل أو المركبة غير صحيحة'
-        } else if (error.message?.includes('unique')) {
-          userMessage = 'رقم العقد موجود مسبقاً'
-        } else if (error.message?.includes('check constraint')) {
-          userMessage = 'بيانات العقد غير صحيحة'
-        } else if (error.message?.includes('row-level security')) {
-          userMessage = 'ليس لديك صلاحية لإنشاء العقود'
-        }
-        
-        throw new Error(`${userMessage}: ${error.message}`)
-      }
-      
-      if (!insertedData) {
-        console.error('❌ [CONTRACT_SUBMIT] No data returned from insert')
-        throw new Error('فشل في إنشاء العقد - لم يتم إرجاع بيانات')
-      }
-      
-      console.log('✅ [CONTRACT_SUBMIT] Contract created successfully:', insertedData)
-      
-      // Update UI only after successful database operation
-      await refetch()
-      setShowContractWizard(false)
-      setPreselectedCustomerId(null)
-      
-      return insertedData
+      // Don't close wizard immediately - let progress dialog handle it
+      return null
     } catch (error) {
       console.error('❌ [CONTRACT_SUBMIT] Error in contract creation:', error)
-      throw error // Re-throw so the wizard can handle the error
+      setShowCreationProgress(false)
+      throw error
     }
+  }
+
+  // Handle successful contract creation
+  const handleCreationComplete = () => {
+    setShowCreationProgress(false)
+    setShowContractWizard(false)
+    setPreselectedCustomerId(null)
+    refetch()
+  }
+
+  // Handle creation failure with option to retry
+  const handleCreationRetry = () => {
+    retryCreation()
   }
 
   const handleRenewContract = (contract: any) => {
@@ -849,6 +776,22 @@ export default function Contracts() {
         preselectedCustomerId={preselectedCustomerId}
       />
       
+      {/* Contract Creation Progress Dialog */}
+      <Dialog open={showCreationProgress} onOpenChange={(open) => {
+        if (!open && !creationState.isProcessing) {
+          setShowCreationProgress(false)
+          resetCreationState()
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <ContractCreationProgress
+            creationState={creationState}
+            onRetry={handleCreationRetry}
+            onClose={handleCreationComplete}
+          />
+        </DialogContent>
+      </Dialog>
+
       {showTemplateManager && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-background border rounded-lg shadow-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">

@@ -1302,6 +1302,45 @@ export type Database = {
           },
         ]
       }
+      contract_creation_log: {
+        Row: {
+          attempt_number: number | null
+          company_id: string
+          contract_id: string | null
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          metadata: Json | null
+          operation_step: string
+          status: string
+        }
+        Insert: {
+          attempt_number?: number | null
+          company_id: string
+          contract_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          metadata?: Json | null
+          operation_step: string
+          status: string
+        }
+        Update: {
+          attempt_number?: number | null
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          metadata?: Json | null
+          operation_step?: string
+          status?: string
+        }
+        Relationships: []
+      }
       contract_drafts: {
         Row: {
           company_id: string
@@ -7494,6 +7533,10 @@ export type Database = {
         Args: { contract_id_param: string }
         Returns: string
       }
+      create_contract_journal_entry_safe: {
+        Args: { contract_id_param: string }
+        Returns: string
+      }
       create_customer_financial_account: {
         Args:
           | {
@@ -7949,6 +7992,19 @@ export type Database = {
       is_aggregate_account: {
         Args: { account_id_param: string }
         Returns: boolean
+      }
+      log_contract_creation_step: {
+        Args: {
+          company_id_param: string
+          contract_id_param: string
+          step_name: string
+          status_param: string
+          attempt_num?: number
+          error_msg?: string
+          exec_time?: number
+          meta?: Json
+        }
+        Returns: undefined
       }
       log_security_event: {
         Args: {
