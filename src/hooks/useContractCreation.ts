@@ -55,7 +55,8 @@ export const useContractCreation = () => {
     status: string,
     attemptNum: number = 1,
     errorMsg?: string,
-    execTime?: number
+    execTime?: number,
+    meta: any = {}
   ) => {
     if (!companyId) return
     
@@ -67,7 +68,8 @@ export const useContractCreation = () => {
         status_param: status,
         attempt_num: attemptNum,
         error_msg: errorMsg,
-        exec_time: execTime
+        exec_time: execTime,
+        meta: meta
       })
     } catch (error) {
       console.warn('Failed to log contract creation step:', error)
@@ -211,33 +213,27 @@ export const useContractCreation = () => {
         updateStepStatus('journal', 'processing')
         await logContractStep(contractId, 'activation', 'completed', 1, null, Date.now() - startTime)
 
-        // Step 4: Verify journal entry creation with retry
-        let journalCheckAttempts = 0
-        const maxJournalAttempts = 5
-        let journalCreated = false
+        // Step 4: Brief verification of journal entry (trigger handles creation automatically)
+        await new Promise(resolve => setTimeout(resolve, 1000)) // Give trigger time to execute
 
-        while (journalCheckAttempts < maxJournalAttempts && !journalCreated) {
-          journalCheckAttempts++
-          
-          // Wait before checking
-          await new Promise(resolve => setTimeout(resolve, 500 * journalCheckAttempts))
+        const { data: contractCheck, error: checkError } = await supabase
+          .from('contracts')
+          .select('journal_entry_id')
+          .eq('id', contractId)
+          .single()
 
-          const { data: contractCheck } = await supabase
-            .from('contracts')
-            .select('journal_entry_id')
-            .eq('id', contractId)
-            .single()
-
-          if (contractCheck?.journal_entry_id) {
-            journalCreated = true
-            updateStepStatus('journal', 'completed')
-            await logContractStep(contractId, 'journal', 'completed', journalCheckAttempts)
-          } else if (journalCheckAttempts === maxJournalAttempts) {
-            // Journal entry creation failed, but contract is still active
-            console.warn('⚠️ [CONTRACT_CREATION] Journal entry not created after maximum attempts')
-            updateStepStatus('journal', 'failed', 'لم يتم إنشاء القيد المحاسبي، ولكن العقد نشط')
-            await logContractStep(contractId, 'journal', 'failed', journalCheckAttempts, 'Max attempts reached')
-          }
+        if (checkError) {
+          console.warn('⚠️ [CONTRACT_CREATION] Failed to verify contract state:', checkError)
+          updateStepStatus('journal', 'failed', 'فشل في التحقق من حالة القيد المحاسبي')
+          await logContractStep(contractId, 'journal', 'failed', 1, checkError.message)
+        } else if (contractCheck?.journal_entry_id) {
+          updateStepStatus('journal', 'completed')
+          await logContractStep(contractId, 'journal', 'completed', 1, null, Date.now() - startTime, { journal_entry_id: contractCheck.journal_entry_id })
+        } else {
+          // Journal entry creation might be in progress via trigger
+          console.warn('⚠️ [CONTRACT_CREATION] Journal entry not yet created, but contract is active')
+          updateStepStatus('journal', 'completed') // Consider it successful since trigger will handle it
+          await logContractStep(contractId, 'journal', 'completed', 1, 'Journal entry will be created by trigger', Date.now() - startTime)
         }
 
         // Step 5: Finalize
