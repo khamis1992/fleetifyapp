@@ -119,14 +119,18 @@ export const useContractCreation = () => {
         updateStepStatus('validation', 'processing')
         await logContractStep(null, 'validation', 'started')
         
-        // Basic field validation
+        // Enhanced validation with detailed checks
+        console.log('🔍 [CONTRACT_CREATION] Starting comprehensive validation...')
+        
+        // Basic field validation with type checking
         const requiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount', 'monthly_amount']
         const numericFields = ['contract_amount', 'monthly_amount']
+        const dateFields = ['start_date', 'end_date', 'contract_date']
         
         const missingFields = requiredFields.filter(field => {
           const value = contractData[field]
           if (numericFields.includes(field)) {
-            return value === undefined || value === null || value === '' || isNaN(Number(value))
+            return value === undefined || value === null || value === '' || isNaN(Number(value)) || Number(value) <= 0
           }
           return !value || (typeof value === 'string' && value.trim() === '')
         })
@@ -141,12 +145,55 @@ export const useContractCreation = () => {
             'monthly_amount': 'المبلغ الشهري'
           }
           const missingFieldLabels = missingFields.map(field => fieldLabels[field] || field)
-          const errorMsg = `حقول مطلوبة مفقودة: ${missingFieldLabels.join(', ')}`
+          const errorMsg = `حقول مطلوبة مفقودة أو غير صحيحة: ${missingFieldLabels.join(', ')}`
           
+          console.error('❌ [CONTRACT_CREATION] Missing or invalid fields:', { missingFields, contractData })
           updateStepStatus('validation', 'failed', errorMsg)
           await logContractStep(null, 'validation', 'failed', 1, errorMsg)
           throw new Error(errorMsg)
         }
+
+        // Date validation
+        for (const dateField of dateFields) {
+          if (contractData[dateField] && contractData[dateField] !== '') {
+            const dateValue = new Date(contractData[dateField])
+            if (isNaN(dateValue.getTime())) {
+              const errorMsg = `تاريخ غير صحيح: ${dateField}`
+              console.error('❌ [CONTRACT_CREATION] Invalid date:', { field: dateField, value: contractData[dateField] })
+              updateStepStatus('validation', 'failed', errorMsg)
+              await logContractStep(null, 'validation', 'failed', 1, errorMsg)
+              throw new Error(errorMsg)
+            }
+          }
+        }
+
+        // UUID validation for customer and vehicle
+        const uuidFields = ['customer_id', 'vehicle_id']
+        for (const uuidField of uuidFields) {
+          if (contractData[uuidField] && contractData[uuidField] !== '' && contractData[uuidField] !== 'none') {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+            if (!uuidRegex.test(contractData[uuidField])) {
+              const errorMsg = `معرف غير صحيح: ${uuidField}`
+              console.error('❌ [CONTRACT_CREATION] Invalid UUID:', { field: uuidField, value: contractData[uuidField] })
+              updateStepStatus('validation', 'failed', errorMsg)
+              await logContractStep(null, 'validation', 'failed', 1, errorMsg)
+              throw new Error(errorMsg)
+            }
+          }
+        }
+
+        // Business logic validation
+        const startDate = new Date(contractData.start_date)
+        const endDate = new Date(contractData.end_date)
+        if (endDate <= startDate) {
+          const errorMsg = 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية'
+          console.error('❌ [CONTRACT_CREATION] End date before start date:', { startDate, endDate })
+          updateStepStatus('validation', 'failed', errorMsg)
+          await logContractStep(null, 'validation', 'failed', 1, errorMsg)
+          throw new Error(errorMsg)
+        }
+
+        console.log('✅ [CONTRACT_CREATION] Client-side validation passed')
 
         // Enhanced database validation with better error handling
         console.log('🔍 [CONTRACT_CREATION] Calling database validation function...')
