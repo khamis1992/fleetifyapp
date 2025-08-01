@@ -10,9 +10,11 @@ import { DashboardPreview } from '@/components/landing/DashboardPreview';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { CallToActionSection } from '@/components/landing/CallToActionSection';
 import { ParallaxSection } from '@/components/landing/ParallaxSection';
+import { useDynamicLandingContent } from '@/hooks/useDynamicLandingContent';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { content: dynamicContent, loading: contentLoading } = useDynamicLandingContent('ar');
 
   if (loading) {
     return (
