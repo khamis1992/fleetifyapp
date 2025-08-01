@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ContractForm } from "@/components/finance/ContractForm"
 import { ContractWizard } from "@/components/contracts/ContractWizard"
 import { ContractTemplateManager } from "@/components/contracts/ContractTemplateManager"
 import { ContractExpirationAlerts } from "@/components/contracts/ContractExpirationAlerts"
@@ -25,7 +24,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useQueryClient } from "@tanstack/react-query"
 
 export default function Contracts() {
-  const [showContractForm, setShowContractForm] = useState(false)
   const [showContractWizard, setShowContractWizard] = useState(false)
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
@@ -259,7 +257,6 @@ export default function Contracts() {
       
       console.log('✅ [CONTRACT_SUBMIT] Contract created successfully')
       refetch()
-      setShowContractForm(false)
       setShowContractWizard(false)
       // Clear preselected customer after successful creation
       setPreselectedCustomerId(null)
@@ -386,17 +383,10 @@ export default function Contracts() {
           </Button>
           <Button onClick={() => {
             setPreselectedCustomerId(null)
-            setShowContractForm(true)
-          }} variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
-            عقد عادي
-          </Button>
-          <Button onClick={() => {
-            setPreselectedCustomerId(null)
             setShowContractWizard(true)
           }}>
             <Plus className="h-4 w-4 mr-2" />
-            معالج العقود
+            إنشاء عقد جديد
           </Button>
         </div>
       </div>
@@ -578,7 +568,7 @@ export default function Contracts() {
                       <p className="text-muted-foreground text-center mb-4">
                         ابدأ في إنشاء أول عقد لعملائك
                       </p>
-                      <Button onClick={() => setShowContractForm(true)}>
+                      <Button onClick={() => setShowContractWizard(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         إنشاء عقد جديد
                       </Button>
@@ -780,13 +770,6 @@ export default function Contracts() {
       </Tabs>
 
       {/* Dialogs */}
-      <ContractForm 
-        open={showContractForm} 
-        onOpenChange={setShowContractForm}
-        onSubmit={handleContractSubmit}
-        preselectedCustomerId={preselectedCustomerId}
-      />
-      
       <ContractRenewalDialog
         open={showRenewalDialog}
         onOpenChange={setShowRenewalDialog}
