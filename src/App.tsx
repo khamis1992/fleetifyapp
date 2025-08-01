@@ -47,6 +47,7 @@ import ApprovalSystem from "./pages/ApprovalSystem";
 import Support from "./pages/Support";
 import SupportTicketDetail from "./pages/SupportTicketDetail";
 import SuperAdminSupport from "./pages/super-admin/Support";
+import SuperAdminPayments from "./pages/super-admin/Payments";
 import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
@@ -67,7 +68,7 @@ const App = () => (
               <Route path="companies" element={<SuperAdminCompanies />} />
               <Route path="users" element={<SuperAdminUsers />} />
               <Route path="support" element={<SuperAdminSupport />} />
-              <Route path="payments" element={<div className="p-8 text-center text-muted-foreground">المدفوعات - قيد التطوير</div>} />
+              <Route path="payments" element={<SuperAdminPayments />} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">تقارير النظام - قيد التطوير</div>} />
               <Route path="settings" element={<SuperAdminSettings />} />
             </Route>
