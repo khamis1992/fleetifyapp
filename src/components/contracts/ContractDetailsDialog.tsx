@@ -201,11 +201,11 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="details">التفاصيل</TabsTrigger>
-            <TabsTrigger value="invoices">الفواتير</TabsTrigger>
-            <TabsTrigger value="timeline">التاريخ</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4" dir="rtl">
             <TabsTrigger value="documents">المستندات</TabsTrigger>
+            <TabsTrigger value="timeline">التاريخ</TabsTrigger>
+            <TabsTrigger value="invoices">الفواتير</TabsTrigger>
+            <TabsTrigger value="details">التفاصيل</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
