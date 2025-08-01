@@ -7902,7 +7902,7 @@ export type Database = {
       get_mapped_account_id: {
         Args:
           | { company_id_param: string; account_type_code: string }
-          | { company_id_param: string; account_type_code: string }
+          | { company_id_param: string; account_type_param: string }
         Returns: string
       }
       get_payment_analytics: {
