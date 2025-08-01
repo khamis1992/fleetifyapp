@@ -493,7 +493,7 @@ export const FinancialStep: React.FC = () => {
                 <SelectValue placeholder="اختر مركز التكلفة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">بدون مركز تكلفة</SelectItem>
+                <SelectItem value="none">بدون مركز تكلفة</SelectItem>
                 {costCenters?.map((center) => (
                   <SelectItem key={center.id} value={center.id}>
                     {center.center_code} - {center.center_name_ar || center.center_name}

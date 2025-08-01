@@ -218,7 +218,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                         <SelectValue placeholder="اختر حساب المدينين" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">بدون ربط</SelectItem>
+                        <SelectItem value="none">بدون ربط</SelectItem>
                         {accounts?.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
                             {account.account_code} - {account.account_name}
@@ -235,7 +235,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                         <SelectValue placeholder="اختر حساب الإيرادات" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">بدون ربط</SelectItem>
+                        <SelectItem value="none">بدون ربط</SelectItem>
                         {accounts?.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
                             {account.account_code} - {account.account_name}
