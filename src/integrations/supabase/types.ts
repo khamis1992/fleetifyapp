@@ -1302,6 +1302,39 @@ export type Database = {
           },
         ]
       }
+      contract_drafts: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          current_step: number
+          data: Json
+          id: string
+          last_saved_at: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          current_step?: number
+          data?: Json
+          id?: string
+          last_saved_at?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          current_step?: number
+          data?: Json
+          id?: string
+          last_saved_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contract_notifications: {
         Row: {
           company_id: string
@@ -1362,6 +1395,99 @@ export type Database = {
           },
         ]
       }
+      contract_operations_log: {
+        Row: {
+          company_id: string
+          contract_id: string
+          id: string
+          new_values: Json | null
+          notes: string | null
+          old_values: Json | null
+          operation_details: Json | null
+          operation_type: string
+          performed_at: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          company_id: string
+          contract_id: string
+          id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          operation_details?: Json | null
+          operation_type: string
+          performed_at?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          contract_id?: string
+          id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+          operation_details?: Json | null
+          operation_type?: string
+          performed_at?: string | null
+          performed_by?: string | null
+        }
+        Relationships: []
+      }
+      contract_templates: {
+        Row: {
+          account_mappings: Json
+          approval_threshold: number
+          auto_calculate_pricing: boolean
+          company_id: string
+          contract_type: string
+          created_at: string
+          created_by: string
+          default_duration_days: number
+          default_terms: string | null
+          id: string
+          is_active: boolean
+          requires_approval: boolean
+          template_name: string
+          template_name_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_mappings?: Json
+          approval_threshold?: number
+          auto_calculate_pricing?: boolean
+          company_id: string
+          contract_type: string
+          created_at?: string
+          created_by: string
+          default_duration_days?: number
+          default_terms?: string | null
+          id?: string
+          is_active?: boolean
+          requires_approval?: boolean
+          template_name: string
+          template_name_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_mappings?: Json
+          approval_threshold?: number
+          auto_calculate_pricing?: boolean
+          company_id?: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string
+          default_duration_days?: number
+          default_terms?: string | null
+          id?: string
+          is_active?: boolean
+          requires_approval?: boolean
+          template_name?: string
+          template_name_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           account_id: string | null
@@ -1377,13 +1503,16 @@ export type Database = {
           customer_id: string
           description: string | null
           end_date: string
+          expired_at: string | null
           id: string
           journal_entry_id: string | null
+          last_payment_check_date: string | null
           last_renewal_check: string | null
           monthly_amount: number
           renewal_terms: Json | null
           start_date: string
           status: string
+          suspension_reason: string | null
           terms: string | null
           updated_at: string
           vehicle_id: string | null
@@ -1403,13 +1532,16 @@ export type Database = {
           customer_id: string
           description?: string | null
           end_date: string
+          expired_at?: string | null
           id?: string
           journal_entry_id?: string | null
+          last_payment_check_date?: string | null
           last_renewal_check?: string | null
           monthly_amount?: number
           renewal_terms?: Json | null
           start_date: string
           status?: string
+          suspension_reason?: string | null
           terms?: string | null
           updated_at?: string
           vehicle_id?: string | null
@@ -1429,13 +1561,16 @@ export type Database = {
           customer_id?: string
           description?: string | null
           end_date?: string
+          expired_at?: string | null
           id?: string
           journal_entry_id?: string | null
+          last_payment_check_date?: string | null
           last_renewal_check?: string | null
           monthly_amount?: number
           renewal_terms?: Json | null
           start_date?: string
           status?: string
+          suspension_reason?: string | null
           terms?: string | null
           updated_at?: string
           vehicle_id?: string | null
@@ -1461,6 +1596,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_contracts_customer_id"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -6896,6 +7038,15 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: Json
       }
+      check_contract_payment_status: {
+        Args: { contract_id_param: string }
+        Returns: {
+          is_overdue: boolean
+          overdue_amount: number
+          days_overdue: number
+          last_payment_date: string
+        }[]
+      }
       check_rate_limit: {
         Args: {
           operation_type: string
@@ -6944,6 +7095,10 @@ export type Database = {
           cancellation_date_param: string
           cancellation_reason?: string
         }
+        Returns: string
+      }
+      create_contract_invoice: {
+        Args: { contract_id_param: string; invoice_period?: string }
         Returns: string
       }
       create_contract_journal_entry: {
@@ -7030,6 +7185,10 @@ export type Database = {
         Args: { penalty_id_param: string }
         Returns: string
       }
+      create_periodic_invoice_safely: {
+        Args: { contract_id_param: string }
+        Returns: string
+      }
       create_system_alert: {
         Args: {
           company_id_param: string
@@ -7092,6 +7251,29 @@ export type Database = {
       generate_contract_number: {
         Args: { company_id_param: string }
         Returns: string
+      }
+      generate_contracts_report: {
+        Args: {
+          company_id_param: string
+          start_date_param?: string
+          end_date_param?: string
+          status_filter?: string
+        }
+        Returns: {
+          contract_id: string
+          contract_number: string
+          customer_name: string
+          contract_type: string
+          contract_amount: number
+          monthly_amount: number
+          start_date: string
+          end_date: string
+          status: string
+          days_remaining: number
+          total_invoiced: number
+          total_paid: number
+          outstanding_amount: number
+        }[]
       }
       generate_dispatch_permit_number: {
         Args: { company_id_param: string }
@@ -7185,6 +7367,28 @@ export type Database = {
           daily_rate: number
           weekly_rate: number
           monthly_rate: number
+        }[]
+      }
+      get_contract_operations_history: {
+        Args: { contract_id_param: string }
+        Returns: {
+          operation_id: string
+          operation_type: string
+          operation_details: Json
+          performed_by_name: string
+          performed_at: string
+          notes: string
+        }[]
+      }
+      get_contracts_pending_approval: {
+        Args: { company_id_param: string }
+        Returns: {
+          contract_id: string
+          contract_number: string
+          contract_amount: number
+          customer_name: string
+          created_at: string
+          pending_steps: number
         }[]
       }
       get_cost_center_analysis: {
@@ -7478,6 +7682,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: undefined
       }
+      update_contract_statuses: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_dispatch_permit_status: {
         Args: {
           permit_id_param: string
@@ -7509,6 +7717,10 @@ export type Database = {
       validate_company_access_secure: {
         Args: { _user_id: string; _company_id: string }
         Returns: boolean
+      }
+      validate_contract_data: {
+        Args: { contract_data: Json }
+        Returns: Json
       }
       validate_password_strength: {
         Args: { password: string }
