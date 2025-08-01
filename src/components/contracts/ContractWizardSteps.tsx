@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, Edit } from 'lucide-react'
 import { useContractWizard } from './ContractWizardProvider'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -15,10 +16,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
+import { useTemplateByType } from '@/hooks/useContractTemplates'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
   const { data, updateData } = useContractWizard()
+  const template = useTemplateByType(data.contract_type || '')
+  const [isEditingTerms, setIsEditingTerms] = useState(false)
 
   return (
     <Card>
@@ -53,13 +57,23 @@ export const BasicInfoStep: React.FC = () => {
                 <SelectValue placeholder="اختر نوع العقد" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rent_to_own">إيجار حتى التملك</SelectItem>
                 <SelectItem value="daily_rental">إيجار يومي</SelectItem>
                 <SelectItem value="weekly_rental">إيجار أسبوعي</SelectItem>
                 <SelectItem value="monthly_rental">إيجار شهري</SelectItem>
+                <SelectItem value="corporate">عقد مؤسسي</SelectItem>
+                <SelectItem value="rent_to_own">إيجار حتى التملك</SelectItem>
                 <SelectItem value="yearly_rental">إيجار سنوي</SelectItem>
               </SelectContent>
             </Select>
+            
+            {template && (
+              <Alert className="mt-2">
+                <FileText className="h-4 w-4" />
+                <AlertDescription>
+                  تم تطبيق قالب: <strong>{template.template_name_ar}</strong>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
           
           <div className="space-y-2">
@@ -85,14 +99,41 @@ export const BasicInfoStep: React.FC = () => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="terms">الشروط والأحكام</Label>
-          <Textarea
-            id="terms"
-            value={data.terms}
-            onChange={(e) => updateData({ terms: e.target.value })}
-            placeholder="شروط وأحكام العقد..."
-            rows={4}
-          />
+          <div className="flex items-center justify-between">
+            <Label htmlFor="terms">الشروط والأحكام</Label>
+            {data.terms && !isEditingTerms && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingTerms(true)}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                تعديل
+              </Button>
+            )}
+          </div>
+          
+          {!isEditingTerms && data.terms ? (
+            <div className="relative">
+              <div className="border rounded-md p-3 bg-background min-h-[120px] whitespace-pre-wrap text-sm">
+                {data.terms}
+              </div>
+              {template && (
+                <Badge variant="secondary" className="absolute top-2 right-2">
+                  من القالب: {template.template_name_ar}
+                </Badge>
+              )}
+            </div>
+          ) : (
+            <Textarea
+              id="terms"
+              value={data.terms}
+              onChange={(e) => updateData({ terms: e.target.value })}
+              placeholder="شروط وأحكام العقد..."
+              rows={8}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

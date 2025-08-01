@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTemplateByType, useApplyTemplate } from '@/hooks/useContractTemplates'
 
 interface ContractWizardData {
   // Basic Info
@@ -95,6 +96,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const totalSteps = 5 // Basic Info, Customer/Vehicle, Dates, Financial, Review
 
+  const template = useTemplateByType(data.contract_type || '')
+  const { applyTemplate } = useApplyTemplate()
+
   // Auto-save timer
   useEffect(() => {
     const autoSaveInterval = setInterval(() => {
@@ -112,6 +116,20 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       updateData({ customer_id: preselectedCustomerId })
     }
   }, [preselectedCustomerId])
+
+  // Apply template when contract type changes
+  useEffect(() => {
+    if (template && data.contract_type) {
+      const appliedData = applyTemplate(template, data)
+      // Only update if terms are empty to avoid overriding user changes
+      if (!data.terms || data.terms.trim() === '') {
+        updateData({ 
+          terms: appliedData.terms,
+          rental_days: appliedData.rental_days
+        })
+      }
+    }
+  }, [data.contract_type, template])
 
   const updateData = (updates: Partial<ContractWizardData>) => {
     setData(prev => ({
