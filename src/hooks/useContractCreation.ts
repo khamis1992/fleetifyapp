@@ -122,12 +122,23 @@ export const useContractCreation = () => {
         // Enhanced validation with detailed checks
         console.log('🔍 [CONTRACT_CREATION] Starting comprehensive validation...')
         
-        // Basic field validation with type checking
-        const requiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount', 'monthly_amount']
+        // Enhanced field validation with flexible monthly_amount handling
+        const coreRequiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount']
         const numericFields = ['contract_amount', 'monthly_amount']
         const dateFields = ['start_date', 'end_date', 'contract_date']
         
-        const missingFields = requiredFields.filter(field => {
+        // Flexible monthly_amount handling - use contract_amount as fallback
+        const monthlyAmount = contractData.monthly_amount && contractData.monthly_amount > 0 
+          ? contractData.monthly_amount 
+          : contractData.contract_amount
+        
+        console.log('[CONTRACT_CREATION] Validation data:', {
+          contract_amount: contractData.contract_amount,
+          monthly_amount: monthlyAmount,
+          original_monthly: contractData.monthly_amount
+        })
+        
+        const missingFields = coreRequiredFields.filter(field => {
           const value = contractData[field]
           if (numericFields.includes(field)) {
             return value === undefined || value === null || value === '' || isNaN(Number(value)) || Number(value) <= 0

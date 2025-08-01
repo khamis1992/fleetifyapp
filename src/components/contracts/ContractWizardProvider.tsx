@@ -257,9 +257,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 2: // Dates
         return !!(data.start_date && data.end_date && data.rental_days > 0)
       case 3: // Financial
-        return data.contract_amount > 0
+        return data.contract_amount > 0 && (data.monthly_amount > 0 || data.rental_days < 30)
       case 4: // Review
-        return data._validation_status === 'valid'
+        return !!(data.customer_id && data.contract_amount > 0 && data.start_date && data.end_date)
       default:
         return true
     }
@@ -290,6 +290,30 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     toast.success('تم تعبئة البيانات التجريبية بنجاح')
   }
 
+  // Data preparation and validation before submission
+  const prepareContractData = (rawData: ContractWizardData) => {
+    console.log('[CONTRACT_WIZARD] Preparing contract data:', rawData)
+    
+    const prepared = {
+      ...rawData,
+      // Ensure monthly_amount is always present and properly calculated
+      monthly_amount: rawData.monthly_amount || rawData.contract_amount,
+      // Clean up optional fields
+      vehicle_id: rawData.vehicle_id === 'none' || !rawData.vehicle_id ? null : rawData.vehicle_id,
+      account_id: rawData.account_id === 'none' || !rawData.account_id ? null : rawData.account_id,
+      cost_center_id: rawData.cost_center_id === 'none' || !rawData.cost_center_id ? null : rawData.cost_center_id,
+      // Ensure numeric fields are properly typed
+      contract_amount: Number(rawData.contract_amount) || 0,
+      rental_days: Number(rawData.rental_days) || 1,
+      // Add metadata for tracking
+      _prepared_at: new Date().toISOString(),
+      _validation_version: '2.0'
+    }
+    
+    console.log('[CONTRACT_WIZARD] Prepared data:', prepared)
+    return prepared
+  }
+
   const submitContract = async () => {
     if (!onSubmit) {
       toast.error('لم يتم تحديد وظيفة الإرسال')
@@ -298,10 +322,24 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
     try {
       console.log('📝 [CONTRACT_WIZARD] Starting contract submission')
-      console.log('📝 [CONTRACT_WIZARD] Data before submission:', data)
+      console.log('📝 [CONTRACT_WIZARD] Raw data before preparation:', data)
+      
+      // Prepare and validate data before submission
+      const preparedData = prepareContractData(data)
+      
+      // Final validation
+      if (!preparedData.customer_id) {
+        throw new Error('العميل مطلوب')
+      }
+      if (!preparedData.contract_amount || preparedData.contract_amount <= 0) {
+        throw new Error('مبلغ العقد مطلوب')
+      }
+      if (!preparedData.start_date || !preparedData.end_date) {
+        throw new Error('تواريخ العقد مطلوبة')
+      }
       
       const finalData = {
-        ...data,
+        ...preparedData,
         is_draft: false
       }
       

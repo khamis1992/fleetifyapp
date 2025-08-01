@@ -19,6 +19,7 @@ import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { useContractValidation } from '@/hooks/useContractValidation'
 import { ProactiveAlertSystem } from './ProactiveAlertSystem'
+import { ContractDataValidator } from './ContractDataValidator'
 import { ContractValidationSummary } from './ContractValidationSummary'
 import { SmartSuggestions } from './SmartSuggestions'
 import { useSmartSuggestions } from '@/hooks/useSmartSuggestions'
@@ -509,15 +510,23 @@ export const FinancialStep: React.FC = () => {
   const selectedVehicle = availableVehicles?.find(v => v.id === data.vehicle_id) || null
   const calculations = useContractCalculations(selectedVehicle, data.contract_type, data.rental_days)
 
-  // Auto-update financial calculations
+  // Auto-update financial calculations with proper tracking
   React.useEffect(() => {
-    if (calculations && selectedVehicle) {
-      updateData({
+    if (calculations && selectedVehicle && data.rental_days) {
+      const newData = {
         contract_amount: calculations.totalAmount,
-        monthly_amount: calculations.monthlyAmount
-      })
+        // Always calculate monthly_amount, even for short contracts (for consistency)
+        monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
+      }
+      
+      // Only update if values have actually changed
+      if (data.contract_amount !== newData.contract_amount || 
+          data.monthly_amount !== newData.monthly_amount) {
+        console.log('[FINANCIAL_STEP] Auto-updating calculations:', newData)
+        updateData(newData)
+      }
     }
-  }, [calculations])
+  }, [calculations, selectedVehicle, data.rental_days, data.contract_amount, data.monthly_amount, updateData])
 
   return (
     <Card>
@@ -732,6 +741,24 @@ export const ReviewStep: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Data Validation and Auto-Correction */}
+        <ContractDataValidator 
+          data={data}
+          onDataCorrection={(corrections) => {
+            console.log('[REVIEW_STEP] Applying data corrections:', corrections)
+            updateData(corrections)
+          }}
+          onValidate={() => validateContract({
+            customer_id: data.customer_id,
+            vehicle_id: data.vehicle_id,
+            start_date: data.start_date,
+            end_date: data.end_date,
+            contract_amount: data.contract_amount,
+            contract_type: data.contract_type
+          })}
+          isValidating={isValidating}
+        />
+
         {/* Comprehensive Validation Summary */}
         <ContractValidationSummary 
           validation={validation}
