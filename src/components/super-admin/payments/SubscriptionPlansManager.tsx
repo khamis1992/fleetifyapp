@@ -99,7 +99,17 @@ export const SubscriptionPlansManager: React.FC = () => {
   };
 
   const PlanFormDialog = () => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+      name: string;
+      name_ar: string;
+      description: string;
+      price_monthly: number;
+      price_yearly: number;
+      max_users: number;
+      features: string;
+      is_popular: boolean;
+      is_active: boolean;
+    }>({
       name: editingPlan?.name || '',
       name_ar: editingPlan?.name_ar || '',
       description: editingPlan?.description || '',
@@ -108,7 +118,7 @@ export const SubscriptionPlansManager: React.FC = () => {
       max_users: editingPlan?.max_users || 5,
       features: editingPlan?.features?.join('\n') || '',
       is_popular: editingPlan?.is_popular || false,
-      is_active: editingPlan?.is_active || true
+      is_active: editingPlan?.is_active !== undefined ? editingPlan.is_active : true
     });
 
     return (
