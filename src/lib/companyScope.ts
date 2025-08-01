@@ -16,7 +16,7 @@ export interface CompanyScopeContext {
  */
 export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeContext => {
   const userRoles = (user?.roles || []) as UserRole[];
-  const companyId = user?.profile?.company_id;
+  const companyId = user?.profile?.company_id || user?.company?.id;
   
   return {
     user,
