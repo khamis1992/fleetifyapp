@@ -66,7 +66,7 @@ const ContractWizardContent: React.FC = () => {
     <>
       <DialogHeader className="space-y-4">
         <DialogTitle className="flex items-center justify-between">
-          <span>معالج إنشاء العقد المتقدم</span>
+          <span>انشاء عقد جديد</span>
           <div className="flex items-center gap-2">
             {isAutoSaving && (
               <Badge variant="outline" className="flex items-center gap-1">
