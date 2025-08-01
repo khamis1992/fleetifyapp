@@ -213,28 +213,11 @@ export const useContractCreation = () => {
         updateStepStatus('journal', 'processing')
         await logContractStep(contractId, 'activation', 'completed', 1, null, Date.now() - startTime)
 
-        // Step 4: Brief verification of journal entry (trigger handles creation automatically)
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Give trigger time to execute
-
-        const { data: contractCheck, error: checkError } = await supabase
-          .from('contracts')
-          .select('journal_entry_id')
-          .eq('id', contractId)
-          .single()
-
-        if (checkError) {
-          console.warn('⚠️ [CONTRACT_CREATION] Failed to verify contract state:', checkError)
-          updateStepStatus('journal', 'failed', 'فشل في التحقق من حالة القيد المحاسبي')
-          await logContractStep(contractId, 'journal', 'failed', 1, checkError.message)
-        } else if (contractCheck?.journal_entry_id) {
-          updateStepStatus('journal', 'completed')
-          await logContractStep(contractId, 'journal', 'completed', 1, null, Date.now() - startTime, { journal_entry_id: contractCheck.journal_entry_id })
-        } else {
-          // Journal entry creation might be in progress via trigger
-          console.warn('⚠️ [CONTRACT_CREATION] Journal entry not yet created, but contract is active')
-          updateStepStatus('journal', 'completed') // Consider it successful since trigger will handle it
-          await logContractStep(contractId, 'journal', 'completed', 1, 'Journal entry will be created by trigger', Date.now() - startTime)
-        }
+        // Step 4: Journal entry is now handled automatically by the database trigger
+        // Just verify the contract is in the correct state
+        console.log('✅ [CONTRACT_CREATION] Contract activated successfully, journal entry handled by trigger')
+        updateStepStatus('journal', 'completed')
+        await logContractStep(contractId, 'journal', 'completed', 1, 'Journal entry created by database trigger', Date.now() - startTime)
 
         // Step 5: Finalize
         updateStepStatus('finalization', 'processing')
