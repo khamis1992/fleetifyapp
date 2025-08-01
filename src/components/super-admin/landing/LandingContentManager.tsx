@@ -106,7 +106,7 @@ export const LandingContentManager: React.FC = () => {
           <DialogTrigger asChild>
             <Button onClick={() => setEditingSection(null)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Section
+              إضافة قسم
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
