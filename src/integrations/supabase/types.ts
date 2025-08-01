@@ -3015,6 +3015,395 @@ export type Database = {
           },
         ]
       }
+      landing_ab_tests: {
+        Row: {
+          company_id: string | null
+          conversion_goal: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          start_date: string | null
+          status: string | null
+          test_name: string
+          test_name_ar: string | null
+          traffic_split: number | null
+          updated_at: string | null
+          variant_a_config: Json | null
+          variant_b_config: Json | null
+          winner_variant: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          conversion_goal?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          status?: string | null
+          test_name: string
+          test_name_ar?: string | null
+          traffic_split?: number | null
+          updated_at?: string | null
+          variant_a_config?: Json | null
+          variant_b_config?: Json | null
+          winner_variant?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          conversion_goal?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          status?: string | null
+          test_name?: string
+          test_name_ar?: string | null
+          traffic_split?: number | null
+          updated_at?: string | null
+          variant_a_config?: Json | null
+          variant_b_config?: Json | null
+          winner_variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_ab_tests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_analytics: {
+        Row: {
+          city: string | null
+          company_id: string | null
+          country: string | null
+          created_at: string | null
+          device_type: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          page_path: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_id?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          page_path?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_id?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          page_path?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_analytics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_content: {
+        Row: {
+          content_key: string
+          content_type: string
+          content_value: string | null
+          content_value_ar: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          link_url: string | null
+          media_url: string | null
+          metadata: Json | null
+          section_id: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_key: string
+          content_type: string
+          content_value?: string | null
+          content_value_ar?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_url?: string | null
+          media_url?: string | null
+          metadata?: Json | null
+          section_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_key?: string
+          content_type?: string
+          content_value?: string | null
+          content_value_ar?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_url?: string | null
+          media_url?: string | null
+          metadata?: Json | null
+          section_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_content_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "landing_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_media: {
+        Row: {
+          alt_text: string | null
+          alt_text_ar: string | null
+          company_id: string | null
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          is_active: boolean | null
+          mime_type: string | null
+          tags: string[] | null
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          alt_text_ar?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          is_active?: boolean | null
+          mime_type?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          alt_text_ar?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          is_active?: boolean | null
+          mime_type?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_media_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_sections: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          section_name: string
+          section_name_ar: string | null
+          section_type: string
+          settings: Json
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          section_name: string
+          section_name_ar?: string | null
+          section_type: string
+          settings?: Json
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          section_name?: string
+          section_name_ar?: string | null
+          section_type?: string
+          settings?: Json
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_sections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_settings: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          setting_key: string
+          setting_value: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_key: string
+          setting_value?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_key?: string
+          setting_value?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_themes: {
+        Row: {
+          colors: Json
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          custom_css: string | null
+          fonts: Json
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          spacing: Json
+          theme_name: string
+          theme_name_ar: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          colors?: Json
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_css?: string | null
+          fonts?: Json
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          spacing?: Json
+          theme_name: string
+          theme_name_ar?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          colors?: Json
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_css?: string | null
+          fonts?: Json
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          spacing?: Json
+          theme_name?: string
+          theme_name_ar?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_themes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           created_at: string | null
