@@ -197,7 +197,7 @@ export const SubscriptionPlansManager: React.FC = () => {
             <Switch
               id="is_popular"
               checked={formData.is_popular}
-              onCheckedChange={(checked: boolean) => setFormData({ ...formData, is_popular: checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_popular: Boolean(checked) })}
             />
             <Label htmlFor="is_popular">خطة شائعة</Label>
           </div>
@@ -206,7 +206,7 @@ export const SubscriptionPlansManager: React.FC = () => {
             <Switch
               id="is_active"
               checked={formData.is_active}
-              onCheckedChange={(checked: boolean) => setFormData({ ...formData, is_active: checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_active: Boolean(checked) })}
             />
             <Label htmlFor="is_active">نشطة</Label>
           </div>
