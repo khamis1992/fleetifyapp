@@ -8057,6 +8057,10 @@ export type Database = {
         Args: { company_id_param: string; backup_type_param?: string }
         Returns: string
       }
+      process_failed_journal_entries: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       process_monthly_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number

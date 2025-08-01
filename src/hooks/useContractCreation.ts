@@ -24,6 +24,12 @@ interface AutoConfigResult {
   created?: string[]
   existing?: string[]
   errors?: string[]
+  status?: string
+}
+
+interface ValidationResult {
+  valid?: boolean
+  errors?: string[]
 }
 
 export const useContractCreation = () => {
@@ -34,9 +40,10 @@ export const useContractCreation = () => {
     currentStep: 0,
     steps: [
       { id: 'validation', title: 'التحقق من البيانات', status: 'pending' },
+      { id: 'accounts', title: 'فحص ربط الحسابات', status: 'pending' },
       { id: 'creation', title: 'إنشاء العقد', status: 'pending' },
-      { id: 'activation', title: 'تفعيل العقد', status: 'pending' },
-      { id: 'journal', title: 'إنشاء القيد المحاسبي', status: 'pending' },
+      { id: 'activation', title: 'تفعيل العقد وإنشاء القيد', status: 'pending' },
+      { id: 'verification', title: 'التحقق من القيد المحاسبي', status: 'pending' },
       { id: 'finalization', title: 'إتمام العملية', status: 'pending' }
     ],
     isProcessing: false,
@@ -84,6 +91,12 @@ export const useContractCreation = () => {
 
   const createContractMutation = useMutation({
     mutationFn: async (contractData: any) => {
+      console.log('🚀 [CONTRACT_CREATION] Starting simplified database-driven contract creation', {
+        contractType: contractData.contract_type,
+        amount: contractData.contract_amount,
+        customerId: contractData.customer_id
+      })
+
       const startTime = Date.now()
       let contractId: string | null = null
       
@@ -94,7 +107,7 @@ export const useContractCreation = () => {
         updateStepStatus('validation', 'processing')
         await logContractStep(null, 'validation', 'started')
         
-        // Validate required fields
+        // Basic field validation
         const requiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount', 'monthly_amount']
         const numericFields = ['contract_amount', 'monthly_amount']
         
@@ -123,29 +136,21 @@ export const useContractCreation = () => {
           throw new Error(errorMsg)
         }
 
-        // Validate customer status
-        const { data: customer, error: customerError } = await supabase
-          .from('customers')
-          .select('is_blacklisted, is_active')
-          .eq('id', contractData.customer_id)
-          .single()
-
-        if (customerError) {
-          const errorMsg = 'فشل في التحقق من بيانات العميل'
+        // Use database validation function
+        const validationResult = await supabase
+          .rpc('validate_contract_data', { contract_data: contractData })
+        
+        if (validationResult.error) {
+          const errorMsg = `فشل في التحقق من البيانات: ${validationResult.error.message}`
           updateStepStatus('validation', 'failed', errorMsg)
-          await logContractStep(null, 'validation', 'failed', 1, customerError.message)
+          await logContractStep(null, 'validation', 'failed', 1, validationResult.error.message)
           throw new Error(errorMsg)
         }
-
-        if (customer?.is_blacklisted) {
-          const errorMsg = 'العميل محظور ولا يمكن إنشاء عقود معه'
-          updateStepStatus('validation', 'failed', errorMsg)
-          await logContractStep(null, 'validation', 'failed', 1, errorMsg)
-          throw new Error(errorMsg)
-        }
-
-        if (!customer?.is_active) {
-          const errorMsg = 'العميل غير نشط'
+        
+        const validationData = validationResult.data as ValidationResult
+        if (!validationData?.valid) {
+          const errors = validationData?.errors || ['فشل في التحقق من البيانات']
+          const errorMsg = `التحقق من صحة البيانات: ${errors.join(', ')}`
           updateStepStatus('validation', 'failed', errorMsg)
           await logContractStep(null, 'validation', 'failed', 1, errorMsg)
           throw new Error(errorMsg)
@@ -154,7 +159,42 @@ export const useContractCreation = () => {
         updateStepStatus('validation', 'completed')
         await logContractStep(null, 'validation', 'completed', 1, null, Date.now() - startTime)
 
-        // Step 2: Create contract in draft status
+        // Step 2: Check and ensure account mappings
+        updateStepStatus('accounts', 'processing')
+        await logContractStep(null, 'accounts', 'started')
+
+        try {
+          const { data: autoConfigResult, error: autoConfigError } = await supabase
+            .rpc('ensure_essential_account_mappings', { 
+              company_id_param: companyId 
+            })
+
+          if (autoConfigError) {
+            const errorMsg = `فشل في فحص ربط الحسابات: ${autoConfigError.message}`
+            updateStepStatus('accounts', 'failed', errorMsg)
+            await logContractStep(null, 'accounts', 'failed', 1, autoConfigError.message)
+            throw new Error(errorMsg)
+          }
+
+          const configData = autoConfigResult as AutoConfigResult
+          if (configData?.errors && configData.errors.length > 0) {
+            const errorMsg = `ربط الحسابات غير مكتمل: ${configData.errors.join(', ')}`
+            updateStepStatus('accounts', 'failed', errorMsg)
+            await logContractStep(null, 'accounts', 'failed', 1, errorMsg)
+            throw new Error(errorMsg)
+          }
+
+          updateStepStatus('accounts', 'completed')
+          await logContractStep(null, 'accounts', 'completed', 1, null, Date.now() - startTime, autoConfigResult)
+
+        } catch (mappingError: any) {
+          console.error('❌ [CONTRACT_CREATION] Account mapping failed:', mappingError)
+          updateStepStatus('accounts', 'failed', mappingError.message)
+          await logContractStep(null, 'accounts', 'failed', 1, mappingError.message)
+          throw mappingError
+        }
+
+        // Step 3: Create contract record
         updateStepStatus('creation', 'processing')
         await logContractStep(null, 'creation', 'started')
 
@@ -171,11 +211,11 @@ export const useContractCreation = () => {
           contract_type: contractData.contract_type,
           description: contractData.description || null,
           terms: contractData.terms || null,
-          status: 'draft', // Always create as draft first
+          status: 'draft', // Start as draft
           created_by: contractData.created_by
         }
 
-        console.log('🚀 [CONTRACT_CREATION] Creating contract with data:', cleanContractData)
+        console.log('📝 [CONTRACT_CREATION] Creating contract record:', cleanContractData)
 
         const { data: newContract, error: createError } = await supabase
           .from('contracts')
@@ -196,92 +236,12 @@ export const useContractCreation = () => {
         updateStepStatus('creation', 'completed')
         await logContractStep(contractId, 'creation', 'completed', 1, null, Date.now() - startTime)
 
-        // Step 3: Create journal entry first (before activation)
-        updateStepStatus('journal', 'processing')
-        await logContractStep(contractId, 'journal', 'started')
-
-        try {
-          const { data: journalEntryId, error: journalError } = await supabase
-            .rpc('create_contract_journal_entry', {
-              contract_id_param: contractId
-            })
-
-          if (journalError) {
-            console.error('❌ [CONTRACT_CREATION] Journal entry failed:', journalError)
-            
-            // Check if this is a configuration error (missing accounts)
-            if (journalError.code === 'configuration_error') {
-              console.log('🔧 [CONTRACT_CREATION] Attempting to auto-configure account mappings...')
-              
-              // Try to auto-configure essential account mappings
-              const { data: autoConfigResult, error: autoConfigError } = await supabase
-                .rpc('ensure_essential_account_mappings', {
-                  company_id_param: companyId
-                })
-              
-              if (autoConfigError) {
-                console.error('❌ [CONTRACT_CREATION] Auto-configuration failed:', autoConfigError)
-                const errorMsg = `فشل في إنشاء القيد المحاسبي: ${journalError.message}. ${journalError.hint || 'يرجى إعداد ربط الحسابات في صفحة المالية > ربط الحسابات.'}`
-                updateStepStatus('journal', 'failed', errorMsg)
-                await logContractStep(contractId, 'journal', 'failed', 1, errorMsg)
-                throw new Error(errorMsg)
-              }
-              
-              console.log('✅ [CONTRACT_CREATION] Auto-configuration result:', autoConfigResult)
-              
-              const configResult = autoConfigResult as AutoConfigResult
-              
-              // If any accounts were created, retry journal entry
-              if (configResult?.created?.length && configResult.created.length > 0) {
-                console.log('🔄 [CONTRACT_CREATION] Retrying journal entry creation after auto-configuration...')
-                const { data: retryJournalId, error: retryJournalError } = await supabase
-                  .rpc('create_contract_journal_entry', {
-                    contract_id_param: contractId
-                  })
-                
-                if (retryJournalError) {
-                  console.error('❌ [CONTRACT_CREATION] Retry journal entry failed:', retryJournalError)
-                  updateStepStatus('journal', 'failed', retryJournalError.message)
-                  await logContractStep(contractId, 'journal', 'failed', 2, retryJournalError.message)
-                  throw retryJournalError
-                }
-                
-                console.log('✅ [CONTRACT_CREATION] Journal entry created on retry:', retryJournalId)
-                await logContractStep(contractId, 'journal', 'completed', 2, `Auto-configured accounts: ${configResult.created!.join(', ')}`, Date.now() - startTime)
-              } else {
-                // No accounts could be auto-configured
-                const missingAccountsMessage = configResult?.errors && configResult.errors.length > 0
-                  ? `الحسابات المفقودة: ${configResult.errors.join(', ')}`
-                  : 'لم يتم العثور على الحسابات المطلوبة'
-                
-                const errorMsg = `${journalError.message}. ${missingAccountsMessage}. يرجى إعداد ربط الحسابات يدوياً في صفحة المالية > ربط الحسابات.`
-                updateStepStatus('journal', 'failed', errorMsg)
-                await logContractStep(contractId, 'journal', 'failed', 1, errorMsg)
-                throw new Error(errorMsg)
-              }
-            } else {
-              // Other types of journal entry errors
-              updateStepStatus('journal', 'failed', journalError.message)
-              await logContractStep(contractId, 'journal', 'failed', 1, journalError.message)
-              throw journalError
-            }
-          } else {
-            console.log('✅ [CONTRACT_CREATION] Journal entry created successfully:', journalEntryId)
-            await logContractStep(contractId, 'journal', 'completed', 1, null, Date.now() - startTime)
-          }
-        } catch (journalEntryError: any) {
-          await logContractStep(contractId, 'journal', 'failed', 1, journalEntryError.message)
-          throw journalEntryError
-        }
-
-        updateStepStatus('journal', 'completed')
-        
-        // Step 4: Now activate the contract
+        // Step 4: Activate contract (journal entry will be created by database trigger)
         updateStepStatus('activation', 'processing')
         await logContractStep(contractId, 'activation', 'started')
 
-        // Small delay to ensure journal entry is fully committed
-        await new Promise(resolve => setTimeout(resolve, 200))
+        // Add delay to ensure proper transaction isolation
+        await new Promise(resolve => setTimeout(resolve, 500))
 
         const { error: activationError } = await supabase
           .from('contracts')
@@ -295,25 +255,73 @@ export const useContractCreation = () => {
           throw activationError
         }
 
-        console.log('✅ [CONTRACT_CREATION] Contract activated successfully')
+        console.log('✅ [CONTRACT_CREATION] Contract activated (journal entry created by trigger)')
         updateStepStatus('activation', 'completed')
         await logContractStep(contractId, 'activation', 'completed', 1, null, Date.now() - startTime)
 
-        // Step 5: Finalize
+        // Step 5: Verify journal entry creation (with polling)
+        updateStepStatus('verification', 'processing')
+        await logContractStep(contractId, 'verification', 'started')
+
+        let journalEntryVerified = false
+        let attempts = 0
+        const maxAttempts = 10
+
+        while (!journalEntryVerified && attempts < maxAttempts) {
+          attempts++
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          const { data: contractCheck } = await supabase
+            .from('contracts')
+            .select('journal_entry_id')
+            .eq('id', contractId)
+            .single()
+
+          if (contractCheck?.journal_entry_id) {
+            journalEntryVerified = true
+            console.log('✅ [CONTRACT_CREATION] Journal entry verified:', contractCheck.journal_entry_id)
+            updateStepStatus('verification', 'completed')
+            await logContractStep(contractId, 'verification', 'completed', 1, null, Date.now() - startTime)
+          } else if (attempts === maxAttempts) {
+            console.warn('⚠️ [CONTRACT_CREATION] Journal entry verification timeout')
+            updateStepStatus('verification', 'failed', 'انتهت مهلة التحقق من القيد المحاسبي (سيتم إنشاؤه بواسطة المهمة الخلفية)')
+            await logContractStep(contractId, 'verification', 'failed', 1, 'Journal entry verification timeout')
+            // Don't throw error - contract is still active
+          }
+        }
+
+        // Step 6: Finalize - Update vehicle status if applicable
         updateStepStatus('finalization', 'processing')
         
-        // Update vehicle status if vehicle was selected
         if (cleanContractData.vehicle_id) {
-          await supabase
+          await logContractStep(contractId, 'finalization', 'started')
+          
+          const { error: vehicleError } = await supabase
             .from('vehicles')
             .update({ status: 'rented' })
             .eq('id', cleanContractData.vehicle_id)
+
+          if (vehicleError) {
+            console.warn('⚠️ [CONTRACT_CREATION] Vehicle status update failed:', vehicleError)
+            updateStepStatus('finalization', 'failed', `فشل في تحديث حالة المركبة: ${vehicleError.message}`)
+            await logContractStep(contractId, 'finalization', 'failed', 1, vehicleError.message)
+          } else {
+            console.log('✅ [CONTRACT_CREATION] Vehicle status updated to rented')
+            updateStepStatus('finalization', 'completed')
+            await logContractStep(contractId, 'finalization', 'completed', 1, null, Date.now() - startTime)
+          }
+        } else {
+          updateStepStatus('finalization', 'completed')
+          await logContractStep(contractId, 'finalization', 'completed', 1, 'No vehicle to update', Date.now() - startTime)
         }
 
-        updateStepStatus('finalization', 'completed')
-        await logContractStep(contractId, 'finalization', 'completed', 1, null, Date.now() - startTime)
-
         setCreationState(prev => ({ ...prev, contractId, isProcessing: false }))
+
+        console.log('🎉 [CONTRACT_CREATION] Process completed successfully:', {
+          contractId,
+          contractNumber: newContract.contract_number,
+          totalTime: Date.now() - startTime
+        })
 
         return newContract
 
@@ -359,9 +367,10 @@ export const useContractCreation = () => {
       currentStep: 0,
       steps: [
         { id: 'validation', title: 'التحقق من البيانات', status: 'pending' },
+        { id: 'accounts', title: 'فحص ربط الحسابات', status: 'pending' },
         { id: 'creation', title: 'إنشاء العقد', status: 'pending' },
-        { id: 'activation', title: 'تفعيل العقد', status: 'pending' },
-        { id: 'journal', title: 'إنشاء القيد المحاسبي', status: 'pending' },
+        { id: 'activation', title: 'تفعيل العقد وإنشاء القيد', status: 'pending' },
+        { id: 'verification', title: 'التحقق من القيد المحاسبي', status: 'pending' },
         { id: 'finalization', title: 'إتمام العملية', status: 'pending' }
       ],
       isProcessing: false,
