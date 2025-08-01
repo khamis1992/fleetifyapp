@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTemplateByType, useApplyTemplate } from '@/hooks/useContractTemplates'
+import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 
 interface ContractWizardData {
   // Basic Info
@@ -117,15 +117,44 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     }
   }, [preselectedCustomerId])
 
+  // Auto-calculate duration and end date when contract type or start date changes
+  useEffect(() => {
+    if (data.contract_type) {
+      const suggestedDuration = getDefaultDurationByType(data.contract_type)
+      
+      // Only auto-update duration if it's currently 1 (default) or empty
+      if (data.rental_days <= 1) {
+        updateData({ rental_days: suggestedDuration })
+        
+        // Show notification about automatic calculation
+        if (suggestedDuration > 1) {
+          toast.success(`تم تعيين مدة العقد تلقائياً إلى ${suggestedDuration} يوم حسب نوع العقد`)
+        }
+      }
+    }
+  }, [data.contract_type])
+
+  // Calculate end date when start date or duration changes
+  useEffect(() => {
+    if (data.start_date && data.rental_days > 0) {
+      const startDate = new Date(data.start_date)
+      const endDate = new Date(startDate.getTime() + data.rental_days * 24 * 60 * 60 * 1000)
+      const endDateString = endDate.toISOString().slice(0, 10)
+      
+      if (data.end_date !== endDateString) {
+        updateData({ end_date: endDateString })
+      }
+    }
+  }, [data.start_date, data.rental_days])
+
   // Apply template when contract type changes
   useEffect(() => {
     if (template && data.contract_type) {
       const appliedData = applyTemplate(template, data)
-      // Only update if terms are empty to avoid overriding user changes
+      // Only update terms if empty to avoid overriding user changes
       if (!data.terms || data.terms.trim() === '') {
         updateData({ 
-          terms: appliedData.terms,
-          rental_days: appliedData.rental_days
+          terms: appliedData.terms
         })
       }
     }

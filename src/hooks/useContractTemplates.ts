@@ -18,7 +18,7 @@ export interface ContractTemplate {
   }
 }
 
-// Enhanced mock data with actual terms
+// Enhanced mock data with actual terms and accurate durations
 const defaultTemplates: ContractTemplate[] = [
   {
     id: '1',
@@ -43,7 +43,7 @@ const defaultTemplates: ContractTemplate[] = [
   },
   {
     id: '2',
-    template_name: 'Weekly Rental Template',
+    template_name: 'Weekly Rental Template', 
     template_name_ar: 'قالب الإيجار الأسبوعي',
     contract_type: 'weekly_rental',
     default_terms: `شروط وأحكام عقد الإيجار الأسبوعي
@@ -107,6 +107,23 @@ const defaultTemplates: ContractTemplate[] = [
     account_mappings: {}
   }
 ]
+
+// Contract type to duration mapping for automatic calculation
+export const getDefaultDurationByType = (contractType: string): number => {
+  const typeMap: Record<string, number> = {
+    'daily_rental': 1,
+    'weekly_rental': 7,
+    'monthly_rental': 30,
+    'quarterly_rental': 90,
+    'yearly_rental': 365,
+    'corporate': 90,
+    'rental': 1,
+    'service': 1,
+    'maintenance': 7,
+    'insurance': 365
+  }
+  return typeMap[contractType] || 1
+}
 
 export const useContractTemplates = () => {
   const [templates] = useState<ContractTemplate[]>(defaultTemplates)

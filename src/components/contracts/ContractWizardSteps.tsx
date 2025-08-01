@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
-import { useTemplateByType } from '@/hooks/useContractTemplates'
+import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -315,6 +315,13 @@ export const DatesStep: React.FC = () => {
     })
   }
 
+  const suggestedDuration = getDefaultDurationByType(data.contract_type)
+  const isUsingSuggested = data.rental_days === suggestedDuration
+
+  const applySuggestedDuration = () => {
+    handleRentalDaysChange(suggestedDuration)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -327,6 +334,30 @@ export const DatesStep: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Duration suggestion */}
+        {data.contract_type && suggestedDuration > 1 && !isUsingSuggested && (
+          <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-900">
+                  المدة المقترحة لنوع العقد "{data.contract_type}": {suggestedDuration} يوم
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  يمكنك استخدام المدة المقترحة أو تخصيص مدة أخرى
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={applySuggestedDuration}
+                className="text-blue-700 border-blue-300 hover:bg-blue-100"
+              >
+                استخدام المقترح
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="start_date">تاريخ البداية *</Label>
@@ -339,18 +370,24 @@ export const DatesStep: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="rental_days">عدد الأيام *</Label>
+            <Label htmlFor="rental_days">
+              عدد الأيام * 
+              {isUsingSuggested && (
+                <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
+              )}
+            </Label>
             <Input
               id="rental_days"
               type="number"
               min="1"
               value={data.rental_days}
               onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
+              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="end_date">تاريخ النهاية</Label>
+            <Label htmlFor="end_date">تاريخ النهاية (محسوب تلقائياً)</Label>
             <Input
               id="end_date"
               type="date"
