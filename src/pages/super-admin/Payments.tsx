@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PaymentsDashboardStats } from '@/components/super-admin/payments/PaymentsDashboardStats';
-import { CompanySubscriptionsList } from '@/components/super-admin/payments/CompanySubscriptionsList';
+
 import { SubscriptionPlansManager } from '@/components/super-admin/payments/SubscriptionPlansManager';
 import { PaymentTransactionsList } from '@/components/super-admin/payments/PaymentTransactionsList';
 import { RevenueAnalyticsChart } from '@/components/super-admin/payments/RevenueAnalyticsChart';
@@ -227,14 +227,10 @@ const SuperAdminPayments: React.FC = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             لوحة التحكم
-          </TabsTrigger>
-          <TabsTrigger value="subscriptions" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            الاشتراكات
           </TabsTrigger>
           <TabsTrigger value="plans" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
@@ -247,10 +243,6 @@ const SuperAdminPayments: React.FC = () => {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <PieChart className="h-4 w-4" />
             التحليلات
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            التقارير
           </TabsTrigger>
         </TabsList>
 
@@ -335,10 +327,6 @@ const SuperAdminPayments: React.FC = () => {
               </Card>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="subscriptions" className="space-y-6">
-          <CompanySubscriptionsList />
         </TabsContent>
 
         <TabsContent value="plans" className="space-y-6">
@@ -460,177 +448,6 @@ const SuperAdminPayments: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  تقرير الإيرادات الشهرية
-                </CardTitle>
-                <CardDescription>
-                  تفصيل شامل للإيرادات والمدفوعات
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => toast.success('يتم تحضير التقرير...')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  تنزيل التقرير
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  تقرير الاشتراكات
-                </CardTitle>
-                <CardDescription>
-                  إحصائيات شاملة عن حالة الاشتراكات
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => toast.success('يتم تحضير التقرير...')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  تنزيل التقرير
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  تقرير الأداء
-                </CardTitle>
-                <CardDescription>
-                  تحليل شامل لأداء النظام والنمو
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => toast.success('يتم تحضير التقرير...')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  تنزيل التقرير
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  تقرير المعاملات
-                </CardTitle>
-                <CardDescription>
-                  سجل مفصل لجميع المعاملات المالية
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => toast.success('يتم تحضير التقرير...')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  تنزيل التقرير
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  تقرير شهري مخصص
-                </CardTitle>
-                <CardDescription>
-                  إنشاء تقرير مخصص لفترة محددة
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 mb-4">
-                  <Label className="text-xs">الفترة الزمنية</Label>
-                  <Select defaultValue="current_month">
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="current_month">الشهر الحالي</SelectItem>
-                      <SelectItem value="last_month">الشهر الماضي</SelectItem>
-                      <SelectItem value="quarter">الربع الحالي</SelectItem>
-                      <SelectItem value="year">السنة الحالية</SelectItem>
-                      <SelectItem value="custom">فترة مخصصة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full" onClick={() => toast.success('يتم تحضير التقرير المخصص...')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  إنشاء التقرير
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  تقرير التنبؤات
-                </CardTitle>
-                <CardDescription>
-                  توقعات الإيرادات والنمو المستقبلي
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => toast.success('يتم تحضير تقرير التنبؤات...')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  تنزيل التقرير
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>جدولة التقارير التلقائية</CardTitle>
-              <CardDescription>
-                إعداد التقارير التلقائية المنتظمة
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">تقرير شهري</div>
-                      <div className="text-sm text-muted-foreground">يرسل في بداية كل شهر</div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-800">نشط</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">تقرير أسبوعي</div>
-                      <div className="text-sm text-muted-foreground">يرسل كل يوم إثنين</div>
-                    </div>
-                    <Badge className="bg-gray-100 text-gray-800">معطل</Badge>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">تقرير ربعي</div>
-                      <div className="text-sm text-muted-foreground">يرسل في نهاية كل ربع</div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-800">نشط</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">تقرير سنوي</div>
-                      <div className="text-sm text-muted-foreground">يرسل في نهاية السنة المالية</div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-800">نشط</Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
