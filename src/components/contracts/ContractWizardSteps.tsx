@@ -20,6 +20,8 @@ import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContract
 import { useContractValidation } from '@/hooks/useContractValidation'
 import { ProactiveAlertSystem } from './ProactiveAlertSystem'
 import { ContractValidationSummary } from './ContractValidationSummary'
+import { SmartSuggestions } from './SmartSuggestions'
+import { useSmartSuggestions } from '@/hooks/useSmartSuggestions'
 import { useCostCenters } from '@/hooks/useCostCenters'
 
 // Step 1: Basic Information
@@ -273,11 +275,13 @@ export const CustomerVehicleStep: React.FC = () => {
         </div>
 
         {/* Proactive Alert System */}
-        <ProactiveAlertSystem 
-          validation={validation}
-          isValidating={isValidating}
-          showConflictDetails={true}
-        />
+        <div className="mt-4">
+          <ProactiveAlertSystem 
+            validation={validation}
+            isValidating={isValidating}
+            showConflictDetails={true}
+          />
+        </div>
       </CardContent>
     </Card>
   )
@@ -650,20 +654,37 @@ export const FinancialStep: React.FC = () => {
 
 // Step 5: Review and Submit
 export const ReviewStep: React.FC = () => {
+  const { user } = useAuth()
   const { data, updateData } = useContractWizard()
   const { validation, isValidating, validateContract } = useContractValidation()
+  const { generateAllSuggestions } = useSmartSuggestions()
+  const [suggestions, setSuggestions] = React.useState<any[]>([])
   
-  // Final validation on component mount
+  // Final validation and suggestions on component mount
   React.useEffect(() => {
-    validateContract({
-      customer_id: data.customer_id,
-      vehicle_id: data.vehicle_id,
-      start_date: data.start_date,
-      end_date: data.end_date,
-      contract_amount: data.contract_amount,
-      contract_type: data.contract_type
-    })
-  }, [])
+    const runValidationAndSuggestions = async () => {
+      await validateContract({
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        contract_amount: data.contract_amount,
+        contract_type: data.contract_type
+      })
+      
+      // Generate smart suggestions
+      if (user?.profile?.company_id) {
+        const smartSuggestions = await generateAllSuggestions(
+          user.profile.company_id,
+          data,
+          [...(validation.errors || []), ...(validation.warnings || [])]
+        )
+        setSuggestions(smartSuggestions)
+      }
+    }
+    
+    runValidationAndSuggestions()
+  }, [data, validateContract, generateAllSuggestions, user?.profile?.company_id])
 
   // Validation logic
   React.useEffect(() => {
@@ -717,6 +738,18 @@ export const ReviewStep: React.FC = () => {
           contractData={data}
           isValidating={isValidating}
         />
+
+        {/* Smart Suggestions */}
+        {suggestions.length > 0 && (
+          <SmartSuggestions 
+            suggestions={suggestions}
+            onApplySuggestion={(suggestion) => {
+              // Handle suggestion application
+              console.log('Applying suggestion:', suggestion)
+              // You can implement specific logic for each suggestion type here
+            }}
+          />
+        )}
 
         {/* Legacy Validation Status - keeping for backwards compatibility */}
         {data._validation_status === 'invalid' && data._validation_errors?.length > 0 && (

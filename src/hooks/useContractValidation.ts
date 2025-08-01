@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useDebounce } from './useDebounce';
 
 export interface ValidationAlert {
   type: string;
@@ -36,9 +35,11 @@ export const useContractValidation = () => {
     errors: []
   });
   const [isValidating, setIsValidating] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const validateContract = useCallback(async (formData: ContractFormData) => {
-    if (!formData.customer_id && !formData.vehicle_id) {
+    // Return early if no meaningful data to validate
+    if (!formData || (!formData.customer_id && !formData.vehicle_id)) {
       setValidation({ valid: true, alerts: [], warnings: [], errors: [] });
       return;
     }
@@ -127,8 +128,18 @@ export const useContractValidation = () => {
     }
   }, []);
 
-  // Debounced version for real-time validation
-  const debouncedValidation = useDebounce(validateContract, 500);
+  // Debounced validation function
+  const debouncedValidation = useCallback((formData: ContractFormData) => {
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set new timeout
+    timeoutRef.current = setTimeout(() => {
+      validateContract(formData);
+    }, 500);
+  }, [validateContract]);
 
   return {
     validation,
