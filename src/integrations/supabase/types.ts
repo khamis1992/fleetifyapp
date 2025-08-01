@@ -7653,6 +7653,10 @@ export type Database = {
         Args: { data: string }
         Returns: string
       }
+      ensure_essential_account_mappings: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
       export_ledger_data: {
         Args: {
           company_id_param: string

@@ -1,5 +1,6 @@
 import React from "react";
 import { AccountMappingSettings } from "@/components/finance/AccountMappingSettings";
+import { EssentialAccountMappingsManager } from "@/components/finance/EssentialAccountMappingsManager";
 
 const AccountMappings: React.FC = () => {
   return (
@@ -11,7 +12,10 @@ const AccountMappings: React.FC = () => {
         </p>
       </div>
       
-      <AccountMappingSettings />
+      <div className="space-y-6">
+        <EssentialAccountMappingsManager />
+        <AccountMappingSettings />
+      </div>
     </div>
   );
 };

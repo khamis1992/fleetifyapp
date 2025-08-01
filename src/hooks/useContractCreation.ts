@@ -20,6 +20,12 @@ export interface ContractCreationState {
   canRetry: boolean
 }
 
+interface AutoConfigResult {
+  created?: string[]
+  existing?: string[]
+  errors?: string[]
+}
+
 export const useContractCreation = () => {
   const { companyId } = useUnifiedCompanyAccess()
   const queryClient = useQueryClient()
@@ -190,11 +196,91 @@ export const useContractCreation = () => {
         updateStepStatus('creation', 'completed')
         await logContractStep(contractId, 'creation', 'completed', 1, null, Date.now() - startTime)
 
-        // Step 3: Activate contract (this will trigger journal entry creation)
+        // Step 3: Create journal entry first (before activation)
+        updateStepStatus('journal', 'processing')
+        await logContractStep(contractId, 'journal', 'started')
+
+        try {
+          const { data: journalEntryId, error: journalError } = await supabase
+            .rpc('create_contract_journal_entry', {
+              contract_id_param: contractId
+            })
+
+          if (journalError) {
+            console.error('❌ [CONTRACT_CREATION] Journal entry failed:', journalError)
+            
+            // Check if this is a configuration error (missing accounts)
+            if (journalError.code === 'configuration_error') {
+              console.log('🔧 [CONTRACT_CREATION] Attempting to auto-configure account mappings...')
+              
+              // Try to auto-configure essential account mappings
+              const { data: autoConfigResult, error: autoConfigError } = await supabase
+                .rpc('ensure_essential_account_mappings', {
+                  company_id_param: companyId
+                })
+              
+              if (autoConfigError) {
+                console.error('❌ [CONTRACT_CREATION] Auto-configuration failed:', autoConfigError)
+                const errorMsg = `فشل في إنشاء القيد المحاسبي: ${journalError.message}. ${journalError.hint || 'يرجى إعداد ربط الحسابات في صفحة المالية > ربط الحسابات.'}`
+                updateStepStatus('journal', 'failed', errorMsg)
+                await logContractStep(contractId, 'journal', 'failed', 1, errorMsg)
+                throw new Error(errorMsg)
+              }
+              
+              console.log('✅ [CONTRACT_CREATION] Auto-configuration result:', autoConfigResult)
+              
+              const configResult = autoConfigResult as AutoConfigResult
+              
+              // If any accounts were created, retry journal entry
+              if (configResult?.created?.length && configResult.created.length > 0) {
+                console.log('🔄 [CONTRACT_CREATION] Retrying journal entry creation after auto-configuration...')
+                const { data: retryJournalId, error: retryJournalError } = await supabase
+                  .rpc('create_contract_journal_entry', {
+                    contract_id_param: contractId
+                  })
+                
+                if (retryJournalError) {
+                  console.error('❌ [CONTRACT_CREATION] Retry journal entry failed:', retryJournalError)
+                  updateStepStatus('journal', 'failed', retryJournalError.message)
+                  await logContractStep(contractId, 'journal', 'failed', 2, retryJournalError.message)
+                  throw retryJournalError
+                }
+                
+                console.log('✅ [CONTRACT_CREATION] Journal entry created on retry:', retryJournalId)
+                await logContractStep(contractId, 'journal', 'completed', 2, `Auto-configured accounts: ${configResult.created!.join(', ')}`, Date.now() - startTime)
+              } else {
+                // No accounts could be auto-configured
+                const missingAccountsMessage = configResult?.errors && configResult.errors.length > 0
+                  ? `الحسابات المفقودة: ${configResult.errors.join(', ')}`
+                  : 'لم يتم العثور على الحسابات المطلوبة'
+                
+                const errorMsg = `${journalError.message}. ${missingAccountsMessage}. يرجى إعداد ربط الحسابات يدوياً في صفحة المالية > ربط الحسابات.`
+                updateStepStatus('journal', 'failed', errorMsg)
+                await logContractStep(contractId, 'journal', 'failed', 1, errorMsg)
+                throw new Error(errorMsg)
+              }
+            } else {
+              // Other types of journal entry errors
+              updateStepStatus('journal', 'failed', journalError.message)
+              await logContractStep(contractId, 'journal', 'failed', 1, journalError.message)
+              throw journalError
+            }
+          } else {
+            console.log('✅ [CONTRACT_CREATION] Journal entry created successfully:', journalEntryId)
+            await logContractStep(contractId, 'journal', 'completed', 1, null, Date.now() - startTime)
+          }
+        } catch (journalEntryError: any) {
+          await logContractStep(contractId, 'journal', 'failed', 1, journalEntryError.message)
+          throw journalEntryError
+        }
+
+        updateStepStatus('journal', 'completed')
+        
+        // Step 4: Now activate the contract
         updateStepStatus('activation', 'processing')
         await logContractStep(contractId, 'activation', 'started')
 
-        // Small delay to ensure contract is fully committed
+        // Small delay to ensure journal entry is fully committed
         await new Promise(resolve => setTimeout(resolve, 200))
 
         const { error: activationError } = await supabase
@@ -209,15 +295,9 @@ export const useContractCreation = () => {
           throw activationError
         }
 
+        console.log('✅ [CONTRACT_CREATION] Contract activated successfully')
         updateStepStatus('activation', 'completed')
-        updateStepStatus('journal', 'processing')
         await logContractStep(contractId, 'activation', 'completed', 1, null, Date.now() - startTime)
-
-        // Step 4: Journal entry is now handled automatically by the database trigger
-        // Just verify the contract is in the correct state
-        console.log('✅ [CONTRACT_CREATION] Contract activated successfully, journal entry handled by trigger')
-        updateStepStatus('journal', 'completed')
-        await logContractStep(contractId, 'journal', 'completed', 1, 'Journal entry created by database trigger', Date.now() - startTime)
 
         // Step 5: Finalize
         updateStepStatus('finalization', 'processing')
