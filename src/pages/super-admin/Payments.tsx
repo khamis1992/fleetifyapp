@@ -227,7 +227,7 @@ const SuperAdminPayments: React.FC = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="plans" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             الخطط
@@ -235,10 +235,6 @@ const SuperAdminPayments: React.FC = () => {
           <TabsTrigger value="transactions" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             المعاملات
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <PieChart className="h-4 w-4" />
-            التحليلات
           </TabsTrigger>
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -335,117 +331,6 @@ const SuperAdminPayments: React.FC = () => {
 
         <TabsContent value="transactions" className="space-y-6">
           <PaymentTransactionsList />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-primary" />
-                  توزيع الإيرادات حسب الخطة
-                </CardTitle>
-                <CardDescription>
-                  نسبة مساهمة كل خطة في الإيرادات الإجمالية
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {analytics?.revenueByPlan.map((plan, index) => {
-                  const totalRevenue = analytics.revenueByPlan.reduce((sum, p) => sum + p.revenue, 0);
-                  const percentage = totalRevenue > 0 ? (plan.revenue / totalRevenue * 100) : 0;
-                  const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500'];
-                  
-                  return (
-                    <div key={plan.plan} className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">
-                          {plan.plan === 'basic' ? 'أساسي' : 
-                           plan.plan === 'premium' ? 'مميز' : 'مؤسسي'}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {percentage.toFixed(1)}% ({plan.revenue} د.ك)
-                        </span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className={`${colors[index]} h-2 rounded-full transition-all duration-300`}
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-primary" />
-                  إحصائيات عامة
-                </CardTitle>
-                <CardDescription>
-                  مؤشرات الأداء الرئيسية للنظام
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {analytics ? (analytics.monthlyRevenue * 12).toLocaleString() : 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">إيرادات سنوية متوقعة</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
-                    <div className="text-2xl font-bold text-green-600">
-                      {analytics ? Math.round(analytics.activeSubscriptions * 0.95) : 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">عملاء راضون</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {analytics ? (analytics.averageSubscriptionValue * 12).toFixed(0) : 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">قيمة عميل سنوية</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {analytics ? Math.round(analytics.activeSubscriptions * 1.15) : 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">هدف نهاية السنة</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>تحليل الاتجاهات</CardTitle>
-              <CardDescription>
-                تحليل مفصل لاتجاهات النمو والأداء
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-4 border rounded-lg">
-                  <TrendingUp className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                  <div className="text-2xl font-bold text-green-600">+{analytics?.revenueGrowth.toFixed(1)}%</div>
-                  <div className="text-sm text-muted-foreground">نمو الإيرادات الشهري</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <Users className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                  <div className="text-2xl font-bold text-blue-600">+{analytics?.subscriptionGrowth.toFixed(1)}%</div>
-                  <div className="text-sm text-muted-foreground">نمو الاشتراكات</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <Target className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-                  <div className="text-2xl font-bold text-purple-600">{analytics?.renewalRate}%</div>
-                  <div className="text-sm text-muted-foreground">معدل التجديد</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
       </Tabs>
