@@ -18,33 +18,33 @@ export const SystemAlerts: React.FC = () => {
     {
       id: '1',
       type: 'warning',
-      title: 'High System Usage',
-      message: 'System CPU usage is at 85%. Consider scaling resources.',
-      timestamp: '5 minutes ago',
+      title: 'استخدام عالي للنظام',
+      message: 'استخدام المعالج يصل إلى 85%. يُنصح بتوسيع الموارد.',
+      timestamp: 'منذ 5 دقائق',
       dismissible: true
     },
     {
       id: '2',
       type: 'error',
-      title: 'Payment Processing Failed',
-      message: '3 payment transactions failed in the last hour.',
-      timestamp: '15 minutes ago',
+      title: 'فشل في معالجة المدفوعات',
+      message: 'فشلت 3 عمليات دفع في الساعة الماضية.',
+      timestamp: 'منذ 15 دقيقة',
       dismissible: true
     },
     {
       id: '3',
       type: 'info',
-      title: 'Scheduled Maintenance',
-      message: 'System maintenance scheduled for tonight at 2 AM UTC.',
-      timestamp: '1 hour ago',
+      title: 'صيانة مجدولة',
+      message: 'صيانة النظام مجدولة الليلة في الساعة 2 صباحاً بتوقيت غرينتش.',
+      timestamp: 'منذ ساعة',
       dismissible: true
     },
     {
       id: '4',
       type: 'success',
-      title: 'Backup Completed',
-      message: 'Daily database backup completed successfully.',
-      timestamp: '2 hours ago',
+      title: 'اكتملت النسخة الاحتياطية',
+      message: 'تمت النسخة الاحتياطية اليومية لقاعدة البيانات بنجاح.',
+      timestamp: 'منذ ساعتين',
       dismissible: true
     }
   ]);
@@ -98,10 +98,10 @@ export const SystemAlerts: React.FC = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-primary" />
-            System Alerts
+            تنبيهات النظام
           </CardTitle>
           <Badge variant="secondary">
-            {alerts.length} active
+            {alerts.length} نشط
           </Badge>
         </div>
       </CardHeader>
@@ -144,8 +144,8 @@ export const SystemAlerts: React.FC = () => {
           {alerts.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>All systems operational</p>
-              <p className="text-sm">No active alerts</p>
+              <p>جميع الأنظمة تعمل بشكل طبيعي</p>
+              <p className="text-sm">لا توجد تنبيهات نشطة</p>
             </div>
           )}
         </div>

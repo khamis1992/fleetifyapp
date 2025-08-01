@@ -15,57 +15,57 @@ import {
 export const QuickActions: React.FC = () => {
   const actions = [
     {
-      label: 'Add Company',
-      description: 'Create new company account',
+      label: 'إضافة شركة',
+      description: 'إنشاء حساب شركة جديد',
       icon: Plus,
       color: 'from-blue-500 to-blue-600',
       action: () => console.log('Add Company')
     },
     {
-      label: 'System Settings',
-      description: 'Configure system parameters',
+      label: 'إعدادات النظام',
+      description: 'تكوين معاملات النظام',
       icon: Settings,
       color: 'from-gray-500 to-gray-600',
       action: () => console.log('System Settings')
     },
     {
-      label: 'Generate Report',
-      description: 'Create system analytics report',
+      label: 'إنشاء تقرير',
+      description: 'إنشاء تقرير تحليلات النظام',
       icon: FileText,
       color: 'from-green-500 to-green-600',
       action: () => console.log('Generate Report')
     },
     {
-      label: 'User Management',
-      description: 'Manage system users',
+      label: 'إدارة المستخدمين',
+      description: 'إدارة مستخدمي النظام',
       icon: Users,
       color: 'from-purple-500 to-purple-600',
       action: () => console.log('User Management')
     },
     {
-      label: 'Billing & Plans',
-      description: 'Manage subscription plans',
+      label: 'الفوترة والخطط',
+      description: 'إدارة خطط الاشتراك',
       icon: CreditCard,
       color: 'from-yellow-500 to-yellow-600',
       action: () => console.log('Billing & Plans')
     },
     {
-      label: 'System Alerts',
-      description: 'View system notifications',
+      label: 'تنبيهات النظام',
+      description: 'عرض إشعارات النظام',
       icon: AlertTriangle,
       color: 'from-red-500 to-red-600',
       action: () => console.log('System Alerts')
     },
     {
-      label: 'Database Health',
-      description: 'Monitor database status',
+      label: 'صحة قاعدة البيانات',
+      description: 'مراقبة حالة قاعدة البيانات',
       icon: Database,
       color: 'from-teal-500 to-teal-600',
       action: () => console.log('Database Health')
     },
     {
-      label: 'Notifications',
-      description: 'Send system notifications',
+      label: 'الإشعارات',
+      description: 'إرسال إشعارات النظام',
       icon: Bell,
       color: 'from-indigo-500 to-indigo-600',
       action: () => console.log('Notifications')
@@ -75,7 +75,7 @@ export const QuickActions: React.FC = () => {
   return (
     <Card className="border-0 shadow-card">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">Quick Actions</CardTitle>
+        <CardTitle className="text-xl font-semibold">الإجراءات السريعة</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
