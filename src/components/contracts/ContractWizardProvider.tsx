@@ -145,37 +145,21 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     try {
       setIsAutoSaving(true)
       
+      // Store in localStorage for now (will implement DB storage later)
       const draftData = {
-        id: data.draft_id || undefined,
-        company_id: user.profile?.company_id,
-        created_by: user.id,
         data: data,
         current_step: currentStep,
+        last_saved_at: new Date().toISOString(),
+        user_id: user.id
+      }
+
+      localStorage.setItem(`contract_draft_${user.id}`, JSON.stringify(draftData))
+      
+      updateData({ 
         last_saved_at: new Date().toISOString()
-      }
+      })
 
-      if (data.draft_id) {
-        // Update existing draft
-        const { error } = await supabase
-          .from('contract_drafts')
-          .update(draftData)
-          .eq('id', data.draft_id)
-        
-        if (error) throw error
-      } else {
-        // Create new draft
-        const { data: newDraft, error } = await supabase
-          .from('contract_drafts')
-          .insert([draftData])
-          .select('id')
-          .single()
-        
-        if (error) throw error
-        
-        updateData({ draft_id: newDraft.id })
-      }
-
-      console.log('Draft saved successfully')
+      console.log('Draft saved successfully to localStorage')
     } catch (error) {
       console.error('Error saving draft:', error)
       toast.error('خطأ في حفظ المسودة')
@@ -186,14 +170,14 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   const loadDraft = async (draftId: string) => {
     try {
-      const { data: draft, error } = await supabase
-        .from('contract_drafts')
-        .select('*')
-        .eq('id', draftId)
-        .single()
-      
-      if (error) throw error
-      
+      // Load from localStorage for now
+      const savedDraft = localStorage.getItem(`contract_draft_${user?.id}`)
+      if (!savedDraft) {
+        toast.error('لم يتم العثور على مسودة')
+        return
+      }
+
+      const draft = JSON.parse(savedDraft)
       setData(draft.data)
       setCurrentStep(draft.current_step || 0)
       toast.success('تم تحميل المسودة بنجاح')
@@ -204,32 +188,26 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   }
 
   const deleteDraft = async () => {
-    if (!data.draft_id) return
-
     try {
-      const { error } = await supabase
-        .from('contract_drafts')
-        .delete()
-        .eq('id', data.draft_id)
-      
-      if (error) throw error
-      
-      updateData({ draft_id: undefined })
-      toast.success('تم حذف المسودة')
+      if (user?.id) {
+        localStorage.removeItem(`contract_draft_${user.id}`)
+        updateData({ draft_id: undefined })
+        toast.success('تم حذف المسودة')
+      }
     } catch (error) {
       console.error('Error deleting draft:', error)
       toast.error('خطأ في حذف المسودة')
     }
   }
 
-  const canProceedToNext = () => {
+  const canProceedToNext = (): boolean => {
     switch (currentStep) {
       case 0: // Basic Info
-        return data.contract_type && data.contract_date
+        return !!(data.contract_type && data.contract_date)
       case 1: // Customer/Vehicle
-        return data.customer_id
+        return !!data.customer_id
       case 2: // Dates
-        return data.start_date && data.end_date && data.rental_days > 0
+        return !!(data.start_date && data.end_date && data.rental_days > 0)
       case 3: // Financial
         return data.contract_amount > 0
       case 4: // Review
