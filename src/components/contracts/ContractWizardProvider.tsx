@@ -53,6 +53,7 @@ interface ContractWizardContextType {
   isAutoSaving: boolean
   canProceedToNext: () => boolean
   submitContract: () => Promise<void>
+  fillTestData: () => void
 }
 
 const ContractWizardContext = createContext<ContractWizardContextType | null>(null)
@@ -264,6 +265,31 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     }
   }
 
+  const fillTestData = () => {
+    const testData: Partial<ContractWizardData> = {
+      contract_number: `CONTRACT-${Date.now()}`,
+      contract_type: 'weekly_rental',
+      description: 'عقد إيجار تجريبي لسيارة سيدان متوسطة الحجم',
+      terms: 'شروط وأحكام عقد الإيجار الأسبوعي\n\n1. مدة الإيجار: سبعة أيام من تاريخ بداية العقد\n2. الدفع: يمكن الدفع مقدماً أو بالتقسيط الأسبوعي\n3. المسؤولية: المستأجر مسؤول عن أي أضرار تلحق بالمركبة',
+      start_date: new Date().toISOString().slice(0, 10),
+      rental_days: 7,
+      contract_amount: 1500,
+      monthly_amount: 6000,
+      validation_status: 'pending' as const,
+      validation_errors: [],
+      requires_approval: false,
+      approval_steps: []
+    }
+
+    // Calculate end date
+    const startDate = new Date(testData.start_date!)
+    const endDate = new Date(startDate.getTime() + testData.rental_days! * 24 * 60 * 60 * 1000)
+    testData.end_date = endDate.toISOString().slice(0, 10)
+
+    updateData(testData)
+    toast.success('تم تعبئة البيانات التجريبية بنجاح')
+  }
+
   const submitContract = async () => {
     if (!onSubmit) {
       toast.error('لم يتم تحديد وظيفة الإرسال')
@@ -307,7 +333,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     deleteDraft,
     isAutoSaving,
     canProceedToNext,
-    submitContract
+    submitContract,
+    fillTestData
   }
 
   return (

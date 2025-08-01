@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Save, ChevronLeft, ChevronRight, Send, Clock } from 'lucide-react'
+import { Save, ChevronLeft, ChevronRight, Send, Clock, TestTube } from 'lucide-react'
 import { ContractWizardProvider, useContractWizard } from './ContractWizardProvider'
 import { 
   BasicInfoStep, 
@@ -47,7 +47,8 @@ const ContractWizardContent: React.FC = () => {
     submitContract,
     saveDraft,
     isAutoSaving,
-    data
+    data,
+    fillTestData
   } = useContractWizard()
 
   const progress = ((currentStep + 1) / totalSteps) * 100
@@ -66,7 +67,18 @@ const ContractWizardContent: React.FC = () => {
     <>
       <DialogHeader className="space-y-4">
         <DialogTitle className="flex items-center justify-between">
-          <span>انشاء عقد جديد</span>
+          <div className="flex items-center gap-3">
+            <span>انشاء عقد جديد</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fillTestData}
+              className="text-xs flex items-center gap-1"
+            >
+              <TestTube className="h-3 w-3" />
+              بيانات تجريبية
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             {isAutoSaving && (
               <Badge variant="outline" className="flex items-center gap-1">
