@@ -433,15 +433,10 @@ export default function Contracts() {
                         
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                           <div className="flex items-center gap-2 justify-end">
-                            <span className="text-sm">عميل رقم: {contract.customer_id}</span>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          
-                          <div className="flex items-center gap-2 justify-end">
-                            <span className="text-sm font-medium">
-                              {contract.contract_amount?.toFixed(3)} د.ك
+                            <span className="text-sm">
+                               {getContractTypeLabel(contract.contract_type)}
                             </span>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <FileText className="h-4 w-4 text-muted-foreground" />
                           </div>
                           
                           <div className="flex items-center gap-2 justify-end">
@@ -452,10 +447,15 @@ export default function Contracts() {
                           </div>
                           
                           <div className="flex items-center gap-2 justify-end">
-                            <span className="text-sm">
-                               {getContractTypeLabel(contract.contract_type)}
+                            <span className="text-sm font-medium">
+                              {contract.contract_amount?.toFixed(3)} د.ك
                             </span>
-                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          
+                          <div className="flex items-center gap-2 justify-end">
+                            <span className="text-sm">عميل رقم: {contract.customer_id}</span>
+                            <Users className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
                         
