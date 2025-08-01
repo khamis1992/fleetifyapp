@@ -94,8 +94,20 @@ export const useContractCreation = () => {
       console.log('🚀 [CONTRACT_CREATION] Starting simplified database-driven contract creation', {
         contractType: contractData.contract_type,
         amount: contractData.contract_amount,
-        customerId: contractData.customer_id
+        customerId: contractData.customer_id,
+        vehicleId: contractData.vehicle_id,
+        startDate: contractData.start_date,
+        endDate: contractData.end_date
       })
+      
+      // Enhanced pre-flight validation
+      if (!contractData) {
+        throw new Error('بيانات العقد مطلوبة')
+      }
+      
+      if (!companyId) {
+        throw new Error('معرف الشركة مطلوب')
+      }
 
       const startTime = Date.now()
       let contractId: string | null = null
@@ -136,23 +148,38 @@ export const useContractCreation = () => {
           throw new Error(errorMsg)
         }
 
-        // Use database validation function
-        const validationResult = await supabase
-          .rpc('validate_contract_data', { contract_data: contractData })
+        // Enhanced database validation with better error handling
+        console.log('🔍 [CONTRACT_CREATION] Calling database validation function...')
         
-        if (validationResult.error) {
-          const errorMsg = `فشل في التحقق من البيانات: ${validationResult.error.message}`
+        try {
+          const validationResult = await supabase
+            .rpc('validate_contract_data', { contract_data: contractData })
+          
+          console.log('🔍 [CONTRACT_CREATION] Database validation result:', validationResult)
+          
+          if (validationResult.error) {
+            const errorMsg = `فشل في التحقق من البيانات: ${validationResult.error.message}`
+            console.error('❌ [CONTRACT_CREATION] Database validation error:', validationResult.error)
+            updateStepStatus('validation', 'failed', errorMsg)
+            await logContractStep(null, 'validation', 'failed', 1, validationResult.error.message)
+            throw new Error(errorMsg)
+          }
+          
+          const validationData = validationResult.data as ValidationResult
+          console.log('✅ [CONTRACT_CREATION] Validation data received:', validationData)
+          
+          if (!validationData?.valid) {
+            const errors = validationData?.errors || ['فشل في التحقق من البيانات']
+            const errorMsg = `التحقق من صحة البيانات: ${errors.join(', ')}`
+            updateStepStatus('validation', 'failed', errorMsg)
+            await logContractStep(null, 'validation', 'failed', 1, errorMsg)
+            throw new Error(errorMsg)
+          }
+        } catch (dbValidationError: any) {
+          console.error('❌ [CONTRACT_CREATION] Database validation exception:', dbValidationError)
+          const errorMsg = `خطأ في التحقق من البيانات: ${dbValidationError.message || 'خطأ غير متوقع'}`
           updateStepStatus('validation', 'failed', errorMsg)
-          await logContractStep(null, 'validation', 'failed', 1, validationResult.error.message)
-          throw new Error(errorMsg)
-        }
-        
-        const validationData = validationResult.data as ValidationResult
-        if (!validationData?.valid) {
-          const errors = validationData?.errors || ['فشل في التحقق من البيانات']
-          const errorMsg = `التحقق من صحة البيانات: ${errors.join(', ')}`
-          updateStepStatus('validation', 'failed', errorMsg)
-          await logContractStep(null, 'validation', 'failed', 1, errorMsg)
+          await logContractStep(null, 'validation', 'failed', 1, dbValidationError.message)
           throw new Error(errorMsg)
         }
 
@@ -164,13 +191,18 @@ export const useContractCreation = () => {
         await logContractStep(null, 'accounts', 'started')
 
         try {
+          console.log('🔗 [CONTRACT_CREATION] Checking account mappings...')
+          
           const { data: autoConfigResult, error: autoConfigError } = await supabase
             .rpc('ensure_essential_account_mappings', { 
               company_id_param: companyId 
             })
 
+          console.log('🔗 [CONTRACT_CREATION] Account mapping result:', { autoConfigResult, autoConfigError })
+
           if (autoConfigError) {
             const errorMsg = `فشل في فحص ربط الحسابات: ${autoConfigError.message}`
+            console.error('❌ [CONTRACT_CREATION] Account mapping RPC error:', autoConfigError)
             updateStepStatus('accounts', 'failed', errorMsg)
             await logContractStep(null, 'accounts', 'failed', 1, autoConfigError.message)
             throw new Error(errorMsg)
@@ -179,19 +211,22 @@ export const useContractCreation = () => {
           const configData = autoConfigResult as AutoConfigResult
           if (configData?.errors && configData.errors.length > 0) {
             const errorMsg = `ربط الحسابات غير مكتمل: ${configData.errors.join(', ')}`
+            console.warn('⚠️ [CONTRACT_CREATION] Account mapping incomplete:', configData.errors)
             updateStepStatus('accounts', 'failed', errorMsg)
             await logContractStep(null, 'accounts', 'failed', 1, errorMsg)
             throw new Error(errorMsg)
           }
 
+          console.log('✅ [CONTRACT_CREATION] Account mappings verified:', configData)
           updateStepStatus('accounts', 'completed')
           await logContractStep(null, 'accounts', 'completed', 1, null, Date.now() - startTime, autoConfigResult)
 
         } catch (mappingError: any) {
-          console.error('❌ [CONTRACT_CREATION] Account mapping failed:', mappingError)
-          updateStepStatus('accounts', 'failed', mappingError.message)
-          await logContractStep(null, 'accounts', 'failed', 1, mappingError.message)
-          throw mappingError
+          console.error('❌ [CONTRACT_CREATION] Account mapping exception:', mappingError)
+          const errorMessage = mappingError?.message || 'خطأ في فحص ربط الحسابات'
+          updateStepStatus('accounts', 'failed', errorMessage)
+          await logContractStep(null, 'accounts', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
         }
 
         // Step 3: Create contract record
@@ -327,13 +362,52 @@ export const useContractCreation = () => {
 
       } catch (error: any) {
         console.error('❌ [CONTRACT_CREATION] Process failed:', error)
+        
+        // Enhanced error handling and logging
+        let errorMessage = 'حدث خطأ غير متوقع أثناء إنشاء العقد'
+        let detailedError = 'Unknown error'
+        
+        if (error) {
+          // Handle different error types
+          if (typeof error === 'string') {
+            errorMessage = error
+            detailedError = error
+          } else if (error instanceof Error) {
+            errorMessage = error.message || errorMessage
+            detailedError = error.message
+            console.error('❌ [CONTRACT_CREATION] Error stack:', error.stack)
+          } else if (error.message) {
+            errorMessage = error.message
+            detailedError = error.message
+          } else if (error.error) {
+            errorMessage = error.error.message || error.error
+            detailedError = JSON.stringify(error.error)
+          } else {
+            detailedError = JSON.stringify(error)
+            console.error('❌ [CONTRACT_CREATION] Raw error object:', error)
+          }
+          
+          // Log additional error context
+          console.error('❌ [CONTRACT_CREATION] Error details:', {
+            errorType: typeof error,
+            errorConstructor: error?.constructor?.name,
+            errorMessage: errorMessage,
+            contractId: contractId,
+            currentStep: creationState.currentStep,
+            timestamp: new Date().toISOString()
+          })
+        }
+        
         setCreationState(prev => ({ ...prev, isProcessing: false, canRetry: true }))
         
         if (contractId) {
-          await logContractStep(contractId, 'process', 'failed', 1, error.message, Date.now() - startTime)
+          await logContractStep(contractId, 'process', 'failed', 1, detailedError, Date.now() - startTime)
         }
         
-        throw error
+        // Throw a properly formatted error
+        const formattedError = new Error(errorMessage)
+        formattedError.name = 'ContractCreationError'
+        throw formattedError
       }
     },
     onSuccess: () => {
@@ -342,7 +416,33 @@ export const useContractCreation = () => {
     },
     onError: (error: any) => {
       console.error('❌ [CONTRACT_CREATION] Mutation failed:', error)
-      toast.error(error.message || 'فشل في إنشاء العقد')
+      
+      // Enhanced error messaging for users
+      let userMessage = 'فشل في إنشاء العقد'
+      
+      if (error && error.message) {
+        // Check for specific error patterns and provide helpful messages
+        if (error.message.includes('unique_violation')) {
+          userMessage = 'رقم العقد موجود مسبقاً، يرجى استخدام رقم مختلف'
+        } else if (error.message.includes('foreign_key_violation')) {
+          userMessage = 'يرجى التأكد من صحة بيانات العميل والمركبة'
+        } else if (error.message.includes('check_violation')) {
+          userMessage = 'يرجى التأكد من صحة البيانات المدخلة'
+        } else if (error.message.includes('not_null_violation')) {
+          userMessage = 'يرجى ملء جميع الحقول المطلوبة'
+        } else if (error.message.includes('timeout')) {
+          userMessage = 'انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى'
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          userMessage = 'خطأ في الاتصال، يرجى التحقق من الإنترنت والمحاولة مرة أخرى'
+        } else {
+          userMessage = error.message
+        }
+      }
+      
+      toast.error(userMessage, {
+        description: 'يمكنك المحاولة مرة أخرى أو التواصل مع الدعم الفني إذا استمر الخطأ',
+        duration: 6000
+      })
     }
   })
 
