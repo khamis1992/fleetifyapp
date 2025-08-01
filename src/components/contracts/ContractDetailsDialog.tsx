@@ -220,6 +220,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between" dir="rtl">
+                    <span className="text-sm text-muted-foreground">حالة العقد</span>
                     <Badge className={getStatusColor(contract.status)}>
                       {getStatusIcon(contract.status)}
                       <span className="ml-1">
@@ -230,7 +231,6 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                          contract.status === 'cancelled' ? 'ملغي' : contract.status}
                       </span>
                     </Badge>
-                    <span className="text-sm text-muted-foreground">حالة العقد</span>
                   </div>
 
                   {isEditing ? (
@@ -262,33 +262,33 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">نوع العقد</span>
                         <span className="font-medium">
                           {contract.contract_type === 'rental' ? 'إيجار' :
                            contract.contract_type === 'service' ? 'خدمة' :
                            contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات'}
                         </span>
-                        <span className="text-sm text-muted-foreground">نوع العقد</span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">تاريخ البداية</span>
                         <span className="font-medium">
                           {new Date(contract.start_date).toLocaleDateString('en-GB')}
                         </span>
-                        <span className="text-sm text-muted-foreground">تاريخ البداية</span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">تاريخ النهاية</span>
                         <span className="font-medium">
                           {new Date(contract.end_date).toLocaleDateString('en-GB')}
                         </span>
-                        <span className="text-sm text-muted-foreground">تاريخ النهاية</span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">مدة العقد</span>
                         <span className="font-medium">
                           {Math.ceil((new Date(contract.end_date).getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))} يوم
                         </span>
-                        <span className="text-sm text-muted-foreground">مدة العقد</span>
                       </div>
                     </div>
                   )}
@@ -328,31 +328,31 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">قيمة العقد</span>
                         <span className="font-bold text-2xl text-primary">
                           {contract.contract_amount?.toFixed(3)} د.ك
                         </span>
-                        <span className="text-sm text-muted-foreground">قيمة العقد</span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">المبلغ الشهري</span>
                         <span className="font-medium">
                           {contract.monthly_amount?.toFixed(3)} د.ك
                         </span>
-                        <span className="text-sm text-muted-foreground">المبلغ الشهري</span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">المبلغ المدفوع</span>
                         <span className="font-medium text-green-600">
                           {(invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0).toFixed(3)} د.ك
                         </span>
-                        <span className="text-sm text-muted-foreground">المبلغ المدفوع</span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
+                        <span className="text-sm text-muted-foreground">المبلغ المتبقي</span>
                         <span className="font-medium text-orange-600">
                           {(contract.contract_amount - (invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0)).toFixed(3)} د.ك
                         </span>
-                        <span className="text-sm text-muted-foreground">المبلغ المتبقي</span>
                       </div>
                     </div>
                   )}
@@ -370,31 +370,31 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between" dir="rtl">
+                      <span className="text-sm text-muted-foreground">اسم العميل</span>
                       <span className="font-medium">
                         {customer.customer_type === 'individual' 
                           ? `${customer.first_name_ar || customer.first_name} ${customer.last_name_ar || customer.last_name}`
                           : customer.company_name_ar || customer.company_name
                         }
                       </span>
-                      <span className="text-sm text-muted-foreground">اسم العميل</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
+                      <span className="text-sm text-muted-foreground">نوع العميل</span>
                       <span className="font-medium">
                         {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
                       </span>
-                      <span className="text-sm text-muted-foreground">نوع العميل</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium" dir="ltr">{customer.phone}</span>
                       <span className="text-sm text-muted-foreground">رقم الهاتف</span>
+                      <span className="font-medium" dir="ltr">{customer.phone}</span>
                     </div>
                     
                     {customer.email && (
                       <div className="flex items-center justify-between" dir="rtl">
-                        <span className="font-medium">{customer.email}</span>
                         <span className="text-sm text-muted-foreground">البريد الإلكتروني</span>
+                        <span className="font-medium">{customer.email}</span>
                       </div>
                     )}
                   </CardContent>
@@ -412,18 +412,18 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium">{chartOfAccount.account_code}</span>
                       <span className="text-sm text-muted-foreground">رقم الحساب</span>
+                      <span className="font-medium">{chartOfAccount.account_code}</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium">{chartOfAccount.account_name}</span>
                       <span className="text-sm text-muted-foreground">اسم الحساب</span>
+                      <span className="font-medium">{chartOfAccount.account_name}</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium">{chartOfAccount.account_type}</span>
                       <span className="text-sm text-muted-foreground">نوع الحساب</span>
+                      <span className="font-medium">{chartOfAccount.account_type}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -440,23 +440,23 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium">{vehicle.plate_number}</span>
                       <span className="text-sm text-muted-foreground">رقم اللوحة</span>
+                      <span className="font-medium">{vehicle.plate_number}</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium">{vehicle.make} {vehicle.model}</span>
                       <span className="text-sm text-muted-foreground">نوع المركبة</span>
+                      <span className="font-medium">{vehicle.make} {vehicle.model}</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
-                      <span className="font-medium">{vehicle.year}</span>
                       <span className="text-sm text-muted-foreground">سنة الصنع</span>
+                      <span className="font-medium">{vehicle.year}</span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
-                      <Badge variant="outline">{vehicle.status}</Badge>
                       <span className="text-sm text-muted-foreground">حالة المركبة</span>
+                      <Badge variant="outline">{vehicle.status}</Badge>
                     </div>
                   </CardContent>
                 </Card>
