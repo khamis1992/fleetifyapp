@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useSuperAdminData } from '@/hooks/useSuperAdminData';
 import { SystemStatsCards } from '@/components/super-admin/SystemStatsCards';
@@ -6,6 +7,8 @@ import { CompaniesOverview } from '@/components/super-admin/CompaniesOverview';
 import { QuickActions } from '@/components/super-admin/QuickActions';
 import { SystemAlerts } from '@/components/super-admin/SystemAlerts';
 import { useAuth } from '@/contexts/AuthContext';
+import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
+import { Crown, Target, Zap, Building2, Users, DollarSign, Activity } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -21,61 +24,95 @@ const SuperAdminDashboard: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return "صباح الخير";
+    if (hour < 18) return "مساء الخير";
+    return "مساء الخير";
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Enhanced Welcome Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 backdrop-blur-sm">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10 opacity-50"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-radial from-primary/20 to-transparent rounded-full blur-3xl"></div>
-        <div className="relative p-8">
-          <div className="space-y-4">
-            <div className="animate-fade-in">
-              <p className="text-lg text-muted-foreground font-medium">
-                {getGreeting()}, {user?.email?.split('@')[0] || 'Admin'}! 👋
-              </p>
-            </div>
-            <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent leading-tight">
-                Super Admin Dashboard
-              </h1>
-            </div>
-            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Monitor system-wide activities, manage companies, and oversee all platform operations from your central command center.
-              </p>
+    <>
+      <ProfessionalBackground />
+      <div className="relative z-10 space-y-8">
+        {/* Professional Hero Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative"
+        >
+          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-8">
+            <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
+                    <Crown size={20} />
+                  </div>
+                  <span className="text-sm font-medium text-destructive">لوحة التحكم الرئيسية</span>
+                </div>
+                
+                <div>
+                  <h1 className="text-4xl font-bold text-foreground mb-2">
+                    {getGreeting()}, {user?.email?.split('@')[0] || 'مشرف النظام'}
+                  </h1>
+                  <p className="text-lg text-muted-foreground">مراقبة وإدارة جميع عمليات المنصة من مركز التحكم المركزي</p>
+                </div>
+              </div>
+              
+              <motion.div
+                className="hidden lg:block"
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center">
+                  <Activity size={32} />
+                </div>
+              </motion.div>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Enhanced Stats Grid */}
-      <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-        <SystemStatsCards stats={stats} loading={false} />
-      </div>
+        {/* Enhanced Stats Grid */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <SystemStatsCards stats={stats} loading={false} />
+        </motion.div>
 
-      {/* Main Content Grid with Enhanced Styling */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-        {/* Companies Overview - Takes 2 columns */}
-        <div className="xl:col-span-2 space-y-6">
-          <CompaniesOverview companies={companies} loading={false} />
+        {/* Main Content Grid with Enhanced Styling */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Companies Overview - Takes 2 columns */}
+          <motion.div 
+            className="lg:col-span-2"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <CompaniesOverview companies={companies} loading={false} />
+          </motion.div>
+          
+          {/* System Alerts - Takes 1 column */}
+          <motion.div 
+            className="lg:col-span-1 space-y-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <SystemAlerts />
+          </motion.div>
         </div>
-        
-        {/* System Alerts - Takes 1 column */}
-        <div className="xl:col-span-1 space-y-6">
-          <SystemAlerts />
-        </div>
-      </div>
 
-      {/* Enhanced Quick Actions */}
-      <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
-        <QuickActions />
+        {/* Enhanced Quick Actions */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+        >
+          <QuickActions />
+        </motion.div>
       </div>
-    </div>
+    </>
   );
 };
 

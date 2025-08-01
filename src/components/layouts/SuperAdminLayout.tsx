@@ -63,28 +63,30 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
   };
 
   return (
-    <div className={`h-screen bg-gradient-to-br from-destructive via-destructive/90 to-warning p-6 text-destructive-foreground ${className}`}>
+    <div className={`h-screen bg-card/80 backdrop-blur-xl border-l border-border/50 p-6 ${className}`}>
       <div className="mb-8">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <Crown className="h-8 w-8 text-warning" />
-          <h1 className="text-2xl font-bold text-center">
+          <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
+            <Crown className="h-6 w-6" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
             Super Admin
           </h1>
         </div>
-        <p className="text-sm text-center text-destructive-foreground/80">
+        <p className="text-sm text-center text-muted-foreground">
           لوحة تحكم مزود الخدمة
         </p>
       </div>
 
       {/* User Info */}
-      <div className="mb-6 p-4 bg-destructive-foreground/10 rounded-lg backdrop-blur-sm border border-destructive-foreground/20">
+      <div className="mb-6 p-4 bg-primary/5 rounded-lg backdrop-blur-sm border border-primary/20">
         <div className="flex items-center gap-2 mb-2">
-          <Shield className="h-4 w-4 text-warning" />
-          <span className="text-sm font-medium">
+          <Shield className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">
             {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
           </span>
         </div>
-        <div className="text-xs text-destructive-foreground/70">
+        <div className="text-xs text-muted-foreground">
           مدير النظام الرئيسي
         </div>
       </div>
@@ -97,13 +99,15 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
             <Link
               key={item.href}
               to={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all group ${
                 isActive
-                  ? 'bg-destructive-foreground/20 text-warning shadow-warning/20 shadow-lg'
-                  : 'hover:bg-destructive-foreground/10'
+                  ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
+                  : 'hover:bg-primary/5 text-muted-foreground hover:text-foreground'
               }`}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className={`h-5 w-5 transition-colors ${
+                isActive ? 'text-primary' : 'group-hover:text-primary'
+              }`} />
               <span className="font-medium">{item.name}</span>
             </Link>
           );
@@ -114,15 +118,15 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
       <div className="space-y-2 mt-8">
         <Link
           to="/super-admin/settings"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-destructive-foreground/10 transition-all"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-primary/5 transition-all text-muted-foreground hover:text-foreground group"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-5 w-5 group-hover:text-primary transition-colors" />
           <span>إعدادات النظام</span>
         </Link>
         <Button
           variant="ghost"
           onClick={handleSignOut}
-          className="w-full justify-start gap-3 text-destructive-foreground hover:bg-destructive-foreground/20"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
         >
           <LogOut className="h-5 w-5" />
           تسجيل الخروج
@@ -153,17 +157,19 @@ export const SuperAdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background-soft" dir="rtl">
+    <div className="min-h-screen bg-background" dir="rtl">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block lg:w-80 lg:fixed lg:inset-y-0 lg:right-0 lg:z-50">
         <Sidebar />
       </div>
 
       {/* Mobile Header */}
-      <div className="lg:hidden bg-destructive text-destructive-foreground p-4 flex items-center justify-between">
+      <div className="lg:hidden bg-card/80 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Crown className="h-6 w-6 text-warning" />
-          <h1 className="text-xl font-bold">Super Admin</h1>
+          <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive">
+            <Crown className="h-5 w-5" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Super Admin</h1>
         </div>
         <Sheet>
           <SheetTrigger asChild>
