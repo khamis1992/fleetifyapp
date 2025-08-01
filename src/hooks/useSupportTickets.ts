@@ -60,8 +60,15 @@ export interface UpdateTicketData {
 
 export const useSupportTickets = () => {
   const { user } = useAuth();
-  const { filter } = useUnifiedCompanyAccess();
+  const { filter, loading: companyLoading } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
+
+  console.log('🎫 [SUPPORT_TICKETS] Hook state:', {
+    user: !!user,
+    companyLoading,
+    filter,
+    filterCompanyId: filter?.company_id
+  });
 
   const {
     data: tickets = [],
@@ -70,6 +77,13 @@ export const useSupportTickets = () => {
   } = useQuery({
     queryKey: ['support-tickets', filter],
     queryFn: async () => {
+      console.log('🎫 [SUPPORT_TICKETS] Query function called with filter:', filter);
+      
+      // Skip query if still loading company data
+      if (filter.company_id === 'loading') {
+        throw new Error('Company data still loading');
+      }
+
       let query = supabase
         .from('support_tickets')
         .select(`
@@ -87,14 +101,36 @@ export const useSupportTickets = () => {
       if (error) throw error;
       return (data || []) as any[];
     },
-    enabled: !!user
+    enabled: !!user && !companyLoading && filter.company_id !== 'loading'
   });
 
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: CreateTicketData) => {
-      if (!user || !filter.company_id) {
-        throw new Error('User not authenticated or company not found');
+      console.log('🎫 [CREATE_TICKET] Starting ticket creation with:', {
+        user: !!user,
+        userId: user?.id,
+        companyId: filter?.company_id,
+        companyLoading,
+        ticketData
+      });
+
+      // Enhanced validation with better error messages
+      if (!user) {
+        console.error('🎫 [CREATE_TICKET] No user found');
+        throw new Error('المستخدم غير مصادق عليه. يرجى تسجيل الدخول مرة أخرى.');
       }
+
+      if (companyLoading || filter.company_id === 'loading') {
+        console.error('🎫 [CREATE_TICKET] Company data still loading');
+        throw new Error('جاري تحميل بيانات الشركة. يرجى المحاولة مرة أخرى.');
+      }
+
+      if (!filter.company_id || filter.company_id === 'no-access') {
+        console.error('🎫 [CREATE_TICKET] No company ID found');
+        throw new Error('لم يتم العثور على معرف الشركة. يرجى التأكد من الصلاحيات.');
+      }
+
+      console.log('🎫 [CREATE_TICKET] Validation passed, creating ticket...');
 
       const { data, error } = await (supabase
         .from('support_tickets') as any)
@@ -106,7 +142,12 @@ export const useSupportTickets = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('🎫 [CREATE_TICKET] Database error:', error);
+        throw error;
+      }
+      
+      console.log('🎫 [CREATE_TICKET] Ticket created successfully:', data?.id);
       return data;
     },
     onSuccess: () => {
@@ -114,8 +155,9 @@ export const useSupportTickets = () => {
       toast.success('تم إنشاء التذكرة بنجاح');
     },
     onError: (error) => {
-      console.error('Error creating ticket:', error);
-      toast.error('حدث خطأ في إنشاء التذكرة');
+      console.error('🎫 [CREATE_TICKET] Error creating ticket:', error);
+      const errorMessage = error.message || 'حدث خطأ غير متوقع في إنشاء التذكرة';
+      toast.error(errorMessage);
     }
   });
 

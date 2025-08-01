@@ -7,16 +7,77 @@ import { getCompanyScopeContext, getCompanyFilter, hasGlobalAccess, hasCompanyAd
  * Replaces scattered company_id logic across the application
  */
 export const useUnifiedCompanyAccess = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   
   return useMemo(() => {
+    // Add debug logging for company access
+    console.log('🏢 [COMPANY_ACCESS] User data:', {
+      user: !!user,
+      loading,
+      profile: user?.profile,
+      company: user?.company,
+      roles: user?.roles
+    });
+
+    // Check if we're still loading or user data is incomplete
+    const isUserDataIncomplete = !user || loading || (!user.profile?.company_id && !user.company?.id);
+    
+    if (isUserDataIncomplete) {
+      console.log('🏢 [COMPANY_ACCESS] User data incomplete, returning loading state');
+      return {
+        // Core context information
+        context: {
+          user: null,
+          userRoles: [],
+          companyId: undefined,
+          isSystemLevel: false,
+          isCompanyScoped: false
+        },
+        user: null,
+        loading: true,
+        
+        // Company identification
+        companyId: undefined,
+        isSystemLevel: false,
+        isCompanyScoped: false,
+        
+        // Access control helpers
+        hasGlobalAccess: false,
+        hasCompanyAdminAccess: false,
+        
+        // Query filters - safe fallback
+        filter: { company_id: 'loading' },
+        
+        // Validation helpers
+        canAccessCompany: () => false,
+        canAccessMultipleCompanies: () => false,
+        
+        // Security validation
+        validateCompanyAccess: () => {
+          throw new Error('User data still loading, please wait');
+        },
+        
+        // Query key generation for React Query
+        getQueryKey: (baseKey: string[], additionalKeys: unknown[] = []) => {
+          return [baseKey, 'loading', ...additionalKeys].filter(Boolean);
+        }
+      };
+    }
+
     const context = getCompanyScopeContext(user);
     const filter = getCompanyFilter(context);
+    
+    console.log('🏢 [COMPANY_ACCESS] Context created:', {
+      companyId: context.companyId,
+      isSystemLevel: context.isSystemLevel,
+      filter
+    });
     
     return {
       // Core context information
       context,
       user,
+      loading: false,
       
       // Company identification
       companyId: context.companyId,
@@ -55,7 +116,7 @@ export const useUnifiedCompanyAccess = () => {
         return keys;
       }
     };
-  }, [user]);
+  }, [user, loading]);
 };
 
 /**
