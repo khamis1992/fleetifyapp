@@ -409,15 +409,30 @@ export const DatesStep: React.FC = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">الأسابيع:</span>
-                <p className="font-medium">{Math.ceil(data.rental_days / 7)} أسبوع</p>
+                <p className="font-medium">
+                  {Math.floor(data.rental_days / 7) > 0 
+                    ? `${Math.floor(data.rental_days / 7)} أسبوع` 
+                    : 'أقل من أسبوع'
+                  }
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">الأشهر:</span>
-                <p className="font-medium">{Math.ceil(data.rental_days / 30)} شهر</p>
+                <p className="font-medium">
+                  {Math.floor(data.rental_days / 30) > 0 
+                    ? `${Math.floor(data.rental_days / 30)} شهر` 
+                    : 'أقل من شهر'
+                  }
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">السنوات:</span>
-                <p className="font-medium">{(data.rental_days / 365).toFixed(1)} سنة</p>
+                <p className="font-medium">
+                  {data.rental_days >= 365 
+                    ? `${(data.rental_days / 365).toFixed(1)} سنة`
+                    : 'أقل من سنة'
+                  }
+                </p>
               </div>
             </div>
           </div>
