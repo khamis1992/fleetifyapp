@@ -27,11 +27,11 @@ interface ContractWizardData {
   account_id: string
   cost_center_id: string
   
-  // Validation & Approval
-  validation_status: 'pending' | 'validating' | 'valid' | 'invalid'
-  validation_errors: string[]
-  requires_approval: boolean
-  approval_steps: any[]
+  // Validation & Approval (using underscore prefix to avoid DB conflicts)
+  _validation_status?: 'pending' | 'validating' | 'valid' | 'invalid'
+  _validation_errors?: string[]
+  _requires_approval?: boolean
+  _approval_steps?: any[]
   
   // Draft metadata
   is_draft: boolean
@@ -73,10 +73,10 @@ const defaultData: ContractWizardData = {
   monthly_amount: 0,
   account_id: '',
   cost_center_id: '',
-  validation_status: 'pending',
-  validation_errors: [],
-  requires_approval: false,
-  approval_steps: [],
+  _validation_status: 'pending',
+  _validation_errors: [],
+  _requires_approval: false,
+  _approval_steps: [],
   is_draft: true
 }
 
@@ -259,7 +259,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 3: // Financial
         return data.contract_amount > 0
       case 4: // Review
-        return data.validation_status === 'valid'
+        return data._validation_status === 'valid'
       default:
         return true
     }
@@ -275,10 +275,10 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       rental_days: 7,
       contract_amount: 1500,
       monthly_amount: 6000,
-      validation_status: 'pending' as const,
-      validation_errors: [],
-      requires_approval: false,
-      approval_steps: []
+      _validation_status: 'pending' as const,
+      _validation_errors: [],
+      _requires_approval: false,
+      _approval_steps: []
     }
 
     // Calculate end date

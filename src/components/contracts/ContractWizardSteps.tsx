@@ -634,11 +634,12 @@ export const ReviewStep: React.FC = () => {
         approvalSteps.push({ role: 'company_admin', title: 'موافقة إدارة الشركة' })
       }
 
+      // Store validation data in local state instead of contract data
       updateData({
-        validation_status: errors.length === 0 ? 'valid' : 'invalid',
-        validation_errors: errors,
-        requires_approval: requiresApproval,
-        approval_steps: approvalSteps
+        _validation_status: errors.length === 0 ? 'valid' : 'invalid',
+        _validation_errors: errors,
+        _requires_approval: requiresApproval,
+        _approval_steps: approvalSteps
       })
     }
 
@@ -658,14 +659,14 @@ export const ReviewStep: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Validation Status */}
-        {data.validation_status === 'invalid' && data.validation_errors.length > 0 && (
+        {data._validation_status === 'invalid' && data._validation_errors?.length > 0 && (
           <Alert className="border-destructive bg-destructive/5">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-1">
                 <p className="font-medium">يرجى إصلاح الأخطاء التالية:</p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  {data.validation_errors.map((error, index) => (
+                  {data._validation_errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
                 </ul>
@@ -674,7 +675,7 @@ export const ReviewStep: React.FC = () => {
           </Alert>
         )}
 
-        {data.validation_status === 'valid' && (
+        {data._validation_status === 'valid' && (
           <Alert className="border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
@@ -684,7 +685,7 @@ export const ReviewStep: React.FC = () => {
         )}
 
         {/* Approval Information */}
-        {data.requires_approval && (
+        {data._requires_approval && (
           <Alert className="border-yellow-200 bg-yellow-50">
             <Clock className="h-4 w-4" />
             <AlertDescription>
@@ -694,7 +695,7 @@ export const ReviewStep: React.FC = () => {
                 </p>
                 <div className="text-sm space-y-1">
                   <p className="font-medium">خطوات الموافقة المطلوبة:</p>
-                  {data.approval_steps.map((step: any, index: number) => (
+                  {data._approval_steps?.map((step: any, index: number) => (
                     <div key={index} className="flex items-center gap-2">
                       <Clock className="h-3 w-3" />
                       <span>{step.title}</span>

@@ -244,7 +244,16 @@ export default function Contracts() {
       console.log('📋 [CONTRACT_SUBMIT] Raw form data:', contractData)
       
       // Remove fields that don't exist in the contracts table
-      const { rental_days, ...contractInsertData } = contractData
+      const { 
+        rental_days, 
+        validation_status, 
+        validation_errors, 
+        requires_approval, 
+        approval_steps,
+        is_draft,
+        draft_id,
+        ...contractInsertData 
+      } = contractData
       
       // Prepare the final data for database insertion
       const finalData = {
@@ -255,23 +264,24 @@ export default function Contracts() {
       
       console.log('💾 [CONTRACT_SUBMIT] Data being sent to database:', finalData)
       
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('contracts')
         .insert([finalData])
+        .select()
 
       if (error) {
         console.error('❌ [CONTRACT_SUBMIT] Database error:', error)
         throw error
       }
       
-      console.log('✅ [CONTRACT_SUBMIT] Contract created successfully')
+      console.log('✅ [CONTRACT_SUBMIT] Contract created successfully:', insertedData)
       refetch()
       setShowContractWizard(false)
       // Clear preselected customer after successful creation
       setPreselectedCustomerId(null)
     } catch (error) {
       console.error('❌ [CONTRACT_SUBMIT] Error creating contract:', error)
-      // You could add a toast notification here to inform the user
+      // Error message is already shown in the first catch block
     }
   }
 
