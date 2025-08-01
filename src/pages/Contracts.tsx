@@ -409,10 +409,6 @@ export default function Contracts() {
                             تجديد
                           </Button>
                         )}
-                        <Button variant="outline" size="sm" onClick={() => handleManageStatus(contract)}>
-                          <Settings className="h-4 w-4 mr-2" />
-                          إدارة
-                        </Button>
                       </div>
                       
                       <div className="flex-1 space-y-2 mr-4">
