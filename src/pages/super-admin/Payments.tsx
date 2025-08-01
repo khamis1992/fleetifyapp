@@ -38,23 +38,69 @@ const SuperAdminPayments: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const { data: analytics, isLoading, refetch } = useSubscriptionsAnalytics();
+  const { data: analytics, isLoading, error, refetch } = useSubscriptionsAnalytics();
+
+  // Debug logging
+  console.log('💰 [PAYMENTS_PAGE] Component state:', {
+    activeTab,
+    isLoading,
+    hasAnalytics: !!analytics,
+    error,
+    analytics
+  });
 
   const handleRefresh = async () => {
+    console.log('💰 [PAYMENTS_PAGE] Refreshing data...');
     setIsRefreshing(true);
     try {
       await refetch();
       toast.success('تم تحديث البيانات بنجاح');
     } catch (error) {
+      console.error('💰 [PAYMENTS_PAGE] Refresh error:', error);
       toast.error('حدث خطأ في تحديث البيانات');
     } finally {
       setIsRefreshing(false);
     }
   };
 
+  // Show loading state
+  if (isLoading) {
+    console.log('💰 [PAYMENTS_PAGE] Showing loading state');
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">جاري تحميل بيانات المدفوعات...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    console.error('💰 [PAYMENTS_PAGE] Showing error state:', error);
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-red-500" />
+            <p className="text-muted-foreground">حدث خطأ في تحميل البيانات</p>
+            <Button onClick={handleRefresh} className="mt-4">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              إعادة المحاولة
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('💰 [PAYMENTS_PAGE] Rendering main content');
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6">{/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">إدارة المدفوعات والاشتراكات</h1>

@@ -26,15 +26,23 @@ export interface SubscriptionsAnalytics {
 export const useSubscriptionsAnalytics = (period: 'month' | 'quarter' | 'year' = 'month') => {
   const { user } = useAuth();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['subscriptions-analytics', user?.id, period],
     queryFn: async (): Promise<SubscriptionsAnalytics> => {
-      if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      console.log('🔍 [ANALYTICS] Starting subscription analytics fetch', { userId: user?.id, roles: user?.roles });
+      
+      if (!user?.id) {
+        console.error('🔍 [ANALYTICS] No user ID found');
+        throw new Error('المستخدم غير مصرح له');
+      }
 
       // Check if user is super admin
       if (!user.roles?.includes('super_admin')) {
+        console.error('🔍 [ANALYTICS] User does not have super_admin role', { roles: user.roles });
         throw new Error('صلاحيات غير كافية');
       }
+      
+      console.log('🔍 [ANALYTICS] User authenticated as super_admin, fetching companies...');
 
       // Get companies data with subscription info
       const { data: companies, error: companiesError } = await supabase
@@ -49,7 +57,16 @@ export const useSubscriptionsAnalytics = (period: 'month' | 'quarter' | 'year' =
           updated_at
         `);
 
-      if (companiesError) throw companiesError;
+      console.log('🔍 [ANALYTICS] Companies query response:', { 
+        companiesCount: companies?.length || 0, 
+        error: companiesError,
+        sampleCompany: companies?.[0] 
+      });
+
+      if (companiesError) {
+        console.error('🔍 [ANALYTICS] Error fetching companies:', companiesError);
+        throw companiesError;
+      }
 
       // Calculate analytics based on companies data
       const now = new Date();
@@ -105,7 +122,7 @@ export const useSubscriptionsAnalytics = (period: 'month' | 'quarter' | 'year' =
         });
       }
 
-      return {
+      const result = {
         monthlyRevenue,
         activeSubscriptions: activeCompanies.length,
         averageSubscriptionValue: monthlyRevenue / Math.max(activeCompanies.length, 1),
@@ -117,8 +134,23 @@ export const useSubscriptionsAnalytics = (period: 'month' | 'quarter' | 'year' =
         revenueByPlan,
         monthlyTrend
       };
+      
+      console.log('🔍 [ANALYTICS] Final analytics result:', result);
+      return result;
     },
     enabled: !!user?.id && user.roles?.includes('super_admin'),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
   });
+
+  // Log errors and success manually
+  if (query.error) {
+    console.error('🔍 [ANALYTICS] Query error:', query.error);
+  }
+  
+  if (query.data) {
+    console.log('🔍 [ANALYTICS] Query success:', query.data);
+  }
+
+  return query;
 };
