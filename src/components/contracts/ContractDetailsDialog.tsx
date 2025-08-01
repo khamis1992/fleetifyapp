@@ -273,14 +273,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">تاريخ البداية</span>
                         <span className="font-medium">
-                          {new Date(contract.start_date).toLocaleDateString('ar-SA')}
+                          {new Date(contract.start_date).toLocaleDateString('en-GB')}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">تاريخ النهاية</span>
                         <span className="font-medium">
-                          {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                          {new Date(contract.end_date).toLocaleDateString('en-GB')}
                         </span>
                       </div>
                       
@@ -533,7 +533,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div>
                         <h4 className="font-semibold">فاتورة رقم {invoice.invoice_number}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(invoice.invoice_date).toLocaleDateString('ar-SA')}
+                          {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
                         </p>
                       </div>
                       <div className="text-right">
@@ -575,7 +575,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div>
                       <p className="font-medium">إنشاء العقد</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(contract.created_at).toLocaleDateString('ar-SA')}
+                        {new Date(contract.created_at).toLocaleDateString('en-GB')}
                       </p>
                     </div>
                   </div>
@@ -585,7 +585,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div>
                       <p className="font-medium">بداية العقد</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(contract.start_date).toLocaleDateString('ar-SA')}
+                        {new Date(contract.start_date).toLocaleDateString('en-GB')}
                       </p>
                     </div>
                   </div>
@@ -595,7 +595,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div>
                       <p className="font-medium">نهاية العقد</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                        {new Date(contract.end_date).toLocaleDateString('en-GB')}
                       </p>
                     </div>
                   </div>

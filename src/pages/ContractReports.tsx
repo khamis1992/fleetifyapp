@@ -52,7 +52,7 @@ export function ContractReports() {
 
       // Revenue by month
       const revenueByMonth = contracts?.reduce((acc: any, contract) => {
-        const month = new Date(contract.contract_date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short' });
+        const month = new Date(contract.contract_date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short' });
         acc[month] = (acc[month] || 0) + Number(contract.contract_amount);
         return acc;
       }, {});
@@ -309,7 +309,7 @@ export function ContractReports() {
                       </div>
                       <div className="text-right">
                         <Badge variant="outline" className="mb-2">
-                          ينتهي في: {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                          ينتهي في: {new Date(contract.end_date).toLocaleDateString('en-GB')}
                         </Badge>
                         <p className="text-sm font-medium">{Number(contract.contract_amount).toFixed(3)} د.ك</p>
                       </div>

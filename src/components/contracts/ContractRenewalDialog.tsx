@@ -98,7 +98,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
               <div className="space-y-2">
                 <Label>تاريخ انتهاء العقد الحالي</Label>
                 <div className="p-3 bg-muted rounded-md">
-                  {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                  {new Date(contract.end_date).toLocaleDateString('en-GB')}
                 </div>
               </div>
               

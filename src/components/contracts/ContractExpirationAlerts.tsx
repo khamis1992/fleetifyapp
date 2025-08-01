@@ -111,7 +111,7 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
                     
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      <span>ينتهي في {new Date(contract.end_date).toLocaleDateString('ar-SA')}</span>
+                      <span>ينتهي في {new Date(contract.end_date).toLocaleDateString('en-GB')}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">

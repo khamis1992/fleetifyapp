@@ -112,7 +112,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       <body>
         <div class="header">
           <h1>تقرير العقود</h1>
-          <p>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+          <p>تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</p>
           <p>عدد العقود: ${contracts.length}</p>
         </div>
         
@@ -151,8 +151,8 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                 ${includeCustomer ? `<td>${(contract.customer as any)?.customer_type === 'individual' 
                   ? `${(contract.customer as any)?.first_name} ${(contract.customer as any)?.last_name}`
                   : (contract.customer as any)?.company_name || 'غير محدد'}</td>` : ''}
-                <td>${new Date(contract.start_date).toLocaleDateString('ar-SA')}</td>
-                <td>${new Date(contract.end_date).toLocaleDateString('ar-SA')}</td>
+                <td>${new Date(contract.start_date).toLocaleDateString('en-GB')}</td>
+                <td>${new Date(contract.end_date).toLocaleDateString('en-GB')}</td>
                 ${includeFinancial ? `<td>${contract.contract_amount?.toFixed(3) || '0.000'}</td>` : ''}
                 ${includeVehicle ? `<td>${(contract.vehicle as any)?.plate_number || 'لا يوجد'}</td>` : ''}
               </tr>
@@ -205,8 +205,8 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
           ? `${(contract.customer as any)?.first_name} ${(contract.customer as any)?.last_name}`
           : (contract.customer as any)?.company_name || 'غير محدد'
       ] : []),
-      new Date(contract.start_date).toLocaleDateString('ar-SA'),
-      new Date(contract.end_date).toLocaleDateString('ar-SA'),
+      new Date(contract.start_date).toLocaleDateString('en-GB'),
+      new Date(contract.end_date).toLocaleDateString('en-GB'),
       ...(includeFinancial ? [
         contract.contract_amount?.toFixed(3) || '0.000',
         contract.monthly_amount?.toFixed(3) || '0.000'

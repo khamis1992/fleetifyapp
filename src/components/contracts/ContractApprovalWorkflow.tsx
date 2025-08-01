@@ -247,7 +247,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
               <div>
                 <span className="text-sm text-muted-foreground">المدة</span>
                 <p className="font-medium">
-                  {new Date(contract.start_date).toLocaleDateString('ar-SA')} - {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                  {new Date(contract.start_date).toLocaleDateString('en-GB')} - {new Date(contract.end_date).toLocaleDateString('en-GB')}
                 </p>
               </div>
             </CardContent>
@@ -314,8 +314,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
                             <Calendar className="h-4 w-4" />
                             <span>
                               {step.approved_at 
-                                ? `تمت الموافقة في ${new Date(step.approved_at).toLocaleDateString('ar-SA')}`
-                                : `تم الرفض في ${new Date(step.rejected_at!).toLocaleDateString('ar-SA')}`
+                                ? `تمت الموافقة في ${new Date(step.approved_at).toLocaleDateString('en-GB')}`
+                                : `تم الرفض في ${new Date(step.rejected_at!).toLocaleDateString('en-GB')}`
                               }
                             </span>
                           </div>
