@@ -55,10 +55,16 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
   });
 
   const handleFilterChange = (key: string, value: any) => {
-    const newFilters = { ...activeFilters, [key]: value };
+    console.log('🔧 [FILTER_CHANGE]', key, '=', value)
+    const newFilters = { ...activeFilters };
+    
     if (value === '' || value === null || value === undefined || value === 'all') {
       delete newFilters[key];
+    } else {
+      newFilters[key] = value;
     }
+    
+    console.log('🔧 [FILTER_CHANGE] New filters:', newFilters)
     onFiltersChange(newFilters);
   };
 
