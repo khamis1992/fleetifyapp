@@ -373,8 +373,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <span className="text-sm text-muted-foreground">اسم العميل</span>
                       <span className="font-medium">
                         {customer.customer_type === 'individual' 
-                          ? `${customer.first_name} ${customer.last_name}`
-                          : customer.company_name
+                          ? `${customer.first_name_ar || customer.first_name} ${customer.last_name_ar || customer.last_name}`
+                          : customer.company_name_ar || customer.company_name
                         }
                       </span>
                     </div>
