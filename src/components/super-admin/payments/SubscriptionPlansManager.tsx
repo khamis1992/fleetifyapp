@@ -33,14 +33,14 @@ export const SubscriptionPlansManager: React.FC = () => {
   // Mock data - in real app this would come from useSubscriptionPlans hook
   const [plans, setPlans] = useState<SubscriptionPlan[]>([
     {
-      id: '1',
-      name: 'Basic',
-      name_ar: 'أساسي',
-      description: 'خطة مناسبة للشركات الصغيرة',
-      price_monthly: 25,
-      price_yearly: 250,
-      features: ['5 مستخدمين', 'تقارير أساسية', 'دعم فني', 'تخزين 5 جيجا'],
-      max_users: 5,
+      id: '3',
+      name: 'Enterprise',
+      name_ar: 'مؤسسي',
+      description: 'خطة مناسبة للشركات الكبيرة',
+      price_monthly: 100,
+      price_yearly: 1000,
+      features: ['مستخدمين غير محدود', 'تقارير شاملة', 'دعم فني مخصص', 'تخزين غير محدود', 'تكامل مخصص'],
+      max_users: -1, // unlimited
       is_popular: false,
       is_active: true,
       created_at: '2024-01-01'
@@ -59,14 +59,14 @@ export const SubscriptionPlansManager: React.FC = () => {
       created_at: '2024-01-01'
     },
     {
-      id: '3',
-      name: 'Enterprise',
-      name_ar: 'مؤسسي',
-      description: 'خطة مناسبة للشركات الكبيرة',
-      price_monthly: 100,
-      price_yearly: 1000,
-      features: ['مستخدمين غير محدود', 'تقارير شاملة', 'دعم فني مخصص', 'تخزين غير محدود', 'تكامل مخصص'],
-      max_users: -1, // unlimited
+      id: '1',
+      name: 'Basic',
+      name_ar: 'أساسي',
+      description: 'خطة مناسبة للشركات الصغيرة',
+      price_monthly: 25,
+      price_yearly: 250,
+      features: ['5 مستخدمين', 'تقارير أساسية', 'دعم فني', 'تخزين 5 جيجا'],
+      max_users: 5,
       is_popular: false,
       is_active: true,
       created_at: '2024-01-01'
