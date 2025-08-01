@@ -232,17 +232,17 @@ const SuperAdminPayments: React.FC = () => {
             <BarChart3 className="h-4 w-4" />
             لوحة التحكم
           </TabsTrigger>
-          <TabsTrigger value="plans" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            الخطط
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <PieChart className="h-4 w-4" />
+            التحليلات
           </TabsTrigger>
           <TabsTrigger value="transactions" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             المعاملات
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <PieChart className="h-4 w-4" />
-            التحليلات
+          <TabsTrigger value="plans" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            الخطط
           </TabsTrigger>
         </TabsList>
 
