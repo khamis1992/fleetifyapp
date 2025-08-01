@@ -7475,6 +7475,10 @@ export type Database = {
           last_payment_date: string
         }[]
       }
+      check_customer_eligibility_realtime: {
+        Args: { customer_id_param: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           operation_type: string
@@ -7486,6 +7490,15 @@ export type Database = {
       check_session_timeout: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      check_vehicle_availability_realtime: {
+        Args: {
+          vehicle_id_param: string
+          start_date_param: string
+          end_date_param: string
+          exclude_contract_id_param?: string
+        }
+        Returns: Json
       }
       cleanup_inactive_accounts: {
         Args: { target_company_id: string; days_old?: number }
@@ -8172,6 +8185,10 @@ export type Database = {
         Returns: boolean
       }
       validate_contract_data: {
+        Args: { contract_data: Json }
+        Returns: Json
+      }
+      validate_contract_realtime: {
         Args: { contract_data: Json }
         Returns: Json
       }

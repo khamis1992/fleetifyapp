@@ -17,6 +17,10 @@ import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
+import { useContractValidation } from '@/hooks/useContractValidation'
+import { ProactiveAlertSystem } from './ProactiveAlertSystem'
+import { ContractValidationSummary } from './ContractValidationSummary'
+import { useCostCenters } from '@/hooks/useCostCenters'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -144,6 +148,21 @@ export const BasicInfoStep: React.FC = () => {
 export const CustomerVehicleStep: React.FC = () => {
   const { user } = useAuth()
   const { data, updateData } = useContractWizard()
+  const { validation, isValidating, debouncedValidation } = useContractValidation()
+  
+  // Trigger validation when customer or vehicle changes
+  React.useEffect(() => {
+    if (data.customer_id || data.vehicle_id) {
+      debouncedValidation({
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        contract_amount: data.contract_amount,
+        contract_type: data.contract_type
+      })
+    }
+  }, [data.customer_id, data.vehicle_id, data.start_date, data.end_date, data.contract_amount, debouncedValidation])
 
   // Get customers for the company
   const { data: customers, isLoading: customersLoading } = useQuery({
@@ -253,35 +272,12 @@ export const CustomerVehicleStep: React.FC = () => {
           </div>
         </div>
 
-        {/* Selected customer validation */}
-        {data.customer_id && customers && (
-          <div className="mt-4">
-            {(() => {
-              const selectedCustomer = customers.find(c => c.id === data.customer_id)
-              if (selectedCustomer?.is_blacklisted) {
-                return (
-                  <Alert className="border-destructive bg-destructive/5">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      تحذير: هذا العميل محظور. لا يمكن إنشاء عقود جديدة معه.
-                    </AlertDescription>
-                  </Alert>
-                )
-              }
-              if (!selectedCustomer?.is_active) {
-                return (
-                  <Alert className="border-yellow-200 bg-yellow-50">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      تحذير: هذا العميل غير نشط.
-                    </AlertDescription>
-                  </Alert>
-                )
-              }
-              return null
-            })()}
-          </div>
-        )}
+        {/* Proactive Alert System */}
+        <ProactiveAlertSystem 
+          validation={validation}
+          isValidating={isValidating}
+          showConflictDetails={true}
+        />
       </CardContent>
     </Card>
   )
@@ -290,6 +286,21 @@ export const CustomerVehicleStep: React.FC = () => {
 // Step 3: Dates and Duration
 export const DatesStep: React.FC = () => {
   const { data, updateData } = useContractWizard()
+  const { validation, isValidating, debouncedValidation } = useContractValidation()
+  
+  // Trigger validation when dates change
+  React.useEffect(() => {
+    if (data.start_date && data.end_date) {
+      debouncedValidation({
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        contract_amount: data.contract_amount,
+        contract_type: data.contract_type
+      })
+    }
+  }, [data.start_date, data.end_date, data.customer_id, data.vehicle_id, data.contract_amount, debouncedValidation])
 
   const calculateEndDate = (startDate: string, days: number) => {
     if (!startDate || days <= 0) return ''
@@ -398,6 +409,13 @@ export const DatesStep: React.FC = () => {
           </div>
         </div>
 
+        {/* Proactive Alert System */}
+        <ProactiveAlertSystem 
+          validation={validation}
+          isValidating={isValidating}
+          showConflictDetails={true}
+        />
+
         {/* Duration summary */}
         {data.start_date && data.end_date && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
@@ -446,6 +464,21 @@ export const DatesStep: React.FC = () => {
 export const FinancialStep: React.FC = () => {
   const { user } = useAuth()
   const { data, updateData } = useContractWizard()
+  const { validation, isValidating, debouncedValidation } = useContractValidation()
+  
+  // Trigger validation when amounts change
+  React.useEffect(() => {
+    if (data.contract_amount > 0) {
+      debouncedValidation({
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        contract_amount: data.contract_amount,
+        contract_type: data.contract_type
+      })
+    }
+  }, [data.contract_amount, data.customer_id, data.vehicle_id, data.start_date, data.end_date, debouncedValidation])
   
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts()
   
@@ -603,6 +636,13 @@ export const FinancialStep: React.FC = () => {
             </Select>
           </div>
         </div>
+
+        {/* Proactive Alert System */}
+        <ProactiveAlertSystem 
+          validation={validation}
+          isValidating={isValidating}
+          showConflictDetails={false}
+        />
       </CardContent>
     </Card>
   )
@@ -611,6 +651,19 @@ export const FinancialStep: React.FC = () => {
 // Step 5: Review and Submit
 export const ReviewStep: React.FC = () => {
   const { data, updateData } = useContractWizard()
+  const { validation, isValidating, validateContract } = useContractValidation()
+  
+  // Final validation on component mount
+  React.useEffect(() => {
+    validateContract({
+      customer_id: data.customer_id,
+      vehicle_id: data.vehicle_id,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      contract_amount: data.contract_amount,
+      contract_type: data.contract_type
+    })
+  }, [])
 
   // Validation logic
   React.useEffect(() => {
@@ -658,7 +711,14 @@ export const ReviewStep: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Validation Status */}
+        {/* Comprehensive Validation Summary */}
+        <ContractValidationSummary 
+          validation={validation}
+          contractData={data}
+          isValidating={isValidating}
+        />
+
+        {/* Legacy Validation Status - keeping for backwards compatibility */}
         {data._validation_status === 'invalid' && data._validation_errors?.length > 0 && (
           <Alert className="border-destructive bg-destructive/5">
             <AlertTriangle className="h-4 w-4" />
