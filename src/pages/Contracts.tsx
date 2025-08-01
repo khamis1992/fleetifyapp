@@ -49,7 +49,7 @@ export default function Contracts() {
     }
   }, [location.state])
 
-  // Fetch contracts
+  // Fetch contracts with customer data
   const { data: contracts, isLoading, refetch } = useQuery({
     queryKey: ['contracts', user?.profile?.company_id],
     queryFn: async () => {
@@ -59,7 +59,16 @@ export default function Contracts() {
       
       const { data, error } = await supabase
         .from('contracts')
-        .select('*')
+        .select(`
+          *,
+          customers(
+            id,
+            first_name_ar,
+            last_name_ar,
+            company_name_ar,
+            customer_type
+          )
+        `)
         .eq('company_id', user.profile.company_id)
         .order('created_at', { ascending: false })
 
@@ -450,7 +459,12 @@ export default function Contracts() {
                           </div>
                           
                           <div className="flex items-center gap-2 justify-end">
-                            <span className="text-sm">عميل رقم: {contract.customer_id}</span>
+                            <span className="text-sm">
+                              {(contract as any).customers?.customer_type === 'individual' 
+                                ? `${(contract as any).customers?.first_name_ar || ''} ${(contract as any).customers?.last_name_ar || ''}`.trim() || 'عميل غير محدد'
+                                : (contract as any).customers?.company_name_ar || 'عميل غير محدد'
+                              }
+                            </span>
                             <Users className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
