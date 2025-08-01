@@ -241,67 +241,106 @@ export default function Contracts() {
 
   const handleContractSubmit = async (contractData: any) => {
     try {
+      console.log('📋 [CONTRACT_SUBMIT] Starting contract creation process')
       console.log('📋 [CONTRACT_SUBMIT] Raw form data:', contractData)
       
-      // Remove ALL fields that don't exist in the contracts table
+      // Validate required fields
+      const requiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount', 'monthly_amount']
+      const missingFields = requiredFields.filter(field => !contractData[field])
+      
+      if (missingFields.length > 0) {
+        const errorMsg = `حقول مطلوبة مفقودة: ${missingFields.join(', ')}`
+        console.error('❌ [CONTRACT_SUBMIT] Missing required fields:', missingFields)
+        throw new Error(errorMsg)
+      }
+      
+      // Validate user authentication and company context
+      if (!user?.id) {
+        console.error('❌ [CONTRACT_SUBMIT] User not authenticated')
+        throw new Error('المستخدم غير مصرح له')
+      }
+      
+      const companyId = user?.profile?.company_id || user?.company?.id
+      if (!companyId) {
+        console.error('❌ [CONTRACT_SUBMIT] No company context found')
+        throw new Error('لا يمكن تحديد الشركة')
+      }
+      
+      console.log('✅ [CONTRACT_SUBMIT] Validation passed - User:', user.id, 'Company:', companyId)
+      
+      // Clean data - keep only database fields
+      const allowedFields = [
+        'customer_id', 'vehicle_id', 'contract_type', 'contract_date', 
+        'start_date', 'end_date', 'contract_amount', 'monthly_amount', 
+        'description', 'terms', 'status', 'cost_center_id', 'account_id',
+        'auto_renew_enabled', 'renewal_terms', 'suspension_reason'
+      ]
+      
       const cleanedData = Object.keys(contractData).reduce((acc, key) => {
-        // Skip all fields that start with underscore (internal fields)
-        if (key.startsWith('_')) {
-          console.log('🧹 [CONTRACT_SUBMIT] Removing internal field:', key)
-          return acc
+        if (allowedFields.includes(key) && contractData[key] !== undefined && contractData[key] !== '') {
+          acc[key] = contractData[key]
         }
-        
-        // Skip other non-database fields
-        const fieldsToSkip = [
-          'rental_days', 
-          'validation_status', 
-          'validation_errors', 
-          'requires_approval', 
-          'approval_steps',
-          'is_draft',
-          'draft_id',
-          'last_saved_at'
-        ]
-        
-        if (fieldsToSkip.includes(key)) {
-          console.log('🧹 [CONTRACT_SUBMIT] Removing non-DB field:', key)
-          return acc
-        }
-        
-        acc[key] = contractData[key]
         return acc
       }, {} as any)
       
-      // Prepare the final data for database insertion
+      // Prepare final data with required system fields
       const finalData = {
         ...cleanedData,
-        company_id: user?.profile?.company_id || user?.company?.id,
-        created_by: user?.id
+        company_id: companyId,
+        created_by: user.id,
+        // Set defaults for required fields if not provided
+        status: cleanedData.status || 'draft',
+        contract_date: cleanedData.contract_date || new Date().toISOString().split('T')[0]
       }
       
-      console.log('💾 [CONTRACT_SUBMIT] Cleaned data being sent to database:', finalData)
-      console.log('💾 [CONTRACT_SUBMIT] Fields count - Original:', Object.keys(contractData).length, 'Cleaned:', Object.keys(finalData).length)
+      console.log('💾 [CONTRACT_SUBMIT] Final data for database:', finalData)
+      console.log('💾 [CONTRACT_SUBMIT] Field count - Original:', Object.keys(contractData).length, 'Final:', Object.keys(finalData).length)
       
+      // Insert contract with detailed error handling
       const { data: insertedData, error } = await supabase
         .from('contracts')
         .insert([finalData])
-        .select()
-
+        .select('*')
+        .single()
+      
       if (error) {
-        console.error('❌ [CONTRACT_SUBMIT] Database error:', error)
-        throw error
+        console.error('❌ [CONTRACT_SUBMIT] Database error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
+        
+        // Provide user-friendly error messages
+        let userMessage = 'فشل في إنشاء العقد'
+        if (error.message?.includes('foreign key')) {
+          userMessage = 'بيانات العميل أو المركبة غير صحيحة'
+        } else if (error.message?.includes('unique')) {
+          userMessage = 'رقم العقد موجود مسبقاً'
+        } else if (error.message?.includes('check constraint')) {
+          userMessage = 'بيانات العقد غير صحيحة'
+        } else if (error.message?.includes('row-level security')) {
+          userMessage = 'ليس لديك صلاحية لإنشاء العقود'
+        }
+        
+        throw new Error(`${userMessage}: ${error.message}`)
+      }
+      
+      if (!insertedData) {
+        console.error('❌ [CONTRACT_SUBMIT] No data returned from insert')
+        throw new Error('فشل في إنشاء العقد - لم يتم إرجاع بيانات')
       }
       
       console.log('✅ [CONTRACT_SUBMIT] Contract created successfully:', insertedData)
       
-      // Only proceed with UI updates if database insert was successful
-      refetch()
+      // Update UI only after successful database operation
+      await refetch()
       setShowContractWizard(false)
       setPreselectedCustomerId(null)
       
       return insertedData
     } catch (error) {
-      console.error('❌ [CONTRACT_SUBMIT] Error creating contract:', error)
+      console.error('❌ [CONTRACT_SUBMIT] Error in contract creation:', error)
       throw error // Re-throw so the wizard can handle the error
     }
   }
