@@ -33,7 +33,7 @@ const stepTitles = [
 interface ContractWizardProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit?: (contractData: any) => Promise<void>
+  onSubmit?: (contractData: any) => Promise<any>
   preselectedCustomerId?: string
 }
 

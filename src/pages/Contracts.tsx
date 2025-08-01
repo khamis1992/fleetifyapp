@@ -243,26 +243,44 @@ export default function Contracts() {
     try {
       console.log('📋 [CONTRACT_SUBMIT] Raw form data:', contractData)
       
-      // Remove fields that don't exist in the contracts table
-      const { 
-        rental_days, 
-        validation_status, 
-        validation_errors, 
-        requires_approval, 
-        approval_steps,
-        is_draft,
-        draft_id,
-        ...contractInsertData 
-      } = contractData
+      // Remove ALL fields that don't exist in the contracts table
+      const cleanedData = Object.keys(contractData).reduce((acc, key) => {
+        // Skip all fields that start with underscore (internal fields)
+        if (key.startsWith('_')) {
+          console.log('🧹 [CONTRACT_SUBMIT] Removing internal field:', key)
+          return acc
+        }
+        
+        // Skip other non-database fields
+        const fieldsToSkip = [
+          'rental_days', 
+          'validation_status', 
+          'validation_errors', 
+          'requires_approval', 
+          'approval_steps',
+          'is_draft',
+          'draft_id',
+          'last_saved_at'
+        ]
+        
+        if (fieldsToSkip.includes(key)) {
+          console.log('🧹 [CONTRACT_SUBMIT] Removing non-DB field:', key)
+          return acc
+        }
+        
+        acc[key] = contractData[key]
+        return acc
+      }, {} as any)
       
       // Prepare the final data for database insertion
       const finalData = {
-        ...contractInsertData,
+        ...cleanedData,
         company_id: user?.profile?.company_id || user?.company?.id,
         created_by: user?.id
       }
       
-      console.log('💾 [CONTRACT_SUBMIT] Data being sent to database:', finalData)
+      console.log('💾 [CONTRACT_SUBMIT] Cleaned data being sent to database:', finalData)
+      console.log('💾 [CONTRACT_SUBMIT] Fields count - Original:', Object.keys(contractData).length, 'Cleaned:', Object.keys(finalData).length)
       
       const { data: insertedData, error } = await supabase
         .from('contracts')
@@ -275,13 +293,16 @@ export default function Contracts() {
       }
       
       console.log('✅ [CONTRACT_SUBMIT] Contract created successfully:', insertedData)
+      
+      // Only proceed with UI updates if database insert was successful
       refetch()
       setShowContractWizard(false)
-      // Clear preselected customer after successful creation
       setPreselectedCustomerId(null)
+      
+      return insertedData
     } catch (error) {
       console.error('❌ [CONTRACT_SUBMIT] Error creating contract:', error)
-      // Error message is already shown in the first catch block
+      throw error // Re-throw so the wizard can handle the error
     }
   }
 

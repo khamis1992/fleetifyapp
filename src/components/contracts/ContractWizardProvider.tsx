@@ -82,7 +82,7 @@ const defaultData: ContractWizardData = {
 
 interface ContractWizardProviderProps {
   children: ReactNode
-  onSubmit?: (data: ContractWizardData) => Promise<void>
+  onSubmit?: (data: ContractWizardData) => Promise<any>
   preselectedCustomerId?: string
 }
 
@@ -297,14 +297,22 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     }
 
     try {
+      console.log('📝 [CONTRACT_WIZARD] Starting contract submission')
+      console.log('📝 [CONTRACT_WIZARD] Data before submission:', data)
+      
       const finalData = {
         ...data,
         is_draft: false
       }
       
-      await onSubmit(finalData)
+      console.log('📝 [CONTRACT_WIZARD] Final data for submission:', finalData)
       
-      // Delete draft after successful submission
+      // Wait for the actual database operation to complete
+      const result = await onSubmit(finalData)
+      
+      console.log('✅ [CONTRACT_WIZARD] Contract submission successful:', result)
+      
+      // Only proceed with cleanup if submission was successful
       if (data.draft_id) {
         await deleteDraft()
       }
@@ -313,10 +321,11 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       setData(defaultData)
       setCurrentStep(0)
       
+      // Show success message only after successful database operation
       toast.success('تم إنشاء العقد بنجاح')
     } catch (error) {
-      console.error('Error submitting contract:', error)
-      toast.error('خطأ في إنشاء العقد')
+      console.error('❌ [CONTRACT_WIZARD] Error submitting contract:', error)
+      toast.error('خطأ في إنشاء العقد: ' + (error.message || 'حدث خطأ غير متوقع'))
     }
   }
 
