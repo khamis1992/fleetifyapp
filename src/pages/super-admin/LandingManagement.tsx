@@ -17,10 +17,10 @@ const LandingManagement: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Landing Page Management
+            إدارة الصفحات المقصودة
           </h1>
           <p className="text-muted-foreground">
-            Manage and customize landing pages for all companies
+            إدارة وتخصيص الصفحات المقصودة لجميع الشركات
           </p>
         </div>
 
@@ -28,36 +28,36 @@ const LandingManagement: React.FC = () => {
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="content" className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
-              Content
+              المحتوى
             </TabsTrigger>
             <TabsTrigger value="media" className="flex items-center gap-2">
               <Image className="h-4 w-4" />
-              Media
+              الوسائط
             </TabsTrigger>
             <TabsTrigger value="themes" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              Themes
+              القوالب
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Analytics
+              التحليلات
             </TabsTrigger>
             <TabsTrigger value="preview" className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
-              Preview
+              المعاينة
             </TabsTrigger>
             <TabsTrigger value="ab-testing" className="flex items-center gap-2">
               <TestTube className="h-4 w-4" />
-              A/B Testing
+              اختبار أ/ب
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="content" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Content Management</CardTitle>
+                <CardTitle>إدارة المحتوى</CardTitle>
                 <CardDescription>
-                  Manage sections and content for landing pages
+                  إدارة أقسام ومحتوى الصفحات المقصودة
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -69,9 +69,9 @@ const LandingManagement: React.FC = () => {
           <TabsContent value="media" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Media Library</CardTitle>
+                <CardTitle>مكتبة الوسائط</CardTitle>
                 <CardDescription>
-                  Upload and manage images, videos, and other media assets
+                  رفع وإدارة الصور والفيديوهات والوسائط الأخرى
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -83,9 +83,9 @@ const LandingManagement: React.FC = () => {
           <TabsContent value="themes" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Theme Settings</CardTitle>
+                <CardTitle>إعدادات القوالب</CardTitle>
                 <CardDescription>
-                  Customize colors, fonts, and visual styling
+                  تخصيص الألوان والخطوط والتصميم المرئي
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -97,9 +97,9 @@ const LandingManagement: React.FC = () => {
           <TabsContent value="analytics" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Landing Page Analytics</CardTitle>
+                <CardTitle>تحليلات الصفحة المقصودة</CardTitle>
                 <CardDescription>
-                  View performance metrics and user engagement data
+                  عرض مقاييس الأداء وبيانات تفاعل المستخدمين
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -111,9 +111,9 @@ const LandingManagement: React.FC = () => {
           <TabsContent value="preview" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Live Preview</CardTitle>
+                <CardTitle>المعاينة المباشرة</CardTitle>
                 <CardDescription>
-                  Preview how landing pages will appear to visitors
+                  معاينة كيف ستظهر الصفحات المقصودة للزوار
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -125,9 +125,9 @@ const LandingManagement: React.FC = () => {
           <TabsContent value="ab-testing" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>A/B Testing</CardTitle>
+                <CardTitle>اختبار أ/ب</CardTitle>
                 <CardDescription>
-                  Create and manage A/B tests for landing page optimization
+                  إنشاء وإدارة اختبارات أ/ب لتحسين الصفحة المقصودة
                 </CardDescription>
               </CardHeader>
               <CardContent>

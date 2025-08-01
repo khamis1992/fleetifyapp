@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, Globe, Languages, FileText, Image, Video, Link2 } from 'lucide-react';
 import { useLandingSections } from '@/hooks/useLandingSections';
+import { useLandingContent } from '@/hooks/useLandingContent';
 import { toast } from 'sonner';
 
 interface Section {
@@ -24,10 +26,12 @@ interface Section {
 }
 
 export const LandingContentManager: React.FC = () => {
-  const { sections, loading, createSection, updateSection, deleteSection } = useLandingSections();
+  const { sections, loading: sectionsLoading, createSection, updateSection, deleteSection } = useLandingSections();
+  const { content, loading: contentLoading, createContent, updateContent, deleteContent } = useLandingContent();
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('sections');
 
   const sectionTypes = [
     { value: 'hero', label: 'Hero Section', label_ar: 'قسم البطل' },
@@ -127,7 +131,7 @@ export const LandingContentManager: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {loading ? (
+        {sectionsLoading ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading sections...</p>
           </div>
