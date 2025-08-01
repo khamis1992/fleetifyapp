@@ -246,10 +246,29 @@ export default function Contracts() {
       
       // Validate required fields
       const requiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount', 'monthly_amount']
-      const missingFields = requiredFields.filter(field => !contractData[field])
+      const numericFields = ['contract_amount', 'monthly_amount']
+      
+      const missingFields = requiredFields.filter(field => {
+        const value = contractData[field]
+        // For numeric fields, check if value exists and is a valid number (including 0)
+        if (numericFields.includes(field)) {
+          return value === undefined || value === null || value === '' || isNaN(Number(value))
+        }
+        // For other fields, check if value exists and is not empty
+        return !value || (typeof value === 'string' && value.trim() === '')
+      })
       
       if (missingFields.length > 0) {
-        const errorMsg = `حقول مطلوبة مفقودة: ${missingFields.join(', ')}`
+        const fieldLabels = {
+          'customer_id': 'العميل',
+          'contract_type': 'نوع العقد', 
+          'start_date': 'تاريخ البداية',
+          'end_date': 'تاريخ النهاية',
+          'contract_amount': 'قيمة العقد',
+          'monthly_amount': 'المبلغ الشهري'
+        }
+        const missingFieldLabels = missingFields.map(field => fieldLabels[field] || field)
+        const errorMsg = `حقول مطلوبة مفقودة: ${missingFieldLabels.join(', ')}`
         console.error('❌ [CONTRACT_SUBMIT] Missing required fields:', missingFields)
         throw new Error(errorMsg)
       }
