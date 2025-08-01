@@ -13,7 +13,8 @@ import {
   BarChart3,
   Shield,
   Crown,
-  Headphones
+  Headphones,
+  Layout
 } from 'lucide-react';
 import {
   Sheet,
@@ -51,6 +52,11 @@ const navigationItems = [
     name: 'تقارير النظام', 
     href: '/super-admin/reports', 
     icon: BarChart3 
+  },
+  { 
+    name: 'إدارة الصفحات المقصودة', 
+    href: '/super-admin/landing-management', 
+    icon: Layout 
   },
 ];
 

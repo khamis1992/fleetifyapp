@@ -49,6 +49,7 @@ import SupportTicketDetail from "./pages/SupportTicketDetail";
 import SuperAdminSupport from "./pages/super-admin/Support";
 import SuperAdminPayments from "./pages/super-admin/Payments";
 import SuperAdminReports from "./pages/super-admin/Reports";
+import LandingManagement from "./pages/super-admin/LandingManagement";
 import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="support" element={<SuperAdminSupport />} />
               <Route path="payments" element={<SuperAdminPayments />} />
               <Route path="reports" element={<SuperAdminReports />} />
+              <Route path="landing-management" element={<LandingManagement />} />
               <Route path="settings" element={<SuperAdminSettings />} />
             </Route>
             <Route path="/*" element={<DashboardLayout />}>
