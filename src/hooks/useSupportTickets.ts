@@ -60,8 +60,17 @@ export interface UpdateTicketData {
 
 export const useSupportTickets = () => {
   const { user } = useAuth();
-  const { filter } = useUnifiedCompanyAccess();
+  const { filter, companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
+  
+  // Debug logging to track authentication issues
+  console.log('🎫 [SUPPORT_TICKETS] Debug info:', {
+    hasUser: !!user,
+    userId: user?.id,
+    companyId,
+    filter,
+    userCompanyId: (user as any)?.company_id
+  });
 
   const {
     data: tickets = [],
@@ -92,21 +101,51 @@ export const useSupportTickets = () => {
 
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: CreateTicketData) => {
-      if (!user || !filter.company_id) {
-        throw new Error('User not authenticated or company not found');
+      console.log('🎫 [CREATE_TICKET] Attempting to create ticket:', {
+        hasUser: !!user,
+        userId: user?.id,
+        filterCompanyId: filter.company_id,
+        directCompanyId: companyId,
+        userCompanyId: (user as any)?.company_id,
+        ticketData
+      });
+
+      if (!user) {
+        console.error('🎫 [CREATE_TICKET] No user found');
+        throw new Error('المستخدم غير مسجل الدخول');
       }
+
+      // Try multiple company ID sources
+      const resolvedCompanyId = filter.company_id || companyId || (user as any)?.company_id;
+      
+      if (!resolvedCompanyId) {
+        console.error('🎫 [CREATE_TICKET] No company ID found:', {
+          filter,
+          companyId,
+          userCompanyId: (user as any)?.company_id,
+          userObject: user
+        });
+        throw new Error('لم يتم العثور على معرف الشركة. يرجى المحاولة مرة أخرى أو الاتصال بالدعم');
+      }
+
+      console.log('🎫 [CREATE_TICKET] Creating ticket with company ID:', resolvedCompanyId);
 
       const { data, error } = await (supabase
         .from('support_tickets') as any)
         .insert({
           ...ticketData,
-          company_id: filter.company_id,
+          company_id: resolvedCompanyId,
           created_by: user.id
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('🎫 [CREATE_TICKET] Database error:', error);
+        throw error;
+      }
+
+      console.log('🎫 [CREATE_TICKET] Ticket created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -114,8 +153,9 @@ export const useSupportTickets = () => {
       toast.success('تم إنشاء التذكرة بنجاح');
     },
     onError: (error) => {
-      console.error('Error creating ticket:', error);
-      toast.error('حدث خطأ في إنشاء التذكرة');
+      console.error('🎫 [CREATE_TICKET] Mutation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ في إنشاء التذكرة';
+      toast.error(errorMessage);
     }
   });
 
