@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { CreditCard, Plus, Edit, Trash2, Check, Users, Star } from 'lucide-react';
+import { CreditCard, Plus, Edit, Trash2, Check, Users, Star, Car, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionPlan {
@@ -19,6 +19,8 @@ interface SubscriptionPlan {
   price_yearly: number;
   features: string[];
   max_users: number;
+  max_vehicles: number;
+  max_contracts: number;
   max_companies?: number;
   is_popular: boolean;
   is_active: boolean;
@@ -33,14 +35,16 @@ export const SubscriptionPlansManager: React.FC = () => {
   // Mock data - in real app this would come from useSubscriptionPlans hook
   const [plans, setPlans] = useState<SubscriptionPlan[]>([
     {
-      id: '3',
-      name: 'Enterprise',
-      name_ar: 'مؤسسي',
-      description: 'خطة مناسبة للشركات الكبيرة',
-      price_monthly: 100,
-      price_yearly: 1000,
-      features: ['مستخدمين غير محدود', 'تقارير شاملة', 'دعم فني مخصص', 'تخزين غير محدود', 'تكامل مخصص'],
-      max_users: -1, // unlimited
+      id: '1',
+      name: 'Basic',
+      name_ar: 'أساسي',
+      description: 'خطة مناسبة للشركات الصغيرة',
+      price_monthly: 25,
+      price_yearly: 250,
+      features: ['5 مستخدمين', '10 مركبات', '20 عقد', 'تقارير أساسية', 'دعم فني'],
+      max_users: 5,
+      max_vehicles: 10,
+      max_contracts: 20,
       is_popular: false,
       is_active: true,
       created_at: '2024-01-01'
@@ -52,21 +56,25 @@ export const SubscriptionPlansManager: React.FC = () => {
       description: 'خطة مناسبة للشركات المتوسطة',
       price_monthly: 50,
       price_yearly: 500,
-      features: ['15 مستخدم', 'تقارير متقدمة', 'دعم فني أولوية', 'تخزين 50 جيجا', 'ميزات متقدمة'],
-      max_users: 15,
+      features: ['25 مستخدم', '50 مركبة', '100 عقد', 'تقارير متقدمة', 'دعم فني أولوية'],
+      max_users: 25,
+      max_vehicles: 50,
+      max_contracts: 100,
       is_popular: true,
       is_active: true,
       created_at: '2024-01-01'
     },
     {
-      id: '1',
-      name: 'Basic',
-      name_ar: 'أساسي',
-      description: 'خطة مناسبة للشركات الصغيرة',
-      price_monthly: 25,
-      price_yearly: 250,
-      features: ['5 مستخدمين', 'تقارير أساسية', 'دعم فني', 'تخزين 5 جيجا'],
-      max_users: 5,
+      id: '3',
+      name: 'Enterprise',
+      name_ar: 'مؤسسي',
+      description: 'خطة مناسبة للشركات الكبيرة',
+      price_monthly: 100,
+      price_yearly: 1000,
+      features: ['مستخدمين غير محدود', 'مركبات غير محدودة', 'عقود غير محدودة', 'تقارير شاملة', 'دعم فني مخصص'],
+      max_users: -1, // unlimited
+      max_vehicles: -1, // unlimited
+      max_contracts: -1, // unlimited
       is_popular: false,
       is_active: true,
       created_at: '2024-01-01'
@@ -106,6 +114,8 @@ export const SubscriptionPlansManager: React.FC = () => {
       price_monthly: number;
       price_yearly: number;
       max_users: number;
+      max_vehicles: number;
+      max_contracts: number;
       features: string;
       is_popular: boolean;
       is_active: boolean;
@@ -116,6 +126,8 @@ export const SubscriptionPlansManager: React.FC = () => {
       price_monthly: editingPlan?.price_monthly || 0,
       price_yearly: editingPlan?.price_yearly || 0,
       max_users: editingPlan?.max_users || 5,
+      max_vehicles: editingPlan?.max_vehicles || 10,
+      max_contracts: editingPlan?.max_contracts || 20,
       features: editingPlan?.features?.join('\n') || '',
       is_popular: editingPlan?.is_popular || false,
       is_active: editingPlan?.is_active !== undefined ? editingPlan.is_active : true
@@ -182,15 +194,37 @@ export const SubscriptionPlansManager: React.FC = () => {
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="max_users">عدد المستخدمين الأقصى</Label>
-            <Input
-              id="max_users"
-              type="number"
-              value={formData.max_users}
-              onChange={(e) => setFormData({ ...formData, max_users: Number(e.target.value) })}
-              placeholder="-1 للاستخدام غير المحدود"
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="max_users">عدد المستخدمين الأقصى</Label>
+              <Input
+                id="max_users"
+                type="number"
+                value={formData.max_users}
+                onChange={(e) => setFormData({ ...formData, max_users: Number(e.target.value) })}
+                placeholder="-1 للاستخدام غير المحدود"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="max_vehicles">عدد المركبات الأقصى</Label>
+              <Input
+                id="max_vehicles"
+                type="number"
+                value={formData.max_vehicles}
+                onChange={(e) => setFormData({ ...formData, max_vehicles: Number(e.target.value) })}
+                placeholder="-1 للاستخدام غير المحدود"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="max_contracts">عدد العقود الأقصى</Label>
+              <Input
+                id="max_contracts"
+                type="number"
+                value={formData.max_contracts}
+                onChange={(e) => setFormData({ ...formData, max_contracts: Number(e.target.value) })}
+                placeholder="-1 للاستخدام غير المحدود"
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -291,11 +325,19 @@ export const SubscriptionPlansManager: React.FC = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {plan.max_users === -1 ? 'مستخدمين غير محدود' : `حتى ${plan.max_users} مستخدمين`}
-                    </span>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{plan.max_users === -1 ? 'غير محدود' : plan.max_users}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Car className="h-4 w-4 text-muted-foreground" />
+                      <span>{plan.max_vehicles === -1 ? 'غير محدود' : plan.max_vehicles}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>{plan.max_contracts === -1 ? 'غير محدود' : plan.max_contracts}</span>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
