@@ -424,7 +424,7 @@ export default function Contracts() {
                                contract.status === 'renewed' ? 'مجدد' : contract.status}
                             </span>
                           </Badge>
-                          <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                          <h3 className="font-semibold text-lg">{contract.contract_number} عقد رقم</h3>
                         </div>
                         
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -518,7 +518,7 @@ export default function Contracts() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                        <h3 className="font-semibold text-lg">{contract.contract_number} عقد رقم</h3>
                         <Badge className={getStatusColor(contract.status)}>
                           {getStatusIcon(contract.status)}
                           <span className="mr-1">نشط</span>
@@ -570,7 +570,7 @@ export default function Contracts() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                        <h3 className="font-semibold text-lg">{contract.contract_number} عقد رقم</h3>
                         <Badge className={getStatusColor(contract.status)}>
                           {getStatusIcon(contract.status)}
                           <span className="mr-1">معلق</span>
@@ -634,7 +634,7 @@ export default function Contracts() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                        <h3 className="font-semibold text-lg">{contract.contract_number} عقد رقم</h3>
                         <Badge className={getStatusColor(contract.status)}>
                           {getStatusIcon(contract.status)}
                           <span className="mr-1">منتهي</span>
