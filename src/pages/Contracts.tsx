@@ -280,61 +280,6 @@ export default function Contracts() {
     await autoRenewContracts.mutateAsync()
   }
 
-  const handleFixDraftContracts = async () => {
-    try {
-      // أولاً، نزيل معرف القيد المحاسبي من العقود المسودة لتجنب مشاكل النظام المحاسبي
-      const { error: updateJournalError } = await supabase
-        .from('contracts')
-        .update({ journal_entry_id: null })
-        .eq('company_id', user?.profile?.company_id)
-        .eq('status', 'draft')
-
-      if (updateJournalError) {
-        console.error('❌ Error removing journal entries:', updateJournalError)
-        throw updateJournalError
-      }
-
-      // ثم نحدث العقود المسودة ذات البيانات الصحيحة إلى حالة نشطة
-      const { data, error } = await supabase
-        .from('contracts')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('company_id', user?.profile?.company_id)
-        .eq('status', 'draft')
-        .gt('contract_amount', 0)
-        .neq('customer_id', null)
-        .neq('start_date', null)
-        .neq('end_date', null)
-        .select()
-
-      if (error) throw error
-
-      // عرض رسالة نجاح مع عدد العقود المفعلة
-      const activatedCount = data?.length || 0
-      
-      toast({
-        title: "تم تفعيل العقود بنجاح",
-        description: `تم تفعيل ${activatedCount} عقد من المسودات`,
-      })
-
-      // إعادة تحميل البيانات
-      queryClient.invalidateQueries({ queryKey: ['contracts'] })
-      refetch()
-      
-      console.log('✅ تم تفعيل العقود المسودة بنجاح')
-    } catch (error) {
-      console.error('❌ خطأ في تفعيل العقود المسودة:', error)
-      
-      toast({
-        title: "خطأ في تفعيل العقود",
-        description: "حدث خطأ أثناء تفعيل العقود المسودة",
-        variant: "destructive",
-      })
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -362,12 +307,6 @@ export default function Contracts() {
             <FileText className="h-4 w-4 mr-2" />
             تصدير التقرير
           </Button>
-          {draftContracts.length > 0 && (
-            <Button variant="outline" onClick={handleFixDraftContracts}>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              تفعيل المسودات ({draftContracts.length})
-            </Button>
-          )}
           <Button variant="outline" onClick={handleAutoRenew} disabled={autoRenewContracts.isPending}>
             <RefreshCw className="h-4 w-4 mr-2" />
             {autoRenewContracts.isPending ? 'جاري التجديد...' : 'تجديد تلقائي'}
