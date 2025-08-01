@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ContractForm } from "@/components/finance/ContractForm"
+import { ContractWizard } from "@/components/contracts/ContractWizard"
+import { ContractTemplateManager } from "@/components/contracts/ContractTemplateManager"
 import { ContractExpirationAlerts } from "@/components/contracts/ContractExpirationAlerts"
 import { ContractRenewalDialog } from "@/components/contracts/ContractRenewalDialog"
 import { ContractStatusManagement } from "@/components/contracts/ContractStatusManagement"
@@ -24,6 +26,8 @@ import { useQueryClient } from "@tanstack/react-query"
 
 export default function Contracts() {
   const [showContractForm, setShowContractForm] = useState(false)
+  const [showContractWizard, setShowContractWizard] = useState(false)
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | null>(null)
   const location = useLocation()
@@ -43,7 +47,7 @@ export default function Contracts() {
   useEffect(() => {
     if (location.state?.selectedCustomerId) {
       setPreselectedCustomerId(location.state.selectedCustomerId)
-      setShowContractForm(true)
+      setShowContractWizard(true)
     }
   }, [location.state])
 
@@ -256,6 +260,7 @@ export default function Contracts() {
       console.log('✅ [CONTRACT_SUBMIT] Contract created successfully')
       refetch()
       setShowContractForm(false)
+      setShowContractWizard(false)
       // Clear preselected customer after successful creation
       setPreselectedCustomerId(null)
     } catch (error) {
@@ -352,6 +357,10 @@ export default function Contracts() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowTemplateManager(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            القوالب
+          </Button>
           <Button variant="outline" onClick={() => setShowExportDialog(true)}>
             <FileText className="h-4 w-4 mr-2" />
             تصدير التقرير
@@ -378,9 +387,16 @@ export default function Contracts() {
           <Button onClick={() => {
             setPreselectedCustomerId(null)
             setShowContractForm(true)
+          }} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            عقد عادي
+          </Button>
+          <Button onClick={() => {
+            setPreselectedCustomerId(null)
+            setShowContractWizard(true)
           }}>
             <Plus className="h-4 w-4 mr-2" />
-            عقد جديد
+            معالج العقود
           </Button>
         </div>
       </div>
@@ -802,6 +818,29 @@ export default function Contracts() {
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
       />
+      
+      <ContractWizard
+        open={showContractWizard}
+        onOpenChange={setShowContractWizard}
+        onSubmit={handleContractSubmit}
+        preselectedCustomerId={preselectedCustomerId}
+      />
+      
+      {showTemplateManager && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background border rounded-lg shadow-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold">قوالب العقود</h2>
+              <Button variant="outline" onClick={() => setShowTemplateManager(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6">
+              <ContractTemplateManager />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

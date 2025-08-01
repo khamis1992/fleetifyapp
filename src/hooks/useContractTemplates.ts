@@ -1,12 +1,9 @@
 import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 
+// Simplified templates without database operations for now
 export interface ContractTemplate {
   id: string
-  company_id: string
   template_name: string
   template_name_ar: string
   contract_type: string
@@ -20,97 +17,63 @@ export interface ContractTemplate {
     receivables_account_id?: string
     cost_center_id?: string
   }
-  is_active: boolean
-  created_by: string
-  created_at: string
-  updated_at: string
 }
 
+// Mock data for demonstration
+const defaultTemplates: ContractTemplate[] = [
+  {
+    id: '1',
+    template_name: 'Daily Rental Template',
+    template_name_ar: 'قالب الإيجار اليومي',
+    contract_type: 'daily_rental',
+    default_terms: 'شروط وأحكام الإيجار اليومي...',
+    default_duration_days: 1,
+    auto_calculate_pricing: true,
+    requires_approval: false,
+    approval_threshold: 5000,
+    account_mappings: {}
+  },
+  {
+    id: '2',
+    template_name: 'Monthly Rental Template',
+    template_name_ar: 'قالب الإيجار الشهري',
+    contract_type: 'monthly_rental',
+    default_terms: 'شروط وأحكام الإيجار الشهري...',
+    default_duration_days: 30,
+    auto_calculate_pricing: true,
+    requires_approval: true,
+    approval_threshold: 10000,
+    account_mappings: {}
+  }
+]
+
 export const useContractTemplates = () => {
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
+  const [templates] = useState<ContractTemplate[]>(defaultTemplates)
+  const [isLoading] = useState(false)
 
-  // Fetch templates
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ['contract-templates', user?.profile?.company_id],
-    queryFn: async () => {
-      if (!user?.profile?.company_id) return []
-      
-      const { data, error } = await supabase
-        .from('contract_templates')
-        .select('*')
-        .eq('company_id', user.profile.company_id)
-        .eq('is_active', true)
-        .order('template_name')
-      
-      if (error) throw error
-      return data as ContractTemplate[]
+  const createTemplate = {
+    mutate: (templateData: Partial<ContractTemplate>) => {
+      console.log('Creating template:', templateData)
+      toast.success('سيتم إضافة وظيفة القوالب قريباً')
     },
-    enabled: !!user?.profile?.company_id,
-  })
+    isPending: false
+  }
 
-  // Create template mutation
-  const createTemplate = useMutation({
-    mutationFn: async (templateData: Partial<ContractTemplate>) => {
-      const { error } = await supabase
-        .from('contract_templates')
-        .insert([{
-          ...templateData,
-          company_id: user?.profile?.company_id,
-          created_by: user?.id
-        }])
-      
-      if (error) throw error
+  const updateTemplate = {
+    mutate: ({ id, updates }: { id: string, updates: Partial<ContractTemplate> }) => {
+      console.log('Updating template:', id, updates)
+      toast.success('سيتم تحديث القوالب قريباً')
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract-templates'] })
-      toast.success('تم إنشاء القالب بنجاح')
-    },
-    onError: (error) => {
-      console.error('Error creating template:', error)
-      toast.error('خطأ في إنشاء القالب')
-    }
-  })
+    isPending: false
+  }
 
-  // Update template mutation
-  const updateTemplate = useMutation({
-    mutationFn: async ({ id, updates }: { id: string, updates: Partial<ContractTemplate> }) => {
-      const { error } = await supabase
-        .from('contract_templates')
-        .update(updates)
-        .eq('id', id)
-      
-      if (error) throw error
+  const deleteTemplate = {
+    mutate: (id: string) => {
+      console.log('Deleting template:', id)
+      toast.success('سيتم حذف القوالب قريباً')
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract-templates'] })
-      toast.success('تم تحديث القالب بنجاح')
-    },
-    onError: (error) => {
-      console.error('Error updating template:', error)
-      toast.error('خطأ في تحديث القالب')
-    }
-  })
-
-  // Delete template mutation
-  const deleteTemplate = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('contract_templates')
-        .update({ is_active: false })
-        .eq('id', id)
-      
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contract-templates'] })
-      toast.success('تم حذف القالب بنجاح')
-    },
-    onError: (error) => {
-      console.error('Error deleting template:', error)
-      toast.error('خطأ في حذف القالب')
-    }
-  })
+    isPending: false
+  }
 
   return {
     templates,
