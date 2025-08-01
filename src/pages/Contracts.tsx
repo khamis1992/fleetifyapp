@@ -398,56 +398,7 @@ export default function Contracts() {
               filteredContracts.map((contract) => (
                 <Card key={contract.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
-                          <Badge className={getStatusColor(contract.status)}>
-                            {getStatusIcon(contract.status)}
-                            <span className="mr-1">
-                              {contract.status === 'active' ? 'نشط' :
-                               contract.status === 'draft' ? 'مسودة' :
-                               contract.status === 'expired' ? 'منتهي' :
-                               contract.status === 'suspended' ? 'معلق' :
-                               contract.status === 'cancelled' ? 'ملغي' :
-                               contract.status === 'renewed' ? 'مجدد' : contract.status}
-                            </span>
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                               {getContractTypeLabel(contract.contract_type)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {new Date(contract.start_date).toLocaleDateString('en-GB')} - {new Date(contract.end_date).toLocaleDateString('en-GB')}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {contract.contract_amount?.toFixed(3)} د.ك
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">عميل رقم: {contract.customer_id}</span>
-                          </div>
-                        </div>
-                        
-                        {contract.description && (
-                          <p className="text-sm text-muted-foreground">{contract.description}</p>
-                        )}
-                      </div>
-                      
+                    <div className="flex items-start justify-between flex-row-reverse">
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => { setSelectedContract(contract); setShowDetailsDialog(true); }}>
                           عرض
@@ -462,6 +413,55 @@ export default function Contracts() {
                           <Settings className="h-4 w-4 mr-2" />
                           إدارة
                         </Button>
+                      </div>
+                      
+                      <div className="flex-1 space-y-2 ml-4">
+                        <div className="flex items-center gap-2 justify-end">
+                          <Badge className={getStatusColor(contract.status)}>
+                            {getStatusIcon(contract.status)}
+                            <span className="mr-1">
+                              {contract.status === 'active' ? 'نشط' :
+                               contract.status === 'draft' ? 'مسودة' :
+                               contract.status === 'expired' ? 'منتهي' :
+                               contract.status === 'suspended' ? 'معلق' :
+                               contract.status === 'cancelled' ? 'ملغي' :
+                               contract.status === 'renewed' ? 'مجدد' : contract.status}
+                            </span>
+                          </Badge>
+                          <h3 className="font-semibold text-lg">عقد رقم {contract.contract_number}</h3>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="flex items-center gap-2 justify-end">
+                            <span className="text-sm">عميل رقم: {contract.customer_id}</span>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          
+                          <div className="flex items-center gap-2 justify-end">
+                            <span className="text-sm font-medium">
+                              {contract.contract_amount?.toFixed(3)} د.ك
+                            </span>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          
+                          <div className="flex items-center gap-2 justify-end">
+                            <span className="text-sm">
+                              {new Date(contract.start_date).toLocaleDateString('en-GB')} - {new Date(contract.end_date).toLocaleDateString('en-GB')}
+                            </span>
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          
+                          <div className="flex items-center gap-2 justify-end">
+                            <span className="text-sm">
+                               {getContractTypeLabel(contract.contract_type)}
+                            </span>
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        
+                        {contract.description && (
+                          <p className="text-sm text-muted-foreground text-right">{contract.description}</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
