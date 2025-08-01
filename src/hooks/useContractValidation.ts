@@ -37,9 +37,48 @@ export const useContractValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isValidUUID = (value: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value);
+  };
+
+  const cleanFormDataForValidation = (formData: ContractFormData): ContractFormData => {
+    const cleaned = { ...formData };
+    
+    // Convert empty strings to null for UUID fields
+    if (cleaned.customer_id === '' || cleaned.customer_id === undefined) {
+      cleaned.customer_id = undefined;
+    }
+    if (cleaned.vehicle_id === '' || cleaned.vehicle_id === undefined) {
+      cleaned.vehicle_id = undefined;
+    }
+    
+    return cleaned;
+  };
+
+  const hasValidData = (formData: ContractFormData): boolean => {
+    const customerId = formData.customer_id?.trim();
+    const vehicleId = formData.vehicle_id?.trim();
+    
+    // Return false if both are empty, null, or undefined
+    if ((!customerId || customerId === '') && (!vehicleId || vehicleId === '')) {
+      return false;
+    }
+    
+    // Validate UUID format if provided
+    if (customerId && customerId !== '' && !isValidUUID(customerId)) {
+      return false;
+    }
+    if (vehicleId && vehicleId !== '' && !isValidUUID(vehicleId)) {
+      return false;
+    }
+    
+    return true;
+  };
+
   const validateContract = useCallback(async (formData: ContractFormData) => {
     // Return early if no meaningful data to validate
-    if (!formData || (!formData.customer_id && !formData.vehicle_id)) {
+    if (!formData || !hasValidData(formData)) {
       setValidation({ valid: true, alerts: [], warnings: [], errors: [] });
       return;
     }
@@ -47,8 +86,9 @@ export const useContractValidation = () => {
     setIsValidating(true);
     
     try {
+      const cleanedData = cleanFormDataForValidation(formData);
       const { data, error } = await supabase.rpc('validate_contract_realtime', {
-        contract_data: formData as any
+        contract_data: cleanedData as any
       });
 
       if (error) {
