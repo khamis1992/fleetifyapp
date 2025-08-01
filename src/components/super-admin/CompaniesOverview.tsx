@@ -38,6 +38,19 @@ export const CompaniesOverview: React.FC<CompaniesOverviewProps> = ({ companies,
     }
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'نشط';
+      case 'suspended':
+        return 'معلق';
+      case 'trial':
+        return 'تجريبي';
+      default:
+        return status;
+    }
+  };
+
   if (loading) {
     return (
       <Card className="animate-pulse">
@@ -67,10 +80,10 @@ export const CompaniesOverview: React.FC<CompaniesOverviewProps> = ({ companies,
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
-            Recent Companies
+            الشركات الحديثة
           </CardTitle>
           <Button variant="outline" size="sm">
-            View All
+            عرض الكل
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
@@ -84,37 +97,37 @@ export const CompaniesOverview: React.FC<CompaniesOverviewProps> = ({ companies,
                   <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                     {company.name}
                   </h3>
-                  <Badge 
-                    variant={getStatusVariant(company.status)}
-                    className={`${getStatusColor(company.status)} text-xs`}
-                  >
-                    {company.status}
-                  </Badge>
+                   <Badge 
+                     variant={getStatusVariant(company.status)}
+                     className={`${getStatusColor(company.status)} text-xs`}
+                   >
+                     {getStatusText(company.status)}
+                   </Badge>
                 </div>
                 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {company.userCount} users
+                    {company.userCount} مستخدم
                   </div>
                   <div className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
-                    {company.monthlyRevenue} KWD/month
+                    {company.monthlyRevenue} د.ك/شهر
                   </div>
                   <span>•</span>
-                  <span>
-                    Last active {formatDistanceToNow(new Date(company.lastActive), { addSuffix: true })}
-                  </span>
+                   <span>
+                     آخر نشاط منذ {formatDistanceToNow(new Date(company.lastActive), { addSuffix: true })}
+                   </span>
                 </div>
                 
                 <div className="text-xs text-muted-foreground">
-                  Plan: <span className="font-medium text-foreground">{company.subscriptionPlan}</span>
+                  الخطة: <span className="font-medium text-foreground">{company.subscriptionPlan}</span>
                 </div>
               </div>
               
               <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <Settings className="h-4 w-4" />
-                Manage
+                إدارة
               </Button>
             </div>
           ))}
@@ -122,7 +135,7 @@ export const CompaniesOverview: React.FC<CompaniesOverviewProps> = ({ companies,
           {companies.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No companies found</p>
+              <p>لم يتم العثور على شركات</p>
             </div>
           )}
         </div>
