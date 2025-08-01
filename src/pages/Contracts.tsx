@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { useLocation } from "react-router-dom"
-import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle, Building2, X } from "lucide-react"
+import { Plus, Calendar, FileText, DollarSign, Users, AlertCircle, CheckCircle, Clock, RefreshCw, Settings, Pause, XCircle, Building2, X, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { ContractForm } from "@/components/finance/ContractForm"
 import { ContractExpirationAlerts } from "@/components/contracts/ContractExpirationAlerts"
 import { ContractRenewalDialog } from "@/components/contracts/ContractRenewalDialog"
 import { ContractStatusManagement } from "@/components/contracts/ContractStatusManagement"
+import { useManualContractStatusUpdate } from "@/hooks/useContractStatusChecker"
 import { ContractDetailsDialog } from "@/components/contracts/ContractDetailsDialog"
 import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilters"
 import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
@@ -34,6 +35,7 @@ export default function Contracts() {
   const [filters, setFilters] = useState<any>({})
   const { user } = useAuth()
   const autoRenewContracts = useAutoRenewContracts()
+  const manualStatusUpdate = useManualContractStatusUpdate()
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -363,6 +365,15 @@ export default function Contracts() {
           <Button variant="outline" onClick={handleAutoRenew} disabled={autoRenewContracts.isPending}>
             <RefreshCw className="h-4 w-4 mr-2" />
             {autoRenewContracts.isPending ? 'جاري التجديد...' : 'تجديد تلقائي'}
+          </Button>
+          <Button
+            onClick={() => manualStatusUpdate.mutate()}
+            disabled={manualStatusUpdate.isPending}
+            variant="outline"
+            className="border-green-600 text-green-600 hover:bg-green-50"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            {manualStatusUpdate.isPending ? 'جاري التحديث...' : 'تحديث الحالات'}
           </Button>
           <Button onClick={() => {
             setPreselectedCustomerId(null)

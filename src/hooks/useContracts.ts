@@ -26,6 +26,9 @@ export interface Contract {
   renewal_terms?: any;
   vehicle_returned?: boolean;
   last_renewal_check?: string;
+  last_payment_check_date?: string;
+  suspension_reason?: string;
+  expired_at?: string;
   created_by?: string;
 }
 
