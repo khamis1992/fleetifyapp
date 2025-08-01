@@ -311,15 +311,6 @@ export default function Contracts() {
             <RefreshCw className="h-4 w-4 mr-2" />
             {autoRenewContracts.isPending ? 'جاري التجديد...' : 'تجديد تلقائي'}
           </Button>
-          <Button
-            onClick={() => manualStatusUpdate.mutate()}
-            disabled={manualStatusUpdate.isPending}
-            variant="outline"
-            className="border-green-600 text-green-600 hover:bg-green-50"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            {manualStatusUpdate.isPending ? 'جاري التحديث...' : 'تحديث الحالات'}
-          </Button>
           <Button onClick={() => {
             setPreselectedCustomerId(null)
             setShowContractWizard(true)
