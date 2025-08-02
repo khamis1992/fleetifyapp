@@ -8371,6 +8371,7 @@ export type Database = {
               entry_type_param?: string
               amount_param?: number
             }
+          | { contract_id_param: string; user_id_param?: string }
         Returns: string
       }
       create_contract_journal_entry_enhanced: {
