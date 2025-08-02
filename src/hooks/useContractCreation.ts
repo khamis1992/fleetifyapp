@@ -7,9 +7,11 @@ import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 export interface ContractCreationStep {
   id: string
   title: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'warning'
   error?: string
   retryCount?: number
+  executionTime?: number
+  warnings?: string[]
 }
 
 export interface ContractCreationState {
@@ -18,6 +20,9 @@ export interface ContractCreationState {
   contractId?: string
   isProcessing: boolean
   canRetry: boolean
+  totalExecutionTime?: number
+  hasWarnings: boolean
+  healthStatus: 'good' | 'warning' | 'error'
 }
 
 interface AutoConfigResult {
@@ -47,7 +52,9 @@ export const useContractCreation = () => {
       { id: 'finalization', title: 'إتمام العملية', status: 'pending' }
     ],
     isProcessing: false,
-    canRetry: false
+    canRetry: false,
+    hasWarnings: false,
+    healthStatus: 'good'
   })
 
   const updateStepStatus = (stepId: string, status: ContractCreationStep['status'], error?: string) => {
@@ -299,7 +306,9 @@ export const useContractCreation = () => {
         { id: 'finalization', title: 'إتمام العملية', status: 'pending' }
       ],
       isProcessing: false,
-      canRetry: false
+      canRetry: false,
+      hasWarnings: false,
+      healthStatus: 'good'
     })
   }
 

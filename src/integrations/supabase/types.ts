@@ -7516,6 +7516,10 @@ export type Database = {
         }
         Returns: Json
       }
+      cleanup_contract_issues: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       cleanup_inactive_accounts: {
         Args: { target_company_id: string; days_old?: number }
         Returns: number
@@ -8090,6 +8094,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      monitor_contract_health: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          contract_id: string
+          issue_type: string
+          issue_description: string
+          severity: string
+          recommended_action: string
+        }[]
+      }
       prepare_company_backup: {
         Args: { company_id_param: string; backup_type_param?: string }
         Returns: string
@@ -8139,6 +8153,10 @@ export type Database = {
       reverse_payment_bank_transaction: {
         Args: { payment_id_param: string }
         Returns: string
+      }
+      scheduled_contract_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       soft_delete_account: {
         Args: { account_id_param: string }
