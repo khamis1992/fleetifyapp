@@ -491,10 +491,7 @@ export const FinancialStep: React.FC = () => {
   // Get customer's linked accounts
   const { data: customerLinkedAccounts } = useCustomerLinkedAccounts(data.customer_id || '')
   
-  // Get cost centers using the dedicated hook
-  const { data: costCenters } = useCostCenters()
-
-  // Auto-set customer's financial account and cost center when customer is selected
+  // Auto-set customer's financial account when customer is selected
   React.useEffect(() => {
     console.log('[FINANCIAL_STEP] Effect triggered:', {
       customerLinkedAccounts,
@@ -514,167 +511,11 @@ export const FinancialStep: React.FC = () => {
     }
   }, [customerLinkedAccounts, data.account_id, data.customer_id, updateData])
 
-  // Enhanced cost center suggestion logic
-  const getSuggestedCostCenter = () => {
-    if (!costCenters || costCenters.length === 0) {
-      console.log('[COST_CENTER] No cost centers available for suggestion');
-      return null;
-    }
-    
-    console.log('[COST_CENTER] Starting suggestion process:', {
-      contractType: data.contract_type,
-      vehicleId: data.vehicle_id,
-      availableCenters: costCenters.length
-    });
+  // Note: Cost center is now handled automatically by the database trigger
+  // No manual cost center selection needed
 
-    // Enhanced matching rules with priorities
-    const rules = [
-      // Rule 1: Exact contract type match (highest priority)
-      {
-        priority: 1,
-        description: 'exact_contract_type_match',
-        keywords: getContractTypeKeywords(data.contract_type),
-        weight: 100
-      },
-      // Rule 2: Vehicle type integration (if vehicle is selected)
-      {
-        priority: 2, 
-        description: 'vehicle_type_match',
-        keywords: getVehicleTypeKeywords(),
-        weight: 80
-      },
-      // Rule 3: General business keywords
-      {
-        priority: 3,
-        description: 'general_business_match', 
-        keywords: ['تشغيل', 'عمليات', 'operations', 'main'],
-        weight: 50
-      }
-    ];
 
-    let bestMatch = null;
-    let bestScore = 0;
-    let matchReason = '';
-
-    for (const rule of rules) {
-      for (const center of costCenters) {
-        const score = calculateCenterScore(center, rule.keywords, rule.weight);
-        console.log('[COST_CENTER] Evaluating center:', {
-          centerCode: center.center_code,
-          centerName: center.center_name,
-          rule: rule.description,
-          score,
-          keywords: rule.keywords
-        });
-        
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = center;
-          matchReason = rule.description;
-        }
-      }
-    }
-
-    // Fallback: Use first available cost center if no smart match found
-    if (!bestMatch && costCenters.length > 0) {
-      bestMatch = costCenters[0];
-      matchReason = 'fallback_first_available';
-      console.log('[COST_CENTER] Using fallback - first available center:', bestMatch.center_code);
-    }
-
-    if (bestMatch) {
-      console.log('[COST_CENTER] Best match found:', {
-        centerCode: bestMatch.center_code,
-        centerName: bestMatch.center_name,
-        score: bestScore,
-        reason: matchReason
-      });
-    } else {
-      console.log('[COST_CENTER] No suitable cost center found');
-    }
-
-    return bestMatch;
-  };
-
-  // Helper function to get contract type keywords
-  const getContractTypeKeywords = (contractType: string) => {
-    const contractTypeKeywords = {
-      rental: ['إيجار', 'تأجير', 'rent', 'rental'],
-      service: ['خدمة', 'خدمات', 'service', 'services'], 
-      maintenance: ['صيانة', 'maintenance', 'repair'],
-      transportation: ['نقل', 'مواصلات', 'transport', 'logistics'],
-      sale: ['بيع', 'مبيعات', 'sales', 'sale'],
-      lease: ['تأجير', 'إيجار', 'lease', 'leasing']
-    };
-    
-    return contractTypeKeywords[contractType as keyof typeof contractTypeKeywords] || [];
-  };
-
-  // Helper function to get vehicle type keywords (if vehicle integration needed)
-  const getVehicleTypeKeywords = () => {
-    if (!selectedVehicle) return [];
-    
-    // Use vehicle make and model for now since vehicle_type isn't in the schema
-    const vehicleKeywords = [];
-    
-    if (selectedVehicle.make) {
-      vehicleKeywords.push(selectedVehicle.make.toLowerCase());
-    }
-    
-    if (selectedVehicle.model) {
-      vehicleKeywords.push(selectedVehicle.model.toLowerCase());
-    }
-    
-    // Add general vehicle keywords
-    vehicleKeywords.push('مركبة', 'سيارة', 'vehicle', 'car');
-    
-    return vehicleKeywords;
-  };
-
-  // Helper function to calculate center score based on keyword matching
-  const calculateCenterScore = (center: any, keywords: string[], weight: number) => {
-    if (!keywords.length) return 0;
-    
-    let score = 0;
-    const centerName = center.center_name?.toLowerCase() || '';
-    const centerNameAr = center.center_name_ar?.toLowerCase() || '';
-    const centerCode = center.center_code?.toLowerCase() || '';
-    
-    for (const keyword of keywords) {
-      const keywordLower = keyword.toLowerCase();
-      
-      // Exact match gets highest score
-      if (centerName === keywordLower || centerNameAr === keywordLower) {
-        score += weight;
-      }
-      // Contains match gets partial score
-      else if (centerName.includes(keywordLower) || centerNameAr.includes(keywordLower) || centerCode.includes(keywordLower)) {
-        score += weight * 0.7;
-      }
-    }
-    
-    return score;
-  };
-
-  // Auto-suggest cost center with enhanced timing
-  React.useEffect(() => {
-    // Only auto-suggest if:
-    // 1. No cost center is currently selected
-    // 2. We have cost centers available
-    // 3. Contract type is selected (key dependency)
-    if (!data.cost_center_id && costCenters && costCenters.length > 0 && data.contract_type) {
-      const suggestedCostCenter = getSuggestedCostCenter();
-      
-      if (suggestedCostCenter) {
-        console.log('[COST_CENTER] Auto-setting cost center:', {
-          centerCode: suggestedCostCenter.center_code,
-          centerName: suggestedCostCenter.center_name,
-          contractType: data.contract_type
-        });
-        updateData({ cost_center_id: suggestedCostCenter.id });
-      }
-    }
-  }, [data.cost_center_id, data.contract_type, data.vehicle_id, costCenters, updateData]);
+  // Cost center is now automatically assigned by database trigger
 
   // Get vehicle for calculations
   const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)
@@ -760,19 +601,16 @@ export const FinancialStep: React.FC = () => {
           </div>
         )}
 
-        {/* Cost Center Suggestion Information */}
-        {data.cost_center_id && getSuggestedCostCenter()?.id === data.cost_center_id && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              مركز التكلفة المقترح
-            </h4>
-            <p className="text-green-700 text-sm">
-              تم اقتراح مركز التكلفة تلقائياً بناءً على نوع العقد "{data.contract_type}". 
-              يمكنك تغييره إذا لزم الأمر.
-            </p>
-          </div>
-        )}
+        {/* Cost Center Information */}
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            مركز التكلفة
+          </h4>
+          <p className="text-blue-700 text-sm">
+            سيتم تعيين مركز التكلفة تلقائياً للعميل المحدد عند إنشاء العقد.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -870,39 +708,7 @@ export const FinancialStep: React.FC = () => {
             </Select>
           </div>
           
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="cost_center_id">مركز التكلفة</Label>
-              {data.cost_center_id && getSuggestedCostCenter()?.id === data.cost_center_id && (
-                <Badge variant="secondary" className="text-xs">
-                  مقترح تلقائياً
-                </Badge>
-              )}
-            </div>
-            <Select 
-              value={data.cost_center_id} 
-              onValueChange={(value) => updateData({ cost_center_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر مركز التكلفة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">بدون مركز تكلفة</SelectItem>
-                {costCenters?.map((center) => (
-                  <SelectItem key={center.id} value={center.id}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{center.center_code} - {center.center_name_ar || center.center_name}</span>
-                      {getSuggestedCostCenter()?.id === center.id && (
-                        <Badge variant="outline" className="text-xs ml-2">
-                          مقترح
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Cost center field removed - now handled automatically */}
         </div>
 
         {/* Proactive Alert System */}
