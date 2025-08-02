@@ -491,44 +491,46 @@ export const FinancialStep: React.FC = () => {
   // Get customer's linked accounts
   const { data: customerLinkedAccounts } = useCustomerLinkedAccounts(data.customer_id || '')
   
-  // Get cost centers
-  const { data: costCenters } = useQuery({
-    queryKey: ['cost-centers', user?.profile?.company_id],
-    queryFn: async () => {
-      if (!user?.profile?.company_id) return []
-      const { data, error } = await supabase
-        .from('cost_centers')
-        .select('id, center_code, center_name, center_name_ar')
-        .eq('company_id', user.profile.company_id)
-        .eq('is_active', true)
-        .order('center_code')
-      
-      if (error) throw error
-      return data || []
-    },
-    enabled: !!user?.profile?.company_id,
-  })
+  // Get cost centers using the dedicated hook
+  const { data: costCenters } = useCostCenters()
 
   // Auto-set customer's financial account when customer is selected
   React.useEffect(() => {
+    console.log('[FINANCIAL_STEP] Effect triggered:', {
+      customerLinkedAccounts,
+      hasAccounts: customerLinkedAccounts?.length > 0,
+      currentAccountId: data.account_id,
+      customerId: data.customer_id
+    });
+
     if (customerLinkedAccounts && customerLinkedAccounts.length > 0 && !data.account_id) {
       const primaryAccountLink = customerLinkedAccounts[0]
-      const chartOfAccounts = primaryAccountLink?.chart_of_accounts
       
-      // Check if chart_of_accounts is properly loaded and has the expected structure
-      if (chartOfAccounts && 
-          Array.isArray(chartOfAccounts) && 
-          chartOfAccounts.length > 0 && 
-          chartOfAccounts[0] && 
-          'id' in chartOfAccounts[0] && 
-          'account_code' in chartOfAccounts[0]) {
+      if (primaryAccountLink?.chart_of_accounts) {
+        const chartOfAccounts = primaryAccountLink.chart_of_accounts
         
-        const primaryAccount = chartOfAccounts[0] as any
-        console.log('[FINANCIAL_STEP] Auto-setting customer account:', primaryAccount.account_code)
-        updateData({ account_id: primaryAccount.id })
+        console.log('[FINANCIAL_STEP] Processing account link:', {
+          primaryAccountLink,
+          chartOfAccounts,
+          isArray: Array.isArray(chartOfAccounts)
+        });
+        
+        // Handle both array and object formats for chart_of_accounts
+        let primaryAccount: any = null;
+        
+        if (Array.isArray(chartOfAccounts) && chartOfAccounts.length > 0) {
+          primaryAccount = chartOfAccounts[0];
+        } else if (chartOfAccounts && typeof chartOfAccounts === 'object' && chartOfAccounts !== null && Object.hasOwnProperty.call(chartOfAccounts, 'id')) {
+          primaryAccount = chartOfAccounts;
+        }
+        
+        if (primaryAccount && 'id' in primaryAccount && 'account_code' in primaryAccount) {
+          console.log('[FINANCIAL_STEP] Auto-setting customer account:', primaryAccount.account_code);
+          updateData({ account_id: primaryAccount.id });
+        }
       }
     }
-  }, [customerLinkedAccounts, data.account_id, updateData])
+  }, [customerLinkedAccounts, data.account_id, data.customer_id, updateData])
 
   // Suggest cost center based on contract type
   const getSuggestedCostCenter = () => {

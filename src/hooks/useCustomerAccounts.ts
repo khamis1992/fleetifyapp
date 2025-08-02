@@ -120,6 +120,8 @@ export const useCustomerLinkedAccounts = (customerId: string) => {
     queryFn: async () => {
       if (!customerId || !companyId) return [];
 
+      console.log('[CUSTOMER_ACCOUNTS] Fetching for customer:', customerId, 'company:', companyId);
+
       const { data, error } = await supabase
         .from("customer_accounts")
         .select(`
@@ -141,6 +143,7 @@ export const useCustomerLinkedAccounts = (customerId: string) => {
         throw error;
       }
 
+      console.log('[CUSTOMER_ACCOUNTS] Fetched data:', data);
       return data || [];
     },
     enabled: !!customerId && !!companyId,
