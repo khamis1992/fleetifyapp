@@ -74,7 +74,7 @@ export default function Quotations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, first_name, last_name, company_name, customer_type')
+        .select('id, first_name, last_name, company_name, customer_type, phone, alternative_phone')
         .eq('is_active', true)
 
       if (error) throw error
@@ -228,6 +228,29 @@ export default function Quotations() {
     const customer = customers?.find(c => c.id === quotation.customer_id)
     const vehicle = vehicles?.find(v => v.id === quotation.vehicle_id)
     
+    // Get customer phone number (prefer phone over alternative_phone)
+    const customerPhone = customer?.phone || customer?.alternative_phone
+    
+    if (!customerPhone) {
+      toast.error('رقم هاتف العميل غير متوفر')
+      return
+    }
+
+    // Clean and format phone number (remove spaces, dashes, etc.)
+    const cleanPhone = customerPhone.replace(/[\s\-\(\)]/g, '')
+    
+    // Add Kuwait country code if not present
+    let formattedPhone = cleanPhone
+    if (!cleanPhone.startsWith('+')) {
+      if (cleanPhone.startsWith('965')) {
+        formattedPhone = '+' + cleanPhone
+      } else if (cleanPhone.startsWith('0')) {
+        formattedPhone = '+965' + cleanPhone.substring(1)
+      } else {
+        formattedPhone = '+965' + cleanPhone
+      }
+    }
+    
     const customerName = customer?.customer_type === 'corporate' 
       ? customer.company_name 
       : `${customer?.first_name} ${customer?.last_name}`
@@ -240,10 +263,11 @@ export default function Quotations() {
                         quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
 
     const message = `
+السلام عليكم ${customerName} 👋
+
 🏢 *عرض سعر من شركة ${user?.company?.name || 'شركتنا'}*
 
-📋 *رقم العرض:* ${quotation.quotation_number}
-👤 *العميل:* ${customerName}${vehicleInfo}
+📋 *رقم العرض:* ${quotation.quotation_number}${vehicleInfo}
 
 💰 *تفاصيل السعر:*
 • نوع الإيجار: ${quotation.quotation_type === 'daily' ? 'يومي' : quotation.quotation_type === 'weekly' ? 'أسبوعي' : 'شهري'}
@@ -254,12 +278,13 @@ export default function Quotations() {
 📅 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
 
 ${quotation.description ? `📝 *الوصف:* ${quotation.description}\n` : ''}
-${quotation.terms ? `📋 *الشروط:* ${quotation.terms}\n` : ''}
+${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n` : ''}
 
 نتطلع لخدمتكم! 🤝
+للاستفسار أو الموافقة على العرض، يرجى الرد على هذه الرسالة.
     `.trim()
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
   }
 
