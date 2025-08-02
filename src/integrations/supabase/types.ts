@@ -4724,6 +4724,76 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_journal_entries: {
+        Row: {
+          company_id: string
+          contract_id: string
+          created_at: string | null
+          entry_type: string
+          id: string
+          last_error: string | null
+          max_retries: number | null
+          metadata: Json | null
+          next_retry_at: string | null
+          priority: number | null
+          processed_at: string | null
+          retry_count: number | null
+          status: string | null
+        }
+        Insert: {
+          company_id: string
+          contract_id: string
+          created_at?: string | null
+          entry_type?: string
+          id?: string
+          last_error?: string | null
+          max_retries?: number | null
+          metadata?: Json | null
+          next_retry_at?: string | null
+          priority?: number | null
+          processed_at?: string | null
+          retry_count?: number | null
+          status?: string | null
+        }
+        Update: {
+          company_id?: string
+          contract_id?: string
+          created_at?: string | null
+          entry_type?: string
+          id?: string
+          last_error?: string | null
+          max_retries?: number | null
+          metadata?: Json | null
+          next_retry_at?: string | null
+          priority?: number | null
+          processed_at?: string | null
+          retry_count?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pending_journal_entries_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pending_journal_entries_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "fk_pending_journal_entries_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       performance_metrics: {
         Row: {
           company_id: string | null
