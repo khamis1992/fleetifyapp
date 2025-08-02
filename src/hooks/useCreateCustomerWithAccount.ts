@@ -88,10 +88,9 @@ export const useCreateCustomerWithAccount = () => {
           console.log('[CREATE_CUSTOMER_WITH_ACCOUNT] Creating financial account for customer');
 
           const { data: accountId, error: accountError } = await supabase
-            .rpc('create_customer_financial_account', {
+            .rpc('create_customer_financial_account_fixed', {
               customer_id_param: customer.id,
-              company_id_param: companyId,
-              customer_data: customerPayload
+              company_id_param: companyId
             });
 
           if (accountError) {
@@ -109,7 +108,7 @@ export const useCreateCustomerWithAccount = () => {
             const { data: accountDetails } = await supabase
               .from("chart_of_accounts")
               .select("id, account_code, account_name")
-              .eq("id", accountId)
+              .eq("id", accountId as string)
               .single();
 
             if (accountDetails) {
@@ -148,7 +147,7 @@ export const useCreateCustomerWithAccount = () => {
                 const journalLines = [
                   {
                     journal_entry_id: journalEntry.id,
-                    account_id: accountId,
+                    account_id: accountId as string,
                     line_number: 1,
                     debit_amount: data.initialBalance > 0 ? Math.abs(data.initialBalance) : 0,
                     credit_amount: data.initialBalance < 0 ? Math.abs(data.initialBalance) : 0,
@@ -156,7 +155,7 @@ export const useCreateCustomerWithAccount = () => {
                   },
                   {
                     journal_entry_id: journalEntry.id,
-                    account_id: accountId, // TODO: This should be the owner's equity or cash account
+                    account_id: accountId as string, // TODO: This should be the owner's equity or cash account
                     line_number: 2,
                     debit_amount: data.initialBalance < 0 ? Math.abs(data.initialBalance) : 0,
                     credit_amount: data.initialBalance > 0 ? Math.abs(data.initialBalance) : 0,
