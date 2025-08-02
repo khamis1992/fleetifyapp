@@ -153,35 +153,80 @@ export const useContractCreation = () => {
             contract_data: contractRequestData
           })
 
+        // Handle database connection errors
         if (createError) {
-          console.error('❌ [CONTRACT_CREATION] Enhanced creation failed:', createError)
+          console.error('❌ [CONTRACT_CREATION] Database error:', createError)
           
+          const errorMessage = `Database error: ${createError.message}`
           // Update all steps to failed
-          updateStepStatus('validation', 'failed', createError.message)
-          updateStepStatus('accounts', 'failed', createError.message)
-          updateStepStatus('creation', 'failed', createError.message)
-          updateStepStatus('activation', 'failed', createError.message)
-          updateStepStatus('verification', 'failed', createError.message)
-          updateStepStatus('finalization', 'failed', createError.message)
+          updateStepStatus('validation', 'failed', errorMessage)
+          updateStepStatus('accounts', 'failed', errorMessage)
+          updateStepStatus('creation', 'failed', errorMessage)
+          updateStepStatus('activation', 'failed', errorMessage)
+          updateStepStatus('verification', 'failed', errorMessage)
+          updateStepStatus('finalization', 'failed', errorMessage)
           
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, createError.message)
-          throw createError
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
+
+        // Handle unexpected response format
+        if (!result) {
+          const errorMessage = 'لم يتم تلقي استجابة من الخادم'
+          console.error('❌ [CONTRACT_CREATION] No response received')
+          
+          updateStepStatus('creation', 'failed', errorMessage)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
+
+        // Handle non-object response
+        if (typeof result !== 'object') {
+          const errorMessage = `تنسيق استجابة غير متوقع: متوقع كائن، حصلت على ${typeof result}`
+          console.error('❌ [CONTRACT_CREATION] Unexpected response type:', typeof result)
+          
+          updateStepStatus('creation', 'failed', errorMessage)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
         }
 
         interface ContractCreationResult {
           success: boolean
           contract_id: string
+          contract_number?: string
           journal_entry_id?: string
           warning?: string
           requires_manual_entry?: boolean
           message?: string
+          error?: string
         }
 
         const typedResult = result as unknown as ContractCreationResult
 
-        if (!typedResult || !typedResult.success) {
-          const errorMessage = 'Failed to create contract - unexpected response format'
-          console.error('❌ [CONTRACT_CREATION] Unexpected response:', result)
+        // Validate response structure
+        if (!typedResult.hasOwnProperty('success')) {
+          const errorMessage = 'تنسيق استجابة غير صحيح: خاصية النجاح مفقودة'
+          console.error('❌ [CONTRACT_CREATION] Invalid response format - missing success property:', result)
+          
+          updateStepStatus('creation', 'failed', errorMessage)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
+
+        // Handle failed contract creation
+        if (typedResult.success !== true) {
+          const errorMessage = typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
+          console.error('❌ [CONTRACT_CREATION] Contract creation failed:', result)
+          
+          updateStepStatus('creation', 'failed', errorMessage)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
+
+        // Validate contract_id is present on success
+        if (!typedResult.contract_id) {
+          const errorMessage = 'تم إنشاء العقد ولكن معرف العقد مفقود'
+          console.error('❌ [CONTRACT_CREATION] Success response missing contract_id:', result)
           
           updateStepStatus('creation', 'failed', errorMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
