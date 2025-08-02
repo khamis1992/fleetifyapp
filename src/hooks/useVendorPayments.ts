@@ -155,6 +155,7 @@ export const useCreateVendorPayment = () => {
           notes: data.notes,
           bank_id: data.bank_id,
           purchase_order_id: data.purchase_order_id,
+          created_by: '00000000-0000-0000-0000-000000000000', // Will be replaced by auth trigger
         })
         .select()
         .single();

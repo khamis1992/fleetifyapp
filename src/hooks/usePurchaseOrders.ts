@@ -102,7 +102,7 @@ export const usePurchaseOrders = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as PurchaseOrder[];
+      return data as any[];
     },
     enabled: !!companyId,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -163,6 +163,7 @@ export const useCreatePurchaseOrder = () => {
           contact_person: data.contact_person,
           phone: data.phone,
           email: data.email,
+          created_by: '00000000-0000-0000-0000-000000000000', // Will be replaced by auth trigger
         })
         .select()
         .single();
