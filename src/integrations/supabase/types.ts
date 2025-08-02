@@ -8351,10 +8351,6 @@ export type Database = {
         Args: { contract_id_param: string; invoice_period?: string }
         Returns: string
       }
-      create_contract_journal_entry: {
-        Args: { contract_id_param: string }
-        Returns: string
-      }
       create_contract_journal_entry_enhanced: {
         Args: {
           contract_id_param: string
@@ -8402,21 +8398,23 @@ export type Database = {
         Returns: Json
       }
       create_contract_with_journal_entry: {
-        Args: {
-          p_customer_id: string
-          p_vehicle_id?: string
-          p_contract_number?: string
-          p_contract_type?: string
-          p_contract_date?: string
-          p_start_date?: string
-          p_end_date?: string
-          p_contract_amount?: number
-          p_monthly_amount?: number
-          p_description?: string
-          p_terms?: string
-          p_cost_center_id?: string
-          p_created_by?: string
-        }
+        Args:
+          | { contract_data: Json }
+          | {
+              p_customer_id: string
+              p_vehicle_id?: string
+              p_contract_number?: string
+              p_contract_type?: string
+              p_contract_date?: string
+              p_start_date?: string
+              p_end_date?: string
+              p_contract_amount?: number
+              p_monthly_amount?: number
+              p_description?: string
+              p_terms?: string
+              p_cost_center_id?: string
+              p_created_by?: string
+            }
         Returns: Json
       }
       create_customer_financial_account_enhanced: {
@@ -8859,7 +8857,9 @@ export type Database = {
         Returns: string
       }
       get_mapped_account_id: {
-        Args: { company_id_param: string; account_type_code: string }
+        Args:
+          | { company_id_param: string; account_type_code: string }
+          | { company_id_param: string; account_type_code_param: string }
         Returns: string
       }
       get_payment_analytics: {
