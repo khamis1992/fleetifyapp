@@ -7641,11 +7641,17 @@ export type Database = {
         Returns: string
       }
       create_contract_journal_entry: {
-        Args: {
-          contract_id_param: string
-          entry_type_param?: string
-          amount_param?: number
-        }
+        Args:
+          | {
+              contract_id_param: string
+              company_id_param: string
+              created_by_user_id?: string
+            }
+          | {
+              contract_id_param: string
+              entry_type_param?: string
+              amount_param?: number
+            }
         Returns: string
       }
       create_contract_journal_entry_enhanced: {
