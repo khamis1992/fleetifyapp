@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
+import { createContractWithFallback } from '@/utils/contractJournalEntry'
 
 export interface ContractCreationStep {
   id: string
@@ -171,9 +172,8 @@ export const useContractCreation = () => {
         updateStepStatus('accounts', 'processing')
         updateStepStatus('creation', 'processing')
 
-        // استخدام دالة إنشاء العقد الموحدة مع المعاملات المنفصلة
-        const { data: result, error: createError } = await supabase
-          .rpc('create_contract_with_journal_entry', rpcParams)
+        // استخدام دالة إنشاء العقد الموحدة مع المعاملات المنفصلة مع fallback
+        const { data: result, error: createError } = await createContractWithFallback(rpcParams)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
