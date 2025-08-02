@@ -7482,6 +7482,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: Json
       }
+      check_contract_creation_requirements: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
       check_contract_payment_status: {
         Args: { contract_id_param: string }
         Returns: {
@@ -7517,7 +7521,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_contract_issues: {
-        Args: Record<PropertyKey, never>
+        Args: Record<PropertyKey, never> | { company_id_param: string }
         Returns: Json
       }
       cleanup_inactive_accounts: {
@@ -8095,7 +8099,7 @@ export type Database = {
         Returns: undefined
       }
       monitor_contract_health: {
-        Args: Record<PropertyKey, never>
+        Args: Record<PropertyKey, never> | { company_id_param: string }
         Returns: {
           contract_id: string
           issue_type: string

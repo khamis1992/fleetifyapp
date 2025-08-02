@@ -35,6 +35,8 @@ export const useContractValidation = () => {
     errors: []
   });
   const [isValidating, setIsValidating] = useState(false);
+  const [lastValidationTime, setLastValidationTime] = useState<Date | null>(null);
+  const [validationHistory, setValidationHistory] = useState<ValidationResult[]>([]);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isValidUUID = (value: string): boolean => {
@@ -76,14 +78,17 @@ export const useContractValidation = () => {
     return true;
   };
 
-  const validateContract = useCallback(async (formData: ContractFormData) => {
+  const validateContract = useCallback(async (formData: ContractFormData, retryCount = 0) => {
     // Return early if no meaningful data to validate
     if (!formData || !hasValidData(formData)) {
-      setValidation({ valid: true, alerts: [], warnings: [], errors: [] });
-      return;
+      const emptyResult = { valid: true, alerts: [], warnings: [], errors: [] };
+      setValidation(emptyResult);
+      setLastValidationTime(new Date());
+      return emptyResult;
     }
 
     setIsValidating(true);
+    const startTime = Date.now();
     
     try {
       const cleanedData = cleanFormDataForValidation(formData);
@@ -93,32 +98,71 @@ export const useContractValidation = () => {
 
       if (error) {
         console.error('Validation error:', error);
-        setValidation({
+        
+        // Smart retry logic for transient errors
+        if (retryCount < 2 && (error.code === '503' || error.message.includes('network') || error.message.includes('timeout'))) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          return validateContract(formData, retryCount + 1);
+        }
+        
+        const errorResult = {
           valid: false,
           alerts: [],
           warnings: [],
           errors: [{
             type: 'validation_error',
-            severity: 'high',
-            message: 'خطأ في التحقق من البيانات'
+            severity: 'high' as const,
+            message: error.message.includes('insufficient_privilege') 
+              ? 'ليس لديك صلاحية كافية للتحقق من البيانات'
+              : 'خطأ في التحقق من البيانات: ' + (error.message || 'خطأ غير محدد')
           }]
-        });
-        return;
+        };
+        
+        setValidation(errorResult);
+        setValidationHistory(prev => [...prev.slice(-4), errorResult]);
+        setLastValidationTime(new Date());
+        return errorResult;
       }
 
-      setValidation((data as unknown as ValidationResult) || { valid: true, alerts: [], warnings: [], errors: [] });
+      const result = (data as unknown as ValidationResult) || { valid: true, alerts: [], warnings: [], errors: [] };
+      
+      // Enhanced validation result with metadata
+      const enhancedResult = {
+        ...result,
+        validationTime: Date.now() - startTime,
+        retryCount,
+        timestamp: new Date()
+      };
+      
+      setValidation(result);
+      setValidationHistory(prev => [...prev.slice(-4), result]);
+      setLastValidationTime(new Date());
+      
+      return result;
     } catch (error) {
       console.error('Validation failed:', error);
-      setValidation({
+      
+      // Smart retry for network errors
+      if (retryCount < 2 && (error instanceof TypeError || error.message.includes('fetch'))) {
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        return validateContract(formData, retryCount + 1);
+      }
+      
+      const errorResult = {
         valid: false,
         alerts: [],
         warnings: [],
         errors: [{
           type: 'validation_failed',
-          severity: 'high',
-          message: 'فشل في التحقق من البيانات'
+          severity: 'high' as const,
+          message: 'فشل في التحقق من البيانات: ' + (error.message || 'خطأ في الاتصال')
         }]
-      });
+      };
+      
+      setValidation(errorResult);
+      setValidationHistory(prev => [...prev.slice(-4), errorResult]);
+      setLastValidationTime(new Date());
+      return errorResult;
     } finally {
       setIsValidating(false);
     }
