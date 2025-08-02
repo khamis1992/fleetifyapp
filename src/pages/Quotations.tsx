@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown } from "lucide-react"
+import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -103,7 +103,7 @@ export default function Quotations() {
       // Generate quotation number
       const quotationNumber = `QT-${Date.now()}`
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('quotations')
         .insert([{
           ...quotationData,
@@ -112,14 +112,22 @@ export default function Quotations() {
           created_by: user?.id,
           status: 'pending'
         }])
+        .select()
+        .single()
 
       if (error) throw error
+      return { ...data, quotation_number: quotationNumber }
     },
-    onSuccess: () => {
+    onSuccess: (newQuotation) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
       setShowQuotationForm(false)
       reset()
-      toast.success('تم إنشاء عرض السعر بنجاح')
+      toast.success('تم إنشاء عرض السعر بنجاح', {
+        action: {
+          label: 'مشاركة عبر واتساب',
+          onClick: () => shareViaWhatsApp(newQuotation)
+        }
+      })
     },
     onError: (error) => {
       console.error('Error creating quotation:', error)
@@ -213,6 +221,46 @@ export default function Quotations() {
       case 'converted': return <FileText className="h-4 w-4" />
       default: return <FileText className="h-4 w-4" />
     }
+  }
+
+  // Share quotation via WhatsApp
+  const shareViaWhatsApp = (quotation: any) => {
+    const customer = customers?.find(c => c.id === quotation.customer_id)
+    const vehicle = vehicles?.find(v => v.id === quotation.vehicle_id)
+    
+    const customerName = customer?.customer_type === 'corporate' 
+      ? customer.company_name 
+      : `${customer?.first_name} ${customer?.last_name}`
+
+    const vehicleInfo = vehicle 
+      ? `\n🚗 المركبة: ${vehicle.make} ${vehicle.model} - ${vehicle.plate_number}`
+      : ''
+
+    const durationType = quotation.quotation_type === 'daily' ? 'يوم' : 
+                        quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
+
+    const message = `
+🏢 *عرض سعر من شركة ${user?.company?.name || 'شركتنا'}*
+
+📋 *رقم العرض:* ${quotation.quotation_number}
+👤 *العميل:* ${customerName}${vehicleInfo}
+
+💰 *تفاصيل السعر:*
+• نوع الإيجار: ${quotation.quotation_type === 'daily' ? 'يومي' : quotation.quotation_type === 'weekly' ? 'أسبوعي' : 'شهري'}
+• المدة: ${quotation.duration} ${durationType}
+• السعر لكل ${durationType}: ${quotation.rate_per_unit?.toFixed(3)} د.ك
+• *المبلغ الإجمالي: ${quotation.total_amount?.toFixed(3)} د.ك*
+
+📅 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
+
+${quotation.description ? `📝 *الوصف:* ${quotation.description}\n` : ''}
+${quotation.terms ? `📋 *الشروط:* ${quotation.terms}\n` : ''}
+
+نتطلع لخدمتكم! 🤝
+    `.trim()
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
   }
 
   const onSubmit = (data: QuotationFormData) => {
@@ -364,6 +412,15 @@ export default function Quotations() {
                   <Button variant="outline" size="sm">
                     <FileDown className="h-4 w-4 mr-1" />
                     PDF
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => shareViaWhatsApp(quotation)}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    واتساب
                   </Button>
                   {quotation.status === 'accepted' && (
                     <Button 
