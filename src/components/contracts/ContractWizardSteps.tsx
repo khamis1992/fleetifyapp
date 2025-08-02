@@ -601,16 +601,6 @@ export const FinancialStep: React.FC = () => {
           </div>
         )}
 
-        {/* Cost Center Information */}
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            مركز التكلفة
-          </h4>
-          <p className="text-blue-700 text-sm">
-            سيتم تعيين مركز التكلفة تلقائياً للعميل المحدد عند إنشاء العقد.
-          </p>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
