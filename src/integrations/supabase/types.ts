@@ -8402,9 +8402,7 @@ export type Database = {
         Returns: Json
       }
       create_contract_with_journal_entry: {
-        Args:
-          | { contract_data: Json }
-          | { contract_data: Json; user_id_param?: string }
+        Args: { contract_data: Json }
         Returns: Json
       }
       create_customer_financial_account_enhanced: {
