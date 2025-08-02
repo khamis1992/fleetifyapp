@@ -2700,6 +2700,75 @@ export type Database = {
         }
         Relationships: []
       }
+      goods_receipt_items: {
+        Row: {
+          created_at: string
+          goods_receipt_id: string
+          id: string
+          notes: string | null
+          purchase_order_item_id: string
+          received_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          goods_receipt_id: string
+          id?: string
+          notes?: string | null
+          purchase_order_item_id: string
+          received_quantity?: number
+        }
+        Update: {
+          created_at?: string
+          goods_receipt_id?: string
+          id?: string
+          notes?: string | null
+          purchase_order_item_id?: string
+          received_quantity?: number
+        }
+        Relationships: []
+      }
+      goods_receipts: {
+        Row: {
+          company_id: string
+          created_at: string
+          delivery_note_number: string | null
+          id: string
+          notes: string | null
+          purchase_order_id: string
+          receipt_date: string
+          receipt_number: string
+          received_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          delivery_note_number?: string | null
+          id?: string
+          notes?: string | null
+          purchase_order_id: string
+          receipt_date?: string
+          receipt_number: string
+          received_by: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          delivery_note_number?: string | null
+          id?: string
+          notes?: string | null
+          purchase_order_id?: string
+          receipt_date?: string
+          receipt_number?: string
+          received_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_settings: {
         Row: {
           allow_negative_balance: boolean
@@ -5175,6 +5244,132 @@ export type Database = {
           },
         ]
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          description: string
+          description_ar: string | null
+          id: string
+          item_code: string | null
+          notes: string | null
+          purchase_order_id: string
+          quantity: number
+          received_quantity: number | null
+          total_price: number
+          unit_of_measure: string | null
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          description_ar?: string | null
+          id?: string
+          item_code?: string | null
+          notes?: string | null
+          purchase_order_id: string
+          quantity?: number
+          received_quantity?: number | null
+          total_price?: number
+          unit_of_measure?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          description_ar?: string | null
+          id?: string
+          item_code?: string | null
+          notes?: string | null
+          purchase_order_id?: string
+          quantity?: number
+          received_quantity?: number | null
+          total_price?: number
+          unit_of_measure?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      purchase_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          contact_person: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          delivery_address: string | null
+          delivery_date: string | null
+          email: string | null
+          expected_delivery_date: string | null
+          id: string
+          notes: string | null
+          order_date: string
+          order_number: string
+          phone: string | null
+          status: string
+          subtotal: number
+          tax_amount: number
+          terms_and_conditions: string | null
+          total_amount: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          contact_person?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          delivery_address?: string | null
+          delivery_date?: string | null
+          email?: string | null
+          expected_delivery_date?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          order_number: string
+          phone?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          terms_and_conditions?: string | null
+          total_amount?: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          delivery_address?: string | null
+          delivery_date?: string | null
+          email?: string | null
+          expected_delivery_date?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          order_number?: string
+          phone?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          terms_and_conditions?: string | null
+          total_amount?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       quotations: {
         Row: {
           company_id: string
@@ -7525,6 +7720,102 @@ export type Database = {
           },
         ]
       }
+      vendor_accounts: {
+        Row: {
+          account_id: string
+          account_type: string
+          company_id: string
+          created_at: string
+          id: string
+          is_default: boolean | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          account_id: string
+          account_type?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          account_id?: string
+          account_type?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
+      vendor_payments: {
+        Row: {
+          amount: number
+          bank_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          currency: string
+          description: string | null
+          id: string
+          journal_entry_id: string | null
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          payment_number: string
+          purchase_order_id: string | null
+          reference_number: string | null
+          status: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          amount?: number
+          bank_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          currency?: string
+          description?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number: string
+          purchase_order_id?: string | null
+          reference_number?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          bank_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number?: string
+          purchase_order_id?: string | null
+          reference_number?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           address: string | null
@@ -8017,6 +8308,14 @@ export type Database = {
         Args: { vehicle_id_param: string }
         Returns: string
       }
+      create_vendor_financial_account: {
+        Args: {
+          vendor_id_param: string
+          company_id_param: string
+          vendor_data?: Json
+        }
+        Returns: string
+      }
       decrypt_sensitive_data: {
         Args: { encrypted_data: string }
         Returns: string
@@ -8108,6 +8407,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: string
       }
+      generate_goods_receipt_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       generate_journal_entry_number: {
         Args: { company_id_param: string }
         Returns: string
@@ -8134,6 +8437,10 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: string
       }
+      generate_purchase_order_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
       generate_secure_password: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -8149,6 +8456,10 @@ export type Database = {
       generate_vehicle_alerts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_vendor_payment_number: {
+        Args: { company_id_param: string }
+        Returns: string
       }
       get_account_balances: {
         Args: {
