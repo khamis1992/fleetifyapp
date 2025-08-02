@@ -8385,6 +8385,24 @@ export type Database = {
               contract_data: Json
             }
           | { contract_data: Json; user_id_param?: string }
+          | {
+              customer_id_param: string
+              vehicle_id_param?: string
+              contract_type_param?: string
+              contract_date_param?: string
+              start_date_param?: string
+              end_date_param?: string
+              contract_amount_param?: number
+              monthly_amount_param?: number
+              description_param?: string
+              terms_param?: string
+              status_param?: string
+              cost_center_id_param?: string
+            }
+        Returns: Json
+      }
+      create_contract_with_journal_entry: {
+        Args: { contract_data: Json; user_id_param?: string }
         Returns: Json
       }
       create_customer_financial_account_enhanced: {

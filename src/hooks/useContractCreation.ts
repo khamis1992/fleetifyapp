@@ -146,11 +146,11 @@ export const useContractCreation = () => {
           created_by: inputContractData.created_by
         }
 
-        console.log('📝 [CONTRACT_CREATION] Using enhanced safe creation method:', contractRequestData)
+        console.log('📝 [CONTRACT_CREATION] Using unified creation method:', contractRequestData)
 
-        // Use the enhanced contract creation function
+        // Use the unified contract creation function
         const { data: result, error: createError } = await supabase
-          .rpc('create_contract_safe', {
+          .rpc('create_contract_with_journal_entry', {
             contract_data: contractRequestData
           })
 
