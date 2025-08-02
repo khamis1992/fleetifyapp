@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3 } from "lucide-react"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator } from "lucide-react"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -42,6 +43,12 @@ export default function Fleet() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link to="/fleet/financial-analysis">
+            <Button variant="outline" size="sm">
+              <Calculator className="h-4 w-4 mr-2" />
+              التحليل المالي
+            </Button>
+          </Link>
           <Dialog open={showGroupManagement} onOpenChange={setShowGroupManagement}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">

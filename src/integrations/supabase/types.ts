@@ -8245,7 +8245,13 @@ export type Database = {
       }
       process_vehicle_depreciation_monthly: {
         Args: { company_id_param: string; depreciation_date_param?: string }
-        Returns: number
+        Returns: {
+          vehicle_id: string
+          vehicle_number: string
+          monthly_depreciation: number
+          accumulated_depreciation: number
+          journal_entry_id: string
+        }[]
       }
       recalculate_bank_balance: {
         Args: { bank_id_param: string }

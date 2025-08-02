@@ -34,6 +34,7 @@ import TrafficViolationPayments from "./pages/fleet/TrafficViolationPayments";
 import FleetReports from "./pages/fleet/FleetReports";
 import DispatchPermits from "./pages/fleet/DispatchPermits";
 import { VehicleConditionCheck } from "./pages/fleet/VehicleConditionCheck";
+import FleetFinancialAnalysis from "./pages/fleet/FleetFinancialAnalysis";
 import Employees from "./pages/hr/Employees";
 import UserManagement from "./pages/hr/UserManagement";
 import Attendance from "./pages/hr/Attendance";
@@ -125,6 +126,11 @@ const App = () => (
               <Route path="fleet/reports" element={
                 <AdminRoute>
                   <FleetReports />
+                </AdminRoute>
+              } />
+              <Route path="fleet/financial-analysis" element={
+                <AdminRoute>
+                  <FleetFinancialAnalysis />
                 </AdminRoute>
               } />
               <Route path="contracts" element={<Contracts />} />
