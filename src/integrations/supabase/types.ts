@@ -8911,16 +8911,25 @@ export type Database = {
         Returns: boolean
       }
       log_contract_creation_step: {
-        Args: {
-          company_id_param: string
-          contract_id_param?: string
-          step_name?: string
-          status_param?: string
-          attempt_num?: number
-          error_msg?: string
-          exec_time?: number
-          meta?: Json
-        }
+        Args:
+          | {
+              company_id_param: string
+              contract_id_param?: string
+              operation_step_param?: string
+              status_param?: string
+              error_message_param?: string
+              metadata_param?: Json
+            }
+          | {
+              company_id_param: string
+              contract_id_param?: string
+              step_name?: string
+              status_param?: string
+              attempt_num?: number
+              error_msg?: string
+              exec_time?: number
+              meta?: Json
+            }
         Returns: undefined
       }
       log_security_event: {

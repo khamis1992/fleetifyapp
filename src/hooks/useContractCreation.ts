@@ -81,15 +81,16 @@ export const useContractCreation = () => {
     if (!companyId) return
     
     try {
+      // Ensure contractId is properly typed - convert null to undefined for optional parameter
+      const contractIdParam = contractId || undefined
+      
       await supabase.rpc('log_contract_creation_step', {
         company_id_param: companyId as string,
-        contract_id_param: contractId || null,
-        step_name: stepName,
+        contract_id_param: contractIdParam,
+        operation_step_param: stepName,
         status_param: status,
-        attempt_num: attemptNum,
-        error_msg: errorMsg || null,
-        exec_time: execTime || null,
-        meta: meta || {}
+        error_message_param: errorMsg || undefined,
+        metadata_param: meta ? JSON.parse(JSON.stringify(meta)) : undefined
       })
     } catch (error) {
       console.warn('Failed to log contract creation step:', error)
