@@ -92,7 +92,7 @@ const AlertItem: React.FC<{
           </div>
           
           {/* Display conflict details for vehicle conflicts */}
-          {showConflictDetails && alert.conflicts && alert.conflicts.length > 0 && (
+          {showConflictDetails && alert.conflicts && Array.isArray(alert.conflicts) && alert.conflicts.length > 0 && (
             <div className="mt-2 space-y-2">
               <p className="text-sm font-medium text-muted-foreground">العقود المتضاربة:</p>
               {alert.conflicts.map((conflict: any, index: number) => (
@@ -101,18 +101,18 @@ const AlertItem: React.FC<{
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <Car className="h-4 w-4" />
-                        <span className="font-medium">{conflict.contract_number}</span>
+                        <span className="font-medium">{conflict.contract_number || 'رقم العقد غير متوفر'}</span>
                       </div>
-                      <Badge variant="outline">{conflict.status}</Badge>
+                      <Badge variant="outline">{conflict.status || 'غير محدد'}</Badge>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        <span>{conflict.customer_name}</span>
+                        <span>{conflict.customer_name || 'اسم العميل غير متوفر'}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1">
                         <Clock className="h-3 w-3" />
-                        <span>{conflict.start_date} إلى {conflict.end_date}</span>
+                        <span>{conflict.start_date || 'غير محدد'} إلى {conflict.end_date || 'غير محدد'}</span>
                       </div>
                     </div>
                   </CardContent>
