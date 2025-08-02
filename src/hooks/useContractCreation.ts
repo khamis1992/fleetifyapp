@@ -159,20 +159,19 @@ export const useContractCreation = () => {
         // استخدام دالة إنشاء العقد الموحدة مع البراميتر الصحيحة
         const { data: result, error: createError } = await supabase
           .rpc('create_contract_with_journal_entry', {
-            company_id_param: contractRequestData.company_id,
-            customer_id_param: contractRequestData.customer_id,
-            vehicle_id_param: contractRequestData.vehicle_id,
-            contract_number_param: contractRequestData.contract_number,
-            contract_type_param: contractRequestData.contract_type,
-            contract_date_param: contractRequestData.contract_date,
-            start_date_param: contractRequestData.start_date,
-            end_date_param: contractRequestData.end_date,
-            contract_amount_param: contractRequestData.contract_amount,
-            monthly_amount_param: contractRequestData.monthly_amount,
-            description_param: contractRequestData.description,
-            terms_param: contractRequestData.terms,
-            cost_center_id_param: contractRequestData.cost_center_id,
-            created_by_param: contractRequestData.created_by
+            p_customer_id: contractRequestData.customer_id,
+            p_vehicle_id: contractRequestData.vehicle_id,
+            p_contract_number: contractRequestData.contract_number,
+            p_contract_type: contractRequestData.contract_type,
+            p_contract_date: contractRequestData.contract_date,
+            p_start_date: contractRequestData.start_date,
+            p_end_date: contractRequestData.end_date,
+            p_contract_amount: contractRequestData.contract_amount,
+            p_monthly_amount: contractRequestData.monthly_amount,
+            p_description: contractRequestData.description,
+            p_terms: contractRequestData.terms,
+            p_cost_center_id: contractRequestData.cost_center_id,
+            p_created_by: contractRequestData.created_by
           })
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
