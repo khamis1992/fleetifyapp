@@ -17,6 +17,7 @@ import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilt
 import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
 import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress"
+import { ContractCreationTest } from "@/components/contracts/ContractCreationTest"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
@@ -387,6 +388,13 @@ export default function Contracts() {
             <p className="text-xs text-muted-foreground">من العقود النشطة</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Contract Creation Test */}
+      <div className="border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-lg p-4">
+        <h3 className="text-lg font-semibold mb-2 text-blue-800">🧪 Testing Mode</h3>
+        <p className="text-sm text-blue-700 mb-4">Test the contract creation functionality with sample data</p>
+        <ContractCreationTest />
       </div>
 
       {/* Search and Filters */}
