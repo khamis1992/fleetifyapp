@@ -7663,7 +7663,13 @@ export type Database = {
         Returns: string
       }
       create_contract_safe: {
-        Args: { contract_data: Json }
+        Args:
+          | {
+              company_id_param: string
+              customer_id_param: string
+              contract_data: Json
+            }
+          | { contract_data: Json }
         Returns: Json
       }
       create_customer_financial_account: {
