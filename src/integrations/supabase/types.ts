@@ -1655,6 +1655,7 @@ export type Database = {
           center_name_ar: string | null
           company_id: string
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
           is_active: boolean | null
@@ -1670,6 +1671,7 @@ export type Database = {
           center_name_ar?: string | null
           company_id: string
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -1685,6 +1687,7 @@ export type Database = {
           center_name_ar?: string | null
           company_id?: string
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -1772,6 +1775,7 @@ export type Database = {
           company_name_ar: string | null
           country: string | null
           created_at: string
+          created_by: string | null
           credit_limit: number | null
           customer_type: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth: string | null
@@ -1806,6 +1810,7 @@ export type Database = {
           company_name_ar?: string | null
           country?: string | null
           created_at?: string
+          created_by?: string | null
           credit_limit?: number | null
           customer_type?: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth?: string | null
@@ -1840,6 +1845,7 @@ export type Database = {
           company_name_ar?: string | null
           country?: string | null
           created_at?: string
+          created_by?: string | null
           credit_limit?: number | null
           customer_type?: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth?: string | null
