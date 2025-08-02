@@ -8368,6 +8368,15 @@ export type Database = {
         Args: { contract_id_param: string }
         Returns: string
       }
+      create_contract_journal_entry_with_data: {
+        Args: {
+          contract_data: Json
+          user_id_param?: string
+          entry_type_param?: string
+          amount_param?: number
+        }
+        Returns: Json
+      }
       create_contract_safe: {
         Args:
           | {
