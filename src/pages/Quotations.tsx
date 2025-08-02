@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown } from "lucide-react"
+import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -36,16 +36,23 @@ export default function Quotations() {
   const { register, handleSubmit, watch, reset, setValue } = useForm<QuotationFormData>({
     defaultValues: {
       quotation_type: 'daily',
-      duration: 1
+      duration: 1,
+      total_amount: 0
     }
   })
 
   const quotationType = watch('quotation_type')
   const duration = watch('duration')
   const ratePerUnit = watch('rate_per_unit')
+  const totalAmount = watch('total_amount')
 
-  // Auto calculate total amount
-  const totalAmount = (duration || 0) * (ratePerUnit || 0)
+  // Auto calculate total amount when duration or rate changes
+  const calculatedAmount = (duration || 0) * (ratePerUnit || 0)
+  
+  // Update total amount when calculated amount changes, but allow manual override
+  if (calculatedAmount !== totalAmount && calculatedAmount > 0) {
+    setValue('total_amount', calculatedAmount)
+  }
 
   // Fetch quotations
   const { data: quotations, isLoading } = useQuery({
@@ -67,7 +74,7 @@ export default function Quotations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, first_name, last_name, company_name, customer_type')
+        .select('id, first_name, last_name, company_name, customer_type, phone, alternative_phone')
         .eq('is_active', true)
 
       if (error) throw error
@@ -96,7 +103,7 @@ export default function Quotations() {
       // Generate quotation number
       const quotationNumber = `QT-${Date.now()}`
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('quotations')
         .insert([{
           ...quotationData,
@@ -105,14 +112,22 @@ export default function Quotations() {
           created_by: user?.id,
           status: 'pending'
         }])
+        .select()
+        .single()
 
       if (error) throw error
+      return { ...data, quotation_number: quotationNumber }
     },
-    onSuccess: () => {
+    onSuccess: (newQuotation) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
       setShowQuotationForm(false)
       reset()
-      toast.success('تم إنشاء عرض السعر بنجاح')
+      toast.success('تم إنشاء عرض السعر بنجاح', {
+        action: {
+          label: 'مشاركة عبر واتساب',
+          onClick: () => shareViaWhatsApp(newQuotation)
+        }
+      })
     },
     onError: (error) => {
       console.error('Error creating quotation:', error)
@@ -208,11 +223,73 @@ export default function Quotations() {
     }
   }
 
+  // Share quotation via WhatsApp
+  const shareViaWhatsApp = (quotation: any) => {
+    const customer = customers?.find(c => c.id === quotation.customer_id)
+    const vehicle = vehicles?.find(v => v.id === quotation.vehicle_id)
+    
+    // Get customer phone number (prefer phone over alternative_phone)
+    const customerPhone = customer?.phone || customer?.alternative_phone
+    
+    if (!customerPhone) {
+      toast.error('رقم هاتف العميل غير متوفر')
+      return
+    }
+
+    // Clean and format phone number (remove spaces, dashes, etc.)
+    const cleanPhone = customerPhone.replace(/[\s\-\(\)]/g, '')
+    
+    // Add Kuwait country code if not present
+    let formattedPhone = cleanPhone
+    if (!cleanPhone.startsWith('+')) {
+      if (cleanPhone.startsWith('965')) {
+        formattedPhone = '+' + cleanPhone
+      } else if (cleanPhone.startsWith('0')) {
+        formattedPhone = '+965' + cleanPhone.substring(1)
+      } else {
+        formattedPhone = '+965' + cleanPhone
+      }
+    }
+    
+    const customerName = customer?.customer_type === 'corporate' 
+      ? customer.company_name 
+      : `${customer?.first_name} ${customer?.last_name}`
+
+    const vehicleInfo = vehicle 
+      ? `\n🚗 المركبة: ${vehicle.make} ${vehicle.model} - ${vehicle.plate_number}`
+      : ''
+
+    const durationType = quotation.quotation_type === 'daily' ? 'يوم' : 
+                        quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
+
+    const message = `
+السلام عليكم ${customerName} 👋
+
+🏢 *عرض سعر من شركة ${user?.company?.name || 'شركتنا'}*
+
+📋 *رقم العرض:* ${quotation.quotation_number}${vehicleInfo}
+
+💰 *تفاصيل السعر:*
+• نوع الإيجار: ${quotation.quotation_type === 'daily' ? 'يومي' : quotation.quotation_type === 'weekly' ? 'أسبوعي' : 'شهري'}
+• المدة: ${quotation.duration} ${durationType}
+• السعر لكل ${durationType}: ${quotation.rate_per_unit?.toFixed(3)} د.ك
+• *المبلغ الإجمالي: ${quotation.total_amount?.toFixed(3)} د.ك*
+
+📅 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
+
+${quotation.description ? `📝 *الوصف:* ${quotation.description}\n` : ''}
+${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n` : ''}
+
+نتطلع لخدمتكم! 🤝
+للاستفسار أو الموافقة على العرض، يرجى الرد على هذه الرسالة.
+    `.trim()
+
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
+  }
+
   const onSubmit = (data: QuotationFormData) => {
-    createQuotationMutation.mutate({
-      ...data,
-      total_amount: totalAmount
-    })
+    createQuotationMutation.mutate(data)
   }
 
   if (isLoading) {
@@ -361,6 +438,15 @@ export default function Quotations() {
                     <FileDown className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => shareViaWhatsApp(quotation)}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    واتساب
+                  </Button>
                   {quotation.status === 'accepted' && (
                     <Button 
                       size="sm"
@@ -395,121 +481,167 @@ export default function Quotations() {
 
       {/* Quotation Form Dialog */}
       <Dialog open={showQuotationForm} onOpenChange={setShowQuotationForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>إنشاء عرض سعر جديد</DialogTitle>
+            <DialogTitle className="text-xl font-bold">إنشاء عرض سعر جديد</DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>العميل *</Label>
-                <Select onValueChange={(value) => setValue('customer_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر العميل" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers?.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.customer_type === 'corporate'
-                          ? customer.company_name 
-                          : `${customer.first_name} ${customer.last_name}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* معلومات أساسية */}
+            <div className="bg-card p-4 rounded-lg border">
+              <h3 className="text-lg font-semibold mb-4 text-primary">المعلومات الأساسية</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer">العميل *</Label>
+                  <Select onValueChange={(value) => setValue('customer_id', value)}>
+                    <SelectTrigger id="customer">
+                      <SelectValue placeholder="اختر العميل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers?.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.customer_type === 'corporate'
+                            ? customer.company_name 
+                            : `${customer.first_name} ${customer.last_name}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label>المركبة</Label>
-                <Select onValueChange={(value) => setValue('vehicle_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المركبة (اختياري)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicles?.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.make} {vehicle.model} - {vehicle.plate_number}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>نوع الإيجار *</Label>
-                <Select 
-                  value={quotationType} 
-                  onValueChange={(value) => setValue('quotation_type', value as 'daily' | 'weekly' | 'monthly')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">يومي</SelectItem>
-                    <SelectItem value="weekly">أسبوعي</SelectItem>
-                    <SelectItem value="monthly">شهري</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>المدة *</Label>
-                <Input 
-                  type="number" 
-                  min="1"
-                  {...register('duration', { required: true, valueAsNumber: true })} 
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>السعر لكل وحدة *</Label>
-                <Input 
-                  type="number" 
-                  step="0.001"
-                  min="0"
-                  {...register('rate_per_unit', { required: true, valueAsNumber: true })} 
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle">المركبة</Label>
+                  <Select onValueChange={(value) => setValue('vehicle_id', value)}>
+                    <SelectTrigger id="vehicle">
+                      <SelectValue placeholder="اختر المركبة (اختياري)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles?.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.make} {vehicle.model} - {vehicle.plate_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>المبلغ الإجمالي</Label>
-              <Input 
-                type="number" 
-                step="0.001"
-                value={totalAmount.toFixed(3)}
-                readOnly
-                className="bg-muted"
-              />
+            {/* تفاصيل السعر */}
+            <div className="bg-card p-4 rounded-lg border">
+              <h3 className="text-lg font-semibold mb-4 text-primary">تفاصيل السعر</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quotation_type">نوع الإيجار *</Label>
+                  <Select 
+                    value={quotationType} 
+                    onValueChange={(value) => setValue('quotation_type', value as 'daily' | 'weekly' | 'monthly')}
+                  >
+                    <SelectTrigger id="quotation_type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">يومي</SelectItem>
+                      <SelectItem value="weekly">أسبوعي</SelectItem>
+                      <SelectItem value="monthly">شهري</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">المدة *</Label>
+                  <Input 
+                    id="duration"
+                    type="number" 
+                    min="1"
+                    placeholder="عدد الأيام/الأسابيع/الشهور"
+                    {...register('duration', { required: true, valueAsNumber: true })} 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rate_per_unit">السعر لكل وحدة (د.ك) *</Label>
+                  <Input 
+                    id="rate_per_unit"
+                    type="number" 
+                    step="0.001"
+                    min="0"
+                    placeholder="0.000"
+                    {...register('rate_per_unit', { required: true, valueAsNumber: true })} 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="total_amount">المبلغ الإجمالي (د.ك) *</Label>
+                  <Input 
+                    id="total_amount"
+                    type="number" 
+                    step="0.001"
+                    min="0"
+                    placeholder="0.000"
+                    className="font-semibold text-primary"
+                    {...register('total_amount', { required: true, valueAsNumber: true })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    محسوب تلقائياً: {calculatedAmount.toFixed(3)} د.ك
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>صالح حتى *</Label>
-              <Input 
-                type="date" 
-                {...register('valid_until', { required: true })} 
-              />
+            {/* تفاصيل إضافية */}
+            <div className="bg-card p-4 rounded-lg border">
+              <h3 className="text-lg font-semibold mb-4 text-primary">التفاصيل الإضافية</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="valid_until">صالح حتى *</Label>
+                  <Input 
+                    id="valid_until"
+                    type="date" 
+                    {...register('valid_until', { required: true })} 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">الوصف</Label>
+                  <Textarea 
+                    id="description"
+                    placeholder="وصف موجز لعرض السعر..."
+                    {...register('description')} 
+                    rows={2} 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="terms">الشروط والأحكام</Label>
+                  <Textarea 
+                    id="terms"
+                    placeholder="الشروط والأحكام الخاصة بعرض السعر..."
+                    {...register('terms')} 
+                    rows={3} 
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>الوصف</Label>
-              <Textarea {...register('description')} rows={2} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>الشروط والأحكام</Label>
-              <Textarea {...register('terms')} rows={3} />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowQuotationForm(false)}>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowQuotationForm(false)
+                  reset()
+                }}
+                className="px-6"
+              >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={createQuotationMutation.isPending}>
-                {createQuotationMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+              <Button 
+                type="submit" 
+                disabled={createQuotationMutation.isPending}
+                className="px-6"
+              >
+                {createQuotationMutation.isPending ? 'جاري الحفظ...' : 'حفظ عرض السعر'}
               </Button>
             </div>
           </form>
