@@ -8368,11 +8368,6 @@ export type Database = {
             }
           | {
               contract_id_param: string
-              entry_type_param?: string
-              amount_param?: number
-            }
-          | {
-              contract_id_param: string
               user_id_param?: string
               override_receivables_account_id?: string
               override_revenue_account_id?: string
@@ -8382,7 +8377,14 @@ export type Database = {
         Returns: Json
       }
       create_contract_journal_entry_enhanced: {
-        Args: { contract_id_param: string }
+        Args:
+          | { contract_id_param: string }
+          | {
+              contract_id_param: string
+              user_id_param?: string
+              entry_type_param?: string
+              amount_param?: number
+            }
         Returns: string
       }
       create_contract_journal_entry_safe: {
@@ -8423,6 +8425,10 @@ export type Database = {
               p_customer_name_ar?: string
             }
         Returns: string
+      }
+      create_customer_financial_account_enhanced: {
+        Args: { customer_id_param: string; user_id_param?: string }
+        Returns: Json
       }
       create_customer_financial_account_fixed: {
         Args: { customer_id_param: string; company_id_param: string }
@@ -8484,12 +8490,11 @@ export type Database = {
       create_payment_journal_entry: {
         Args:
           | { payment_id_param: string }
-          | {
-              payment_id_param: string
-              amount_param: number
-              payment_type_param?: string
-            }
           | { payment_record: Record<string, unknown> }
+        Returns: string
+      }
+      create_payment_journal_entry_enhanced: {
+        Args: { payment_id_param: string; user_id_param?: string }
         Returns: Json
       }
       create_payroll_journal_entry: {
@@ -8862,10 +8867,12 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: string
       }
+      get_mapped_account_enhanced: {
+        Args: { company_id_param: string; account_type_code_param: string }
+        Returns: string
+      }
       get_mapped_account_id: {
-        Args:
-          | { company_id_param: string; account_type_code: string }
-          | { company_id_param: string; account_type_param: string }
+        Args: { company_id_param: string; account_type_code: string }
         Returns: string
       }
       get_payment_analytics: {
