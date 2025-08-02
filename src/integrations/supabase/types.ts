@@ -8351,41 +8351,14 @@ export type Database = {
         Args: { contract_id_param: string; invoice_period?: string }
         Returns: string
       }
-      create_contract_journal_entry: {
-        Args:
-          | {
-              contract_id_param: string
-              company_id_param: string
-              created_by_param: string
-              contract_amount_param: number
-              entry_description_param?: string
-              reference_param?: string
-            }
-          | {
-              contract_id_param: string
-              company_id_param: string
-              created_by_user_id?: string
-            }
-          | {
-              contract_id_param: string
-              user_id_param?: string
-              override_receivables_account_id?: string
-              override_revenue_account_id?: string
-              force_recreate?: boolean
-              custom_description?: string
-            }
-        Returns: Json
-      }
       create_contract_journal_entry_enhanced: {
-        Args:
-          | { contract_id_param: string }
-          | {
-              contract_id_param: string
-              user_id_param?: string
-              entry_type_param?: string
-              amount_param?: number
-            }
-        Returns: string
+        Args: {
+          contract_id_param: string
+          user_id_param?: string
+          entry_type_param?: string
+          amount_param?: number
+        }
+        Returns: Json
       }
       create_contract_journal_entry_safe: {
         Args: { contract_id_param: string }
@@ -8400,31 +8373,6 @@ export type Database = {
             }
           | { contract_data: Json; user_id_param?: string }
         Returns: Json
-      }
-      create_customer_financial_account: {
-        Args:
-          | {
-              customer_id_param: string
-              account_id_param?: string
-              account_name_override?: string
-            }
-          | {
-              customer_id_param: string
-              company_id_param: string
-              customer_data?: Json
-            }
-          | {
-              customer_id_param: string
-              customer_name_param: string
-              company_id_param: string
-            }
-          | {
-              p_company_id: string
-              p_customer_id: string
-              p_customer_name: string
-              p_customer_name_ar?: string
-            }
-        Returns: string
       }
       create_customer_financial_account_enhanced: {
         Args: { customer_id_param: string; user_id_param?: string }
@@ -8485,12 +8433,6 @@ export type Database = {
       }
       create_payment_bank_transaction: {
         Args: { payment_id_param: string }
-        Returns: string
-      }
-      create_payment_journal_entry: {
-        Args:
-          | { payment_id_param: string }
-          | { payment_record: Record<string, unknown> }
         Returns: string
       }
       create_payment_journal_entry_enhanced: {
