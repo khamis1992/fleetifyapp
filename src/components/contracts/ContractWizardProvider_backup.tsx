@@ -54,8 +54,6 @@ interface ContractWizardContextType {
   canProceedToNext: () => boolean
   submitContract: () => Promise<void>
   fillTestData: () => void
-  validateCurrentStep: () => Promise<boolean>
-  isValidating: boolean
 }
 
 const ContractWizardContext = createContext<ContractWizardContextType | null>(null)
@@ -97,7 +95,6 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   const [data, setData] = useState<ContractWizardData>(defaultData)
   const [currentStep, setCurrentStep] = useState(0)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
-  const [isValidating, setIsValidating] = useState(false)
   const totalSteps = 5 // Basic Info, Customer/Vehicle, Dates, Financial, Review
 
   const template = useTemplateByType(data.contract_type || '')
@@ -210,9 +207,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
         last_saved_at: new Date().toISOString()
       })
 
-      console.log('تم حفظ المسودة بنجاح في localStorage')
+      console.log('Draft saved successfully to localStorage')
     } catch (error) {
-      console.error('خطأ في حفظ المسودة:', error)
+      console.error('Error saving draft:', error)
       toast.error('خطأ في حفظ المسودة')
     } finally {
       setIsAutoSaving(false)
@@ -233,7 +230,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       setCurrentStep(draft.current_step || 0)
       toast.success('تم تحميل المسودة بنجاح')
     } catch (error) {
-      console.error('خطأ في تحميل المسودة:', error)
+      console.error('Error loading draft:', error)
       toast.error('خطأ في تحميل المسودة')
     }
   }
@@ -246,141 +243,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
         toast.success('تم حذف المسودة')
       }
     } catch (error) {
-      console.error('خطأ في حذف المسودة:', error)
+      console.error('Error deleting draft:', error)
       toast.error('خطأ في حذف المسودة')
-    }
-  }
-
-  const validateCurrentStep = async (): Promise<boolean> => {
-    setIsValidating(true)
-    
-    try {
-      switch (currentStep) {
-        case 0: // Basic Info
-          if (!data.contract_type) {
-            toast.error('يرجى اختيار نوع العقد')
-            return false
-          }
-          if (!data.contract_date) {
-            toast.error('يرجى تحديد تاريخ العقد')
-            return false
-          }
-          break
-          
-        case 1: // Customer/Vehicle
-          if (!data.customer_id) {
-            toast.error('يرجى اختيار العميل')
-            return false
-          }
-          
-          // التحقق من صحة العميل في الوقت الفعلي
-          try {
-            const { data: customerCheck, error } = await supabase
-              .rpc('check_customer_eligibility_realtime', {
-                customer_id_param: data.customer_id
-              })
-            
-            if (error) {
-              console.error('خطأ في التحقق من العميل:', error)
-              toast.error('خطأ في التحقق من صحة العميل')
-              return false
-            }
-            
-            if (!customerCheck?.eligible) {
-              toast.error(`العميل غير مؤهل: ${customerCheck?.reason || 'سبب غير معروف'}`)
-              return false
-            }
-          } catch (error) {
-            console.error('خطأ في التحقق من العميل:', error)
-            toast.warning('لا يمكن التحقق من صحة العميل، سيتم التحقق عند الإرسال')
-          }
-          
-          // التحقق من توفر المركبة إذا تم اختيارها
-          if (data.vehicle_id && data.vehicle_id !== 'none') {
-            try {
-              const { data: vehicleCheck, error } = await supabase
-                .rpc('check_vehicle_availability_realtime', {
-                  vehicle_id_param: data.vehicle_id,
-                  start_date_param: data.start_date,
-                  end_date_param: data.end_date
-                })
-              
-              if (error) {
-                console.error('خطأ في التحقق من المركبة:', error)
-                toast.error('خطأ في التحقق من توفر المركبة')
-                return false
-              }
-              
-              if (!vehicleCheck?.available) {
-                toast.error(`المركبة غير متوفرة: ${vehicleCheck?.reason || 'سبب غير معروف'}`)
-                return false
-              }
-            } catch (error) {
-              console.error('خطأ في التحقق من المركبة:', error)
-              toast.warning('لا يمكن التحقق من توفر المركبة، سيتم التحقق عند الإرسال')
-            }
-          }
-          break
-          
-        case 2: // Dates
-          if (!data.start_date) {
-            toast.error('يرجى تحديد تاريخ البداية')
-            return false
-          }
-          if (!data.end_date) {
-            toast.error('يرجى تحديد تاريخ النهاية')
-            return false
-          }
-          if (data.rental_days <= 0) {
-            toast.error('مدة الإيجار يجب أن تكون أكبر من صفر')
-            return false
-          }
-          
-          // التحقق من أن تاريخ النهاية بعد تاريخ البداية
-          if (new Date(data.end_date) <= new Date(data.start_date)) {
-            toast.error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
-            return false
-          }
-          break
-          
-        case 3: // Financial
-          if (data.contract_amount <= 0) {
-            toast.error('مبلغ العقد يجب أن يكون أكبر من صفر')
-            return false
-          }
-          if (data.rental_days >= 30 && data.monthly_amount <= 0) {
-            toast.error('المبلغ الشهري مطلوب للعقود الطويلة المدى')
-            return false
-          }
-          break
-          
-        case 4: // Review
-          // التحقق النهائي من جميع البيانات
-          const requiredFields = [
-            { field: 'customer_id', name: 'العميل' },
-            { field: 'contract_type', name: 'نوع العقد' },
-            { field: 'start_date', name: 'تاريخ البداية' },
-            { field: 'end_date', name: 'تاريخ النهاية' },
-            { field: 'contract_amount', name: 'مبلغ العقد' }
-          ]
-          
-          for (const { field, name } of requiredFields) {
-            if (!data[field as keyof ContractWizardData] || 
-                (typeof data[field as keyof ContractWizardData] === 'number' && data[field as keyof ContractWizardData] <= 0)) {
-              toast.error(`${name} مطلوب`)
-              return false
-            }
-          }
-          break
-      }
-      
-      return true
-    } catch (error) {
-      console.error('خطأ في التحقق من الخطوة:', error)
-      toast.error('خطأ في التحقق من البيانات')
-      return false
-    } finally {
-      setIsValidating(false)
     }
   }
 
@@ -428,49 +292,25 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   // Data preparation and validation before submission
   const prepareContractData = (rawData: ContractWizardData) => {
-    console.log('[CONTRACT_WIZARD] إعداد بيانات العقد:', rawData)
-    
-    // التحقق من البيانات الأساسية
-    if (!rawData.customer_id) {
-      throw new Error('العميل مطلوب')
-    }
-    if (!rawData.contract_amount || rawData.contract_amount <= 0) {
-      throw new Error('مبلغ العقد مطلوب ويجب أن يكون أكبر من صفر')
-    }
-    if (!rawData.start_date || !rawData.end_date) {
-      throw new Error('تواريخ العقد مطلوبة')
-    }
-    if (!rawData.contract_type) {
-      throw new Error('نوع العقد مطلوب')
-    }
-    
-    // التحقق من صحة التواريخ
-    const startDate = new Date(rawData.start_date)
-    const endDate = new Date(rawData.end_date)
-    
-    if (endDate <= startDate) {
-      throw new Error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
-    }
+    console.log('[CONTRACT_WIZARD] Preparing contract data:', rawData)
     
     const prepared = {
       ...rawData,
-      // التأكد من وجود المبلغ الشهري وحسابه بشكل صحيح
+      // Ensure monthly_amount is always present and properly calculated
       monthly_amount: rawData.monthly_amount || rawData.contract_amount,
-      // تنظيف الحقول الاختيارية
+      // Clean up optional fields
       vehicle_id: rawData.vehicle_id === 'none' || !rawData.vehicle_id ? null : rawData.vehicle_id,
       account_id: rawData.account_id === 'none' || !rawData.account_id ? null : rawData.account_id,
       cost_center_id: rawData.cost_center_id === 'none' || !rawData.cost_center_id ? null : rawData.cost_center_id,
-      // التأكد من أن الحقول الرقمية من النوع الصحيح
+      // Ensure numeric fields are properly typed
       contract_amount: Number(rawData.contract_amount) || 0,
       rental_days: Number(rawData.rental_days) || 1,
-      // إضافة بيانات وصفية للتتبع
+      // Add metadata for tracking
       _prepared_at: new Date().toISOString(),
-      _validation_version: '3.0',
-      // إضافة معرف المستخدم
-      created_by: user?.id
+      _validation_version: '2.0'
     }
     
-    console.log('[CONTRACT_WIZARD] البيانات المعدة:', prepared)
+    console.log('[CONTRACT_WIZARD] Prepared data:', prepared)
     return prepared
   }
 
@@ -481,68 +321,49 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     }
 
     try {
-      console.log('📝 [CONTRACT_WIZARD] بدء إرسال العقد')
-      console.log('📝 [CONTRACT_WIZARD] البيانات الخام قبل الإعداد:', data)
+      console.log('📝 [CONTRACT_WIZARD] Starting contract submission')
+      console.log('📝 [CONTRACT_WIZARD] Raw data before preparation:', data)
       
-      // التحقق النهائي من البيانات
-      const isValid = await validateCurrentStep()
-      if (!isValid) {
-        console.log('❌ [CONTRACT_WIZARD] فشل في التحقق من البيانات')
-        return
-      }
-      
-      // إعداد والتحقق من البيانات قبل الإرسال
+      // Prepare and validate data before submission
       const preparedData = prepareContractData(data)
+      
+      // Final validation
+      if (!preparedData.customer_id) {
+        throw new Error('العميل مطلوب')
+      }
+      if (!preparedData.contract_amount || preparedData.contract_amount <= 0) {
+        throw new Error('مبلغ العقد مطلوب')
+      }
+      if (!preparedData.start_date || !preparedData.end_date) {
+        throw new Error('تواريخ العقد مطلوبة')
+      }
       
       const finalData = {
         ...preparedData,
         is_draft: false
       }
       
-      console.log('📝 [CONTRACT_WIZARD] البيانات النهائية للإرسال:', finalData)
+      console.log('📝 [CONTRACT_WIZARD] Final data for submission:', finalData)
       
-      // انتظار اكتمال عملية قاعدة البيانات
+      // Wait for the actual database operation to complete
       const result = await onSubmit(finalData)
       
-      console.log('✅ [CONTRACT_WIZARD] تم إرسال العقد بنجاح:', result)
+      console.log('✅ [CONTRACT_WIZARD] Contract submission successful:', result)
       
-      // المتابعة مع التنظيف فقط إذا كان الإرسال ناجحاً
+      // Only proceed with cleanup if submission was successful
       if (data.draft_id) {
         await deleteDraft()
       }
       
-      // إعادة تعيين النموذج
+      // Reset form
       setData(defaultData)
       setCurrentStep(0)
       
-      // إظهار رسالة النجاح فقط بعد نجاح عملية قاعدة البيانات
-      console.log('🎉 [CONTRACT_WIZARD] تم إنشاء العقد بنجاح')
-    } catch (error: any) {
-      console.error('❌ [CONTRACT_WIZARD] خطأ في إرسال العقد:', error)
-      
-      // تحسين رسائل الخطأ للمستخدم
-      let errorMessage = 'خطأ في إنشاء العقد'
-      
-      if (error?.message) {
-        if (error.message.includes('العميل مطلوب')) {
-          errorMessage = 'يرجى اختيار العميل'
-        } else if (error.message.includes('مبلغ العقد مطلوب')) {
-          errorMessage = 'يرجى إدخال مبلغ العقد'
-        } else if (error.message.includes('تواريخ العقد مطلوبة')) {
-          errorMessage = 'يرجى تحديد تواريخ العقد'
-        } else if (error.message.includes('نوع العقد مطلوب')) {
-          errorMessage = 'يرجى اختيار نوع العقد'
-        } else if (error.message.includes('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')) {
-          errorMessage = 'تواريخ العقد غير صحيحة'
-        } else {
-          errorMessage = error.message
-        }
-      }
-      
-      toast.error(errorMessage, {
-        description: 'يرجى مراجعة البيانات والمحاولة مرة أخرى',
-        duration: 6000
-      })
+      // Show success message only after successful database operation
+      toast.success('تم إنشاء العقد بنجاح')
+    } catch (error) {
+      console.error('❌ [CONTRACT_WIZARD] Error submitting contract:', error)
+      toast.error('خطأ في إنشاء العقد: ' + (error.message || 'حدث خطأ غير متوقع'))
     }
   }
 
@@ -560,9 +381,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     isAutoSaving,
     canProceedToNext,
     submitContract,
-    fillTestData,
-    validateCurrentStep,
-    isValidating
+    fillTestData
   }
 
   return (
@@ -579,4 +398,3 @@ export const useContractWizard = () => {
   }
   return context
 }
-

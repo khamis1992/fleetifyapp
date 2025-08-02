@@ -25,17 +25,15 @@ export interface ContractCreationState {
   healthStatus: 'good' | 'warning' | 'error'
 }
 
-interface ContractCreationResult {
-  success: boolean
-  contract_id: string
-  contract_number?: string
-  journal_entry_id?: string
-  journal_entry_number?: string
-  warning?: string
-  warnings?: string[]
-  requires_manual_entry?: boolean
-  message?: string
-  error?: string
+interface AutoConfigResult {
+  created?: string[]
+  existing?: string[]
+  errors?: string[]
+  status?: string
+}
+
+interface ValidationResult {
+  valid?: boolean
   errors?: string[]
 }
 
@@ -59,22 +57,15 @@ export const useContractCreation = () => {
     healthStatus: 'good'
   })
 
-  const updateStepStatus = (stepId: string, status: ContractCreationStep['status'], error?: string, warnings?: string[]) => {
+  const updateStepStatus = (stepId: string, status: ContractCreationStep['status'], error?: string) => {
     setCreationState(prev => ({
       ...prev,
       steps: prev.steps.map(step => 
         step.id === stepId 
-          ? { 
-              ...step, 
-              status, 
-              error, 
-              warnings,
-              retryCount: status === 'failed' ? (step.retryCount || 0) + 1 : step.retryCount 
-            }
+          ? { ...step, status, error, retryCount: status === 'failed' ? (step.retryCount || 0) + 1 : step.retryCount }
           : step
       ),
-      canRetry: status === 'failed',
-      hasWarnings: prev.hasWarnings || status === 'warning' || (warnings && warnings.length > 0)
+      canRetry: status === 'failed'
     }))
   }
 
@@ -90,6 +81,7 @@ export const useContractCreation = () => {
     if (!companyId) return
     
     try {
+      // Ensure contractId is properly typed - convert null to undefined for optional parameter
       const contractIdParam = contractId || undefined
       
       await supabase.rpc('log_contract_creation_step', {
@@ -107,7 +99,7 @@ export const useContractCreation = () => {
 
   const createContractMutation = useMutation({
     mutationFn: async (inputContractData: any) => {
-      console.log('🚀 [CONTRACT_CREATION] بدء عملية إنشاء العقد المحسنة', {
+      console.log('🚀 [CONTRACT_CREATION] Starting enhanced contract creation with fallback mechanism', {
         contractType: inputContractData.contract_type,
         amount: inputContractData.contract_amount,
         customerId: inputContractData.customer_id,
@@ -128,11 +120,16 @@ export const useContractCreation = () => {
       setCreationState(prev => ({ ...prev, isProcessing: true, canRetry: false }))
 
       try {
-        // تحديث حالة الخطوات إلى قيد المعالجة
+        // Update step statuses to processing
         updateStepStatus('validation', 'processing')
+        updateStepStatus('accounts', 'processing')
+        updateStepStatus('creation', 'processing')
+        updateStepStatus('activation', 'processing')
+        updateStepStatus('verification', 'processing')
+        updateStepStatus('finalization', 'processing')
+
         await logContractStep(null, 'enhanced_creation', 'started')
 
-        // إعداد بيانات العقد
         const contractRequestData = {
           company_id: companyId,
           customer_id: inputContractData.customer_id,
@@ -149,22 +146,20 @@ export const useContractCreation = () => {
           created_by: inputContractData.created_by
         }
 
-        console.log('📝 [CONTRACT_CREATION] استخدام طريقة الإنشاء الموحدة:', contractRequestData)
+        console.log('📝 [CONTRACT_CREATION] Using unified creation method:', contractRequestData)
 
-        updateStepStatus('accounts', 'processing')
-        updateStepStatus('creation', 'processing')
-
-        // استخدام دالة إنشاء العقد الموحدة
+        // Use the unified contract creation function
         const { data: result, error: createError } = await supabase
           .rpc('create_contract_with_journal_entry', {
             contract_data: contractRequestData
           })
 
-        // معالجة أخطاء الاتصال بقاعدة البيانات
+        // Handle database connection errors
         if (createError) {
-          console.error('❌ [CONTRACT_CREATION] خطأ في قاعدة البيانات:', createError)
+          console.error('❌ [CONTRACT_CREATION] Database error:', createError)
           
-          const errorMessage = `خطأ في قاعدة البيانات: ${createError.message}`
+          const errorMessage = `Database error: ${createError.message}`
+          // Update all steps to failed
           updateStepStatus('validation', 'failed', errorMessage)
           updateStepStatus('accounts', 'failed', errorMessage)
           updateStepStatus('creation', 'failed', errorMessage)
@@ -176,110 +171,100 @@ export const useContractCreation = () => {
           throw new Error(errorMessage)
         }
 
-        // معالجة عدم وجود استجابة
+        // Handle unexpected response format
         if (!result) {
           const errorMessage = 'لم يتم تلقي استجابة من الخادم'
-          console.error('❌ [CONTRACT_CREATION] لم يتم تلقي استجابة')
+          console.error('❌ [CONTRACT_CREATION] No response received')
           
           updateStepStatus('creation', 'failed', errorMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
-        // معالجة تنسيق الاستجابة غير المتوقع
+        // Handle non-object response
         if (typeof result !== 'object') {
           const errorMessage = `تنسيق استجابة غير متوقع: متوقع كائن، حصلت على ${typeof result}`
-          console.error('❌ [CONTRACT_CREATION] نوع استجابة غير متوقع:', typeof result)
+          console.error('❌ [CONTRACT_CREATION] Unexpected response type:', typeof result)
           
           updateStepStatus('creation', 'failed', errorMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
+        }
+
+        interface ContractCreationResult {
+          success: boolean
+          contract_id: string
+          contract_number?: string
+          journal_entry_id?: string
+          warning?: string
+          requires_manual_entry?: boolean
+          message?: string
+          error?: string
         }
 
         const typedResult = result as unknown as ContractCreationResult
 
-        // التحقق من بنية الاستجابة
+        // Validate response structure
         if (!typedResult.hasOwnProperty('success')) {
           const errorMessage = 'تنسيق استجابة غير صحيح: خاصية النجاح مفقودة'
-          console.error('❌ [CONTRACT_CREATION] تنسيق استجابة غير صحيح - خاصية النجاح مفقودة:', result)
+          console.error('❌ [CONTRACT_CREATION] Invalid response format - missing success property:', result)
           
           updateStepStatus('creation', 'failed', errorMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
-        // معالجة فشل إنشاء العقد
+        // Handle failed contract creation
         if (typedResult.success !== true) {
           const errorMessage = typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
-          const errors = typedResult.errors || [errorMessage]
-          
-          console.error('❌ [CONTRACT_CREATION] فشل في إنشاء العقد:', result)
-          
-          updateStepStatus('creation', 'failed', errors.join(', '))
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
-          throw new Error(errors.join(', '))
-        }
-
-        // التحقق من وجود معرف العقد عند النجاح
-        if (!typedResult.contract_id) {
-          const errorMessage = 'تم إنشاء العقد ولكن معرف العقد مفقود'
-          console.error('❌ [CONTRACT_CREATION] استجابة النجاح تفتقر لمعرف العقد:', result)
+          console.error('❌ [CONTRACT_CREATION] Contract creation failed:', result)
           
           updateStepStatus('creation', 'failed', errorMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
-        console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', typedResult)
+        // Validate contract_id is present on success
+        if (!typedResult.contract_id) {
+          const errorMessage = 'تم إنشاء العقد ولكن معرف العقد مفقود'
+          console.error('❌ [CONTRACT_CREATION] Success response missing contract_id:', result)
+          
+          updateStepStatus('creation', 'failed', errorMessage)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
 
-        // تحديد حالة الخطوات بناءً على النتيجة
+        console.log('✅ [CONTRACT_CREATION] Contract created successfully:', typedResult)
+
+        // Mark creation and validation as completed
         updateStepStatus('validation', 'completed')
         updateStepStatus('accounts', 'completed')
         updateStepStatus('creation', 'completed')
 
         const contractId = typedResult.contract_id
         const journalEntryId = typedResult.journal_entry_id
-        const warnings = typedResult.warnings || []
+        const warning = typedResult.warning
         const requiresManualEntry = typedResult.requires_manual_entry || false
 
-        // معالجة حالة القيد المحاسبي
+        // Handle journal entry status based on new enhanced response
         if (journalEntryId) {
-          // تم إنشاء القيد المحاسبي بنجاح
+          // Journal entry created successfully
           updateStepStatus('activation', 'completed')
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
-          
-          toast.success('تم إنشاء العقد والقيد المحاسبي بنجاح')
         } else if (requiresManualEntry) {
-          // فشل في إنشاء القيد المحاسبي - يحتاج تدخل يدوي
-          updateStepStatus('activation', 'warning', 'فشل في إنشاء القيد المحاسبي بعد عدة محاولات')
-          updateStepStatus('verification', 'failed', 'يتطلب إنشاء قيد محاسبي يدوي')
-          updateStepStatus('finalization', 'warning', 'تم إنشاء العقد ولكن يتطلب قيد محاسبي يدوي')
-          
-          toast.warning('تم إنشاء العقد بنجاح ولكن يتطلب إنشاء قيد محاسبي يدوي', {
-            description: 'يرجى التواصل مع قسم المحاسبة لإنشاء القيد المحاسبي',
-            duration: 8000
-          })
-        } else if (warnings.length > 0) {
-          // تحذيرات في إنشاء القيد المحاسبي
-          updateStepStatus('activation', 'warning', warnings.join(', '), warnings)
-          updateStepStatus('verification', 'warning', 'سيتم التحقق تلقائياً')
-          updateStepStatus('finalization', 'completed')
-          
-          toast.success('تم إنشاء العقد بنجاح مع بعض التحذيرات', {
-            description: warnings.join(', '),
-            duration: 6000
-          })
+          // Journal entry failed after retries - needs manual intervention
+          updateStepStatus('activation', 'warning', warning || 'Journal entry creation failed after retries')
+          updateStepStatus('verification', 'failed', 'Manual journal entry required')
+          updateStepStatus('finalization', 'warning', 'Contract created but requires manual journal entry')
         } else {
-          // تم إنشاء العقد بدون قيد محاسبي (مبلغ صفر مثلاً)
-          updateStepStatus('activation', 'completed')
-          updateStepStatus('verification', 'completed')
+          // Journal entry is pending - show warning but mark as completed with fallback
+          updateStepStatus('activation', 'warning', 'Journal entry queued for automatic retry')
+          updateStepStatus('verification', 'warning', 'Will be verified automatically')
           updateStepStatus('finalization', 'completed')
-          
-          toast.success('تم إنشاء العقد بنجاح')
         }
 
-        const hasWarnings = warnings.length > 0 || requiresManualEntry
+        const hasWarnings = !!warning || requiresManualEntry
         
         setCreationState(prev => ({ 
           ...prev, 
@@ -291,15 +276,15 @@ export const useContractCreation = () => {
 
         await logContractStep(contractId, 'enhanced_creation', 'completed', 1, null, Date.now() - startTime)
 
-        console.log('🎉 [CONTRACT_CREATION] اكتملت العملية المحسنة:', {
+        console.log('🎉 [CONTRACT_CREATION] Enhanced process completed:', {
           contractId,
           journalEntryId,
-          warnings,
+          warning,
           requiresManualEntry,
           totalTime: Date.now() - startTime
         })
 
-        // الحصول على بيانات العقد الكاملة للإرجاع
+        // Get the full contract data for return
         const { data: createdContractData, error: fetchError } = await supabase
           .from('contracts')
           .select('*')
@@ -307,8 +292,8 @@ export const useContractCreation = () => {
           .single()
 
         if (fetchError || !createdContractData) {
-          console.warn('⚠️ [CONTRACT_CREATION] لا يمكن جلب بيانات العقد المنشأ:', fetchError)
-          // إرجاع بيانات العقد الأساسية
+          console.warn('⚠️ [CONTRACT_CREATION] Could not fetch created contract data:', fetchError)
+          // Return minimal contract data
           return { 
             id: contractId, 
             contract_number: contractRequestData.contract_number,
@@ -319,21 +304,21 @@ export const useContractCreation = () => {
         return createdContractData
 
       } catch (error: any) {
-        console.error('❌ [CONTRACT_CREATION] فشلت العملية:', error)
+        console.error('❌ [CONTRACT_CREATION] Process failed:', error)
         
-        // معالجة محسنة للأخطاء وتسجيلها
+        // Enhanced error handling and logging
         let errorMessage = 'حدث خطأ غير متوقع أثناء إنشاء العقد'
-        let detailedError = 'خطأ غير معروف'
+        let detailedError = 'Unknown error'
         
         if (error) {
-          // معالجة أنواع مختلفة من الأخطاء
+          // Handle different error types
           if (typeof error === 'string') {
             errorMessage = error
             detailedError = error
           } else if (error instanceof Error) {
             errorMessage = error.message || errorMessage
             detailedError = error.message
-            console.error('❌ [CONTRACT_CREATION] مكدس الخطأ:', error.stack)
+            console.error('❌ [CONTRACT_CREATION] Error stack:', error.stack)
           } else if (error.message) {
             errorMessage = error.message
             detailedError = error.message
@@ -342,11 +327,11 @@ export const useContractCreation = () => {
             detailedError = JSON.stringify(error.error)
           } else {
             detailedError = JSON.stringify(error)
-            console.error('❌ [CONTRACT_CREATION] كائن الخطأ الخام:', error)
+            console.error('❌ [CONTRACT_CREATION] Raw error object:', error)
           }
           
-          // تسجيل سياق إضافي للخطأ
-          console.error('❌ [CONTRACT_CREATION] تفاصيل الخطأ:', {
+          // Log additional error context
+          console.error('❌ [CONTRACT_CREATION] Error details:', {
             errorType: typeof error,
             errorConstructor: error?.constructor?.name,
             errorMessage: errorMessage,
@@ -355,38 +340,28 @@ export const useContractCreation = () => {
           })
         }
         
-        // تحديث جميع الخطوات المتبقية كفاشلة
-        setCreationState(prev => ({
-          ...prev,
-          isProcessing: false,
-          canRetry: true,
-          steps: prev.steps.map(step => 
-            step.status === 'processing' || step.status === 'pending'
-              ? { ...step, status: 'failed', error: errorMessage }
-              : step
-          )
-        }))
+        setCreationState(prev => ({ ...prev, isProcessing: false, canRetry: true }))
         
         await logContractStep(null, 'unified_creation', 'failed', 1, detailedError, Date.now() - startTime)
         
-        // رمي خطأ منسق بشكل صحيح
+        // Throw a properly formatted error
         const formattedError = new Error(errorMessage)
         formattedError.name = 'ContractCreationError'
         throw formattedError
       }
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] })
-      console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', data)
+      toast.success('تم إنشاء العقد بنجاح')
     },
     onError: (error: any) => {
-      console.error('❌ [CONTRACT_CREATION] فشل في الطفرة:', error)
+      console.error('❌ [CONTRACT_CREATION] Mutation failed:', error)
       
-      // رسائل خطأ محسنة للمستخدمين
+      // Enhanced error messaging for users
       let userMessage = 'فشل في إنشاء العقد'
       
       if (error && error.message) {
-        // فحص أنماط أخطاء محددة وتوفير رسائل مفيدة
+        // Check for specific error patterns and provide helpful messages
         if (error.message.includes('unique_violation')) {
           userMessage = 'رقم العقد موجود مسبقاً، يرجى استخدام رقم مختلف'
         } else if (error.message.includes('foreign_key_violation')) {
@@ -399,10 +374,6 @@ export const useContractCreation = () => {
           userMessage = 'انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى'
         } else if (error.message.includes('network') || error.message.includes('connection')) {
           userMessage = 'خطأ في الاتصال، يرجى التحقق من الإنترنت والمحاولة مرة أخرى'
-        } else if (error.message.includes('المستخدم غير موجود')) {
-          userMessage = 'مشكلة في المصادقة، يرجى تسجيل الدخول مرة أخرى'
-        } else if (error.message.includes('ليس لديك صلاحية')) {
-          userMessage = 'ليس لديك صلاحية لإنشاء العقود، يرجى التواصل مع الإدارة'
         } else {
           userMessage = error.message
         }
@@ -410,27 +381,24 @@ export const useContractCreation = () => {
       
       toast.error(userMessage, {
         description: 'يمكنك المحاولة مرة أخرى أو التواصل مع الدعم الفني إذا استمر الخطأ',
-        duration: 8000
+        duration: 6000
       })
     }
   })
 
-  const retryCreation = (originalData?: any) => {
-    if (creationState.canRetry) {
-      // إعادة تعيين الخطوات الفاشلة وإعادة المحاولة
+  const retryCreation = () => {
+    if (creationState.contractId && creationState.canRetry) {
+      // Reset failed steps and retry
       setCreationState(prev => ({
         ...prev,
         steps: prev.steps.map(step => 
-          step.status === 'failed' ? { ...step, status: 'pending', error: undefined } : step
+          step.status === 'failed' ? { ...step, status: 'pending' } : step
         ),
-        canRetry: false,
-        isProcessing: false
+        canRetry: false
       }))
       
-      // إعادة المحاولة مع البيانات الأصلية إذا توفرت
-      if (originalData) {
-        createContractMutation.mutate(originalData)
-      }
+      // Continue from where it failed
+      // This would need the original contract data, which could be stored in state
     }
   }
 
@@ -460,4 +428,3 @@ export const useContractCreation = () => {
     resetCreationState
   }
 }
-

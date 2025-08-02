@@ -9,20 +9,19 @@ import {
   RefreshCw,
   Info 
 } from 'lucide-react'
-import { ContractCreationData, ContractValidationResult } from '@/types/contracts'
 
 interface ContractDataValidatorProps {
-  data: Partial<ContractCreationData>
-  onDataCorrection?: (correctedData: Partial<ContractCreationData>) => void
+  data: any
+  onDataCorrection?: (correctedData: any) => void
   onValidate?: () => void
   isValidating?: boolean
 }
 
 interface DataIssue {
-  field: keyof ContractCreationData
+  field: string
   issue: string
   severity: 'error' | 'warning' | 'info'
-  correction?: string | number
+  correction?: any
 }
 
 export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
@@ -32,31 +31,29 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
   isValidating = false
 }) => {
   const [issues, setIssues] = React.useState<DataIssue[]>([])
-  const [autoCorrections, setAutoCorrections] = React.useState<Partial<ContractCreationData>>({})
+  const [autoCorrections, setAutoCorrections] = React.useState<any>({})
 
   // Validate contract data and detect issues
   React.useEffect(() => {
     const detectedIssues: DataIssue[] = []
-    const corrections: Partial<ContractCreationData> = {}
+    const corrections: any = {}
 
     // Check monthly_amount
     if (!data.monthly_amount || data.monthly_amount <= 0) {
-      if (data.contract_amount && data.contract_amount > 0) {
-        detectedIssues.push({
-          field: 'monthly_amount',
-          issue: 'المبلغ الشهري مفقود أو صفر',
-          severity: 'warning',
-          correction: data.contract_amount
-        })
-        corrections.monthly_amount = data.contract_amount
-      }
+      detectedIssues.push({
+        field: 'monthly_amount',
+        issue: 'المبلغ الشهري مفقود أو صفر',
+        severity: 'warning',
+        correction: data.contract_amount
+      })
+      corrections.monthly_amount = data.contract_amount
     }
 
     // Check contract amount
     if (!data.contract_amount || data.contract_amount <= 0) {
       detectedIssues.push({
         field: 'contract_amount',
-        issue: 'مبلغ العقد مطلوب ويجب أن يكون أكبر من صفر',
+        issue: 'مبلغ العقد مطلوب',
         severity: 'error'
       })
     }
@@ -70,76 +67,31 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
       })
     }
 
-    // Check contract type
-    if (!data.contract_type) {
-      detectedIssues.push({
-        field: 'contract_type',
-        issue: 'نوع العقد مطلوب',
-        severity: 'error'
-      })
-    }
-
     // Check dates
-    if (!data.start_date) {
+    if (!data.start_date || !data.end_date) {
       detectedIssues.push({
-        field: 'start_date',
-        issue: 'تاريخ البداية مطلوب',
+        field: 'dates',
+        issue: 'تواريخ العقد مطلوبة',
         severity: 'error'
       })
     }
 
-    if (!data.end_date) {
-      detectedIssues.push({
-        field: 'end_date',
-        issue: 'تاريخ النهاية مطلوب',
-        severity: 'error'
-      })
-    }
-
-    // Check date logic
-    if (data.start_date && data.end_date) {
+    // Check rental days
+    if (!data.rental_days || data.rental_days <= 0) {
       const startDate = new Date(data.start_date)
       const endDate = new Date(data.end_date)
-      
-      if (endDate <= startDate) {
-        detectedIssues.push({
-          field: 'end_date',
-          issue: 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية',
-          severity: 'error'
-        })
-      }
-
-      // Calculate rental days if missing or incorrect
-      const diffTime = endDate.getTime() - startDate.getTime()
-      const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
-      if (!data.rental_days || data.rental_days !== calculatedDays) {
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        const diffTime = endDate.getTime() - startDate.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        
         detectedIssues.push({
           field: 'rental_days',
-          issue: 'عدد أيام التأجير غير محسوب بشكل صحيح',
+          issue: 'عدد أيام التأجير غير محسوب',
           severity: 'warning',
-          correction: calculatedDays
+          correction: diffDays
         })
-        corrections.rental_days = calculatedDays
+        corrections.rental_days = diffDays
       }
-    }
-
-    // Check contract number format
-    if (data.contract_number && !/^[A-Z0-9-]+$/.test(data.contract_number)) {
-      detectedIssues.push({
-        field: 'contract_number',
-        issue: 'رقم العقد يجب أن يحتوي على أحرف إنجليزية وأرقام وشرطات فقط',
-        severity: 'warning'
-      })
-    }
-
-    // Check description length
-    if (data.description && data.description.length > 500) {
-      detectedIssues.push({
-        field: 'description',
-        issue: 'الوصف طويل جداً (أكثر من 500 حرف)',
-        severity: 'warning'
-      })
     }
 
     setIssues(detectedIssues)
@@ -148,12 +100,12 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
 
   const applyAutoCorrections = () => {
     if (Object.keys(autoCorrections).length > 0 && onDataCorrection) {
-      console.log('[DATA_VALIDATOR] تطبيق التصحيحات التلقائية:', autoCorrections)
+      console.log('[DATA_VALIDATOR] Applying auto-corrections:', autoCorrections)
       onDataCorrection(autoCorrections)
     }
   }
 
-  const getIssueIcon = (severity: DataIssue['severity']) => {
+  const getIssueIcon = (severity: string) => {
     switch (severity) {
       case 'error': return <XCircle className="h-4 w-4 text-destructive" />
       case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -162,33 +114,13 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
     }
   }
 
-  const getSeverityVariant = (severity: DataIssue['severity']): "default" | "secondary" | "destructive" | "outline" => {
+  const getSeverityVariant = (severity: string) => {
     switch (severity) {
       case 'error': return 'destructive'
       case 'warning': return 'secondary'
       case 'info': return 'outline'
       default: return 'default'
     }
-  }
-
-  const getFieldDisplayName = (field: keyof ContractCreationData): string => {
-    const fieldNames: Record<keyof ContractCreationData, string> = {
-      customer_id: 'العميل',
-      vehicle_id: 'المركبة',
-      contract_number: 'رقم العقد',
-      contract_type: 'نوع العقد',
-      contract_date: 'تاريخ العقد',
-      start_date: 'تاريخ البداية',
-      end_date: 'تاريخ النهاية',
-      contract_amount: 'مبلغ العقد',
-      monthly_amount: 'المبلغ الشهري',
-      description: 'الوصف',
-      terms: 'الشروط والأحكام',
-      cost_center_id: 'مركز التكلفة',
-      created_by: 'المنشئ'
-    }
-    
-    return fieldNames[field] || field
   }
 
   if (issues.length === 0) {
@@ -202,17 +134,12 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
     )
   }
 
-  const errorCount = issues.filter(issue => issue.severity === 'error').length
-  const warningCount = issues.filter(issue => issue.severity === 'warning').length
-
   return (
     <div className="space-y-3">
-      <Alert variant={errorCount > 0 ? "destructive" : "default"}>
+      <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
           تم اكتشاف {issues.length} مشكلة في بيانات العقد
-          {errorCount > 0 && ` (${errorCount} خطأ`}
-          {warningCount > 0 && `, ${warningCount} تحذير)`}
         </AlertDescription>
       </Alert>
 
@@ -223,7 +150,7 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
               {getIssueIcon(issue.severity)}
               <span className="text-sm">{issue.issue}</span>
               <Badge variant={getSeverityVariant(issue.severity)} className="text-xs">
-                {getFieldDisplayName(issue.field)}
+                {issue.field}
               </Badge>
             </div>
             {issue.correction && (
@@ -244,7 +171,7 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
             className="flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            تطبيق التصحيحات التلقائية ({Object.keys(autoCorrections).length})
+            تطبيق التصحيحات التلقائية
           </Button>
         )}
         
@@ -264,4 +191,3 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
     </div>
   )
 }
-
