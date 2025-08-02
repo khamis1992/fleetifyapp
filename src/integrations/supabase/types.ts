@@ -8351,10 +8351,6 @@ export type Database = {
         Args: { contract_id_param: string; invoice_period?: string }
         Returns: string
       }
-      create_contract_journal_entry: {
-        Args: { contract_id_param: string }
-        Returns: string
-      }
       create_contract_journal_entry_enhanced: {
         Args: {
           contract_id_param: string
@@ -8404,6 +8400,20 @@ export type Database = {
       create_contract_with_journal_entry: {
         Args:
           | { contract_data: Json }
+          | {
+              p_company_id: string
+              p_customer_id: string
+              p_vehicle_id?: string
+              p_contract_type?: string
+              p_start_date?: string
+              p_end_date?: string
+              p_contract_amount?: number
+              p_monthly_amount?: number
+              p_description?: string
+              p_terms?: string
+              p_cost_center_id?: string
+              p_created_by?: string
+            }
           | {
               p_customer_id: string
               p_vehicle_id?: string
