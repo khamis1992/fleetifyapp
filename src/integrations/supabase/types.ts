@@ -7604,7 +7604,7 @@ export type Database = {
       }
       cleanup_orphaned_contract_logs: {
         Args: Record<PropertyKey, never>
-        Returns: Json
+        Returns: number
       }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
@@ -8129,16 +8129,25 @@ export type Database = {
         Returns: boolean
       }
       log_contract_creation_step: {
-        Args: {
-          company_id_param: string
-          contract_id_param: string
-          step_name: string
-          status_param: string
-          attempt_num?: number
-          error_msg?: string
-          exec_time?: number
-          meta?: Json
-        }
+        Args:
+          | {
+              company_id_param: string
+              contract_id_param: string
+              step_name: string
+              status_param: string
+              attempt_num?: number
+              error_msg?: string
+              exec_time?: number
+              meta?: Json
+            }
+          | {
+              company_id_param: string
+              contract_id_param: string
+              step_name_param: string
+              status_param: string
+              error_message_param?: string
+              metadata_param?: Json
+            }
         Returns: undefined
       }
       log_security_event: {
