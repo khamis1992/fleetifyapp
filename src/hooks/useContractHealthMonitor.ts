@@ -33,7 +33,7 @@ export const useContractHealthMonitor = () => {
       console.log('🔍 [HEALTH_MONITOR] Checking contract health...')
       
       const { data, error } = await supabase
-        .rpc('monitor_contract_health')
+        .rpc('monitor_contract_health', { company_id_param: companyId })
         .returns<ContractHealthIssue[]>()
 
       if (error) {
@@ -103,7 +103,7 @@ export const useContractHealthMonitor = () => {
       console.log('🧹 [CLEANUP] Starting contract cleanup...')
       
       const { data, error } = await supabase
-        .rpc('cleanup_contract_issues')
+        .rpc('cleanup_contract_issues', { company_id_param: companyId })
         .single()
 
       if (error) {

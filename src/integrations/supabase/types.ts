@@ -8298,7 +8298,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_contract_issues: {
-        Args: Record<PropertyKey, never> | { company_id_param: string }
+        Args: { company_id_param?: string }
         Returns: Json
       }
       cleanup_inactive_accounts: {
@@ -8403,10 +8403,14 @@ export type Database = {
         Args:
           | {
               customer_id_param: string
+              account_id_param?: string
+              account_name_override?: string
+            }
+          | {
+              customer_id_param: string
               company_id_param: string
               customer_data?: Json
             }
-          | { customer_id_param: string; company_id_param?: string }
           | {
               customer_id_param: string
               customer_name_param: string
@@ -8480,6 +8484,11 @@ export type Database = {
       create_payment_journal_entry: {
         Args:
           | { payment_id_param: string }
+          | {
+              payment_id_param: string
+              amount_param: number
+              payment_type_param?: string
+            }
           | { payment_record: Record<string, unknown> }
         Returns: string
       }
@@ -9024,13 +9033,16 @@ export type Database = {
         Returns: undefined
       }
       monitor_contract_health: {
-        Args: Record<PropertyKey, never> | { company_id_param: string }
+        Args: { company_id_param?: string }
         Returns: {
-          contract_id: string
+          issue_id: string
           issue_type: string
-          issue_description: string
+          description: string
           severity: string
           recommended_action: string
+          contract_id: string
+          contract_number: string
+          created_at: string
         }[]
       }
       monitor_user_data_quality: {

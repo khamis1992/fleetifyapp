@@ -169,12 +169,11 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Attempt to create journal entry using the unified function
+        // Attempt to create journal entry using the enhanced function
         const { data: journalResult, error: journalError } = await supabase
-          .rpc('create_contract_journal_entry', {
+          .rpc('create_contract_journal_entry_enhanced', {
             contract_id_param: contract.id,
-            user_id_param: contract.created_by,
-            custom_description: `Retry: Contract Journal Entry - ${contract.contract_number}`
+            user_id_param: contract.created_by
           })
 
         if (journalError) {
