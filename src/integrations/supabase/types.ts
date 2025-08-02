@@ -8490,7 +8490,7 @@ export type Database = {
               payment_type_param?: string
             }
           | { payment_record: Record<string, unknown> }
-        Returns: string
+        Returns: Json
       }
       create_payroll_journal_entry: {
         Args: { payroll_id_param: string }
