@@ -40,7 +40,7 @@ interface ContractCreationResult {
 }
 
 export const useContractCreation = () => {
-  const { companyId } = useUnifiedCompanyAccess()
+  const { companyId, user } = useUnifiedCompanyAccess()
   const queryClient = useQueryClient()
   
   const [creationState, setCreationState] = useState<ContractCreationState>({
@@ -122,7 +122,12 @@ export const useContractCreation = () => {
       }
       
       if (!companyId) {
-        throw new Error('معرف الشركة مطلوب')
+        console.error('❌ [CONTRACT_CREATION] معرف الشركة غير موجود:', { user, companyId })
+        throw new Error('معرف الشركة مطلوب - يرجى التأكد من تسجيل الدخول بشكل صحيح')
+      }
+
+      if (!inputContractData.customer_id) {
+        throw new Error('معرف العميل مطلوب')
       }
 
       const startTime = Date.now()
@@ -134,30 +139,60 @@ export const useContractCreation = () => {
         await logContractStep(null, 'enhanced_creation', 'started')
 
         console.log('📝 [CONTRACT_CREATION] استخدام طريقة الإنشاء الموحدة مع المعاملات المنفصلة')
+        
+        // التحقق من صحة البيانات الأساسية
+        if (!inputContractData.start_date || !inputContractData.end_date) {
+          throw new Error('تواريخ بداية ونهاية العقد مطلوبة')
+        }
+
+        const contractAmount = Number(inputContractData.contract_amount)
+        if (isNaN(contractAmount) || contractAmount < 0) {
+          throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من أو يساوي صفر')
+        }
+
+        // التحقق من البيانات المطلوبة مع تسجيل مفصل
+        const rpcParams = {
+          p_company_id: companyId,
+          p_customer_id: inputContractData.customer_id,
+          p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
+          p_contract_type: inputContractData.contract_type || 'rental',
+          p_start_date: inputContractData.start_date,
+          p_end_date: inputContractData.end_date,
+          p_contract_amount: contractAmount,
+          p_monthly_amount: Number(inputContractData.monthly_amount || contractAmount) || contractAmount,
+          p_description: inputContractData.description || null,
+          p_terms: inputContractData.terms || null,
+          p_cost_center_id: inputContractData.cost_center_id || null,
+          p_created_by: inputContractData.created_by || user?.id
+        }
+        
+        console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
 
         updateStepStatus('accounts', 'processing')
         updateStepStatus('creation', 'processing')
 
         // استخدام دالة إنشاء العقد الموحدة مع المعاملات المنفصلة
         const { data: result, error: createError } = await supabase
-          .rpc('create_contract_with_journal_entry', {
-            p_company_id: companyId,
-            p_customer_id: inputContractData.customer_id,
-            p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
-            p_contract_type: inputContractData.contract_type || 'rental',
-            p_start_date: inputContractData.start_date,
-            p_end_date: inputContractData.end_date,
-            p_contract_amount: Number(inputContractData.contract_amount) || 0,
-            p_monthly_amount: Number(inputContractData.monthly_amount || inputContractData.contract_amount) || 0,
-            p_description: inputContractData.description || null,
-            p_terms: inputContractData.terms || null,
-            p_cost_center_id: inputContractData.cost_center_id || null,
-            p_created_by: inputContractData.created_by
-          })
+          .rpc('create_contract_with_journal_entry', rpcParams)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
           console.error('❌ [CONTRACT_CREATION] خطأ في قاعدة البيانات:', createError)
+          
+          // إجراء تشخيص سريع لفهم المشكلة
+          try {
+            const { data: diagnosisResult } = await supabase.rpc('diagnose_contract_creation_readiness', {
+              p_company_id: companyId,
+              p_customer_id: inputContractData.customer_id,
+              p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id
+            })
+            
+            if (diagnosisResult) {
+              console.log('🔍 [CONTRACT_CREATION] تشخيص المشكلة:', diagnosisResult)
+            }
+          } catch (diagError) {
+            console.warn('⚠️ [CONTRACT_CREATION] فشل في التشخيص:', diagError)
+          }
           
           const errorMessage = `خطأ في قاعدة البيانات: ${createError.message}`
           updateStepStatus('validation', 'failed', errorMessage)
@@ -205,14 +240,57 @@ export const useContractCreation = () => {
 
         // معالجة فشل إنشاء العقد
         if (typedResult.success !== true) {
-          const errorMessage = typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
+          const errorMessage = typedResult.error_message || typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
+          const errorCode = typedResult.error_code || 'UNKNOWN_ERROR'
           const errors = typedResult.errors || [errorMessage]
           
-          console.error('❌ [CONTRACT_CREATION] فشل في إنشاء العقد:', result)
+          console.error('❌ [CONTRACT_CREATION] فشل في إنشاء العقد:', {
+            result,
+            errorCode,
+            errorMessage,
+            errors
+          })
           
-          updateStepStatus('creation', 'failed', errors.join(', '))
+          // تحديد رسالة خطأ مناسبة للمستخدم
+          let userMessage = errorMessage
+          switch (errorCode) {
+            case 'MISSING_COMPANY_ID':
+              userMessage = 'معرف الشركة مطلوب - يرجى تسجيل الدخول مرة أخرى'
+              break
+            case 'MISSING_CUSTOMER_ID':
+              userMessage = 'يرجى تحديد العميل'
+              break
+            case 'CUSTOMER_NOT_FOUND':
+              userMessage = 'العميل المحدد غير موجود'
+              break
+            case 'CUSTOMER_NOT_ELIGIBLE':
+              userMessage = 'العميل غير مؤهل لإنشاء عقد جديد'
+              break
+            case 'VEHICLE_NOT_FOUND':
+              userMessage = 'المركبة المحددة غير موجودة'
+              break
+            case 'VEHICLE_NOT_AVAILABLE':
+              userMessage = 'المركبة غير متاحة حالياً'
+              break
+            case 'VEHICLE_DATE_CONFLICT':
+              userMessage = 'يوجد تضارب في مواعيد استخدام المركبة'
+              break
+            case 'MISSING_DATES':
+              userMessage = 'تواريخ بداية ونهاية العقد مطلوبة'
+              break
+            case 'INVALID_DATES':
+              userMessage = 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية'
+              break
+            case 'AUTHENTICATION_ERROR':
+              userMessage = 'خطأ في المصادقة - يرجى تسجيل الدخول مرة أخرى'
+              break
+            default:
+              userMessage = errorMessage
+          }
+          
+          updateStepStatus('creation', 'failed', userMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
-          throw new Error(errors.join(', '))
+          throw new Error(userMessage)
         }
 
         // التحقق من وجود معرف العقد عند النجاح

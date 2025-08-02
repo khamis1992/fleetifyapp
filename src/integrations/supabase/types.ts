@@ -8418,6 +8418,14 @@ export type Database = {
         Args: { customer_id_param: string; user_id_param?: string }
         Returns: Json
       }
+      diagnose_contract_creation_readiness: {
+        Args: {
+          p_company_id: string
+          p_customer_id: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
       create_customer_financial_account_fixed: {
         Args: { customer_id_param: string; company_id_param: string }
         Returns: string

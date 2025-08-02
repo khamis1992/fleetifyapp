@@ -253,14 +253,9 @@ export default function Contracts() {
       resetCreationState()
       
       // Prepare contract data with user context
-      const companyId = user?.profile?.company_id || user?.company?.id
-      if (!companyId) {
-        throw new Error('لا يمكن تحديد الشركة')
-      }
-
+      // Note: companyId will be handled inside useContractCreation hook
       const finalData = {
         ...contractData,
-        company_id: companyId,
         created_by: user?.id,
         contract_date: contractData.contract_date || new Date().toISOString().split('T')[0],
         contract_number: contractData.contract_number || `CON-${Date.now()}`
