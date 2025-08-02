@@ -19,15 +19,15 @@ const getStatusVariant = (status: PurchaseOrder['status']) => {
     case 'draft':
       return 'secondary';
     case 'pending_approval':
-      return 'warning';
+      return 'outline';
     case 'approved':
-      return 'success';
+      return 'default';
     case 'sent_to_vendor':
-      return 'info';
+      return 'default';
     case 'received':
-      return 'success';
+      return 'default';
     case 'partially_received':
-      return 'warning';
+      return 'outline';
     case 'cancelled':
       return 'destructive';
     default:
@@ -103,10 +103,7 @@ export default function PurchaseOrders() {
 
   return (
     <div className="space-y-6 p-6">
-      <Breadcrumbs items={[
-        { label: 'النظام المالي', href: '/finance' },
-        { label: 'أوامر الشراء', href: '/finance/purchase-orders' }
-      ]} />
+      <Breadcrumbs />
 
       <div className="flex justify-between items-center">
         <div>
