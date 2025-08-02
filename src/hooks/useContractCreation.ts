@@ -172,7 +172,9 @@ export const useContractCreation = () => {
           success: boolean
           contract_id: string
           journal_entry_id?: string
-          warnings?: string[]
+          warning?: string
+          requires_manual_entry?: boolean
+          message?: string
         }
 
         const typedResult = result as unknown as ContractCreationResult
@@ -195,31 +197,35 @@ export const useContractCreation = () => {
 
         const contractId = typedResult.contract_id
         const journalEntryId = typedResult.journal_entry_id
-        const warnings = typedResult.warnings || []
+        const warning = typedResult.warning
+        const requiresManualEntry = typedResult.requires_manual_entry || false
 
-        // Handle journal entry status
+        // Handle journal entry status based on new enhanced response
         if (journalEntryId) {
           // Journal entry created successfully
           updateStepStatus('activation', 'completed')
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
+        } else if (requiresManualEntry) {
+          // Journal entry failed after retries - needs manual intervention
+          updateStepStatus('activation', 'warning', warning || 'Journal entry creation failed after retries')
+          updateStepStatus('verification', 'failed', 'Manual journal entry required')
+          updateStepStatus('finalization', 'warning', 'Contract created but requires manual journal entry')
         } else {
           // Journal entry is pending - show warning but mark as completed with fallback
           updateStepStatus('activation', 'warning', 'Journal entry queued for automatic retry')
           updateStepStatus('verification', 'warning', 'Will be verified automatically')
           updateStepStatus('finalization', 'completed')
-          
-          if (warnings.length > 0) {
-            console.log('⚠️ [CONTRACT_CREATION] Contract created with warnings:', warnings)
-          }
         }
 
+        const hasWarnings = !!warning || requiresManualEntry
+        
         setCreationState(prev => ({ 
           ...prev, 
           contractId, 
           isProcessing: false,
-          hasWarnings: warnings.length > 0,
-          healthStatus: warnings.length > 0 ? 'warning' : 'good'
+          hasWarnings,
+          healthStatus: requiresManualEntry ? 'error' : (hasWarnings ? 'warning' : 'good')
         }))
 
         await logContractStep(contractId, 'enhanced_creation', 'completed', 1, null, Date.now() - startTime)
@@ -227,7 +233,8 @@ export const useContractCreation = () => {
         console.log('🎉 [CONTRACT_CREATION] Enhanced process completed:', {
           contractId,
           journalEntryId,
-          warnings,
+          warning,
+          requiresManualEntry,
           totalTime: Date.now() - startTime
         })
 

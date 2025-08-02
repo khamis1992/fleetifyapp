@@ -7604,7 +7604,7 @@ export type Database = {
       }
       cleanup_orphaned_contract_logs: {
         Args: Record<PropertyKey, never>
-        Returns: number
+        Returns: Json
       }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }

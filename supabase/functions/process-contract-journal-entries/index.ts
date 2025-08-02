@@ -53,13 +53,13 @@ Deno.serve(async (req) => {
       .select(`
         contract_id,
         company_id,
-        operation_step,
-        status,
+        step_name,
+        step_status,
         error_message,
         created_at
       `)
-      .eq('operation_step', 'journal_entry_creation')
-      .eq('status', 'failed')
+      .eq('step_name', 'journal_entry_creation')
+      .in('step_status', ['failed', 'retry_1', 'retry_2', 'retry_3'])
       .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false })
 
@@ -154,14 +154,15 @@ Deno.serve(async (req) => {
             .insert({
               company_id: contract.company_id,
               contract_id: contract.id,
-              operation_step: 'journal_entry_creation',
-              status: 'contract_not_found',
+              step_name: 'journal_entry_creation',
+              step_status: 'contract_not_found',
               error_message: 'Contract no longer exists in database',
-              metadata: {
+              step_details: {
                 background_job: true,
                 cleanup_reason: 'contract_deleted',
                 contract_number: contract.contract_number
-              }
+              },
+              created_by: null
             })
           
           continue
@@ -182,14 +183,15 @@ Deno.serve(async (req) => {
             .insert({
               company_id: contract.company_id,
               contract_id: contract.id,
-              operation_step: 'journal_entry_creation',
-              status: 'background_retry_failed',
+              step_name: 'journal_entry_creation',
+              step_status: 'background_retry_failed',
               error_message: journalError.message,
-              metadata: {
+              step_details: {
                 background_job: true,
                 retry_attempt: true,
                 contract_number: contract.contract_number
-              }
+              },
+              created_by: null
             })
 
           errors++
@@ -211,14 +213,15 @@ Deno.serve(async (req) => {
             .insert({
               company_id: contract.company_id,
               contract_id: contract.id,
-              operation_step: 'journal_entry_creation',
-              status: 'background_retry_completed',
-              metadata: {
+              step_name: 'journal_entry_creation',
+              step_status: 'background_retry_completed',
+              step_details: {
                 background_job: true,
                 retry_attempt: true,
                 journal_entry_id: journalEntryId,
                 contract_number: contract.contract_number
-              }
+              },
+              created_by: null
             })
 
           processed++
