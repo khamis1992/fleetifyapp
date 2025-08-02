@@ -7644,9 +7644,17 @@ export type Database = {
         Args: { contract_id_param: string }
         Returns: string
       }
+      create_contract_journal_entry_enhanced: {
+        Args: { contract_id_param: string }
+        Returns: string
+      }
       create_contract_journal_entry_safe: {
         Args: { contract_id_param: string }
         Returns: string
+      }
+      create_contract_safe: {
+        Args: { contract_data: Json }
+        Returns: Json
       }
       create_customer_financial_account: {
         Args:
@@ -7890,6 +7898,10 @@ export type Database = {
           total_credits: number
           closing_balance: number
         }[]
+      }
+      get_account_by_type: {
+        Args: { company_id_param: string; account_type_code: string }
+        Returns: string
       }
       get_available_customer_accounts: {
         Args: { company_id_param: string }
@@ -8189,6 +8201,10 @@ export type Database = {
       process_monthly_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: number
+      }
+      process_pending_journal_entries: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       process_vehicle_depreciation: {
         Args: { company_id_param: string; depreciation_date_param?: string }

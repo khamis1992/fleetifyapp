@@ -97,17 +97,17 @@ export const useContractCreation = () => {
   }
 
   const createContractMutation = useMutation({
-    mutationFn: async (contractData: any) => {
-      console.log('🚀 [CONTRACT_CREATION] Starting unified database-driven contract creation', {
-        contractType: contractData.contract_type,
-        amount: contractData.contract_amount,
-        customerId: contractData.customer_id,
-        vehicleId: contractData.vehicle_id,
-        startDate: contractData.start_date,
-        endDate: contractData.end_date
+    mutationFn: async (inputContractData: any) => {
+      console.log('🚀 [CONTRACT_CREATION] Starting enhanced contract creation with fallback mechanism', {
+        contractType: inputContractData.contract_type,
+        amount: inputContractData.contract_amount,
+        customerId: inputContractData.customer_id,
+        vehicleId: inputContractData.vehicle_id,
+        startDate: inputContractData.start_date,
+        endDate: inputContractData.end_date
       })
       
-      if (!contractData) {
+      if (!inputContractData) {
         throw new Error('بيانات العقد مطلوبة')
       }
       
@@ -119,7 +119,7 @@ export const useContractCreation = () => {
       setCreationState(prev => ({ ...prev, isProcessing: true, canRetry: false }))
 
       try {
-        // Single unified step that handles everything in the database
+        // Update step statuses to processing
         updateStepStatus('validation', 'processing')
         updateStepStatus('accounts', 'processing')
         updateStepStatus('creation', 'processing')
@@ -127,38 +127,34 @@ export const useContractCreation = () => {
         updateStepStatus('verification', 'processing')
         updateStepStatus('finalization', 'processing')
 
-        await logContractStep(null, 'unified_creation', 'started')
+        await logContractStep(null, 'enhanced_creation', 'started')
 
-        const cleanContractData = {
+        const contractRequestData = {
           company_id: companyId,
-          customer_id: contractData.customer_id,
-          vehicle_id: contractData.vehicle_id === 'none' ? null : contractData.vehicle_id,
-          contract_number: contractData.contract_number,
-          contract_date: contractData.contract_date,
-          start_date: contractData.start_date,
-          end_date: contractData.end_date,
-          contract_amount: Number(contractData.contract_amount),
-          monthly_amount: Number(contractData.monthly_amount || contractData.contract_amount),
-          contract_type: contractData.contract_type,
-          description: contractData.description || null,
-          terms: contractData.terms || null,
-          created_by: contractData.created_by
+          customer_id: inputContractData.customer_id,
+          vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
+          contract_number: inputContractData.contract_number,
+          contract_date: inputContractData.contract_date,
+          start_date: inputContractData.start_date,
+          end_date: inputContractData.end_date,
+          contract_amount: Number(inputContractData.contract_amount),
+          monthly_amount: Number(inputContractData.monthly_amount || inputContractData.contract_amount),
+          contract_type: inputContractData.contract_type,
+          description: inputContractData.description || null,
+          terms: inputContractData.terms || null,
+          created_by: inputContractData.created_by
         }
 
-        console.log('📝 [CONTRACT_CREATION] Creating contract directly in database:', cleanContractData)
+        console.log('📝 [CONTRACT_CREATION] Using enhanced safe creation method:', contractRequestData)
 
-        // Insert contract directly and let triggers handle the rest
-        const { data: newContract, error: createError } = await supabase
-          .from('contracts')
-          .insert({
-            ...cleanContractData,
-            status: 'active' // Set as active to trigger journal entry creation
+        // Use the enhanced contract creation function
+        const { data: result, error: createError } = await supabase
+          .rpc('create_contract_safe', {
+            contract_data: contractRequestData
           })
-          .select()
-          .single()
 
         if (createError) {
-          console.error('❌ [CONTRACT_CREATION] Creation failed:', createError)
+          console.error('❌ [CONTRACT_CREATION] Enhanced creation failed:', createError)
           
           // Update all steps to failed
           updateStepStatus('validation', 'failed', createError.message)
@@ -168,32 +164,91 @@ export const useContractCreation = () => {
           updateStepStatus('verification', 'failed', createError.message)
           updateStepStatus('finalization', 'failed', createError.message)
           
-          await logContractStep(null, 'unified_creation', 'failed', 1, createError.message)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, createError.message)
           throw createError
         }
 
-        console.log('✅ [CONTRACT_CREATION] Contract created successfully:', newContract.id)
+        interface ContractCreationResult {
+          success: boolean
+          contract_id: string
+          journal_entry_id?: string
+          warnings?: string[]
+        }
 
-        // Mark all steps as completed
+        const typedResult = result as unknown as ContractCreationResult
+
+        if (!typedResult || !typedResult.success) {
+          const errorMessage = 'Failed to create contract - unexpected response format'
+          console.error('❌ [CONTRACT_CREATION] Unexpected response:', result)
+          
+          updateStepStatus('creation', 'failed', errorMessage)
+          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          throw new Error(errorMessage)
+        }
+
+        console.log('✅ [CONTRACT_CREATION] Contract created successfully:', typedResult)
+
+        // Mark creation and validation as completed
         updateStepStatus('validation', 'completed')
         updateStepStatus('accounts', 'completed')
         updateStepStatus('creation', 'completed')
-        updateStepStatus('activation', 'completed')
-        updateStepStatus('verification', 'completed')
-        updateStepStatus('finalization', 'completed')
 
-        const contractId = newContract.id
-        setCreationState(prev => ({ ...prev, contractId, isProcessing: false }))
+        const contractId = typedResult.contract_id
+        const journalEntryId = typedResult.journal_entry_id
+        const warnings = typedResult.warnings || []
 
-        await logContractStep(contractId, 'unified_creation', 'completed', 1, null, Date.now() - startTime)
+        // Handle journal entry status
+        if (journalEntryId) {
+          // Journal entry created successfully
+          updateStepStatus('activation', 'completed')
+          updateStepStatus('verification', 'completed')
+          updateStepStatus('finalization', 'completed')
+        } else {
+          // Journal entry is pending - show warning but mark as completed with fallback
+          updateStepStatus('activation', 'warning', 'Journal entry queued for automatic retry')
+          updateStepStatus('verification', 'warning', 'Will be verified automatically')
+          updateStepStatus('finalization', 'completed')
+          
+          if (warnings.length > 0) {
+            console.log('⚠️ [CONTRACT_CREATION] Contract created with warnings:', warnings)
+          }
+        }
 
-        console.log('🎉 [CONTRACT_CREATION] Process completed successfully:', {
+        setCreationState(prev => ({ 
+          ...prev, 
+          contractId, 
+          isProcessing: false,
+          hasWarnings: warnings.length > 0,
+          healthStatus: warnings.length > 0 ? 'warning' : 'good'
+        }))
+
+        await logContractStep(contractId, 'enhanced_creation', 'completed', 1, null, Date.now() - startTime)
+
+        console.log('🎉 [CONTRACT_CREATION] Enhanced process completed:', {
           contractId,
-          contractNumber: newContract.contract_number,
+          journalEntryId,
+          warnings,
           totalTime: Date.now() - startTime
         })
 
-        return newContract
+        // Get the full contract data for return
+        const { data: createdContractData, error: fetchError } = await supabase
+          .from('contracts')
+          .select('*')
+          .eq('id', contractId)
+          .single()
+
+        if (fetchError || !createdContractData) {
+          console.warn('⚠️ [CONTRACT_CREATION] Could not fetch created contract data:', fetchError)
+          // Return minimal contract data
+          return { 
+            id: contractId, 
+            contract_number: contractRequestData.contract_number,
+            status: journalEntryId ? 'active' : 'draft'
+          }
+        }
+
+        return createdContractData
 
       } catch (error: any) {
         console.error('❌ [CONTRACT_CREATION] Process failed:', error)
