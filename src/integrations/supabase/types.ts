@@ -7692,6 +7692,15 @@ export type Database = {
         Args: { account_id: string }
         Returns: number
       }
+      calculate_customer_outstanding_balance: {
+        Args: { customer_id_param: string; company_id_param: string }
+        Returns: {
+          current_balance: number
+          overdue_amount: number
+          days_overdue: number
+          credit_available: number
+        }[]
+      }
       calculate_employee_salary: {
         Args: {
           employee_id_param: string
@@ -7764,6 +7773,16 @@ export type Database = {
           overdue_amount: number
           days_overdue: number
           last_payment_date: string
+        }[]
+      }
+      check_customer_credit_status: {
+        Args: { customer_id_param: string; company_id_param: string }
+        Returns: {
+          credit_score: number
+          risk_level: string
+          credit_available: number
+          payment_history_score: number
+          can_extend_credit: boolean
         }[]
       }
       check_customer_eligibility_realtime: {
@@ -8062,6 +8081,23 @@ export type Database = {
           total_invoiced: number
           total_paid: number
           outstanding_amount: number
+        }[]
+      }
+      generate_customer_statement_data: {
+        Args: {
+          customer_id_param: string
+          company_id_param: string
+          start_date_param?: string
+          end_date_param?: string
+        }
+        Returns: {
+          statement_period: string
+          opening_balance: number
+          total_charges: number
+          total_payments: number
+          closing_balance: number
+          transaction_count: number
+          overdue_amount: number
         }[]
       }
       generate_dispatch_permit_number: {
@@ -8561,6 +8597,10 @@ export type Database = {
       }
       update_contract_statuses: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_customer_aging_analysis: {
+        Args: { customer_id_param: string; company_id_param: string }
         Returns: undefined
       }
       update_dispatch_permit_status: {
