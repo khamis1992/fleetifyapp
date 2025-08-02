@@ -7581,6 +7581,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_vehicle_availability_fixed: {
+        Args: {
+          vehicle_id_param: string
+          start_date_param: string
+          end_date_param: string
+          exclude_contract_id_param?: string
+        }
+        Returns: Json
+      }
       check_vehicle_availability_realtime: {
         Args: {
           vehicle_id_param: string
@@ -8105,6 +8114,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_company_fixed: {
+        Args: { input_user_id: string }
+        Returns: string
+      }
       get_user_company_secure: {
         Args: { _user_id: string }
         Returns: string
@@ -8287,11 +8300,37 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      search_contracts_fixed: {
+        Args: {
+          search_company_id: string
+          search_term?: string
+          status_filter?: string
+          customer_filter?: string
+          vehicle_filter?: string
+          limit_param?: number
+          offset_param?: number
+        }
+        Returns: {
+          id: string
+          contract_number: string
+          customer_name: string
+          vehicle_plate: string
+          contract_amount: number
+          status: string
+          start_date: string
+          end_date: string
+          created_at: string
+        }[]
+      }
       soft_delete_account: {
         Args: { account_id_param: string }
         Returns: boolean
       }
       system_health_check: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      test_ambiguity_fix: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
@@ -8337,6 +8376,10 @@ export type Database = {
         Args: { _user_id: string; _company_id: string }
         Returns: boolean
       }
+      user_has_access_to_company_fixed: {
+        Args: { input_user_id: string; target_company_id: string }
+        Returns: boolean
+      }
       validate_account_for_transactions: {
         Args: { account_id_param: string }
         Returns: {
@@ -8356,6 +8399,10 @@ export type Database = {
         Returns: boolean
       }
       validate_contract_data: {
+        Args: { contract_data: Json }
+        Returns: Json
+      }
+      validate_contract_data_fixed: {
         Args: { contract_data: Json }
         Returns: Json
       }
