@@ -8913,9 +8913,9 @@ export type Database = {
       log_contract_creation_step: {
         Args: {
           company_id_param: string
-          contract_id_param: string
-          step_name: string
-          status_param: string
+          contract_id_param?: string
+          step_name?: string
+          status_param?: string
           attempt_num?: number
           error_msg?: string
           exec_time?: number
