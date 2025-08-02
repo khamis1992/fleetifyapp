@@ -69,7 +69,7 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
     includeInactive: false,
     limit: 50
   })
-  const { data: vehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts()
+  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts()
   const { validation, isValidating, validateContract, debouncedValidation } = useContractValidation()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
 
@@ -376,6 +376,20 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">معلومات المركبة</CardTitle>
+                <CardDescription>
+                  {vehiclesLoading ? (
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner className="h-4 w-4" />
+                      جاري تحميل المركبات المتاحة...
+                    </div>
+                  ) : vehiclesError ? (
+                    <div className="text-destructive">
+                      خطأ في تحميل المركبات
+                    </div>
+                  ) : (
+                    `${vehicles?.length || 0} مركبة متاحة`
+                  )}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -386,24 +400,122 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
                     disabled={vehiclesLoading}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={vehiclesLoading ? "جاري التحميل..." : "اختر المركبة (اختياري)"} />
+                      <SelectValue placeholder={
+                        vehiclesLoading ? "جاري التحميل..." :
+                        vehiclesError ? "خطأ في تحميل المركبات" :
+                        vehicles?.length === 0 ? "لا توجد مركبات متاحة" :
+                        "اختر المركبة (اختياري)"
+                      } />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60">
                       <SelectItem value="">بدون مركبة</SelectItem>
                       {vehicles?.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} ({vehicle.year}) - {vehicle.plate_number}
+                        <SelectItem 
+                          key={vehicle.id} 
+                          value={vehicle.id}
+                          className="py-3"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <div className="font-medium">
+                              {vehicle.make} {vehicle.model} ({vehicle.year})
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              لوحة: {vehicle.plate_number} | حالة: {vehicle.status}
+                            </div>
+                            {(vehicle.daily_rate > 0 || vehicle.weekly_rate > 0 || vehicle.monthly_rate > 0) && (
+                              <div className="text-xs text-accent-foreground bg-accent/20 px-2 py-1 rounded">
+                                {vehicle.daily_rate > 0 && `يومي: ${vehicle.daily_rate} د.ك`}
+                                {vehicle.weekly_rate > 0 && ` | أسبوعي: ${vehicle.weekly_rate} د.ك`}
+                                {vehicle.monthly_rate > 0 && ` | شهري: ${vehicle.monthly_rate} د.ك`}
+                              </div>
+                            )}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {/* Vehicle Loading Error */}
+                  {vehiclesError && (
+                    <Alert variant="destructive" className="mt-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        خطأ في تحميل قائمة المركبات: {vehiclesError.message}
+                        <br />
+                        <small className="text-xs opacity-80">
+                          يمكنك المتابعة بإنشاء العقد بدون مركبة أو المحاولة مرة أخرى
+                        </small>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Selected Vehicle Details */}
                   {selectedVehicle && (
-                    <div className="mt-2 p-2 bg-muted rounded text-sm">
-                      <p><strong>الطراز:</strong> {selectedVehicle.make} {selectedVehicle.model}</p>
-                      <p><strong>السنة:</strong> {selectedVehicle.year}</p>
-                      <p><strong>اللوحة:</strong> {selectedVehicle.plate_number}</p>
-                      <p><strong>الحالة:</strong> {selectedVehicle.status}</p>
+                    <div className="mt-2 p-3 bg-muted rounded-lg text-sm space-y-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p><strong>الطراز:</strong> {selectedVehicle.make} {selectedVehicle.model}</p>
+                          <p><strong>السنة:</strong> {selectedVehicle.year}</p>
+                          <p><strong>اللوحة:</strong> {selectedVehicle.plate_number}</p>
+                        </div>
+                        <div>
+                          <p><strong>الحالة:</strong> 
+                            <Badge 
+                              variant={selectedVehicle.status === 'available' ? 'default' : 'secondary'}
+                              className="ml-2"
+                            >
+                              {selectedVehicle.status}
+                            </Badge>
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Pricing Information */}
+                      {(selectedVehicle.daily_rate > 0 || selectedVehicle.weekly_rate > 0 || selectedVehicle.monthly_rate > 0) ? (
+                        <div className="border-t pt-2">
+                          <p className="font-medium text-primary mb-1">أسعار الإيجار:</p>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            {selectedVehicle.daily_rate > 0 && (
+                              <div className="bg-primary/10 p-2 rounded text-center">
+                                <div className="font-medium">يومي</div>
+                                <div className="text-primary">{selectedVehicle.daily_rate} د.ك</div>
+                              </div>
+                            )}
+                            {selectedVehicle.weekly_rate > 0 && (
+                              <div className="bg-primary/10 p-2 rounded text-center">
+                                <div className="font-medium">أسبوعي</div>
+                                <div className="text-primary">{selectedVehicle.weekly_rate} د.ك</div>
+                              </div>
+                            )}
+                            {selectedVehicle.monthly_rate > 0 && (
+                              <div className="bg-primary/10 p-2 rounded text-center">
+                                <div className="font-medium">شهري</div>
+                                <div className="text-primary">{selectedVehicle.monthly_rate} د.ك</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-t pt-2">
+                          <Alert>
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription className="text-xs">
+                              لا توجد أسعار محددة لهذه المركبة. سيحتاج إلى تحديد السعر يدوياً.
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      )}
                     </div>
+                  )}
+
+                  {/* No Vehicles Available Message */}
+                  {!vehiclesLoading && !vehiclesError && vehicles?.length === 0 && (
+                    <Alert className="mt-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        لا توجد مركبات متاحة حالياً. يمكنك إنشاء العقد بدون مركبة وربطها لاحقاً.
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
               </CardContent>

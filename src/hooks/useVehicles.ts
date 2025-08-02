@@ -790,7 +790,7 @@ export const useProcessVehicleDepreciation = () => {
   })
 }
 
-// Enhanced hook for available vehicles for contracts
+// Enhanced hook for available vehicles for contracts with improved pricing handling
 export const useAvailableVehiclesForContracts = (companyId?: string) => {
   return useQuery({
     queryKey: ["available-vehicles-contracts", companyId],
@@ -803,34 +803,56 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
 
       try {
-        const { data, error } = await supabase
-          .from('vehicles')
-          .select(`
-            id,
-            plate_number,
-            make,
-            model,
-            year,
-            status,
-            daily_rate,
-            weekly_rate,
-            monthly_rate,
-            purchase_cost,
-            deposit_amount
-          `)
-          .eq('company_id', companyId)
-          .eq('is_active', true)
-          .in('status', ['available', 'reserved'])
+        // Use the improved database function that handles pricing fallbacks
+        const { data, error } = await supabase.rpc(
+          'get_available_vehicles_for_contracts',
+          { company_id_param: companyId }
+        )
 
         if (error) {
           console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database error:", error)
-          throw error
+          
+          // Fallback to direct vehicle query if function fails
+          console.log("🔄 [AVAILABLE_VEHICLES_CONTRACTS] Trying fallback query...")
+          const fallbackResult = await supabase
+            .from('vehicles')
+            .select(`
+              id,
+              plate_number,
+              make,
+              model,
+              year,
+              status,
+              daily_rate,
+              weekly_rate,
+              monthly_rate
+            `)
+            .eq('company_id', companyId)
+            .eq('is_active', true)
+            .in('status', ['available', 'reserved'])
+
+          if (fallbackResult.error) {
+            console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fallback also failed:", fallbackResult.error)
+            throw fallbackResult.error
+          }
+
+          console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Fallback successful:", fallbackResult.data?.length || 0)
+          return fallbackResult.data || []
         }
 
         const availableVehicles = data || []
         console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", availableVehicles.length)
 
-        return availableVehicles
+        // Ensure pricing defaults for vehicles without pricing data
+        const vehiclesWithDefaults = availableVehicles.map(vehicle => ({
+          ...vehicle,
+          daily_rate: vehicle.daily_rate || 0,
+          weekly_rate: vehicle.weekly_rate || 0,
+          monthly_rate: vehicle.monthly_rate || 0,
+          status: vehicle.status || 'available'
+        }))
+
+        return vehiclesWithDefaults
       } catch (error) {
         console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fetch failed:", error)
         throw error
@@ -840,7 +862,11 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    throwOnError: false, // Don't throw errors to prevent UI crashes
+    meta: {
+      errorMessage: "فشل في تحميل قائمة المركبات المتاحة"
+    }
   })
 }
 
