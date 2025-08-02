@@ -37,6 +37,9 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
       parts_replaced: "",
       cost_center_id: "",
       notes: "",
+      tax_amount: "",
+      payment_method: "cash",
+      invoice_number: "",
     }
   })
 
@@ -54,6 +57,9 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         parts_replaced: maintenance.parts_replaced?.join(", ") || "",
         cost_center_id: maintenance.cost_center_id || "",
         notes: maintenance.notes || "",
+        tax_amount: (maintenance as any).tax_amount?.toString() || "",
+        payment_method: (maintenance as any).payment_method || "cash",
+        invoice_number: (maintenance as any).invoice_number || "",
       })
     }
   }, [maintenance, form])
@@ -64,6 +70,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         ...data,
         company_id: user?.user_metadata?.company_id,
         estimated_cost: data.estimated_cost ? parseFloat(data.estimated_cost) : 0,
+        tax_amount: data.tax_amount ? parseFloat(data.tax_amount) : 0,
         parts_replaced: data.parts_replaced ? data.parts_replaced.split(",").map((p: string) => p.trim()) : [],
         created_by: user?.id,
         status: "pending" as const,
@@ -228,7 +235,72 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                       <FormItem>
                         <FormLabel>التكلفة المقدرة (د.ك)</FormLabel>
                         <FormControl>
-                          <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                          <Input {...field} type="number" step="0.001" placeholder="0.000" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Financial Integration Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-lg font-medium">البيانات المالية الإضافية</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="tax_amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>مبلغ الضريبة (د.ك)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              step="0.001" 
+                              placeholder="0.000"
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="payment_method"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>طريقة الدفع</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="اختر طريقة الدفع" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="cash">نقد</SelectItem>
+                              <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                              <SelectItem value="check">شيك</SelectItem>
+                              <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="invoice_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رقم الفاتورة</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="رقم الفاتورة من مزود الخدمة" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -4416,6 +4416,60 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_account_mappings: {
+        Row: {
+          asset_account_id: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          expense_account_id: string
+          id: string
+          is_active: boolean | null
+          maintenance_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          asset_account_id?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          expense_account_id: string
+          id?: string
+          is_active?: boolean | null
+          maintenance_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          asset_account_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          expense_account_id?: string
+          id?: string
+          is_active?: boolean | null
+          maintenance_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_account_mappings_asset_account_id_fkey"
+            columns: ["asset_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_account_mappings_expense_account_id_fkey"
+            columns: ["expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_checklist: {
         Row: {
           completed_at: string | null
@@ -7091,22 +7145,29 @@ export type Database = {
           created_by: string | null
           description: string
           estimated_cost: number | null
+          expense_account_id: string | null
+          expense_recorded: boolean | null
           id: string
           invoice_id: string | null
+          invoice_number: string | null
           journal_entry_id: string | null
           maintenance_number: string
           maintenance_type: string
           mileage_at_service: number | null
           notes: string | null
           parts_replaced: string[] | null
+          payment_method: string | null
           priority: Database["public"]["Enums"]["maintenance_priority"] | null
           scheduled_date: string | null
           service_provider: string | null
           service_provider_contact: string | null
           started_date: string | null
           status: Database["public"]["Enums"]["maintenance_status"] | null
+          tax_amount: number | null
+          total_cost_with_tax: number | null
           updated_at: string | null
           vehicle_id: string
+          vendor_id: string | null
           warranty_until: string | null
         }
         Insert: {
@@ -7120,22 +7181,29 @@ export type Database = {
           created_by?: string | null
           description: string
           estimated_cost?: number | null
+          expense_account_id?: string | null
+          expense_recorded?: boolean | null
           id?: string
           invoice_id?: string | null
+          invoice_number?: string | null
           journal_entry_id?: string | null
           maintenance_number: string
           maintenance_type: string
           mileage_at_service?: number | null
           notes?: string | null
           parts_replaced?: string[] | null
+          payment_method?: string | null
           priority?: Database["public"]["Enums"]["maintenance_priority"] | null
           scheduled_date?: string | null
           service_provider?: string | null
           service_provider_contact?: string | null
           started_date?: string | null
           status?: Database["public"]["Enums"]["maintenance_status"] | null
+          tax_amount?: number | null
+          total_cost_with_tax?: number | null
           updated_at?: string | null
           vehicle_id: string
+          vendor_id?: string | null
           warranty_until?: string | null
         }
         Update: {
@@ -7149,25 +7217,47 @@ export type Database = {
           created_by?: string | null
           description?: string
           estimated_cost?: number | null
+          expense_account_id?: string | null
+          expense_recorded?: boolean | null
           id?: string
           invoice_id?: string | null
+          invoice_number?: string | null
           journal_entry_id?: string | null
           maintenance_number?: string
           maintenance_type?: string
           mileage_at_service?: number | null
           notes?: string | null
           parts_replaced?: string[] | null
+          payment_method?: string | null
           priority?: Database["public"]["Enums"]["maintenance_priority"] | null
           scheduled_date?: string | null
           service_provider?: string | null
           service_provider_contact?: string | null
           started_date?: string | null
           status?: Database["public"]["Enums"]["maintenance_status"] | null
+          tax_amount?: number | null
+          total_cost_with_tax?: number | null
           updated_at?: string | null
           vehicle_id?: string
+          vendor_id?: string | null
           warranty_until?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenance_expense_account_id_fkey"
+            columns: ["expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_maintenance_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_operating_costs: {
         Row: {
@@ -8020,6 +8110,23 @@ export type Database = {
           },
         ]
       }
+      maintenance_cost_summary: {
+        Row: {
+          average_maintenance_cost: number | null
+          company_id: string | null
+          completed_maintenance_count: number | null
+          last_maintenance_date: string | null
+          make: string | null
+          model: string | null
+          plate_number: string | null
+          total_cost_with_tax: number | null
+          total_maintenance_cost: number | null
+          total_maintenance_count: number | null
+          total_tax_amount: number | null
+          vehicle_id: string | null
+        }
+        Relationships: []
+      }
       payroll_financial_analysis: {
         Row: {
           allowances: number | null
@@ -8348,6 +8455,10 @@ export type Database = {
       }
       create_invoice_journal_entry: {
         Args: { invoice_id_param: string }
+        Returns: string
+      }
+      create_maintenance_expense_entry: {
+        Args: { maintenance_id_param: string; company_id_param: string }
         Returns: string
       }
       create_maintenance_journal_entry: {
