@@ -156,22 +156,10 @@ export const useContractCreation = () => {
         updateStepStatus('accounts', 'processing')
         updateStepStatus('creation', 'processing')
 
-        // استخدام دالة إنشاء العقد الموحدة مع البراميتر الصحيحة
+        // استخدام دالة إنشاء العقد الموحدة مع كائن JSONB
         const { data: result, error: createError } = await supabase
           .rpc('create_contract_with_journal_entry', {
-            p_customer_id: contractRequestData.customer_id,
-            p_vehicle_id: contractRequestData.vehicle_id,
-            p_contract_number: contractRequestData.contract_number,
-            p_contract_type: contractRequestData.contract_type,
-            p_contract_date: contractRequestData.contract_date,
-            p_start_date: contractRequestData.start_date,
-            p_end_date: contractRequestData.end_date,
-            p_contract_amount: contractRequestData.contract_amount,
-            p_monthly_amount: contractRequestData.monthly_amount,
-            p_description: contractRequestData.description,
-            p_terms: contractRequestData.terms,
-            p_cost_center_id: contractRequestData.cost_center_id,
-            p_created_by: contractRequestData.created_by
+            contract_data: contractRequestData
           })
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
