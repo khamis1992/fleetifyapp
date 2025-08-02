@@ -8371,8 +8371,15 @@ export type Database = {
               entry_type_param?: string
               amount_param?: number
             }
-          | { contract_id_param: string; user_id_param?: string }
-        Returns: string
+          | {
+              contract_id_param: string
+              user_id_param?: string
+              override_receivables_account_id?: string
+              override_revenue_account_id?: string
+              force_recreate?: boolean
+              custom_description?: string
+            }
+        Returns: Json
       }
       create_contract_journal_entry_enhanced: {
         Args: { contract_id_param: string }
@@ -8390,6 +8397,7 @@ export type Database = {
               contract_data: Json
             }
           | { contract_data: Json }
+          | { contract_data: Json; user_id_param?: string }
         Returns: Json
       }
       create_customer_financial_account: {

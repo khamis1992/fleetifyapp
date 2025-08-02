@@ -169,15 +169,12 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Attempt to create journal entry using the corrected database function
-        const { data: journalEntryId, error: journalError } = await supabase
+        // Attempt to create journal entry using the unified function
+        const { data: journalResult, error: journalError } = await supabase
           .rpc('create_contract_journal_entry', {
             contract_id_param: contract.id,
-            company_id_param: contract.company_id,
-            created_by_param: contract.created_by,
-            contract_amount_param: contract.contract_amount,
-            entry_description_param: `Contract Journal Entry - ${contract.contract_number}`,
-            reference_param: contract.contract_number
+            user_id_param: contract.created_by,
+            custom_description: `Retry: Contract Journal Entry - ${contract.contract_number}`
           })
 
         if (journalError) {
@@ -209,7 +206,8 @@ Deno.serve(async (req) => {
           continue
         }
 
-        if (journalEntryId) {
+        if (journalResult?.success) {
+          const journalEntryId = journalResult.journal_entry_id;
           console.log(`✅ [BACKGROUND_JOB] Successfully created journal entry ${journalEntryId} for contract ${contract.contract_number}`)
           
           // Log the successful retry
@@ -224,7 +222,8 @@ Deno.serve(async (req) => {
                 background_job: true,
                 retry_attempt: true,
                 journal_entry_id: journalEntryId,
-                contract_number: contract.contract_number
+                contract_number: contract.contract_number,
+                journal_result: journalResult
               }
             })
 
@@ -233,7 +232,38 @@ Deno.serve(async (req) => {
             contract_id: contract.id,
             contract_number: contract.contract_number,
             success: true,
-            journal_entry_id: journalEntryId
+            journal_entry_id: journalEntryId,
+            result: journalResult
+          })
+        } else {
+          // Handle case where function returns success=false
+          const errorMessage = journalResult?.error_message || 'Unknown error in journal result';
+          console.error(`❌ [BACKGROUND_JOB] Journal function returned error for contract ${contract.contract_number}:`, errorMessage)
+          
+          // Log the failure
+          await supabase
+            .from('contract_creation_log')
+            .insert({
+              company_id: contract.company_id,
+              contract_id: contract.id,
+              operation_step: 'journal_entry_creation',
+              status: 'background_retry_failed',
+              error_message: errorMessage,
+              metadata: {
+                background_job: true,
+                retry_attempt: true,
+                contract_number: contract.contract_number,
+                journal_result: journalResult
+              }
+            })
+
+          errors++
+          results.push({
+            contract_id: contract.id,
+            contract_number: contract.contract_number,
+            success: false,
+            error: errorMessage,
+            result: journalResult
           })
         }
 
