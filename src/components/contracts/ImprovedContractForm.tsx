@@ -116,25 +116,54 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
     }
   }, [formData, debouncedValidation])
 
-  // Auto-calculate monthly amount based on contract duration
+  // Find selected customer and vehicle
+  const selectedCustomer = customers?.find(c => c.id === formData.customer_id)
+  const selectedVehicle = vehicles?.find(v => v.id === formData.vehicle_id)
+
+  // Auto-calculate monthly amount based on contract duration and vehicle pricing
   useEffect(() => {
-    if (formData.start_date && formData.end_date && formData.contract_amount > 0) {
+    if (formData.start_date && formData.end_date && selectedVehicle) {
       const startDate = new Date(formData.start_date)
       const endDate = new Date(formData.end_date)
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       const diffMonths = Math.max(1, Math.round(diffDays / 30))
       
-      const calculatedMonthlyAmount = Math.round(formData.contract_amount / diffMonths)
+      // Try to calculate based on vehicle pricing first
+      let suggestedAmount = 0
+      let suggestedMonthlyAmount = 0
       
-      if (calculatedMonthlyAmount !== formData.monthly_amount) {
+      if (selectedVehicle.monthly_rate > 0) {
+        suggestedMonthlyAmount = selectedVehicle.monthly_rate
+        suggestedAmount = suggestedMonthlyAmount * diffMonths
+      } else if (selectedVehicle.daily_rate > 0) {
+        suggestedAmount = selectedVehicle.daily_rate * diffDays
+        suggestedMonthlyAmount = Math.round(suggestedAmount / diffMonths)
+      } else if (selectedVehicle.weekly_rate > 0) {
+        const diffWeeks = Math.ceil(diffDays / 7)
+        suggestedAmount = selectedVehicle.weekly_rate * diffWeeks
+        suggestedMonthlyAmount = Math.round(suggestedAmount / diffMonths)
+      }
+      
+      // Only update if we have a suggested amount and current amount is 0 or doesn't match
+      if (suggestedAmount > 0 && formData.contract_amount !== suggestedAmount) {
         setFormData(prev => ({
           ...prev,
-          monthly_amount: calculatedMonthlyAmount
+          contract_amount: suggestedAmount,
+          monthly_amount: suggestedMonthlyAmount
         }))
+      } else if (formData.contract_amount > 0 && suggestedMonthlyAmount === 0) {
+        // Manual calculation if no vehicle pricing available
+        const calculatedMonthlyAmount = Math.round(formData.contract_amount / diffMonths)
+        if (calculatedMonthlyAmount !== formData.monthly_amount) {
+          setFormData(prev => ({
+            ...prev,
+            monthly_amount: calculatedMonthlyAmount
+          }))
+        }
       }
     }
-  }, [formData.start_date, formData.end_date, formData.contract_amount])
+  }, [formData.start_date, formData.end_date, formData.contract_amount, selectedVehicle])
 
   // Set preselected customer
   useEffect(() => {
@@ -206,8 +235,6 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
     resetCreationState()
   }
 
-  const selectedCustomer = customers?.find(c => c.id === formData.customer_id)
-  const selectedVehicle = vehicles?.find(v => v.id === formData.vehicle_id)
 
   const hasValidationErrors = validation.errors.length > 0
   const hasValidationWarnings = validation.warnings.length > 0
