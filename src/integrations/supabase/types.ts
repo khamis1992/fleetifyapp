@@ -7524,6 +7524,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_orphaned_contract_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -8207,6 +8211,10 @@ export type Database = {
       validate_contract_data: {
         Args: { contract_data: Json }
         Returns: Json
+      }
+      validate_contract_exists: {
+        Args: { contract_id_param: string }
+        Returns: boolean
       }
       validate_contract_realtime: {
         Args: { contract_data: Json }

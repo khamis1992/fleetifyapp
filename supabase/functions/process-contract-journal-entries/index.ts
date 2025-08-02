@@ -36,6 +36,17 @@ Deno.serve(async (req) => {
 
     console.log('🔄 [BACKGROUND_JOB] Starting contract journal entry processing...')
 
+    // Clean up any orphaned logs first
+    console.log('🧹 [BACKGROUND_JOB] Cleaning up orphaned logs...')
+    const { data: cleanupResult, error: cleanupError } = await supabase
+      .rpc('cleanup_orphaned_contract_logs')
+    
+    if (cleanupError) {
+      console.error('⚠️ [BACKGROUND_JOB] Failed to cleanup orphaned logs:', cleanupError)
+    } else {
+      console.log(`✅ [BACKGROUND_JOB] Cleaned up ${cleanupResult || 0} orphaned logs`)
+    }
+
     // Get failed journal entry creation attempts from the last 24 hours
     const { data: failedLogs, error: logsError } = await supabase
       .from('contract_creation_log')
@@ -115,6 +126,46 @@ Deno.serve(async (req) => {
     for (const contract of contractsToProcess as Contract[]) {
       try {
         console.log(`📝 [BACKGROUND_JOB] Processing contract ${contract.contract_number} (${contract.id})`)
+
+        // Double-check that contract still exists and is valid
+        const { data: contractExists, error: checkError } = await supabase
+          .rpc('validate_contract_exists', {
+            contract_id_param: contract.id
+          })
+
+        if (checkError) {
+          console.error(`❌ [BACKGROUND_JOB] Error validating contract ${contract.contract_number}:`, checkError)
+          errors++
+          results.push({
+            contract_id: contract.id,
+            contract_number: contract.contract_number,
+            success: false,
+            error: `Contract validation failed: ${checkError.message}`
+          })
+          continue
+        }
+
+        if (!contractExists) {
+          console.warn(`⚠️ [BACKGROUND_JOB] Contract ${contract.contract_number} no longer exists, skipping...`)
+          
+          // Mark logs for this contract as obsolete
+          await supabase
+            .from('contract_creation_log')
+            .insert({
+              company_id: contract.company_id,
+              contract_id: contract.id,
+              operation_step: 'journal_entry_creation',
+              status: 'contract_not_found',
+              error_message: 'Contract no longer exists in database',
+              metadata: {
+                background_job: true,
+                cleanup_reason: 'contract_deleted',
+                contract_number: contract.contract_number
+              }
+            })
+          
+          continue
+        }
 
         // Attempt to create journal entry using the database function
         const { data: journalEntryId, error: journalError } = await supabase
