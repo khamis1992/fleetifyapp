@@ -8210,6 +8210,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: undefined
       }
+      copy_default_accounts_to_company_fixed: {
+        Args: { target_company_id: string }
+        Returns: undefined
+      }
       copy_default_cost_centers_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -8300,6 +8304,14 @@ export type Database = {
               p_customer_name_ar?: string
             }
         Returns: string
+      }
+      create_customer_financial_account_fixed: {
+        Args: { customer_id_param: string; company_id_param: string }
+        Returns: string
+      }
+      create_default_customer_accounts_fixed: {
+        Args: { company_id_param: string }
+        Returns: undefined
       }
       create_default_leave_types_for_company: {
         Args: { target_company_id: string }
@@ -8414,6 +8426,26 @@ export type Database = {
           export_format?: string
           filters?: Json
         }
+        Returns: string
+      }
+      find_account_by_name_fixed: {
+        Args: {
+          company_id_param: string
+          search_name: string
+          account_type_param?: string
+        }
+        Returns: string
+      }
+      find_cash_account_fixed: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
+      find_receivable_account_fixed: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
+      find_revenue_account_fixed: {
+        Args: { company_id_param: string }
         Returns: string
       }
       generate_approval_request_number: {
@@ -8563,6 +8595,17 @@ export type Database = {
       get_account_by_type: {
         Args: { company_id_param: string; account_type_code: string }
         Returns: string
+      }
+      get_accounts_by_type_fixed: {
+        Args: { company_id_param: string; account_type_param: string }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          current_balance: number
+          is_header: boolean
+        }[]
       }
       get_available_customer_accounts: {
         Args: { company_id_param: string }
@@ -8944,6 +8987,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      search_accounts_fixed: {
+        Args: {
+          company_id_param: string
+          search_term?: string
+          account_type_filter?: string
+        }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_type: string
+          current_balance: number
+          is_active: boolean
+        }[]
+      }
       search_contracts_fixed: {
         Args: {
           search_company_id: string
@@ -8973,6 +9031,10 @@ export type Database = {
       system_health_check: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      test_account_name_ambiguity_fix: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       test_ambiguity_fix: {
         Args: Record<PropertyKey, never>
@@ -9041,6 +9103,15 @@ export type Database = {
       validate_account_level_for_entries: {
         Args: { account_id_param: string }
         Returns: boolean
+      }
+      validate_account_structure_fixed: {
+        Args: { company_id_param: string }
+        Returns: {
+          check_name: string
+          status: string
+          message: string
+          count_value: number
+        }[]
       }
       validate_company_access_secure: {
         Args: { _user_id: string; _company_id: string }
