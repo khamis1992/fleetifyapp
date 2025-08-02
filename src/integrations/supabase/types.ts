@@ -1724,6 +1724,207 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_aging_analysis: {
+        Row: {
+          analysis_date: string
+          company_id: string
+          created_at: string
+          current_amount: number | null
+          customer_id: string
+          days_1_30: number | null
+          days_31_60: number | null
+          days_61_90: number | null
+          days_91_120: number | null
+          days_over_120: number | null
+          id: string
+          total_outstanding: number | null
+        }
+        Insert: {
+          analysis_date?: string
+          company_id: string
+          created_at?: string
+          current_amount?: number | null
+          customer_id: string
+          days_1_30?: number | null
+          days_31_60?: number | null
+          days_61_90?: number | null
+          days_91_120?: number | null
+          days_over_120?: number | null
+          id?: string
+          total_outstanding?: number | null
+        }
+        Update: {
+          analysis_date?: string
+          company_id?: string
+          created_at?: string
+          current_amount?: number | null
+          customer_id?: string
+          days_1_30?: number | null
+          days_31_60?: number | null
+          days_61_90?: number | null
+          days_91_120?: number | null
+          days_over_120?: number | null
+          id?: string
+          total_outstanding?: number | null
+        }
+        Relationships: []
+      }
+      customer_balances: {
+        Row: {
+          account_id: string | null
+          company_id: string
+          created_at: string
+          credit_available: number | null
+          credit_limit: number | null
+          credit_used: number | null
+          current_balance: number
+          customer_id: string
+          days_overdue: number | null
+          id: string
+          last_payment_amount: number | null
+          last_payment_date: string | null
+          last_statement_date: string | null
+          next_statement_date: string | null
+          overdue_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          company_id: string
+          created_at?: string
+          credit_available?: number | null
+          credit_limit?: number | null
+          credit_used?: number | null
+          current_balance?: number
+          customer_id: string
+          days_overdue?: number | null
+          id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
+          last_statement_date?: string | null
+          next_statement_date?: string | null
+          overdue_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          company_id?: string
+          created_at?: string
+          credit_available?: number | null
+          credit_limit?: number | null
+          credit_used?: number | null
+          current_balance?: number
+          customer_id?: string
+          days_overdue?: number | null
+          id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
+          last_statement_date?: string | null
+          next_statement_date?: string | null
+          overdue_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_credit_history: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+        }
+        Relationships: []
+      }
+      customer_financial_summary: {
+        Row: {
+          average_days_to_pay: number | null
+          company_id: string
+          created_at: string
+          credit_score: number | null
+          customer_id: string
+          id: string
+          largest_outstanding_invoice: number | null
+          last_payment_date: string | null
+          payment_frequency: number | null
+          risk_level: string | null
+          summary_date: string
+          total_invoiced: number | null
+          total_outstanding: number | null
+          total_paid: number | null
+          updated_at: string
+        }
+        Insert: {
+          average_days_to_pay?: number | null
+          company_id: string
+          created_at?: string
+          credit_score?: number | null
+          customer_id: string
+          id?: string
+          largest_outstanding_invoice?: number | null
+          last_payment_date?: string | null
+          payment_frequency?: number | null
+          risk_level?: string | null
+          summary_date?: string
+          total_invoiced?: number | null
+          total_outstanding?: number | null
+          total_paid?: number | null
+          updated_at?: string
+        }
+        Update: {
+          average_days_to_pay?: number | null
+          company_id?: string
+          created_at?: string
+          credit_score?: number | null
+          customer_id?: string
+          id?: string
+          largest_outstanding_invoice?: number | null
+          last_payment_date?: string | null
+          payment_frequency?: number | null
+          risk_level?: string | null
+          summary_date?: string
+          total_invoiced?: number | null
+          total_outstanding?: number | null
+          total_paid?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_notes: {
         Row: {
           company_id: string
