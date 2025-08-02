@@ -87,10 +87,12 @@ export const useContractCreation = () => {
       await supabase.rpc('log_contract_creation_step', {
         company_id_param: companyId as string,
         contract_id_param: contractIdParam,
-        operation_step_param: stepName,
+        step_name: stepName,
         status_param: status,
-        error_message_param: errorMsg || undefined,
-        metadata_param: meta ? JSON.parse(JSON.stringify(meta)) : undefined
+        attempt_num: attemptNum,
+        error_msg: errorMsg || null,
+        exec_time: execTime || null,
+        meta: meta ? JSON.parse(JSON.stringify(meta)) : null
       })
     } catch (error) {
       console.warn('Failed to log contract creation step:', error)

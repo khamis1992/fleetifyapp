@@ -90,15 +90,16 @@ export const useContractCreation = () => {
     if (!companyId) return
     
     try {
-      const contractIdParam = contractId || undefined
-      
+      // Use the existing RPC function with proper parameter names
       await supabase.rpc('log_contract_creation_step', {
         company_id_param: companyId as string,
-        contract_id_param: contractIdParam,
-        operation_step_param: stepName,
+        contract_id_param: contractId,
+        step_name: stepName,
         status_param: status,
-        error_message_param: errorMsg || undefined,
-        metadata_param: meta ? JSON.parse(JSON.stringify(meta)) : undefined
+        attempt_num: attemptNum,
+        error_msg: errorMsg || null,
+        exec_time: execTime || null,
+        meta: meta ? JSON.parse(JSON.stringify(meta)) : null
       })
     } catch (error) {
       console.warn('Failed to log contract creation step:', error)
@@ -399,6 +400,10 @@ export const useContractCreation = () => {
           userMessage = 'انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى'
         } else if (error.message.includes('network') || error.message.includes('connection')) {
           userMessage = 'خطأ في الاتصال، يرجى التحقق من الإنترنت والمحاولة مرة أخرى'
+        } else if (error.message.includes('Contract not found') || error.message.includes('العقد غير موجود')) {
+          userMessage = 'خطأ في إنشاء العقد - يرجى المحاولة مرة أخرى'
+        } else if (error.message.includes('Journal entry') || error.message.includes('القيد المحاسبي')) {
+          userMessage = 'تم إنشاء العقد ولكن فشل في إنشاء القيد المحاسبي'
         } else if (error.message.includes('المستخدم غير موجود')) {
           userMessage = 'مشكلة في المصادقة، يرجى تسجيل الدخول مرة أخرى'
         } else if (error.message.includes('ليس لديك صلاحية')) {

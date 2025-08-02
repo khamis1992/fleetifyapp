@@ -132,10 +132,16 @@ export const ContractCreationProgress = ({
         </div>
         
         {hasFailed && !isProcessing && (
-          <div className="mt-4 p-3 bg-destructive/10 rounded-lg">
-            <p className="text-xs text-destructive text-center">
-              إذا استمر الخطأ، يرجى المحاولة مرة أخرى أو الاتصال بالدعم الفني
+          <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+            <p className="text-sm text-destructive font-medium mb-2">
+              نصائح لحل المشكلة:
             </p>
+            <ul className="text-xs text-destructive space-y-1">
+              <li>• تأكد من صحة بيانات العميل والمركبة</li>
+              <li>• تحقق من ربط الحسابات المحاسبية</li>
+              <li>• جرب تغيير رقم العقد إذا كان مكرراً</li>
+              <li>• تواصل مع الدعم الفني إذا استمرت المشكلة</li>
+            </ul>
           </div>
         )}
       </CardContent>
