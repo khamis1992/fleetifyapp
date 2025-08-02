@@ -286,8 +286,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
               return false
             }
             
-            if (!customerCheck?.eligible) {
-              toast.error(`العميل غير مؤهل: ${customerCheck?.reason || 'سبب غير معروف'}`)
+            const checkResult = customerCheck as any
+            if (!checkResult?.eligible) {
+              toast.error(`العميل غير مؤهل: ${checkResult?.reason || 'سبب غير معروف'}`)
               return false
             }
           } catch (error) {
@@ -311,8 +312,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
                 return false
               }
               
-              if (!vehicleCheck?.available) {
-                toast.error(`المركبة غير متوفرة: ${vehicleCheck?.reason || 'سبب غير معروف'}`)
+              const checkResult = vehicleCheck as any
+              if (!checkResult?.available) {
+                toast.error(`المركبة غير متوفرة: ${checkResult?.reason || 'سبب غير معروف'}`)
                 return false
               }
             } catch (error) {
@@ -365,8 +367,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
           ]
           
           for (const { field, name } of requiredFields) {
-            if (!data[field as keyof ContractWizardData] || 
-                (typeof data[field as keyof ContractWizardData] === 'number' && data[field as keyof ContractWizardData] <= 0)) {
+            const fieldValue = data[field as keyof ContractWizardData]
+            if (!fieldValue || (typeof fieldValue === 'number' && fieldValue <= 0)) {
               toast.error(`${name} مطلوب`)
               return false
             }

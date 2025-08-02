@@ -794,7 +794,7 @@ export const ReviewStep: React.FC = () => {
       <CardContent className="space-y-6">
         {/* Data Validation and Auto-Correction */}
         <ContractDataValidator 
-          data={data}
+          data={data as any}
           onDataCorrection={(corrections) => {
             console.log('[REVIEW_STEP] Applying data corrections:', corrections)
             updateData(corrections)

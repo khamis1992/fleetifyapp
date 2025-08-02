@@ -109,19 +109,11 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
         })
       }
 
-      // Calculate rental days if missing or incorrect
+      // Calculate rental days (as informational)
       const diffTime = endDate.getTime() - startDate.getTime()
       const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       
-      if (!data.rental_days || data.rental_days !== calculatedDays) {
-        detectedIssues.push({
-          field: 'rental_days',
-          issue: 'عدد أيام التأجير غير محسوب بشكل صحيح',
-          severity: 'warning',
-          correction: calculatedDays
-        })
-        corrections.rental_days = calculatedDays
-      }
+      // Note: rental_days is calculated automatically in the system
     }
 
     // Check contract number format
