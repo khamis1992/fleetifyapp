@@ -1775,6 +1775,7 @@ export type Database = {
           credit_limit: number | null
           customer_type: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth: string | null
+          default_cost_center_id: string | null
           documents: Json | null
           email: string | null
           emergency_contact_name: string | null
@@ -1808,6 +1809,7 @@ export type Database = {
           credit_limit?: number | null
           customer_type?: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth?: string | null
+          default_cost_center_id?: string | null
           documents?: Json | null
           email?: string | null
           emergency_contact_name?: string | null
@@ -1841,6 +1843,7 @@ export type Database = {
           credit_limit?: number | null
           customer_type?: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth?: string | null
+          default_cost_center_id?: string | null
           documents?: Json | null
           email?: string | null
           emergency_contact_name?: string | null
@@ -1866,6 +1869,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_default_cost_center_id_fkey"
+            columns: ["default_cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
             referencedColumns: ["id"]
           },
           {
@@ -7852,6 +7862,10 @@ export type Database = {
           net_amount: number
           entry_count: number
         }[]
+      }
+      get_customer_default_cost_center: {
+        Args: { customer_id_param: string }
+        Returns: string
       }
       get_eligible_contracts_for_renewal: {
         Args: { company_id_param: string }
