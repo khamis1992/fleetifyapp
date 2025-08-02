@@ -8351,6 +8351,10 @@ export type Database = {
         Args: { contract_id_param: string; invoice_period?: string }
         Returns: string
       }
+      create_contract_journal_entry: {
+        Args: { contract_id_param: string }
+        Returns: string
+      }
       create_contract_journal_entry_enhanced: {
         Args: {
           contract_id_param: string
