@@ -24,6 +24,7 @@ import { ContractValidationSummary } from './ContractValidationSummary'
 import { SmartSuggestions } from './SmartSuggestions'
 import { useSmartSuggestions } from '@/hooks/useSmartSuggestions'
 import { useCostCenters } from '@/hooks/useCostCenters'
+import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -487,6 +488,9 @@ export const FinancialStep: React.FC = () => {
   
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts()
   
+  // Get customer's linked accounts
+  const { data: customerLinkedAccounts } = useCustomerLinkedAccounts(data.customer_id || '')
+  
   // Get cost centers
   const { data: costCenters } = useQuery({
     queryKey: ['cost-centers', user?.profile?.company_id],
@@ -504,6 +508,59 @@ export const FinancialStep: React.FC = () => {
     },
     enabled: !!user?.profile?.company_id,
   })
+
+  // Auto-set customer's financial account when customer is selected
+  React.useEffect(() => {
+    if (customerLinkedAccounts && customerLinkedAccounts.length > 0 && !data.account_id) {
+      const primaryAccountLink = customerLinkedAccounts[0]
+      const chartOfAccounts = primaryAccountLink?.chart_of_accounts
+      
+      // Check if chart_of_accounts is properly loaded and has the expected structure
+      if (chartOfAccounts && 
+          Array.isArray(chartOfAccounts) && 
+          chartOfAccounts.length > 0 && 
+          chartOfAccounts[0] && 
+          'id' in chartOfAccounts[0] && 
+          'account_code' in chartOfAccounts[0]) {
+        
+        const primaryAccount = chartOfAccounts[0] as any
+        console.log('[FINANCIAL_STEP] Auto-setting customer account:', primaryAccount.account_code)
+        updateData({ account_id: primaryAccount.id })
+      }
+    }
+  }, [customerLinkedAccounts, data.account_id, updateData])
+
+  // Suggest cost center based on contract type
+  const getSuggestedCostCenter = () => {
+    if (!costCenters || costCenters.length === 0) return null
+    
+    const contractTypeKeywords = {
+      rental: ['إيجار', 'تأجير', 'rent'],
+      service: ['خدمة', 'service'], 
+      maintenance: ['صيانة', 'maintenance'],
+      transportation: ['نقل', 'مواصلات', 'transport']
+    }
+    
+    const keywords = contractTypeKeywords[data.contract_type as keyof typeof contractTypeKeywords] || []
+    
+    return costCenters.find(center => 
+      keywords.some(keyword => 
+        center.center_name?.toLowerCase().includes(keyword.toLowerCase()) ||
+        center.center_name_ar?.toLowerCase().includes(keyword.toLowerCase())
+      )
+    )
+  }
+
+  // Auto-suggest cost center when contract type changes
+  React.useEffect(() => {
+    if (!data.cost_center_id && data.contract_type) {
+      const suggested = getSuggestedCostCenter()
+      if (suggested) {
+        console.log('[FINANCIAL_STEP] Auto-suggesting cost center:', suggested.center_code)
+        updateData({ cost_center_id: suggested.id })
+      }
+    }
+  }, [data.contract_type, costCenters, data.cost_center_id, updateData])
 
   // Get vehicle for calculations
   const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)
@@ -576,6 +633,19 @@ export const FinancialStep: React.FC = () => {
           </div>
         )}
 
+        {/* Customer Account Information */}
+        {customerLinkedAccounts && customerLinkedAccounts.length > 0 && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              حساب العميل المالي
+            </h4>
+            <p className="text-blue-700 text-sm">
+              تم اختيار حساب العميل المالي تلقائياً. يمكنك تغييره إذا لزم الأمر.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="contract_amount">مبلغ العقد الإجمالي *</Label>
@@ -605,7 +675,14 @@ export const FinancialStep: React.FC = () => {
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="account_id">الحساب المحاسبي</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="account_id">الحساب المحاسبي</Label>
+              {customerLinkedAccounts && customerLinkedAccounts.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  تم اختياره تلقائياً
+                </Badge>
+              )}
+            </div>
             <Select 
               value={data.account_id} 
               onValueChange={(value) => updateData({ account_id: value })}
@@ -615,6 +692,42 @@ export const FinancialStep: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">بدون ربط محاسبي</SelectItem>
+                {/* Show customer's linked accounts first */}
+                {customerLinkedAccounts && customerLinkedAccounts.length > 0 && (
+                  <>
+                    <SelectItem disabled value="customer_accounts_header">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        حسابات العميل
+                      </div>
+                    </SelectItem>
+                    {customerLinkedAccounts.map((customerAccount) => {
+                      const account = Array.isArray(customerAccount.chart_of_accounts) 
+                        ? customerAccount.chart_of_accounts[0] 
+                        : customerAccount.chart_of_accounts;
+                      if (!account || typeof account !== 'object' || !('id' in account)) return null;
+                      
+                      const accountData = account as any;
+                      return (
+                        <SelectItem key={accountData.id} value={accountData.id}>
+                          <div className="flex flex-col">
+                            <span>{accountData.account_code} - {accountData.account_name}</span>
+                            {accountData.account_name_ar && (
+                              <span className="text-xs text-muted-foreground">{accountData.account_name_ar}</span>
+                            )}
+                            <Badge variant="outline" className="text-xs w-fit mt-1">
+                              حساب العميل
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                    <SelectItem disabled value="other_accounts_header">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        حسابات أخرى
+                      </div>
+                    </SelectItem>
+                  </>
+                )}
                 {entryAllowedAccounts?.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     <div className="flex flex-col">
@@ -630,7 +743,14 @@ export const FinancialStep: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="cost_center_id">مركز التكلفة</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="cost_center_id">مركز التكلفة</Label>
+              {data.cost_center_id && getSuggestedCostCenter()?.id === data.cost_center_id && (
+                <Badge variant="secondary" className="text-xs">
+                  مقترح تلقائياً
+                </Badge>
+              )}
+            </div>
             <Select 
               value={data.cost_center_id} 
               onValueChange={(value) => updateData({ cost_center_id: value })}
@@ -642,7 +762,14 @@ export const FinancialStep: React.FC = () => {
                 <SelectItem value="none">بدون مركز تكلفة</SelectItem>
                 {costCenters?.map((center) => (
                   <SelectItem key={center.id} value={center.id}>
-                    {center.center_code} - {center.center_name_ar || center.center_name}
+                    <div className="flex items-center justify-between w-full">
+                      <span>{center.center_code} - {center.center_name_ar || center.center_name}</span>
+                      {getSuggestedCostCenter()?.id === center.id && (
+                        <Badge variant="outline" className="text-xs ml-2">
+                          مقترح
+                        </Badge>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
