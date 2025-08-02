@@ -494,7 +494,7 @@ export const FinancialStep: React.FC = () => {
   // Get cost centers using the dedicated hook
   const { data: costCenters } = useCostCenters()
 
-  // Auto-set customer's financial account when customer is selected
+  // Auto-set customer's financial account and cost center when customer is selected
   React.useEffect(() => {
     console.log('[FINANCIAL_STEP] Effect triggered:', {
       customerLinkedAccounts,
@@ -507,30 +507,23 @@ export const FinancialStep: React.FC = () => {
       const primaryAccountLink = customerLinkedAccounts[0]
       
       if (primaryAccountLink?.chart_of_accounts) {
-        const chartOfAccounts = primaryAccountLink.chart_of_accounts
-        
-        console.log('[FINANCIAL_STEP] Processing account link:', {
-          primaryAccountLink,
-          chartOfAccounts,
-          isArray: Array.isArray(chartOfAccounts)
-        });
-        
-        // Handle both array and object formats for chart_of_accounts
-        let primaryAccount: any = null;
-        
-        if (Array.isArray(chartOfAccounts) && chartOfAccounts.length > 0) {
-          primaryAccount = chartOfAccounts[0];
-        } else if (chartOfAccounts && typeof chartOfAccounts === 'object' && chartOfAccounts !== null && Object.hasOwnProperty.call(chartOfAccounts, 'id')) {
-          primaryAccount = chartOfAccounts;
-        }
-        
-        if (primaryAccount && 'id' in primaryAccount && 'account_code' in primaryAccount) {
-          console.log('[FINANCIAL_STEP] Auto-setting customer account:', primaryAccount.account_code);
-          updateData({ account_id: primaryAccount.id });
-        }
+        const account = primaryAccountLink.chart_of_accounts
+        console.log('[FINANCIAL_STEP] Auto-setting customer account:', account.account_code);
+        updateData({ account_id: account.id });
       }
     }
   }, [customerLinkedAccounts, data.account_id, data.customer_id, updateData])
+
+  // Auto-suggest cost center based on contract type
+  React.useEffect(() => {
+    if (!data.cost_center_id && costCenters && costCenters.length > 0) {
+      const suggestedCostCenter = getSuggestedCostCenter()
+      if (suggestedCostCenter) {
+        console.log('[FINANCIAL_STEP] Auto-setting cost center:', suggestedCostCenter.center_code);
+        updateData({ cost_center_id: suggestedCostCenter.id });
+      }
+    }
+  }, [data.cost_center_id, data.contract_type, costCenters, updateData])
 
   // Suggest cost center based on contract type
   const getSuggestedCostCenter = () => {

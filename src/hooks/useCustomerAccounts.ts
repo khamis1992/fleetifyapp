@@ -122,29 +122,45 @@ export const useCustomerLinkedAccounts = (customerId: string) => {
 
       console.log('[CUSTOMER_ACCOUNTS] Fetching for customer:', customerId, 'company:', companyId);
 
-      const { data, error } = await supabase
+      // First get the customer accounts
+      const { data: customerAccounts, error: customerError } = await supabase
         .from("customer_accounts")
-        .select(`
-          id,
-          account_id,
-          chart_of_accounts:account_id (
-            id,
-            account_code,
-            account_name,
-            account_name_ar,
-            current_balance
-          )
-        `)
+        .select("id, account_id")
         .eq("customer_id", customerId)
         .eq("company_id", companyId);
 
-      if (error) {
-        console.error("Error fetching customer linked accounts:", error);
-        throw error;
+      if (customerError) {
+        console.error("Error fetching customer accounts:", customerError);
+        throw customerError;
       }
 
-      console.log('[CUSTOMER_ACCOUNTS] Fetched data:', data);
-      return data || [];
+      if (!customerAccounts || customerAccounts.length === 0) {
+        console.log('[CUSTOMER_ACCOUNTS] No customer accounts found');
+        return [];
+      }
+
+      // Now get the chart of accounts for these account IDs
+      const accountIds = customerAccounts.map(ca => ca.account_id);
+      const { data: chartData, error: chartError } = await supabase
+        .from("chart_of_accounts")
+        .select("id, account_code, account_name, account_name_ar, current_balance")
+        .in("id", accountIds)
+        .eq("company_id", companyId);
+
+      if (chartError) {
+        console.error("Error fetching chart of accounts:", chartError);
+        throw chartError;
+      }
+
+      // Combine the data
+      const result = customerAccounts.map(ca => ({
+        id: ca.id,
+        account_id: ca.account_id,
+        chart_of_accounts: chartData?.find(chart => chart.id === ca.account_id) || null
+      }));
+
+      console.log('[CUSTOMER_ACCOUNTS] Fetched data:', result);
+      return result;
     },
     enabled: !!customerId && !!companyId,
   });
