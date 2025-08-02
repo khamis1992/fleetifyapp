@@ -8298,7 +8298,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_contract_issues: {
-        Args: { company_id_param?: string }
+        Args: { company_id_param: string }
         Returns: Json
       }
       cleanup_inactive_accounts: {
@@ -9040,16 +9040,13 @@ export type Database = {
         Returns: undefined
       }
       monitor_contract_health: {
-        Args: { company_id_param?: string }
+        Args: { company_id_param: string }
         Returns: {
-          issue_id: string
+          contract_id: string
           issue_type: string
-          description: string
+          issue_description: string
           severity: string
           recommended_action: string
-          contract_id: string
-          contract_number: string
-          created_at: string
         }[]
       }
       monitor_user_data_quality: {
