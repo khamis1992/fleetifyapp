@@ -147,6 +147,7 @@ export const useContractCreation = () => {
           contract_type: inputContractData.contract_type,
           description: inputContractData.description || null,
           terms: inputContractData.terms || null,
+          cost_center_id: inputContractData.cost_center_id || null,
           created_by: inputContractData.created_by
         }
 
@@ -155,10 +156,23 @@ export const useContractCreation = () => {
         updateStepStatus('accounts', 'processing')
         updateStepStatus('creation', 'processing')
 
-        // استخدام دالة إنشاء العقد الموحدة
+        // استخدام دالة إنشاء العقد الموحدة مع البراميتر الصحيحة
         const { data: result, error: createError } = await supabase
           .rpc('create_contract_with_journal_entry', {
-            contract_data: contractRequestData
+            company_id_param: contractRequestData.company_id,
+            customer_id_param: contractRequestData.customer_id,
+            vehicle_id_param: contractRequestData.vehicle_id,
+            contract_number_param: contractRequestData.contract_number,
+            contract_type_param: contractRequestData.contract_type,
+            contract_date_param: contractRequestData.contract_date,
+            start_date_param: contractRequestData.start_date,
+            end_date_param: contractRequestData.end_date,
+            contract_amount_param: contractRequestData.contract_amount,
+            monthly_amount_param: contractRequestData.monthly_amount,
+            description_param: contractRequestData.description,
+            terms_param: contractRequestData.terms,
+            cost_center_id_param: contractRequestData.cost_center_id,
+            created_by_param: contractRequestData.created_by
           })
 
         // معالجة أخطاء الاتصال بقاعدة البيانات

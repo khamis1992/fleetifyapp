@@ -8403,7 +8403,22 @@ export type Database = {
       }
       create_contract_with_journal_entry: {
         Args:
-          | { contract_data: Json }
+          | {
+              company_id_param: string
+              customer_id_param: string
+              vehicle_id_param?: string
+              contract_number_param?: string
+              contract_type_param?: string
+              contract_date_param?: string
+              start_date_param?: string
+              end_date_param?: string
+              contract_amount_param?: number
+              monthly_amount_param?: number
+              description_param?: string
+              terms_param?: string
+              cost_center_id_param?: string
+              created_by_param?: string
+            }
           | {
               p_company_id: string
               p_customer_id: string
