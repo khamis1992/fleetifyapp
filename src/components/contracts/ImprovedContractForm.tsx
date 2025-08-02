@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { FileText, AlertTriangle, CheckCircle, Clock, Save } from 'lucide-react'
+import { FileText, AlertTriangle, CheckCircle, Clock, Save, Search } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 import { useContractValidation } from '@/hooks/useContractValidation'
@@ -16,6 +16,7 @@ import { useCustomers } from '@/hooks/useCustomers'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useContractCreation } from '@/hooks/useContractCreation'
 import { ContractCreationProgress } from './ContractCreationProgress'
+import { CustomerDisplayName } from '@/components/customers/CustomerDisplayName'
 
 interface ImprovedContractFormProps {
   open: boolean
@@ -60,9 +61,14 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
 
   const [clientErrors, setClientErrors] = useState<string[]>([])
   const [showProgress, setShowProgress] = useState(false)
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('')
 
-  // Hooks
-  const { data: customers, isLoading: customersLoading } = useCustomers()
+  // Hooks - Enhanced customer fetching with search
+  const { data: customers, isLoading: customersLoading, error: customersError } = useCustomers({
+    searchTerm: customerSearchTerm,
+    includeInactive: false,
+    limit: 50
+  })
   const { data: vehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts()
   const { validation, isValidating, validateContract, debouncedValidation } = useContractValidation()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
@@ -286,44 +292,80 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="customer_id">العميل *</Label>
+                  
+                  {/* Customer search */}
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="ابحث عن العميل..."
+                      value={customerSearchTerm}
+                      onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
                   <Select 
                     value={formData.customer_id} 
                     onValueChange={(value) => handleInputChange('customer_id', value)}
                     disabled={customersLoading}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={customersLoading ? "جاري التحميل..." : "اختر العميل"} />
+                      <SelectValue placeholder={
+                        customersLoading ? "جاري التحميل..." :
+                        customersError ? "خطأ في تحميل العملاء" :
+                        customers?.length === 0 ? "لا توجد عملاء" :
+                        "اختر العميل"
+                      } />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60">
                       {customers?.map((customer) => (
                         <SelectItem 
                           key={customer.id} 
                           value={customer.id}
                           disabled={customer.is_blacklisted || !customer.is_active}
+                          className="py-3"
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <span>
-                              {customer.customer_type === 'individual' 
-                                ? `${customer.first_name} ${customer.last_name}`
-                                : customer.company_name
-                              }
-                            </span>
-                            {customer.is_blacklisted && (
-                              <Badge variant="destructive" className="mr-2">محظور</Badge>
-                            )}
-                            {!customer.is_active && (
-                              <Badge variant="secondary" className="mr-2">غير نشط</Badge>
-                            )}
-                          </div>
+                          <CustomerDisplayName 
+                            customer={customer}
+                            showStatus={true}
+                            showBadges={true}
+                          />
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {customersError && (
+                    <Alert variant="destructive" className="mt-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        خطأ في تحميل قائمة العملاء: {customersError.message}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {selectedCustomer && (
-                    <div className="mt-2 p-2 bg-muted rounded text-sm">
-                      <p><strong>النوع:</strong> {selectedCustomer.customer_type === 'individual' ? 'فرد' : 'شركة'}</p>
-                      {selectedCustomer.phone && <p><strong>الهاتف:</strong> {selectedCustomer.phone}</p>}
-                      {selectedCustomer.email && <p><strong>البريد:</strong> {selectedCustomer.email}</p>}
+                    <div className="mt-2 p-3 bg-muted rounded text-sm space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {selectedCustomer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+                        </Badge>
+                        {selectedCustomer.is_blacklisted && (
+                          <Badge variant="destructive">محظور</Badge>
+                        )}
+                        {!selectedCustomer.is_active && (
+                          <Badge variant="secondary">غير نشط</Badge>
+                        )}
+                      </div>
+                      {selectedCustomer.phone && (
+                        <p><strong>الهاتف:</strong> {selectedCustomer.phone}</p>
+                      )}
+                      {selectedCustomer.email && (
+                        <p><strong>البريد:</strong> {selectedCustomer.email}</p>
+                      )}
+                      {selectedCustomer.national_id && (
+                        <p><strong>الهوية:</strong> {selectedCustomer.national_id}</p>
+                      )}
                     </div>
                   )}
                 </div>

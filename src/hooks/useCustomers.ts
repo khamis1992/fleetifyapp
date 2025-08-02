@@ -21,34 +21,52 @@ export const useCustomers = (filters?: CustomerFilters) => {
         return [];
       }
 
-      console.log('🔍 Fetching customers for company:', companyId);
+      console.log('🔍 Fetching customers for company:', companyId, 'with filters:', filters);
 
       let query = supabase
         .from('customers')
         .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .eq('company_id', companyId);
 
+      // Apply active filter
+      if (!filters?.includeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      // Apply customer type filter
       if (filters?.customer_type) {
         query = query.eq('customer_type', filters.customer_type);
       }
 
+      // Apply blacklist filter
       if (filters?.is_blacklisted !== undefined) {
         query = query.eq('is_blacklisted', filters.is_blacklisted);
       }
 
-      if (filters?.search) {
-        const searchTerm = filters.search.trim();
-        if (searchTerm) {
-          query = query.or(
-            `first_name.ilike.%${searchTerm}%,` +
-            `last_name.ilike.%${searchTerm}%,` +
-            `company_name.ilike.%${searchTerm}%,` +
-            `phone.ilike.%${searchTerm}%,` +
-            `email.ilike.%${searchTerm}%`
-          );
-        }
+      // Apply search filters
+      const searchTerm = filters?.search || filters?.searchTerm;
+      if (searchTerm?.trim()) {
+        const search = searchTerm.trim();
+        query = query.or(
+          `first_name.ilike.%${search}%,` +
+          `last_name.ilike.%${search}%,` +
+          `first_name_ar.ilike.%${search}%,` +
+          `last_name_ar.ilike.%${search}%,` +
+          `company_name.ilike.%${search}%,` +
+          `company_name_ar.ilike.%${search}%,` +
+          `phone.ilike.%${search}%,` +
+          `email.ilike.%${search}%,` +
+          `national_id.ilike.%${search}%`
+        );
       }
+
+      // Apply limit
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      // Order by creation date
+      query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
 
