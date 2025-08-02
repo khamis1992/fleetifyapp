@@ -8396,7 +8396,6 @@ export type Database = {
               customer_id_param: string
               contract_data: Json
             }
-          | { contract_data: Json }
           | { contract_data: Json; user_id_param?: string }
         Returns: Json
       }
