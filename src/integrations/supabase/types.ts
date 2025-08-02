@@ -8402,53 +8402,21 @@ export type Database = {
         Returns: Json
       }
       create_contract_with_journal_entry: {
-        Args:
-          | {
-              company_id_param: string
-              customer_id_param: string
-              vehicle_id_param?: string
-              contract_number_param?: string
-              contract_type_param?: string
-              contract_date_param?: string
-              start_date_param?: string
-              end_date_param?: string
-              contract_amount_param?: number
-              monthly_amount_param?: number
-              description_param?: string
-              terms_param?: string
-              cost_center_id_param?: string
-              created_by_param?: string
-            }
-          | {
-              p_company_id: string
-              p_customer_id: string
-              p_vehicle_id?: string
-              p_contract_type?: string
-              p_contract_date?: string
-              p_start_date?: string
-              p_end_date?: string
-              p_contract_amount?: number
-              p_monthly_amount?: number
-              p_description?: string
-              p_terms?: string
-              p_cost_center_id?: string
-              p_created_by?: string
-            }
-          | {
-              p_customer_id: string
-              p_vehicle_id?: string
-              p_contract_number?: string
-              p_contract_type?: string
-              p_contract_date?: string
-              p_start_date?: string
-              p_end_date?: string
-              p_contract_amount?: number
-              p_monthly_amount?: number
-              p_description?: string
-              p_terms?: string
-              p_cost_center_id?: string
-              p_created_by?: string
-            }
+        Args: {
+          p_customer_id: string
+          p_vehicle_id?: string
+          p_contract_number?: string
+          p_contract_type?: string
+          p_contract_date?: string
+          p_start_date?: string
+          p_end_date?: string
+          p_contract_amount?: number
+          p_monthly_amount?: number
+          p_description?: string
+          p_terms?: string
+          p_cost_center_id?: string
+          p_created_by?: string
+        }
         Returns: Json
       }
       create_customer_financial_account_enhanced: {
