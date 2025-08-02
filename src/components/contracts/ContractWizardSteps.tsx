@@ -514,48 +514,167 @@ export const FinancialStep: React.FC = () => {
     }
   }, [customerLinkedAccounts, data.account_id, data.customer_id, updateData])
 
-  // Auto-suggest cost center based on contract type
+  // Enhanced cost center suggestion logic
+  const getSuggestedCostCenter = () => {
+    if (!costCenters || costCenters.length === 0) {
+      console.log('[COST_CENTER] No cost centers available for suggestion');
+      return null;
+    }
+    
+    console.log('[COST_CENTER] Starting suggestion process:', {
+      contractType: data.contract_type,
+      vehicleId: data.vehicle_id,
+      availableCenters: costCenters.length
+    });
+
+    // Enhanced matching rules with priorities
+    const rules = [
+      // Rule 1: Exact contract type match (highest priority)
+      {
+        priority: 1,
+        description: 'exact_contract_type_match',
+        keywords: getContractTypeKeywords(data.contract_type),
+        weight: 100
+      },
+      // Rule 2: Vehicle type integration (if vehicle is selected)
+      {
+        priority: 2, 
+        description: 'vehicle_type_match',
+        keywords: getVehicleTypeKeywords(),
+        weight: 80
+      },
+      // Rule 3: General business keywords
+      {
+        priority: 3,
+        description: 'general_business_match', 
+        keywords: ['تشغيل', 'عمليات', 'operations', 'main'],
+        weight: 50
+      }
+    ];
+
+    let bestMatch = null;
+    let bestScore = 0;
+    let matchReason = '';
+
+    for (const rule of rules) {
+      for (const center of costCenters) {
+        const score = calculateCenterScore(center, rule.keywords, rule.weight);
+        console.log('[COST_CENTER] Evaluating center:', {
+          centerCode: center.center_code,
+          centerName: center.center_name,
+          rule: rule.description,
+          score,
+          keywords: rule.keywords
+        });
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = center;
+          matchReason = rule.description;
+        }
+      }
+    }
+
+    // Fallback: Use first available cost center if no smart match found
+    if (!bestMatch && costCenters.length > 0) {
+      bestMatch = costCenters[0];
+      matchReason = 'fallback_first_available';
+      console.log('[COST_CENTER] Using fallback - first available center:', bestMatch.center_code);
+    }
+
+    if (bestMatch) {
+      console.log('[COST_CENTER] Best match found:', {
+        centerCode: bestMatch.center_code,
+        centerName: bestMatch.center_name,
+        score: bestScore,
+        reason: matchReason
+      });
+    } else {
+      console.log('[COST_CENTER] No suitable cost center found');
+    }
+
+    return bestMatch;
+  };
+
+  // Helper function to get contract type keywords
+  const getContractTypeKeywords = (contractType: string) => {
+    const contractTypeKeywords = {
+      rental: ['إيجار', 'تأجير', 'rent', 'rental'],
+      service: ['خدمة', 'خدمات', 'service', 'services'], 
+      maintenance: ['صيانة', 'maintenance', 'repair'],
+      transportation: ['نقل', 'مواصلات', 'transport', 'logistics'],
+      sale: ['بيع', 'مبيعات', 'sales', 'sale'],
+      lease: ['تأجير', 'إيجار', 'lease', 'leasing']
+    };
+    
+    return contractTypeKeywords[contractType as keyof typeof contractTypeKeywords] || [];
+  };
+
+  // Helper function to get vehicle type keywords (if vehicle integration needed)
+  const getVehicleTypeKeywords = () => {
+    if (!selectedVehicle) return [];
+    
+    // Use vehicle make and model for now since vehicle_type isn't in the schema
+    const vehicleKeywords = [];
+    
+    if (selectedVehicle.make) {
+      vehicleKeywords.push(selectedVehicle.make.toLowerCase());
+    }
+    
+    if (selectedVehicle.model) {
+      vehicleKeywords.push(selectedVehicle.model.toLowerCase());
+    }
+    
+    // Add general vehicle keywords
+    vehicleKeywords.push('مركبة', 'سيارة', 'vehicle', 'car');
+    
+    return vehicleKeywords;
+  };
+
+  // Helper function to calculate center score based on keyword matching
+  const calculateCenterScore = (center: any, keywords: string[], weight: number) => {
+    if (!keywords.length) return 0;
+    
+    let score = 0;
+    const centerName = center.center_name?.toLowerCase() || '';
+    const centerNameAr = center.center_name_ar?.toLowerCase() || '';
+    const centerCode = center.center_code?.toLowerCase() || '';
+    
+    for (const keyword of keywords) {
+      const keywordLower = keyword.toLowerCase();
+      
+      // Exact match gets highest score
+      if (centerName === keywordLower || centerNameAr === keywordLower) {
+        score += weight;
+      }
+      // Contains match gets partial score
+      else if (centerName.includes(keywordLower) || centerNameAr.includes(keywordLower) || centerCode.includes(keywordLower)) {
+        score += weight * 0.7;
+      }
+    }
+    
+    return score;
+  };
+
+  // Auto-suggest cost center with enhanced timing
   React.useEffect(() => {
-    if (!data.cost_center_id && costCenters && costCenters.length > 0) {
-      const suggestedCostCenter = getSuggestedCostCenter()
+    // Only auto-suggest if:
+    // 1. No cost center is currently selected
+    // 2. We have cost centers available
+    // 3. Contract type is selected (key dependency)
+    if (!data.cost_center_id && costCenters && costCenters.length > 0 && data.contract_type) {
+      const suggestedCostCenter = getSuggestedCostCenter();
+      
       if (suggestedCostCenter) {
-        console.log('[FINANCIAL_STEP] Auto-setting cost center:', suggestedCostCenter.center_code);
+        console.log('[COST_CENTER] Auto-setting cost center:', {
+          centerCode: suggestedCostCenter.center_code,
+          centerName: suggestedCostCenter.center_name,
+          contractType: data.contract_type
+        });
         updateData({ cost_center_id: suggestedCostCenter.id });
       }
     }
-  }, [data.cost_center_id, data.contract_type, costCenters, updateData])
-
-  // Suggest cost center based on contract type
-  const getSuggestedCostCenter = () => {
-    if (!costCenters || costCenters.length === 0) return null
-    
-    const contractTypeKeywords = {
-      rental: ['إيجار', 'تأجير', 'rent'],
-      service: ['خدمة', 'service'], 
-      maintenance: ['صيانة', 'maintenance'],
-      transportation: ['نقل', 'مواصلات', 'transport']
-    }
-    
-    const keywords = contractTypeKeywords[data.contract_type as keyof typeof contractTypeKeywords] || []
-    
-    return costCenters.find(center => 
-      keywords.some(keyword => 
-        center.center_name?.toLowerCase().includes(keyword.toLowerCase()) ||
-        center.center_name_ar?.toLowerCase().includes(keyword.toLowerCase())
-      )
-    )
-  }
-
-  // Auto-suggest cost center when contract type changes
-  React.useEffect(() => {
-    if (!data.cost_center_id && data.contract_type) {
-      const suggested = getSuggestedCostCenter()
-      if (suggested) {
-        console.log('[FINANCIAL_STEP] Auto-suggesting cost center:', suggested.center_code)
-        updateData({ cost_center_id: suggested.id })
-      }
-    }
-  }, [data.contract_type, costCenters, data.cost_center_id, updateData])
+  }, [data.cost_center_id, data.contract_type, data.vehicle_id, costCenters, updateData]);
 
   // Get vehicle for calculations
   const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)
@@ -637,6 +756,20 @@ export const FinancialStep: React.FC = () => {
             </h4>
             <p className="text-blue-700 text-sm">
               تم اختيار حساب العميل المالي تلقائياً. يمكنك تغييره إذا لزم الأمر.
+            </p>
+          </div>
+        )}
+
+        {/* Cost Center Suggestion Information */}
+        {data.cost_center_id && getSuggestedCostCenter()?.id === data.cost_center_id && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              مركز التكلفة المقترح
+            </h4>
+            <p className="text-green-700 text-sm">
+              تم اقتراح مركز التكلفة تلقائياً بناءً على نوع العقد "{data.contract_type}". 
+              يمكنك تغييره إذا لزم الأمر.
             </p>
           </div>
         )}
