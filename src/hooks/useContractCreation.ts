@@ -133,33 +133,26 @@ export const useContractCreation = () => {
         updateStepStatus('validation', 'processing')
         await logContractStep(null, 'enhanced_creation', 'started')
 
-        // إعداد بيانات العقد
-        const contractRequestData = {
-          company_id: companyId,
-          customer_id: inputContractData.customer_id,
-          vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
-          contract_number: inputContractData.contract_number,
-          contract_date: inputContractData.contract_date,
-          start_date: inputContractData.start_date,
-          end_date: inputContractData.end_date,
-          contract_amount: Number(inputContractData.contract_amount),
-          monthly_amount: Number(inputContractData.monthly_amount || inputContractData.contract_amount),
-          contract_type: inputContractData.contract_type,
-          description: inputContractData.description || null,
-          terms: inputContractData.terms || null,
-          cost_center_id: inputContractData.cost_center_id || null,
-          created_by: inputContractData.created_by
-        }
-
-        console.log('📝 [CONTRACT_CREATION] استخدام طريقة الإنشاء الموحدة:', contractRequestData)
+        console.log('📝 [CONTRACT_CREATION] استخدام طريقة الإنشاء الموحدة مع المعاملات المنفصلة')
 
         updateStepStatus('accounts', 'processing')
         updateStepStatus('creation', 'processing')
 
-        // استخدام دالة إنشاء العقد الموحدة مع كائن JSONB
+        // استخدام دالة إنشاء العقد الموحدة مع المعاملات المنفصلة
         const { data: result, error: createError } = await supabase
           .rpc('create_contract_with_journal_entry', {
-            contract_data: contractRequestData
+            p_company_id: companyId,
+            p_customer_id: inputContractData.customer_id,
+            p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
+            p_contract_type: inputContractData.contract_type || 'rental',
+            p_start_date: inputContractData.start_date,
+            p_end_date: inputContractData.end_date,
+            p_contract_amount: Number(inputContractData.contract_amount) || 0,
+            p_monthly_amount: Number(inputContractData.monthly_amount || inputContractData.contract_amount) || 0,
+            p_description: inputContractData.description || null,
+            p_terms: inputContractData.terms || null,
+            p_cost_center_id: inputContractData.cost_center_id || null,
+            p_created_by: inputContractData.created_by
           })
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
@@ -313,7 +306,7 @@ export const useContractCreation = () => {
           // إرجاع بيانات العقد الأساسية
           return { 
             id: contractId, 
-            contract_number: contractRequestData.contract_number,
+            contract_number: typedResult.contract_number,
             status: journalEntryId ? 'active' : 'draft'
           }
         }
