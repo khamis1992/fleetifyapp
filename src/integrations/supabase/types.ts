@@ -8743,7 +8743,7 @@ export type Database = {
         Returns: string
       }
       get_user_company_secure: {
-        Args: { _user_id: string }
+        Args: { user_id_param: string }
         Returns: string
       }
       get_user_company_secure_cached: {
@@ -8774,6 +8774,13 @@ export type Database = {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
+      has_role_secure: {
+        Args: {
+          user_id_param: string
+          role_name: Database["public"]["Enums"]["user_role"]
         }
         Returns: boolean
       }
@@ -8858,6 +8865,15 @@ export type Database = {
           issue_description: string
           severity: string
           recommended_action: string
+        }[]
+      }
+      monitor_user_data_quality: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_name: string
+          status: string
+          count_found: number
+          description: string
         }[]
       }
       prepare_company_backup: {
