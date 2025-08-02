@@ -7645,6 +7645,14 @@ export type Database = {
           | {
               contract_id_param: string
               company_id_param: string
+              created_by_param: string
+              contract_amount_param: number
+              entry_description_param?: string
+              reference_param?: string
+            }
+          | {
+              contract_id_param: string
+              company_id_param: string
               created_by_user_id?: string
             }
           | {

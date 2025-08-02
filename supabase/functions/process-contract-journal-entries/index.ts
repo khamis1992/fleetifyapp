@@ -21,6 +21,7 @@ interface Contract {
   contract_number: string
   company_id: string
   created_by: string
+  contract_amount: number
 }
 
 Deno.serve(async (req) => {
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
     // Check which contracts are active but missing journal entries
     const { data: contractsToProcess, error: contractsError } = await supabase
       .from('contracts')
-      .select('id, status, journal_entry_id, contract_number, company_id, created_by')
+      .select('id, status, journal_entry_id, contract_number, company_id, created_by, contract_amount')
       .in('id', uniqueContractIds)
       .eq('status', 'active')
       .is('journal_entry_id', null)
@@ -173,7 +174,10 @@ Deno.serve(async (req) => {
           .rpc('create_contract_journal_entry', {
             contract_id_param: contract.id,
             company_id_param: contract.company_id,
-            created_by_user_id: contract.created_by
+            created_by_param: contract.created_by,
+            contract_amount_param: contract.contract_amount,
+            entry_description_param: `Contract Journal Entry - ${contract.contract_number}`,
+            reference_param: contract.contract_number
           })
 
         if (journalError) {
