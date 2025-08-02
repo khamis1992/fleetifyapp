@@ -8117,6 +8117,10 @@ export type Database = {
         Args: { vehicle_id_param: string }
         Returns: undefined
       }
+      check_and_fix_user_data_integrity: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       check_budget_overruns: {
         Args: { budget_id_param: string }
         Returns: number
