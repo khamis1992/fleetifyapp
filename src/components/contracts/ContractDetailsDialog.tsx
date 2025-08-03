@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ContractDocuments } from './ContractDocuments';
 import { toast } from 'sonner';
 
 interface ContractDetailsDialogProps {
@@ -605,19 +606,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
           </TabsContent>
 
           <TabsContent value="documents" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>مستندات العقد</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    سيتم إضافة ميزة إدارة المستندات قريباً
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <ContractDocuments contractId={contract.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
