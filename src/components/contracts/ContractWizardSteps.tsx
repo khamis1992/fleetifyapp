@@ -246,7 +246,7 @@ export const CustomerVehicleStep: React.FC = () => {
                       value={customer.id}
                       disabled={customer.is_blacklisted || !customer.is_active}
                     >
-                      <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-2">
                         <span>
                           {customer.customer_type === 'individual' 
                             ? `${customer.first_name} ${customer.last_name}`
@@ -259,7 +259,7 @@ export const CustomerVehicleStep: React.FC = () => {
                         {!customer.is_active && (
                           <Badge variant="secondary" className="text-xs">غير نشط</Badge>
                         )}
-                      </div>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -290,16 +290,16 @@ export const CustomerVehicleStep: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="none">بدون مركبة محددة</SelectItem>
                   {vehiclesToShow?.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      <div className="flex flex-col">
-                        <span>{vehicle.make} {vehicle.model} - {vehicle.plate_number}</span>
-                        <div className="text-xs text-muted-foreground flex gap-2">
-                          {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate} د.ك</span>}
-                          {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate} د.ك</span>}
-                          {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate} د.ك</span>}
-                        </div>
-                      </div>
-                    </SelectItem>
+                  <SelectItem key={vehicle.id} value={vehicle.id}>
+                    <span className="flex flex-col">
+                      <span>{vehicle.make} {vehicle.model} - {vehicle.plate_number}</span>
+                      <span className="text-xs text-muted-foreground flex gap-2">
+                        {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate} د.ك</span>}
+                        {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate} د.ك</span>}
+                        {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate} د.ك</span>}
+                      </span>
+                    </span>
+                  </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
