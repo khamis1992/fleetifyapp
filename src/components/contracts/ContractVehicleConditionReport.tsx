@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
-import { VehicleDiagram } from './VehicleDiagram';
+import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 
 interface VehicleConditionItem {
   category: string;
@@ -272,7 +272,19 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
       {/* مخطط المركبة البصري */}
       {conditionData.damage_items && conditionData.damage_items.length > 0 && (
         <div className="mb-6">
-          <VehicleDiagram damageItems={conditionData.damage_items} />
+          <VehicleConditionDiagram 
+            damagePoints={conditionData.damage_items
+              .filter((item): item is DamageItem => typeof item === 'object')
+              .map(item => ({
+                id: item.id,
+                x: item.x,
+                y: item.y,
+                severity: (item.severity === 'خطير' || item.severity === 'severe') ? 'severe' as const :
+                         (item.severity === 'متوسط' || item.severity === 'moderate') ? 'moderate' as const : 'minor' as const,
+                description: item.description
+              }))}
+            readOnly={true}
+          />
         </div>
       )}
 
