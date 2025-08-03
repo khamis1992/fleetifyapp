@@ -62,6 +62,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📝 [VEHICLE_RETURN] Form submitted manually by user');
     
     // جمع كل الأضرار من المجسم والإدخال اليدوي
     const allDamages = [
@@ -76,6 +77,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       }))
     ];
     
+    console.log('📝 [VEHICLE_RETURN] Submitting with damages:', allDamages);
     onSubmit({
       ...formData,
       damages: allDamages

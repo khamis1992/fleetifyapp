@@ -56,7 +56,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
   const handleCreateVehicleReturn = async (data: CreateContractVehicleReturnData) => {
     try {
+      console.log('📝 [CONTRACT_CANCELLATION] Creating vehicle return with data:', data);
       await createVehicleReturn.mutateAsync(data);
+      console.log('📝 [CONTRACT_CANCELLATION] Vehicle return created, moving to approval step');
       setCurrentStep('approval');
     } catch (error) {
       console.error('Error creating vehicle return:', error);

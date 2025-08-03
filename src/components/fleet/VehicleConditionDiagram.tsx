@@ -130,16 +130,19 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
     
     if (selectedPoint?.id) {
       // Edit existing point
+      console.log('📝 [DAMAGE_DIAGRAM] Editing existing damage point:', selectedPoint.id);
       const updatedPoints = damagePoints.map(point =>
         point.id === selectedPoint.id ? { ...pointData, id: selectedPoint.id } : point
       );
       onDamagePointsChange(updatedPoints);
     } else {
       // Add new point
+      console.log('📝 [DAMAGE_DIAGRAM] Adding new damage point:', pointData);
       const newPoint: DamagePoint = {
         ...pointData,
         id: `damage_${Date.now()}`
       };
+      console.log('📝 [DAMAGE_DIAGRAM] New point created with ID:', newPoint.id);
       onDamagePointsChange([...damagePoints, newPoint]);
     }
     
