@@ -28,6 +28,7 @@ import NotFound from "./pages/NotFound";
 import Contracts from "./pages/Contracts";
 import Customers from "./pages/Customers";
 import Quotations from "./pages/Quotations";
+import QuotationApproval from "./pages/QuotationApproval";
 import Maintenance from "./pages/fleet/Maintenance";
 import TrafficViolations from "./pages/fleet/TrafficViolations";
 import TrafficViolationPayments from "./pages/fleet/TrafficViolationPayments";
@@ -65,6 +66,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/approval/:token" element={<QuotationApproval />} />
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/super-admin/*" element={<SuperAdminLayout />}>
               <Route path="dashboard" element={<SuperAdminDashboard />} />

@@ -5590,8 +5590,55 @@ export type Database = {
           },
         ]
       }
+      quotation_approval_log: {
+        Row: {
+          action: string
+          client_ip: string | null
+          client_user_agent: string | null
+          comments: string | null
+          company_id: string
+          created_at: string
+          id: string
+          quotation_id: string
+        }
+        Insert: {
+          action: string
+          client_ip?: string | null
+          client_user_agent?: string | null
+          comments?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          quotation_id: string
+        }
+        Update: {
+          action?: string
+          client_ip?: string | null
+          client_user_agent?: string | null
+          comments?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          quotation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_approval_log_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotations: {
         Row: {
+          approval_expires_at: string | null
+          approval_token: string | null
+          approved_at: string | null
+          approved_by_client: boolean | null
+          client_approval_url: string | null
+          client_comments: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -5610,6 +5657,12 @@ export type Database = {
           vehicle_id: string | null
         }
         Insert: {
+          approval_expires_at?: string | null
+          approval_token?: string | null
+          approved_at?: string | null
+          approved_by_client?: boolean | null
+          client_approval_url?: string | null
+          client_comments?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -5628,6 +5681,12 @@ export type Database = {
           vehicle_id?: string | null
         }
         Update: {
+          approval_expires_at?: string | null
+          approval_token?: string | null
+          approved_at?: string | null
+          approved_by_client?: boolean | null
+          client_approval_url?: string | null
+          client_comments?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -8760,6 +8819,10 @@ export type Database = {
       }
       generate_approval_request_number: {
         Args: { company_id_param: string }
+        Returns: string
+      }
+      generate_approval_token: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       generate_cash_flow_analysis: {

@@ -223,8 +223,49 @@ export default function Quotations() {
     }
   }
 
-  // Share quotation via WhatsApp
-  const shareViaWhatsApp = (quotation: any) => {
+  // Generate approval link for quotation
+  const generateApprovalLink = async (quotationId: string) => {
+    try {
+      // Generate token and set expiry (7 days)
+      const { data, error } = await supabase
+        .rpc('generate_approval_token')
+
+      if (error) throw error;
+
+      const approvalToken = data;
+      const expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const approvalUrl = `${window.location.origin}/approval/${approvalToken}`;
+
+      // Update quotation with approval data
+      const { error: updateError } = await supabase
+        .from('quotations')
+        .update({
+          approval_token: approvalToken,
+          approval_expires_at: expiryDate,
+          client_approval_url: approvalUrl
+        })
+        .eq('id', quotationId);
+
+      if (updateError) throw updateError;
+
+      // Log the sending action
+      await supabase
+        .from('quotation_approval_log')
+        .insert({
+          quotation_id: quotationId,
+          company_id: user?.profile?.company_id,
+          action: 'sent'
+        });
+
+      return approvalUrl;
+    } catch (error) {
+      console.error('Error generating approval link:', error);
+      return null;
+    }
+  };
+
+  // Share quotation via WhatsApp with approval link
+  const shareViaWhatsApp = async (quotation: any) => {
     const customer = customers?.find(c => c.id === quotation.customer_id)
     const vehicle = vehicles?.find(v => v.id === quotation.vehicle_id)
     
@@ -235,6 +276,9 @@ export default function Quotations() {
       toast.error('رقم هاتف العميل غير متوفر')
       return
     }
+
+    // Generate approval link
+    const approvalUrl = await generateApprovalLink(quotation.id);
 
     // Clean and format phone number (remove spaces, dashes, etc.)
     const cleanPhone = customerPhone.replace(/[\s\-\(\)]/g, '')
@@ -280,12 +324,19 @@ export default function Quotations() {
 ${quotation.description ? `📝 *الوصف:* ${quotation.description}\n` : ''}
 ${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n` : ''}
 
+${approvalUrl ? `\n✅ *للموافقة على العرض أو رفضه، يرجى الضغط على الرابط التالي:*\n${approvalUrl}\n` : ''}
+
 نتطلع لخدمتكم! 🤝
-للاستفسار أو الموافقة على العرض، يرجى الرد على هذه الرسالة.
+للاستفسار، يرجى الرد على هذه الرسالة.
     `.trim()
 
     const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
+    
+    // Refresh quotations to show updated data
+    queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    
+    toast.success('تم إرسال العرض مع رابط الموافقة عبر واتساب');
   }
 
   const onSubmit = (data: QuotationFormData) => {

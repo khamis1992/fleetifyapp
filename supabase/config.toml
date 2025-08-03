@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.refresh-stats-cache]
 verify_jwt = false
+
+[functions.quotation-approval]
+verify_jwt = false
