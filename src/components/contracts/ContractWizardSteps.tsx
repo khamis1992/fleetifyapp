@@ -706,10 +706,26 @@ export const FinancialStep: React.FC = () => {
               id="contract_amount"
               type="number"
               step="0.001"
-              min="0"
+              min={selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle ? selectedVehicle.minimum_rental_price : 0}
               value={data.contract_amount}
-              onChange={(e) => updateData({ contract_amount: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value) || 0
+                const minPrice = selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle ? selectedVehicle.minimum_rental_price : 0
+                
+                if (minPrice && value > 0 && value < minPrice) {
+                  // Show warning but allow the value temporarily
+                  updateData({ contract_amount: value })
+                } else {
+                  updateData({ contract_amount: value })
+                }
+              }}
+              className={selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle && data.contract_amount < selectedVehicle.minimum_rental_price ? 'border-red-500' : ''}
             />
+            {selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle && data.contract_amount > 0 && data.contract_amount < selectedVehicle.minimum_rental_price && (
+              <p className="text-sm text-red-600 font-medium">
+                ⚠️ المبلغ أقل من الحد الأدنى المطلوب ({selectedVehicle.minimum_rental_price} د.ك)
+              </p>
+            )}
           </div>
           
           {/* Only show monthly amount for contracts 30+ days */}
