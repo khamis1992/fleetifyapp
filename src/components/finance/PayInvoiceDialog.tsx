@@ -65,7 +65,6 @@ export function PayInvoiceDialog({
   invoice,
   onPaymentCreated,
 }: PayInvoiceDialogProps) {
-  const [isPartialPayment, setIsPartialPayment] = useState(false);
   const createPayment = useCreatePayment();
 
   const form = useForm<PaymentFormData>({
@@ -80,6 +79,10 @@ export function PayInvoiceDialog({
   });
 
   const watchedAmount = form.watch('amount');
+  
+  // Auto-detect if it's partial payment based on amount
+  const isAmountPartial = watchedAmount > 0 && watchedAmount < invoice.balance_due;
+  const isAmountFull = watchedAmount === invoice.balance_due;
 
   const onSubmit = async (data: PaymentFormData) => {
     try {
@@ -105,12 +108,15 @@ export function PayInvoiceDialog({
 
   const handleFullPayment = () => {
     form.setValue('amount', invoice.balance_due);
-    setIsPartialPayment(false);
   };
 
   const handlePartialPayment = () => {
-    setIsPartialPayment(true);
-    form.setValue('amount', 0);
+    // Just focus on amount field, let user enter the amount
+    const amountField = document.querySelector('input[name="amount"]') as HTMLInputElement;
+    if (amountField) {
+      amountField.focus();
+      amountField.select();
+    }
   };
 
   return (
@@ -179,25 +185,46 @@ export function PayInvoiceDialog({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  type="button"
-                  variant={!isPartialPayment ? 'default' : 'outline'}
-                  onClick={handleFullPayment}
-                  className="h-12 text-base"
-                >
-                  <span>💰</span>
-                  دفع كامل
-                </Button>
-                <Button
-                  type="button"
-                  variant={isPartialPayment ? 'default' : 'outline'}
-                  onClick={handlePartialPayment}
-                  className="h-12 text-base"
-                >
-                  <span>📊</span>
-                  دفع جزئي
-                </Button>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={isAmountFull ? 'default' : 'outline'}
+                    onClick={handleFullPayment}
+                    className="h-12 text-base"
+                  >
+                    <span>💰</span>
+                    دفع كامل
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isAmountPartial ? 'default' : 'outline'}
+                    onClick={handlePartialPayment}
+                    className="h-12 text-base"
+                  >
+                    <span>📊</span>
+                    دفع جزئي
+                  </Button>
+                </div>
+                
+                {/* Auto-detection feedback */}
+                {isAmountPartial && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2 text-yellow-800">
+                      <span>⚡</span>
+                      <span className="text-sm font-medium">تم اكتشاف دفع جزئي تلقائياً</span>
+                    </div>
+                  </div>
+                )}
+                
+                {isAmountFull && watchedAmount > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <span>✅</span>
+                      <span className="text-sm font-medium">دفع كامل - سيتم إغلاق الفاتورة</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
