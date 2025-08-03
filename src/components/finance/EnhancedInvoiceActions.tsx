@@ -149,7 +149,7 @@ export function EnhancedInvoiceActions({
         });
         return null;
       })()}
-      {onPay && invoice.payment_status !== 'paid' && invoice.status !== 'draft' && invoice.status !== 'cancelled' && (
+      {onPay && (
         <Button 
           variant="default" 
           size="sm"
