@@ -145,7 +145,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
         await createDocument.mutateAsync({
           contract_id: contractId,
           document_type: 'condition_report',
-          document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('ar-SA')}`,
+          document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('en-GB')}`,
           notes: 'تقرير حالة المركبة المأخوذ عند بداية العقد',
           is_required: true,
           condition_report_id: report.id

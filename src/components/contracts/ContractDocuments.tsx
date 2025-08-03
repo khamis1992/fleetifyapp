@@ -216,37 +216,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
             {documents.map((document) => (
               <div
                 key={document.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors dir-rtl"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{document.document_name}</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {getDocumentTypeLabel(document.document_type)}
-                    </Badge>
-                    {document.is_required && (
-                      <Badge variant="destructive" className="text-xs">
-                        مطلوب
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>
-                      {new Date(document.uploaded_at).toLocaleDateString('ar-SA')}
-                    </span>
-                    {document.file_size && (
-                      <span>{formatFileSize(document.file_size)}</span>
-                    )}
-                  </div>
-                  
-                  {document.notes && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {document.notes}
-                    </p>
-                  )}
-                </div>
-
                 <div className="flex items-center gap-2">
                   {document.file_path && (
                     <Button
@@ -268,6 +239,35 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                </div>
+
+                <div className="flex-1 text-right">
+                  <div className="flex items-center justify-end gap-2 mb-1">
+                    {document.is_required && (
+                      <Badge variant="destructive" className="text-xs">
+                        مطلوب
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-xs">
+                      {getDocumentTypeLabel(document.document_type)}
+                    </Badge>
+                    <h4 className="font-medium">{document.document_name}</h4>
+                  </div>
+                  
+                  <div className="flex items-center justify-end gap-4 text-xs text-muted-foreground">
+                    {document.file_size && (
+                      <span>{formatFileSize(document.file_size)}</span>
+                    )}
+                    <span>
+                      {new Date(document.uploaded_at).toLocaleDateString('en-GB')}
+                    </span>
+                  </div>
+                  
+                  {document.notes && (
+                    <p className="text-sm text-muted-foreground mt-1 text-right">
+                      {document.notes}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

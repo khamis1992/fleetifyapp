@@ -301,7 +301,7 @@ export const useContractCreation = () => {
                     company_id: profile.company_id,
                     contract_id: contractId,
                     document_type: 'condition_report',
-                    document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('ar-SA')}`,
+                    document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('en-GB')}`,
                     notes: 'تقرير حالة المركبة المأخوذ عند بداية العقد',
                     is_required: true,
                     condition_report_id: inputContractData.vehicle_condition_report_id,
