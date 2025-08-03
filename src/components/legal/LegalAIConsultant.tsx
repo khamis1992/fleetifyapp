@@ -419,7 +419,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-start">
+      <div className="flex items-start justify-end">
         <div className="text-right">
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2 justify-end">
             المستشار القانوني
