@@ -112,6 +112,11 @@ export default function Contracts() {
     setShowDetailsDialog(true)
   }
 
+  const handleCancelContract = (contract: any) => {
+    setSelectedContract(contract)
+    setShowStatusDialog(true)
+  }
+
   const handleCreateContract = () => {
     setPreselectedCustomerId(null)
     setShowContractWizard(true)
@@ -180,6 +185,7 @@ export default function Contracts() {
             onRenewContract={handleRenewContract}
             onManageStatus={handleManageStatus}
             onViewDetails={handleViewDetails}
+            onCancelContract={handleCancelContract}
             onCreateContract={handleCreateContract}
             onClearFilters={handleClearFilters}
             hasFilters={Object.keys(filters).length > 0}
@@ -194,6 +200,7 @@ export default function Contracts() {
           onRenewContract={handleRenewContract}
           onManageStatus={handleManageStatus}
           onViewContract={handleViewDetails}
+          onCancelContract={handleCancelContract}
         />
       </Tabs>
 

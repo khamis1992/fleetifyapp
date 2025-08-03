@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings } from 'lucide-react';
+import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +10,10 @@ interface ContractCardProps {
   onRenew?: (contract: any) => void;
   onManageStatus?: (contract: any) => void;
   onViewDetails?: (contract: any) => void;
+  onCancelContract?: (contract: any) => void;
   showRenewButton?: boolean;
   showManageButton?: boolean;
+  showCancelButton?: boolean;
 }
 
 export const ContractCard: React.FC<ContractCardProps> = ({
@@ -19,8 +21,10 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   onRenew,
   onManageStatus,
   onViewDetails,
+  onCancelContract,
   showRenewButton = false,
-  showManageButton = false
+  showManageButton = false,
+  showCancelButton = false
 }) => {
   const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
 
@@ -54,6 +58,16 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               >
                 <Settings className="h-4 w-4 mr-2" />
                 إدارة
+              </Button>
+            )}
+            {showCancelButton && contract.status === 'active' && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onCancelContract?.(contract)}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                إلغاء
               </Button>
             )}
           </div>

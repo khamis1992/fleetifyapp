@@ -11,6 +11,7 @@ interface ContractsTabsContentProps {
   onRenewContract: (contract: any) => void;
   onManageStatus: (contract: any) => void;
   onViewContract: (contract: any) => void;
+  onCancelContract: (contract: any) => void;
 }
 
 export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
@@ -19,7 +20,8 @@ export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
   expiredContracts,
   onRenewContract,
   onManageStatus,
-  onViewContract
+  onViewContract,
+  onCancelContract
 }) => {
   return (
     <>
@@ -39,7 +41,9 @@ export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
               contract={contract}
               onRenew={onRenewContract}
               onViewDetails={onViewContract}
+              onCancelContract={onCancelContract}
               showRenewButton={true}
+              showCancelButton={true}
             />
           ))}
         </div>
