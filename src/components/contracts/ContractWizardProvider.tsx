@@ -267,7 +267,28 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
           }
           break
           
-        case 1: // Customer/Vehicle
+        case 1: // Dates
+          if (!data.start_date) {
+            toast.error('يرجى تحديد تاريخ البداية')
+            return false
+          }
+          if (!data.end_date) {
+            toast.error('يرجى تحديد تاريخ النهاية')
+            return false
+          }
+          if (data.rental_days <= 0) {
+            toast.error('مدة الإيجار يجب أن تكون أكبر من صفر')
+            return false
+          }
+          
+          // التحقق من أن تاريخ النهاية بعد تاريخ البداية
+          if (new Date(data.end_date) <= new Date(data.start_date)) {
+            toast.error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
+            return false
+          }
+          break
+          
+        case 2: // Customer/Vehicle
           if (!data.customer_id) {
             toast.error('يرجى اختيار العميل')
             return false
@@ -324,27 +345,6 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
           }
           break
           
-        case 2: // Dates
-          if (!data.start_date) {
-            toast.error('يرجى تحديد تاريخ البداية')
-            return false
-          }
-          if (!data.end_date) {
-            toast.error('يرجى تحديد تاريخ النهاية')
-            return false
-          }
-          if (data.rental_days <= 0) {
-            toast.error('مدة الإيجار يجب أن تكون أكبر من صفر')
-            return false
-          }
-          
-          // التحقق من أن تاريخ النهاية بعد تاريخ البداية
-          if (new Date(data.end_date) <= new Date(data.start_date)) {
-            toast.error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
-            return false
-          }
-          break
-          
         case 3: // Financial
           if (data.contract_amount <= 0) {
             toast.error('مبلغ العقد يجب أن يكون أكبر من صفر')
@@ -390,10 +390,10 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     switch (currentStep) {
       case 0: // Basic Info
         return !!(data.contract_type && data.contract_date)
-      case 1: // Customer/Vehicle
-        return !!data.customer_id
-      case 2: // Dates
+      case 1: // Dates
         return !!(data.start_date && data.end_date && data.rental_days > 0)
+      case 2: // Customer/Vehicle
+        return !!data.customer_id
       case 3: // Financial
         return data.contract_amount > 0 && (data.monthly_amount > 0 || data.rental_days < 30)
       case 4: // Review
