@@ -11,7 +11,6 @@ import {
   FileText,
   DollarSign,
   Building2,
-  Wrench,
   Calendar,
   AlertTriangle
 } from "lucide-react";
@@ -63,15 +62,6 @@ export function EnhancedInvoiceActions({
         </Badge>
       );
     }
-    
-    if (invoice.maintenance_id) {
-      badges.push(
-        <Badge key="maintenance" variant="outline" className="text-red-600 border-red-200">
-          <Wrench className="h-3 w-3 mr-1" />
-          صيانة
-        </Badge>
-      );
-    }
 
     return badges;
   };
@@ -86,11 +76,6 @@ export function EnhancedInvoiceActions({
       case 'vehicle':
         if (invoice.vehicle_id) {
           navigate(`/fleet?vehicle=${invoice.vehicle_id}`);
-        }
-        break;
-      case 'maintenance':
-        if (invoice.maintenance_id) {
-          navigate(`/fleet/maintenance?maintenance=${invoice.maintenance_id}`);
         }
         break;
       case 'asset':
@@ -200,18 +185,6 @@ export function EnhancedInvoiceActions({
             className="text-blue-600 hover:text-blue-700"
           >
             <Car className="h-3 w-3" />
-          </Button>
-        )}
-        
-        {invoice.maintenance_id && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => handleQuickNavigation('maintenance')}
-            title="عرض الصيانة المرتبطة"
-            className="text-red-600 hover:text-red-700"
-          >
-            <Wrench className="h-3 w-3" />
           </Button>
         )}
         
