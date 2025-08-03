@@ -15,6 +15,7 @@ interface ContractWizardData {
   // Customer & Vehicle
   customer_id: string
   vehicle_id: string
+  vehicle_condition_report_id?: string
   
   // Dates & Duration
   start_date: string
@@ -393,7 +394,13 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 1: // Dates
         return !!(data.start_date && data.end_date && data.rental_days > 0)
       case 2: // Customer/Vehicle
-        return !!data.customer_id
+        const hasCustomer = !!data.customer_id
+        // If a vehicle is selected and it's not "none", require vehicle condition report
+        if (data.vehicle_id && data.vehicle_id !== 'none') {
+          return hasCustomer && !!data.vehicle_condition_report_id
+        }
+        // If no vehicle selected or "none" selected, only require customer
+        return hasCustomer
       case 3: // Financial
         return data.contract_amount > 0 && (data.monthly_amount > 0 || data.rental_days < 30)
       case 4: // Review

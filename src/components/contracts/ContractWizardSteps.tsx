@@ -275,7 +275,13 @@ export const CustomerVehicleStep: React.FC = () => {
             ) : (
               <Select 
                 value={data.vehicle_id} 
-                onValueChange={(value) => updateData({ vehicle_id: value })}
+                onValueChange={(value) => {
+                  // Clear vehicle condition report when vehicle changes
+                  updateData({ 
+                    vehicle_id: value,
+                    vehicle_condition_report_id: undefined 
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر المركبة (اختياري)" />
@@ -309,6 +315,8 @@ export const CustomerVehicleStep: React.FC = () => {
               contractId={undefined} // Will be set after contract creation
               onComplete={(reportId) => {
                 console.log('Vehicle condition report created:', reportId);
+                // Save the condition report ID to enable Next button
+                updateData({ vehicle_condition_report_id: reportId });
               }}
             />
           </div>
