@@ -122,7 +122,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
       const reportData = {
         dispatch_permit_id: null, // No dispatch permit for contract creation
         vehicle_id: vehicleId,
-        inspection_type: 'pre_dispatch' as const,
+        inspection_type: (contractId ? 'contract_inspection' : 'pre_dispatch') as 'pre_dispatch' | 'post_dispatch' | 'contract_inspection',
         overall_condition: overallCondition,
         mileage_reading: mileage,
         fuel_level: fuelLevel,
@@ -134,7 +134,8 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
           };
           return acc;
         }, {} as Record<string, any>),
-        damage_items: damagePoints
+        damage_items: damagePoints,
+        contract_id: contractId || null
       };
 
       const report = await createConditionReport.mutateAsync(reportData);

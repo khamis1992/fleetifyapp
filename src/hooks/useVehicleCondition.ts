@@ -25,9 +25,9 @@ export interface VehicleConditionReport {
 }
 
 export interface CreateConditionReportData {
-  dispatch_permit_id?: string; // Optional for contract reports
+  dispatch_permit_id?: string | null; // Optional for contract reports
   vehicle_id: string;
-  inspection_type: 'pre_dispatch' | 'post_dispatch';
+  inspection_type: 'pre_dispatch' | 'post_dispatch' | 'contract_inspection';
   overall_condition: 'excellent' | 'good' | 'fair' | 'poor';
   mileage_reading?: number;
   fuel_level?: number;
@@ -35,6 +35,7 @@ export interface CreateConditionReportData {
   condition_items: Record<string, any>;
   damage_items?: any[];
   photos?: string[];
+  contract_id?: string | null; // Optional for contract reports
 }
 
 export interface UpdateConditionReportData {
@@ -90,6 +91,7 @@ export const useCreateConditionReport = () => {
         .insert([{
           ...reportData,
           dispatch_permit_id: reportData.dispatch_permit_id || null,
+          contract_id: reportData.contract_id || null,
           company_id: profile?.company_id,
           inspector_id: (await supabase.auth.getUser()).data.user?.id,
         }])

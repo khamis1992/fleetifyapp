@@ -6682,7 +6682,7 @@ export type Database = {
           created_at: string
           customer_signature: string | null
           damage_items: Json | null
-          dispatch_permit_id: string
+          dispatch_permit_id: string | null
           fuel_level: number | null
           id: string
           inspection_date: string
@@ -6704,7 +6704,7 @@ export type Database = {
           created_at?: string
           customer_signature?: string | null
           damage_items?: Json | null
-          dispatch_permit_id: string
+          dispatch_permit_id?: string | null
           fuel_level?: number | null
           id?: string
           inspection_date?: string
@@ -6726,7 +6726,7 @@ export type Database = {
           created_at?: string
           customer_signature?: string | null
           damage_items?: Json | null
-          dispatch_permit_id?: string
+          dispatch_permit_id?: string | null
           fuel_level?: number | null
           id?: string
           inspection_date?: string
