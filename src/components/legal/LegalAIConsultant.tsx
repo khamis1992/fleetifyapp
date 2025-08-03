@@ -453,12 +453,11 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
         )}
       </div>
 
-      {/* منطقة المحادثة بدون تبويبات */}
+      {/* منطقة المحادثة بحجم الصفحة الكامل */}
       <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* منطقة المحادثة */}
-          <div className="lg:col-span-3">
-            <Card className="h-[400px] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
+        {/* منطقة المحادثة */}
+        <div className="w-full">
+          <Card className="h-[calc(100vh-200px)] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
               <CardHeader className="flex-shrink-0 bg-gradient-chat-header rounded-t-lg border-b border-border/20">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-3 text-lg">
@@ -586,106 +585,6 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                 )}
               </div>
             </Card>
-          </div>
-          
-          {/* الشريط الجانبي */}
-          <div className="space-y-4">
-            {/* إحصائيات سريعة */}
-            {stats && (
-              <Card className="bg-gradient-card shadow-card border-0 animate-fade-in">
-                <CardHeader className="bg-gradient-chat-header rounded-t-lg">
-                  <CardTitle className="flex items-center gap-3 text-primary">
-                    <div className="p-1.5 rounded-full bg-primary/10">
-                      <BarChart className="w-4 h-4" />
-                    </div>
-                    إحصائيات سريعة
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 p-6">
-                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
-                    <span className="text-sm font-medium">الاستفسارات اليوم</span>
-                    <span className="font-bold text-primary text-lg">{stats.performance_overview.total_queries}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
-                    <span className="text-sm font-medium">كفاءة التكلفة</span>
-                    <span className="font-bold text-success text-lg">{stats.performance_overview.cost_efficiency}%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
-                    <span className="text-sm font-medium">رضا المستخدمين</span>
-                    <span className="font-bold text-primary text-lg">{stats.performance_overview.user_satisfaction}%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
-                    <span className="text-sm font-medium">وقت الاستجابة</span>
-                    <span className="font-bold text-muted-foreground text-lg">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* تقييم الإجابة الأخيرة */}
-            {currentMessageId && !feedbackSubmitted && (
-              <Card className="bg-gradient-card shadow-card border-0 animate-slide-up">
-                <CardHeader className="bg-gradient-chat-header rounded-t-lg">
-                  <CardTitle className="flex items-center gap-3 text-primary">
-                    <div className="p-1.5 rounded-full bg-warning/20">
-                      <Star className="w-4 h-4 text-warning" />
-                    </div>
-                    قيّم الإجابة
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    ساعدنا في تحسين جودة الخدمة
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 p-6">
-                  {/* نجوم التقييم */}
-                  <div className="flex justify-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Button
-                        key={star}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setRating(star)}
-                        className={`p-2 hover:scale-110 transition-all duration-300 ${
-                          rating >= star ? 'text-warning' : 'text-muted-foreground hover:text-warning/70'
-                        }`}
-                      >
-                        <Star className="w-6 h-6 fill-current" />
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  {/* تعليق إضافي */}
-                  <Textarea
-                    value={feedbackText}
-                    onChange={(e) => setFeedbackText(e.target.value)}
-                    placeholder="تعليق إضافي (اختياري)"
-                    className="min-h-[80px] resize-none shadow-chat-input border-border/30 bg-background/50 focus:shadow-chat-glow transition-all duration-300"
-                  />
-                  
-                  <Button 
-                    onClick={handleSubmitFeedback}
-                    disabled={rating === 0}
-                    className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 font-semibold"
-                  >
-                    <Star className="w-4 h-4 mr-2" />
-                    إرسال التقييم
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-            
-            {feedbackSubmitted && (
-              <Card className="bg-gradient-card shadow-card border-0 animate-scale-in">
-                <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-success/10 mb-4 inline-block">
-                    <CheckCircle className="w-8 h-8 text-success" />
-                  </div>
-                  <h4 className="font-semibold text-card-foreground mb-2">شكراً لك!</h4>
-                  <p className="text-sm text-success">تم تسجيل تقييمك بنجاح</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
         </div>
       </div>
     </div>
