@@ -467,6 +467,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       vehicle_id: rawData.vehicle_id === 'none' || !rawData.vehicle_id ? null : rawData.vehicle_id,
       account_id: rawData.account_id === 'none' || !rawData.account_id ? null : rawData.account_id,
       cost_center_id: rawData.cost_center_id === 'none' || !rawData.cost_center_id ? null : rawData.cost_center_id,
+      // تنظيف معرف تقرير حالة المركبة
+      vehicle_condition_report_id: rawData.vehicle_condition_report_id || undefined,
       // التأكد من أن الحقول الرقمية من النوع الصحيح
       contract_amount: Number(rawData.contract_amount) || 0,
       rental_days: Number(rawData.rental_days) || 1,

@@ -268,6 +268,58 @@ export const useContractCreation = () => {
         const warnings = typedResult.warnings || []
         const requiresManualEntry = typedResult.requires_manual_entry || false
 
+        // Link vehicle condition report to contract if exists
+        if (inputContractData.vehicle_condition_report_id && contractId) {
+          try {
+            console.log('🔗 [CONTRACT_CREATION] ربط تقرير حالة المركبة بالعقد:', {
+              report_id: inputContractData.vehicle_condition_report_id,
+              contract_id: contractId
+            })
+            
+            // Update the condition report to link it to the contract
+            const { error: updateError } = await supabase
+              .from('vehicle_condition_reports')
+              .update({ contract_id: contractId })
+              .eq('id', inputContractData.vehicle_condition_report_id)
+            
+            if (updateError) {
+              console.error('❌ [CONTRACT_CREATION] فشل في ربط تقرير حالة المركبة:', updateError)
+            } else {
+              console.log('✅ [CONTRACT_CREATION] تم ربط تقرير حالة المركبة بنجاح')
+              
+              // Create a document entry for the condition report
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('company_id')
+                .eq('user_id', user?.id)
+                .single()
+              
+              if (profile) {
+                const { error: docError } = await supabase
+                  .from('contract_documents')
+                  .insert({
+                    company_id: profile.company_id,
+                    contract_id: contractId,
+                    document_type: 'condition_report',
+                    document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('ar-SA')}`,
+                    notes: 'تقرير حالة المركبة المأخوذ عند بداية العقد',
+                    is_required: true,
+                    condition_report_id: inputContractData.vehicle_condition_report_id,
+                    uploaded_by: user?.id
+                  })
+                
+                if (docError) {
+                  console.error('❌ [CONTRACT_CREATION] فشل في إنشاء مستند تقرير الحالة:', docError)
+                } else {
+                  console.log('✅ [CONTRACT_CREATION] تم إنشاء مستند تقرير الحالة بنجاح')
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ [CONTRACT_CREATION] خطأ في ربط تقرير حالة المركبة:', error)
+          }
+        }
+
         // معالجة حالة القيد المحاسبي
         if (journalEntryId) {
           // تم إنشاء القيد المحاسبي بنجاح
