@@ -233,8 +233,8 @@ export default function Quotations() {
       if (error) throw error;
 
       const approvalToken = data;
-      const expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      const approvalUrl = `${window.location.origin}/approval/${approvalToken}`;
+      const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const approvalUrl = `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval?token=${approvalToken}`;
 
       // Update quotation with approval data
       const { error: updateError } = await supabase
@@ -247,15 +247,6 @@ export default function Quotations() {
         .eq('id', quotationId);
 
       if (updateError) throw updateError;
-
-      // Log the sending action
-      await supabase
-        .from('quotation_approval_log')
-        .insert({
-          quotation_id: quotationId,
-          company_id: user?.profile?.company_id,
-          action: 'sent'
-        });
 
       return approvalUrl;
     } catch (error) {

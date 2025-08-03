@@ -6,45 +6,50 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ApprovalRequest {
+interface QuotationApprovalRequest {
   token: string;
   action: 'approve' | 'reject';
   comments?: string;
+  customer_signature?: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
       // Get quotation details by token
       const url = new URL(req.url);
       const token = url.searchParams.get('token');
-
+      
       if (!token) {
         return new Response(
-          JSON.stringify({ error: 'Approval token is required' }),
-          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          JSON.stringify({ error: 'Missing approval token' }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      const { data: quotation, error } = await supabase
+      // Get quotation by approval token
+      const { data: quotation, error: quotationError } = await supabase
         .from('quotations')
         .select(`
           *,
           customers (
             id,
-            first_name_ar,
-            last_name_ar,
-            company_name_ar,
+            first_name,
+            last_name,
+            company_name,
             customer_type,
             phone,
             email
@@ -57,63 +62,79 @@ const handler = async (req: Request): Promise<Response> => {
             plate_number
           ),
           companies (
+            id,
             name,
             name_ar,
+            logo_url,
             phone,
             email,
-            logo_url
+            address
           )
         `)
         .eq('approval_token', token)
         .single();
 
-      if (error || !quotation) {
+      if (quotationError || !quotation) {
+        console.error('Quotation fetch error:', quotationError);
         return new Response(
           JSON.stringify({ error: 'Invalid or expired approval token' }),
-          { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          { 
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      // Check if token has expired
+      // Check if token is expired
       if (quotation.approval_expires_at && new Date(quotation.approval_expires_at) < new Date()) {
         return new Response(
-          JSON.stringify({ error: 'Approval link has expired' }),
-          { status: 410, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          JSON.stringify({ error: 'Approval token has expired' }),
+          { 
+            status: 410,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      // Check if already approved/rejected
-      if (quotation.status === 'accepted' || quotation.status === 'rejected') {
+      // Check if already processed
+      if (quotation.approved_by_client !== null) {
         return new Response(
           JSON.stringify({ 
-            quotation,
-            alreadyProcessed: true,
-            message: `This quotation has already been ${quotation.status}` 
+            error: 'This quotation has already been processed',
+            quotation 
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          { 
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
       return new Response(
         JSON.stringify({ quotation }),
-        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
       );
     }
 
     if (req.method === 'POST') {
       // Process approval/rejection
-      const { token, action, comments }: ApprovalRequest = await req.json();
-      const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-      const userAgent = req.headers.get('user-agent') || 'unknown';
+      const requestData: QuotationApprovalRequest = await req.json();
+      const { token, action, comments, customer_signature } = requestData;
 
       if (!token || !action) {
         return new Response(
-          JSON.stringify({ error: 'Token and action are required' }),
-          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          JSON.stringify({ error: 'Missing required fields' }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      // Get quotation
+      // Get quotation by approval token
       const { data: quotation, error: quotationError } = await supabase
         .from('quotations')
         .select('*')
@@ -123,111 +144,96 @@ const handler = async (req: Request): Promise<Response> => {
       if (quotationError || !quotation) {
         return new Response(
           JSON.stringify({ error: 'Invalid approval token' }),
-          { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          { 
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      // Check if token has expired
+      // Check if token is expired
       if (quotation.approval_expires_at && new Date(quotation.approval_expires_at) < new Date()) {
         return new Response(
-          JSON.stringify({ error: 'Approval link has expired' }),
-          { status: 410, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          JSON.stringify({ error: 'Approval token has expired' }),
+          { 
+            status: 410,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
       // Check if already processed
-      if (quotation.status === 'accepted' || quotation.status === 'rejected') {
+      if (quotation.approved_by_client !== null) {
         return new Response(
-          JSON.stringify({ error: `Quotation already ${quotation.status}` }),
-          { status: 409, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          JSON.stringify({ error: 'This quotation has already been processed' }),
+          { 
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      // Update quotation status
-      const newStatus = action === 'approve' ? 'accepted' : 'rejected';
-      const { error: updateError } = await supabase
+      // Update quotation with approval/rejection
+      const updateData = {
+        approved_by_client: action === 'approve',
+        approved_at: new Date().toISOString(),
+        client_comments: comments || null,
+        status: action === 'approve' ? 'approved' : 'rejected'
+      };
+
+      const { data: updatedQuotation, error: updateError } = await supabase
         .from('quotations')
-        .update({
-          status: newStatus,
-          approved_by_client: action === 'approve',
-          approved_at: action === 'approve' ? new Date().toISOString() : null,
-          client_comments: comments || null
-        })
-        .eq('id', quotation.id);
+        .update(updateData)
+        .eq('id', quotation.id)
+        .select()
+        .single();
 
       if (updateError) {
-        console.error('Error updating quotation:', updateError);
+        console.error('Update error:', updateError);
         return new Response(
-          JSON.stringify({ error: 'Failed to process approval' }),
-          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          JSON.stringify({ error: 'Failed to update quotation' }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
 
-      // Log the approval action
-      await supabase
-        .from('quotation_approval_log')
-        .insert({
-          quotation_id: quotation.id,
-          company_id: quotation.company_id,
-          action: action === 'approve' ? 'approved' : 'rejected',
-          client_ip: clientIP,
-          client_user_agent: userAgent,
-          comments: comments || null
-        });
-
-      // Create notification for company users
-      const notificationTitle = action === 'approve' 
-        ? 'Quotation Approved by Client' 
-        : 'Quotation Rejected by Client';
-      
-      const notificationMessage = action === 'approve'
-        ? `Quotation #${quotation.quotation_number} has been approved by the client.`
-        : `Quotation #${quotation.quotation_number} has been rejected by the client.`;
-
-      // Get company users to notify
-      const { data: companyUsers } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('company_id', quotation.company_id);
-
-      if (companyUsers) {
-        const notifications = companyUsers.map(user => ({
-          company_id: quotation.company_id,
-          user_id: user.user_id,
-          title: notificationTitle,
-          message: notificationMessage,
-          notification_type: action === 'approve' ? 'success' : 'info',
-          related_id: quotation.id,
-          related_type: 'quotation'
-        }));
-
-        await supabase
-          .from('user_notifications')
-          .insert(notifications);
+      // If approved, create a contract (optional, based on business logic)
+      if (action === 'approve') {
+        // Here you could automatically create a contract or notify the company
+        console.log(`Quotation ${quotation.quotation_number} approved by client`);
       }
 
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          message: `Quotation ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
-          action: newStatus
+          success: true,
+          message: action === 'approve' ? 'Quotation approved successfully' : 'Quotation rejected',
+          quotation: updatedQuotation
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
       );
     }
 
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      { 
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
 
   } catch (error) {
-    console.error('Error in quotation-approval function:', error);
+    console.error('Function error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   }
-};
-
-serve(handler);
+});
