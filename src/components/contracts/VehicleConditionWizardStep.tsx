@@ -120,7 +120,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
       }
 
       const reportData = {
-        dispatch_permit_id: 'CONTRACT_' + (contractId || 'TEMP_' + Date.now()),
+        dispatch_permit_id: null, // No dispatch permit for contract creation
         vehicle_id: vehicleId,
         inspection_type: 'pre_dispatch' as const,
         overall_condition: overallCondition,

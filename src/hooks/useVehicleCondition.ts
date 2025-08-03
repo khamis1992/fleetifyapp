@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export interface VehicleConditionReport {
   id: string;
   company_id: string;
-  dispatch_permit_id: string;
+  dispatch_permit_id?: string; // Optional for contract reports
   vehicle_id: string;
   inspector_id: string;
   inspection_type: 'pre_dispatch' | 'post_dispatch';
@@ -25,7 +25,7 @@ export interface VehicleConditionReport {
 }
 
 export interface CreateConditionReportData {
-  dispatch_permit_id: string;
+  dispatch_permit_id?: string; // Optional for contract reports
   vehicle_id: string;
   inspection_type: 'pre_dispatch' | 'post_dispatch';
   overall_condition: 'excellent' | 'good' | 'fair' | 'poor';
@@ -89,6 +89,7 @@ export const useCreateConditionReport = () => {
         .from('vehicle_condition_reports')
         .insert([{
           ...reportData,
+          dispatch_permit_id: reportData.dispatch_permit_id || null,
           company_id: profile?.company_id,
           inspector_id: (await supabase.auth.getUser()).data.user?.id,
         }])
