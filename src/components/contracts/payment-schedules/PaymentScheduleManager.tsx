@@ -122,18 +122,22 @@ export const PaymentScheduleManager = ({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>جدول الدفع</CardTitle>
-            {schedules.length === 0 && (
-              <CreatePaymentScheduleDialog contractId={contractId} />
-            )}
+            <CreatePaymentScheduleDialog contractId={contractId} />
           </div>
         </CardHeader>
         <CardContent>
           {schedules.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                لم يتم إنشاء جدول دفع لهذا العقد بعد
-              </p>
-              <CreatePaymentScheduleDialog contractId={contractId} />
+              <div className="mb-6">
+                <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-lg font-medium text-muted-foreground mb-2">
+                  لا يوجد جدول دفع
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  أنشئ جدول دفع لتنظيم الأقساط والمواعيد المالية لهذا العقد
+                </p>
+                <CreatePaymentScheduleDialog contractId={contractId} />
+              </div>
             </div>
           ) : (
             <Tabs defaultValue="all">

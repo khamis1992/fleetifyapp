@@ -117,6 +117,18 @@ export default function Contracts() {
     setShowStatusDialog(true)
   }
 
+  const handleManagePayments = (contract: any) => {
+    setSelectedContract(contract)
+    setShowDetailsDialog(true)
+    // Set a flag to auto-open payment schedules tab when dialog opens
+    setTimeout(() => {
+      const paymentTab = document.querySelector('[value="schedules"]')
+      if (paymentTab) {
+        (paymentTab as HTMLElement).click()
+      }
+    }, 100)
+  }
+
   const handleCreateContract = () => {
     setPreselectedCustomerId(null)
     setShowContractWizard(true)
@@ -186,6 +198,7 @@ export default function Contracts() {
             onManageStatus={handleManageStatus}
             onViewDetails={handleViewDetails}
             onCancelContract={handleCancelContract}
+            onManagePayments={handleManagePayments}
             onCreateContract={handleCreateContract}
             onClearFilters={handleClearFilters}
             hasFilters={Object.keys(filters).length > 0}
@@ -201,6 +214,7 @@ export default function Contracts() {
           onManageStatus={handleManageStatus}
           onViewContract={handleViewDetails}
           onCancelContract={handleCancelContract}
+          onManagePayments={handleManagePayments}
         />
       </Tabs>
 

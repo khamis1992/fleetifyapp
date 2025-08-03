@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle } from 'lucide-react';
+import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,11 @@ interface ContractCardProps {
   onManageStatus?: (contract: any) => void;
   onViewDetails?: (contract: any) => void;
   onCancelContract?: (contract: any) => void;
+  onManagePayments?: (contract: any) => void;
   showRenewButton?: boolean;
   showManageButton?: boolean;
   showCancelButton?: boolean;
+  showPaymentButton?: boolean;
 }
 
 export const ContractCard: React.FC<ContractCardProps> = ({
@@ -23,9 +25,11 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   onManageStatus,
   onViewDetails,
   onCancelContract,
+  onManagePayments,
   showRenewButton = false,
   showManageButton = false,
-  showCancelButton = false
+  showCancelButton = false,
+  showPaymentButton = true
 }) => {
   const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
 
@@ -59,6 +63,16 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               >
                 <Settings className="h-4 w-4 mr-2" />
                 إدارة
+              </Button>
+            )}
+            {showPaymentButton && (contract.status === 'active' || contract.status === 'draft') && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => onManagePayments?.(contract)}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                المدفوعات
               </Button>
             )}
             {showCancelButton && contract.status === 'active' && (
