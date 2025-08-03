@@ -14,7 +14,7 @@ export const useContractsData = (filters: any = {}) => {
       
       console.log('🔍 [CONTRACTS_QUERY] Fetching contracts for company:', user.profile.company_id)
       
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from('contracts')
         .select(`
           *,
@@ -24,13 +24,6 @@ export const useContractsData = (filters: any = {}) => {
             last_name_ar,
             company_name_ar,
             customer_type
-          ),
-          vehicles(
-            id,
-            plate_number,
-            model,
-            make,
-            year
           )
         `)
         .eq('company_id', user.profile.company_id)

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus } from 'lucide-react';
 import { CreateContractVehicleReturnData } from '@/hooks/useContractVehicleReturn';
+import { useContractVehicle } from '@/hooks/useContractVehicle';
 
 interface Damage {
   type: string;
@@ -29,6 +30,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
   onCancel,
   isSubmitting = false
 }) => {
+  const { data: vehicleData } = useContractVehicle(contract.vehicle_id);
   const [formData, setFormData] = useState<CreateContractVehicleReturnData>({
     contract_id: contract.id,
     vehicle_id: contract.vehicle_id,
@@ -107,14 +109,14 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             <div>
               <Label>المركبة</Label>
               <Input value={
-                contract.vehicles ? 
-                  `${contract.vehicles.make || ''} ${contract.vehicles.model || ''} (${contract.vehicles.year || ''})`.trim() || 'غير محدد'
+                vehicleData ? 
+                  `${vehicleData.make || ''} ${vehicleData.model || ''} (${vehicleData.year || ''})`.trim() || 'غير محدد'
                   : 'غير محدد'
               } disabled />
             </div>
             <div>
               <Label>رقم اللوحة</Label>
-              <Input value={contract.vehicles?.plate_number || 'غير محدد'} disabled />
+              <Input value={vehicleData?.plate_number || 'غير محدد'} disabled />
             </div>
           </div>
         </CardContent>
