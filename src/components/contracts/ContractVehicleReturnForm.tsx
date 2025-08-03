@@ -31,7 +31,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 }) => {
   const [formData, setFormData] = useState<CreateContractVehicleReturnData>({
     contract_id: contract.id,
-    vehicle_id: contract.vehicle_id,
+    vehicle_id: contract.vehicle_id || contract.vehicle?.id || '',
     return_date: new Date().toISOString().split('T')[0],
     vehicle_condition: 'good',
     fuel_level: 100,
@@ -50,6 +50,13 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التحقق من وجود vehicle_id
+    if (!formData.vehicle_id) {
+      alert('خطأ: لا يمكن العثور على معرف المركبة. يرجى التأكد من أن العقد مرتبط بمركبة.');
+      return;
+    }
+    
     onSubmit({
       ...formData,
       damages: damages
@@ -96,17 +103,25 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             </div>
             <div>
               <Label>العميل</Label>
-              <Input value={contract.customer?.first_name + ' ' + contract.customer?.last_name} disabled />
+              <Input value={
+                contract.customer?.customer_type === 'individual' 
+                  ? `${contract.customer?.first_name || contract.customer?.first_name_ar || ''} ${contract.customer?.last_name || contract.customer?.last_name_ar || ''}`.trim()
+                  : contract.customer?.company_name || contract.customer?.company_name_ar || 'غير محدد'
+              } disabled />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>المركبة</Label>
-              <Input value={`${contract.vehicle?.make} ${contract.vehicle?.model} (${contract.vehicle?.year})`} disabled />
+              <Input value={
+                contract.vehicle 
+                  ? `${contract.vehicle.make || ''} ${contract.vehicle.model || ''} (${contract.vehicle.year || ''})`
+                  : 'غير محدد'
+              } disabled />
             </div>
             <div>
               <Label>رقم اللوحة</Label>
-              <Input value={contract.vehicle?.license_plate} disabled />
+              <Input value={contract.vehicle?.license_plate || 'غير محدد'} disabled />
             </div>
           </div>
         </CardContent>

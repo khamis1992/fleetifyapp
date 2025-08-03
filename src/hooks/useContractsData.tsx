@@ -20,10 +20,25 @@ export const useContractsData = (filters: any = {}) => {
           *,
           customers(
             id,
+            first_name,
+            last_name,
             first_name_ar,
             last_name_ar,
+            company_name,
             company_name_ar,
-            customer_type
+            customer_type,
+            phone,
+            email
+          ),
+          vehicles(
+            id,
+            make,
+            model,
+            year,
+            license_plate,
+            vin,
+            color,
+            status
           )
         `)
         .eq('company_id', user.profile.company_id)

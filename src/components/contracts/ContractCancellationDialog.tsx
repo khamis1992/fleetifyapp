@@ -193,6 +193,19 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
         {/* Step Content */}
         {currentStep === 'vehicle-return' && !vehicleReturn && (
           <div>
+            {/* Check for missing data */}
+            {(!contract?.customer || !contract?.vehicle) && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  تحذير: بعض البيانات المطلوبة مفقودة من العقد:
+                  {!contract?.customer && <div>• بيانات العميل مفقودة</div>}
+                  {!contract?.vehicle && <div>• بيانات المركبة مفقودة</div>}
+                  يرجى التأكد من اكتمال بيانات العقد قبل المتابعة.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <Alert className="mb-6">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
