@@ -377,6 +377,24 @@ All colors MUST be HSL.
     100% { transform: scale(1) translateY(0); opacity: 1; }
   }
   
+  @keyframes gravity-pull {
+    0% { transform: translateX(0) translateY(0) scale(1); }
+    20% { transform: translateX(15px) translateY(-10px) scale(0.8); }
+    40% { transform: translateX(25px) translateY(15px) scale(0.6); }
+    60% { transform: translateX(20px) translateY(25px) scale(0.7); }
+    80% { transform: translateX(5px) translateY(10px) scale(0.9); }
+    100% { transform: translateX(0) translateY(0) scale(1); }
+  }
+  
+  @keyframes gravity-pull-reverse {
+    0% { transform: translateX(0) translateY(0) scale(1); }
+    20% { transform: translateX(-15px) translateY(-10px) scale(0.8); }
+    40% { transform: translateX(-25px) translateY(15px) scale(0.6); }
+    60% { transform: translateX(-20px) translateY(25px) scale(0.7); }
+    80% { transform: translateX(-5px) translateY(10px) scale(0.9); }
+    100% { transform: translateX(0) translateY(0) scale(1); }
+  }
+  
   /* RTL support and Arabic text improvements */
   [dir="rtl"] {
     text-align: right;
