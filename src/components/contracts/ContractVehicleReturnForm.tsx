@@ -121,7 +121,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             </div>
             <div>
               <Label>رقم اللوحة</Label>
-              <Input value={contract.vehicle?.license_plate || 'غير محدد'} disabled />
+              <Input value={contract.vehicle?.plate_number || 'غير محدد'} disabled />
             </div>
           </div>
         </CardContent>

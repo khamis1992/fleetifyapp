@@ -35,7 +35,7 @@ export const useContractsData = (filters: any = {}) => {
             make,
             model,
             year,
-            license_plate,
+            plate_number,
             vin,
             color,
             status
