@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle } from 'lucide-react';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
+import { DocumentSavingProgress } from './DocumentSavingProgress';
+import { useContractDocumentSaving } from '@/hooks/useContractDocumentSaving';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -30,7 +32,10 @@ interface DocumentFormData {
 const documentTypes = [
   { value: 'general', label: 'عام' },
   { value: 'contract', label: 'عقد' },
+  { value: 'signed_contract', label: 'عقد موقع' },
+  { value: 'draft_contract', label: 'مسودة عقد' },
   { value: 'condition_report', label: 'تقرير حالة المركبة' },
+  { value: 'signature', label: 'توقيع' },
   { value: 'insurance', label: 'تأمين' },
   { value: 'identity', label: 'هوية' },
   { value: 'license', label: 'رخصة' },
@@ -46,6 +51,9 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
   const downloadDocument = useDownloadContractDocument();
+  
+  // Enhanced document saving with progress tracking
+  const { savingSteps, isProcessing: isSavingDocuments } = useContractDocumentSaving();
 
   // Hook لجلب بيانات تقرير حالة المركبة
   const { data: conditionReport } = useQuery({
@@ -176,13 +184,23 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            مستندات العقد
-          </CardTitle>
+    <div className="space-y-4">
+      {/* Document Saving Progress */}
+      {(savingSteps.length > 0 || isSavingDocuments) && (
+        <DocumentSavingProgress 
+          steps={savingSteps} 
+          isProcessing={isSavingDocuments}
+        />
+      )}
+      
+      {/* Documents List */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              مستندات العقد
+            </CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -571,6 +589,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           )}
         </DialogContent>
       </Dialog>
-    </Card>
+      </Card>
+    </div>
   );
 }

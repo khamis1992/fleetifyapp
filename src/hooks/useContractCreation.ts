@@ -323,49 +323,47 @@ export const useContractCreation = () => {
           }
         }
 
-        // Generate and save contract PDF if signatures are present
-        if (inputContractData.customer_signature && inputContractData.company_signature) {
-          try {
-            console.log('📄 [CONTRACT_CREATION] Generating contract PDF...')
-            
-            const pdfData = {
-              contract_number: typedResult.contract_number || 'N/A',
-              contract_type: inputContractData.contract_type,
-              customer_name: inputContractData.customer_name || 'العميل',
-              start_date: inputContractData.start_date,
-              end_date: inputContractData.end_date,
-              contract_amount: inputContractData.contract_amount,
-              monthly_amount: inputContractData.monthly_amount,
-              terms: inputContractData.terms,
-              customer_signature: inputContractData.customer_signature,
-              company_signature: inputContractData.company_signature,
-              company_name: 'الشركة',
-              created_date: new Date().toLocaleDateString('ar-SA')
-            }
-            
-            const pdfBlob = await generateContractPdf(pdfData)
-            
-            // Convert blob to file
-            const pdfFile = new File([pdfBlob], `contract-${typedResult.contract_number}.pdf`, {
-              type: 'application/pdf'
-            })
-            
-            // Save PDF to contract documents
-            await createDocument({
-              contract_id: contractId,
-              document_type: 'signed_contract',
-              document_name: `عقد موقع رقم ${typedResult.contract_number}`,
-              file: pdfFile,
-              notes: 'نسخة موقعة من العقد تم إنشاؤها تلقائياً',
-              is_required: true
-            })
-            
-            console.log('✅ [CONTRACT_CREATION] Contract PDF saved successfully')
-            
-          } catch (error) {
-            console.error('❌ [CONTRACT_CREATION] Error generating PDF:', error)
-            // Don't fail the entire process for PDF generation errors
+        // Enhanced document saving with improved error handling
+        try {
+          console.log('📄 [CONTRACT_CREATION] Initiating enhanced document saving...')
+          
+          // Import the enhanced document saving hook
+          const { saveDocuments } = await import('@/hooks/useContractDocumentSaving').then(m => m.useContractDocumentSaving())
+          
+          const documentData = {
+            contract_id: contractId,
+            contract_number: typedResult.contract_number || contractId,
+            contract_type: inputContractData.contract_type,
+            customer_name: inputContractData.customer_name || 'العميل',
+            vehicle_info: inputContractData.vehicle_info,
+            start_date: inputContractData.start_date,
+            end_date: inputContractData.end_date,
+            contract_amount: inputContractData.contract_amount,
+            monthly_amount: inputContractData.monthly_amount,
+            terms: inputContractData.terms,
+            customer_signature: inputContractData.customer_signature,
+            company_signature: inputContractData.company_signature,
+            condition_report_id: inputContractData.vehicle_condition_report_id
           }
+          
+          // Use enhanced document saving with progress tracking
+          const savingResult = await saveDocuments(documentData)
+          
+          console.log('✅ [CONTRACT_CREATION] Enhanced document saving completed:', savingResult)
+          
+          // Log any warnings or errors without failing the contract creation
+          if (savingResult.warnings.length > 0) {
+            console.warn('⚠️ [CONTRACT_CREATION] Document saving warnings:', savingResult.warnings)
+          }
+          
+          if (savingResult.errors.length > 0) {
+            console.error('❌ [CONTRACT_CREATION] Document saving errors (non-fatal):', savingResult.errors)
+          }
+          
+        } catch (error) {
+          console.error('❌ [CONTRACT_CREATION] Enhanced document saving failed (non-fatal):', error)
+          // Don't fail the entire contract creation process for document saving errors
+          // This is part of the improved error handling - contract creation succeeds even if document saving fails
         }
 
         // معالجة حالة القيد المحاسبي
