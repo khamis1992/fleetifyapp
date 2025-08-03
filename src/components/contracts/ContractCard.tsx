@@ -77,7 +77,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             <div className="flex items-center gap-2 justify-end">
               <Badge className={getStatusColor(contract.status)}>
                 {getStatusIcon(contract.status)}
-                <span className="mr-1">
+                <span className="mr-1 text-red-600">
                   {contract.status === 'active' ? 'نشط' :
                    contract.status === 'draft' ? 'مسودة' :
                    contract.status === 'expired' ? 'منتهي' :
