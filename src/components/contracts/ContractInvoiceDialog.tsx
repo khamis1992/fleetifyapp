@@ -152,7 +152,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
       const invoiceNumber = generateInvoiceNumber();
       
       // Create the invoice
-      const { data: invoice, error: invoiceError } = await supabase
+      const { data: invoiceResponse, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
           company_id: user?.profile?.company_id,
@@ -174,10 +174,18 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
           payment_status: 'unpaid',
           created_by: user?.id
         }])
-        .select()
-        .single();
+        .select();
 
-      if (invoiceError) throw invoiceError;
+      if (invoiceError) {
+        console.error('Invoice creation error:', invoiceError);
+        throw invoiceError;
+      }
+
+      if (!invoiceResponse || invoiceResponse.length === 0) {
+        throw new Error('Failed to create invoice - no data returned');
+      }
+
+      const invoice = invoiceResponse[0];
 
       // Create invoice items
       const itemsToInsert = invoiceData.items.map((item, index) => ({
