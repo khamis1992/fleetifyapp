@@ -12,6 +12,7 @@ import { useCreateConditionReport, useUpdateConditionReport } from '@/hooks/useV
 import { useCreateContractDocument } from '@/hooks/useContractDocuments';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 import { toast } from 'sonner';
 
 interface VehicleConditionWizardStepProps {
@@ -292,6 +293,12 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
                 </div>
               </CardContent>
             </Card>
+
+            {/* Vehicle Damage Diagram */}
+            <VehicleConditionDiagram
+              damagePoints={damagePoints}
+              onDamagePointsChange={setDamagePoints}
+            />
 
             {/* General Notes */}
             <div>
