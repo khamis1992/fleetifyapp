@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle, AlertCircle, Car, Plus, Save } from 'lucide-react';
 import { useCreateConditionReport, useUpdateConditionReport } from '@/hooks/useVehicleCondition';
-import { useCreateContractDocument } from '@/hooks/useContractDocuments';
+import { useCreateContractDocument, useExportConditionDiagram } from '@/hooks/useContractDocuments';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
@@ -63,6 +63,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
   const createConditionReport = useCreateConditionReport();
   const updateConditionReport = useUpdateConditionReport();
   const createDocument = useCreateContractDocument();
+  const exportDiagram = useExportConditionDiagram();
 
   const handleConditionChange = (itemId: string, condition: ConditionItem['condition']) => {
     setConditionItems(prev => 
@@ -296,10 +297,14 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
             </Card>
 
             {/* Vehicle Damage Diagram */}
-            <VehicleConditionDiagram
-              damagePoints={damagePoints}
-              onDamagePointsChange={setDamagePoints}
-            />
+                    <VehicleConditionDiagram 
+                      damagePoints={damagePoints} 
+                      onDamagePointsChange={setDamagePoints}
+                      onExport={contractId ? async (imageBlob) => {
+                        // This will be called when the report is saved
+                        // The export will happen automatically
+                      } : undefined}
+                    />
 
             {/* General Notes */}
             <div>

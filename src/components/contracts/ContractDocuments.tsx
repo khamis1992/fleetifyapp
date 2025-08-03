@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle } from 'lucide-react';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
+import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -507,6 +508,27 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <h4 className="font-semibold mb-2">ملاحظات</h4>
                   <p className="text-sm text-muted-foreground">{conditionReport.notes}</p>
+                </div>
+              )}
+
+              {/* مخطط حالة المركبة */}
+              {conditionReport.damage_items && Array.isArray(conditionReport.damage_items) && conditionReport.damage_items.length > 0 && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Car className="h-4 w-4" />
+                    مخطط حالة المركبة
+                  </h4>
+                  <VehicleConditionDiagram
+                    damagePoints={conditionReport.damage_items.map((damage: any, index: number) => ({
+                      id: `damage_${index}`,
+                      x: damage.x || 50,
+                      y: damage.y || 50,
+                      severity: damage.severity === 'high' ? 'severe' : 
+                               damage.severity === 'medium' ? 'moderate' : 'minor',
+                      description: damage.description || damage.location || 'ضرر غير محدد'
+                    }))}
+                    readOnly={true}
+                  />
                 </div>
               )}
 

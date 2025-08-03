@@ -52,6 +52,71 @@ export function useContractDocuments(contractId?: string) {
   });
 }
 
+export function useExportConditionDiagram() {
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ 
+      contractId, 
+      conditionReportId, 
+      imageBlob 
+    }: { 
+      contractId: string; 
+      conditionReportId: string; 
+      imageBlob: Blob; 
+    }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      // Upload image to storage
+      const fileName = `${contractId}/${conditionReportId}/vehicle-diagram-${Date.now()}.png`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vehicle-condition-diagrams')
+        .upload(fileName, imageBlob, {
+          contentType: 'image/png',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get user's company
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      // Create document record
+      const { data: document, error } = await supabase
+        .from('contract_documents')
+        .insert({
+          company_id: profile.company_id,
+          contract_id: contractId,
+          document_type: 'condition_diagram',
+          document_name: 'Vehicle Condition Diagram',
+          file_path: fileName,
+          file_size: imageBlob.size,
+          mime_type: 'image/png',
+          uploaded_by: user.id,
+          notes: 'Auto-generated vehicle condition diagram',
+          is_required: false,
+          condition_report_id: conditionReportId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return document;
+    },
+    onError: (error) => {
+      console.error('Error exporting diagram:', error);
+      toast.error('فشل في تصدير المخطط');
+    }
+  });
+}
+
 export function useCreateContractDocument() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

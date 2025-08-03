@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, AlertTriangle } from 'lucide-react';
+import { X, Plus, AlertTriangle, Download } from 'lucide-react';
 
 interface DamagePoint {
   id: string;
@@ -17,18 +17,26 @@ interface DamagePoint {
 
 interface VehicleConditionDiagramProps {
   damagePoints: DamagePoint[];
-  onDamagePointsChange: (points: DamagePoint[]) => void;
+  onDamagePointsChange?: (points: DamagePoint[]) => void;
+  readOnly?: boolean;
+  onExport?: (imageBlob: Blob) => Promise<void>;
 }
 
 export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = ({
   damagePoints,
-  onDamagePointsChange
+  onDamagePointsChange,
+  readOnly = false,
+  onExport
 }) => {
   const [showDialog, setShowDialog] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState<DamagePoint | null>(null);
   const [pendingPoint, setPendingPoint] = useState<{x: number, y: number} | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const diagramRef = useRef<HTMLDivElement>(null);
 
   const handleDiagramClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (readOnly) return;
+    
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
@@ -44,7 +52,78 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
     setShowDialog(true);
   };
 
+  const exportDiagram = useCallback(async () => {
+    if (!diagramRef.current || !onExport) return;
+    
+    setIsExporting(true);
+    try {
+      // Create a canvas to render the diagram
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const rect = diagramRef.current.getBoundingClientRect();
+      canvas.width = 800;
+      canvas.height = 480;
+
+      // Load and draw the vehicle image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = async () => {
+        // Draw the vehicle image
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Draw damage points
+        damagePoints.forEach((point) => {
+          const x = (point.x / 100) * canvas.width;
+          const y = (point.y / 100) * canvas.height;
+          
+          // Draw damage point circle
+          ctx.beginPath();
+          ctx.arc(x, y, 8, 0, 2 * Math.PI);
+          
+          // Set color based on severity
+          switch (point.severity) {
+            case 'minor':
+              ctx.fillStyle = '#eab308';
+              break;
+            case 'moderate':
+              ctx.fillStyle = '#f97316';
+              break;
+            case 'severe':
+              ctx.fillStyle = '#ef4444';
+              break;
+            default:
+              ctx.fillStyle = '#6b7280';
+          }
+          
+          ctx.fill();
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+
+        // Convert to blob and call onExport
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            await onExport(blob);
+          }
+          setIsExporting(false);
+        }, 'image/png');
+      };
+      
+      img.src = '/lovable-uploads/c3d3679c-5f97-4d37-a138-1c52edad03f8.png';
+    } catch (error) {
+      console.error('Error exporting diagram:', error);
+      setIsExporting(false);
+    }
+  }, [damagePoints, onExport]);
+
   const handleSaveDamagePoint = (pointData: Omit<DamagePoint, 'id'>) => {
+    if (!onDamagePointsChange) return;
+    
     if (selectedPoint?.id) {
       // Edit existing point
       const updatedPoints = damagePoints.map(point =>
@@ -66,6 +145,8 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
   };
 
   const handleDeleteDamagePoint = (pointId: string) => {
+    if (!onDamagePointsChange) return;
+    
     const updatedPoints = damagePoints.filter(point => point.id !== pointId);
     onDamagePointsChange(updatedPoints);
     setShowDialog(false);
@@ -92,10 +173,26 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
 
   return (
     <div className="space-y-4">
+      {/* Export Button */}
+      {onExport && (
+        <div className="flex justify-end">
+          <Button
+            onClick={exportDiagram}
+            disabled={isExporting}
+            variant="outline"
+            size="sm"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isExporting ? 'جاري التصدير...' : 'تصدير المخطط'}
+          </Button>
+        </div>
+      )}
+
       {/* Vehicle Diagram */}
       <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
         <div
-          className="relative w-full cursor-crosshair bg-white"
+          ref={diagramRef}
+          className={`relative w-full bg-white ${readOnly ? 'cursor-default' : 'cursor-crosshair'}`}
           style={{ paddingBottom: '60%' }} // Aspect ratio for the diagram
           onClick={handleDiagramClick}
         >
@@ -121,8 +218,10 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedPoint(point);
-                setShowDialog(true);
+                if (!readOnly) {
+                  setSelectedPoint(point);
+                  setShowDialog(true);
+                }
               }}
               title={point.description}
             >
@@ -131,11 +230,21 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
           ))}
           
           {/* Instructions Overlay */}
-          {damagePoints.length === 0 && (
+          {damagePoints.length === 0 && !readOnly && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-10">
               <div className="text-center p-4 bg-white rounded-lg shadow-lg">
                 <Plus className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                 <p className="text-sm text-gray-600">اضغط على أي مكان في المخطط لإضافة نقطة ضرر</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Read-only overlay */}
+          {damagePoints.length === 0 && readOnly && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-5">
+              <div className="text-center p-4 bg-white rounded-lg shadow-lg">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm text-gray-600">لا توجد أضرار مسجلة على هذه المركبة</p>
               </div>
             </div>
           )}
