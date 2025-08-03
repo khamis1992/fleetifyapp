@@ -94,11 +94,11 @@ export function EnhancedVehicleDetailsDialog({
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger value="technical">تقنية</TabsTrigger>
             <TabsTrigger value="financial">مالية</TabsTrigger>
             <TabsTrigger value="pricing">التسعير</TabsTrigger>
             <TabsTrigger value="documents">الوثائق</TabsTrigger>
-            <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -109,27 +109,27 @@ export function EnhancedVehicleDetailsDialog({
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="font-medium">{vehicle.make}</span>
                     <span className="text-muted-foreground">الشركة المصنعة:</span>
+                    <span className="font-medium">{vehicle.make}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">{vehicle.model}</span>
                     <span className="text-muted-foreground">الطراز:</span>
+                    <span className="font-medium">{vehicle.model}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">{vehicle.year}</span>
                     <span className="text-muted-foreground">السنة:</span>
+                    <span className="font-medium">{vehicle.year}</span>
                   </div>
                   {vehicle.color && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.color}</span>
                       <span className="text-muted-foreground">اللون:</span>
+                      <span className="font-medium">{vehicle.color}</span>
                     </div>
                   )}
                   {vehicle.seating_capacity && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.seating_capacity}</span>
                       <span className="text-muted-foreground">عدد المقاعد:</span>
+                      <span className="font-medium">{vehicle.seating_capacity}</span>
                     </div>
                   )}
                 </CardContent>
@@ -142,38 +142,38 @@ export function EnhancedVehicleDetailsDialog({
                 <CardContent className="space-y-2">
                   {vehicle.vin && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.vin}</span>
                       <span className="text-muted-foreground">رقم الهيكل:</span>
+                      <span className="font-medium">{vehicle.vin}</span>
                     </div>
                   )}
                   {vehicle.engine_number && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.engine_number}</span>
                       <span className="text-muted-foreground">رقم المحرك:</span>
+                      <span className="font-medium">{vehicle.engine_number}</span>
                     </div>
                   )}
                   {vehicle.transmission_type && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">ناقل الحركة:</span>
                       <span className="font-medium">
                         {vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'}
                       </span>
-                      <span className="text-muted-foreground">ناقل الحركة:</span>
                     </div>
                   )}
                   {vehicle.fuel_type && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">نوع الوقود:</span>
                       <span className="font-medium">
                         {vehicle.fuel_type === 'gasoline' ? 'بنزين' : 
                          vehicle.fuel_type === 'diesel' ? 'ديزل' : 
                          vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'}
                       </span>
-                      <span className="text-muted-foreground">نوع الوقود:</span>
                     </div>
                   )}
                   {vehicle.current_mileage && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.current_mileage} كم</span>
                       <span className="text-muted-foreground">المسافة المقطوعة:</span>
+                      <span className="font-medium">{vehicle.current_mileage} كم</span>
                     </div>
                   )}
                 </CardContent>
@@ -186,26 +186,26 @@ export function EnhancedVehicleDetailsDialog({
                 <CardContent className="space-y-2">
                   {vehicle.daily_rate && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.daily_rate)}</span>
                       <span className="text-muted-foreground">يومي:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.daily_rate)}</span>
                     </div>
                   )}
                   {vehicle.weekly_rate && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.weekly_rate)}</span>
                       <span className="text-muted-foreground">أسبوعي:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.weekly_rate)}</span>
                     </div>
                   )}
                   {vehicle.monthly_rate && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.monthly_rate)}</span>
                       <span className="text-muted-foreground">شهري:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.monthly_rate)}</span>
                     </div>
                   )}
                   {vehicle.deposit_amount && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.deposit_amount)}</span>
                       <span className="text-muted-foreground">التأمين:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.deposit_amount)}</span>
                     </div>
                   )}
                 </CardContent>
@@ -233,35 +233,35 @@ export function EnhancedVehicleDetailsDialog({
                 <CardContent className="space-y-3">
                   {vehicle.chassis_number && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.chassis_number}</span>
                       <span className="text-muted-foreground">رقم الشاسيه:</span>
+                      <span className="font-medium">{vehicle.chassis_number}</span>
                     </div>
                   )}
                   {vehicle.fuel_capacity && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.fuel_capacity} لتر</span>
                       <span className="text-muted-foreground">سعة الخزان:</span>
+                      <span className="font-medium">{vehicle.fuel_capacity} لتر</span>
                     </div>
                   )}
                   {vehicle.drive_type && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">نوع الدفع:</span>
                       <span className="font-medium">
                         {vehicle.drive_type === 'front_wheel' ? 'دفع أمامي' :
                          vehicle.drive_type === 'rear_wheel' ? 'دفع خلفي' :
                          vehicle.drive_type === 'all_wheel' ? 'دفع رباعي' : vehicle.drive_type}
                       </span>
-                      <span className="text-muted-foreground">نوع الدفع:</span>
                     </div>
                   )}
                   {vehicle.vehicle_condition && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">حالة المركبة:</span>
                       <span className="font-medium">
                         {vehicle.vehicle_condition === 'excellent' ? 'ممتازة' :
                          vehicle.vehicle_condition === 'very_good' ? 'جيدة جداً' :
                          vehicle.vehicle_condition === 'good' ? 'جيدة' :
                          vehicle.vehicle_condition === 'fair' ? 'مقبولة' : 'ضعيفة'}
                       </span>
-                      <span className="text-muted-foreground">حالة المركبة:</span>
                     </div>
                   )}
                 </CardContent>
@@ -274,32 +274,32 @@ export function EnhancedVehicleDetailsDialog({
                 <CardContent className="space-y-3">
                   {vehicle.registration_date && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">تاريخ التسجيل:</span>
                       <span className="font-medium">
                         {format(new Date(vehicle.registration_date), 'dd/MM/yyyy')}
                       </span>
-                      <span className="text-muted-foreground">تاريخ التسجيل:</span>
                     </div>
                   )}
                   {vehicle.registration_expiry && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">انتهاء التسجيل:</span>
                       <span className="font-medium">
                         {format(new Date(vehicle.registration_expiry), 'dd/MM/yyyy')}
                       </span>
-                      <span className="text-muted-foreground">انتهاء التسجيل:</span>
                     </div>
                   )}
                   {vehicle.inspection_due_date && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">الفحص القادم:</span>
                       <span className="font-medium">
                         {format(new Date(vehicle.inspection_due_date), 'dd/MM/yyyy')}
                       </span>
-                      <span className="text-muted-foreground">الفحص القادم:</span>
                     </div>
                   )}
                   {vehicle.current_location && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.current_location}</span>
                       <span className="text-muted-foreground">الموقع الحالي:</span>
+                      <span className="font-medium">{vehicle.current_location}</span>
                     </div>
                   )}
                 </CardContent>
@@ -316,28 +316,28 @@ export function EnhancedVehicleDetailsDialog({
                 <CardContent className="space-y-3">
                   {vehicle.purchase_date && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">تاريخ الشراء:</span>
                       <span className="font-medium">
                         {format(new Date(vehicle.purchase_date), 'dd/MM/yyyy')}
                       </span>
-                      <span className="text-muted-foreground">تاريخ الشراء:</span>
                     </div>
                   )}
                   {vehicle.purchase_cost && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.purchase_cost)}</span>
                       <span className="text-muted-foreground">تكلفة الشراء:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.purchase_cost)}</span>
                     </div>
                   )}
                   {vehicle.useful_life_years && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.useful_life_years} سنة</span>
                       <span className="text-muted-foreground">العمر الإنتاجي:</span>
+                      <span className="font-medium">{vehicle.useful_life_years} سنة</span>
                     </div>
                   )}
                   {vehicle.residual_value && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.residual_value)}</span>
                       <span className="text-muted-foreground">القيمة المتبقية:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.residual_value)}</span>
                     </div>
                   )}
                 </CardContent>
@@ -350,32 +350,32 @@ export function EnhancedVehicleDetailsDialog({
                 <CardContent className="space-y-3">
                   {vehicle.ownership_status && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">حالة الملكية:</span>
                       <span className="font-medium">
                         {vehicle.ownership_status === 'owned' ? 'مملوكة' :
                          vehicle.ownership_status === 'leased' ? 'مؤجرة' : 'ممولة'}
                       </span>
-                      <span className="text-muted-foreground">حالة الملكية:</span>
                     </div>
                   )}
                   {vehicle.lease_company && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{vehicle.lease_company}</span>
                       <span className="text-muted-foreground">شركة التأجير:</span>
+                      <span className="font-medium">{vehicle.lease_company}</span>
                     </div>
                   )}
                   {vehicle.monthly_lease_amount && (
                     <div className="flex justify-between">
-                      <span className="font-medium">{formatCurrency(vehicle.monthly_lease_amount)}</span>
                       <span className="text-muted-foreground">القسط الشهري:</span>
+                      <span className="font-medium">{formatCurrency(vehicle.monthly_lease_amount)}</span>
                     </div>
                   )}
                   {vehicle.lease_start_date && vehicle.lease_end_date && (
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">فترة التأجير:</span>
                       <span className="font-medium">
                         {format(new Date(vehicle.lease_start_date), 'dd/MM/yyyy')} - 
                         {format(new Date(vehicle.lease_end_date), 'dd/MM/yyyy')}
                       </span>
-                      <span className="text-muted-foreground">فترة التأجير:</span>
                     </div>
                   )}
                 </CardContent>
