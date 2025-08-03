@@ -209,6 +209,75 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
           </div>
         )}
 
+        {currentStep === 'vehicle-return' && vehicleReturn && (
+          <div className="space-y-6">
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                تم إكمال نموذج إرجاع المركبة بنجاح. يمكنك الآن الانتقال إلى خطوة الموافقة.
+              </AlertDescription>
+            </Alert>
+
+            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Badge className={getStatusColor(vehicleReturn.status)} variant="outline">
+                  {getStatusIcon(vehicleReturn.status)}
+                  <span className="mr-1">
+                    {vehicleReturn.status === 'pending' && 'في انتظار الموافقة'}
+                    {vehicleReturn.status === 'approved' && 'تمت الموافقة'}
+                    {vehicleReturn.status === 'rejected' && 'مرفوض'}
+                  </span>
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <strong>تاريخ الإرجاع:</strong> {new Date(vehicleReturn.return_date).toLocaleDateString('ar-EG')}
+                </div>
+                <div>
+                  <strong>حالة المركبة:</strong> {vehicleReturn.vehicle_condition}
+                </div>
+                <div>
+                  <strong>مستوى الوقود:</strong> {vehicleReturn.fuel_level}%
+                </div>
+                {vehicleReturn.odometer_reading && (
+                  <div>
+                    <strong>قراءة العداد:</strong> {vehicleReturn.odometer_reading} كم
+                  </div>
+                )}
+              </div>
+              
+              {vehicleReturn.damages && Array.isArray(vehicleReturn.damages) && vehicleReturn.damages.length > 0 && (
+                <div className="mt-4">
+                  <strong>الأضرار:</strong>
+                  <ul className="list-disc list-inside mt-2">
+                    {vehicleReturn.damages.map((damage: any, index: number) => (
+                      <li key={index} className="text-sm">
+                        {damage.type}: {damage.description} ({damage.severity})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {vehicleReturn.notes && (
+                <div className="mt-4">
+                  <strong>ملاحظات:</strong>
+                  <p className="text-sm mt-1">{vehicleReturn.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <Button 
+                onClick={() => setCurrentStep('approval')}
+              >
+                الانتقال إلى الموافقة
+              </Button>
+            </div>
+          </div>
+        )}
+
         {currentStep === 'approval' && vehicleReturn && vehicleReturn.status === 'pending' && (
           <div className="space-y-6">
             <Alert>
