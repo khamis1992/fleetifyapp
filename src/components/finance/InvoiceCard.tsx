@@ -44,20 +44,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
-          {/* Left side - Invoice details */}
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-3">
-              <h3 className="font-semibold text-lg">فاتورة رقم {invoice.invoice_number}</h3>
-              {getPaymentStatusBadge(invoice.payment_status)}
-            </div>
-            
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span>المبلغ: {invoice.total_amount?.toFixed(3)} د.ك</span>
-              <span>التاريخ: {formatDateInGregorian(invoice.invoice_date || invoice.created_at)}</span>
-            </div>
-          </div>
-
-          {/* Right side - Actions */}
+          {/* Left side - Actions */}
           <div className="flex items-center gap-2">
             {/* Pay button - only show for unpaid/partial invoices */}
             {canPay && onPay && (
@@ -99,6 +86,19 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
             >
               <Trash2 className="h-4 w-4" />
             </Button>
+          </div>
+
+          {/* Right side - Invoice details */}
+          <div className="flex-1 space-y-2 mr-4">
+            <div className="flex items-center gap-3 justify-end">
+              {getPaymentStatusBadge(invoice.payment_status)}
+              <h3 className="font-semibold text-lg">فاتورة رقم {invoice.invoice_number}</h3>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm text-muted-foreground justify-end">
+              <span>التاريخ: {formatDateInGregorian(invoice.invoice_date || invoice.created_at)}</span>
+              <span>المبلغ: {invoice.total_amount?.toFixed(3)} د.ك</span>
+            </div>
           </div>
         </div>
       </CardContent>
