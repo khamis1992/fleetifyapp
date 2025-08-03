@@ -347,16 +347,23 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
                 <h4 className="font-medium">الفواتير الموجودة</h4>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {existingInvoices.map((invoice: any) => (
-                    <div key={invoice.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{invoice.invoice_number}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
-                          </p>
-                        </div>
-                      </div>
+                     <div key={invoice.id} className="flex items-center justify-between p-3 border rounded-lg">
+                       <div className="flex items-center gap-3">
+                         <FileText className="h-4 w-4 text-muted-foreground" />
+                         <div>
+                           <div className="flex items-center gap-2">
+                             <p className="font-medium">{invoice.invoice_number}</p>
+                             {invoice.notes?.includes('payment schedule') && (
+                               <Badge variant="outline" className="text-xs">
+                                 من جدول دفع
+                               </Badge>
+                             )}
+                           </div>
+                           <p className="text-sm text-muted-foreground">
+                             {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
+                           </p>
+                         </div>
+                       </div>
                       <div className="text-right">
                         <p className="font-bold">{invoice.total_amount?.toFixed(3)} د.ك</p>
                         <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>

@@ -12,6 +12,7 @@ import { useCreateInvoice, useCostCenters, useFixedAssets } from "@/hooks/useFin
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveContracts } from "@/hooks/useContracts";
+import { PaymentScheduleSection } from "./PaymentScheduleSection";
 import { toast } from "sonner";
 
 interface InvoiceItem {
@@ -547,6 +548,18 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
               </div>
             </CardContent>
           </Card>
+
+          {/* Payment Schedule Section - Only for sales invoices with contracts */}
+          {type === 'sales' && invoiceData.contract_id && invoiceData.contract_id !== 'none' && (
+            <PaymentScheduleSection
+              contractId={invoiceData.contract_id}
+              totalAmount={total}
+              currency={invoiceData.currency}
+              onScheduleCreated={() => {
+                toast.success("سيتم إنشاء جدول الدفع بعد حفظ الفاتورة");
+              }}
+            />
+          )}
 
           {/* Actions */}
           <div className="flex justify-end space-x-2">
