@@ -1341,6 +1341,82 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_documents: {
+        Row: {
+          company_id: string
+          condition_report_id: string | null
+          contract_id: string
+          created_at: string | null
+          document_name: string
+          document_type: string
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_required: boolean | null
+          mime_type: string | null
+          notes: string | null
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          condition_report_id?: string | null
+          contract_id: string
+          created_at?: string | null
+          document_name: string
+          document_type?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_required?: boolean | null
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          condition_report_id?: string | null
+          contract_id?: string
+          created_at?: string | null
+          document_name?: string
+          document_type?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_required?: boolean | null
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_documents_condition_report_id_fkey"
+            columns: ["condition_report_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_condition_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_documents_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "contract_documents_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_drafts: {
         Row: {
           company_id: string
@@ -6602,6 +6678,7 @@ export type Database = {
         Row: {
           company_id: string
           condition_items: Json
+          contract_id: string | null
           created_at: string
           customer_signature: string | null
           damage_items: Json | null
@@ -6623,6 +6700,7 @@ export type Database = {
         Insert: {
           company_id: string
           condition_items?: Json
+          contract_id?: string | null
           created_at?: string
           customer_signature?: string | null
           damage_items?: Json | null
@@ -6644,6 +6722,7 @@ export type Database = {
         Update: {
           company_id?: string
           condition_items?: Json
+          contract_id?: string | null
           created_at?: string
           customer_signature?: string | null
           damage_items?: Json | null
@@ -6662,7 +6741,22 @@ export type Database = {
           updated_at?: string
           vehicle_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_condition_reports_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "vehicle_condition_reports_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_dispatch_permits: {
         Row: {

@@ -18,6 +18,7 @@ import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useAvailableVehiclesByDateRange } from '@/hooks/useAvailableVehiclesByDateRange'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
+import { VehicleConditionWizardStep } from './VehicleConditionWizardStep'
 import { useContractValidation } from '@/hooks/useContractValidation'
 import { ProactiveAlertSystem } from './ProactiveAlertSystem'
 import { ContractDataValidator } from './ContractDataValidator'
@@ -298,6 +299,20 @@ export const CustomerVehicleStep: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Vehicle Condition Check */}
+        {data.vehicle_id && data.vehicle_id !== 'none' && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">فحص حالة المركبة</h3>
+            <VehicleConditionWizardStep 
+              vehicleId={data.vehicle_id}
+              contractId={undefined} // Will be set after contract creation
+              onComplete={(reportId) => {
+                console.log('Vehicle condition report created:', reportId);
+              }}
+            />
+          </div>
+        )}
 
         {/* Proactive Alert System */}
         <div className="mt-4">
