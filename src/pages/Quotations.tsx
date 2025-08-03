@@ -300,33 +300,30 @@ export default function Quotations() {
       : `${customer?.first_name} ${customer?.last_name}`
 
     const vehicleInfo = vehicle 
-      ? `\n🚗 المركبة: ${vehicle.make} ${vehicle.model} - ${vehicle.plate_number}`
+      ? `\nالمركبة: ${vehicle.make} ${vehicle.model} - ${vehicle.plate_number}`
       : ''
 
     const durationType = quotation.quotation_type === 'daily' ? 'يوم' : 
                         quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
 
-    const message = `
-السلام عليكم ${customerName} 👋
+    const message = `*عرض سعر من شركة ${user?.company?.name || 'شركتنا'}*
 
-🏢 *عرض سعر من شركة ${user?.company?.name || 'شركتنا'}*
+*رقم العرض:* ${quotation.quotation_number}${vehicleInfo}
 
-📋 *رقم العرض:* ${quotation.quotation_number}${vehicleInfo}
-
-💰 *تفاصيل السعر:*
+*تفاصيل السعر:*
 • نوع الإيجار: ${quotation.quotation_type === 'daily' ? 'يومي' : quotation.quotation_type === 'weekly' ? 'أسبوعي' : 'شهري'}
 • المدة: ${quotation.duration} ${durationType}
 • السعر لكل ${durationType}: ${quotation.rate_per_unit?.toFixed(3)} د.ك
 • *المبلغ الإجمالي: ${quotation.total_amount?.toFixed(3)} د.ك*
 
-📅 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('en-GB')}
+*صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('en-GB')}
 
-${quotation.description ? `📝 *الوصف:* ${quotation.description}\n` : ''}
-${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n` : ''}
+${quotation.description ? `*الوصف:* ${quotation.description}\n` : ''}
+${quotation.terms ? `*الشروط والأحكام:* ${quotation.terms}\n` : ''}
 
-${approvalUrl ? `\n✅ *للموافقة على العرض أو رفضه، يرجى الضغط على الرابط التالي:*\n${approvalUrl}\n` : ''}
+${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى الضغط على الرابط التالي:*\n${approvalUrl}\n` : ''}
 
-نتطلع لخدمتكم! 🤝
+نتطلع لخدمتكم!
 للاستفسار، يرجى الرد على هذه الرسالة.
     `.trim()
 
