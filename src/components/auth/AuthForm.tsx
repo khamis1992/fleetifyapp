@@ -71,28 +71,20 @@ export const AuthForm: React.FC = () => {
         {/* Logo Section */}
         <div className="text-center mb-8">
           <div className="relative inline-flex items-center justify-center w-32 h-32 mb-4">
-            {/* Large outer rotating circles */}
-            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '1.5s' }}>
-              <div className="absolute -top-2 left-1/2 w-6 h-6 bg-blue-500 rounded-full transform -translate-x-1/2 shadow-lg animate-pulse"></div>
-              <div className="absolute -bottom-2 left-1/2 w-6 h-6 bg-green-500 rounded-full transform -translate-x-1/2 shadow-lg animate-pulse"></div>
-              <div className="absolute top-1/2 -left-2 w-6 h-6 bg-yellow-500 rounded-full transform -translate-y-1/2 shadow-lg animate-pulse"></div>
-              <div className="absolute top-1/2 -right-2 w-6 h-6 bg-purple-500 rounded-full transform -translate-y-1/2 shadow-lg animate-pulse"></div>
-            </div>
-            
-            {/* Medium middle rotating circles - counter direction */}
-            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}>
-              <div className="absolute top-4 right-4 w-4 h-4 bg-red-500 rounded-full shadow-md"></div>
-              <div className="absolute bottom-4 left-4 w-4 h-4 bg-cyan-500 rounded-full shadow-md"></div>
-              <div className="absolute top-4 left-4 w-4 h-4 bg-orange-500 rounded-full shadow-md"></div>
-              <div className="absolute bottom-4 right-4 w-4 h-4 bg-pink-500 rounded-full shadow-md"></div>
-            </div>
-            
-            {/* Small inner fast rotating circles */}
+            {/* Rotating circles around the logo */}
             <div className="absolute inset-0 animate-spin" style={{ animationDuration: '0.8s' }}>
-              <div className="absolute top-8 left-1/2 w-3 h-3 bg-white rounded-full transform -translate-x-1/2 shadow-xl"></div>
-              <div className="absolute bottom-8 left-1/2 w-3 h-3 bg-white rounded-full transform -translate-x-1/2 shadow-xl"></div>
-              <div className="absolute top-1/2 left-8 w-3 h-3 bg-white rounded-full transform -translate-y-1/2 shadow-xl"></div>
-              <div className="absolute top-1/2 right-8 w-3 h-3 bg-white rounded-full transform -translate-y-1/2 shadow-xl"></div>
+              <div className="absolute top-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
+              <div className="absolute bottom-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
+              <div className="absolute top-1/2 left-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
+              <div className="absolute top-1/2 right-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
+            </div>
+            
+            {/* Counter-rotating circles */}
+            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2.5s' }}>
+              <div className="absolute top-6 right-6 w-2 h-2 bg-secondary rounded-full"></div>
+              <div className="absolute bottom-6 left-6 w-2 h-2 bg-secondary rounded-full"></div>
+              <div className="absolute top-6 left-6 w-2 h-2 bg-accent rounded-full"></div>
+              <div className="absolute bottom-6 right-6 w-2 h-2 bg-accent rounded-full"></div>
             </div>
             
             {/* Logo in the center */}
