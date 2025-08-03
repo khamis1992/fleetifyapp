@@ -639,21 +639,18 @@ export const FinancialStep: React.FC = () => {
         )}
 
         {/* خيار التعديل اليدوي للمبلغ */}
-        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-orange-800 flex items-center gap-2">
-              <Edit className="h-4 w-4" />
-              خيارات التسعير
-            </h4>
-          </div>
+        <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="custom_amount_toggle" className="text-sm font-medium">
-                تعديل المبلغ يدوياً
-              </Label>
-              <p className="text-xs text-orange-700">
-                تجاوز الحسابات التلقائية ووضع مبلغ مخصص
-              </p>
+            <div className="flex items-center gap-2">
+              <Edit className="h-4 w-4 text-orange-600" />
+              <div>
+                <Label htmlFor="custom_amount_toggle" className="text-sm font-medium text-orange-800">
+                  تعديل المبلغ يدوياً
+                </Label>
+                <p className="text-xs text-orange-600 mt-0.5">
+                  تجاوز الحسابات التلقائية
+                </p>
+              </div>
             </div>
             <Switch
               id="custom_amount_toggle"
@@ -661,7 +658,6 @@ export const FinancialStep: React.FC = () => {
               onCheckedChange={(checked) => {
                 setIsCustomAmount(checked)
                 if (!checked && calculations) {
-                  // Reset to automatic calculation
                   updateData({
                     contract_amount: calculations.totalAmount,
                     monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
@@ -671,14 +667,13 @@ export const FinancialStep: React.FC = () => {
             />
           </div>
           {isCustomAmount && (
-            <Alert className="mt-3 border-orange-300 bg-orange-100">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800 text-sm">
-                <strong>تنبيه:</strong> تم تفعيل التعديل اليدوي. لن يتم تحديث المبلغ تلقائياً عند تغيير المركبة أو المدة.
+            <Alert className="mt-2 p-2 border-orange-300 bg-orange-100">
+              <AlertDescription className="text-orange-800 text-xs">
+                <strong>تنبيه:</strong> الحسابات التلقائية معطلة.
                 {selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 
                  'minimum_rental_price' in selectedVehicle && selectedVehicle.minimum_rental_price && (
                   <span className="block mt-1">
-                    <strong>الحد الأدنى للسعر:</strong> {selectedVehicle.minimum_rental_price} د.ك
+                    <strong>الحد الأدنى:</strong> {selectedVehicle.minimum_rental_price} د.ك
                   </span>
                 )}
               </AlertDescription>
