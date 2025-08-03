@@ -96,7 +96,10 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
             </div>
             
             <div className="flex items-center gap-6 text-sm text-muted-foreground justify-end">
-              <span>التاريخ: {formatDateInGregorian(invoice.invoice_date || invoice.created_at)}</span>
+              <span>تاريخ الإنشاء: {formatDateInGregorian(invoice.invoice_date || invoice.created_at)}</span>
+              {invoice.due_date && (
+                <span>تاريخ الاستحقاق: {formatDateInGregorian(invoice.due_date)}</span>
+              )}
               <span>المبلغ: {invoice.total_amount?.toFixed(3)} د.ك</span>
             </div>
           </div>
