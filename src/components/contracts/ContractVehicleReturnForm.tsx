@@ -219,11 +219,12 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           {/* Vehicle Damage Diagram */}
           <div>
             <h4 className="font-medium mb-4">مجسم أضرار المركبة</h4>
-            <VehicleConditionDiagram
-              damagePoints={damagePoints}
-              onDamagePointsChange={setDamagePoints}
-              readOnly={false}
-            />
+          <VehicleConditionDiagram
+            damagePoints={damagePoints}
+            onDamagePointsChange={setDamagePoints}
+            readOnly={false}
+            conditionReportId={contract.id} // Pass contract ID as placeholder for condition report
+          />
           </div>
 
           {/* Separator */}

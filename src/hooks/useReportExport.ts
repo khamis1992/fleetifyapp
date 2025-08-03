@@ -10,6 +10,8 @@ interface ExportOptions {
   filters: any;
   title: string;
   format?: 'html' | 'pdf' | 'excel';
+  conditionReportId?: string; // For damage reports
+  damagePoints?: any[]; // For damage reports
 }
 
 export const useReportExport = () => {
@@ -383,6 +385,181 @@ export const useReportExport = () => {
         }
     }
 
+    /* Damage Report Specific Styles */
+    .vehicle-info-section {
+        margin: 2rem 0;
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-right: 4px solid #28a745;
+    }
+
+    .vehicle-info-section h3 {
+        margin-bottom: 1rem;
+        color: #495057;
+        font-size: 1.2rem;
+    }
+
+    .vehicle-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .detail-item {
+        background: white;
+        padding: 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+
+    .detail-item strong {
+        color: #495057;
+        margin-left: 0.5rem;
+    }
+
+    .damage-visualization {
+        margin: 2rem 0;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .damage-visualization h3 {
+        margin-bottom: 1.5rem;
+        color: #495057;
+        text-align: center;
+    }
+
+    .vehicle-diagram {
+        position: relative;
+        max-width: 600px;
+        margin: 0 auto;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 2rem;
+    }
+
+    .vehicle-outline {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .damage-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .damage-point {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        transform: translate(-50%, -50%);
+    }
+
+    .damage-point.severity-minor {
+        background: #28a745;
+    }
+
+    .damage-point.severity-moderate {
+        background: #ffc107;
+        color: #212529;
+    }
+
+    .damage-point.severity-severe {
+        background: #dc3545;
+    }
+
+    .damage-legend {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .legend-color.severity-minor {
+        background: #28a745;
+    }
+
+    .legend-color.severity-moderate {
+        background: #ffc107;
+    }
+
+    .legend-color.severity-severe {
+        background: #dc3545;
+    }
+
+    .no-damage {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 2px dashed #dee2e6;
+    }
+
+    .damage-table-section {
+        margin: 2rem 0;
+    }
+
+    .damage-table-section h3 {
+        margin-bottom: 1rem;
+        color: #495057;
+    }
+
+    .notes-section {
+        margin: 2rem 0;
+        background: #fff3cd;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-right: 4px solid #ffc107;
+    }
+
+    .notes-section h3 {
+        margin-bottom: 1rem;
+        color: #856404;
+    }
+
+    .notes-content {
+        color: #856404;
+        line-height: 1.6;
+        background: white;
+        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid #ffeaa7;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .header-content {
@@ -438,10 +615,29 @@ export const useReportExport = () => {
             font-style: italic;
             margin-top: 1rem;
         }
+
+        .vehicle-details {
+            grid-template-columns: 1fr;
+        }
+
+        .damage-legend {
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .vehicle-diagram {
+            padding: 1rem;
+        }
     }
   `;
 
   const generateReportContent = (options: ExportOptions, data: any) => {
+    // Handle damage report specific content
+    if (options.moduleType === 'damage_report') {
+      return generateDamageReportContent(options, data);
+    }
+
     if (!data || !data.summary) {
       return `
         <div class="summary-cards">
@@ -483,6 +679,196 @@ export const useReportExport = () => {
     `;
   };
 
+  const generateDamageReportContent = (options: ExportOptions, data: any) => {
+    const { conditionReport, damagePoints, summary } = data;
+
+    if (!conditionReport) {
+      return `
+        <div class="no-data">
+          <h3>لا يوجد تقرير حالة متاح</h3>
+          <p>لم يتم العثور على تقرير حالة المركبة المطلوب</p>
+        </div>
+      `;
+    }
+
+    // Summary cards for damage statistics
+    const summaryCards = Object.entries(summary)
+      .map(([key, value]) => {
+        const label = getSummaryLabel(key);
+        return `
+          <div class="summary-card">
+            <h4>${label}</h4>
+            <div class="value">${value}</div>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Vehicle information
+    const vehicleInfo = `
+      <div class="vehicle-info-section">
+        <h3>معلومات المركبة</h3>
+        <div class="vehicle-details">
+          <div class="detail-item">
+            <strong>رقم اللوحة:</strong> ${conditionReport.vehicles?.plate_number || 'غير محدد'}
+          </div>
+          <div class="detail-item">
+            <strong>الماركة:</strong> ${conditionReport.vehicles?.make || 'غير محدد'}
+          </div>
+          <div class="detail-item">
+            <strong>الموديل:</strong> ${conditionReport.vehicles?.model || 'غير محدد'}
+          </div>
+          <div class="detail-item">
+            <strong>السنة:</strong> ${conditionReport.vehicles?.year || 'غير محدد'}
+          </div>
+          <div class="detail-item">
+            <strong>المفتش:</strong> ${conditionReport.profiles?.full_name || 'غير محدد'}
+          </div>
+          <div class="detail-item">
+            <strong>تاريخ الفحص:</strong> ${new Date(conditionReport.inspection_date).toLocaleDateString('ar-SA')}
+          </div>
+          <div class="detail-item">
+            <strong>نوع الفحص:</strong> ${conditionReport.inspection_type === 'pre_dispatch' ? 'قبل الإرسال' : 'بعد الإرسال'}
+          </div>
+          <div class="detail-item">
+            <strong>الحالة العامة:</strong> ${getConditionLabel(conditionReport.overall_condition)}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Damage diagram (2D representation)
+    const damageVisualization = generateDamageVisualization(damagePoints);
+
+    // Damage details table
+    const damageTable = generateDamageTable(damagePoints);
+
+    return `
+      <div class="summary-cards">
+        ${summaryCards}
+      </div>
+      
+      ${vehicleInfo}
+      ${damageVisualization}
+      ${damageTable}
+      
+      ${conditionReport.notes ? `
+      <div class="notes-section">
+        <h3>ملاحظات إضافية</h3>
+        <div class="notes-content">${conditionReport.notes}</div>
+      </div>
+      ` : ''}
+    `;
+  };
+
+  const generateDamageVisualization = (damagePoints: any[]) => {
+    if (!damagePoints || damagePoints.length === 0) {
+      return `
+        <div class="damage-visualization">
+          <h3>مخطط الأضرار</h3>
+          <div class="no-damage">
+            <p>لا توجد أضرار مسجلة على هذه المركبة</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // Create a 2D vehicle representation with damage points
+    const damagePointsHtml = damagePoints.map((point, index) => `
+      <div class="damage-point severity-${point.severity}" 
+           style="left: ${point.x}%; top: ${point.y}%;"
+           title="${point.description}">
+        ${index + 1}
+      </div>
+    `).join('');
+
+    return `
+      <div class="damage-visualization">
+        <h3>مخطط الأضرار</h3>
+        <div class="vehicle-diagram">
+          <svg viewBox="0 0 400 200" class="vehicle-outline">
+            <!-- Simple car outline -->
+            <rect x="50" y="60" width="300" height="80" rx="15" fill="none" stroke="#333" stroke-width="2"/>
+            <circle cx="100" cy="160" r="15" fill="none" stroke="#333" stroke-width="2"/>
+            <circle cx="300" cy="160" r="15" fill="none" stroke="#333" stroke-width="2"/>
+            <rect x="80" y="70" width="60" height="30" fill="none" stroke="#333" stroke-width="1"/>
+            <rect x="260" y="70" width="60" height="30" fill="none" stroke="#333" stroke-width="1"/>
+          </svg>
+          <div class="damage-overlay">
+            ${damagePointsHtml}
+          </div>
+        </div>
+        <div class="damage-legend">
+          <div class="legend-item">
+            <span class="legend-color severity-minor"></span>
+            <span>ضرر بسيط</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color severity-moderate"></span>
+            <span>ضرر متوسط</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color severity-severe"></span>
+            <span>ضرر شديد</span>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  const generateDamageTable = (damagePoints: any[]) => {
+    if (!damagePoints || damagePoints.length === 0) {
+      return '';
+    }
+
+    const rows = damagePoints.map((point, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${getSeverityLabel(point.severity)}</td>
+        <td>${point.description || 'غير محدد'}</td>
+        <td>X: ${point.x.toFixed(1)}%, Y: ${point.y.toFixed(1)}%</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div class="damage-table-section">
+        <h3>تفاصيل الأضرار</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرقم</th>
+              <th>مستوى الضرر</th>
+              <th>الوصف</th>
+              <th>الموقع</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
+
+  const getConditionLabel = (condition: string) => {
+    const labels: Record<string, string> = {
+      excellent: 'ممتازة',
+      good: 'جيدة',
+      fair: 'مقبولة',
+      poor: 'ضعيفة'
+    };
+    return labels[condition] || condition;
+  };
+
+  const getSeverityLabel = (severity: string) => {
+    const labels: Record<string, string> = {
+      minor: 'بسيط',
+      moderate: 'متوسط',
+      severe: 'شديد'
+    };
+    return labels[severity] || severity;
+  };
+
   const getSummaryLabel = (key: string): string => {
     const labels: Record<string, string> = {
       totalEmployees: 'إجمالي الموظفين',
@@ -503,7 +889,11 @@ export const useReportExport = () => {
       totalInvoices: 'إجمالي الفواتير',
       totalAmount: 'إجمالي المبلغ',
       paidInvoices: 'الفواتير المدفوعة',
-      totalPayments: 'إجمالي المدفوعات'
+      totalPayments: 'إجمالي المدفوعات',
+      totalDamagePoints: 'إجمالي نقاط الضرر',
+      severeDamages: 'أضرار شديدة',
+      moderateDamages: 'أضرار متوسطة',
+      minorDamages: 'أضرار بسيطة'
     };
     return labels[key] || key;
   };
@@ -618,6 +1008,8 @@ export const useReportExport = () => {
           return await fetchLegalData(options, companyId);
         case 'finance':
           return await fetchFinanceData(options, companyId);
+        case 'damage_report':
+          return await fetchDamageReportData(options, companyId);
         default:
           return { data: [], summary: {} };
       }
@@ -736,13 +1128,44 @@ export const useReportExport = () => {
     };
   };
 
+  const fetchDamageReportData = async (options: ExportOptions, companyId: string) => {
+    if (options.conditionReportId) {
+      // Fetch specific condition report
+      const { data: conditionReport } = await supabase
+        .from('vehicle_condition_reports')
+        .select(`
+          *,
+          vehicles (plate_number, make, model, year),
+          profiles:inspector_id (full_name)
+        `)
+        .eq('id', options.conditionReportId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (conditionReport) {
+        return {
+          conditionReport,
+          damagePoints: options.damagePoints || [],
+          summary: {
+            totalDamagePoints: options.damagePoints?.length || 0,
+            severeDamages: options.damagePoints?.filter(p => p.severity === 'severe').length || 0,
+            moderateDamages: options.damagePoints?.filter(p => p.severity === 'moderate').length || 0,
+            minorDamages: options.damagePoints?.filter(p => p.severity === 'minor').length || 0
+          }
+        };
+      }
+    }
+    return { conditionReport: null, damagePoints: [], summary: {} };
+  };
+
   const getModuleTitle = (moduleType: string) => {
     const titles: Record<string, string> = {
       finance: 'المالية',
       hr: 'الموارد البشرية',
       fleet: 'الأسطول',
       customers: 'العملاء',
-      legal: 'القانونية'
+      legal: 'القانونية',
+      damage_report: 'تقرير الأضرار'
     };
     return titles[moduleType] || moduleType;
   };

@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, AlertTriangle, Download } from 'lucide-react';
+import { X, Plus, AlertTriangle, Download, FileText } from 'lucide-react';
+import { useDamageReportExport } from '@/hooks/useDamageReportExport';
 
 interface DamagePoint {
   id: string;
@@ -20,19 +21,22 @@ interface VehicleConditionDiagramProps {
   onDamagePointsChange?: (points: DamagePoint[]) => void;
   readOnly?: boolean;
   onExport?: (imageBlob: Blob) => Promise<void>;
+  conditionReportId?: string; // For HTML report export
 }
 
 export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = ({
   damagePoints,
   onDamagePointsChange,
   readOnly = false,
-  onExport
+  onExport,
+  conditionReportId
 }) => {
   const [showDialog, setShowDialog] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState<DamagePoint | null>(null);
   const [pendingPoint, setPendingPoint] = useState<{x: number, y: number} | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const diagramRef = useRef<HTMLDivElement>(null);
+  const { exportDamageReport, isExporting: isExportingReport } = useDamageReportExport();
 
   const handleDiagramClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (readOnly) return;
@@ -171,11 +175,32 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
     }
   };
 
+  const handleExportReport = async () => {
+    if (!conditionReportId) return;
+    
+    await exportDamageReport({
+      conditionReportId,
+      damagePoints,
+      title: 'تقرير أضرار المركبة'
+    });
+  };
+
   return (
     <div className="space-y-4">
-      {/* Export Button */}
-      {onExport && (
-        <div className="flex justify-end">
+      {/* Export Buttons */}
+      <div className="flex justify-end gap-2">
+        {conditionReportId && (
+          <Button
+            onClick={handleExportReport}
+            disabled={isExportingReport}
+            variant="outline"
+            size="sm"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            {isExportingReport ? 'جاري إنشاء التقرير...' : 'تصدير تقرير HTML'}
+          </Button>
+        )}
+        {onExport && (
           <Button
             onClick={exportDiagram}
             disabled={isExporting}
@@ -185,8 +210,8 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? 'جاري التصدير...' : 'تصدير المخطط'}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Vehicle Diagram */}
       <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
