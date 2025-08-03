@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { 
   CheckCircle, 
   XCircle, 
@@ -247,7 +248,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
               <div>
                 <span className="text-sm text-muted-foreground">المدة</span>
                 <p className="font-medium">
-                  {new Date(contract.start_date).toLocaleDateString('en-GB')} - {new Date(contract.end_date).toLocaleDateString('en-GB')}
+                  {formatDateInGregorian(contract.start_date)} - {formatDateInGregorian(contract.end_date)}
                 </p>
               </div>
             </CardContent>
@@ -312,12 +313,12 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
                         {(step.approved_at || step.rejected_at) && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            <span>
-                              {step.approved_at 
-                                ? `تمت الموافقة في ${new Date(step.approved_at).toLocaleDateString('en-GB')}`
-                                : `تم الرفض في ${new Date(step.rejected_at!).toLocaleDateString('en-GB')}`
-                              }
-                            </span>
+                             <span>
+                               {step.approved_at 
+                                 ? `تمت الموافقة في ${formatDateInGregorian(step.approved_at)}`
+                                 : `تم الرفض في ${formatDateInGregorian(step.rejected_at!)}`
+                               }
+                             </span>
                           </div>
                         )}
                       </div>

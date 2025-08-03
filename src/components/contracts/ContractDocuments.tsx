@@ -11,6 +11,7 @@ import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertC
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
+import { formatDateForContract } from '@/utils/dateFormatter';
 import { DocumentSavingProgress } from './DocumentSavingProgress';
 import { useContractDocumentSaving } from '@/hooks/useContractDocumentSaving';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
@@ -220,7 +221,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           customer_signature: '', // التوقيع سيتم جلبه من المستندات
           company_signature: '', // التوقيع سيتم جلبه من المستندات
           company_name: 'الشركة',
-          created_date: new Date(contractData.created_at).toLocaleDateString('ar-SA')
+          created_date: formatDateForContract(contractData.created_at)
         };
 
         setSelectedDocumentForPreview({

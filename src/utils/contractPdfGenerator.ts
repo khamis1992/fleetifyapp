@@ -1,4 +1,5 @@
 import html2pdf from 'html2pdf.js'
+import { formatDateInGregorian } from './dateFormatter'
 
 export interface ContractPdfData {
   contract_number: string
@@ -218,11 +219,11 @@ const generateContractHtml = (data: ContractPdfData): string => {
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ البداية</div>
-              <div class="info-value">${data.start_date}</div>
+              <div class="info-value">${formatDateInGregorian(data.start_date)}</div>
             </div>
             <div class="info-item">
               <div class="info-label">تاريخ النهاية</div>
-              <div class="info-value">${data.end_date}</div>
+              <div class="info-value">${formatDateInGregorian(data.end_date)}</div>
             </div>
           </div>
         </div>

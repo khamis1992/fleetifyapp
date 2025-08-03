@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useContractHelpers } from '@/hooks/useContractHelpers';
+import { formatDateInGregorian } from '@/utils/dateFormatter';
 
 interface ContractCardProps {
   contract: any;
@@ -98,7 +99,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               
               <div className="flex items-center gap-2 justify-end">
                 <span className="text-sm">
-                  {new Date(contract.start_date).toLocaleDateString('en-GB')} - {new Date(contract.end_date).toLocaleDateString('en-GB')}
+                  {formatDateInGregorian(contract.start_date)} - {formatDateInGregorian(contract.end_date)}
                 </span>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </div>

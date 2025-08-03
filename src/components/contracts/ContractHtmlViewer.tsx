@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, Download } from 'lucide-react';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
+import { formatDateInGregorian, formatDateForDocument } from '@/utils/dateFormatter';
 
 interface ContractHtmlViewerProps {
   contractData: ContractPdfData;
@@ -274,11 +275,11 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
               </div>
               <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
                 <div className="info-label font-bold text-gray-700 mb-1">تاريخ البداية</div>
-                <div className="info-value text-gray-900">{contractData.start_date}</div>
+                <div className="info-value text-gray-900">{formatDateInGregorian(contractData.start_date)}</div>
               </div>
               <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
                 <div className="info-label font-bold text-gray-700 mb-1">تاريخ النهاية</div>
-                <div className="info-value text-gray-900">{contractData.end_date}</div>
+                <div className="info-value text-gray-900">{formatDateInGregorian(contractData.end_date)}</div>
               </div>
             </div>
           </div>
