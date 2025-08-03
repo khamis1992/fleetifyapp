@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ContractSignature } from './ContractSignature'
-import { useContractWizard } from './ContractWizardProvider_fixed'
+import { useContractWizard } from './ContractWizardProvider'
 import { useAuth } from '@/contexts/AuthContext'
 import { Users, FileText, CheckCircle } from 'lucide-react'
 

@@ -14,6 +14,7 @@ interface ContractWizardData {
   
   // Customer & Vehicle
   customer_id: string
+  customer_name?: string
   vehicle_id: string
   vehicle_condition_report_id?: string
   
@@ -27,6 +28,10 @@ interface ContractWizardData {
   monthly_amount: number
   account_id: string
   cost_center_id: string
+  
+  // Signatures
+  customer_signature?: string
+  company_signature?: string
   
   // Validation & Approval (using underscore prefix to avoid DB conflicts)
   _validation_status?: 'pending' | 'validating' | 'valid' | 'invalid'
