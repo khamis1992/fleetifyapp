@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,9 +69,6 @@ export function EnhancedInvoiceActions({
         if (invoice.fixed_asset_id) {
           navigate(`/finance/fixed-assets?asset=${invoice.fixed_asset_id}`);
         }
-        break;
-      case 'payments':
-        navigate(`/finance/payments?invoice=${invoice.id}`);
         break;
       case 'journal':
         if (invoice.journal_entry_id) {
@@ -173,16 +171,6 @@ export function EnhancedInvoiceActions({
             <Package className="h-3 w-3" />
           </Button>
         )}
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => handleQuickNavigation('payments')}
-          title="عرض المدفوعات المرتبطة"
-          className="text-yellow-600 hover:text-yellow-700"
-        >
-          <DollarSign className="h-3 w-3" />
-        </Button>
         
         {invoice.journal_entry_id && (
           <Button 
