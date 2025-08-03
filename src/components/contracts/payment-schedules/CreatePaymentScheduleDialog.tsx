@@ -19,6 +19,7 @@ export const CreatePaymentScheduleDialog = ({
   const [open, setOpen] = useState(false);
   const [installmentPlan, setInstallmentPlan] = useState<'monthly' | 'quarterly' | 'semi_annual' | 'annual'>('monthly');
   const [numberOfInstallments, setNumberOfInstallments] = useState<string>('');
+  const [firstPaymentDate, setFirstPaymentDate] = useState<string>('');
 
   const createSchedules = useCreatePaymentSchedules();
 
@@ -26,10 +27,12 @@ export const CreatePaymentScheduleDialog = ({
     createSchedules.mutate({
       contract_id: contractId,
       installment_plan: installmentPlan,
-      number_of_installments: numberOfInstallments ? parseInt(numberOfInstallments) : undefined
+      number_of_installments: numberOfInstallments ? parseInt(numberOfInstallments) : undefined,
+      first_payment_date: firstPaymentDate || undefined
     });
     setOpen(false);
     setNumberOfInstallments('');
+    setFirstPaymentDate('');
   };
 
   const defaultTrigger = (
@@ -78,6 +81,21 @@ export const CreatePaymentScheduleDialog = ({
             />
             <p className="text-sm text-muted-foreground mt-1">
               إذا لم تحدد عدد الأقساط، سيتم حسابه تلقائياً حسب مدة العقد ونوع الأقساط
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="first-payment-date">
+              تاريخ أول دفعة (اختياري)
+            </Label>
+            <Input
+              id="first-payment-date"
+              type="date"
+              value={firstPaymentDate}
+              onChange={(e) => setFirstPaymentDate(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              إذا لم تحدد تاريخ أول دفعة، سيتم حسابه تلقائياً (تاريخ بداية العقد + الفترة الزمنية)
             </p>
           </div>
 

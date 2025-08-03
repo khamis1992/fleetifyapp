@@ -8818,11 +8818,18 @@ export type Database = {
         Returns: Json
       }
       create_payment_schedule_invoices: {
-        Args: {
-          p_contract_id: string
-          p_installment_plan?: string
-          p_number_of_installments?: number
-        }
+        Args:
+          | {
+              p_contract_id: string
+              p_installment_plan?: string
+              p_number_of_installments?: number
+            }
+          | {
+              p_contract_id: string
+              p_installment_plan?: string
+              p_number_of_installments?: number
+              p_first_payment_date?: string
+            }
         Returns: {
           schedule_id: string
           invoice_id: string

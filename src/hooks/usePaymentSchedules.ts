@@ -117,7 +117,8 @@ export const useCreatePaymentSchedules = () => {
         {
           p_contract_id: data.contract_id,
           p_installment_plan: data.installment_plan,
-          p_number_of_installments: data.number_of_installments
+          p_number_of_installments: data.number_of_installments,
+          p_first_payment_date: data.first_payment_date || null
         }
       );
 

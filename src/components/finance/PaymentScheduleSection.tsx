@@ -83,7 +83,8 @@ export const PaymentScheduleSection = ({
       await createSchedules.mutateAsync({
         contract_id: contractId,
         installment_plan: installmentPlan,
-        number_of_installments: installmentCount
+        number_of_installments: installmentCount,
+        first_payment_date: firstPaymentDate || undefined
       });
       
       onScheduleCreated?.();

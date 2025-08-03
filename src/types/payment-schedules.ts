@@ -47,6 +47,7 @@ export interface CreateScheduleRequest {
   contract_id: string
   installment_plan: 'monthly' | 'quarterly' | 'semi_annual' | 'annual'
   number_of_installments?: number
+  first_payment_date?: string
 }
 
 export interface PaymentScheduleWithContract extends PaymentSchedule {
