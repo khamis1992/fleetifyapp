@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Save, ChevronLeft, ChevronRight, Send, Clock, TestTube } from 'lucide-react'
+import { Save, ChevronLeft, ChevronRight, Send, Clock, TestTube, FileText, CheckCircle } from 'lucide-react'
 import { ContractWizardProvider, useContractWizard } from './ContractWizardProvider'
 import { 
   BasicInfoStep, 

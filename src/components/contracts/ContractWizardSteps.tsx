@@ -25,6 +25,7 @@ import { ContractDataValidator } from './ContractDataValidator'
 import { ContractValidationSummary } from './ContractValidationSummary'
 import { SmartSuggestions } from './SmartSuggestions'
 import { useSmartSuggestions } from '@/hooks/useSmartSuggestions'
+import { ContractSignatureSection } from './ContractSignatureSection'
 import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 
@@ -956,6 +957,9 @@ export const ReviewStep: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Contract Signatures */}
+        <ContractSignatureSection />
       </CardContent>
     </Card>
   )

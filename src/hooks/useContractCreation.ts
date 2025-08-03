@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import { createContractWithFallback } from '@/utils/contractJournalEntry'
+import { generateContractPdf } from '@/utils/contractPdfGenerator'
+import { useCreateContractDocument } from './useContractDocuments'
 
 export interface ContractCreationStep {
   id: string
@@ -43,6 +45,7 @@ interface ContractCreationResult {
 export const useContractCreation = () => {
   const { companyId, user } = useUnifiedCompanyAccess()
   const queryClient = useQueryClient()
+  const { mutateAsync: createDocument } = useCreateContractDocument()
   
   const [creationState, setCreationState] = useState<ContractCreationState>({
     currentStep: 0,
@@ -317,6 +320,51 @@ export const useContractCreation = () => {
             }
           } catch (error) {
             console.error('❌ [CONTRACT_CREATION] خطأ في ربط تقرير حالة المركبة:', error)
+          }
+        }
+
+        // Generate and save contract PDF if signatures are present
+        if (inputContractData.customer_signature && inputContractData.company_signature) {
+          try {
+            console.log('📄 [CONTRACT_CREATION] Generating contract PDF...')
+            
+            const pdfData = {
+              contract_number: typedResult.contract_number || 'N/A',
+              contract_type: inputContractData.contract_type,
+              customer_name: inputContractData.customer_name || 'العميل',
+              start_date: inputContractData.start_date,
+              end_date: inputContractData.end_date,
+              contract_amount: inputContractData.contract_amount,
+              monthly_amount: inputContractData.monthly_amount,
+              terms: inputContractData.terms,
+              customer_signature: inputContractData.customer_signature,
+              company_signature: inputContractData.company_signature,
+              company_name: 'الشركة',
+              created_date: new Date().toLocaleDateString('ar-SA')
+            }
+            
+            const pdfBlob = await generateContractPdf(pdfData)
+            
+            // Convert blob to file
+            const pdfFile = new File([pdfBlob], `contract-${typedResult.contract_number}.pdf`, {
+              type: 'application/pdf'
+            })
+            
+            // Save PDF to contract documents
+            await createDocument({
+              contract_id: contractId,
+              document_type: 'signed_contract',
+              document_name: `عقد موقع رقم ${typedResult.contract_number}`,
+              file: pdfFile,
+              notes: 'نسخة موقعة من العقد تم إنشاؤها تلقائياً',
+              is_required: true
+            })
+            
+            console.log('✅ [CONTRACT_CREATION] Contract PDF saved successfully')
+            
+          } catch (error) {
+            console.error('❌ [CONTRACT_CREATION] Error generating PDF:', error)
+            // Don't fail the entire process for PDF generation errors
           }
         }
 
