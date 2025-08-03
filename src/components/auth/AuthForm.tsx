@@ -72,7 +72,7 @@ export const AuthForm: React.FC = () => {
         <div className="text-center mb-8">
           <div className="relative inline-flex items-center justify-center w-32 h-32 mb-4">
             {/* Rotating circles around the logo */}
-            <div className="absolute inset-0 animate-spin">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '0.8s' }}>
               <div className="absolute top-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
               <div className="absolute bottom-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
               <div className="absolute top-1/2 left-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
@@ -80,7 +80,7 @@ export const AuthForm: React.FC = () => {
             </div>
             
             {/* Counter-rotating circles */}
-            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '4s' }}>
+            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2.5s' }}>
               <div className="absolute top-6 right-6 w-2 h-2 bg-secondary rounded-full"></div>
               <div className="absolute bottom-6 left-6 w-2 h-2 bg-secondary rounded-full"></div>
               <div className="absolute top-6 left-6 w-2 h-2 bg-accent rounded-full"></div>
