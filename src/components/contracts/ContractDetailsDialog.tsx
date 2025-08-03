@@ -531,16 +531,16 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   <Card key={invoice.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div>
-                        <h4 className="font-semibold">فاتورة رقم {invoice.invoice_number}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
-                        </p>
-                      </div>
-                      <div className="text-right">
                         <div className="font-medium">{invoice.total_amount?.toFixed(3)} د.ك</div>
                         <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
                           {invoice.payment_status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}
                         </Badge>
+                      </div>
+                      <div className="text-right">
+                        <h4 className="font-semibold">فاتورة رقم {invoice.invoice_number}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
