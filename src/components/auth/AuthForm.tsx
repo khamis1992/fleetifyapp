@@ -70,12 +70,31 @@ export const AuthForm: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-32 h-32 bg-destructive rounded-2xl mb-4 shadow-accent overflow-hidden">
-            <img 
-              src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
-              alt="Fleetify Logo" 
-              className="h-24 w-auto filter brightness-0 invert"
-            />
+          <div className="relative inline-flex items-center justify-center w-32 h-32 mb-4">
+            {/* Rotating circles around the logo */}
+            <div className="absolute inset-0 animate-spin">
+              <div className="absolute top-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
+              <div className="absolute bottom-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
+              <div className="absolute top-1/2 left-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
+              <div className="absolute top-1/2 right-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
+            </div>
+            
+            {/* Counter-rotating circles */}
+            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '4s' }}>
+              <div className="absolute top-6 right-6 w-2 h-2 bg-secondary rounded-full"></div>
+              <div className="absolute bottom-6 left-6 w-2 h-2 bg-secondary rounded-full"></div>
+              <div className="absolute top-6 left-6 w-2 h-2 bg-accent rounded-full"></div>
+              <div className="absolute bottom-6 right-6 w-2 h-2 bg-accent rounded-full"></div>
+            </div>
+            
+            {/* Logo in the center */}
+            <div className="relative z-10 flex items-center justify-center w-32 h-32 bg-destructive rounded-2xl shadow-accent overflow-hidden">
+              <img 
+                src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+                alt="Fleetify Logo" 
+                className="h-24 w-auto filter brightness-0 invert"
+              />
+            </div>
           </div>
           <p className="text-muted-foreground mt-2">
             نظام إدارة تأجير السيارات المتكامل
