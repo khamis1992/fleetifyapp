@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { PaymentScheduleSection } from '@/components/finance/PaymentScheduleSection';
 
 interface ContractInvoiceDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentScheduleCreated, setPaymentScheduleCreated] = useState(false);
   
   const [invoiceData, setInvoiceData] = useState({
     invoice_type: 'sales',
@@ -255,6 +257,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
           }
         ]
       });
+      setPaymentScheduleCreated(false);
 
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -476,6 +479,21 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
               </div>
             </CardContent>
           </Card>
+
+          {/* Payment Schedule Section - Only show for sales invoices */}
+          {invoiceData.invoice_type === 'sales' && contract?.id && (
+            <PaymentScheduleSection
+              contractId={contract.id}
+              totalAmount={invoiceData.total_amount}
+              currency="KWD"
+              onScheduleCreated={() => {
+                setPaymentScheduleCreated(true);
+                toast.success('تم إنشاء جدول الدفع بنجاح');
+                // Invalidate payment schedules queries
+                queryClient.invalidateQueries({ queryKey: ['contract-payment-schedules', contract.id] });
+              }}
+            />
+          )}
 
           {/* Notes and Terms */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
