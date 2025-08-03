@@ -638,19 +638,6 @@ export const FinancialStep: React.FC = () => {
           </div>
         )}
 
-        {/* Customer Account Information */}
-        {customerLinkedAccounts && customerLinkedAccounts.length > 0 && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              حساب العميل المالي
-            </h4>
-            <p className="text-blue-700 text-sm">
-              تم اختيار حساب العميل المالي تلقائياً. يمكنك تغييره إذا لزم الأمر.
-            </p>
-          </div>
-        )}
-
         {/* خيار التعديل اليدوي للمبلغ */}
         <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
           <div className="flex items-center justify-between mb-3">
