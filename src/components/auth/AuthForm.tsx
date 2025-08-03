@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import fleetifyLogo from '@/assets/fleetify-logo.png';
+import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Eye, EyeOff } from 'lucide-react';
 
 export const AuthForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +71,11 @@ export const AuthForm: React.FC = () => {
         {/* Logo Section */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-4 shadow-accent overflow-hidden">
-            <img src={fleetifyLogo} alt="Fleetify Logo" className="w-full h-full object-contain" />
+            <img 
+              src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+              alt="Fleetify Logo" 
+              className="h-12 w-auto filter brightness-0"
+            />
           </div>
           <h1 className="text-3xl font-bold text-primary">
             Fleetify
