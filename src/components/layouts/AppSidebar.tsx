@@ -255,7 +255,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex items-center gap-3">
           <img 
-            src="/lovable-uploads/877be161-8ac1-46f5-9d33-81c9e531172d.png" 
+            src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
             alt="Fleetify Logo" 
             className="h-10 w-auto"
           />
