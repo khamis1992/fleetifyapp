@@ -135,7 +135,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p>Loading vehicle return information...</p>
+              <p>جاري تحميل معلومات إرجاع المركبة...</p>
             </div>
           </div>
         </DialogContent>
@@ -147,13 +147,13 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-600" />
-            Cancel Contract: {contract?.contract_number}
-          </DialogTitle>
-          <DialogDescription>
-            To cancel this contract, a vehicle return form must be completed and approved.
-          </DialogDescription>
+        <DialogTitle className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-orange-600" />
+          إلغاء العقد: {contract?.contract_number}
+        </DialogTitle>
+        <DialogDescription>
+          لإلغاء هذا العقد، يجب إكمال نموذج إرجاع المركبة والموافقة عليه.
+        </DialogDescription>
         </DialogHeader>
 
         {/* Progress Steps */}
@@ -164,7 +164,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             }`}>
               {vehicleReturn ? '✓' : '1'}
             </div>
-            <span>Vehicle Return</span>
+            <span>إرجاع المركبة</span>
           </div>
           
           <div className="h-px bg-gray-300 flex-1 mx-4"></div>
@@ -175,7 +175,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             }`}>
               {vehicleReturn?.status === 'approved' ? '✓' : '2'}
             </div>
-            <span>Approval</span>
+            <span>الموافقة</span>
           </div>
           
           <div className="h-px bg-gray-300 flex-1 mx-4"></div>
@@ -186,7 +186,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             }`}>
               3
             </div>
-            <span>Cancellation</span>
+            <span>الإلغاء</span>
           </div>
         </div>
 
@@ -196,7 +196,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <Alert className="mb-6">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Before cancelling this contract, please complete the vehicle return form to document the vehicle's condition.
+                قبل إلغاء هذا العقد، يرجى إكمال نموذج إرجاع المركبة لتوثيق حالة المركبة.
               </AlertDescription>
             </Alert>
             
@@ -214,13 +214,13 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Vehicle return form submitted. Please review and approve before proceeding with contract cancellation.
+                تم تقديم نموذج إرجاع المركبة. يرجى المراجعة والموافقة قبل المتابعة مع إلغاء العقد.
               </AlertDescription>
             </Alert>
 
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Vehicle Return Details</h3>
+                <h3 className="font-semibold">تفاصيل إرجاع المركبة</h3>
                 <Badge className={getStatusColor(vehicleReturn.status)}>
                   {getStatusIcon(vehicleReturn.status)}
                   <span className="ml-1 capitalize">{vehicleReturn.status}</span>
@@ -229,24 +229,26 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <strong>Return Date:</strong> {new Date(vehicleReturn.return_date).toLocaleDateString()}
+                  <strong>تاريخ الإرجاع:</strong> {new Date(vehicleReturn.return_date).toLocaleDateString('ar-EG')}
                 </div>
                 <div>
-                  <strong>Condition:</strong> {vehicleReturn.vehicle_condition}
+                  <strong>الحالة:</strong> {vehicleReturn.vehicle_condition === 'excellent' ? 'ممتازة' : 
+                    vehicleReturn.vehicle_condition === 'good' ? 'جيدة' : 
+                    vehicleReturn.vehicle_condition === 'fair' ? 'مقبولة' : 'سيئة'}
                 </div>
                 <div>
-                  <strong>Fuel Level:</strong> {vehicleReturn.fuel_level}%
+                  <strong>مستوى الوقود:</strong> {vehicleReturn.fuel_level}%
                 </div>
                 {vehicleReturn.odometer_reading && (
                   <div>
-                    <strong>Odometer:</strong> {vehicleReturn.odometer_reading} km
+                    <strong>قراءة العداد:</strong> {vehicleReturn.odometer_reading} كم
                   </div>
                 )}
               </div>
               
               {vehicleReturn.damages && Array.isArray(vehicleReturn.damages) && vehicleReturn.damages.length > 0 && (
                 <div className="mt-4">
-                  <strong>Damages:</strong>
+                  <strong>الأضرار:</strong>
                   <ul className="list-disc list-inside mt-2">
                     {vehicleReturn.damages.map((damage: any, index: number) => (
                       <li key={index} className="text-sm">
@@ -259,7 +261,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               
               {vehicleReturn.notes && (
                 <div className="mt-4">
-                  <strong>Notes:</strong>
+                  <strong>ملاحظات:</strong>
                   <p className="text-sm mt-1">{vehicleReturn.notes}</p>
                 </div>
               )}
@@ -267,10 +269,10 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="rejection_reason">Rejection Reason (if rejecting)</Label>
+                <Label htmlFor="rejection_reason">سبب الرفض (في حالة الرفض)</Label>
                 <Textarea
                   id="rejection_reason"
-                  placeholder="Provide reason for rejection..."
+                  placeholder="أدخل سبب الرفض..."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   rows={3}
@@ -284,13 +286,13 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
                 onClick={handleRejectReturn}
                 disabled={!rejectionReason.trim() || rejectVehicleReturn.isPending}
               >
-                Reject Return
+                رفض الإرجاع
               </Button>
               <Button 
                 onClick={handleApproveReturn}
                 disabled={approveVehicleReturn.isPending}
               >
-                Approve Return
+                الموافقة على الإرجاع
               </Button>
             </div>
           </div>
@@ -301,20 +303,20 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <Alert variant="destructive">
               <XCircle className="h-4 w-4" />
               <AlertDescription>
-                Vehicle return form was rejected. Please create a new vehicle return form.
+                تم رفض نموذج إرجاع المركبة. يرجى إنشاء نموذج إرجاع جديد.
               </AlertDescription>
             </Alert>
             
             {vehicleReturn.rejection_reason && (
               <div className="bg-red-50 p-4 rounded-lg">
-                <strong>Rejection Reason:</strong>
+                <strong>سبب الرفض:</strong>
                 <p className="mt-1">{vehicleReturn.rejection_reason}</p>
               </div>
             )}
 
             <div className="flex justify-end">
               <Button onClick={() => setCurrentStep('vehicle-return')}>
-                Create New Return Form
+                إنشاء نموذج إرجاع جديد
               </Button>
             </div>
           </div>
@@ -325,7 +327,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Vehicle return has been approved. You can now proceed with contract cancellation.
+                تمت الموافقة على إرجاع المركبة. يمكنك الآن المتابعة مع إلغاء العقد.
               </AlertDescription>
             </Alert>
 
@@ -333,10 +335,10 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-yellow-800">Final Confirmation</h4>
+                  <h4 className="font-semibold text-yellow-800">تأكيد نهائي</h4>
                   <p className="text-yellow-700 mt-1">
-                    This action will permanently cancel the contract. This cannot be undone.
-                    The contract status will be changed to "Cancelled" and it will no longer be active.
+                    هذا الإجراء سيؤدي إلى إلغاء العقد نهائياً. لا يمكن التراجع عن هذا الإجراء.
+                    سيتم تغيير حالة العقد إلى "ملغي" ولن يعود نشطاً.
                   </p>
                 </div>
               </div>
@@ -344,14 +346,14 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
             <div className="flex justify-end space-x-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Keep Contract Active
+                الاحتفاظ بالعقد نشطاً
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleFinalCancellation}
                 disabled={updateContractStatus.isPending}
               >
-                {updateContractStatus.isPending ? 'Cancelling...' : 'Cancel Contract'}
+                {updateContractStatus.isPending ? 'جاري الإلغاء...' : 'إلغاء العقد'}
               </Button>
             </div>
           </div>

@@ -86,26 +86,26 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       {/* Contract Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Contract Information</CardTitle>
+          <CardTitle className="text-lg">معلومات العقد</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Contract Number</Label>
+              <Label>رقم العقد</Label>
               <Input value={contract.contract_number} disabled />
             </div>
             <div>
-              <Label>Customer</Label>
+              <Label>العميل</Label>
               <Input value={contract.customer?.first_name + ' ' + contract.customer?.last_name} disabled />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Vehicle</Label>
+              <Label>المركبة</Label>
               <Input value={`${contract.vehicle?.make} ${contract.vehicle?.model} (${contract.vehicle?.year})`} disabled />
             </div>
             <div>
-              <Label>License Plate</Label>
+              <Label>رقم اللوحة</Label>
               <Input value={contract.vehicle?.license_plate} disabled />
             </div>
           </div>
@@ -115,12 +115,12 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       {/* Return Details */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Vehicle Return Details</CardTitle>
+          <CardTitle className="text-lg">تفاصيل إرجاع المركبة</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="return_date">Return Date</Label>
+              <Label htmlFor="return_date">تاريخ الإرجاع</Label>
               <Input
                 id="return_date"
                 type="date"
@@ -130,7 +130,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
               />
             </div>
             <div>
-              <Label htmlFor="vehicle_condition">Vehicle Condition</Label>
+              <Label htmlFor="vehicle_condition">حالة المركبة</Label>
               <Select
                 value={formData.vehicle_condition}
                 onValueChange={(value: 'excellent' | 'good' | 'fair' | 'poor') =>
@@ -141,10 +141,10 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="excellent">Excellent</SelectItem>
-                  <SelectItem value="good">Good</SelectItem>
-                  <SelectItem value="fair">Fair</SelectItem>
-                  <SelectItem value="poor">Poor</SelectItem>
+                  <SelectItem value="excellent">ممتازة</SelectItem>
+                  <SelectItem value="good">جيدة</SelectItem>
+                  <SelectItem value="fair">مقبولة</SelectItem>
+                  <SelectItem value="poor">سيئة</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -152,7 +152,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="fuel_level">Fuel Level (%)</Label>
+              <Label htmlFor="fuel_level">مستوى الوقود (%)</Label>
               <Input
                 id="fuel_level"
                 type="number"
@@ -164,7 +164,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
               />
             </div>
             <div>
-              <Label htmlFor="odometer_reading">Odometer Reading (km)</Label>
+              <Label htmlFor="odometer_reading">قراءة العداد (كم)</Label>
               <Input
                 id="odometer_reading"
                 type="number"
@@ -179,31 +179,31 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       {/* Damages */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Vehicle Damages</CardTitle>
+          <CardTitle className="text-lg">أضرار المركبة</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add New Damage */}
           <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
-              <Label htmlFor="damage_type">Damage Type</Label>
+              <Label htmlFor="damage_type">نوع الضرر</Label>
               <Input
                 id="damage_type"
-                placeholder="e.g., Scratch, Dent"
+                placeholder="مثال: خدش، انبعاج"
                 value={newDamage.type}
                 onChange={(e) => setNewDamage({ ...newDamage, type: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="damage_description">Description</Label>
+              <Label htmlFor="damage_description">الوصف</Label>
               <Input
                 id="damage_description"
-                placeholder="Detailed description"
+                placeholder="وصف تفصيلي"
                 value={newDamage.description}
                 onChange={(e) => setNewDamage({ ...newDamage, description: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="damage_severity">Severity</Label>
+              <Label htmlFor="damage_severity">الشدة</Label>
               <Select
                 value={newDamage.severity}
                 onValueChange={(value: 'minor' | 'moderate' | 'major') =>
@@ -214,16 +214,16 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="minor">Minor</SelectItem>
-                  <SelectItem value="moderate">Moderate</SelectItem>
-                  <SelectItem value="major">Major</SelectItem>
+                  <SelectItem value="minor">طفيف</SelectItem>
+                  <SelectItem value="moderate">متوسط</SelectItem>
+                  <SelectItem value="major">شديد</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-end">
               <Button type="button" onClick={addDamage} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Damage
+                إضافة ضرر
               </Button>
             </div>
           </div>
@@ -243,7 +243,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
                 </div>
                 <div>
                   {damage.cost_estimate && (
-                    <p className="text-sm">Est. Cost: ${damage.cost_estimate}</p>
+                    <p className="text-sm">التكلفة المقدرة: {damage.cost_estimate} د.ك</p>
                   )}
                 </div>
               </div>
@@ -260,7 +260,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           ))}
 
           {damages.length === 0 && (
-            <p className="text-gray-500 text-center py-4">No damages reported</p>
+            <p className="text-gray-500 text-center py-4">لا توجد أضرار مسجلة</p>
           )}
         </CardContent>
       </Card>
@@ -268,11 +268,11 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       {/* Additional Notes */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Additional Notes</CardTitle>
+          <CardTitle className="text-lg">ملاحظات إضافية</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
-            placeholder="Any additional notes about the vehicle condition or return process..."
+            placeholder="أي ملاحظات إضافية حول حالة المركبة أو عملية الإرجاع..."
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={4}
@@ -283,10 +283,10 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       {/* Form Actions */}
       <div className="flex justify-end space-x-4">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          إلغاء
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating Return Form...' : 'Create Return Form'}
+          {isSubmitting ? 'جاري إنشاء نموذج الإرجاع...' : 'إنشاء نموذج الإرجاع'}
         </Button>
       </div>
     </form>
