@@ -566,42 +566,6 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
 
             {/* لوحة التقييم */}
             <div className="space-y-6">
-              {/* تقييم الرسالة الأخيرة */}
-              {currentMessageId && !feedbackSubmitted && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">قيم هذه الاستشارة</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          onClick={() => setRating(star)}
-                          className={`text-2xl ${
-                            star <= rating ? 'text-yellow-400' : 'text-gray-300'
-                          } hover:text-yellow-400 transition-colors`}
-                        >
-                          ⭐
-                        </button>
-                      ))}
-                      <span className="text-sm text-gray-600 mr-2">
-                        {rating > 0 && `${rating}/5`}
-                      </span>
-                    </div>
-                    <Textarea
-                      placeholder="تعليقك (اختياري)"
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      rows={2}
-                    />
-                    <Button onClick={handleSubmitFeedback} disabled={rating === 0} className="w-full">
-                      <ThumbsUp className="w-4 h-4 mr-2" />
-                      إرسال التقييم
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
 
               {feedbackSubmitted && (
                 <Alert>
