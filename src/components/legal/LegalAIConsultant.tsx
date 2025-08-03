@@ -220,60 +220,69 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
     const isUser = message.type === 'user';
     
     return (
-      <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-        <div className={`flex items-start gap-2 max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-            isUser ? 'bg-blue-500' : 'bg-green-500'
+      <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6 animate-bubble-in`}>
+        <div className={`flex items-start gap-3 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+          {/* أيقونة المستخدم/البوت مع تأثيرات بصرية جميلة */}
+          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-chat-bubble transition-all duration-300 hover:scale-105 ${
+            isUser 
+              ? 'bg-gradient-chat-user animate-pulse-glow' 
+              : 'bg-gradient-chat-ai border-2 border-accent/20'
           }`}>
-            {isUser ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
+            {isUser ? (
+              <User className="w-5 h-5 text-white drop-shadow-sm" />
+            ) : (
+              <Bot className="w-5 h-5 text-primary drop-shadow-sm" />
+            )}
           </div>
           
-          <div className={`rounded-lg p-3 ${
+          {/* فقاعة الرسالة مع تصميم متدرج وظلال جميلة */}
+          <div className={`relative rounded-2xl p-4 shadow-chat-bubble transition-all duration-300 hover:shadow-chat-glow ${
             isUser 
-              ? 'bg-blue-500 text-white' 
-              : 'bg-gray-100 text-gray-800 border'
+              ? 'bg-gradient-chat-user text-white' 
+              : 'bg-gradient-chat-ai text-card-foreground border border-border/30'
           }`}>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+            {/* محتوى الرسالة */}
+            <div className="whitespace-pre-wrap text-sm leading-relaxed font-medium">
               {message.content}
             </div>
             
             {/* معلومات إضافية للرسائل من الذكاء الاصطناعي */}
             {!isUser && message.metadata && (
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="flex items-center gap-1">
+              <div className="mt-3 pt-3 border-t border-muted/30">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50">
                     {message.metadata.source === 'cache' && (
                       <>
-                        <Zap className="w-3 h-3" />
+                        <Zap className="w-3 h-3 text-warning" />
                         <span>ذاكرة مؤقتة</span>
                       </>
                     )}
                     {message.metadata.source === 'local_knowledge' && (
                       <>
-                        <Database className="w-3 h-3" />
+                        <Database className="w-3 h-3 text-primary" />
                         <span>معرفة محلية</span>
                       </>
                     )}
                     {message.metadata.source === 'api' && (
                       <>
-                        <Brain className="w-3 h-3" />
+                        <Brain className="w-3 h-3 text-accent-foreground" />
                         <span>ذكاء اصطناعي</span>
                       </>
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50">
+                    <Clock className="w-3 h-3 text-muted-foreground" />
                     <span>{(message.metadata.response_time * 1000).toFixed(0)}ms</span>
                   </div>
                   
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50">
+                    <TrendingUp className="w-3 h-3 text-success" />
                     <span>{(message.metadata.confidence * 100).toFixed(0)}%</span>
                   </div>
                   
                   {message.metadata.cost_saved && (
-                    <Badge variant="outline" className="text-green-600 text-xs">
+                    <Badge variant="outline" className="text-success border-success/30 text-xs">
                       <CheckCircle className="w-2 h-2 mr-1" />
                       توفير
                     </Badge>
@@ -282,12 +291,20 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
               </div>
             )}
             
-            <div className="text-xs text-gray-400 mt-1">
+            {/* وقت الرسالة */}
+            <div className={`text-xs mt-2 ${isUser ? 'text-white/70' : 'text-muted-foreground'}`}>
               {new Date(message.timestamp).toLocaleTimeString('ar', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
               })}
             </div>
+            
+            {/* مؤشر الاتجاه للفقاعة */}
+            <div className={`absolute top-4 w-3 h-3 rotate-45 ${
+              isUser 
+                ? 'right-[-6px] bg-gradient-chat-user' 
+                : 'left-[-6px] bg-gradient-chat-ai border-r border-b border-border/30'
+            }`} />
           </div>
         </div>
       </div>
@@ -441,15 +458,24 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* منطقة المحادثة */}
           <div className="lg:col-span-2">
-            <Card className="h-[600px] flex flex-col">
-              <CardHeader className="flex-shrink-0">
+            <Card className="h-[700px] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
+              <CardHeader className="flex-shrink-0 bg-gradient-chat-header rounded-t-lg border-b border-border/20">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5" />
-                    المحادثة
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <MessageSquare className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="bg-gradient-primary bg-clip-text text-transparent font-bold">
+                      المحادثة القانونية الذكية
+                    </span>
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={clearChatHistory}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={clearChatHistory}
+                      className="hover:shadow-chat-input transition-all duration-300 border-border/30"
+                    >
                       <History className="w-4 h-4 mr-1" />
                       مسح المحادثة
                     </Button>
@@ -458,14 +484,20 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
               </CardHeader>
               
               {/* منطقة الرسائل */}
-              <CardContent className="flex-1 overflow-y-auto">
+              <CardContent className="flex-1 overflow-y-auto p-6">
                 <div className="space-y-4 pr-2">
                   {chatHistory.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                      <div className="text-center">
-                        <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                        <p>ابدأ محادثة جديدة</p>
-                        <p className="text-sm">اطرح سؤالك القانوني وسأساعدك</p>
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center animate-fade-in">
+                        <div className="p-4 rounded-full bg-gradient-primary/10 mb-6 inline-block animate-float">
+                          <Bot className="w-16 h-16 text-primary drop-shadow-sm" />
+                        </div>
+                        <h3 className="text-xl font-bold text-card-foreground mb-2">مرحباً بك في المستشار القانوني</h3>
+                        <p className="text-muted-foreground mb-4">ابدأ محادثة جديدة واطرح سؤالك القانوني</p>
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                          <span>جاهز للمساعدة على مدار الساعة</span>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -475,16 +507,21 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                   )}
                   
                   {loading && (
-                    <div className="flex justify-start mb-4">
-                      <div className="flex items-start gap-2 max-w-[80%]">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-green-500">
-                          <Bot className="w-4 h-4 text-white" />
+                    <div className="flex justify-start mb-6 animate-slide-up">
+                      <div className="flex items-start gap-3 max-w-[85%]">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-chat-ai border-2 border-accent/20 shadow-chat-bubble">
+                          <Bot className="w-5 h-5 text-primary animate-pulse" />
                         </div>
-                        <div className="bg-gray-100 text-gray-800 border rounded-lg p-3">
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>جاري التفكير...</span>
+                        <div className="relative bg-gradient-chat-ai text-card-foreground border border-border/30 rounded-2xl p-4 shadow-chat-bubble">
+                          <div className="flex items-center gap-3">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 rounded-full bg-primary animate-typing" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-2 h-2 rounded-full bg-primary animate-typing" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-2 h-2 rounded-full bg-primary animate-typing" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                            <span className="text-sm text-muted-foreground">المستشار يفكر في إجابتك...</span>
                           </div>
+                          <div className="absolute top-4 left-[-6px] w-3 h-3 rotate-45 bg-gradient-chat-ai border-r border-b border-border/30" />
                         </div>
                       </div>
                     </div>
@@ -493,19 +530,19 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
               </CardContent>
               
               {/* منطقة الإدخال */}
-              <div className="border-t p-4 space-y-4">
+              <div className="border-t border-border/20 bg-gradient-chat-input p-6 space-y-4 rounded-b-lg">
                 {/* اختيار الدولة */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium">الدولة:</label>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-semibold text-card-foreground">الدولة:</label>
                   <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-52 shadow-chat-input border-border/30 hover:shadow-chat-glow transition-all duration-300">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((c) => (
                         <SelectItem key={c.code} value={c.code}>
                           <span className="flex items-center gap-2">
-                            <span>{c.flag}</span>
+                            <span className="text-lg">{c.flag}</span>
                             <span>{c.name}</span>
                           </span>
                         </SelectItem>
@@ -515,12 +552,12 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                 </div>
                 
                 {/* منطقة كتابة الرسالة */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Textarea
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="اكتب سؤالك القانوني هنا..."
-                    className="min-h-[100px] resize-none"
+                    placeholder="اكتب سؤالك القانوني هنا... مثال: ما هي خطوات تأسيس شركة في الكويت؟"
+                    className="min-h-[120px] resize-none shadow-chat-input border-border/30 bg-background/50 focus:shadow-chat-glow transition-all duration-300 text-base"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                         handleSubmitQuery();
@@ -528,30 +565,34 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                     }}
                   />
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">
-                      Ctrl + Enter للإرسال
-                    </span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                      <span>اضغط Ctrl + Enter للإرسال السريع</span>
+                    </div>
                     <Button 
                       onClick={handleSubmitQuery}
                       disabled={loading || !query.trim()}
-                      className="px-6"
+                      className="px-8 bg-gradient-primary hover:shadow-glow transition-all duration-300 font-semibold"
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                          جاري الإرسال...
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          جاري المعالجة...
                         </>
                       ) : (
-                        'إرسال السؤال'
+                        <>
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          إرسال السؤال
+                        </>
                       )}
                     </Button>
                   </div>
                 </div>
                 
                 {error && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                  <Alert className="border-destructive/30 bg-destructive/5 animate-slide-up">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <AlertDescription className="text-destructive">{error}</AlertDescription>
                   </Alert>
                 )}
               </div>
@@ -562,29 +603,31 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
           <div className="space-y-4">
             {/* إحصائيات سريعة */}
             {stats && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart className="w-5 h-5" />
+              <Card className="bg-gradient-card shadow-card border-0 animate-fade-in">
+                <CardHeader className="bg-gradient-chat-header rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-primary">
+                    <div className="p-1.5 rounded-full bg-primary/10">
+                      <BarChart className="w-4 h-4" />
+                    </div>
                     إحصائيات سريعة
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>الاستفسارات اليوم</span>
-                    <span className="font-bold">{stats.performance_overview.total_queries}</span>
+                <CardContent className="space-y-4 p-6">
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
+                    <span className="text-sm font-medium">الاستفسارات اليوم</span>
+                    <span className="font-bold text-primary text-lg">{stats.performance_overview.total_queries}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>كفاءة التكلفة</span>
-                    <span className="font-bold text-green-600">{stats.performance_overview.cost_efficiency}%</span>
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
+                    <span className="text-sm font-medium">كفاءة التكلفة</span>
+                    <span className="font-bold text-success text-lg">{stats.performance_overview.cost_efficiency}%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>رضا المستخدمين</span>
-                    <span className="font-bold text-blue-600">{stats.performance_overview.user_satisfaction}%</span>
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
+                    <span className="text-sm font-medium">رضا المستخدمين</span>
+                    <span className="font-bold text-primary text-lg">{stats.performance_overview.user_satisfaction}%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>وقت الاستجابة</span>
-                    <span className="font-bold">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-accent/10 hover:bg-gradient-accent/20 transition-all duration-300">
+                    <span className="text-sm font-medium">وقت الاستجابة</span>
+                    <span className="font-bold text-muted-foreground text-lg">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
                   </div>
                 </CardContent>
               </Card>
@@ -592,17 +635,19 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
             
             {/* تقييم الإجابة الأخيرة */}
             {currentMessageId && !feedbackSubmitted && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5" />
+              <Card className="bg-gradient-card shadow-card border-0 animate-slide-up">
+                <CardHeader className="bg-gradient-chat-header rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-primary">
+                    <div className="p-1.5 rounded-full bg-warning/20">
+                      <Star className="w-4 h-4 text-warning" />
+                    </div>
                     قيّم الإجابة
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-muted-foreground">
                     ساعدنا في تحسين جودة الخدمة
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-6">
                   {/* نجوم التقييم */}
                   <div className="flex justify-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -611,7 +656,9 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                         variant="ghost"
                         size="sm"
                         onClick={() => setRating(star)}
-                        className={`p-1 ${rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+                        className={`p-2 hover:scale-110 transition-all duration-300 ${
+                          rating >= star ? 'text-warning' : 'text-muted-foreground hover:text-warning/70'
+                        }`}
                       >
                         <Star className="w-6 h-6 fill-current" />
                       </Button>
@@ -623,14 +670,15 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
                     placeholder="تعليق إضافي (اختياري)"
-                    className="min-h-[80px] resize-none"
+                    className="min-h-[80px] resize-none shadow-chat-input border-border/30 bg-background/50 focus:shadow-chat-glow transition-all duration-300"
                   />
                   
                   <Button 
                     onClick={handleSubmitFeedback}
                     disabled={rating === 0}
-                    className="w-full"
+                    className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 font-semibold"
                   >
+                    <Star className="w-4 h-4 mr-2" />
                     إرسال التقييم
                   </Button>
                 </CardContent>
@@ -638,10 +686,13 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
             )}
             
             {feedbackSubmitted && (
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-sm text-green-600">تم تسجيل تقييمك بنجاح</p>
+              <Card className="bg-gradient-card shadow-card border-0 animate-scale-in">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-success/10 mb-4 inline-block">
+                    <CheckCircle className="w-8 h-8 text-success" />
+                  </div>
+                  <h4 className="font-semibold text-card-foreground mb-2">شكراً لك!</h4>
+                  <p className="text-sm text-success">تم تسجيل تقييمك بنجاح</p>
                 </CardContent>
               </Card>
             )}

@@ -66,12 +66,25 @@ All colors MUST be HSL.
     --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
     
+    /* Chat-specific gradients */
+    --gradient-chat-user: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
+    --gradient-chat-ai: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-chat-container: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-chat-input: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+    --gradient-chat-header: linear-gradient(135deg, hsl(var(--accent-light)) 0%, hsl(var(--accent-muted)) 100%);
+    
     /* Clean Shadows */
     --shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
     --shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
     --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
     --shadow-glow: 0 0 20px hsl(var(--primary-glow));
     --shadow-glass: 0 8px 32px hsl(0 0% 15% / 0.06);
+    
+    /* Chat-specific shadows */
+    --shadow-chat-bubble: 0 4px 12px hsl(0 0% 15% / 0.08), 0 2px 6px hsl(0 0% 15% / 0.04);
+    --shadow-chat-container: 0 8px 25px hsl(0 0% 15% / 0.12), 0 4px 10px hsl(0 0% 15% / 0.08);
+    --shadow-chat-input: 0 2px 8px hsl(var(--primary) / 0.1);
+    --shadow-chat-glow: 0 0 30px hsl(var(--primary) / 0.15);
     
     /* Smooth Professional Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -271,6 +284,27 @@ All colors MUST be HSL.
     background: var(--gradient-muted);
   }
   
+  /* Chat-specific gradient utilities */
+  .bg-gradient-chat-user {
+    background: var(--gradient-chat-user);
+  }
+  
+  .bg-gradient-chat-ai {
+    background: var(--gradient-chat-ai);
+  }
+  
+  .bg-gradient-chat-container {
+    background: var(--gradient-chat-container);
+  }
+  
+  .bg-gradient-chat-input {
+    background: var(--gradient-chat-input);
+  }
+  
+  .bg-gradient-chat-header {
+    background: var(--gradient-chat-header);
+  }
+  
   /* Custom shadow utilities */
   .shadow-card {
     box-shadow: var(--shadow-card);
@@ -286,6 +320,23 @@ All colors MUST be HSL.
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
+  }
+  
+  /* Chat-specific shadow utilities */
+  .shadow-chat-bubble {
+    box-shadow: var(--shadow-chat-bubble);
+  }
+  
+  .shadow-chat-container {
+    box-shadow: var(--shadow-chat-container);
+  }
+  
+  .shadow-chat-input {
+    box-shadow: var(--shadow-chat-input);
+  }
+  
+  .shadow-chat-glow {
+    box-shadow: var(--shadow-chat-glow);
   }
   
   .transition-smooth {
