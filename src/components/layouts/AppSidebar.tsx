@@ -254,12 +254,13 @@ export function AppSidebar() {
       {/* Header */}
       <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <Building2 className="h-5 w-5" />
-          </div>
+          <img 
+            src="/lovable-uploads/877be161-8ac1-46f5-9d33-81c9e531172d.png" 
+            alt="Fleetify Logo" 
+            className="h-10 w-auto"
+          />
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">Fleetify</h1>
               <p className="text-xs text-sidebar-foreground/60">نظام إدارة تأجير السيارات</p>
             </div>
           )}

@@ -56,7 +56,11 @@ export const DashboardLayout: React.FC = () => {
           <header className="h-14 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
-              <h2 className="text-lg font-semibold text-foreground">Fleetify</h2>
+              <img 
+                src="/lovable-uploads/877be161-8ac1-46f5-9d33-81c9e531172d.png" 
+                alt="Fleetify Logo" 
+                className="h-8 w-auto"
+              />
             </div>
             
             <div className="flex items-center gap-4">
