@@ -51,107 +51,194 @@ export const VehicleDiagram: React.FC<VehicleDiagramProps> = ({
     <div className={`vehicle-diagram ${className}`}>
       <div className="mb-4">
         <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
-          مخطط المركبة - مواقع الأضرار
+          المخطط المعتمد للمركبة - تحديد مواقع الأضرار
         </h4>
+        <p className="text-xs text-gray-600">مخطط رسمي معتمد لتوثيق حالة المركبة وفقاً للمعايير المهنية</p>
       </div>
       
-      <div className="relative bg-gray-100 border-2 border-gray-300 rounded-lg p-4">
-        {/* رسم المركبة باستخدام SVG */}
+      <div className="relative bg-white border-2 border-gray-400 rounded-lg p-6">
+        {/* مخطط المركبة الاحترافي */}
         <svg 
-          viewBox="0 0 400 200" 
-          className="w-full h-48 mb-4"
+          viewBox="0 0 500 300" 
+          className="w-full h-64 mb-4 border border-gray-300 rounded"
           style={{ maxWidth: '100%', height: 'auto' }}
         >
-          {/* جسم المركبة */}
-          <rect 
-            x="50" 
-            y="60" 
-            width="300" 
-            height="80" 
-            fill="#e5e7eb" 
-            stroke="#374151" 
-            strokeWidth="2"
-            rx="10"
-          />
+          {/* خلفية شبكية للقياس */}
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
           
-          {/* النوافذ */}
-          <rect 
-            x="80" 
-            y="70" 
-            width="60" 
-            height="25" 
-            fill="#bfdbfe" 
-            stroke="#1e40af" 
-            strokeWidth="1"
-            rx="3"
-          />
-          <rect 
-            x="260" 
-            y="70" 
-            width="60" 
-            height="25" 
-            fill="#bfdbfe" 
-            stroke="#1e40af" 
-            strokeWidth="1"
-            rx="3"
-          />
+          {/* جسم المركبة الرئيسي - منظر علوي احترافي */}
+          <g id="vehicle-body">
+            {/* الجسم الخارجي */}
+            <path 
+              d="M 100 80 
+                 L 400 80 
+                 Q 420 80 420 100
+                 L 420 200
+                 Q 420 220 400 220
+                 L 100 220
+                 Q 80 220 80 200
+                 L 80 100
+                 Q 80 80 100 80 Z"
+              fill="#e5e7eb" 
+              stroke="#374151" 
+              strokeWidth="3"
+            />
+            
+            {/* الزجاج الأمامي */}
+            <path 
+              d="M 100 90 
+                 L 380 90 
+                 Q 390 90 390 100
+                 L 390 120
+                 L 100 120
+                 Q 90 120 90 110
+                 L 90 100
+                 Q 90 90 100 90 Z"
+              fill="#bfdbfe" 
+              stroke="#1e40af" 
+              strokeWidth="2"
+            />
+            
+            {/* الزجاج الخلفي */}
+            <path 
+              d="M 100 180 
+                 L 390 180 
+                 L 390 200
+                 Q 390 210 380 210
+                 L 100 210
+                 Q 90 210 90 200
+                 L 90 190
+                 Q 90 180 100 180 Z"
+              fill="#bfdbfe" 
+              stroke="#1e40af" 
+              strokeWidth="2"
+            />
+            
+            {/* النوافذ الجانبية */}
+            <rect x="100" y="130" width="50" height="40" fill="#bfdbfe" stroke="#1e40af" strokeWidth="1.5" rx="3"/>
+            <rect x="340" y="130" width="50" height="40" fill="#bfdbfe" stroke="#1e40af" strokeWidth="1.5" rx="3"/>
+            
+            {/* الأبواب */}
+            <line x1="180" y1="80" x2="180" y2="220" stroke="#374151" strokeWidth="2"/>
+            <line x1="320" y1="80" x2="320" y2="220" stroke="#374151" strokeWidth="2"/>
+            <line x1="250" y1="80" x2="250" y2="220" stroke="#6b7280" strokeWidth="1" strokeDasharray="5,5"/>
+            
+            {/* مقابض الأبواب */}
+            <circle cx="170" cy="150" r="3" fill="#374151"/>
+            <circle cx="190" cy="150" r="3" fill="#374151"/>
+            <circle cx="310" cy="150" r="3" fill="#374151"/>
+            <circle cx="330" cy="150" r="3" fill="#374151"/>
+          </g>
           
           {/* العجلات */}
-          <circle cx="90" cy="160" r="15" fill="#374151" stroke="#111827" strokeWidth="2"/>
-          <circle cx="310" cy="160" r="15" fill="#374151" stroke="#111827" strokeWidth="2"/>
+          <g id="wheels">
+            {/* العجلة الأمامية اليسرى */}
+            <circle cx="130" cy="60" r="18" fill="#1f2937" stroke="#111827" strokeWidth="3"/>
+            <circle cx="130" cy="60" r="12" fill="#4b5563" stroke="#374151" strokeWidth="2"/>
+            <circle cx="130" cy="60" r="6" fill="#6b7280"/>
+            
+            {/* العجلة الأمامية اليمنى */}
+            <circle cx="370" cy="60" r="18" fill="#1f2937" stroke="#111827" strokeWidth="3"/>
+            <circle cx="370" cy="60" r="12" fill="#4b5563" stroke="#374151" strokeWidth="2"/>
+            <circle cx="370" cy="60" r="6" fill="#6b7280"/>
+            
+            {/* العجلة الخلفية اليسرى */}
+            <circle cx="130" cy="240" r="18" fill="#1f2937" stroke="#111827" strokeWidth="3"/>
+            <circle cx="130" cy="240" r="12" fill="#4b5563" stroke="#374151" strokeWidth="2"/>
+            <circle cx="130" cy="240" r="6" fill="#6b7280"/>
+            
+            {/* العجلة الخلفية اليمنى */}
+            <circle cx="370" cy="240" r="18" fill="#1f2937" stroke="#111827" strokeWidth="3"/>
+            <circle cx="370" cy="240" r="12" fill="#4b5563" stroke="#374151" strokeWidth="2"/>
+            <circle cx="370" cy="240" r="6" fill="#6b7280"/>
+          </g>
           
-          {/* المصابيح الأمامية */}
-          <circle cx="60" cy="80" r="8" fill="#fbbf24" stroke="#d97706" strokeWidth="1"/>
-          <circle cx="60" cy="120" r="8" fill="#fbbf24" stroke="#d97706" strokeWidth="1"/>
+          {/* المصابيح */}
+          <g id="lights">
+            {/* المصابيح الأمامية */}
+            <ellipse cx="85" cy="110" rx="8" ry="12" fill="#fbbf24" stroke="#d97706" strokeWidth="2"/>
+            <ellipse cx="85" cy="190" rx="8" ry="12" fill="#fbbf24" stroke="#d97706" strokeWidth="2"/>
+            
+            {/* المصابيح الخلفية */}
+            <ellipse cx="415" cy="110" rx="8" ry="12" fill="#ef4444" stroke="#dc2626" strokeWidth="2"/>
+            <ellipse cx="415" cy="190" rx="8" ry="12" fill="#ef4444" stroke="#dc2626" strokeWidth="2"/>
+            
+            {/* مصابيح الإشارة */}
+            <circle cx="85" cy="150" r="6" fill="#f59e0b" stroke="#d97706" strokeWidth="1"/>
+            <circle cx="415" cy="150" r="6" fill="#f59e0b" stroke="#d97706" strokeWidth="1"/>
+          </g>
           
-          {/* المصابيح الخلفية */}
-          <circle cx="340" cy="80" r="8" fill="#ef4444" stroke="#dc2626" strokeWidth="1"/>
-          <circle cx="340" cy="120" r="8" fill="#ef4444" stroke="#dc2626" strokeWidth="1"/>
+          {/* الأجزاء الخارجية */}
+          <g id="exterior-parts">
+            {/* المرايا */}
+            <ellipse cx="70" cy="120" rx="4" ry="8" fill="#374151" stroke="#111827" strokeWidth="1"/>
+            <ellipse cx="430" cy="120" rx="4" ry="8" fill="#374151" stroke="#111827" strokeWidth="1"/>
+            <ellipse cx="70" cy="180" rx="4" ry="8" fill="#374151" stroke="#111827" strokeWidth="1"/>
+            <ellipse cx="430" cy="180" rx="4" ry="8" fill="#374151" stroke="#111827" strokeWidth="1"/>
+            
+            {/* المصد الأمامي والخلفي */}
+            <rect x="60" y="105" width="15" height="90" fill="#d1d5db" stroke="#9ca3af" strokeWidth="2" rx="3"/>
+            <rect x="425" y="105" width="15" height="90" fill="#d1d5db" stroke="#9ca3af" strokeWidth="2" rx="3"/>
+          </g>
           
-          {/* الأبواب */}
-          <line x1="160" y1="60" x2="160" y2="140" stroke="#374151" strokeWidth="1"/>
-          <line x1="240" y1="60" x2="240" y2="140" stroke="#374151" strokeWidth="1"/>
+          {/* التسميات والمقاييس */}
+          <g id="labels" fontSize="10" fill="#374151" fontFamily="Arial, sans-serif">
+            <text x="250" y="20" textAnchor="middle" fontWeight="bold">مخطط فحص المركبة المعتمد</text>
+            <text x="250" y="35" textAnchor="middle" fontSize="8">منظر علوي - Vehicle Top View</text>
+            
+            {/* محاور الإحداثيات */}
+            <text x="20" y="150" textAnchor="middle" fontSize="8" transform="rotate(-90, 20, 150)">الطول</text>
+            <text x="250" y="290" textAnchor="middle" fontSize="8">العرض</text>
+            
+            {/* أرقام القياس */}
+            <text x="45" y="295" textAnchor="middle" fontSize="8">0%</text>
+            <text x="250" y="295" textAnchor="middle" fontSize="8">50%</text>
+            <text x="455" y="295" textAnchor="middle" fontSize="8">100%</text>
+          </g>
           
           {/* نقاط الأضرار */}
           {damagePoints.map((point, index) => {
-            // تحويل النسبة المئوية إلى إحداثيات SVG
-            const svgX = 50 + (point.x / 100) * 300;
-            const svgY = 60 + (point.y / 100) * 80;
+            // تحويل النسبة المئوية إلى إحداثيات SVG (منطقة جسم المركبة)
+            const svgX = 80 + (point.x / 100) * 340;
+            const svgY = 80 + (point.y / 100) * 140;
             
             return (
               <g key={point.id || index}>
-                {/* دائرة الضرر */}
+                {/* دائرة تحديد منطقة الضرر */}
                 <circle
                   cx={svgX}
                   cy={svgY}
-                  r="8"
+                  r="12"
                   fill={getSeverityColor(point.severity)}
                   stroke="#ffffff"
-                  strokeWidth="2"
+                  strokeWidth="3"
                   opacity="0.9"
                 />
-                {/* رمز التحذير */}
+                {/* رقم نقطة الضرر */}
                 <text
                   x={svgX}
-                  y={svgY + 1}
+                  y={svgY + 2}
                   textAnchor="middle"
                   fill="white"
-                  fontSize="8"
-                  fontWeight="bold"
-                >
-                  !
-                </text>
-                {/* رقم النقطة */}
-                <text
-                  x={svgX}
-                  y={svgY - 12}
-                  textAnchor="middle"
-                  fill="#374151"
                   fontSize="10"
                   fontWeight="bold"
                 >
                   {index + 1}
                 </text>
+                {/* خط ربط بالتفاصيل */}
+                <line
+                  x1={svgX}
+                  y1={svgY - 12}
+                  x2={svgX}
+                  y2={svgY - 25}
+                  stroke={getSeverityColor(point.severity)}
+                  strokeWidth="2"
+                />
               </g>
             );
           })}
