@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -518,6 +519,7 @@ export const FinancialStep: React.FC = () => {
   const { user } = useAuth()
   const { data, updateData } = useContractWizard()
   const { validation, isValidating, debouncedValidation } = useContractValidation()
+  const [isCustomAmount, setIsCustomAmount] = useState(false)
   
   // Trigger validation when amounts change
   React.useEffect(() => {
@@ -567,11 +569,12 @@ export const FinancialStep: React.FC = () => {
   // Get vehicle for calculations
   const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)
   const selectedVehicle = availableVehicles?.find(v => v.id === data.vehicle_id) || null
-  const calculations = useContractCalculations(selectedVehicle, data.contract_type, data.rental_days)
+  const calculations = useContractCalculations(selectedVehicle, data.contract_type, data.rental_days, isCustomAmount ? data.contract_amount : undefined)
 
   // Auto-update financial calculations with proper tracking
   React.useEffect(() => {
-    if (calculations && selectedVehicle && data.rental_days) {
+    // Only auto-update if custom amount is not enabled
+    if (!isCustomAmount && calculations && selectedVehicle && data.rental_days) {
       const newData = {
         contract_amount: calculations.totalAmount,
         // Always calculate monthly_amount, even for short contracts (for consistency)
@@ -585,7 +588,7 @@ export const FinancialStep: React.FC = () => {
         updateData(newData)
       }
     }
-  }, [calculations, selectedVehicle, data.rental_days, data.contract_amount, data.monthly_amount, updateData])
+  }, [calculations, selectedVehicle, data.rental_days, data.contract_amount, data.monthly_amount, updateData, isCustomAmount])
 
   return (
     <Card>
@@ -648,6 +651,53 @@ export const FinancialStep: React.FC = () => {
           </div>
         )}
 
+        {/* خيار التعديل اليدوي للمبلغ */}
+        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-orange-800 flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              خيارات التسعير
+            </h4>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="custom_amount_toggle" className="text-sm font-medium">
+                تعديل المبلغ يدوياً
+              </Label>
+              <p className="text-xs text-orange-700">
+                تجاوز الحسابات التلقائية ووضع مبلغ مخصص
+              </p>
+            </div>
+            <Switch
+              id="custom_amount_toggle"
+              checked={isCustomAmount}
+              onCheckedChange={(checked) => {
+                setIsCustomAmount(checked)
+                if (!checked && calculations) {
+                  // Reset to automatic calculation
+                  updateData({
+                    contract_amount: calculations.totalAmount,
+                    monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
+                  })
+                }
+              }}
+            />
+          </div>
+          {isCustomAmount && (
+            <Alert className="mt-3 border-orange-300 bg-orange-100">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800 text-sm">
+                <strong>تنبيه:</strong> تم تفعيل التعديل اليدوي. لن يتم تحديث المبلغ تلقائياً عند تغيير المركبة أو المدة.
+                {selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 
+                 'minimum_rental_price' in selectedVehicle && selectedVehicle.minimum_rental_price && (
+                  <span className="block mt-1">
+                    <strong>الحد الأدنى للسعر:</strong> {selectedVehicle.minimum_rental_price} د.ك
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">

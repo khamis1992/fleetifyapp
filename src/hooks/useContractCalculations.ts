@@ -9,6 +9,8 @@ export interface ContractCalculation {
   weeklyRate: number
   monthlyRate: number
   bestRateType: 'daily' | 'weekly' | 'monthly'
+  isCustomAmount: boolean
+  customAmount?: number
   breakdown: {
     baseAmount: number
     rateType: string
@@ -16,6 +18,7 @@ export interface ContractCalculation {
     savings?: number
     minimumPriceEnforced?: boolean
     originalAmount?: number
+    isCustom?: boolean
   }
 }
 
@@ -32,9 +35,41 @@ export interface Vehicle {
 export const useContractCalculations = (
   vehicle: Vehicle | null,
   contractType: string,
-  rentalDays: number
+  rentalDays: number,
+  customAmount?: number
 ) => {
   const calculations = useMemo((): ContractCalculation | null => {
+    // If custom amount is provided, use it instead of calculated rates
+    if (customAmount && customAmount > 0) {
+      console.log("💰 [CONTRACT_CALCULATIONS] Using custom amount:", customAmount)
+      
+      const dailyRate = Number(vehicle?.daily_rate) || 0
+      const weeklyRate = Number(vehicle?.weekly_rate) || 0
+      const monthlyRate = Number(vehicle?.monthly_rate) || 0
+      
+      const periodType = getPeriodType(rentalDays)
+      const periodAmount = getPeriodAmount('daily', customAmount, rentalDays)
+      const monthlyAmount = rentalDays >= 30 ? customAmount / Math.ceil(rentalDays / 30) : 0
+      
+      return {
+        totalAmount: customAmount,
+        monthlyAmount,
+        periodAmount,
+        periodType,
+        dailyRate,
+        weeklyRate,
+        monthlyRate,
+        bestRateType: 'daily',
+        isCustomAmount: true,
+        customAmount,
+        breakdown: {
+          baseAmount: customAmount,
+          rateType: 'مبلغ مخصص',
+          period: rentalDays,
+          isCustom: true
+        }
+      }
+    }
     console.log("💰 [CONTRACT_CALCULATIONS] Calculating for:", {
       vehicle: vehicle ? {
         id: vehicle.id,
@@ -93,6 +128,7 @@ export const useContractCalculations = (
         weeklyRate,
         monthlyRate,
         bestRateType: 'daily',
+        isCustomAmount: false,
         breakdown: {
           baseAmount: 0,
           rateType: 'غير متوفر',
@@ -149,6 +185,7 @@ export const useContractCalculations = (
       weeklyRate,
       monthlyRate,
       bestRateType: bestRate.type,
+      isCustomAmount: false,
       breakdown: {
         baseAmount: bestRate.total,
         rateType: getRateTypeLabel(bestRate.type),
@@ -161,7 +198,7 @@ export const useContractCalculations = (
 
     console.log("✅ [CONTRACT_CALCULATIONS] Final result:", result)
     return result
-  }, [vehicle, contractType, rentalDays])
+  }, [vehicle, contractType, rentalDays, customAmount])
 
   return calculations
 }

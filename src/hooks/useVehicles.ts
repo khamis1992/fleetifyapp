@@ -828,7 +828,9 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
               status,
               daily_rate,
               weekly_rate,
-              monthly_rate
+              monthly_rate,
+              minimum_rental_price,
+              enforce_minimum_price
             `)
             .eq('company_id', companyId)
             .eq('is_active', true)
