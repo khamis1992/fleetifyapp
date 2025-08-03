@@ -253,12 +253,43 @@ export function AppSidebar() {
     <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
       {/* Header */}
       <SidebarHeader className="border-b border-sidebar-border p-6">
-        <div className="flex flex-col items-center text-center space-y-2">
-          <img 
-            src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
-            alt="Fleetify Logo" 
-            className="h-24 w-auto filter brightness-0 invert"
-          />
+        <div className="flex flex-col items-center text-center space-y-4">
+          {/* Logo with same styling as login page */}
+          <div className="relative inline-flex items-center justify-center w-20 h-20">
+            {/* Gravity pull dots - moving animation */}
+            <div className="absolute inset-0">
+              <div className="absolute top-1 left-1/2 w-2 h-2 bg-primary rounded-full transform -translate-x-1/2" 
+                   style={{ animation: 'gravity-pull 2s ease-in-out infinite' }}></div>
+              <div className="absolute bottom-1 left-1/2 w-2 h-2 bg-primary rounded-full transform -translate-x-1/2" 
+                   style={{ animation: 'gravity-pull-reverse 2s ease-in-out infinite', animationDelay: '0.5s' }}></div>
+              <div className="absolute top-1/2 left-1 w-2 h-2 bg-secondary rounded-full transform -translate-y-1/2" 
+                   style={{ animation: 'gravity-pull 2.2s ease-in-out infinite', animationDelay: '0.8s' }}></div>
+              <div className="absolute top-1/2 right-1 w-2 h-2 bg-secondary rounded-full transform -translate-y-1/2" 
+                   style={{ animation: 'gravity-pull-reverse 2.2s ease-in-out infinite', animationDelay: '1.2s' }}></div>
+            </div>
+            
+            {/* Corner dots with gravity animation */}
+            <div className="absolute inset-0">
+              <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-accent rounded-full" 
+                   style={{ animation: 'gravity-pull 1.8s ease-in-out infinite', animationDelay: '0.3s' }}></div>
+              <div className="absolute bottom-2 left-2 w-1.5 h-1.5 bg-accent rounded-full" 
+                   style={{ animation: 'gravity-pull-reverse 1.8s ease-in-out infinite', animationDelay: '0.7s' }}></div>
+              <div className="absolute top-2 left-2 w-1.5 h-1.5 bg-destructive rounded-full" 
+                   style={{ animation: 'gravity-pull 2.5s ease-in-out infinite', animationDelay: '1s' }}></div>
+              <div className="absolute bottom-2 right-2 w-1.5 h-1.5 bg-destructive rounded-full" 
+                   style={{ animation: 'gravity-pull-reverse 2.5s ease-in-out infinite', animationDelay: '1.5s' }}></div>
+            </div>
+            
+            {/* Logo in the center with same styling as login page */}
+            <div className="relative z-10 flex items-center justify-center w-20 h-20 bg-destructive rounded-xl shadow-accent overflow-hidden">
+              <img 
+                src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+                alt="Fleetify Logo" 
+                className="h-14 w-auto filter brightness-0 invert"
+              />
+            </div>
+          </div>
+          
           {!collapsed && (
             <p className="text-xs text-sidebar-foreground/60">نظام إدارة تأجير السيارات</p>
           )}

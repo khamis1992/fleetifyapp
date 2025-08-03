@@ -71,65 +71,37 @@ export const AuthForm: React.FC = () => {
         {/* Logo Section */}
         <div className="text-center mb-8">
           <div className="relative inline-flex items-center justify-center w-32 h-32 mb-4">
-            {/* Logo with animated holes/gaps */}
+            {/* Gravity pull dots - moving to corners and back */}
+            <div className="absolute inset-0">
+              <div className="absolute top-3 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2" 
+                   style={{ animation: 'gravity-pull 2s ease-in-out infinite' }}></div>
+              <div className="absolute bottom-3 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2" 
+                   style={{ animation: 'gravity-pull-reverse 2s ease-in-out infinite', animationDelay: '0.5s' }}></div>
+              <div className="absolute top-1/2 left-3 w-3 h-3 bg-secondary rounded-full transform -translate-y-1/2" 
+                   style={{ animation: 'gravity-pull 2.2s ease-in-out infinite', animationDelay: '0.8s' }}></div>
+              <div className="absolute top-1/2 right-3 w-3 h-3 bg-secondary rounded-full transform -translate-y-1/2" 
+                   style={{ animation: 'gravity-pull-reverse 2.2s ease-in-out infinite', animationDelay: '1.2s' }}></div>
+            </div>
+            
+            {/* Corner dots with gravity animation */}
+            <div className="absolute inset-0">
+              <div className="absolute top-5 right-5 w-2 h-2 bg-accent rounded-full" 
+                   style={{ animation: 'gravity-pull 1.8s ease-in-out infinite', animationDelay: '0.3s' }}></div>
+              <div className="absolute bottom-5 left-5 w-2 h-2 bg-accent rounded-full" 
+                   style={{ animation: 'gravity-pull-reverse 1.8s ease-in-out infinite', animationDelay: '0.7s' }}></div>
+              <div className="absolute top-5 left-5 w-2 h-2 bg-destructive rounded-full" 
+                   style={{ animation: 'gravity-pull 2.5s ease-in-out infinite', animationDelay: '1s' }}></div>
+              <div className="absolute bottom-5 right-5 w-2 h-2 bg-destructive rounded-full" 
+                   style={{ animation: 'gravity-pull-reverse 2.5s ease-in-out infinite', animationDelay: '1.5s' }}></div>
+            </div>
+            
+            {/* Logo in the center */}
             <div className="relative z-10 flex items-center justify-center w-32 h-32 bg-destructive rounded-2xl shadow-accent overflow-hidden">
-              {/* Base logo */}
               <img 
                 src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
                 alt="Fleetify Logo" 
-                className="h-24 w-auto filter brightness-0 invert relative z-10"
+                className="h-24 w-auto filter brightness-0 invert"
               />
-              
-              {/* Animated holes that appear when dots move out */}
-              <div className="absolute inset-0 bg-transparent">
-                {/* Top hole */}
-                <div className="absolute top-6 left-1/2 w-3 h-3 bg-background rounded-full transform -translate-x-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2s ease-in-out infinite',
-                       animationDelay: '0.2s'
-                     }}></div>
-                
-                {/* Bottom hole */}
-                <div className="absolute bottom-6 left-1/2 w-3 h-3 bg-background rounded-full transform -translate-x-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2s ease-in-out infinite',
-                       animationDelay: '0.7s'
-                     }}></div>
-                
-                {/* Left hole */}
-                <div className="absolute top-1/2 left-6 w-3 h-3 bg-background rounded-full transform -translate-y-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2.2s ease-in-out infinite',
-                       animationDelay: '1s'
-                     }}></div>
-                
-                {/* Right hole */}
-                <div className="absolute top-1/2 right-6 w-3 h-3 bg-background rounded-full transform -translate-y-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2.2s ease-in-out infinite',
-                       animationDelay: '1.4s'
-                     }}></div>
-              </div>
-            </div>
-            
-            {/* Dots that move out from logo creating holes */}
-            <div className="absolute inset-0">
-              <div className="absolute top-6 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2" 
-                   style={{ animation: 'dot-escape 2s ease-in-out infinite' }}></div>
-              <div className="absolute bottom-6 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2" 
-                   style={{ animation: 'dot-escape-reverse 2s ease-in-out infinite', animationDelay: '0.5s' }}></div>
-              <div className="absolute top-1/2 left-6 w-3 h-3 bg-secondary rounded-full transform -translate-y-1/2" 
-                   style={{ animation: 'dot-escape 2.2s ease-in-out infinite', animationDelay: '0.8s' }}></div>
-              <div className="absolute top-1/2 right-6 w-3 h-3 bg-secondary rounded-full transform -translate-y-1/2" 
-                   style={{ animation: 'dot-escape-reverse 2.2s ease-in-out infinite', animationDelay: '1.2s' }}></div>
-            </div>
-            
-            {/* Additional floating particles */}
-            <div className="absolute inset-0">
-              <div className="absolute top-8 right-8 w-2 h-2 bg-accent rounded-full" 
-                   style={{ animation: 'particle-float 1.8s ease-in-out infinite', animationDelay: '0.3s' }}></div>
-              <div className="absolute bottom-8 left-8 w-2 h-2 bg-accent rounded-full" 
-                   style={{ animation: 'particle-float 1.8s ease-in-out infinite', animationDelay: '0.7s' }}></div>
             </div>
           </div>
           <p className="text-muted-foreground mt-2">
