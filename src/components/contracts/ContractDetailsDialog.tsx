@@ -542,11 +542,11 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
           <TabsContent value="invoices" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">فواتير العقد</h3>
               <Button onClick={() => onCreateInvoice?.(contract)}>
                 <Plus className="h-4 w-4 mr-2" />
                 إنشاء فاتورة جديدة
               </Button>
+              <h3 className="text-lg font-semibold">فواتير العقد</h3>
             </div>
 
             {invoices && invoices.length > 0 ? (
