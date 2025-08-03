@@ -210,19 +210,29 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
 
         // جلب تقرير فحص المركبة المرتبط بالعقد
         let conditionReportData = null;
-        const conditionReportDoc = documents.find(doc => 
-          doc.document_type === 'condition_report' && doc.condition_report_id
-        );
         
-        if (conditionReportDoc?.condition_report_id) {
-          const { data: reportData } = await supabase
-            .from('vehicle_condition_reports')
-            .select('*')
-            .eq('id', conditionReportDoc.condition_report_id)
-            .maybeSingle();
-          
-          if (reportData) {
-            conditionReportData = reportData;
+        // البحث أولاً في مستندات العقد عن تقرير الحالة
+        const { data: conditionReportDocs } = await supabase
+          .from('contract_documents')
+          .select('condition_report_id')
+          .eq('contract_id', contractId)
+          .eq('document_type', 'condition_report')
+          .not('condition_report_id', 'is', null)
+          .limit(1);
+        
+        if (conditionReportDocs && conditionReportDocs.length > 0) {
+          const reportId = conditionReportDocs[0].condition_report_id;
+          if (reportId) {
+            const { data: reportData } = await supabase
+              .from('vehicle_condition_reports')
+              .select('*')
+              .eq('id', reportId)
+              .maybeSingle();
+            
+            if (reportData) {
+              conditionReportData = reportData;
+              console.log('📄 [CONDITION_REPORT] Found condition report:', reportData);
+            }
           }
         }
 
