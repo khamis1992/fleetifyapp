@@ -9,12 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus } from 'lucide-react';
 import { CreateContractVehicleReturnData } from '@/hooks/useContractVehicleReturn';
 import { useContractVehicle } from '@/hooks/useContractVehicle';
+import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 
 interface Damage {
   type: string;
   description: string;
   severity: 'minor' | 'moderate' | 'major';
   cost_estimate?: number;
+}
+
+interface DamagePoint {
+  id: string;
+  x: number;
+  y: number;
+  severity: 'minor' | 'moderate' | 'severe';
+  description: string;
 }
 
 interface ContractVehicleReturnFormProps {
@@ -43,6 +52,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
   });
 
   const [damages, setDamages] = useState<Damage[]>([]);
+  const [damagePoints, setDamagePoints] = useState<DamagePoint[]>([]);
   const [newDamage, setNewDamage] = useState<Damage>({
     type: '',
     description: '',
@@ -52,9 +62,23 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // جمع كل الأضرار من المجسم والإدخال اليدوي
+    const allDamages = [
+      ...damages,
+      ...damagePoints.map(point => ({
+        type: 'ضرر على المجسم',
+        description: point.description,
+        severity: point.severity === 'severe' ? 'major' as const : 
+                  point.severity === 'moderate' ? 'moderate' as const : 'minor' as const,
+        position: { x: point.x, y: point.y },
+        id: point.id
+      }))
+    ];
+    
     onSubmit({
       ...formData,
-      damages: damages
+      damages: allDamages
     });
   };
 
@@ -191,85 +215,117 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
         <CardHeader>
           <CardTitle className="text-lg">أضرار المركبة</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Vehicle Damage Diagram */}
+          <div>
+            <h4 className="font-medium mb-4">مجسم أضرار المركبة</h4>
+            <VehicleConditionDiagram
+              damagePoints={damagePoints}
+              onDamagePointsChange={setDamagePoints}
+              readOnly={false}
+            />
+          </div>
+
+          {/* Separator */}
+          {damagePoints.length > 0 && damages.length > 0 && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-gray-500">أو</span>
+              </div>
+            </div>
+          )}
+
           {/* Add New Damage */}
-          <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-            <div>
-              <Label htmlFor="damage_type">نوع الضرر</Label>
-              <Input
-                id="damage_type"
-                placeholder="مثال: خدش، انبعاج"
-                value={newDamage.type}
-                onChange={(e) => setNewDamage({ ...newDamage, type: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="damage_description">الوصف</Label>
-              <Input
-                id="damage_description"
-                placeholder="وصف تفصيلي"
-                value={newDamage.description}
-                onChange={(e) => setNewDamage({ ...newDamage, description: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="damage_severity">الشدة</Label>
-              <Select
-                value={newDamage.severity}
-                onValueChange={(value: 'minor' | 'moderate' | 'major') =>
-                  setNewDamage({ ...newDamage, severity: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="minor">طفيف</SelectItem>
-                  <SelectItem value="moderate">متوسط</SelectItem>
-                  <SelectItem value="major">شديد</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button type="button" onClick={addDamage} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                إضافة ضرر
-              </Button>
+          <div>
+            <h4 className="font-medium mb-4">إضافة أضرار يدوياً</h4>
+            <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <Label htmlFor="damage_type">نوع الضرر</Label>
+                <Input
+                  id="damage_type"
+                  placeholder="مثال: خدش، انبعاج"
+                  value={newDamage.type}
+                  onChange={(e) => setNewDamage({ ...newDamage, type: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="damage_description">الوصف</Label>
+                <Input
+                  id="damage_description"
+                  placeholder="وصف تفصيلي"
+                  value={newDamage.description}
+                  onChange={(e) => setNewDamage({ ...newDamage, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="damage_severity">الشدة</Label>
+                <Select
+                  value={newDamage.severity}
+                  onValueChange={(value: 'minor' | 'moderate' | 'major') =>
+                    setNewDamage({ ...newDamage, severity: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="minor">طفيف</SelectItem>
+                    <SelectItem value="moderate">متوسط</SelectItem>
+                    <SelectItem value="major">شديد</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button type="button" onClick={addDamage} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  إضافة ضرر
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Existing Damages */}
-          {damages.map((damage, index) => (
-            <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex-1 grid grid-cols-3 gap-4">
-                <div>
-                  <strong>{damage.type}</strong>
-                  <p className="text-sm text-gray-600">{damage.description}</p>
-                </div>
-                <div>
-                  <Badge className={getSeverityColor(damage.severity)}>
-                    {damage.severity}
-                  </Badge>
-                </div>
-                <div>
-                  {damage.cost_estimate && (
-                    <p className="text-sm">التكلفة المقدرة: {damage.cost_estimate} د.ك</p>
-                  )}
-                </div>
+          {/* Existing Manual Damages */}
+          {damages.length > 0 && (
+            <div>
+              <h4 className="font-medium mb-4">الأضرار المضافة يدوياً</h4>
+              <div className="space-y-2">
+                {damages.map((damage, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1 grid grid-cols-3 gap-4">
+                      <div>
+                        <strong>{damage.type}</strong>
+                        <p className="text-sm text-gray-600">{damage.description}</p>
+                      </div>
+                      <div>
+                        <Badge className={getSeverityColor(damage.severity)}>
+                          {damage.severity}
+                        </Badge>
+                      </div>
+                      <div>
+                        {damage.cost_estimate && (
+                          <p className="text-sm">التكلفة المقدرة: {damage.cost_estimate} د.ك</p>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeDamage(index)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeDamage(index)}
-                className="text-red-600 hover:text-red-800"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
-          ))}
+          )}
 
-          {damages.length === 0 && (
+          {damages.length === 0 && damagePoints.length === 0 && (
             <p className="text-gray-500 text-center py-4">لا توجد أضرار مسجلة</p>
           )}
         </CardContent>
