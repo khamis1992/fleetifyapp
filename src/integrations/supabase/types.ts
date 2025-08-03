@@ -1341,6 +1341,57 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_document_operation_log: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          contract_id: string | null
+          created_at: string | null
+          document_id: string | null
+          error_code: string | null
+          error_message: string | null
+          file_path: string | null
+          id: string
+          metadata: Json | null
+          operation_status: string
+          operation_type: string
+          performed_by: string | null
+          retry_count: number | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          operation_status?: string
+          operation_type: string
+          performed_by?: string | null
+          retry_count?: number | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          operation_status?: string
+          operation_type?: string
+          performed_by?: string | null
+          retry_count?: number | null
+        }
+        Relationships: []
+      }
       contract_documents: {
         Row: {
           company_id: string
@@ -8318,6 +8369,10 @@ export type Database = {
         Args: { vehicle_id_param: string }
         Returns: undefined
       }
+      can_access_contract_documents: {
+        Args: { _user_id: string; _company_id?: string; _action?: string }
+        Returns: boolean
+      }
       check_and_fix_user_data_integrity: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -8403,6 +8458,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_orphaned_contract_files: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_orphaned_contract_logs: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -8438,6 +8497,21 @@ export type Database = {
           contract_id_param: string
           cancellation_date_param: string
           cancellation_reason?: string
+        }
+        Returns: string
+      }
+      create_contract_document_with_rollback: {
+        Args: {
+          p_contract_id: string
+          p_document_type: string
+          p_document_name: string
+          p_file_path?: string
+          p_file_size?: number
+          p_mime_type?: string
+          p_notes?: string
+          p_is_required?: boolean
+          p_condition_report_id?: string
+          p_company_id?: string
         }
         Returns: string
       }

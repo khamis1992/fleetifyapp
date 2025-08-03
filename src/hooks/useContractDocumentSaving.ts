@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { generateUnsignedContractPdf } from '@/utils/unsignedContractPdfGenerator'
-import { useCreateContractDocument } from './useContractDocuments'
+import { useEnhancedContractDocuments } from './useEnhancedContractDocuments'
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import type { 
   DocumentSavingStep, 
@@ -43,7 +43,7 @@ interface DocumentSavingError {
 
 export const useContractDocumentSaving = () => {
   const { companyId } = useUnifiedCompanyAccess()
-  const { mutateAsync: createDocument } = useCreateContractDocument()
+  const { createDocument } = useEnhancedContractDocuments()
   
   const [savingSteps, setSavingSteps] = useState<DocumentSavingStep[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -381,7 +381,7 @@ export const useContractDocumentSaving = () => {
 
       updateStep('unsigned-contract', { status: 'processing', progress: 80 })
 
-      await createDocument({
+      const documentResult = await createDocument({
         contract_id: contractData.contract_id,
         document_type: 'draft_contract',
         document_name: `مسودة العقد رقم ${contractData.contract_number}`,
@@ -389,6 +389,10 @@ export const useContractDocumentSaving = () => {
         notes: 'نسخة أولية غير موقعة من العقد',
         is_required: false
       })
+
+      if (!documentResult.success) {
+        throw new Error(documentResult.error || 'فشل في حفظ المستند')
+      }
 
       result.documents_created.push({
         id: 'unsigned-contract',
@@ -448,7 +452,7 @@ export const useContractDocumentSaving = () => {
 
       updateStep('signed-contract', { status: 'processing', progress: 80 })
 
-      await createDocument({
+      const documentResult = await createDocument({
         contract_id: contractData.contract_id,
         document_type: 'signed_contract',
         document_name: `العقد الموقع رقم ${contractData.contract_number}`,
@@ -456,6 +460,10 @@ export const useContractDocumentSaving = () => {
         notes: 'نسخة موقعة من العقد',
         is_required: true
       })
+
+      if (!documentResult.success) {
+        throw new Error(documentResult.error || 'فشل في حفظ المستند')
+      }
 
       result.documents_created.push({
         id: 'signed-contract',
@@ -507,7 +515,7 @@ export const useContractDocumentSaving = () => {
 
       console.log('📄 [CONDITION_REPORT] Linking report ID:', contractData.condition_report_id)
 
-      await createDocument({
+      const documentResult = await createDocument({
         contract_id: contractData.contract_id,
         document_type: 'condition_report',
         document_name: `تقرير حالة المركبة - ${new Date().toLocaleDateString('en-GB')}`,
@@ -515,6 +523,10 @@ export const useContractDocumentSaving = () => {
         is_required: true,
         condition_report_id: contractData.condition_report_id
       })
+
+      if (!documentResult.success) {
+        throw new Error(documentResult.error || 'فشل في ربط تقرير حالة المركبة')
+      }
 
       result.documents_created.push({
         id: 'condition-report',
@@ -567,7 +579,7 @@ export const useContractDocumentSaving = () => {
           type: 'image/png'
         })
 
-        await createDocument({
+        const customerSignatureResult = await createDocument({
           contract_id: contractData.contract_id,
           document_type: 'signature',
           document_name: `توقيع العميل - ${contractData.contract_number}`,
@@ -575,6 +587,10 @@ export const useContractDocumentSaving = () => {
           notes: 'توقيع العميل',
           is_required: false
         })
+
+        if (!customerSignatureResult.success) {
+          throw new Error(customerSignatureResult.error || 'فشل في حفظ توقيع العميل')
+        }
 
         savedSignatures++
         updateStep('signatures', { status: 'processing', progress: 50 })
@@ -587,7 +603,7 @@ export const useContractDocumentSaving = () => {
           type: 'image/png'
         })
 
-        await createDocument({
+        const companySignatureResult = await createDocument({
           contract_id: contractData.contract_id,
           document_type: 'signature',
           document_name: `توقيع الشركة - ${contractData.contract_number}`,
@@ -595,6 +611,10 @@ export const useContractDocumentSaving = () => {
           notes: 'توقيع ممثل الشركة',
           is_required: false
         })
+
+        if (!companySignatureResult.success) {
+          throw new Error(companySignatureResult.error || 'فشل في حفظ توقيع الشركة')
+        }
 
         savedSignatures++
       }
