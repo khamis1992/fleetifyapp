@@ -72,108 +72,92 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
+          <DialogTitle className="text-right">
             إدارة حالة العقد رقم {contract.contract_number}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Current Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">الحالة الحالية</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                {getStatusIcon(contract.status)}
-                <span className="font-medium">{getStatusText(contract.status)}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Current Status - Compact */}
+          <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+            <div className="flex items-center gap-2">
+              {getStatusIcon(contract.status)}
+              <span className="font-medium">{getStatusText(contract.status)}</span>
+            </div>
+            <span className="text-sm text-muted-foreground">الحالة الحالية</span>
+          </div>
 
-          {/* New Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">تغيير الحالة</CardTitle>
-              <CardDescription>اختر الحالة الجديدة للعقد</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">الحالة الجديدة</Label>
-                <Select 
-                  value={statusData.status} 
-                  onValueChange={(value) => setStatusData({...statusData, status: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر الحالة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">
-                      <div className="flex items-center gap-2">
-                        <Play className="h-4 w-4 text-green-600" />
-                        نشط
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="suspended">
-                      <div className="flex items-center gap-2">
-                        <Pause className="h-4 w-4 text-yellow-600" />
-                        معلق
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="cancelled">
-                      <div className="flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        ملغي
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="reason">سبب التغيير</Label>
-                <Textarea
-                  id="reason"
-                  value={statusData.reason}
-                  onChange={(e) => setStatusData({...statusData, reason: e.target.value})}
-                  placeholder="اختياري: اذكر سبب تغيير حالة العقد"
-                  rows={3}
-                />
-              </div>
+          {/* New Status - Simplified */}
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="status">الحالة الجديدة</Label>
+              <Select 
+                value={statusData.status} 
+                onValueChange={(value) => setStatusData({...statusData, status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الحالة" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border">
+                  <SelectItem value="active">
+                    <div className="flex items-center gap-2">
+                      <Play className="h-4 w-4 text-green-600" />
+                      نشط
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="suspended">
+                    <div className="flex items-center gap-2">
+                      <Pause className="h-4 w-4 text-yellow-600" />
+                      معلق
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="cancelled">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      ملغي
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="reason">سبب التغيير (اختياري)</Label>
+              <Textarea
+                id="reason"
+                value={statusData.reason}
+                onChange={(e) => setStatusData({...statusData, reason: e.target.value})}
+                placeholder="اذكر سبب تغيير حالة العقد"
+                rows={2}
+                className="resize-none"
+              />
+            </div>
 
-              {/* Warning for cancellation */}
-              {statusData.status === 'cancelled' && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="font-medium">تحذير</span>
-                  </div>
-                  <p className="text-sm text-red-600 mt-1">
-                    إلغاء العقد سيؤثر على جميع المعاملات المرتبطة به. تأكد من هذا الإجراء.
-                  </p>
+            {/* Warning for cancellation - Compact */}
+            {statusData.status === 'cancelled' && (
+              <div className="p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+                <div className="flex items-center gap-2 text-destructive text-sm">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="font-medium">تحذير: إلغاء العقد سيؤثر على جميع المعاملات المرتبطة</span>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Warning for suspension */}
-              {statusData.status === 'suspended' && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <div className="flex items-center gap-2 text-yellow-700">
-                    <Pause className="h-4 w-4" />
-                    <span className="font-medium">ملاحظة</span>
-                  </div>
-                  <p className="text-sm text-yellow-600 mt-1">
-                    تعليق العقد سيوقف جميع المعاملات المرتبطة به مؤقتاً.
-                  </p>
+            {/* Warning for suspension - Compact */}
+            {statusData.status === 'suspended' && (
+              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-center gap-2 text-yellow-700 text-sm">
+                  <Pause className="h-4 w-4" />
+                  <span className="font-medium">ملاحظة: التعليق سيوقف المعاملات مؤقتاً</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
