@@ -65,6 +65,9 @@ export function PayInvoiceDialog({
   invoice,
   onPaymentCreated,
 }: PayInvoiceDialogProps) {
+  // Debug: طباعة بيانات الفاتورة لتتبع المشكلة
+  console.log('Invoice data in PayInvoiceDialog:', invoice);
+  
   const createPayment = useCreatePayment();
 
   const form = useForm<PaymentFormData>({
