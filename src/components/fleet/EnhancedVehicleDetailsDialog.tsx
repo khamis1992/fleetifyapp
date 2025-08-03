@@ -95,10 +95,10 @@ export function EnhancedVehicleDetailsDialog({
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-            <TabsTrigger value="technical">تقنية</TabsTrigger>
-            <TabsTrigger value="financial">مالية</TabsTrigger>
-            <TabsTrigger value="pricing">التسعير</TabsTrigger>
             <TabsTrigger value="documents">الوثائق</TabsTrigger>
+            <TabsTrigger value="pricing">التسعير</TabsTrigger>
+            <TabsTrigger value="financial">مالية</TabsTrigger>
+            <TabsTrigger value="technical">تقنية</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
