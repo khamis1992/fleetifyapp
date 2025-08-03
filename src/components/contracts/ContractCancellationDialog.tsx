@@ -283,10 +283,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <div className="flex justify-end space-x-4">
               <Button 
                 variant="outline" 
-                onClick={handleRejectReturn}
-                disabled={!rejectionReason.trim() || rejectVehicleReturn.isPending}
+                onClick={() => setCurrentStep('vehicle-return')}
               >
-                رفض الإرجاع
+                عودة
               </Button>
               <Button 
                 onClick={handleApproveReturn}
