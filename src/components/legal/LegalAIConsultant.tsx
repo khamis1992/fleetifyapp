@@ -455,10 +455,10 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
 
       {/* منطقة المحادثة بدون تبويبات */}
       <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* منطقة المحادثة */}
-          <div className="lg:col-span-2">
-            <Card className="h-[700px] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
+          <div className="lg:col-span-3">
+            <Card className="h-[500px] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
               <CardHeader className="flex-shrink-0 bg-gradient-chat-header rounded-t-lg border-b border-border/20">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-3 text-lg">
