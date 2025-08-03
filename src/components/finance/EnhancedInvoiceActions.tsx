@@ -136,21 +136,22 @@ export function EnhancedInvoiceActions({
         </div>
       )}
       
+      {/* Pay Button - Show first for unpaid invoices */}
+      {onPay && invoice.payment_status !== 'paid' && (invoice.balance_due > 0 || !invoice.balance_due) && (
+        <Button 
+          variant="default" 
+          size="sm"
+          onClick={() => handleQuickNavigation('pay')}
+          title="دفع الفاتورة"
+          className="bg-green-600 hover:bg-green-700 text-white mr-2"
+        >
+          <DollarSign className="h-4 w-4 ml-1" />
+          دفع
+        </Button>
+      )}
+
       {/* Main Actions */}
-      <div className="flex gap-2">
-        {/* Pay Button - Show only for unpaid or partially paid invoices */}
-        {onPay && invoice.payment_status !== 'paid' && invoice.balance_due > 0 && (
-          <Button 
-            variant="default" 
-            size="sm"
-            onClick={() => handleQuickNavigation('pay')}
-            title="دفع الفاتورة"
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <DollarSign className="h-4 w-4" />
-          </Button>
-        )}
-        
+      <div className="flex gap-2">        
         <Button 
           variant="ghost" 
           size="sm"
