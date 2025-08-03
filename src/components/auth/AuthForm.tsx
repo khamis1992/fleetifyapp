@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import fleetifyLogo from '@/assets/fleetify-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Eye, EyeOff, Car } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const AuthForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -70,8 +71,8 @@ export const AuthForm: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-4 shadow-accent">
-            <Car className="w-8 h-8 text-primary-foreground animate-pulse hover:scale-110 transition-transform duration-300" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-4 shadow-accent overflow-hidden">
+            <img src={fleetifyLogo} alt="Fleetify Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-primary">
             Fleetify
