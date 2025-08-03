@@ -10,10 +10,6 @@ import { Trash2, Plus } from 'lucide-react';
 import { CreateContractVehicleReturnData } from '@/hooks/useContractVehicleReturn';
 import { useContractVehicle } from '@/hooks/useContractVehicle';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
-import { VehicleConditionAlert } from '@/components/fleet/VehicleConditionAlert';
-import { VehicleConditionComparisonReport } from '@/components/fleet/VehicleConditionComparisonReport';
-import { useVehicleConditionComparison } from '@/hooks/useVehicleConditionComparison';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Damage {
   type: string;
@@ -44,7 +40,6 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
   isSubmitting = false
 }) => {
   const { data: vehicleData } = useContractVehicle(contract.vehicle_id);
-  const { data: comparison, isLoading: comparisonLoading } = useVehicleConditionComparison(contract.id);
   const [formData, setFormData] = useState<CreateContractVehicleReturnData>({
     contract_id: contract.id,
     vehicle_id: contract.vehicle_id,
@@ -58,7 +53,6 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 
   const [damages, setDamages] = useState<Damage[]>([]);
   const [damagePoints, setDamagePoints] = useState<DamagePoint[]>([]);
-  const [showComparisonReport, setShowComparisonReport] = useState(false);
   const [newDamage, setNewDamage] = useState<Damage>({
     type: '',
     description: '',
@@ -114,17 +108,8 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
   };
 
   return (
-    <div className="space-y-6">
-      {/* Vehicle Condition Comparison Alert */}
-      {comparison && !comparisonLoading && (
-        <VehicleConditionAlert 
-          comparison={comparison}
-          onViewDetails={() => setShowComparisonReport(true)}
-        />
-      )}
-
-      <form onSubmit={handleFormSubmit} className="space-y-6">
-        {/* Contract Information */}
+    <form onSubmit={handleFormSubmit} className="space-y-6">
+      {/* Contract Information */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">معلومات العقد</CardTitle>
@@ -372,21 +357,5 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           </Button>
         </div>
       </form>
-
-      {/* Comparison Report Dialog */}
-      <Dialog open={showComparisonReport} onOpenChange={setShowComparisonReport}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>تقرير مقارنة حالة المركبة</DialogTitle>
-          </DialogHeader>
-          {comparison && (
-            <VehicleConditionComparisonReport
-              comparison={comparison}
-              onClose={() => setShowComparisonReport(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
+    );
+  };

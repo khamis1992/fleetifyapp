@@ -13,6 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { ContractVehicleReturnForm } from './ContractVehicleReturnForm';
+import { VehicleConditionAlert } from '../fleet/VehicleConditionAlert';
+import { VehicleConditionComparisonReport } from '../fleet/VehicleConditionComparisonReport';
+import { useVehicleConditionComparison } from '@/hooks/useVehicleConditionComparison';
 import { 
   useContractVehicleReturnByContract, 
   useCreateContractVehicleReturn,
@@ -35,8 +38,10 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 }) => {
   const [currentStep, setCurrentStep] = useState<'vehicle-return' | 'approval' | 'cancellation'>('vehicle-return');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [showComparisonReport, setShowComparisonReport] = useState(false);
   
   const { data: vehicleReturn, isLoading: isLoadingReturn } = useContractVehicleReturnByContract(contract?.id);
+  const { data: comparison, isLoading: comparisonLoading } = useVehicleConditionComparison(contract?.id);
   const createVehicleReturn = useCreateContractVehicleReturn();
   const approveVehicleReturn = useApproveContractVehicleReturn();
   const rejectVehicleReturn = useRejectContractVehicleReturn();
@@ -280,6 +285,14 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
         {currentStep === 'approval' && vehicleReturn && vehicleReturn.status === 'pending' && (
           <div className="space-y-6">
+            {/* Vehicle Condition Comparison Alert */}
+            {comparison && !comparisonLoading && (
+              <VehicleConditionAlert 
+                comparison={comparison}
+                onViewDetails={() => setShowComparisonReport(true)}
+              />
+            )}
+
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
@@ -426,6 +439,21 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             </div>
           </div>
         )}
+
+        {/* Comparison Report Dialog */}
+        <Dialog open={showComparisonReport} onOpenChange={setShowComparisonReport}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>تقرير مقارنة حالة المركبة</DialogTitle>
+            </DialogHeader>
+            {comparison && (
+              <VehicleConditionComparisonReport
+                comparison={comparison}
+                onClose={() => setShowComparisonReport(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
