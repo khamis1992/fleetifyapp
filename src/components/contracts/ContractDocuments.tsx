@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
+import { ContractHtmlViewer } from './ContractHtmlViewer';
+import { ContractPdfData } from '@/utils/contractPdfGenerator';
 import { DocumentSavingProgress } from './DocumentSavingProgress';
 import { useContractDocumentSaving } from '@/hooks/useContractDocumentSaving';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
@@ -164,7 +166,72 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     }
 
     try {
-      setSelectedDocumentForPreview(document);
+      // إذا كان المستند عقد موقع أو مسودة عقد، اجلب بيانات العقد لعرضه كـ HTML
+      if (document.document_type === 'signed_contract' || document.document_type === 'draft_contract') {
+        const { data: contractData, error } = await supabase
+          .from('contracts')
+          .select(`
+            *,
+            customers (
+              customer_type,
+              first_name,
+              last_name,
+              company_name
+            )
+          `)
+          .eq('id', contractId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching contract data:', error);
+          toast.error('حدث خطأ في جلب بيانات العقد');
+          return;
+        }
+
+        // تحويل بيانات العقد لتنسيق ContractPdfData
+        const customerName = contractData.customers?.customer_type === 'individual' 
+          ? `${contractData.customers?.first_name} ${contractData.customers?.last_name}`
+          : contractData.customers?.company_name || '';
+
+        // جلب بيانات المركبة منفصلة إذا كان هناك vehicle_id
+        let vehicleInfo = '';
+        if (contractData.vehicle_id) {
+          const { data: vehicleData } = await supabase
+            .from('vehicles')
+            .select('make, model, year, plate_number')
+            .eq('id', contractData.vehicle_id)
+            .maybeSingle();
+          
+          if (vehicleData) {
+            vehicleInfo = `${vehicleData.make} ${vehicleData.model} ${vehicleData.year} - ${vehicleData.plate_number}`;
+          }
+        }
+
+        const contractPdfData: ContractPdfData = {
+          contract_number: contractData.contract_number,
+          contract_type: contractData.contract_type,
+          customer_name: customerName,
+          vehicle_info: vehicleInfo,
+          start_date: contractData.start_date,
+          end_date: contractData.end_date,
+          contract_amount: contractData.contract_amount,
+          monthly_amount: contractData.monthly_amount,
+          terms: contractData.terms || '',
+          customer_signature: '', // التوقيع سيتم جلبه من المستندات
+          company_signature: '', // التوقيع سيتم جلبه من المستندات
+          company_name: 'الشركة',
+          created_date: new Date(contractData.created_at).toLocaleDateString('ar-SA')
+        };
+
+        setSelectedDocumentForPreview({
+          ...document,
+          contractData: contractPdfData,
+          isContract: true
+        });
+      } else {
+        setSelectedDocumentForPreview(document);
+      }
+      
       setIsDocumentPreviewOpen(true);
     } catch (error) {
       console.error('Error preparing document preview:', error);
@@ -690,7 +757,10 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
 
               {/* معاينة المحتوى */}
               <div className="border rounded-lg overflow-hidden min-h-[500px]">
-                {selectedDocumentForPreview.file_path && (
+                {selectedDocumentForPreview.isContract && selectedDocumentForPreview.contractData ? (
+                  /* عرض العقد كـ HTML قابل للطباعة */
+                  <ContractHtmlViewer contractData={selectedDocumentForPreview.contractData} />
+                ) : selectedDocumentForPreview.file_path && (
                   <>
                     {selectedDocumentForPreview.mime_type?.includes('pdf') ? (
                       <iframe
