@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
+import { VehicleDiagram } from './VehicleDiagram';
 
 interface VehicleConditionItem {
   category: string;
@@ -265,6 +266,13 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* مخطط المركبة البصري */}
+      {conditionData.damage_items && conditionData.damage_items.length > 0 && (
+        <div className="mb-6">
+          <VehicleDiagram damageItems={conditionData.damage_items} />
         </div>
       )}
 
