@@ -71,20 +71,28 @@ export const AuthForm: React.FC = () => {
         {/* Logo Section */}
         <div className="text-center mb-8">
           <div className="relative inline-flex items-center justify-center w-32 h-32 mb-4">
-            {/* Rotating circles around the logo */}
-            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '0.8s' }}>
-              <div className="absolute top-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
-              <div className="absolute bottom-2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2"></div>
-              <div className="absolute top-1/2 left-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
-              <div className="absolute top-1/2 right-2 w-3 h-3 bg-primary rounded-full transform -translate-y-1/2"></div>
+            {/* Fast rotating circles around the logo */}
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '1.5s' }}>
+              <div className="absolute top-2 left-1/2 w-4 h-4 bg-primary rounded-full transform -translate-x-1/2 animate-pulse"></div>
+              <div className="absolute bottom-2 left-1/2 w-4 h-4 bg-primary rounded-full transform -translate-x-1/2 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="absolute top-1/2 left-2 w-4 h-4 bg-primary rounded-full transform -translate-y-1/2 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              <div className="absolute top-1/2 right-2 w-4 h-4 bg-primary rounded-full transform -translate-y-1/2 animate-pulse" style={{ animationDelay: '0.6s' }}></div>
             </div>
             
-            {/* Counter-rotating circles */}
-            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2.5s' }}>
-              <div className="absolute top-6 right-6 w-2 h-2 bg-secondary rounded-full"></div>
-              <div className="absolute bottom-6 left-6 w-2 h-2 bg-secondary rounded-full"></div>
-              <div className="absolute top-6 left-6 w-2 h-2 bg-accent rounded-full"></div>
-              <div className="absolute bottom-6 right-6 w-2 h-2 bg-accent rounded-full"></div>
+            {/* Counter-rotating circles with bounce */}
+            <div className="absolute inset-0 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}>
+              <div className="absolute top-6 right-6 w-3 h-3 bg-secondary rounded-full animate-bounce"></div>
+              <div className="absolute bottom-6 left-6 w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+              <div className="absolute top-6 left-6 w-3 h-3 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}></div>
+              <div className="absolute bottom-6 right-6 w-3 h-3 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.9s' }}></div>
+            </div>
+            
+            {/* Floating circles with scale animation */}
+            <div className="absolute inset-0" style={{ animation: 'float 3s ease-in-out infinite' }}>
+              <div className="absolute top-4 left-4 w-2 h-2 bg-destructive rounded-full animate-ping"></div>
+              <div className="absolute top-4 right-4 w-2 h-2 bg-destructive rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+              <div className="absolute bottom-4 left-4 w-2 h-2 bg-destructive rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute bottom-4 right-4 w-2 h-2 bg-destructive rounded-full animate-ping" style={{ animationDelay: '1.5s' }}></div>
             </div>
             
             {/* Logo in the center */}
