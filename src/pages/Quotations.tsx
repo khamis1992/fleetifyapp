@@ -275,7 +275,7 @@ export default function Quotations() {
 • السعر لكل ${durationType}: ${quotation.rate_per_unit?.toFixed(3)} د.ك
 • *المبلغ الإجمالي: ${quotation.total_amount?.toFixed(3)} د.ك*
 
-📅 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
+📅 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('en-GB')}
 
 ${quotation.description ? `📝 *الوصف:* ${quotation.description}\n` : ''}
 ${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n` : ''}
@@ -419,7 +419,7 @@ ${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n`
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        صالح حتى: {new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
+                        صالح حتى: {new Date(quotation.valid_until).toLocaleDateString('en-GB')}
                       </span>
                     </div>
                   </div>
