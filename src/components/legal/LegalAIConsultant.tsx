@@ -85,7 +85,13 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
       // يمكن تحميل المحادثات السابقة من قاعدة البيانات
       const savedHistory = localStorage.getItem(`legal-ai-chat-${companyId}`);
       if (savedHistory) {
-        setChatHistory(JSON.parse(savedHistory));
+        const parsedHistory = JSON.parse(savedHistory);
+        // إصلاح مشكلة timestamp - تحويل السلاسل النصية إلى Date objects
+        const fixedHistory = parsedHistory.map((message: any) => ({
+          ...message,
+          timestamp: typeof message.timestamp === 'string' ? new Date(message.timestamp) : message.timestamp
+        }));
+        setChatHistory(fixedHistory);
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
