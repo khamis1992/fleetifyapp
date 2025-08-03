@@ -20,6 +20,7 @@ import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilt
 import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDialog"
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
 import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress"
+import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog"
 
 // Hook imports
 import { useContractsData } from "@/hooks/useContractsData"
@@ -41,6 +42,7 @@ export default function Contracts() {
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showCreationProgress, setShowCreationProgress] = useState(false)
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false)
   const [filters, setFilters] = useState<any>({})
 
   // Hooks
@@ -114,7 +116,7 @@ export default function Contracts() {
 
   const handleCancelContract = (contract: any) => {
     setSelectedContract(contract)
-    setShowStatusDialog(true)
+    setShowCancellationDialog(true)
   }
 
   const handleManagePayments = (contract: any) => {
@@ -271,6 +273,12 @@ export default function Contracts() {
           />
         </DialogContent>
       </Dialog>
+
+      <ContractCancellationDialog
+        open={showCancellationDialog}
+        onOpenChange={setShowCancellationDialog}
+        contract={selectedContract}
+      />
 
       {showTemplateManager && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

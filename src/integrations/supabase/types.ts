@@ -1708,6 +1708,66 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_vehicle_returns: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          contract_id: string
+          created_at: string
+          damages: Json | null
+          fuel_level: number | null
+          id: string
+          notes: string | null
+          odometer_reading: number | null
+          rejection_reason: string | null
+          return_date: string
+          returned_by: string
+          status: string
+          updated_at: string
+          vehicle_condition: string
+          vehicle_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          contract_id: string
+          created_at?: string
+          damages?: Json | null
+          fuel_level?: number | null
+          id?: string
+          notes?: string | null
+          odometer_reading?: number | null
+          rejection_reason?: string | null
+          return_date: string
+          returned_by: string
+          status?: string
+          updated_at?: string
+          vehicle_condition?: string
+          vehicle_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          damages?: Json | null
+          fuel_level?: number | null
+          id?: string
+          notes?: string | null
+          odometer_reading?: number | null
+          rejection_reason?: string | null
+          return_date?: string
+          returned_by?: string
+          status?: string
+          updated_at?: string
+          vehicle_condition?: string
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           account_id: string | null

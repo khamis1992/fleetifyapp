@@ -1,0 +1,294 @@
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Plus } from 'lucide-react';
+import { CreateContractVehicleReturnData } from '@/hooks/useContractVehicleReturn';
+
+interface Damage {
+  type: string;
+  description: string;
+  severity: 'minor' | 'moderate' | 'major';
+  cost_estimate?: number;
+}
+
+interface ContractVehicleReturnFormProps {
+  contract: any;
+  onSubmit: (data: CreateContractVehicleReturnData) => void;
+  onCancel: () => void;
+  isSubmitting?: boolean;
+}
+
+export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps> = ({
+  contract,
+  onSubmit,
+  onCancel,
+  isSubmitting = false
+}) => {
+  const [formData, setFormData] = useState<CreateContractVehicleReturnData>({
+    contract_id: contract.id,
+    vehicle_id: contract.vehicle_id,
+    return_date: new Date().toISOString().split('T')[0],
+    vehicle_condition: 'good',
+    fuel_level: 100,
+    odometer_reading: undefined,
+    damages: [],
+    notes: ''
+  });
+
+  const [damages, setDamages] = useState<Damage[]>([]);
+  const [newDamage, setNewDamage] = useState<Damage>({
+    type: '',
+    description: '',
+    severity: 'minor',
+    cost_estimate: undefined
+  });
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      damages: damages
+    });
+  };
+
+  const addDamage = () => {
+    if (newDamage.type && newDamage.description) {
+      setDamages([...damages, newDamage]);
+      setNewDamage({
+        type: '',
+        description: '',
+        severity: 'minor',
+        cost_estimate: undefined
+      });
+    }
+  };
+
+  const removeDamage = (index: number) => {
+    setDamages(damages.filter((_, i) => i !== index));
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'minor': return 'bg-yellow-100 text-yellow-800';
+      case 'moderate': return 'bg-orange-100 text-orange-800';
+      case 'major': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <form onSubmit={handleFormSubmit} className="space-y-6">
+      {/* Contract Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Contract Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Contract Number</Label>
+              <Input value={contract.contract_number} disabled />
+            </div>
+            <div>
+              <Label>Customer</Label>
+              <Input value={contract.customer?.first_name + ' ' + contract.customer?.last_name} disabled />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Vehicle</Label>
+              <Input value={`${contract.vehicle?.make} ${contract.vehicle?.model} (${contract.vehicle?.year})`} disabled />
+            </div>
+            <div>
+              <Label>License Plate</Label>
+              <Input value={contract.vehicle?.license_plate} disabled />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Return Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Vehicle Return Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="return_date">Return Date</Label>
+              <Input
+                id="return_date"
+                type="date"
+                value={formData.return_date}
+                onChange={(e) => setFormData({ ...formData, return_date: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="vehicle_condition">Vehicle Condition</Label>
+              <Select
+                value={formData.vehicle_condition}
+                onValueChange={(value: 'excellent' | 'good' | 'fair' | 'poor') =>
+                  setFormData({ ...formData, vehicle_condition: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excellent">Excellent</SelectItem>
+                  <SelectItem value="good">Good</SelectItem>
+                  <SelectItem value="fair">Fair</SelectItem>
+                  <SelectItem value="poor">Poor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="fuel_level">Fuel Level (%)</Label>
+              <Input
+                id="fuel_level"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.fuel_level}
+                onChange={(e) => setFormData({ ...formData, fuel_level: Number(e.target.value) })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="odometer_reading">Odometer Reading (km)</Label>
+              <Input
+                id="odometer_reading"
+                type="number"
+                value={formData.odometer_reading || ''}
+                onChange={(e) => setFormData({ ...formData, odometer_reading: e.target.value ? Number(e.target.value) : undefined })}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Damages */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Vehicle Damages</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Add New Damage */}
+          <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <Label htmlFor="damage_type">Damage Type</Label>
+              <Input
+                id="damage_type"
+                placeholder="e.g., Scratch, Dent"
+                value={newDamage.type}
+                onChange={(e) => setNewDamage({ ...newDamage, type: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="damage_description">Description</Label>
+              <Input
+                id="damage_description"
+                placeholder="Detailed description"
+                value={newDamage.description}
+                onChange={(e) => setNewDamage({ ...newDamage, description: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="damage_severity">Severity</Label>
+              <Select
+                value={newDamage.severity}
+                onValueChange={(value: 'minor' | 'moderate' | 'major') =>
+                  setNewDamage({ ...newDamage, severity: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="minor">Minor</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="major">Major</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button type="button" onClick={addDamage} className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Damage
+              </Button>
+            </div>
+          </div>
+
+          {/* Existing Damages */}
+          {damages.map((damage, index) => (
+            <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex-1 grid grid-cols-3 gap-4">
+                <div>
+                  <strong>{damage.type}</strong>
+                  <p className="text-sm text-gray-600">{damage.description}</p>
+                </div>
+                <div>
+                  <Badge className={getSeverityColor(damage.severity)}>
+                    {damage.severity}
+                  </Badge>
+                </div>
+                <div>
+                  {damage.cost_estimate && (
+                    <p className="text-sm">Est. Cost: ${damage.cost_estimate}</p>
+                  )}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeDamage(index)}
+                className="text-red-600 hover:text-red-800"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+
+          {damages.length === 0 && (
+            <p className="text-gray-500 text-center py-4">No damages reported</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Additional Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Additional Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Any additional notes about the vehicle condition or return process..."
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            rows={4}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating Return Form...' : 'Create Return Form'}
+        </Button>
+      </div>
+    </form>
+  );
+};
