@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Printer, Download } from 'lucide-react';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
 import { formatDateInGregorian, formatDateForDocument } from '@/utils/dateFormatter';
+import { ContractVehicleConditionReport } from './ContractVehicleConditionReport';
 
 interface ContractHtmlViewerProps {
   contractData: ContractPdfData;
+  conditionReportData?: any;
   className?: string;
 }
 
@@ -23,6 +25,7 @@ const getContractTypeInArabic = (type: string): string => {
 
 export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({ 
   contractData, 
+  conditionReportData,
   className = "" 
 }) => {
   const handlePrint = () => {
@@ -303,6 +306,19 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
                 <div className="info-label font-bold text-gray-700 mb-1">تفاصيل المركبة</div>
                 <div className="info-value text-gray-900">{contractData.vehicle_info}</div>
               </div>
+            </div>
+          )}
+
+          {/* تقرير فحص المركبة */}
+          {conditionReportData && (
+            <div className="section mb-6">
+              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+                تقرير فحص المركبة
+              </div>
+              <ContractVehicleConditionReport 
+                conditionData={conditionReportData}
+                vehicleInfo={contractData.vehicle_info}
+              />
             </div>
           )}
 

@@ -15,6 +15,7 @@ export interface ContractPdfData {
   company_signature?: string
   company_name: string
   created_date: string
+  condition_report?: any
 }
 
 export const generateContractPdf = async (contractData: ContractPdfData): Promise<Blob> => {
@@ -246,6 +247,36 @@ const generateContractHtml = (data: ContractPdfData): string => {
         </div>
         ` : ''}
 
+        ${data.condition_report ? `
+        <div class="section">
+          <div class="section-title">تقرير فحص المركبة</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">الحالة العامة</div>
+              <div class="info-value">${getConditionInArabic(data.condition_report.overall_condition)}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">قراءة العداد</div>
+              <div class="info-value">${data.condition_report.mileage_reading?.toLocaleString() || 0} كم</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">مستوى الوقود</div>
+              <div class="info-value">${data.condition_report.fuel_level || 100}%</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">تاريخ الفحص</div>
+              <div class="info-value">${formatDateInGregorian(data.condition_report.created_at)}</div>
+            </div>
+          </div>
+          ${data.condition_report.notes ? `
+            <div class="info-item">
+              <div class="info-label">ملاحظات الفحص</div>
+              <div class="info-value">${data.condition_report.notes}</div>
+            </div>
+          ` : ''}
+        </div>
+        ` : ''}
+
         <div class="section">
           <div class="section-title">التفاصيل المالية</div>
           <div class="info-grid">
@@ -311,4 +342,15 @@ const getContractTypeInArabic = (type: string): string => {
     'rent_to_own': 'تأجير منتهي بالتمليك'
   }
   return types[type] || type
+}
+
+const getConditionInArabic = (condition: string): string => {
+  const conditions: Record<string, string> = {
+    'excellent': 'ممتازة',
+    'good': 'جيدة',
+    'fair': 'مقبولة',
+    'poor': 'ضعيفة',
+    'damaged': 'متضررة'
+  }
+  return conditions[condition] || condition
 }

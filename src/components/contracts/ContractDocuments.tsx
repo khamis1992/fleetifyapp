@@ -208,6 +208,24 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           }
         }
 
+        // جلب تقرير فحص المركبة المرتبط بالعقد
+        let conditionReportData = null;
+        const conditionReportDoc = documents.find(doc => 
+          doc.document_type === 'condition_report' && doc.condition_report_id
+        );
+        
+        if (conditionReportDoc?.condition_report_id) {
+          const { data: reportData } = await supabase
+            .from('vehicle_condition_reports')
+            .select('*')
+            .eq('id', conditionReportDoc.condition_report_id)
+            .maybeSingle();
+          
+          if (reportData) {
+            conditionReportData = reportData;
+          }
+        }
+
         const contractPdfData: ContractPdfData = {
           contract_number: contractData.contract_number,
           contract_type: contractData.contract_type,
@@ -227,6 +245,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
         setSelectedDocumentForPreview({
           ...document,
           contractData: contractPdfData,
+          conditionReportData: conditionReportData,
           isContract: true
         });
       } else {
@@ -759,8 +778,10 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
               {/* معاينة المحتوى */}
               <div className="border rounded-lg overflow-hidden min-h-[500px]">
                 {selectedDocumentForPreview.isContract && selectedDocumentForPreview.contractData ? (
-                  /* عرض العقد كـ HTML قابل للطباعة */
-                  <ContractHtmlViewer contractData={selectedDocumentForPreview.contractData} />
+                  <ContractHtmlViewer 
+                    contractData={selectedDocumentForPreview.contractData} 
+                    conditionReportData={selectedDocumentForPreview.conditionReportData}
+                  />
                 ) : selectedDocumentForPreview.file_path && (
                   <>
                     {selectedDocumentForPreview.mime_type?.includes('pdf') ? (
