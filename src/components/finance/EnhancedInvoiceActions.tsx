@@ -136,8 +136,8 @@ export function EnhancedInvoiceActions({
         </div>
       )}
       
-      {/* Pay Button - Show first for unpaid invoices */}
-      {onPay && invoice.payment_status !== 'paid' && (invoice.balance_due > 0 || !invoice.balance_due) && (
+      {/* Pay Button - Show for unpaid and partially paid invoices */}
+      {onPay && invoice.payment_status !== 'paid' && (
         <Button 
           variant="default" 
           size="sm"
