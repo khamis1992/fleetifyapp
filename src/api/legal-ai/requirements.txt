@@ -1,0 +1,33 @@
+# FleetifyApp Legal AI API Requirements
+
+# Core Flask dependencies
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# OpenAI for AI functionality
+openai>=1.0.0
+
+# Database and data handling
+sqlite3  # Built-in with Python
+
+# Standard library modules (built-in)
+json
+datetime
+typing
+dataclasses
+hashlib
+time
+pathlib
+os
+sys
+logging
+
+# Optional: Enhanced functionality
+requests>=2.28.0
+numpy>=1.21.0
+
+# Development dependencies (optional)
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0
+
