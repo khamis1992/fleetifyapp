@@ -1,18 +1,18 @@
 import React from 'react';
-import { CheckCircle, Clock, Pause, DollarSign } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ContractsStatisticsProps {
   activeCount: number;
   draftCount: number;
-  suspendedCount: number;
+  cancelledCount: number;
   totalRevenue: number;
 }
 
 export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
   activeCount,
   draftCount,
-  suspendedCount,
+  cancelledCount,
   totalRevenue
 }) => {
   return (
@@ -41,12 +41,12 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">العقود المعلقة</CardTitle>
-          <Pause className="h-4 w-4 text-orange-600" />
+          <CardTitle className="text-sm font-medium">العقود الملغية</CardTitle>
+          <XCircle className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-orange-600">{suspendedCount}</div>
-          <p className="text-xs text-muted-foreground">معلقة مؤقتاً</p>
+          <div className="text-2xl font-bold text-red-600">{cancelledCount}</div>
+          <p className="text-xs text-muted-foreground">عقود ملغية</p>
         </CardContent>
       </Card>
       
