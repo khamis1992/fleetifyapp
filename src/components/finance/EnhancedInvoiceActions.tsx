@@ -137,6 +137,18 @@ export function EnhancedInvoiceActions({
       )}
       
       {/* Pay Button - Show for unpaid and partially paid invoices that are sent */}
+      {(() => {
+        console.log('Pay button conditions:', {
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoice_number,
+          hasOnPay: !!onPay,
+          paymentStatus: invoice.payment_status,
+          status: invoice.status,
+          balanceDue: invoice.balance_due,
+          shouldShow: onPay && invoice.payment_status !== 'paid' && invoice.status !== 'draft' && invoice.status !== 'cancelled'
+        });
+        return null;
+      })()}
       {onPay && invoice.payment_status !== 'paid' && invoice.status !== 'draft' && invoice.status !== 'cancelled' && (
         <Button 
           variant="default" 
