@@ -4,15 +4,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useContractsData = (filters: any = {}) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
+  // Enhanced logging for debugging
+  console.log('🔍 [CONTRACTS_DATA] Hook state:', {
+    authLoading,
+    hasUser: !!user,
+    hasCompanyId: !!user?.profile?.company_id,
+    companyId: user?.profile?.company_id
+  });
 
   // Fetch contracts with customer data
-  const { data: contracts, isLoading, refetch } = useQuery({
+  const { data: contracts, isLoading: contractsLoading, refetch, error } = useQuery({
     queryKey: ['contracts', user?.profile?.company_id],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
+      if (!user?.profile?.company_id) {
+        console.log('🔍 [CONTRACTS_QUERY] No company ID available yet');
+        return [];
+      }
       
-      console.log('🔍 [CONTRACTS_QUERY] Fetching contracts for company:', user.profile.company_id)
+      console.log('🔍 [CONTRACTS_QUERY] Fetching contracts for company:', user.profile.company_id);
       
       const { data, error } = await supabase
         .from('contracts')
@@ -42,18 +53,31 @@ export const useContractsData = (filters: any = {}) => {
           )
         `)
         .eq('company_id', user.profile.company_id)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ [CONTRACTS_QUERY] Error fetching contracts:', error)
-        throw error
+        console.error('❌ [CONTRACTS_QUERY] Error fetching contracts:', error);
+        throw error;
       }
       
-      console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts:', data?.length || 0)
-      return data || []
+      console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts:', data?.length || 0);
+      return data || [];
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !authLoading && !!user?.profile?.company_id,
+    staleTime: 30000, // Cache for 30 seconds
+    retry: (failureCount, error) => {
+      console.log('🔄 [CONTRACTS_QUERY] Retry attempt:', failureCount, error);
+      return failureCount < 3;
+    }
   });
+
+  // Combined loading state
+  const isLoading = authLoading || contractsLoading;
+
+  // Log query error if any
+  if (error) {
+    console.error('❌ [CONTRACTS_DATA] Query error:', error);
+  }
 
   // Contract statistics
   const statistics = useMemo(() => {
@@ -189,6 +213,8 @@ export const useContractsData = (filters: any = {}) => {
     filteredContracts,
     isLoading,
     refetch,
-    statistics
+    statistics,
+    error,
+    hasData: !isLoading && !!contracts
   };
 };

@@ -54,7 +54,7 @@ export default function Contracts() {
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
   
   // Data fetching
-  const { contracts, filteredContracts, isLoading, refetch, statistics } = useContractsData(filters)
+  const { contracts, filteredContracts, isLoading, refetch, statistics, error, hasData } = useContractsData(filters)
 
   // Handle pre-selected customer from navigation
   useEffect(() => {
@@ -152,10 +152,27 @@ export default function Contracts() {
     await autoRenewContracts.mutateAsync()
   }
 
+  // Enhanced loading and error handling
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">جارٍ تحميل العقود...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">حدث خطأ في تحميل العقود</p>
+          <Button onClick={() => refetch()} variant="outline">
+            إعادة المحاولة
+          </Button>
+        </div>
       </div>
     )
   }

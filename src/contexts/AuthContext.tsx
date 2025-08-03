@@ -23,50 +23,74 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
+        console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session?.user);
         setSession(session);
         
         if (session?.user) {
           console.log('📝 [AUTH_CONTEXT] User session found, fetching profile...');
-          // Defer the profile fetch to avoid blocking the auth state change
-          setTimeout(async () => {
-            try {
-              const authUser = await authService.getCurrentUser();
-              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
+          try {
+            const authUser = await authService.getCurrentUser();
+            if (isMounted) {
+              console.log('📝 [AUTH_CONTEXT] Profile loaded successfully:', authUser?.profile?.company_id);
               setUser(authUser);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              setUser(session.user as AuthUser);
+              setLoading(false);
             }
-          }, 0);
+          } catch (error) {
+            console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+            if (isMounted) {
+              setUser(session.user as AuthUser);
+              setLoading(false);
+            }
+          }
         } else {
           console.log('📝 [AUTH_CONTEXT] No user session');
-          setUser(null);
+          if (isMounted) {
+            setUser(null);
+            setLoading(false);
+          }
         }
-        
-        setLoading(false);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      
+      console.log('📝 [AUTH_CONTEXT] Initial session check:', !!session?.user);
       setSession(session);
+      
       if (session?.user) {
         authService.getCurrentUser().then(authUser => {
-          setUser(authUser);
-          setLoading(false);
-        }).catch(() => {
-          setUser(session.user as AuthUser);
-          setLoading(false);
+          if (isMounted) {
+            console.log('📝 [AUTH_CONTEXT] Initial profile loaded:', authUser?.profile?.company_id);
+            setUser(authUser);
+            setLoading(false);
+          }
+        }).catch((error) => {
+          console.error('📝 [AUTH_CONTEXT] Initial profile load error:', error);
+          if (isMounted) {
+            setUser(session.user as AuthUser);
+            setLoading(false);
+          }
         });
       } else {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
