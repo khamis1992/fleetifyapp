@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { VehicleDiagramCanvas } from './VehicleDiagramCanvas';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -510,14 +511,30 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 </div>
               )}
 
-              {/* نقاط الضرر */}
+              {/* نقاط الضرر مع المخطط */}
               {conditionReport.damage_items && Array.isArray(conditionReport.damage_items) && conditionReport.damage_items.length > 0 && (
                 <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                   <h4 className="font-semibold mb-3 text-red-800 flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    نقاط الضرر المكتشفة
+                    نقاط الضرر المكتشفة مع المخطط
                   </h4>
-                  <div className="space-y-2">
+                  
+                  {/* المخطط التفاعلي */}
+                  <VehicleDiagramCanvas
+                    damagePoints={conditionReport.damage_items.map((damage: any, index: number) => ({
+                      id: damage.id || index.toString(),
+                      x: damage.x || 100 + (index * 50),
+                      y: damage.y || 100 + (index * 30),
+                      location: damage.location || 'غير محدد',
+                      description: damage.description || '',
+                      severity: damage.severity || 'medium'
+                    }))}
+                    onDamagePointsChange={() => {}} // Read-only mode
+                    isReadOnly={true}
+                  />
+                  
+                  {/* قائمة نقاط الضرر */}
+                  <div className="space-y-2 mt-4">
                     {conditionReport.damage_items.map((damage: any, index: number) => (
                       <div key={index} className="bg-white p-3 rounded border">
                         <div className="text-sm">

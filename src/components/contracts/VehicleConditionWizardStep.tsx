@@ -13,6 +13,7 @@ import { useCreateContractDocument } from '@/hooks/useContractDocuments';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
+import { VehicleDiagramCanvas } from './VehicleDiagramCanvas';
 import { toast } from 'sonner';
 
 interface VehicleConditionWizardStepProps {
@@ -32,9 +33,9 @@ interface DamagePoint {
   id: string;
   x: number;
   y: number;
-  severity: 'minor' | 'moderate' | 'severe';
+  location: string;
   description: string;
-  photos?: string[];
+  severity: 'low' | 'medium' | 'high';
 }
 
 const defaultConditionItems: ConditionItem[] = [
@@ -296,9 +297,10 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
             </Card>
 
             {/* Vehicle Damage Diagram */}
-            <VehicleConditionDiagram
+            <VehicleDiagramCanvas
               damagePoints={damagePoints}
               onDamagePointsChange={setDamagePoints}
+              isReadOnly={false}
             />
 
             {/* General Notes */}
