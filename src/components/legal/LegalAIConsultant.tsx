@@ -469,7 +469,22 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                       المحادثة القانونية الذكية
                     </span>
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <Select value={country} onValueChange={setCountry}>
+                      <SelectTrigger className="w-48 shadow-chat-input border-border/30 hover:shadow-chat-glow transition-all duration-300">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            <span className="flex items-center gap-2">
+                              <span className="text-lg">{c.flag}</span>
+                              <span>{c.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -531,26 +546,6 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
               
               {/* منطقة الإدخال */}
               <div className="border-t border-border/20 bg-gradient-chat-input p-6 space-y-4 rounded-b-lg">
-                {/* اختيار الدولة */}
-                <div className="flex items-center gap-3">
-                  <label className="text-sm font-semibold text-card-foreground">الدولة:</label>
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger className="w-52 shadow-chat-input border-border/30 hover:shadow-chat-glow transition-all duration-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          <span className="flex items-center gap-2">
-                            <span className="text-lg">{c.flag}</span>
-                            <span>{c.name}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
                 {/* منطقة كتابة الرسالة */}
                 <div className="space-y-3">
                   <Textarea
