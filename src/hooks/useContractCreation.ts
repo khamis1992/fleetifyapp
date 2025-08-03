@@ -6,6 +6,7 @@ import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import { createContractWithFallback } from '@/utils/contractJournalEntry'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { useCreateContractDocument } from './useContractDocuments'
+import { useContractDocumentSaving } from './useContractDocumentSaving'
 
 export interface ContractCreationStep {
   id: string
@@ -46,6 +47,7 @@ export const useContractCreation = () => {
   const { companyId, user } = useUnifiedCompanyAccess()
   const queryClient = useQueryClient()
   const { mutateAsync: createDocument } = useCreateContractDocument()
+  const { saveDocuments, isProcessing: isDocumentSaving } = useContractDocumentSaving()
   
   const [creationState, setCreationState] = useState<ContractCreationState>({
     currentStep: 0,
@@ -327,14 +329,30 @@ export const useContractCreation = () => {
         try {
           console.log('📄 [CONTRACT_CREATION] Initiating enhanced document saving...')
           
-          // Import the enhanced document saving hook
-          const { saveDocuments } = await import('@/hooks/useContractDocumentSaving').then(m => m.useContractDocumentSaving())
-          
+          // Fetch customer name for the document
+          let customerName = 'العميل'
+          try {
+            const { data: customer } = await supabase
+              .from('customers')
+              .select('first_name, last_name, company_name, customer_type')
+              .eq('id', inputContractData.customer_id)
+              .single()
+            
+            if (customer) {
+              customerName = customer.customer_type === 'individual' 
+                ? `${customer.first_name} ${customer.last_name}`
+                : customer.company_name || 'العميل'
+            }
+          } catch (error) {
+            console.warn('⚠️ [CONTRACT_CREATION] Could not fetch customer name:', error)
+          }
+
+          // Prepare document data for saving
           const documentData = {
             contract_id: contractId,
             contract_number: typedResult.contract_number || contractId,
             contract_type: inputContractData.contract_type,
-            customer_name: inputContractData.customer_name || 'العميل',
+            customer_name: customerName,
             vehicle_info: inputContractData.vehicle_info,
             start_date: inputContractData.start_date,
             end_date: inputContractData.end_date,
@@ -343,8 +361,18 @@ export const useContractCreation = () => {
             terms: inputContractData.terms,
             customer_signature: inputContractData.customer_signature,
             company_signature: inputContractData.company_signature,
-            condition_report_id: inputContractData.vehicle_condition_report_id
+            condition_report_id: inputContractData.vehicle_condition_report_id,
+            company_name: 'الشركة', // Will be fetched from settings in the hook
+            created_date: new Date().toISOString(),
+            is_draft: !journalEntryId // Draft if no journal entry was created
           }
+          
+          console.log('📄 [CONTRACT_CREATION] Document data prepared:', {
+            contractId,
+            isDraft: documentData.is_draft,
+            hasSignatures: !!(documentData.customer_signature || documentData.company_signature),
+            hasConditionReport: !!documentData.condition_report_id
+          })
           
           // Use enhanced document saving with progress tracking
           const savingResult = await saveDocuments(documentData)
