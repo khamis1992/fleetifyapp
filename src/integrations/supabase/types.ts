@@ -1600,6 +1600,60 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_payment_schedules: {
+        Row: {
+          amount: number
+          company_id: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string
+          id: string
+          installment_number: number
+          invoice_id: string | null
+          notes: string | null
+          paid_amount: number | null
+          paid_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          company_id: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          installment_number: number
+          invoice_id?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          installment_number?: number
+          invoice_id?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contract_templates: {
         Row: {
           account_mappings: Json
@@ -8632,6 +8686,14 @@ export type Database = {
         }
         Returns: Json
       }
+      create_contract_payment_schedule: {
+        Args: {
+          contract_id_param: string
+          installment_plan?: string
+          number_of_installments?: number
+        }
+        Returns: number
+      }
       create_contract_safe: {
         Args:
           | {
@@ -9475,6 +9537,10 @@ export type Database = {
           odometer_reading?: number
         }
         Returns: undefined
+      }
+      update_payment_schedule_status: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       user_belongs_to_company: {
         Args: { _user_id: string; _company_id: string }
