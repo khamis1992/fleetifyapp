@@ -445,7 +445,7 @@ ${quotation.terms ? `📋 *الشروط والأحكام:* ${quotation.terms}\n`
                     className="text-green-600 hover:text-green-700 hover:bg-green-50"
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
-                    واتساب
+                    ارسال
                   </Button>
                   {quotation.status === 'accepted' && (
                     <Button 

@@ -240,53 +240,17 @@ export const useContractCreation = () => {
 
         // معالجة فشل إنشاء العقد
         if (typedResult.success !== true) {
-          const errorMessage = typedResult.error_message || typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
-          const errorCode = typedResult.error_code || 'UNKNOWN_ERROR'
+          const errorMessage = typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
           const errors = typedResult.errors || [errorMessage]
           
           console.error('❌ [CONTRACT_CREATION] فشل في إنشاء العقد:', {
             result,
-            errorCode,
             errorMessage,
             errors
           })
           
-          // تحديد رسالة خطأ مناسبة للمستخدم
-          let userMessage = errorMessage
-          switch (errorCode) {
-            case 'MISSING_COMPANY_ID':
-              userMessage = 'معرف الشركة مطلوب - يرجى تسجيل الدخول مرة أخرى'
-              break
-            case 'MISSING_CUSTOMER_ID':
-              userMessage = 'يرجى تحديد العميل'
-              break
-            case 'CUSTOMER_NOT_FOUND':
-              userMessage = 'العميل المحدد غير موجود'
-              break
-            case 'CUSTOMER_NOT_ELIGIBLE':
-              userMessage = 'العميل غير مؤهل لإنشاء عقد جديد'
-              break
-            case 'VEHICLE_NOT_FOUND':
-              userMessage = 'المركبة المحددة غير موجودة'
-              break
-            case 'VEHICLE_NOT_AVAILABLE':
-              userMessage = 'المركبة غير متاحة حالياً'
-              break
-            case 'VEHICLE_DATE_CONFLICT':
-              userMessage = 'يوجد تضارب في مواعيد استخدام المركبة'
-              break
-            case 'MISSING_DATES':
-              userMessage = 'تواريخ بداية ونهاية العقد مطلوبة'
-              break
-            case 'INVALID_DATES':
-              userMessage = 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية'
-              break
-            case 'AUTHENTICATION_ERROR':
-              userMessage = 'خطأ في المصادقة - يرجى تسجيل الدخول مرة أخرى'
-              break
-            default:
-              userMessage = errorMessage
-          }
+          // استخدام رسالة الخطأ كما هي
+          const userMessage = errorMessage
           
           updateStepStatus('creation', 'failed', userMessage)
           await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
