@@ -26,7 +26,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ContractDocuments } from './ContractDocuments';
-import { EnhancedInvoiceActions } from '@/components/finance/EnhancedInvoiceActions';
+import { InvoiceCard } from '@/components/finance/InvoiceCard';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { toast } from 'sonner';
 
@@ -554,37 +554,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 {invoices.map((invoice) => {
                   const invoiceHandlers = createInvoiceHandlers(invoice);
                   return (
-                    <Card key={invoice.id}>
-                      <CardContent className="flex items-center justify-between p-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4">
-                            <div>
-                              <h4 className="font-semibold">فاتورة رقم {invoice.invoice_number}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <div className="font-medium">{invoice.total_amount?.toFixed(3)} د.ك</div>
-                              <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
-                                {invoice.payment_status === 'paid' ? 'مدفوعة' : 
-                                 invoice.payment_status === 'partially_paid' ? 'مدفوعة جزئياً' :
-                                 invoice.payment_status === 'overdue' ? 'متأخرة' : 'غير مدفوعة'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <EnhancedInvoiceActions
-                            invoice={invoice}
-                            onPreview={invoiceHandlers.handlePreview}
-                            onEdit={invoiceHandlers.handleEdit}
-                            onDelete={invoiceHandlers.handleDelete}
-                            onPay={invoiceHandlers.handlePay}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <InvoiceCard
+                      key={invoice.id}
+                      invoice={invoice}
+                      onPreview={invoiceHandlers.handlePreview}
+                      onEdit={invoiceHandlers.handleEdit}
+                      onDelete={invoiceHandlers.handleDelete}
+                      onPay={invoiceHandlers.handlePay}
+                    />
                   );
                 })}
               </div>
