@@ -41,6 +41,16 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             >
               عرض
             </Button>
+            {showCancelButton && contract.status === 'active' && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onCancelContract?.(contract)}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                إلغاء
+              </Button>
+            )}
             {showRenewButton && contract.status === 'active' && (
               <Button 
                 variant="outline" 
@@ -59,16 +69,6 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               >
                 <Settings className="h-4 w-4 mr-2" />
                 إدارة
-              </Button>
-            )}
-            {showCancelButton && contract.status === 'active' && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => onCancelContract?.(contract)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                إلغاء
               </Button>
             )}
           </div>
