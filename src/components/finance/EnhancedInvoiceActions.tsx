@@ -7,7 +7,6 @@ import {
   Trash2, 
   Package, 
   Car, 
-  Scale,
   FileText,
   DollarSign,
   Building2,
@@ -36,14 +35,6 @@ export function EnhancedInvoiceActions({
   const getRelatedBadges = () => {
     const badges = [];
     
-    if (invoice.contract_id) {
-      badges.push(
-        <Badge key="contract" variant="outline" className="text-purple-600 border-purple-200">
-          <Scale className="h-3 w-3 mr-1" />
-          عقد
-        </Badge>
-      );
-    }
     
     if (invoice.vehicle_id) {
       badges.push(
@@ -68,11 +59,6 @@ export function EnhancedInvoiceActions({
 
   const handleQuickNavigation = (type: string) => {
     switch (type) {
-      case 'contract':
-        if (invoice.contract_id) {
-          navigate(`/contracts?contract=${invoice.contract_id}`);
-        }
-        break;
       case 'vehicle':
         if (invoice.vehicle_id) {
           navigate(`/fleet?vehicle=${invoice.vehicle_id}`);
@@ -164,18 +150,6 @@ export function EnhancedInvoiceActions({
 
       {/* Quick Navigation Actions */}
       <div className="flex flex-wrap gap-1">
-        {invoice.contract_id && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => handleQuickNavigation('contract')}
-            title="عرض العقد المرتبط"
-            className="text-purple-600 hover:text-purple-700"
-          >
-            <Scale className="h-3 w-3" />
-          </Button>
-        )}
-        
         {invoice.vehicle_id && (
           <Button 
             variant="ghost" 
