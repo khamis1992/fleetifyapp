@@ -425,9 +425,6 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
             المستشار القانوني
             <Brain className="w-6 h-6 text-blue-500" />
           </h2>
-          <p className="text-muted-foreground text-right">
-            استشارات قانونية متخصصة مع ذاكرة ذكية وتعلم تدريجي
-          </p>
         </div>
         
         {/* حالة النظام */}
