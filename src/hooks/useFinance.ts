@@ -775,8 +775,20 @@ export const useUpdateInvoice = () => {
       
       const updateData: any = {
         ...invoiceData,
-        balance_due: invoiceData.total_amount ? invoiceData.total_amount - (invoiceData.subtotal || 0) : undefined,
         updated_at: new Date().toISOString()
+      }
+      
+      // Recalculate balance_due if total_amount is being updated
+      if (invoiceData.total_amount !== undefined) {
+        // Get current paid_amount to calculate balance_due
+        const { data: currentInvoice } = await supabase
+          .from("invoices")
+          .select("paid_amount")
+          .eq("id", invoiceId)
+          .single()
+        
+        const currentPaidAmount = currentInvoice?.paid_amount || 0
+        updateData.balance_due = invoiceData.total_amount - currentPaidAmount
       }
       
       // Remove undefined values

@@ -136,8 +136,8 @@ export function EnhancedInvoiceActions({
         </div>
       )}
       
-      {/* Pay Button - Show for unpaid and partially paid invoices */}
-      {onPay && invoice.payment_status !== 'paid' && (
+      {/* Pay Button - Show for unpaid and partially paid invoices that are sent */}
+      {onPay && invoice.payment_status !== 'paid' && invoice.status !== 'draft' && invoice.status !== 'cancelled' && (
         <Button 
           variant="default" 
           size="sm"
