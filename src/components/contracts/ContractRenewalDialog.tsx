@@ -151,7 +151,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
               className="text-right"
             />
             <p className="text-xs text-muted-foreground text-right">
-              العقد الحالي ينتهي في: {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+              العقد الحالي ينتهي في: {new Date(contract.end_date).toLocaleDateString('en-GB')}
             </p>
           </div>
           
