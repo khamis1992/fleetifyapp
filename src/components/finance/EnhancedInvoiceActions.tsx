@@ -109,10 +109,13 @@ export function EnhancedInvoiceActions({
           size="sm"
           onClick={() => handleQuickNavigation('pay')}
           title="دفع الفاتورة"
-          className="bg-green-600 hover:bg-green-700 text-white mr-2"
+          className="relative overflow-hidden bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0"
         >
-          <DollarSign className="h-4 w-4 ml-1" />
-          دفع
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 animate-pulse" />
+            <span className="relative z-10">دفع الآن</span>
+          </div>
+          <div className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity duration-300"></div>
         </Button>
       )}
 
