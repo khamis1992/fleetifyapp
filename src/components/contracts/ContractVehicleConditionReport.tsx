@@ -13,6 +13,14 @@ interface VehicleConditionItem {
   };
 }
 
+interface DamageItem {
+  x: number;
+  y: number;
+  id: string;
+  severity: string;
+  description: string;
+}
+
 interface VehicleConditionData {
   id: string;
   overall_condition: 'excellent' | 'good' | 'fair' | 'poor';
@@ -23,7 +31,7 @@ interface VehicleConditionData {
   inspector_name?: string;
   created_at: string;
   condition_items?: any;
-  damage_items?: string[];
+  damage_items?: (string | DamageItem)[];
 }
 
 interface ContractVehicleConditionReportProps {
@@ -253,7 +261,7 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
             {conditionData.damage_items.map((item, index) => (
               <li key={index} className="flex items-start gap-2">
                 <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                {item}
+                {typeof item === 'string' ? item : item.description || `ضرر في الموقع (${item.x}, ${item.y})`}
               </li>
             ))}
           </ul>
