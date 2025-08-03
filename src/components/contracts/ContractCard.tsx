@@ -34,13 +34,6 @@ export const ContractCard: React.FC<ContractCardProps> = ({
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onViewDetails?.(contract)}
-            >
-              عرض
-            </Button>
             {showCancelButton && contract.status === 'active' && (
               <Button 
                 variant="destructive" 
@@ -51,6 +44,13 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                 إلغاء
               </Button>
             )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onViewDetails?.(contract)}
+            >
+              عرض
+            </Button>
             {showRenewButton && contract.status === 'active' && (
               <Button 
                 variant="outline" 
