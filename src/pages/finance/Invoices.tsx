@@ -14,6 +14,7 @@ import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { InvoiceIntegrationPanel } from "@/components/finance/InvoiceIntegrationPanel"
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog"
 import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog"
+import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog"
 import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions"
 import { DepartmentIntegrationSummary } from "@/components/finance/DepartmentIntegrationSummary"
 
@@ -26,6 +27,7 @@ const Invoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<any>(null)
+  const [showPayDialog, setShowPayDialog] = useState(false)
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
 
   const { data: invoices, isLoading, error } = useInvoices()
@@ -265,20 +267,24 @@ const Invoices = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <EnhancedInvoiceActions
-                        invoice={invoice}
-                        onPreview={() => {
-                          setSelectedInvoice(invoice);
-                          setIsPreviewOpen(true);
-                        }}
-                        onEdit={() => {
-                          setEditingInvoice(invoice);
-                        }}
-                        onDelete={() => {
-                          // TODO: Implement delete functionality
-                          console.log('Delete invoice:', invoice.id);
-                        }}
-                      />
+                       <EnhancedInvoiceActions
+                         invoice={invoice}
+                         onPreview={() => {
+                           setSelectedInvoice(invoice);
+                           setIsPreviewOpen(true);
+                         }}
+                         onEdit={() => {
+                           setEditingInvoice(invoice);
+                         }}
+                         onDelete={() => {
+                           // TODO: Implement delete functionality
+                           console.log('Delete invoice:', invoice.id);
+                         }}
+                         onPay={() => {
+                           setSelectedInvoice(invoice);
+                           setShowPayDialog(true);
+                         }}
+                       />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -305,6 +311,19 @@ const Invoices = () => {
           setEditingInvoice(null);
         }}
       />
+
+      {/* Pay Invoice Dialog */}
+      {selectedInvoice && (
+        <PayInvoiceDialog
+          open={showPayDialog}
+          onOpenChange={setShowPayDialog}
+          invoice={selectedInvoice}
+          onPaymentCreated={() => {
+            setShowPayDialog(false);
+            setSelectedInvoice(null);
+          }}
+        />
+      )}
     </div>
   )
 }

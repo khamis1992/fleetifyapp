@@ -23,13 +23,15 @@ interface EnhancedInvoiceActionsProps {
   onPreview: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onPay?: () => void;
 }
 
 export function EnhancedInvoiceActions({ 
   invoice, 
   onPreview, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onPay 
 }: EnhancedInvoiceActionsProps) {
   const navigate = useNavigate();
 
@@ -119,6 +121,9 @@ export function EnhancedInvoiceActions({
           navigate(`/finance/general-ledger?entry=${invoice.journal_entry_id}`);
         }
         break;
+      case 'pay':
+        onPay?.();
+        break;
     }
   };
 
@@ -133,6 +138,19 @@ export function EnhancedInvoiceActions({
       
       {/* Main Actions */}
       <div className="flex gap-2">
+        {/* Pay Button - Show only for unpaid or partially paid invoices */}
+        {onPay && invoice.payment_status !== 'paid' && invoice.balance_due > 0 && (
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={() => handleQuickNavigation('pay')}
+            title="دفع الفاتورة"
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <DollarSign className="h-4 w-4" />
+          </Button>
+        )}
+        
         <Button 
           variant="ghost" 
           size="sm"
