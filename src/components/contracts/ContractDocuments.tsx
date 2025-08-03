@@ -47,6 +47,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isReportViewerOpen, setIsReportViewerOpen] = useState(false);
+  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState<any>(null);
+  const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = useState(false);
   const { data: documents = [], isLoading } = useContractDocuments(contractId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
@@ -153,6 +155,21 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const handleViewConditionReport = (reportId: string) => {
     setSelectedReportId(reportId);
     setIsReportViewerOpen(true);
+  };
+
+  const handlePreviewDocument = async (document: any) => {
+    if (!document.file_path) {
+      toast.error('لا يمكن معاينة هذا المستند');
+      return;
+    }
+
+    try {
+      setSelectedDocumentForPreview(document);
+      setIsDocumentPreviewOpen(true);
+    } catch (error) {
+      console.error('Error preparing document preview:', error);
+      toast.error('حدث خطأ في تحضير المعاينة');
+    }
   };
 
   const getDocumentTypeLabel = (type: string) => {
@@ -366,19 +383,19 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                       <Eye className="h-4 w-4" />
                     </Button>
                   )}
-                  {document.file_path && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownload(document.file_path!, document.document_name);
-                      }}
-                      disabled={downloadDocument.isPending}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
+                   {document.file_path && (
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handlePreviewDocument(document);
+                       }}
+                       className="text-blue-600 hover:text-blue-700"
+                     >
+                       <Eye className="h-4 w-4" />
+                     </Button>
+                   )}
                   
                   <Button
                     size="sm"
@@ -624,6 +641,92 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog لمعاينة المستندات */}
+      <Dialog open={isDocumentPreviewOpen} onOpenChange={setIsDocumentPreviewOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              معاينة المستند: {selectedDocumentForPreview?.document_name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedDocumentForPreview && (
+            <div className="space-y-4">
+              {/* معلومات المستند */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">نوع المستند:</span>
+                    <p className="font-medium">{getDocumentTypeLabel(selectedDocumentForPreview.document_type)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">تاريخ الرفع:</span>
+                    <p className="font-medium">
+                      {new Date(selectedDocumentForPreview.uploaded_at).toLocaleDateString('en-GB')}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">حجم الملف:</span>
+                    <p className="font-medium">{formatFileSize(selectedDocumentForPreview.file_size)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">النوع:</span>
+                    <p className="font-medium">{selectedDocumentForPreview.mime_type}</p>
+                  </div>
+                </div>
+                {selectedDocumentForPreview.notes && (
+                  <div className="mt-3">
+                    <span className="text-muted-foreground">ملاحظات:</span>
+                    <p className="font-medium mt-1">{selectedDocumentForPreview.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* معاينة المحتوى */}
+              <div className="border rounded-lg overflow-hidden min-h-[500px]">
+                {selectedDocumentForPreview.file_path && (
+                  <>
+                    {selectedDocumentForPreview.mime_type?.includes('pdf') ? (
+                      <iframe
+                        src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${selectedDocumentForPreview.file_path}`}
+                        className="w-full h-[600px]"
+                        title="معاينة PDF"
+                      />
+                    ) : selectedDocumentForPreview.mime_type?.includes('image') ? (
+                      <div className="flex justify-center p-4">
+                        <img
+                          src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${selectedDocumentForPreview.file_path}`}
+                          alt={selectedDocumentForPreview.document_name}
+                          className="max-w-full max-h-[600px] object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+                        <FileText className="h-16 w-16 mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">لا يمكن معاينة هذا النوع من الملفات</p>
+                        <p className="text-sm">يمكنك تحميل الملف لعرضه في التطبيق المناسب</p>
+                        <Button
+                          className="mt-4"
+                          onClick={() => {
+                            if (selectedDocumentForPreview.file_path) {
+                              handleDownload(selectedDocumentForPreview.file_path, selectedDocumentForPreview.document_name);
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          تحميل الملف
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
