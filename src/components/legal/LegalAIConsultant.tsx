@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -59,8 +59,6 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   
-  // حالات الواجهة
-  const [activeTab, setActiveTab] = useState('chat');
 
   // Hooks مخصصة
   const { submitQuery, submitFeedback, isLoading: apiLoading } = useLegalAI();
@@ -438,231 +436,218 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="chat">المحادثة</TabsTrigger>
-          <TabsTrigger value="stats">الإحصائيات</TabsTrigger>
-          <TabsTrigger value="settings">الإعدادات</TabsTrigger>
-        </TabsList>
-
-        {/* تبويب المحادثة */}
-        <TabsContent value="chat" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* منطقة المحادثة */}
-            <div className="lg:col-span-2">
-              <Card className="h-[600px] flex flex-col">
-                <CardHeader className="flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5" />
-                      المحادثة
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={clearChatHistory}>
-                        <History className="w-4 h-4 mr-1" />
-                        مسح المحادثة
-                      </Button>
-                    </div>
+      {/* منطقة المحادثة بدون تبويبات */}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* منطقة المحادثة */}
+          <div className="lg:col-span-2">
+            <Card className="h-[600px] flex flex-col">
+              <CardHeader className="flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    المحادثة
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={clearChatHistory}>
+                      <History className="w-4 h-4 mr-1" />
+                      مسح المحادثة
+                    </Button>
                   </div>
-                </CardHeader>
-                
-                {/* منطقة الرسائل */}
-                <CardContent className="flex-1 overflow-y-auto">
+                </div>
+              </CardHeader>
+              
+              {/* منطقة الرسائل */}
+              <CardContent className="flex-1 overflow-y-auto">
+                <div className="space-y-4 pr-2">
                   {chatHistory.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-center">
-                      <div>
-                        <Bot className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                          مرحباً بك في المستشار القانوني الذكي
-                        </h3>
-                        <p className="text-gray-500">
-                          اطرح سؤالك القانوني وسأقدم لك استشارة متخصصة
-                        </p>
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <div className="text-center">
+                        <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                        <p>ابدأ محادثة جديدة</p>
+                        <p className="text-sm">اطرح سؤالك القانوني وسأساعدك</p>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {chatHistory.map((message) => (
-                        <MessageBubble key={message.id} message={message} />
-                      ))}
-                      
-                      {loading && (
-                        <div className="flex justify-start mb-4">
+                    chatHistory.map((message) => (
+                      <MessageBubble key={message.id} message={message} />
+                    ))
+                  )}
+                  
+                  {loading && (
+                    <div className="flex justify-start mb-4">
+                      <div className="flex items-start gap-2 max-w-[80%]">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-green-500">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="bg-gray-100 text-gray-800 border rounded-lg p-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                              <Bot className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="bg-gray-100 rounded-lg p-3">
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="text-sm">جاري التفكير...</span>
-                              </div>
-                            </div>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>جاري التفكير...</span>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   )}
-                </CardContent>
-                
-                {/* منطقة الإدخال */}
-                <div className="p-4 border-t">
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Select value={country} onValueChange={setCountry}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countries.map((c) => (
-                            <SelectItem key={c.code} value={c.code}>
-                              {c.flag} {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Textarea
-                        placeholder="اطرح سؤالك القانوني هنا..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        rows={2}
-                        className="resize-none"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSubmitQuery();
-                          }
-                        }}
-                      />
-                      <Button 
-                        onClick={handleSubmitQuery} 
-                        disabled={loading || !query.trim()}
-                        className="px-6"
-                      >
-                        {loading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          'إرسال'
-                        )}
-                      </Button>
-                    </div>
-                    
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
                 </div>
-              </Card>
-            </div>
-
-            {/* لوحة التقييم */}
-            <div className="space-y-6">
-
-              {feedbackSubmitted && (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    شكراً لك! تم تسجيل تقييمك وسيساعد في تحسين النظام.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* إحصائيات سريعة */}
-              {stats && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">إحصائيات سريعة</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm">الاستفسارات اليوم</span>
-                      <span className="font-semibold">{stats.performance_overview.total_queries}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">كفاءة التكلفة</span>
-                      <span className="font-semibold">{stats.performance_overview.cost_efficiency}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">متوسط الاستجابة</span>
-                      <span className="font-semibold">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* تبويب الإحصائيات */}
-        <TabsContent value="stats" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">إحصائيات مفصلة</h3>
-            <Button variant="outline" onClick={refreshStats}>
-              <BarChart className="w-4 h-4 mr-2" />
-              تحديث الإحصائيات
-            </Button>
-          </div>
-          <StatsDisplay />
-        </TabsContent>
-
-        {/* تبويب الإعدادات */}
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                إعدادات المستشار القانوني
-              </CardTitle>
-              <CardDescription>
-                إعدادات وتخصيص المستشار القانوني الذكي
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">الدولة الافتراضية</label>
-                <Select value={country} onValueChange={setCountry}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.flag} {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              </CardContent>
               
-              <div className="pt-4 border-t">
-                <h4 className="font-medium mb-2">معلومات النظام</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>إصدار النظام:</span>
-                    <span>2.0.0</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>آخر تحديث:</span>
-                    <span>{new Date().toLocaleDateString('ar')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>حالة النظام:</span>
-                    <Badge variant="outline" className="text-green-600">
-                      يعمل بكفاءة
-                    </Badge>
+              {/* منطقة الإدخال */}
+              <div className="border-t p-4 space-y-4">
+                {/* اختيار الدولة */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">الدولة:</label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          <span className="flex items-center gap-2">
+                            <span>{c.flag}</span>
+                            <span>{c.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* منطقة كتابة الرسالة */}
+                <div className="space-y-2">
+                  <Textarea
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="اكتب سؤالك القانوني هنا..."
+                    className="min-h-[100px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        handleSubmitQuery();
+                      }
+                    }}
+                  />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      Ctrl + Enter للإرسال
+                    </span>
+                    <Button 
+                      onClick={handleSubmitQuery}
+                      disabled={loading || !query.trim()}
+                      className="px-6"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          جاري الإرسال...
+                        </>
+                      ) : (
+                        'إرسال السؤال'
+                      )}
+                    </Button>
                   </div>
                 </div>
+                
+                {error && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </Card>
+          </div>
+          
+          {/* الشريط الجانبي */}
+          <div className="space-y-4">
+            {/* إحصائيات سريعة */}
+            {stats && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart className="w-5 h-5" />
+                    إحصائيات سريعة
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span>الاستفسارات اليوم</span>
+                    <span className="font-bold">{stats.performance_overview.total_queries}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>كفاءة التكلفة</span>
+                    <span className="font-bold text-green-600">{stats.performance_overview.cost_efficiency}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>رضا المستخدمين</span>
+                    <span className="font-bold text-blue-600">{stats.performance_overview.user_satisfaction}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>وقت الاستجابة</span>
+                    <span className="font-bold">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* تقييم الإجابة الأخيرة */}
+            {currentMessageId && !feedbackSubmitted && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-5 h-5" />
+                    قيّم الإجابة
+                  </CardTitle>
+                  <CardDescription>
+                    ساعدنا في تحسين جودة الخدمة
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* نجوم التقييم */}
+                  <div className="flex justify-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Button
+                        key={star}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRating(star)}
+                        className={`p-1 ${rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+                      >
+                        <Star className="w-6 h-6 fill-current" />
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  {/* تعليق إضافي */}
+                  <Textarea
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    placeholder="تعليق إضافي (اختياري)"
+                    className="min-h-[80px] resize-none"
+                  />
+                  
+                  <Button 
+                    onClick={handleSubmitFeedback}
+                    disabled={rating === 0}
+                    className="w-full"
+                  >
+                    إرسال التقييم
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            
+            {feedbackSubmitted && (
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                  <p className="text-sm text-green-600">تم تسجيل تقييمك بنجاح</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
