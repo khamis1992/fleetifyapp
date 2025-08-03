@@ -7,6 +7,9 @@ import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { FileText, Plus } from "lucide-react";
+import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions";
+import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
+import { useState } from "react";
 
 interface CustomerInvoicesTabProps {
   customerId: string;
@@ -16,6 +19,30 @@ interface CustomerInvoicesTabProps {
 export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInvoicesTabProps) => {
   const { data: invoices, isLoading: invoicesLoading } = useCustomerInvoices(customerId);
   const { data: summary, isLoading: summaryLoading } = useCustomerInvoicesSummary(customerId);
+  
+  // Payment dialog state
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
+
+  // Handlers for invoice actions - these will be created for each invoice
+  const createHandlers = (invoice: any) => ({
+    handlePay: () => {
+      setSelectedInvoice(invoice);
+      setIsPayDialogOpen(true);
+    },
+    handlePreview: () => {
+      // Preview functionality can be implemented later
+      console.log("Preview invoice:", invoice);
+    },
+    handleEdit: () => {
+      // Edit functionality can be implemented later  
+      console.log("Edit invoice:", invoice);
+    },
+    handleDelete: () => {
+      // Delete functionality can be implemented later
+      console.log("Delete invoice:", invoice);
+    }
+  });
 
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, "secondary" | "default" | "destructive" | "outline"> = {
@@ -155,47 +182,74 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
                   <TableHead>المبلغ الإجمالي</TableHead>
                   <TableHead>المبلغ المدفوع</TableHead>
                   <TableHead>المبلغ المستحق</TableHead>
+                  <TableHead>الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">
-                      {invoice.invoice_number}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(invoice.invoice_date), 'dd/MM/yyyy', { locale: ar })}
-                    </TableCell>
-                    <TableCell>
-                      {invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {invoice.invoice_type === 'customer' ? 'عميل' : 'مورد'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(invoice.status)}
-                    </TableCell>
-                    <TableCell>
-                      {getPaymentStatusBadge(invoice.payment_status)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(invoice.total_amount)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(invoice.paid_amount || 0)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(invoice.balance_due || 0)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {invoices.map((invoice) => {
+                  const handlers = createHandlers(invoice);
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">
+                        {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(invoice.invoice_date), 'dd/MM/yyyy', { locale: ar })}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {invoice.invoice_type === 'customer' ? 'عميل' : 'مورد'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(invoice.status)}
+                      </TableCell>
+                      <TableCell>
+                        {getPaymentStatusBadge(invoice.payment_status)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(invoice.total_amount)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(invoice.paid_amount || 0)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(invoice.balance_due || 0)}
+                      </TableCell>
+                      <TableCell>
+                        <EnhancedInvoiceActions
+                          invoice={invoice}
+                          onPreview={handlers.handlePreview}
+                          onEdit={handlers.handleEdit}
+                          onDelete={handlers.handleDelete}
+                          onPay={handlers.handlePay}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Dialog */}
+      {selectedInvoice && (
+        <PayInvoiceDialog
+          open={isPayDialogOpen}
+          onOpenChange={setIsPayDialogOpen}
+          invoice={selectedInvoice}
+          onPaymentCreated={() => {
+            setIsPayDialogOpen(false);
+            setSelectedInvoice(null);
+            // Optionally refetch invoices here
+          }}
+        />
+      )}
     </div>
   );
 };
