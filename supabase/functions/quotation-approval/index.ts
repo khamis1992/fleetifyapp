@@ -40,37 +40,10 @@ serve(async (req) => {
         );
       }
 
-      // Get quotation by approval token
+      // Get quotation by approval token with simpler approach
       const { data: quotation, error: quotationError } = await supabase
         .from('quotations')
-        .select(`
-          *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            company_name,
-            customer_type,
-            phone,
-            email
-          ),
-          vehicles (
-            id,
-            make,
-            model,
-            year,
-            plate_number
-          ),
-          companies (
-            id,
-            name,
-            name_ar,
-            logo_url,
-            phone,
-            email,
-            address
-          )
-        `)
+        .select('*')
         .eq('approval_token', token)
         .single();
 
@@ -84,6 +57,21 @@ serve(async (req) => {
           }
         );
       }
+
+      // Get related data separately to avoid relationship issues
+      const [customerResult, vehicleResult, companyResult] = await Promise.all([
+        supabase.from('customers').select('id, first_name, last_name, company_name, customer_type, phone, email').eq('id', quotation.customer_id).single(),
+        quotation.vehicle_id ? supabase.from('vehicles').select('id, make, model, year, plate_number').eq('id', quotation.vehicle_id).single() : { data: null, error: null },
+        supabase.from('companies').select('id, name, name_ar, logo_url, phone, email, address').eq('id', quotation.company_id).single()
+      ]);
+
+      // Combine the data
+      const enrichedQuotation = {
+        ...quotation,
+        customers: customerResult.data,
+        vehicles: vehicleResult.data,
+        companies: companyResult.data
+      };
 
       // Check if token is expired
       if (quotation.approval_expires_at && new Date(quotation.approval_expires_at) < new Date()) {
@@ -101,7 +89,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: 'This quotation has already been processed',
-            quotation 
+            quotation: enrichedQuotation 
           }),
           { 
             status: 409,
@@ -111,7 +99,7 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ quotation }),
+        JSON.stringify({ quotation: enrichedQuotation }),
         { 
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
