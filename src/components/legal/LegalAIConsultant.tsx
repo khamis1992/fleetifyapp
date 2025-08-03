@@ -419,20 +419,20 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+      <div className="flex items-start justify-start">
+        <div className="text-right">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2 justify-end">
+            المستشار القانوني
             <Brain className="w-6 h-6 text-blue-500" />
-            المستشار القانوني الذكي
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-right">
             استشارات قانونية متخصصة مع ذاكرة ذكية وتعلم تدريجي
           </p>
         </div>
         
         {/* حالة النظام */}
         {healthStatus && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mr-auto">
             <Badge variant="outline" className="text-green-600">
               <CheckCircle className="w-3 h-3 mr-1" />
               النظام يعمل بكفاءة {healthStatus.performance.cost_efficiency}%
@@ -669,4 +669,3 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
     </div>
   );
 };
-
