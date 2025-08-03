@@ -249,6 +249,12 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
           <h4 className="font-bold text-red-700 mb-3 border-b border-red-200 pb-1">
             المشاكل والأضرار المكتشفة
           </h4>
+          {vehicleInfo && (
+            <div className="mb-3 p-3 bg-gray-50 border-r-4 border-red-600">
+              <div className="text-sm font-semibold text-gray-700 mb-1">بيانات المركبة:</div>
+              <div className="text-sm text-gray-600">{vehicleInfo}</div>
+            </div>
+          )}
           <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
             {conditionData.damage_items.map((item, index) => (
               <li key={index} className="flex items-start gap-2">
