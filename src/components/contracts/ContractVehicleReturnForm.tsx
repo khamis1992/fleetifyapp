@@ -96,17 +96,25 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             </div>
             <div>
               <Label>العميل</Label>
-              <Input value={contract.customer?.first_name + ' ' + contract.customer?.last_name} disabled />
+              <Input value={
+                contract.customers?.customer_type === 'corporate' 
+                  ? (contract.customers?.company_name_ar || 'غير محدد')
+                  : `${contract.customers?.first_name_ar || ''} ${contract.customers?.last_name_ar || ''}`.trim() || 'غير محدد'
+              } disabled />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>المركبة</Label>
-              <Input value={`${contract.vehicle?.make} ${contract.vehicle?.model} (${contract.vehicle?.year})`} disabled />
+              <Input value={
+                contract.vehicles ? 
+                  `${contract.vehicles.make || ''} ${contract.vehicles.model || ''} (${contract.vehicles.year || ''})`.trim() || 'غير محدد'
+                  : 'غير محدد'
+              } disabled />
             </div>
             <div>
               <Label>رقم اللوحة</Label>
-              <Input value={contract.vehicle?.license_plate} disabled />
+              <Input value={contract.vehicles?.plate_number || 'غير محدد'} disabled />
             </div>
           </div>
         </CardContent>
