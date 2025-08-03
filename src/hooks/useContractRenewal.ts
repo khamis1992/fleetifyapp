@@ -206,6 +206,16 @@ export const useUpdateContractStatus = () => {
         updateData.description = reason;
       }
       
+      // Get contract details first to check if it has a vehicle
+      const { data: contractData, error: contractError } = await supabase
+        .from("contracts")
+        .select("vehicle_id")
+        .eq("id", contractId)
+        .single();
+      
+      if (contractError) throw contractError;
+      
+      // Update contract status
       const { data, error } = await supabase
         .from("contracts")
         .update(updateData)
@@ -214,6 +224,19 @@ export const useUpdateContractStatus = () => {
         .single();
       
       if (error) throw error;
+      
+      // If cancelling contract and it has a vehicle, make vehicle available
+      if (status === 'cancelled' && contractData.vehicle_id) {
+        const { error: vehicleError } = await supabase
+          .from("vehicles")
+          .update({ status: 'available' })
+          .eq("id", contractData.vehicle_id);
+        
+        if (vehicleError) {
+          console.warn("خطأ في تحديث حالة المركبة:", vehicleError.message);
+        }
+      }
+      
       return data;
     },
     onSuccess: (_, variables) => {
