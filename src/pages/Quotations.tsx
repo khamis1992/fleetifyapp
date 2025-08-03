@@ -226,7 +226,7 @@ export default function Quotations() {
   // Generate approval link for quotation
   const generateApprovalLink = async (quotationId: string) => {
     try {
-      // Generate token and set expiry (7 days)
+      // Generate token and set expiry (30 days)
       const { data, error } = await supabase
         .rpc('generate_approval_token')
 
@@ -234,7 +234,9 @@ export default function Quotations() {
 
       const approvalToken = data;
       const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      const approvalUrl = `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval?token=${approvalToken}`;
+      
+      // Create a shorter, user-friendly approval URL that points to our app
+      const approvalUrl = `${window.location.origin}/quotation-approval?token=${approvalToken}`;
 
       // Update quotation with approval data
       const { error: updateError } = await supabase
@@ -312,7 +314,7 @@ export default function Quotations() {
 ${quotation.description ? `*الوصف:* ${quotation.description}\n` : ''}
 ${quotation.terms ? `*الشروط والأحكام:* ${quotation.terms}\n` : ''}
 
-${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى الضغط على الرابط التالي:*\n${approvalUrl}\n` : ''}
+${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى النقر على الرابط:*\n🔗 ${approvalUrl}\n\n*صالح لمدة 30 يوماً*` : ''}
 
 نتطلع لخدمتكم!
 للاستفسار، يرجى الرد على هذه الرسالة.

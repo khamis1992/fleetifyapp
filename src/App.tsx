@@ -66,7 +66,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/approval/:token" element={<QuotationApproval />} />
+            <Route path="/quotation-approval" element={<QuotationApproval />} />
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/super-admin/*" element={<SuperAdminLayout />}>
               <Route path="dashboard" element={<SuperAdminDashboard />} />
