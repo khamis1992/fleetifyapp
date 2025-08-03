@@ -257,7 +257,7 @@ export function AppSidebar() {
           <img 
             src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
             alt="Fleetify Logo" 
-            className="h-10 w-auto"
+            className="h-10 w-auto filter brightness-0 invert"
           />
           {!collapsed && (
             <div>
