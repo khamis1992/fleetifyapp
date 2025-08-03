@@ -77,9 +77,6 @@ export const AuthForm: React.FC = () => {
               className="h-20 w-auto filter brightness-0"
             />
           </div>
-          <h1 className="text-3xl font-bold text-primary">
-            Fleetify
-          </h1>
           <p className="text-muted-foreground mt-2">
             نظام إدارة تأجير السيارات المتكامل
           </p>
