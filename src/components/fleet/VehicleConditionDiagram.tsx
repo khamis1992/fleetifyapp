@@ -130,19 +130,16 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
     
     if (selectedPoint?.id) {
       // Edit existing point
-      console.log('📝 [DAMAGE_DIAGRAM] Editing existing damage point:', selectedPoint.id);
       const updatedPoints = damagePoints.map(point =>
         point.id === selectedPoint.id ? { ...pointData, id: selectedPoint.id } : point
       );
       onDamagePointsChange(updatedPoints);
     } else {
       // Add new point
-      console.log('📝 [DAMAGE_DIAGRAM] Adding new damage point:', pointData);
       const newPoint: DamagePoint = {
         ...pointData,
         id: `damage_${Date.now()}`
       };
-      console.log('📝 [DAMAGE_DIAGRAM] New point created with ID:', newPoint.id);
       onDamagePointsChange([...damagePoints, newPoint]);
     }
     
@@ -366,7 +363,7 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">درجة الضرر</label>
         <Select value={severity} onValueChange={(value: 'minor' | 'moderate' | 'severe') => setSeverity(value)}>
@@ -393,7 +390,12 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1" disabled={!description.trim()}>
+        <Button 
+          type="button" 
+          className="flex-1" 
+          disabled={!description.trim()}
+          onClick={handleSubmit}
+        >
           {point?.id ? 'حفظ التعديل' : 'إضافة النقطة'}
         </Button>
         {onDelete && (
@@ -405,6 +407,6 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
           إلغاء
         </Button>
       </div>
-    </form>
+    </div>
   );
 };
