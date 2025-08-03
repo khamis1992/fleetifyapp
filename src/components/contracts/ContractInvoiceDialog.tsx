@@ -79,12 +79,11 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     const totalTax = invoiceData.items.reduce((sum, item) => sum + item.tax_amount, 0);
     const total = subtotal + totalTax - invoiceData.discount_amount;
     
-    setInvoiceData(prev => ({
-      ...prev,
+    return {
       subtotal,
       tax_amount: totalTax,
       total_amount: total
-    }));
+    };
   };
 
   const updateItem = (index: number, field: string, value: any) => {
@@ -98,10 +97,24 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
       item.tax_amount = item.line_total * (item.tax_rate / 100);
     }
     
-    setInvoiceData(prev => ({ ...prev, items: newItems }));
+    // Update items and recalculate totals
+    setInvoiceData(prev => {
+      const updatedData = { ...prev, items: newItems };
+      const totals = calculateTotalsFromItems(newItems, prev.discount_amount);
+      return { ...updatedData, ...totals };
+    });
+  };
+
+  const calculateTotalsFromItems = (items: any[], discountAmount: number) => {
+    const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
+    const totalTax = items.reduce((sum, item) => sum + item.tax_amount, 0);
+    const total = subtotal + totalTax - discountAmount;
     
-    // Recalculate totals
-    setTimeout(calculateTotals, 0);
+    return {
+      subtotal,
+      tax_amount: totalTax,
+      total_amount: total
+    };
   };
 
   const addItem = () => {
@@ -123,9 +136,11 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
 
   const removeItem = (index: number) => {
     if (invoiceData.items.length > 1) {
-      const newItems = invoiceData.items.filter((_, i) => i !== index);
-      setInvoiceData(prev => ({ ...prev, items: newItems }));
-      setTimeout(calculateTotals, 0);
+      setInvoiceData(prev => {
+        const newItems = prev.items.filter((_, i) => i !== index);
+        const totals = calculateTotalsFromItems(newItems, prev.discount_amount);
+        return { ...prev, items: newItems, ...totals };
+      });
     }
   };
 
@@ -411,11 +426,10 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                     value={invoiceData.discount_amount}
                     onChange={(e) => {
                       const discount = parseFloat(e.target.value) || 0;
-                      setInvoiceData(prev => ({
-                        ...prev,
-                        discount_amount: discount,
-                        total_amount: prev.subtotal + prev.tax_amount - discount
-                      }));
+                      setInvoiceData(prev => {
+                        const totals = calculateTotalsFromItems(prev.items, discount);
+                        return { ...prev, discount_amount: discount, ...totals };
+                      });
                     }}
                   />
                 </div>
