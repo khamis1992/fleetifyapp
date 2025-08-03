@@ -26,6 +26,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ContractDocuments } from './ContractDocuments';
+import { EnhancedInvoiceActions } from '@/components/finance/EnhancedInvoiceActions';
+import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { toast } from 'sonner';
 
 interface ContractDetailsDialogProps {
@@ -45,6 +47,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(contract || {});
+  
+  // Payment dialog state
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
 
   // Fetch related data
   const { data: customer } = useQuery({
@@ -122,6 +128,23 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       default: return <FileText className="h-4 w-4" />;
     }
   };
+
+  // Handlers for invoice actions - these will be created for each invoice
+  const createInvoiceHandlers = (invoice: any) => ({
+    handlePay: () => {
+      setSelectedInvoice(invoice);
+      setIsPayDialogOpen(true);
+    },
+    handlePreview: () => {
+      console.log("Preview invoice:", invoice);
+    },
+    handleEdit: () => {
+      console.log("Edit invoice:", invoice);
+    },
+    handleDelete: () => {
+      console.log("Delete invoice:", invoice);
+    }
+  });
 
   const handleSave = async () => {
     try {
@@ -528,24 +551,42 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
             {invoices && invoices.length > 0 ? (
               <div className="space-y-4">
-                {invoices.map((invoice) => (
-                  <Card key={invoice.id}>
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div>
-                        <div className="font-medium">{invoice.total_amount?.toFixed(3)} د.ك</div>
-                        <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
-                          {invoice.payment_status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}
-                        </Badge>
-                      </div>
-                      <div className="text-right">
-                        <h4 className="font-semibold">فاتورة رقم {invoice.invoice_number}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {invoices.map((invoice) => {
+                  const invoiceHandlers = createInvoiceHandlers(invoice);
+                  return (
+                    <Card key={invoice.id}>
+                      <CardContent className="flex items-center justify-between p-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <h4 className="font-semibold">فاتورة رقم {invoice.invoice_number}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">{invoice.total_amount?.toFixed(3)} د.ك</div>
+                              <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
+                                {invoice.payment_status === 'paid' ? 'مدفوعة' : 
+                                 invoice.payment_status === 'partially_paid' ? 'مدفوعة جزئياً' :
+                                 invoice.payment_status === 'overdue' ? 'متأخرة' : 'غير مدفوعة'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <EnhancedInvoiceActions
+                            invoice={invoice}
+                            onPreview={invoiceHandlers.handlePreview}
+                            onEdit={invoiceHandlers.handleEdit}
+                            onDelete={invoiceHandlers.handleDelete}
+                            onPay={invoiceHandlers.handlePay}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card>
@@ -609,6 +650,20 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             <ContractDocuments contractId={contract.id} />
           </TabsContent>
         </Tabs>
+
+        {/* Payment Dialog */}
+        {selectedInvoice && (
+          <PayInvoiceDialog
+            open={isPayDialogOpen}
+            onOpenChange={setIsPayDialogOpen}
+            invoice={selectedInvoice}
+            onPaymentCreated={() => {
+              setIsPayDialogOpen(false);
+              setSelectedInvoice(null);
+              // Optionally refetch invoices here
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
