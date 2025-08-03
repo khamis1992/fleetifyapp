@@ -659,6 +659,7 @@ export const FinancialStep: React.FC = () => {
                 <Switch
                   id="custom_amount_toggle"
                   checked={isCustomAmount}
+                  className="transition-all duration-300 hover:scale-105 data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted-foreground/20"
                   onCheckedChange={(checked) => {
                     setIsCustomAmount(checked)
                     if (!checked && calculations) {
