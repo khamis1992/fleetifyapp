@@ -323,6 +323,21 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
             </CardContent>
           </Card>
 
+          {/* Payment Schedule Section - Only show for sales invoices */}
+          {invoiceData.invoice_type === 'sales' && contract?.id && (
+            <PaymentScheduleSection
+              contractId={contract.id}
+              totalAmount={invoiceData.total_amount}
+              currency="KWD"
+              onScheduleCreated={() => {
+                setPaymentScheduleCreated(true);
+                toast.success('تم إنشاء جدول الدفع بنجاح');
+                // Invalidate payment schedules queries
+                queryClient.invalidateQueries({ queryKey: ['contract-payment-schedules', contract.id] });
+              }}
+            />
+          )}
+
           {/* Invoice Items */}
           <Card>
             <CardHeader>
@@ -479,21 +494,6 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
               </div>
             </CardContent>
           </Card>
-
-          {/* Payment Schedule Section - Only show for sales invoices */}
-          {invoiceData.invoice_type === 'sales' && contract?.id && (
-            <PaymentScheduleSection
-              contractId={contract.id}
-              totalAmount={invoiceData.total_amount}
-              currency="KWD"
-              onScheduleCreated={() => {
-                setPaymentScheduleCreated(true);
-                toast.success('تم إنشاء جدول الدفع بنجاح');
-                // Invalidate payment schedules queries
-                queryClient.invalidateQueries({ queryKey: ['contract-payment-schedules', contract.id] });
-              }}
-            />
-          )}
 
           {/* Notes and Terms */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
