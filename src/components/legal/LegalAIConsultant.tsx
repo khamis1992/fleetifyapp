@@ -279,7 +279,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
             )}
             
             <div className="text-xs text-gray-400 mt-1">
-              {message.timestamp.toLocaleTimeString('ar', { 
+              {new Date(message.timestamp).toLocaleTimeString('ar', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
               })}
