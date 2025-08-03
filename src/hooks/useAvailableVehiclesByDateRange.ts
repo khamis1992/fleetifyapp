@@ -29,14 +29,9 @@ export const useAvailableVehiclesByDateRange = ({
           year,
           color,
           status,
-          vehicle_pricing (
-            id,
-            daily_rate,
-            weekly_rate,
-            monthly_rate,
-            yearly_rate,
-            is_active
-          )
+          daily_rate,
+          weekly_rate,
+          monthly_rate
         `)
         .eq('company_id', companyId)
         .eq('is_active', true)

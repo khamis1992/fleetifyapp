@@ -286,9 +286,9 @@ export const CustomerVehicleStep: React.FC = () => {
                       <div className="flex flex-col">
                         <span>{vehicle.make} {vehicle.model} - {vehicle.plate_number}</span>
                         <div className="text-xs text-muted-foreground flex gap-2">
-                          {vehicle.vehicle_pricing?.[0]?.daily_rate && <span>يومي: {vehicle.vehicle_pricing[0].daily_rate} د.ك</span>}
-                          {vehicle.vehicle_pricing?.[0]?.weekly_rate && <span>أسبوعي: {vehicle.vehicle_pricing[0].weekly_rate} د.ك</span>}
-                          {vehicle.vehicle_pricing?.[0]?.monthly_rate && <span>شهري: {vehicle.vehicle_pricing[0].monthly_rate} د.ك</span>}
+                          {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate} د.ك</span>}
+                          {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate} د.ك</span>}
+                          {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate} د.ك</span>}
                         </div>
                       </div>
                     </SelectItem>
