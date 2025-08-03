@@ -83,7 +83,7 @@ export const useContractDocumentSaving = () => {
   }, [companyId])
 
   const getDefaultSettings = (): ContractDocumentSavingSettings => ({
-    auto_save_unsigned_contracts: true,
+    auto_save_unsigned_contracts: false, // Only save signed contracts, not drafts
     auto_save_signed_contracts: true,
     auto_save_condition_reports: true,
     auto_save_signatures: false,
