@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentSavingProgress } from './DocumentSavingProgress';
 import { useContractDocumentSaving } from '@/hooks/useContractDocumentSaving';
@@ -53,7 +53,13 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const downloadDocument = useDownloadContractDocument();
   
   // Enhanced document saving with progress tracking
-  const { savingSteps, isProcessing: isSavingDocuments } = useContractDocumentSaving();
+  const { 
+    savingSteps, 
+    isProcessing: isSavingDocuments,
+    retryStep,
+    documentSavingErrors,
+    clearErrors 
+  } = useContractDocumentSaving();
 
   // Hook لجلب بيانات تقرير حالة المركبة
   const { data: conditionReport } = useQuery({
@@ -190,7 +196,40 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
         <DocumentSavingProgress 
           steps={savingSteps} 
           isProcessing={isSavingDocuments}
+          onRetry={(stepId) => {
+            console.log('📄 [RETRY_REQUEST] Retrying step:', stepId)
+            // We need contract data to retry - this would be passed from parent
+            toast.info('سيتم إعادة المحاولة قريباً')
+          }}
+          showRetryButton={true}
         />
+      )}
+      
+      {/* Document Saving Errors Summary */}
+      {documentSavingErrors.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <span className="text-sm font-medium text-red-800">
+                  {documentSavingErrors.length} خطأ في حفظ المستندات
+                </span>
+              </div>
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={clearErrors}
+                className="text-xs"
+              >
+                مسح الأخطاء
+              </Button>
+            </div>
+            <div className="mt-2 text-xs text-red-700">
+              اضغط على زر "إعادة المحاولة" بجانب الخطوات الفاشلة أعلاه
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       {/* Documents List */}

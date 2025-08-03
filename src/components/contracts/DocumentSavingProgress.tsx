@@ -1,13 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   CheckCircle, 
   AlertCircle, 
   XCircle, 
   Clock, 
   Loader2,
-  FileText 
+  FileText,
+  RotateCcw,
+  AlertTriangle 
 } from 'lucide-react'
 import type { DocumentSavingStep } from '@/types/contractDocumentSaving'
 
@@ -15,12 +18,16 @@ interface DocumentSavingProgressProps {
   steps: DocumentSavingStep[]
   isProcessing: boolean
   className?: string
+  onRetry?: (stepId: string) => void
+  showRetryButton?: boolean
 }
 
 export function DocumentSavingProgress({ 
   steps, 
   isProcessing, 
-  className = '' 
+  className = '',
+  onRetry,
+  showRetryButton = true
 }: DocumentSavingProgressProps) {
   if (steps.length === 0) {
     return null
@@ -122,19 +129,34 @@ export function DocumentSavingProgress({
               )}
               
               {step.error && (
-                <div className="pr-6">
-                  <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                    {step.error}
-                  </p>
+                <div className="pr-6 space-y-2">
+                  <div className="flex items-start justify-between bg-red-50 p-2 rounded">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-red-600">{step.error}</p>
+                    </div>
+                    {showRetryButton && onRetry && step.status === 'failed' && !isProcessing && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onRetry(step.id)}
+                        className="ml-2 h-6 px-2 text-xs"
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        إعادة المحاولة
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
               
               {step.warnings && step.warnings.length > 0 && (
                 <div className="pr-6">
                   {step.warnings.map((warning, index) => (
-                    <p key={index} className="text-xs text-yellow-600 bg-yellow-50 p-2 rounded mb-1">
-                      {warning}
-                    </p>
+                    <div key={index} className="flex items-start gap-2 bg-yellow-50 p-2 rounded mb-1">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-yellow-600">{warning}</p>
+                    </div>
                   ))}
                 </div>
               )}

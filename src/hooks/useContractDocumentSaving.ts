@@ -28,6 +28,17 @@ interface ContractData {
   customer_signature?: string
   company_signature?: string
   condition_report_id?: string
+  company_name?: string
+  created_date?: string
+  is_draft?: boolean
+}
+
+interface DocumentSavingError {
+  step_id: string
+  error_code: string
+  error_message: string
+  retry_count: number
+  timestamp: string
 }
 
 export const useContractDocumentSaving = () => {
@@ -36,6 +47,8 @@ export const useContractDocumentSaving = () => {
   
   const [savingSteps, setSavingSteps] = useState<DocumentSavingStep[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [documentSavingErrors, setDocumentSavingErrors] = useState<DocumentSavingError[]>([])
+  const [retryAttempts, setRetryAttempts] = useState<Map<string, number>>(new Map())
 
   // Get company document saving settings
   const getCompanySettings = useCallback(async (): Promise<ContractDocumentSavingSettings> => {
@@ -82,6 +95,110 @@ export const useContractDocumentSaving = () => {
       errors: true
     }
   })
+
+  // Log detailed error information
+  const logDocumentError = useCallback(async (error: DocumentSavingError) => {
+    try {
+      console.error('📄 [DOCUMENT_SAVING_ERROR]', {
+        stepId: error.step_id,
+        errorCode: error.error_code,
+        errorMessage: error.error_message,
+        retryCount: error.retry_count,
+        timestamp: error.timestamp,
+        companyId
+      })
+      
+      setDocumentSavingErrors(prev => [...prev, error])
+    } catch (logError) {
+      console.warn('Failed to log document error:', logError)
+    }
+  }, [companyId])
+
+  // Check for existing documents to prevent duplicates
+  const checkExistingDocuments = useCallback(async (contractId: string, documentType: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('id, document_type, document_name')
+        .eq('contract_id', contractId)
+        .eq('document_type', documentType)
+        .limit(1)
+
+      if (error) {
+        console.warn('Failed to check existing documents:', error)
+        return false
+      }
+
+      const exists = data && data.length > 0
+      if (exists) {
+        console.log('📄 [DUPLICATE_CHECK] Document already exists:', {
+          contractId,
+          documentType,
+          existingDoc: data[0]
+        })
+      }
+      
+      return exists
+    } catch (error) {
+      console.warn('Error checking existing documents:', error)
+      return false
+    }
+  }, [])
+
+  // Enhanced retry logic
+  const retryStep = useCallback(async (stepId: string, contractData: ContractData) => {
+    const currentRetries = retryAttempts.get(stepId) || 0
+    const maxRetries = 3
+
+    if (currentRetries >= maxRetries) {
+      console.warn(`📄 [RETRY_LIMIT] Max retries reached for step: ${stepId}`)
+      return false
+    }
+
+    setRetryAttempts(prev => new Map(prev).set(stepId, currentRetries + 1))
+    console.log(`📄 [RETRY_ATTEMPT] Retrying step: ${stepId}, attempt: ${currentRetries + 1}`)
+
+    try {
+      const settings = await getCompanySettings()
+      const result: ContractDocumentSavingResult = {
+        success: true,
+        documents_created: [],
+        warnings: [],
+        errors: [],
+        total_documents: 1,
+        successful_saves: 0
+      }
+
+      // Retry specific step
+      switch (stepId) {
+        case 'unsigned-contract':
+          await saveUnsignedContract(contractData, result, settings)
+          break
+        case 'signed-contract':
+          await saveSignedContract(contractData, result, settings)
+          break
+        case 'condition-report':
+          await linkConditionReport(contractData, result, settings)
+          break
+        case 'signatures':
+          await saveSignatures(contractData, result, settings)
+          break
+        default:
+          return false
+      }
+
+      return result.successful_saves > 0
+    } catch (error) {
+      await logDocumentError({
+        step_id: stepId,
+        error_code: 'RETRY_FAILED',
+        error_message: error instanceof Error ? error.message : 'Retry failed',
+        retry_count: currentRetries + 1,
+        timestamp: new Date().toISOString()
+      })
+      return false
+    }
+  }, [retryAttempts, getCompanySettings, logDocumentError])
 
   const updateStep = useCallback((stepId: string, updates: Partial<DocumentSavingStep>) => {
     setSavingSteps(prev => prev.map(step => 
@@ -216,9 +333,29 @@ export const useContractDocumentSaving = () => {
     result: ContractDocumentSavingResult,
     settings: ContractDocumentSavingSettings
   ) => {
-    updateStep('unsigned-contract', { status: 'processing', progress: 20 })
+    updateStep('unsigned-contract', { status: 'processing', progress: 10 })
 
     try {
+      // Check for existing draft contract to prevent duplicates
+      const existingDoc = await checkExistingDocuments(contractData.contract_id, 'draft_contract')
+      if (existingDoc) {
+        const warningMessage = 'مسودة العقد موجودة مسبقاً - سيتم تخطي الحفظ'
+        result.warnings.push(warningMessage)
+        updateStep('unsigned-contract', { 
+          status: 'warning', 
+          progress: 100, 
+          warnings: [warningMessage] 
+        })
+        return
+      }
+
+      updateStep('unsigned-contract', { status: 'processing', progress: 20 })
+
+      console.log('📄 [UNSIGNED_CONTRACT] Starting PDF generation for:', contractData.contract_number)
+      
+      // Get company name from settings/data
+      const companyName = contractData.company_name || 'الشركة'
+      const createdDate = contractData.created_date || new Date().toLocaleDateString('ar-SA')
       const unsignedPdfData: UnsignedContractPdfData = {
         contract_number: contractData.contract_number,
         contract_type: contractData.contract_type,
@@ -350,9 +487,26 @@ export const useContractDocumentSaving = () => {
     result: ContractDocumentSavingResult,
     settings: ContractDocumentSavingSettings
   ) => {
-    updateStep('condition-report', { status: 'processing', progress: 50 })
+    updateStep('condition-report', { status: 'processing', progress: 20 })
 
     try {
+      // Check for existing condition report to prevent duplicates
+      const existingDoc = await checkExistingDocuments(contractData.contract_id, 'condition_report')
+      if (existingDoc) {
+        const warningMessage = 'تقرير حالة المركبة مرتبط مسبقاً - سيتم تخطي الحفظ'
+        result.warnings.push(warningMessage)
+        updateStep('condition-report', { 
+          status: 'warning', 
+          progress: 100, 
+          warnings: [warningMessage] 
+        })
+        return
+      }
+
+      updateStep('condition-report', { status: 'processing', progress: 50 })
+
+      console.log('📄 [CONDITION_REPORT] Linking report ID:', contractData.condition_report_id)
+
       await createDocument({
         contract_id: contractData.contract_id,
         document_type: 'condition_report',
@@ -375,6 +529,14 @@ export const useContractDocumentSaving = () => {
     } catch (error) {
       console.error('Failed to link condition report:', error)
       const errorMessage = 'فشل في ربط تقرير حالة المركبة'
+      
+      await logDocumentError({
+        step_id: 'condition-report',
+        error_code: 'CONDITION_REPORT_LINK_FAILED',
+        error_message: error instanceof Error ? error.message : errorMessage,
+        retry_count: 0,
+        timestamp: new Date().toISOString()
+      })
       
       if (settings.error_handling_mode === 'strict') {
         result.errors.push(errorMessage)
@@ -470,6 +632,9 @@ export const useContractDocumentSaving = () => {
     isProcessing: isProcessing || saveDocumentsMutation.isPending,
     savingSteps,
     getCompanySettings,
-    resetSteps: () => setSavingSteps([])
+    resetSteps: () => setSavingSteps([]),
+    retryStep,
+    documentSavingErrors,
+    clearErrors: () => setDocumentSavingErrors([])
   }
 }

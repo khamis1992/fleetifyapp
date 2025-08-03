@@ -55,15 +55,38 @@ export function CompanyDocumentSettings({
         .eq('id', companyId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to load company settings:', error)
+        throw error
+      }
 
       const settingsData = data?.settings as any
-      if (settingsData?.document_saving) {
-        setSettings(prev => ({
-          ...prev,
-          ...settingsData.document_saving
-        }))
+      
+      // If no settings exist or document_saving is empty, use defaults
+      if (!settingsData || !settingsData.document_saving) {
+        console.log('📄 [COMPANY_SETTINGS] No document settings found, using defaults')
+        // Settings already initialized with defaults, so keep them
+        return
       }
+
+      // Merge with defaults to ensure all properties exist
+      const loadedSettings = {
+        auto_save_unsigned_contracts: settingsData.document_saving.auto_save_unsigned_contracts ?? true,
+        auto_save_signed_contracts: settingsData.document_saving.auto_save_signed_contracts ?? true,
+        auto_save_condition_reports: settingsData.document_saving.auto_save_condition_reports ?? true,
+        auto_save_signatures: settingsData.document_saving.auto_save_signatures ?? false,
+        pdf_generation_priority: settingsData.document_saving.pdf_generation_priority ?? 'immediate',
+        error_handling_mode: settingsData.document_saving.error_handling_mode ?? 'lenient',
+        notification_preferences: {
+          success: settingsData.document_saving.notification_preferences?.success ?? true,
+          warnings: settingsData.document_saving.notification_preferences?.warnings ?? true,
+          errors: settingsData.document_saving.notification_preferences?.errors ?? true
+        }
+      }
+      
+      console.log('📄 [COMPANY_SETTINGS] Loaded settings:', loadedSettings)
+      setSettings(loadedSettings)
+      
     } catch (error) {
       console.error('Failed to load document settings:', error)
       toast.error('فشل في تحميل إعدادات المستندات')
