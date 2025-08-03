@@ -16,16 +16,16 @@ import {
 
 const stepComponents = [
   BasicInfoStep,
-  CustomerVehicleStep,
   DatesStep,
+  CustomerVehicleStep,
   FinancialStep,
   ReviewStep
 ]
 
 const stepTitles = [
   'المعلومات الأساسية',
+  'التواريخ والمدة', 
   'العميل والمركبة',
-  'التواريخ والمدة',
   'التفاصيل المالية',
   'المراجعة والإرسال'
 ]

@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
+import { useAvailableVehiclesByDateRange } from '@/hooks/useAvailableVehiclesByDateRange'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { useContractValidation } from '@/hooks/useContractValidation'
@@ -185,7 +186,20 @@ export const CustomerVehicleStep: React.FC = () => {
     enabled: !!user?.profile?.company_id,
   })
 
-  const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(user?.profile?.company_id)
+  // Use date-range filtered vehicles if dates are available, otherwise fallback to all available vehicles
+  const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesByDateRange({
+    companyId: user?.profile?.company_id,
+    startDate: data.start_date,
+    endDate: data.end_date,
+    enabled: !!user?.profile?.company_id
+  })
+  
+  // Fallback for when no dates are selected yet
+  const { data: allAvailableVehicles, isLoading: allVehiclesLoading } = useAvailableVehiclesForContracts(user?.profile?.company_id)
+  
+  // Use filtered vehicles if dates are available, otherwise use all available vehicles
+  const vehiclesToShow = (data.start_date && data.end_date) ? availableVehicles : allAvailableVehicles
+  const isLoadingVehicles = (data.start_date && data.end_date) ? vehiclesLoading : allVehiclesLoading
 
   return (
     <Card>
@@ -196,6 +210,15 @@ export const CustomerVehicleStep: React.FC = () => {
         </CardTitle>
         <CardDescription>
           اختر العميل والمركبة للعقد
+          {(data.start_date && data.end_date) ? (
+            <div className="text-green-600 text-sm mt-1">
+              ✓ عرض المركبات المتاحة للفترة المحددة ({data.start_date} إلى {data.end_date})
+            </div>
+          ) : (
+            <div className="text-yellow-600 text-sm mt-1">
+              💡 حدد التواريخ أولاً لعرض المركبات المتاحة فقط
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -244,7 +267,7 @@ export const CustomerVehicleStep: React.FC = () => {
           
           <div className="space-y-2">
             <Label htmlFor="vehicle_id">المركبة</Label>
-            {vehiclesLoading ? (
+            {isLoadingVehicles ? (
               <div className="flex items-center justify-center h-10">
                 <LoadingSpinner size="sm" />
               </div>
@@ -258,14 +281,14 @@ export const CustomerVehicleStep: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">بدون مركبة محددة</SelectItem>
-                  {availableVehicles?.map((vehicle) => (
+                  {vehiclesToShow?.map((vehicle) => (
                     <SelectItem key={vehicle.id} value={vehicle.id}>
                       <div className="flex flex-col">
                         <span>{vehicle.make} {vehicle.model} - {vehicle.plate_number}</span>
                         <div className="text-xs text-muted-foreground flex gap-2">
-                          {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate} د.ك</span>}
-                          {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate} د.ك</span>}
-                          {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate} د.ك</span>}
+                          {vehicle.vehicle_pricing?.[0]?.daily_rate && <span>يومي: {vehicle.vehicle_pricing[0].daily_rate} د.ك</span>}
+                          {vehicle.vehicle_pricing?.[0]?.weekly_rate && <span>أسبوعي: {vehicle.vehicle_pricing[0].weekly_rate} د.ك</span>}
+                          {vehicle.vehicle_pricing?.[0]?.monthly_rate && <span>شهري: {vehicle.vehicle_pricing[0].monthly_rate} د.ك</span>}
                         </div>
                       </div>
                     </SelectItem>
