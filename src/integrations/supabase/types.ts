@@ -8817,6 +8817,20 @@ export type Database = {
         Args: { payment_id_param: string; user_id_param?: string }
         Returns: Json
       }
+      create_payment_schedule_invoices: {
+        Args: {
+          p_contract_id: string
+          p_installment_plan?: string
+          p_number_of_installments?: number
+        }
+        Returns: {
+          schedule_id: string
+          invoice_id: string
+          installment_number: number
+          due_date: string
+          amount: number
+        }[]
+      }
       create_payroll_journal_entry: {
         Args: { payroll_id_param: string }
         Returns: string

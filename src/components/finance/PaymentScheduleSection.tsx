@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, CreditCard, Clock } from "lucide-react";
+import { Calendar, CreditCard, Clock, Receipt } from "lucide-react";
 import { useCreatePaymentSchedules } from "@/hooks/usePaymentSchedules";
 import { toast } from "sonner";
 
@@ -177,6 +177,17 @@ export const PaymentScheduleSection = ({
               <span className="text-muted-foreground">إجمالي المبلغ:</span>
               <span className="font-bold text-lg">{totalAmount.toFixed(3)} {currency}</span>
             </div>
+
+            {/* Invoice creation info */}
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-800">
+                <Receipt className="h-4 w-4" />
+                <span className="text-sm font-medium">سيتم إنشاء الفواتير تلقائياً</span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">
+                سيتم إنشاء {installments} فاتورة منفصلة لكل قسط مع تواريخ الاستحقاق المحددة
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -198,9 +209,15 @@ export const PaymentScheduleSection = ({
             </Button>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            سيتم إنشاء جدول الدفع بعد حفظ الفاتورة وربطها بالعقد المحدد
-          </p>
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-green-800">
+              <Calendar className="h-4 w-4" />
+              <span className="text-sm font-medium">ملاحظة مهمة</span>
+            </div>
+            <p className="text-xs text-green-600 mt-1">
+              سيتم إنشاء جدول الدفع مع الفواتير المقترنة فوراً. يمكنك إدارة الفواتير من قسم الفواتير بعد الإنشاء.
+            </p>
+          </div>
         </CardContent>
       )}
     </Card>

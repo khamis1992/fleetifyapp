@@ -90,44 +90,58 @@ export const usePaymentSchedules = (filters?: {
   });
 };
 
-// Hook to create payment schedules for a contract
+// Hook to create payment schedules for a contract with automatic invoice generation
 export const useCreatePaymentSchedules = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateScheduleRequest) => {
+      console.log('Creating payment schedules with invoices for contract:', data.contract_id);
+      
       const { data: result, error } = await supabase.rpc(
-        'create_contract_payment_schedule',
+        'create_payment_schedule_invoices',
         {
-          contract_id_param: data.contract_id,
-          installment_plan: data.installment_plan,
-          number_of_installments: data.number_of_installments
+          p_contract_id: data.contract_id,
+          p_installment_plan: data.installment_plan,
+          p_number_of_installments: data.number_of_installments
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating payment schedules with invoices:', error);
+        throw error;
+      }
 
+      console.log('Payment schedules and invoices created successfully:', result);
       return result;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
+      const scheduleCount = Array.isArray(result) ? result.length : 0;
+      
       queryClient.invalidateQueries({ 
         queryKey: ['payment-schedules', variables.contract_id] 
       });
       queryClient.invalidateQueries({ 
         queryKey: ['payment-schedules'] 
       });
+      queryClient.invalidateQueries({ 
+        queryKey: ['invoices'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['contract-invoices', variables.contract_id] 
+      });
       
       toast({
         title: "تم إنشاء جدول الدفع",
-        description: "تم إنشاء جدول الدفع بنجاح",
+        description: `تم إنشاء جدول الدفع بنجاح مع ${scheduleCount} فاتورة`,
       });
     },
     onError: (error) => {
-      console.error('Error creating payment schedules:', error);
+      console.error('Error creating payment schedules with invoices:', error);
       toast({
         title: "خطأ في إنشاء جدول الدفع",
-        description: "حدث خطأ أثناء إنشاء جدول الدفع",
+        description: "حدث خطأ أثناء إنشاء جدول الدفع والفواتير",
         variant: "destructive",
       });
     },

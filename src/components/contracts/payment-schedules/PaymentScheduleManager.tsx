@@ -4,7 +4,7 @@ import { useContractPaymentSchedules } from "@/hooks/usePaymentSchedules";
 import { PaymentSchedulesList } from "./PaymentSchedulesList";
 import { CreatePaymentScheduleDialog } from "./CreatePaymentScheduleDialog";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
+import { Calendar, DollarSign, TrendingUp, AlertTriangle, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -29,6 +29,7 @@ export const PaymentScheduleManager = ({
   const pendingSchedules = schedules.filter(s => s.status === 'pending');
   const overdueSchedules = schedules.filter(s => s.status === 'overdue');
   const paidSchedules = schedules.filter(s => s.status === 'paid');
+  const schedulesWithInvoices = schedules.filter(s => s.invoice_id);
 
   // Next payment due
   const nextPayment = pendingSchedules
@@ -37,7 +38,7 @@ export const PaymentScheduleManager = ({
   return (
     <div className="space-y-6">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -89,6 +90,20 @@ export const PaymentScheduleManager = ({
               <div>
                 <p className="text-sm text-muted-foreground">المتأخرة</p>
                 <p className="text-lg font-semibold">{overdueSchedules.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Receipt className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">مع فواتير</p>
+                <p className="text-lg font-semibold">{schedulesWithInvoices.length}</p>
               </div>
             </div>
           </CardContent>
