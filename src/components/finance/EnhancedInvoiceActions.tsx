@@ -7,7 +7,6 @@ import {
   Trash2, 
   Package, 
   Car, 
-  Users, 
   Scale,
   FileText,
   DollarSign,
@@ -56,15 +55,6 @@ export function EnhancedInvoiceActions({
       );
     }
     
-    if (invoice.customer_id) {
-      badges.push(
-        <Badge key="customer" variant="outline" className="text-green-600 border-green-200">
-          <Users className="h-3 w-3 mr-1" />
-          عميل
-        </Badge>
-      );
-    }
-    
     if (invoice.fixed_asset_id) {
       badges.push(
         <Badge key="asset" variant="outline" className="text-orange-600 border-orange-200">
@@ -96,11 +86,6 @@ export function EnhancedInvoiceActions({
       case 'vehicle':
         if (invoice.vehicle_id) {
           navigate(`/fleet?vehicle=${invoice.vehicle_id}`);
-        }
-        break;
-      case 'customer':
-        if (invoice.customer_id) {
-          navigate(`/customers?customer=${invoice.customer_id}`);
         }
         break;
       case 'maintenance':
@@ -215,18 +200,6 @@ export function EnhancedInvoiceActions({
             className="text-blue-600 hover:text-blue-700"
           >
             <Car className="h-3 w-3" />
-          </Button>
-        )}
-        
-        {invoice.customer_id && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => handleQuickNavigation('customer')}
-            title="عرض العميل المرتبط"
-            className="text-green-600 hover:text-green-700"
-          >
-            <Users className="h-3 w-3" />
           </Button>
         )}
         
