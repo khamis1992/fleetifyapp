@@ -1,13 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 import { useCustomerInvoices, useCustomerInvoicesSummary } from "@/hooks/useCustomerInvoices";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { FileText, Plus } from "lucide-react";
-import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions";
+import { InvoiceCard } from "@/components/finance/InvoiceCard";
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
 import { useState } from "react";
 
@@ -26,19 +26,19 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
 
   // Handlers for invoice actions - these will be created for each invoice
   const createHandlers = (invoice: any) => ({
-    handlePay: () => {
+    onPay: () => {
       setSelectedInvoice(invoice);
       setIsPayDialogOpen(true);
     },
-    handlePreview: () => {
+    onPreview: () => {
       // Preview functionality can be implemented later
       console.log("Preview invoice:", invoice);
     },
-    handleEdit: () => {
+    onEdit: () => {
       // Edit functionality can be implemented later  
       console.log("Edit invoice:", invoice);
     },
-    handleDelete: () => {
+    onDelete: () => {
       // Delete functionality can be implemented later
       console.log("Delete invoice:", invoice);
     }
@@ -170,69 +170,15 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
               )}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>رقم الفاتورة</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>تاريخ الاستحقاق</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>حالة الدفع</TableHead>
-                  <TableHead>المبلغ الإجمالي</TableHead>
-                  <TableHead>المبلغ المدفوع</TableHead>
-                  <TableHead>المبلغ المستحق</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => {
-                  const handlers = createHandlers(invoice);
-                  return (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">
-                        {invoice.invoice_number}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(invoice.invoice_date), 'dd/MM/yyyy', { locale: ar })}
-                      </TableCell>
-                      <TableCell>
-                        {invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {invoice.invoice_type === 'customer' ? 'عميل' : 'مورد'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(invoice.status)}
-                      </TableCell>
-                      <TableCell>
-                        {getPaymentStatusBadge(invoice.payment_status)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(invoice.total_amount)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(invoice.paid_amount || 0)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(invoice.balance_due || 0)}
-                      </TableCell>
-                      <TableCell>
-                        <EnhancedInvoiceActions
-                          invoice={invoice}
-                          onPreview={handlers.handlePreview}
-                          onEdit={handlers.handleEdit}
-                          onDelete={handlers.handleDelete}
-                          onPay={handlers.handlePay}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="grid gap-4">
+              {invoices.map((invoice) => (
+                <InvoiceCard
+                  key={invoice.id}
+                  invoice={invoice}
+                  {...createHandlers(invoice)}
+                />
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
