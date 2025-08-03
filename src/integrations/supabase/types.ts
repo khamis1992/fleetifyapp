@@ -8860,6 +8860,10 @@ export type Database = {
           daily_rate: number
           weekly_rate: number
           monthly_rate: number
+          color: string
+          vehicle_type: string
+          fuel_type: string
+          current_mileage: number
         }[]
       }
       get_contract_operations_history: {
