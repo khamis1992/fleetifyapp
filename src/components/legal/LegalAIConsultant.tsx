@@ -458,7 +458,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* منطقة المحادثة */}
           <div className="lg:col-span-3">
-            <Card className="h-[500px] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
+            <Card className="h-[400px] flex flex-col bg-gradient-chat-container shadow-chat-container border-0 backdrop-blur-sm">
               <CardHeader className="flex-shrink-0 bg-gradient-chat-header rounded-t-lg border-b border-border/20">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-3 text-lg">
@@ -557,36 +557,30 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="اكتب سؤالك القانوني هنا... مثال: ما هي خطوات تأسيس شركة في الكويت؟"
-                    className="min-h-[120px] resize-none shadow-chat-input border-border/30 bg-background/50 focus:shadow-chat-glow transition-all duration-300 text-base"
+                    className="min-h-[80px] resize-none shadow-chat-input border-border/30 bg-background/50 focus:shadow-chat-glow transition-all duration-300 text-base"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                         handleSubmitQuery();
                       }
                     }}
                   />
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                      <span>اضغط Ctrl + Enter للإرسال السريع</span>
-                    </div>
-                    <Button 
-                      onClick={handleSubmitQuery}
-                      disabled={loading || !query.trim()}
-                      className="px-8 bg-gradient-primary hover:shadow-glow transition-all duration-300 font-semibold"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          جاري المعالجة...
-                        </>
-                      ) : (
-                        <>
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          إرسال السؤال
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <Button 
+                    onClick={handleSubmitQuery}
+                    disabled={loading || !query.trim()}
+                    className="w-full px-8 bg-gradient-primary hover:shadow-glow transition-all duration-300 font-semibold"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        جاري المعالجة...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        إرسال السؤال
+                      </>
+                    )}
+                  </Button>
                 </div>
                 
                 {error && (
