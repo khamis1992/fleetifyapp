@@ -14,6 +14,8 @@ export interface ContractCalculation {
     rateType: string
     period: number
     savings?: number
+    minimumPriceEnforced?: boolean
+    originalAmount?: number
   }
 }
 
@@ -23,6 +25,8 @@ export interface Vehicle {
   weekly_rate?: number
   monthly_rate?: number
   deposit_amount?: number
+  minimum_rental_price?: number
+  enforce_minimum_price?: boolean
 }
 
 export const useContractCalculations = (
@@ -98,9 +102,29 @@ export const useContractCalculations = (
     }
 
     // Find the best rate (lowest total cost)
-    const bestRate = rates.reduce((best, current) => 
+    let bestRate = rates.reduce((best, current) => 
       current.total < best.total ? current : best
     )
+
+    // Apply minimum rental price enforcement if enabled
+    const minimumPrice = Number(vehicle.minimum_rental_price) || 0
+    const enforceMinimum = vehicle.enforce_minimum_price || false
+    const originalTotal = bestRate.total
+    let minimumPriceEnforced = false
+    
+    if (enforceMinimum && minimumPrice > 0 && bestRate.total < minimumPrice) {
+      console.log("⚠️ [CONTRACT_CALCULATIONS] Enforcing minimum price:", {
+        originalTotal: bestRate.total,
+        minimumPrice,
+        difference: minimumPrice - bestRate.total
+      })
+      
+      bestRate = {
+        ...bestRate,
+        total: minimumPrice
+      }
+      minimumPriceEnforced = true
+    }
 
     // Calculate monthly amount for long-term contracts (only if 30+ days)
     const monthlyAmount = rentalDays >= 30 
@@ -129,7 +153,9 @@ export const useContractCalculations = (
         baseAmount: bestRate.total,
         rateType: getRateTypeLabel(bestRate.type),
         period: getRatePeriod(bestRate.type, rentalDays),
-        savings
+        savings,
+        minimumPriceEnforced,
+        originalAmount: minimumPriceEnforced ? originalTotal : undefined
       }
     }
 

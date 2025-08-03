@@ -101,8 +101,15 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
 
         <CardFooter className="pt-3">
           <div className="flex justify-between items-center w-full">
-            <div className="text-sm text-muted-foreground">
-              {vehicle.daily_rate && `${vehicle.daily_rate} KWD/day`}
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">
+                {vehicle.daily_rate && `${vehicle.daily_rate} KWD/day`}
+              </div>
+              {vehicle.minimum_rental_price && vehicle.enforce_minimum_price && (
+                <div className="text-xs text-orange-600 font-medium">
+                  حد أدنى: {vehicle.minimum_rental_price} د.ك
+                </div>
+              )}
             </div>
             <Button 
               variant="outline" 

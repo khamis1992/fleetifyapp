@@ -7712,6 +7712,7 @@ export type Database = {
           deposit_amount: number | null
           depreciation_method: string | null
           depreciation_rate: number | null
+          enforce_minimum_price: boolean | null
           engine_number: string | null
           engine_size: string | null
           features: Json | null
@@ -7740,6 +7741,7 @@ export type Database = {
           location: string | null
           make: string
           manufacturer: string | null
+          minimum_rental_price: number | null
           model: string
           monthly_payment: number | null
           monthly_rate: number | null
@@ -7803,6 +7805,7 @@ export type Database = {
           deposit_amount?: number | null
           depreciation_method?: string | null
           depreciation_rate?: number | null
+          enforce_minimum_price?: boolean | null
           engine_number?: string | null
           engine_size?: string | null
           features?: Json | null
@@ -7831,6 +7834,7 @@ export type Database = {
           location?: string | null
           make: string
           manufacturer?: string | null
+          minimum_rental_price?: number | null
           model: string
           monthly_payment?: number | null
           monthly_rate?: number | null
@@ -7894,6 +7898,7 @@ export type Database = {
           deposit_amount?: number | null
           depreciation_method?: string | null
           depreciation_rate?: number | null
+          enforce_minimum_price?: boolean | null
           engine_number?: string | null
           engine_size?: string | null
           features?: Json | null
@@ -7922,6 +7927,7 @@ export type Database = {
           location?: string | null
           make?: string
           manufacturer?: string | null
+          minimum_rental_price?: number | null
           model?: string
           monthly_payment?: number | null
           monthly_rate?: number | null

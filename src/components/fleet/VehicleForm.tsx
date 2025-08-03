@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -91,6 +92,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       weekly_rate: "",
       monthly_rate: "",
       deposit_amount: "",
+      minimum_rental_price: "",
+      enforce_minimum_price: false,
       status: "available",
       
       // Enhanced Fields
@@ -153,6 +156,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         weekly_rate: vehicle.weekly_rate?.toString() || "",
         monthly_rate: vehicle.monthly_rate?.toString() || "",
         deposit_amount: vehicle.deposit_amount?.toString() || "",
+        minimum_rental_price: vehicle.minimum_rental_price?.toString() || "",
+        enforce_minimum_price: vehicle.enforce_minimum_price || false,
         status: vehicle.status || "available",
         notes: vehicle.notes || "",
         cost_center_id: vehicle.cost_center_id || "",
@@ -231,6 +236,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       weekly_rate: "900",
       monthly_rate: "3000",
       deposit_amount: "2000",
+      minimum_rental_price: "120",
+      enforce_minimum_price: true,
       status: "available",
       
       // Enhanced Fields
@@ -357,6 +364,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         weekly_rate: finalData.weekly_rate ? parseFloat(finalData.weekly_rate) : null,
         monthly_rate: finalData.monthly_rate ? parseFloat(finalData.monthly_rate) : null,
         deposit_amount: finalData.deposit_amount ? parseFloat(finalData.deposit_amount) : null,
+        minimum_rental_price: finalData.minimum_rental_price ? parseFloat(finalData.minimum_rental_price) : null,
+        enforce_minimum_price: finalData.enforce_minimum_price || false,
         
         // Additional fields
         notes: finalData.notes?.trim() || null,
@@ -1360,6 +1369,51 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <Input {...field} type="number" step="0.01" placeholder="0.00" />
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="text-right">
+                    <CardTitle className="text-right">إعدادات الحد الأدنى للسعر</CardTitle>
+                    <CardDescription className="text-right">تحديد الحد الأدنى لسعر الإيجار وإنفاذه</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
+                    <FormField
+                      control={form.control}
+                      name="minimum_rental_price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الحد الأدنى لسعر الإيجار (د.ك)</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="enforce_minimum_price"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              فرض الحد الأدنى للسعر
+                            </FormLabel>
+                            <div className="text-sm text-muted-foreground">
+                              منع إنشاء عقود بسعر أقل من الحد الأدنى المحدد
+                            </div>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
                         </FormItem>
                       )}
                     />

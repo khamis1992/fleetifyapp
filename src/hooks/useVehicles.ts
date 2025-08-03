@@ -87,6 +87,9 @@ export interface Vehicle {
   // Additional financial integration fields
   journal_entry_id?: string
   salvage_value?: number
+  // Minimum pricing fields
+  minimum_rental_price?: number
+  enforce_minimum_price?: boolean
 }
 
 export interface VehiclePricing {
