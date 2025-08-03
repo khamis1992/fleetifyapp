@@ -212,16 +212,16 @@ export const CustomerVehicleStep: React.FC = () => {
         </CardTitle>
         <CardDescription>
           اختر العميل والمركبة للعقد
-          {(data.start_date && data.end_date) ? (
-            <div className="text-green-600 text-sm mt-1">
-              ✓ عرض المركبات المتاحة للفترة المحددة ({data.start_date} إلى {data.end_date})
-            </div>
-          ) : (
-            <div className="text-yellow-600 text-sm mt-1">
-              💡 حدد التواريخ أولاً لعرض المركبات المتاحة فقط
-            </div>
-          )}
         </CardDescription>
+        {(data.start_date && data.end_date) ? (
+          <span className="text-green-600 text-sm">
+            ✓ عرض المركبات المتاحة للفترة المحددة ({data.start_date} إلى {data.end_date})
+          </span>
+        ) : (
+          <span className="text-yellow-600 text-sm">
+            💡 حدد التواريخ أولاً لعرض المركبات المتاحة فقط
+          </span>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
