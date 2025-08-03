@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { FileText, Plus, DollarSign, Calendar } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -26,6 +26,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   onSuccess
 }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [invoiceData, setInvoiceData] = useState({
@@ -223,6 +224,12 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
       if (itemsError) throw itemsError;
 
       toast.success('تم إنشاء الفاتورة بنجاح');
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      
       onSuccess?.();
       onOpenChange(false);
       

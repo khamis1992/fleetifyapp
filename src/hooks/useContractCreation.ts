@@ -180,19 +180,8 @@ export const useContractCreation = () => {
           console.error('❌ [CONTRACT_CREATION] خطأ في قاعدة البيانات:', createError)
           
           // إجراء تشخيص سريع لفهم المشكلة
-          try {
-            const { data: diagnosisResult } = await supabase.rpc('diagnose_contract_creation_readiness', {
-              p_company_id: companyId,
-              p_customer_id: inputContractData.customer_id,
-              p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id
-            })
-            
-            if (diagnosisResult) {
-              console.log('🔍 [CONTRACT_CREATION] تشخيص المشكلة:', diagnosisResult)
-            }
-          } catch (diagError) {
-            console.warn('⚠️ [CONTRACT_CREATION] فشل في التشخيص:', diagError)
-          }
+          console.log('❓ [CONTRACT_CREATION] محاولة تشخيص المشكلة...')
+          console.log('❓ [CONTRACT_CREATION] بيانات العقد المرسلة:', inputContractData)
           
           const errorMessage = `خطأ في قاعدة البيانات: ${createError.message}`
           updateStepStatus('validation', 'failed', errorMessage)
