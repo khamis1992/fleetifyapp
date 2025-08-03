@@ -67,18 +67,34 @@ export const PaymentScheduleSection = ({
       return;
     }
 
+    // Validate installment count
+    const installmentCount = numberOfInstallments ? parseInt(numberOfInstallments) : undefined;
+    if (installmentCount && installmentCount <= 0) {
+      toast.error("عدد الأقساط يجب أن يكون أكبر من صفر");
+      return;
+    }
+
+    if (installmentCount && installmentCount > 120) {
+      toast.error("عدد الأقساط لا يمكن أن يتجاوز 120 قسط");
+      return;
+    }
+
     try {
       await createSchedules.mutateAsync({
         contract_id: contractId,
         installment_plan: installmentPlan,
-        number_of_installments: numberOfInstallments ? parseInt(numberOfInstallments) : undefined
+        number_of_installments: installmentCount
       });
       
-      toast.success("تم إنشاء جدول الدفع بنجاح");
       onScheduleCreated?.();
+      setCreateSchedule(false);
+      // Reset form
+      setInstallmentPlan('monthly');
+      setNumberOfInstallments('');
+      setFirstPaymentDate('');
     } catch (error) {
       console.error('Error creating payment schedule:', error);
-      toast.error("حدث خطأ في إنشاء جدول الدفع");
+      // Error is already handled by the hook with user-friendly messages
     }
   };
 

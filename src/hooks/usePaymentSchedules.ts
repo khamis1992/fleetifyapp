@@ -99,6 +99,19 @@ export const useCreatePaymentSchedules = () => {
     mutationFn: async (data: CreateScheduleRequest) => {
       console.log('Creating payment schedules with invoices for contract:', data.contract_id);
       
+      // Validate input data
+      if (!data.contract_id) {
+        throw new Error('Contract ID is required');
+      }
+      
+      if (!data.installment_plan) {
+        throw new Error('Installment plan is required');
+      }
+      
+      if (data.number_of_installments && data.number_of_installments <= 0) {
+        throw new Error('Number of installments must be greater than 0');
+      }
+      
       const { data: result, error } = await supabase.rpc(
         'create_payment_schedule_invoices',
         {
@@ -110,7 +123,25 @@ export const useCreatePaymentSchedules = () => {
 
       if (error) {
         console.error('Error creating payment schedules with invoices:', error);
-        throw error;
+        
+        // Provide more user-friendly error messages
+        let errorMessage = 'Failed to create payment schedules';
+        
+        if (error.message?.includes('Contract not found')) {
+          errorMessage = 'Contract not found. Please verify the contract exists.';
+        } else if (error.message?.includes('Invalid contract amount')) {
+          errorMessage = 'Invalid contract amount. Please check the contract details.';
+        } else if (error.message?.includes('Invalid installment count')) {
+          errorMessage = 'Invalid installment configuration. Please check your plan settings.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      if (!result || !Array.isArray(result)) {
+        throw new Error('No payment schedules were created');
       }
 
       console.log('Payment schedules and invoices created successfully:', result);
@@ -139,9 +170,13 @@ export const useCreatePaymentSchedules = () => {
     },
     onError: (error) => {
       console.error('Error creating payment schedules with invoices:', error);
+      
+      // Extract user-friendly error message
+      const errorMessage = error.message || 'حدث خطأ أثناء إنشاء جدول الدفع والفواتير';
+      
       toast({
         title: "خطأ في إنشاء جدول الدفع",
-        description: "حدث خطأ أثناء إنشاء جدول الدفع والفواتير",
+        description: errorMessage,
         variant: "destructive",
       });
     },
