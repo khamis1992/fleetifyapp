@@ -257,7 +257,7 @@ export function AppSidebar() {
           <img 
             src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
             alt="Fleetify Logo" 
-            className="h-16 w-auto filter brightness-0 invert"
+            className="h-24 w-auto filter brightness-0 invert"
           />
           {!collapsed && (
             <p className="text-xs text-sidebar-foreground/60">نظام إدارة تأجير السيارات</p>
