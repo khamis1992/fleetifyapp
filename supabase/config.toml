@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.clarification-learning]
 verify_jwt = true
+
+[functions.ai-self-evaluation]
+verify_jwt = true
