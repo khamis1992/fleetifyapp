@@ -13,6 +13,222 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Query classification function
+async function classifyQuery(query: string, companyId: string, userId?: string): Promise<'system_data' | 'legal_advice'> {
+  const systemDataPatterns = [
+    // Payment and financial patterns
+    /عميل.*لم.*يدفع|عميل.*متأخر.*دفع|عميل.*مدين|عميل.*يدين|عميل.*مستحق/i,
+    /client.*hasn.*paid|client.*overdue|client.*owes|outstanding.*balance|unpaid.*invoices/i,
+    /مدفوعات.*متأخرة|فواتير.*غير.*مدفوعة|ذمم.*مدينة|حسابات.*مستحقة/i,
+    
+    // Customer search patterns
+    /معلومات.*عميل|بيانات.*عميل|تفاصيل.*عميل|البحث.*عن.*عميل/i,
+    /customer.*information|customer.*details|search.*customer|find.*customer/i,
+    
+    // Contract patterns
+    /عقود.*منتهية|عقود.*نشطة|عقود.*معلقة|حالة.*العقد/i,
+    /expired.*contracts|active.*contracts|contract.*status|contract.*details/i,
+    
+    // Financial reporting patterns
+    /تقرير.*مالي|الإيرادات|المصروفات|الأرباح|الخسائر/i,
+    /financial.*report|revenue|expenses|profit|loss|balance.*sheet/i,
+    
+    // Vehicle and asset patterns
+    /مركبات.*متاحة|حالة.*المركبة|صيانة.*المركبة/i,
+    /available.*vehicles|vehicle.*status|maintenance.*records/i
+  ];
+
+  return systemDataPatterns.some(pattern => pattern.test(query)) ? 'system_data' : 'legal_advice';
+}
+
+// Handle system data queries
+async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
+  const { query, company_id, user_id } = body;
+  
+  try {
+    // Check user permissions
+    const userProfile = await getUserPermissions(user_id);
+    if (!userProfile || userProfile.company_id !== company_id) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Unauthorized access to system data' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Analyze query intent and fetch relevant data
+    const systemData = await fetchRelevantSystemData(query, company_id, supabase);
+    
+    // Generate AI response with system data context
+    const startTime = Date.now();
+    
+    const systemPrompt = `أنت مساعد ذكي للنظام المالي والإداري متخصص في تحليل البيانات والإجابة على الاستفسارات حول:
+    - العملاء والمدفوعات
+    - العقود والفواتير  
+    - التقارير المالية
+    - حالة المركبات والأصول
+    
+    بناءً على البيانات المتوفرة في النظام، قدم إجابة دقيقة ومفصلة مع:
+    - عرض البيانات ذات الصلة بوضوح
+    - تحليل الوضع الحالي
+    - تقديم توصيات عملية
+    - استخدام الأرقام والإحصائيات الفعلية
+    
+    البيانات المتوفرة: ${JSON.stringify(systemData, null, 2)}`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: query }
+        ],
+        temperature: 0.3, // Lower temperature for more factual responses
+        max_tokens: 1500,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const advice = data.choices[0].message.content;
+    const responseTime = Date.now() - startTime;
+
+    // Log the system data query
+    try {
+      await supabase.from('legal_ai_queries').insert({
+        company_id: company_id,
+        query: query,
+        country: body.country,
+        response: advice,
+        response_time: responseTime,
+        query_type: 'system_data',
+        data_accessed: systemData
+      });
+    } catch (logError) {
+      console.warn('Failed to log system data query:', logError);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        advice: advice,
+        system_data: systemData,
+        metadata: {
+          source: 'system_data_with_ai',
+          confidence: 0.95,
+          response_time: responseTime,
+          data_sources: Object.keys(systemData),
+          query_type: 'system_data'
+        }
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+
+  } catch (error) {
+    console.error('Error handling system data query:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        message: 'Failed to process system data query. Please try again.' 
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+}
+
+// Fetch relevant system data based on query
+async function fetchRelevantSystemData(query: string, companyId: string, supabase: any) {
+  const data: any = {};
+  
+  // Check if query is about payments/outstanding amounts
+  if (/عميل.*لم.*يدفع|عميل.*مدين|outstanding|unpaid|overdue/i.test(query)) {
+    // Get customers with outstanding payments
+    const { data: customersWithDebt } = await supabase
+      .from('customers')
+      .select(`
+        id, first_name, last_name, company_name, customer_type,
+        invoices!inner(total_amount, payment_status, due_date, invoice_number)
+      `)
+      .eq('company_id', companyId)
+      .eq('invoices.payment_status', 'unpaid')
+      .order('invoices.due_date', { ascending: true });
+
+    data.unpaid_customers = customersWithDebt;
+    
+    // Calculate total outstanding
+    const totalOutstanding = customersWithDebt?.reduce((sum, customer) => {
+      return sum + customer.invoices.reduce((invSum: number, inv: any) => invSum + (inv.total_amount || 0), 0);
+    }, 0) || 0;
+    
+    data.outstanding_summary = {
+      total_outstanding: totalOutstanding,
+      customers_count: customersWithDebt?.length || 0
+    };
+  }
+
+  // Check if query is about customer information
+  if (/معلومات.*عميل|بيانات.*عميل|customer.*info/i.test(query)) {
+    const { data: customerStats } = await supabase
+      .from('customers')
+      .select('customer_type, is_blacklisted, is_active')
+      .eq('company_id', companyId);
+
+    data.customer_statistics = {
+      total_customers: customerStats?.length || 0,
+      individual_customers: customerStats?.filter(c => c.customer_type === 'individual').length || 0,
+      company_customers: customerStats?.filter(c => c.customer_type === 'company').length || 0,
+      blacklisted_customers: customerStats?.filter(c => c.is_blacklisted).length || 0,
+      active_customers: customerStats?.filter(c => c.is_active).length || 0
+    };
+  }
+
+  // Check if query is about contracts
+  if (/عقود|contract/i.test(query)) {
+    const { data: contractStats } = await supabase
+      .from('contracts')
+      .select('status, contract_amount, start_date, end_date')
+      .eq('company_id', companyId);
+
+    data.contract_statistics = {
+      total_contracts: contractStats?.length || 0,
+      active_contracts: contractStats?.filter(c => c.status === 'active').length || 0,
+      expired_contracts: contractStats?.filter(c => c.status === 'expired').length || 0,
+      suspended_contracts: contractStats?.filter(c => c.status === 'suspended').length || 0,
+      total_contract_value: contractStats?.reduce((sum, c) => sum + (c.contract_amount || 0), 0) || 0
+    };
+  }
+
+  // Check if query is about financial summaries
+  if (/تقرير.*مالي|financial.*report|revenue|expenses/i.test(query)) {
+    const { data: financialData } = await supabase
+      .from('invoices')
+      .select('total_amount, payment_status, invoice_date')
+      .eq('company_id', companyId)
+      .gte('invoice_date', new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
+
+    data.financial_summary = {
+      total_invoiced: financialData?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
+      paid_invoices: financialData?.filter(inv => inv.payment_status === 'paid').length || 0,
+      unpaid_invoices: financialData?.filter(inv => inv.payment_status === 'unpaid').length || 0,
+      partially_paid_invoices: financialData?.filter(inv => inv.payment_status === 'partially_paid').length || 0
+    };
+  }
+
+  return data;
+}
+
 // Helper function to log access
 async function logAccess(companyId: string, userId: string, accessType: string, customerId?: string, dataAccessed?: any, purpose?: string) {
   try {
@@ -86,7 +302,7 @@ serve(async (req) => {
       );
     }
 
-    // Legal advice endpoint
+    // Smart query classification and routing
     if (requestedPath === 'legal-advice') {
       console.log('Processing legal advice request:', { query: body.query?.substring(0, 100), country: body.country });
 
@@ -116,6 +332,15 @@ serve(async (req) => {
         );
       }
 
+      // Classify the query to determine if it's about system data or general legal advice
+      const queryType = await classifyQuery(body.query, body.company_id, body.user_id);
+      
+      if (queryType === 'system_data') {
+        // Route to system data analysis
+        return await handleSystemDataQuery(body, corsHeaders, supabase, openAIApiKey);
+      }
+
+      // Handle general legal advice
       const systemPrompt = `You are a professional legal consultant AI specialized in ${body.country} law. 
       Provide accurate, helpful legal advice while emphasizing that this is general information and not a substitute for professional legal counsel.
       

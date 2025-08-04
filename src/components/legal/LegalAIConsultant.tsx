@@ -45,11 +45,16 @@ interface ChatMessage {
   type: 'user' | 'ai';
   content: string;
   timestamp: number; // تغيير من Date إلى number للـ unix timestamp
+  system_data?: any;
   metadata?: {
-    source: 'cache' | 'local_knowledge' | 'api';
+    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai';
     confidence: number;
     response_time: number;
     cost_saved?: boolean;
+    usage_count?: number;
+    match_score?: number;
+    data_sources?: string[];
+    query_type?: 'legal_advice' | 'system_data';
   };
 }
 
@@ -146,8 +151,9 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
         const aiMessage: ChatMessage = {
           id: `ai-${Date.now()}`,
           type: 'ai',
-          content: response.advice,
+          content: response.advice || '',
           timestamp: Date.now(), // استخدام timestamp رقمي
+          system_data: response.system_data,
           metadata: response.metadata
         };
 
@@ -258,17 +264,23 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                         <span>معرفة محلية</span>
                       </>
                     )}
-                    {message.metadata.source === 'api' && (
+                     {message.metadata.source === 'api' && (
                       <>
                         <Brain className="w-3 h-3" />
                         <span>ذكاء اصطناعي</span>
                       </>
                     )}
+                    {message.metadata.source === 'system_data_with_ai' && (
+                      <>
+                        <Database className="w-3 h-3" />
+                        <span>بيانات النظام + AI</span>
+                      </>
+                    )}
                   </div>
                   
-                  <div className="flex items-center gap-1">
+                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    <span>{(message.metadata.response_time * 1000).toFixed(0)}ms</span>
+                    <span>{message.metadata.response_time?.toFixed(0)}ms</span>
                   </div>
                   
                   <div className="flex items-center gap-1">
@@ -281,6 +293,31 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                       <CheckCircle className="w-2 h-2 mr-1" />
                       توفير
                     </Badge>
+                  )}
+                  
+                  {message.metadata.data_sources && (
+                    <div className="flex items-center gap-1">
+                      <Database className="w-3 h-3" />
+                      <span>{message.metadata.data_sources.length} مصدر بيانات</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* عرض البيانات الإضافية من النظام */}
+            {!isUser && message.system_data && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="text-xs text-gray-600 mb-2">البيانات المستخدمة:</div>
+                <div className="text-xs bg-gray-50 p-2 rounded max-h-20 overflow-y-auto">
+                  {message.system_data.outstanding_summary && (
+                    <div>المبالغ المستحقة: {message.system_data.outstanding_summary.total_outstanding} د.ك من {message.system_data.outstanding_summary.customers_count} عميل</div>
+                  )}
+                  {message.system_data.customer_statistics && (
+                    <div>إجمالي العملاء: {message.system_data.customer_statistics.total_customers}</div>
+                  )}
+                  {message.system_data.contract_statistics && (
+                    <div>العقود النشطة: {message.system_data.contract_statistics.active_contracts}</div>
                   )}
                 </div>
               </div>

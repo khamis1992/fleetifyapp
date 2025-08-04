@@ -7,6 +7,7 @@ export interface LegalAIQuery {
   query: string;
   country: string;
   company_id: string;
+  user_id?: string;
 }
 
 export interface LegalAIFeedback {
@@ -21,13 +22,16 @@ export interface LegalAIFeedback {
 export interface LegalAIResponse {
   success: boolean;
   advice?: string;
+  system_data?: any;
   metadata?: {
-    source: 'cache' | 'local_knowledge' | 'api';
+    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai';
     confidence: number;
     response_time: number;
     cost_saved?: boolean;
     usage_count?: number;
     match_score?: number;
+    data_sources?: string[];
+    query_type?: 'legal_advice' | 'system_data';
   };
   message?: string;
 }
@@ -53,7 +57,8 @@ export const useLegalAI = () => {
       const { data, error } = await supabase.functions.invoke('legal-ai-api', {
         body: {
           ...queryData,
-          path: 'legal-advice'
+          path: 'legal-advice',
+          user_id: (await supabase.auth.getUser()).data.user?.id
         }
       });
 
@@ -62,7 +67,11 @@ export const useLegalAI = () => {
       }
 
       if (data.success) {
-        toast.success('تم الحصول على الاستشارة بنجاح');
+        if (data.metadata?.query_type === 'system_data') {
+          toast.success('تم تحليل البيانات وتقديم الإجابة بنجاح');
+        } else {
+          toast.success('تم الحصول على الاستشارة بنجاح');
+        }
       } else {
         toast.error(data.message || 'حدث خطأ في معالجة الطلب');
       }
