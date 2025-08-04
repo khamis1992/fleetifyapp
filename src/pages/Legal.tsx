@@ -12,6 +12,7 @@ import { LegalCaseDashboard } from '@/components/legal/LegalCaseDashboard';
 import { LegalAIConsultant } from '@/components/legal/LegalAIConsultant';
 import { usePermissionCheck } from '@/hooks/usePermissionCheck';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { 
   Plus, 
   Search, 
@@ -38,9 +39,9 @@ const Legal = () => {
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
 
-  // الحصول على company_id من السياق أو localStorage
-  const companyId = localStorage.getItem('company_id') || 'fleetify_default';
-
+  // Get company access and permissions using unified hook
+  const { companyId } = useUnifiedCompanyAccess();
+  
   const debouncedSearch = useDebounce(searchTerm, 300);
   const canManageCases = usePermissionCheck('company_admin') || usePermissionCheck('manager') || usePermissionCheck('sales_agent');
 
