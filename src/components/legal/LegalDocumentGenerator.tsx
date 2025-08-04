@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { FileText, Download, Eye, Settings, Wand2, Check, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -53,7 +55,16 @@ const LegalDocumentGenerator: React.FC<DocumentGeneratorProps> = ({ onDocumentGe
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedDocument[]>([]);
+  const [previewDocument, setPreviewDocument] = useState<GeneratedDocument | null>(null);
   const [currentStep, setCurrentStep] = useState<string>('');
+
+  const handlePreviewDocument = (document: GeneratedDocument) => {
+    setPreviewDocument(document);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewDocument(null);
+  };
 
   // قوالب الوثائق المتاحة
   const documentTemplates: DocumentTemplate[] = [
@@ -521,7 +532,11 @@ const LegalDocumentGenerator: React.FC<DocumentGeneratorProps> = ({ onDocumentGe
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handlePreviewDocument(doc)}
+                            >
                               <Eye className="h-4 w-4" />
                               معاينة
                             </Button>
@@ -540,6 +555,35 @@ const LegalDocumentGenerator: React.FC<DocumentGeneratorProps> = ({ onDocumentGe
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Document Preview Dialog */}
+      {previewDocument && (
+        <Dialog open={!!previewDocument} onOpenChange={handleClosePreview}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                معاينة الوثيقة: {previewDocument.title}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>نوع الوثيقة: {previewDocument.type}</span>
+                <span>{previewDocument.wordCount} كلمة</span>
+                <Badge className={getStatusColor(previewDocument.status)}>
+                  {getStatusText(previewDocument.status)}
+                </Badge>
+              </div>
+              <Separator />
+              <div className="prose prose-sm max-w-none bg-muted/30 p-6 rounded-lg">
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-right">
+                  {previewDocument.content}
+                </pre>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
