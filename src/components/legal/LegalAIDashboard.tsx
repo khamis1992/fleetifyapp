@@ -26,6 +26,9 @@ import {
 import { SmartRecommendationSystem } from './SmartRecommendationSystem';
 import EnhancedLegalAIInterface from './EnhancedLegalAIInterface';
 import { LegalAIConsultant } from './LegalAIConsultant';
+import DocumentAnalyzer from './DocumentAnalyzer';
+import LegalDocumentGenerator from './LegalDocumentGenerator';
+import PredictiveAnalysis from './PredictiveAnalysis';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -230,7 +233,7 @@ export const LegalAIDashboard: React.FC = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             نظرة عامة
@@ -243,16 +246,24 @@ export const LegalAIDashboard: React.FC = () => {
             <Brain className="h-4 w-4" />
             التحليل الذكي
           </TabsTrigger>
+          <TabsTrigger value="document-analyzer" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            تحليل الوثائق
+          </TabsTrigger>
+          <TabsTrigger value="document-generator" className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4" />
+            مولد الوثائق
+          </TabsTrigger>
+          <TabsTrigger value="predictive-analysis" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            التحليل التنبؤي
+          </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             الرؤى والتوصيات
           </TabsTrigger>
-          <TabsTrigger value="risk-assessment" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            تقييم المخاطر
-          </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4" />
             الأداء
           </TabsTrigger>
         </TabsList>
@@ -377,6 +388,24 @@ export const LegalAIDashboard: React.FC = () => {
 
         <TabsContent value="analysis">
           <EnhancedLegalAIInterface company_id={user?.profile?.company_id || ''} />
+        </TabsContent>
+
+        <TabsContent value="document-analyzer">
+          <DocumentAnalyzer onAnalysisComplete={(analysis) => {
+            console.log('Analysis completed:', analysis);
+          }} />
+        </TabsContent>
+
+        <TabsContent value="document-generator">
+          <LegalDocumentGenerator onDocumentGenerated={(document) => {
+            console.log('Document generated:', document);
+          }} />
+        </TabsContent>
+
+        <TabsContent value="predictive-analysis">
+          <PredictiveAnalysis onAnalysisComplete={(result) => {
+            console.log('Predictive analysis completed:', result);
+          }} />
         </TabsContent>
 
         <TabsContent value="insights">
