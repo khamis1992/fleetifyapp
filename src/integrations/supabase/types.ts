@@ -170,6 +170,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_analysis_results: {
+        Row: {
+          analysis_type: string
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          results: Json
+        }
+        Insert: {
+          analysis_type: string
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          results?: Json
+        }
+        Update: {
+          analysis_type?: string
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          results?: Json
+        }
+        Relationships: []
+      }
       ai_clarification_sessions: {
         Row: {
           clarification_questions: Json
