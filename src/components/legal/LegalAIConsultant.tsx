@@ -41,7 +41,7 @@ interface ChatMessage {
   id: string;
   type: 'user' | 'ai';
   content: string;
-  timestamp: Date;
+  timestamp: number; // تغيير من Date إلى number للـ unix timestamp
   metadata?: {
     source: 'cache' | 'local_knowledge' | 'api';
     confidence: number;
@@ -124,7 +124,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
       id: `user-${Date.now()}`,
       type: 'user',
       content: query,
-      timestamp: new Date()
+      timestamp: Date.now() // استخدام timestamp رقمي
     };
 
     const newHistory = [...chatHistory, userMessage];
@@ -144,7 +144,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
           id: `ai-${Date.now()}`,
           type: 'ai',
           content: response.advice,
-          timestamp: new Date(),
+          timestamp: Date.now(), // استخدام timestamp رقمي
           metadata: response.metadata
         };
 
