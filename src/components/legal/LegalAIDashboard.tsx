@@ -194,8 +194,8 @@ export const LegalAIDashboard: React.FC = () => {
           </Badge>
         </div>
         <div className="text-right">
-          <h1 className="text-3xl font-bold text-gradient bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            مركز الذكاء الاصطناعي القانوني
+          <h1 className="text-3xl font-bold text-black">
+            المستشار القانوني
           </h1>
           <p className="text-muted-foreground mt-2">
             نظام متكامل للاستشارات والتحليل القانوني الذكي
