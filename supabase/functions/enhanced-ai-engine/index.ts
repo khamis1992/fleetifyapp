@@ -323,7 +323,7 @@ async function generateAdvancedAnalysis(
     analysis = generateFallbackAnalysis(query, retrievedData, intent, insights, metrics);
   } else {
     // Enhanced analysis with OpenAI
-    analysis = await generateAIAnalysis(query, retrievedData, intent, insights, metrics, analysisType);
+    analysis = await generateAIAnalysis(query, retrievedData, intent, insights, metrics, analysisType, context);
   }
 
   return {
