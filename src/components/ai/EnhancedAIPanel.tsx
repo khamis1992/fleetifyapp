@@ -24,11 +24,12 @@ import {
   Send,
   Sparkles
 } from 'lucide-react';
-import { useEnhancedAI, EnhancedAIResponse, QuickStats } from '@/hooks/useEnhancedAI';
-import { SmartAnalyticsPanel } from '@/components/analytics/SmartAnalyticsPanel';
-import { SelfLearningAIPanel } from './SelfLearningAIPanel';
-import { IntelligentInsightsPanel } from './IntelligentInsightsPanel';
-import { ComprehensiveAIDashboard } from './ComprehensiveAIDashboard';
+import { useEnhancedAI } from '@/hooks/useEnhancedAI';
+import { useAdaptiveLearning } from '@/hooks/useAdaptiveLearning';
+import { useEnhancedContextAnalyzer } from '@/hooks/useEnhancedContextAnalyzer';
+import SmartAnalyticsPanel from './SmartAnalyticsPanel';
+import SelfLearningAIPanel from './SelfLearningAIPanel';
+import IntelligentInsightsPanel from './IntelligentInsightsPanel';
 import { toast } from 'sonner';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
@@ -36,31 +37,54 @@ const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d
 interface Message {
   id: string;
   content: string;
-  type: 'user' | 'ai';
+  sender: 'user' | 'ai';
   timestamp: Date;
-  response?: EnhancedAIResponse;
+  confidence?: number;
+  processingTime?: number;
+  data?: any;
+  insights?: string[];
+  recommendations?: string[];
+  visualizations?: any[];
+  contextualInfo?: {
+    detectedEntities?: any[];
+    missingContext?: string[];
+    suggestedContext?: string[];
+    enhancedQuery?: string | null;
+    learningSuggestions?: any[];
+  };
 }
 
 export const EnhancedAIPanel: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputQuery, setInputQuery] = useState('');
-  const [quickStats, setQuickStats] = useState<QuickStats | null>(null);
+  const [userInput, setUserInput] = useState('');
+  const [quickStats, setQuickStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('chat');
   
-  const {
-    processQuery,
-    getQuickStats,
+  const { 
+    processQuery, 
+    getQuickStats, 
     getFinancialOverview,
     getCustomerAnalysis,
     getContractPerformance,
     getOperationalInsights,
-    getPredictiveAnalysis,
-    getRiskAssessment,
-    isProcessing,
-    error,
-    processingStatus,
-    clearError
+    isProcessing, 
+    error 
   } = useEnhancedAI();
+
+  const {
+    recordFeedback,
+    getLearningSuggestions,
+    getPerformanceMetrics,
+    isLearning
+  } = useAdaptiveLearning();
+
+  const {
+    analyzeContextualQuery,
+    getContextSuggestions,
+    enhanceQueryWithContext,
+    initializeEntityRegistry,
+    isAnalyzing
+  } = useEnhancedContextAnalyzer();
 
   // Load quick stats on component mount
   const loadQuickStats = async () => {
@@ -78,38 +102,90 @@ export const EnhancedAIPanel: React.FC = () => {
   }, []);
 
   const handleSendQuery = async () => {
-    if (!inputQuery.trim()) return;
+    if (!userInput.trim() || isProcessing) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputQuery,
-      type: 'user',
+      content: userInput,
+      sender: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentQuery = inputQuery;
-    setInputQuery('');
+    const originalQuery = userInput;
+    setUserInput('');
 
     try {
+      // Enhanced query processing with context analysis
+      const contextualAnalysis = await analyzeContextualQuery(originalQuery);
+      
+      // Check if query needs enhancement
+      let processedQuery = originalQuery;
+      if (contextualAnalysis.missingContext.length > 0) {
+        processedQuery = enhanceQueryWithContext(originalQuery, contextualAnalysis);
+      }
+
+      // Get learning-based suggestions
+      const learningSuggestions = getLearningSuggestions(
+        originalQuery, 
+        contextualAnalysis.inferredIntent, 
+        contextualAnalysis.contextualConfidence
+      );
+
       const response = await processQuery({
-        query: currentQuery,
-        analysis_type: 'comprehensive'
+        query: processedQuery,
+        analysisType: 'comprehensive',
+        includeVisualization: true,
+        context: {
+          originalQuery,
+          contextualAnalysis,
+          learningSuggestions,
+          enhancedQuery: processedQuery !== originalQuery
+        }
       });
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response.analysis,
-        type: 'ai',
+        content: response.analysis || 'تم معالجة استعلامك بنجاح',
+        sender: 'ai',
         timestamp: new Date(),
-        response
+        confidence: response.confidence,
+        processingTime: response.processingTime,
+        data: response.data,
+        insights: response.insights,
+        recommendations: response.recommendations,
+        visualizations: response.visualizations,
+        contextualInfo: {
+          detectedEntities: contextualAnalysis.detectedEntities,
+          missingContext: contextualAnalysis.missingContext,
+          suggestedContext: contextualAnalysis.suggestedContext,
+          enhancedQuery: processedQuery !== originalQuery ? processedQuery : null,
+          learningSuggestions
+        }
       };
 
       setMessages(prev => [...prev, aiMessage]);
-      toast.success('تم تحليل الاستعلام بنجاح');
+
+      // Record feedback for learning (initial neutral feedback)
+      await recordFeedback(
+        originalQuery,
+        contextualAnalysis.inferredIntent,
+        'neutral',
+        response.confidence || 70,
+        response.processingTime || 1000,
+        undefined,
+        contextualAnalysis.businessDomain
+      );
+
     } catch (error) {
       console.error('Error processing query:', error);
-      toast.error('حدث خطأ في معالجة الاستعلام');
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'عذراً، حدث خطأ أثناء معالجة استعلامك. يرجى المحاولة مرة أخرى.',
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
   };
 

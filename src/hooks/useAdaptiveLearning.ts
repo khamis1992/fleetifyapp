@@ -59,19 +59,21 @@ export const useAdaptiveLearning = () => {
         contextFactors
       };
 
-      // Store in Supabase
+      // For now, we'll store in existing ai_learning_patterns table structure
       const { error } = await supabase
         .from('ai_learning_patterns')
         .insert({
-          pattern_id: learningPattern.id,
-          query: learningPattern.query,
-          category: learningPattern.category,
-          user_feedback: learningPattern.userFeedback,
-          confidence: learningPattern.confidence,
-          response_time: learningPattern.responseTime,
-          corrected_classification: learningPattern.correctedClassification,
-          context_factors: learningPattern.contextFactors,
-          created_at: learningPattern.timestamp
+          pattern_type: learningPattern.category,
+          pattern_data: {
+            id: learningPattern.id,
+            query: learningPattern.query,
+            category: learningPattern.category,
+            userFeedback: learningPattern.userFeedback,
+            confidence: learningPattern.confidence,
+            responseTime: learningPattern.responseTime,
+            correctedClassification: learningPattern.correctedClassification,
+            contextFactors: learningPattern.contextFactors
+          }
         });
 
       if (error) {
@@ -181,7 +183,8 @@ export const useAdaptiveLearning = () => {
       const categoryInsights: Map<string, AdaptiveInsight> = new Map();
 
       patterns.forEach(pattern => {
-        const category = pattern.category;
+        const patternData = pattern.pattern_data as any;
+        const category = pattern.pattern_type;
         if (!categoryInsights.has(category)) {
           categoryInsights.set(category, {
             pattern: category,
@@ -196,15 +199,16 @@ export const useAdaptiveLearning = () => {
         insight.frequency++;
 
         // Calculate success rate
-        const totalInCategory = patterns.filter(p => p.category === category).length;
+        const totalInCategory = patterns.filter(p => p.pattern_type === category).length;
         const successfulInCategory = patterns.filter(p => 
-          p.category === category && p.user_feedback === 'positive'
+          p.pattern_type === category && 
+          (p.pattern_data as any)?.userFeedback === 'positive'
         ).length;
         insight.successRate = (successfulInCategory / totalInCategory) * 100;
 
         // Collect common mistakes
-        if (pattern.user_feedback === 'negative' && pattern.corrected_classification) {
-          const mistake = `Classified as "${category}" but should be "${pattern.corrected_classification}"`;
+        if (patternData?.userFeedback === 'negative' && patternData?.correctedClassification) {
+          const mistake = `Classified as "${category}" but should be "${patternData.correctedClassification}"`;
           if (!insight.commonMistakes.includes(mistake)) {
             insight.commonMistakes.push(mistake);
           }
@@ -214,7 +218,7 @@ export const useAdaptiveLearning = () => {
         if (insight.successRate < 70) {
           insight.suggestedImprovements.push(`Improve classification accuracy for ${category} queries`);
         }
-        if (pattern.confidence < 50) {
+        if ((patternData?.confidence || 0) < 50) {
           insight.suggestedImprovements.push(`Add more specific patterns for ${category} detection`);
         }
       });
@@ -240,17 +244,20 @@ export const useAdaptiveLearning = () => {
         return;
       }
 
-      const loadedPatterns: LearningPattern[] = (patterns || []).map(p => ({
-        id: p.pattern_id,
-        query: p.query,
-        category: p.category,
-        userFeedback: p.user_feedback,
-        confidence: p.confidence,
-        timestamp: p.created_at,
-        responseTime: p.response_time,
-        correctedClassification: p.corrected_classification,
-        contextFactors: p.context_factors || []
-      }));
+      const loadedPatterns: LearningPattern[] = (patterns || []).map(p => {
+        const patternData = p.pattern_data as any;
+        return {
+          id: patternData?.id || p.id,
+          query: patternData?.query || '',
+          category: p.pattern_type,
+          userFeedback: patternData?.userFeedback || 'neutral',
+          confidence: patternData?.confidence || 0,
+          timestamp: p.created_at,
+          responseTime: patternData?.responseTime || 0,
+          correctedClassification: patternData?.correctedClassification,
+          contextFactors: patternData?.contextFactors || []
+        };
+      });
 
       setLearningPatterns(loadedPatterns);
 
