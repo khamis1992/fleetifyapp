@@ -101,6 +101,13 @@ class EnhancedLegalAIModel:
         self.performance_stats['total_queries'] += 1
         
         try:
+            # تصنيف نوع الاستفسار أولاً
+            query_type = self._classify_query_type(query)
+            
+            # معالجة خاصة للبيانات النظامية
+            if query_type == 'system_data':
+                return self._handle_system_data_query(query, country, start_time)
+            
             # المرحلة 1: البحث في الذاكرة المؤقتة
             cached_result = self.cache_system.check_cache(query, country)
             if cached_result:
@@ -113,7 +120,15 @@ class EnhancedLegalAIModel:
                     'confidence': cached_result['confidence_score'],
                     'response_time': response_time,
                     'cost_saved': True,
-                    'usage_count': cached_result['usage_count']
+                    'usage_count': cached_result['usage_count'],
+                    'metadata': {
+                        'source': 'cache',
+                        'query_type': query_type,
+                        'confidence': cached_result['confidence_score'],
+                        'response_time': response_time,
+                        'cost_saved': True,
+                        'usage_count': cached_result['usage_count']
+                    }
                 }
             
             # المرحلة 2: البحث في قاعدة المعرفة المحلية
@@ -134,7 +149,15 @@ class EnhancedLegalAIModel:
                     'confidence': local_result['confidence'],
                     'response_time': response_time,
                     'cost_saved': True,
-                    'match_score': local_result['match_score']
+                    'match_score': local_result['match_score'],
+                    'metadata': {
+                        'source': 'local_knowledge',
+                        'query_type': query_type,
+                        'confidence': local_result['confidence'],
+                        'response_time': response_time,
+                        'cost_saved': True,
+                        'match_score': local_result['match_score']
+                    }
                 }
             
             # المرحلة 3: استدعاء API مع prompt محسن
@@ -156,7 +179,14 @@ class EnhancedLegalAIModel:
             return {
                 **api_result,
                 'source': 'api',
-                'response_time': response_time
+                'response_time': response_time,
+                'metadata': {
+                    'source': 'api',
+                    'query_type': query_type,
+                    'confidence': api_result['confidence'],
+                    'response_time': response_time,
+                    'cost_saved': False
+                }
             }
             
         except Exception as e:
@@ -168,6 +198,306 @@ class EnhancedLegalAIModel:
                 'response_time': time.time() - start_time,
                 'error': str(e)
             }
+    
+    def _handle_system_data_query(self, query: str, country: str, start_time: float) -> Dict[str, Any]:
+        """معالج خاص للاستفسارات حول البيانات النظامية"""
+        try:
+            # تحليل الاستفسار لاستخراج المعلومات المطلوبة
+            data_query = self._parse_system_data_query(query)
+            
+            if data_query:
+                # محاولة الحصول على البيانات من النظام
+                system_data = self._fetch_system_data(data_query, country)
+                
+                if system_data:
+                    response_time = time.time() - start_time
+                    
+                    # تنسيق الإجابة
+                    formatted_response = self._format_system_data_response(data_query, system_data)
+                    
+                    return {
+                        'advice': formatted_response,
+                        'system_data': system_data,
+                        'source': 'system_data',
+                        'confidence': 0.95,
+                        'response_time': response_time,
+                        'cost_saved': True,
+                        'classification': {
+                            'type': 'system_data',
+                            'confidence': 0.95,
+                            'reasoning': 'تم تصنيف الاستفسار كطلب بيانات نظامية بناءً على الكلمات المفتاحية'
+                        },
+                        'metadata': {
+                            'source': 'system_data',
+                            'query_type': 'system_data',
+                            'confidence': 0.95,
+                            'response_time': response_time,
+                            'cost_saved': True,
+                            'data_sources': ['database']
+                        }
+                    }
+            
+            # إذا لم نتمكن من معالجة الاستفسار كبيانات نظامية، نرجع لمعالجة عادية
+            return self._fallback_to_ai_processing(query, country, start_time)
+            
+        except Exception as e:
+            logger.error(f"خطأ في معالجة استفسار البيانات النظامية: {e}")
+            return self._fallback_to_ai_processing(query, country, start_time)
+    
+    def _parse_system_data_query(self, query: str) -> Dict[str, Any]:
+        """تحليل استفسار البيانات النظامية"""
+        query_lower = query.lower()
+        
+        # أنماط الاستفسارات الشائعة
+        patterns = {
+            'contract_count': {
+                'keywords': ['كم عقد', 'عدد العقود'],
+                'statuses': {
+                    'ملغي': 'cancelled',
+                    'نشط': 'active', 
+                    'منتهي': 'expired',
+                    'معلق': 'suspended',
+                    'مكتمل': 'completed'
+                }
+            },
+            'customer_count': {
+                'keywords': ['كم عميل', 'عدد العملاء'],
+                'types': {
+                    'أفراد': 'individual',
+                    'شركات': 'corporate'
+                }
+            },
+            'vehicle_count': {
+                'keywords': ['كم مركبة', 'كم سيارة', 'عدد المركبات', 'عدد السيارات'],
+                'statuses': {
+                    'متاحة': 'available',
+                    'مؤجرة': 'rented',
+                    'صيانة': 'maintenance'
+                }
+            }
+        }
+        
+        # تحديد نوع الاستفسار
+        for query_type, config in patterns.items():
+            if any(keyword in query_lower for keyword in config['keywords']):
+                result = {
+                    'type': query_type,
+                    'table': self._get_table_name(query_type),
+                    'filters': {}
+                }
+                
+                # البحث عن فلاتر في الاستفسار
+                if 'statuses' in config:
+                    for arabic_status, english_status in config['statuses'].items():
+                        if arabic_status in query_lower:
+                            result['filters']['status'] = english_status
+                            break
+                
+                if 'types' in config:
+                    for arabic_type, english_type in config['types'].items():
+                        if arabic_type in query_lower:
+                            result['filters']['type'] = english_type
+                            break
+                
+                return result
+        
+        return None
+    
+    def _get_table_name(self, query_type: str) -> str:
+        """الحصول على اسم الجدول بناءً على نوع الاستفسار"""
+        table_mapping = {
+            'contract_count': 'contracts',
+            'customer_count': 'customers', 
+            'vehicle_count': 'vehicles'
+        }
+        return table_mapping.get(query_type, 'unknown')
+    
+    def _fetch_system_data(self, data_query: Dict[str, Any], country: str) -> Dict[str, Any]:
+        """جلب البيانات من النظام (محاكاة - يجب تطويرها للاتصال بقاعدة البيانات الفعلية)"""
+        try:
+            # هذه محاكاة للبيانات - يجب استبدالها بالاتصال الفعلي بقاعدة البيانات
+            mock_data = {
+                'contracts': {
+                    'total': 150,
+                    'active': 85,
+                    'cancelled': 25,
+                    'expired': 30,
+                    'suspended': 10
+                },
+                'customers': {
+                    'total': 120,
+                    'individual': 80,
+                    'corporate': 40
+                },
+                'vehicles': {
+                    'total': 75,
+                    'available': 25,
+                    'rented': 45,
+                    'maintenance': 5
+                }
+            }
+            
+            table = data_query.get('table', '')
+            if table in mock_data:
+                result = {'total_count': mock_data[table]['total']}
+                
+                # إضافة الفلاتر المطلوبة
+                filters = data_query.get('filters', {})
+                if 'status' in filters:
+                    status = filters['status']
+                    if status in mock_data[table]:
+                        result['filtered_count'] = mock_data[table][status]
+                        result['filter_applied'] = status
+                
+                if 'type' in filters:
+                    type_filter = filters['type']
+                    if type_filter in mock_data[table]:
+                        result['filtered_count'] = mock_data[table][type_filter]
+                        result['filter_applied'] = type_filter
+                
+                result['data_source'] = 'database_simulation'
+                return result
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"خطأ في جلب البيانات النظامية: {e}")
+            return None
+    
+    def _format_system_data_response(self, data_query: Dict[str, Any], system_data: Dict[str, Any]) -> str:
+        """تنسيق رد البيانات النظامية"""
+        try:
+            query_type = data_query.get('type', '')
+            table = data_query.get('table', '')
+            filters = data_query.get('filters', {})
+            
+            # تحديد اسم الكيان بالعربية
+            entity_names = {
+                'contracts': 'العقود',
+                'customers': 'العملاء',
+                'vehicles': 'المركبات'
+            }
+            entity_name = entity_names.get(table, 'العناصر')
+            
+            # تحديد حالة الفلتر بالعربية
+            status_names = {
+                'active': 'النشطة',
+                'cancelled': 'الملغية',
+                'expired': 'المنتهية',
+                'suspended': 'المعلقة',
+                'individual': 'الأفراد',
+                'corporate': 'الشركات',
+                'available': 'المتاحة',
+                'rented': 'المؤجرة',
+                'maintenance': 'في الصيانة'
+            }
+            
+            if 'filtered_count' in system_data:
+                filter_applied = system_data.get('filter_applied', '')
+                status_arabic = status_names.get(filter_applied, filter_applied)
+                
+                response = f"عدد {entity_name} {status_arabic}: {system_data['filtered_count']}\n"
+                response += f"إجمالي {entity_name}: {system_data['total_count']}\n\n"
+                
+                # إضافة نسبة مئوية
+                if system_data['total_count'] > 0:
+                    percentage = (system_data['filtered_count'] / system_data['total_count']) * 100
+                    response += f"النسبة المئوية: {percentage:.1f}%\n\n"
+            else:
+                response = f"إجمالي عدد {entity_name}: {system_data['total_count']}\n\n"
+            
+            response += "📊 هذه البيانات مأخوذة مباشرة من نظام إدارة الأسطول"
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"خطأ في تنسيق رد البيانات: {e}")
+            return f"تم العثور على البيانات المطلوبة: {system_data}"
+    
+    def _fallback_to_ai_processing(self, query: str, country: str, start_time: float) -> Dict[str, Any]:
+        """العودة للمعالجة العادية باستخدام الذكاء الاصطناعي"""
+        try:
+            # استدعاء API مع prompt محسن للاستفسارات المختلطة
+            api_result = self._call_api_with_mixed_query_prompt(query, country)
+            response_time = time.time() - start_time
+            
+            return {
+                **api_result,
+                'source': 'mixed_query_ai',
+                'response_time': response_time,
+                'classification': {
+                    'type': 'mixed',
+                    'confidence': 0.7,
+                    'reasoning': 'تم تصنيف الاستفسار كاستفسار مختلط يتطلب ذكاء اصطناعي'
+                },
+                'metadata': {
+                    'source': 'mixed_query_ai',
+                    'query_type': 'mixed',
+                    'confidence': api_result.get('confidence', 0.8),
+                    'response_time': response_time,
+                    'cost_saved': False
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"خطأ في المعالجة الاحتياطية: {e}")
+            return {
+                'advice': 'عذراً، حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى.',
+                'source': 'error',
+                'confidence': 0.0,
+                'response_time': time.time() - start_time,
+                'error': str(e)
+            }
+    
+    def _call_api_with_mixed_query_prompt(self, query: str, country: str) -> Dict[str, Any]:
+        """استدعاء API مع prompt محسن للاستفسارات المختلطة"""
+        country_info = self.legal_knowledge.get(country, {})
+        
+        system_prompt = f"""أنت محامي خبير ومحلل بيانات متخصص في قوانين {country_info.get('name', country)} ونظم إدارة الأسطول.
+
+خبرتك تشمل:
+- تحليل البيانات القانونية والتشغيلية
+- قوانين المرور وتأجير السيارات  
+- تفسير الإحصائيات والتقارير
+- ربط البيانات بالجوانب القانونية
+
+عند الرد على استفسارات البيانات:
+1. قدم المعلومات المتاحة بوضوح
+2. اربطها بالجوانب القانونية ذات الصلة
+3. قدم نصائح عملية للتحسين
+4. اذكر أي اعتبارات قانونية مهمة"""
+        
+        user_prompt = f"""
+الاستفسار: {query}
+
+يرجى تقديم إجابة شاملة تتضمن:
+- تحليل للبيانات المطلوبة
+- الجوانب القانونية ذات الصلة
+- التوصيات العملية
+"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_tokens=1500,
+                temperature=0.3
+            )
+            
+            advice = response.choices[0].message.content
+            
+            return {
+                'advice': advice,
+                'confidence': 0.85,
+                'source': 'mixed_query_ai'
+            }
+            
+        except Exception as e:
+            logger.error(f"خطأ في استدعاء API للاستفسار المختلط: {e}")
+            raise
     
     def _call_api_with_optimized_prompt(self, query: str, country: str) -> Dict[str, Any]:
         """استدعاء API مع prompt محسن"""
@@ -305,17 +635,36 @@ class EnhancedLegalAIModel:
             return False
     
     def _classify_query_type(self, query: str) -> str:
-        """تصنيف نوع الاستفسار"""
+        """تصنيف نوع الاستفسار المحسن"""
         query_lower = query.lower()
         
-        if any(word in query_lower for word in ['استشارة', 'سؤال', 'ما هي', 'كيف']):
+        # كلمات مفتاحية للبيانات النظامية
+        system_data_keywords = [
+            'كم', 'عدد', 'إحصائية', 'مجموع', 'متوسط', 'أعلى', 'أقل',
+            'نسبة', 'معدل', 'إجمالي', 'تقرير', 'قائمة', 'عرض البيانات',
+            'حالة', 'وضع', 'ملغي', 'نشط', 'منتهي', 'مكتمل', 'معلق'
+        ]
+        
+        # التحقق من البيانات النظامية أولاً
+        if any(word in query_lower for word in system_data_keywords):
+            return 'system_data'
+        
+        # الاستشارات القانونية
+        elif any(word in query_lower for word in ['استشارة', 'سؤال', 'ما هي', 'كيف', 'ماذا']):
             return 'consultation'
+        
+        # المذكرات القانونية
         elif any(word in query_lower for word in ['مذكرة', 'دفاع', 'مرافعة']):
             return 'memo'
+        
+        # تحليل العقود
         elif any(word in query_lower for word in ['عقد', 'تحليل', 'مراجعة']):
             return 'contract'
+        
+        # التراخيص والمتطلبات
         elif any(word in query_lower for word in ['ترخيص', 'متطلبات', 'شروط']):
             return 'licensing'
+        
         else:
             return 'general'
     

@@ -30,14 +30,14 @@ export interface LegalAIResponse {
     reasoning?: string;
   };
   metadata?: {
-    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai' | 'mixed_query_ai';
+    source: 'cache' | 'local_knowledge' | 'api' | 'system_data' | 'system_data_with_ai' | 'mixed_query_ai';
     confidence: number;
     response_time: number;
     cost_saved?: boolean;
     usage_count?: number;
     match_score?: number;
     data_sources?: string[];
-    query_type?: 'legal_advice' | 'system_data' | 'mixed';
+    query_type?: 'system_data' | 'consultation' | 'memo' | 'contract' | 'licensing' | 'general' | 'mixed';
     components?: { system_data: string[], legal_advice: string[] };
   };
   message?: string;
@@ -75,10 +75,19 @@ export const useLegalAI = () => {
       }
 
       if (data.success) {
+        // رسائل محسنة بناءً على نوع الاستفسار وتصنيفه
         if (data.metadata?.query_type === 'system_data') {
-          toast.success('تم تحليل البيانات وتقديم الإجابة بنجاح');
+          toast.success('📊 تم جلب البيانات المطلوبة من النظام بنجاح');
+        } else if (data.metadata?.source === 'cache') {
+          toast.success('⚡ تم العثور على إجابة سريعة من الذاكرة المؤقتة');
+        } else if (data.metadata?.source === 'local_knowledge') {
+          toast.success('📚 تم العثور على الإجابة في قاعدة المعرفة المحلية');
+        } else if (data.metadata?.source === 'mixed_query_ai') {
+          toast.success('🤖 تم تحليل الاستفسار المختلط بنجاح');
+        } else if (data.classification?.type === 'mixed') {
+          toast.success('🔄 تم معالجة الاستفسار المختلط بنجاح');
         } else {
-          toast.success('تم الحصول على الاستشارة بنجاح');
+          toast.success('✅ تم الحصول على الاستشارة القانونية بنجاح');
         }
       } else {
         toast.error(data.message || 'حدث خطأ في معالجة الطلب');

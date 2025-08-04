@@ -53,14 +53,14 @@ interface ChatMessage {
     reasoning?: string;
   };
   metadata?: {
-    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai' | 'mixed_query_ai';
+    source: 'cache' | 'local_knowledge' | 'api' | 'system_data' | 'system_data_with_ai' | 'mixed_query_ai';
     confidence: number;
     response_time: number;
     cost_saved?: boolean;
     usage_count?: number;
     match_score?: number;
     data_sources?: string[];
-    query_type?: 'legal_advice' | 'system_data' | 'mixed';
+    query_type?: 'system_data' | 'consultation' | 'memo' | 'contract' | 'licensing' | 'general' | 'mixed';
     components?: { system_data: string[], legal_advice: string[] };
   };
 }
