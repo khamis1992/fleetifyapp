@@ -22,7 +22,6 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { SmartLegalAssistant } from './SmartLegalAssistant';
-import { AdvancedLearningDashboard } from '@/components/ai/AdvancedLearningDashboard';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -190,10 +189,6 @@ export const LegalAIDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Advanced Learning Dashboard */}
-          <div>
-            <AdvancedLearningDashboard />
-          </div>
         </div>
     </div>
   );
