@@ -28,8 +28,8 @@ import { useEnhancedAI } from '@/hooks/useEnhancedAI';
 import { useAdaptiveLearning } from '@/hooks/useAdaptiveLearning';
 import { useEnhancedContextAnalyzer } from '@/hooks/useEnhancedContextAnalyzer';
 import SmartAnalyticsPanel from './SmartAnalyticsPanel';
-import SelfLearningAIPanel from './SelfLearningAIPanel';
-import IntelligentInsightsPanel from './IntelligentInsightsPanel';
+import { SelfLearningAIPanel } from './SelfLearningAIPanel';
+import { IntelligentInsightsPanel } from './IntelligentInsightsPanel';
 import { toast } from 'sonner';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
@@ -45,6 +45,16 @@ interface Message {
   insights?: string[];
   recommendations?: string[];
   visualizations?: any[];
+  type?: 'user' | 'ai';
+  response?: {
+    confidence: number;
+    processing_time: number;
+    data: {
+      insights: string[];
+      recommendations: string[];
+      visualizations: any[];
+    };
+  };
   contextualInfo?: {
     detectedEntities?: any[];
     missingContext?: string[];
@@ -57,6 +67,7 @@ interface Message {
 export const EnhancedAIPanel: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
+  const [inputQuery, setInputQuery] = useState('');
   const [quickStats, setQuickStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('chat');
   
@@ -67,8 +78,11 @@ export const EnhancedAIPanel: React.FC = () => {
     getCustomerAnalysis,
     getContractPerformance,
     getOperationalInsights,
+    getPredictiveAnalysis,
+    getRiskAssessment,
     isProcessing, 
-    error 
+    error,
+    processingStatus
   } = useEnhancedAI();
 
   const {
@@ -102,18 +116,18 @@ export const EnhancedAIPanel: React.FC = () => {
   }, []);
 
   const handleSendQuery = async () => {
-    if (!userInput.trim() || isProcessing) return;
+    if (!inputQuery.trim() || isProcessing) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: userInput,
+      content: inputQuery,
       sender: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const originalQuery = userInput;
-    setUserInput('');
+    const originalQuery = inputQuery;
+    setInputQuery('');
 
     try {
       // Enhanced query processing with context analysis
@@ -134,8 +148,7 @@ export const EnhancedAIPanel: React.FC = () => {
 
       const response = await processQuery({
         query: processedQuery,
-        analysisType: 'comprehensive',
-        includeVisualization: true,
+        analysis_type: 'comprehensive',
         context: {
           originalQuery,
           contextualAnalysis,
@@ -150,11 +163,17 @@ export const EnhancedAIPanel: React.FC = () => {
         sender: 'ai',
         timestamp: new Date(),
         confidence: response.confidence,
-        processingTime: response.processingTime,
+        processingTime: response.processing_time,
         data: response.data,
-        insights: response.insights,
-        recommendations: response.recommendations,
-        visualizations: response.visualizations,
+        insights: response.data.insights,
+        recommendations: response.data.recommendations,
+        visualizations: response.data.visualizations,
+        type: 'ai',
+        response: {
+          confidence: response.confidence,
+          processing_time: response.processing_time,
+          data: response.data
+        },
         contextualInfo: {
           detectedEntities: contextualAnalysis.detectedEntities,
           missingContext: contextualAnalysis.missingContext,
@@ -172,7 +191,7 @@ export const EnhancedAIPanel: React.FC = () => {
         contextualAnalysis.inferredIntent,
         'neutral',
         response.confidence || 70,
-        response.processingTime || 1000,
+        response.processing_time || 1000,
         undefined,
         contextualAnalysis.businessDomain
       );
@@ -191,7 +210,7 @@ export const EnhancedAIPanel: React.FC = () => {
 
   const handleQuickAnalysis = async (analysisType: string) => {
     try {
-      let response: EnhancedAIResponse;
+      let response: any;
       let analysisName = '';
 
       switch (analysisType) {
@@ -226,9 +245,14 @@ export const EnhancedAIPanel: React.FC = () => {
       const aiMessage: Message = {
         id: Date.now().toString(),
         content: response.analysis,
+        sender: 'ai',
         type: 'ai',
         timestamp: new Date(),
-        response
+        response: {
+          confidence: response.confidence,
+          processing_time: response.processing_time,
+          data: response.data
+        }
       };
 
       setMessages([aiMessage]);

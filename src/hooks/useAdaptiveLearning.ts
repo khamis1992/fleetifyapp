@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
 interface LearningPattern {
   id: string;
@@ -33,6 +34,7 @@ export const useAdaptiveLearning = () => {
   const [learningPatterns, setLearningPatterns] = useState<LearningPattern[]>([]);
   const [insights, setInsights] = useState<AdaptiveInsight[]>([]);
   const learningCache = useRef<Map<string, LearningPattern[]>>(new Map());
+  const { companyId } = useUnifiedCompanyAccess();
 
   // Record user feedback and learn from it
   const recordFeedback = useCallback(async (
@@ -63,6 +65,7 @@ export const useAdaptiveLearning = () => {
       const { error } = await supabase
         .from('ai_learning_patterns')
         .insert({
+          company_id: companyId || 'default',
           pattern_type: learningPattern.category,
           pattern_data: {
             id: learningPattern.id,
@@ -97,7 +100,7 @@ export const useAdaptiveLearning = () => {
     } finally {
       setIsLearning(false);
     }
-  }, [supabase]);
+  }, [companyId]);
 
   // Find similar queries and their classifications
   const findSimilarQueries = useCallback((
@@ -228,7 +231,7 @@ export const useAdaptiveLearning = () => {
     } catch (error) {
       console.error('Error generating insights:', error);
     }
-  }, [supabase]);
+  }, []);
 
   // Load learning patterns from database
   const loadLearningPatterns = useCallback(async () => {
@@ -273,7 +276,7 @@ export const useAdaptiveLearning = () => {
     } catch (error) {
       console.error('Error loading learning patterns:', error);
     }
-  }, [supabase]);
+  }, []);
 
   // Get performance metrics
   const getPerformanceMetrics = useCallback(() => {
