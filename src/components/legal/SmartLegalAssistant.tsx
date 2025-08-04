@@ -54,5 +54,13 @@ interface SmartSuggestion {
 }
 
 import { EnhancedSmartLegalAssistant } from './EnhancedSmartLegalAssistant';
+import { EnhancedAIPanel } from '../ai/EnhancedAIPanel';
 
-export const SmartLegalAssistant = EnhancedSmartLegalAssistant;
+export const SmartLegalAssistant = () => {
+  return (
+    <div className="space-y-6">
+      <EnhancedAIPanel />
+      <EnhancedSmartLegalAssistant />
+    </div>
+  );
+};
