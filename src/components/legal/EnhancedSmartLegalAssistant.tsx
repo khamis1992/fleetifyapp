@@ -412,31 +412,6 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto">
-      {/* Header */}
-      <Card className="mb-4">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Brain className="h-6 w-6 text-primary" />
-              <CardTitle className="text-xl">المساعد القانوني الذكي المتكامل</CardTitle>
-              {isProcessing && (
-                <Badge variant="secondary" className="animate-pulse">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-current rounded-full animate-bounce" />
-                    {processingStatus || 'معالجة...'}
-                  </div>
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="flex items-center gap-1">
-                {getQueryTypeIcon(activeQueryType)}
-                {getQueryTypeLabel(activeQueryType)}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
 
       {/* Query Type Selector */}
       <Card className="mb-4">
