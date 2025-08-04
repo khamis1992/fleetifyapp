@@ -34,14 +34,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const url = new URL(req.url);
-  const path = url.pathname;
-
   try {
-    console.log(`Processing request: ${req.method} ${path}`);
+    const body = req.method === 'POST' ? await req.json() : {};
+    const requestedPath = body.path || '';
+    
+    console.log(`Processing request: ${req.method} with path: ${requestedPath}`);
 
     // Health check endpoint
-    if (path === '/legal-ai-api/health' && req.method === 'GET') {
+    if (requestedPath === 'health') {
       return new Response(
         JSON.stringify({
           status: 'healthy',
@@ -55,8 +55,7 @@ serve(async (req) => {
     }
 
     // Legal advice endpoint
-    if (path === '/legal-ai-api/legal-advice' && req.method === 'POST') {
-      const body: LegalQuery = await req.json();
+    if (requestedPath === 'legal-advice') {
       console.log('Processing legal advice request:', { query: body.query?.substring(0, 100), country: body.country });
 
       if (!body.query || !body.country || !body.company_id) {
@@ -169,8 +168,7 @@ serve(async (req) => {
     }
 
     // Feedback endpoint
-    if (path === '/legal-ai-api/feedback' && req.method === 'POST') {
-      const body: LegalFeedback = await req.json();
+    if (requestedPath === 'feedback') {
       console.log('Processing feedback:', { rating: body.rating, company_id: body.company_id });
 
       if (!body.rating || !body.company_id || !body.message_id) {
@@ -213,7 +211,7 @@ serve(async (req) => {
     }
 
     // Stats endpoint - generate mock data for now
-    if (path === '/legal-ai-api/stats' && req.method === 'GET') {
+    if (requestedPath === 'stats') {
       const mockStats = {
         performance_overview: {
           total_queries: 156,
@@ -261,7 +259,7 @@ serve(async (req) => {
     }
 
     // Learning insights endpoint
-    if (path === '/legal-ai-api/learning-insights' && req.method === 'GET') {
+    if (requestedPath === 'learning-insights') {
       const mockInsights = {
         summary: {
           total_patterns: 12,
@@ -295,7 +293,7 @@ serve(async (req) => {
     }
 
     // Optimize endpoint
-    if (path === '/legal-ai-api/optimize' && req.method === 'POST') {
+    if (requestedPath === 'optimize') {
       // Simulate optimization process
       console.log('Running system optimization...');
       

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // أنواع البيانات للإحصائيات
 export interface LegalAIStats {
@@ -74,8 +75,7 @@ export interface LearningInsights {
   }>;
 }
 
-// عنوان API - استخدام Supabase Edge Function
-const API_BASE_URL = '/functions/v1/legal-ai-api';
+// استخدام Supabase Edge Function
 
 export const useLegalAIStats = () => {
   const [stats, setStats] = useState<LegalAIStats | null>(null);
@@ -90,14 +90,14 @@ export const useLegalAIStats = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/stats`);
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: { path: 'stats' }
+      });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const data = await response.json();
-      
       if (data.success) {
         setStats(data.stats);
       } else {
@@ -115,10 +115,11 @@ export const useLegalAIStats = () => {
   // جلب حالة صحة النظام
   const fetchHealthStatus = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`);
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: { path: 'health' }
+      });
       
-      if (response.ok) {
-        const data = await response.json();
+      if (!error && data) {
         setHealthStatus(data);
       }
     } catch (error) {
@@ -129,13 +130,12 @@ export const useLegalAIStats = () => {
   // جلب رؤى التعلم
   const fetchLearningInsights = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/learning-insights`);
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: { path: 'learning-insights' }
+      });
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setLearningInsights(data.insights);
-        }
+      if (!error && data.success) {
+        setLearningInsights(data.insights);
       }
     } catch (error) {
       console.error('Error fetching learning insights:', error);
@@ -145,24 +145,18 @@ export const useLegalAIStats = () => {
   // تحسين النظام
   const optimizeSystem = async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/optimize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: { path: 'optimize' }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success('تم تحسين النظام بنجاح');
-          // تحديث الإحصائيات بعد التحسين
-          setTimeout(() => {
-            fetchStats();
-            fetchHealthStatus();
-          }, 1000);
-          return true;
-        }
+      if (!error && data.success) {
+        toast.success('تم تحسين النظام بنجاح');
+        // تحديث الإحصائيات بعد التحسين
+        setTimeout(() => {
+          fetchStats();
+          fetchHealthStatus();
+        }, 1000);
+        return true;
       }
       
       toast.error('فشل في تحسين النظام');

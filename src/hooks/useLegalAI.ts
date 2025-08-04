@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // أنواع البيانات
 export interface LegalAIQuery {
@@ -37,8 +38,7 @@ export interface LegalAIFeedbackResponse {
   message?: string;
 }
 
-// عنوان API - استخدام Supabase Edge Function
-const API_BASE_URL = '/functions/v1/legal-ai-api';
+// استخدام Supabase Edge Function
 
 export const useLegalAI = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -50,20 +50,17 @@ export const useLegalAI = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/legal-advice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(queryData),
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: {
+          ...queryData,
+          path: 'legal-advice'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const data = await response.json();
-      
       if (data.success) {
         toast.success('تم الحصول على الاستشارة بنجاح');
       } else {
@@ -91,20 +88,17 @@ export const useLegalAI = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/feedback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(feedbackData),
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: {
+          ...feedbackData,
+          path: 'feedback'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const data = await response.json();
-      
       if (data.success) {
         toast.success('تم تسجيل تقييمك بنجاح');
       } else {
@@ -129,8 +123,10 @@ export const useLegalAI = () => {
   // اختبار الاتصال بالخادم
   const testConnection = async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`);
-      return response.ok;
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: { path: 'health' }
+      });
+      return !error && data;
     } catch (error) {
       return false;
     }
