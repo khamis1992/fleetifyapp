@@ -21,6 +21,12 @@ async function classifyQuery(query: string, companyId: string, userId?: string):
     /client.*hasn.*paid|client.*overdue|client.*owes|outstanding.*balance|unpaid.*invoices/i,
     /مدفوعات.*متأخرة|فواتير.*غير.*مدفوعة|ذمم.*مدينة|حسابات.*مستحقة/i,
     
+    // Enhanced invoice patterns
+    /فواتير.*معلقة|فواتير.*متأخرة|فواتير.*غير.*مرسلة|فواتير.*منتهية.*الصلاحية/i,
+    /pending.*invoices|overdue.*invoices|unpaid.*invoices|unsent.*invoices|draft.*invoices/i,
+    /توجد.*فواتير|هل.*توجد.*فواتير|كم.*فاتورة|عدد.*الفواتير/i,
+    /are.*there.*invoices|how.*many.*invoices|invoice.*count|any.*invoices/i,
+    
     // Customer search patterns
     /معلومات.*عميل|بيانات.*عميل|تفاصيل.*عميل|البحث.*عن.*عميل/i,
     /customer.*information|customer.*details|search.*customer|find.*customer/i,
@@ -188,29 +194,92 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
 async function fetchRelevantSystemData(query: string, companyId: string, supabase: any) {
   const data: any = {};
   
-  // Check if query is about payments/outstanding amounts
-  if (/عميل.*لم.*يدفع|عميل.*مدين|outstanding|unpaid|overdue/i.test(query)) {
-    // Get customers with outstanding payments
-    const { data: customersWithDebt } = await supabase
-      .from('customers')
+  // Enhanced invoice and payment queries
+  if (/فواتير.*معلقة|فواتير.*متأخرة|فواتير.*غير.*مدفوعة|pending.*invoices|overdue.*invoices|unpaid.*invoices|عميل.*لم.*يدفع|عميل.*مدين|outstanding|unpaid|overdue/i.test(query)) {
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Get all invoice data with customer details
+    const { data: allInvoices } = await supabase
+      .from('invoices')
       .select(`
-        id, first_name, last_name, company_name, customer_type,
-        invoices!inner(total_amount, payment_status, due_date, invoice_number)
+        id, invoice_number, total_amount, payment_status, due_date, status, invoice_date,
+        customers (
+          id, first_name, last_name, company_name, customer_type, phone, email
+        )
       `)
       .eq('company_id', companyId)
-      .eq('invoices.payment_status', 'unpaid')
-      .order('invoices.due_date', { ascending: true });
+      .order('due_date', { ascending: true });
 
+    // Categorize invoices
+    const unpaidInvoices = allInvoices?.filter(inv => 
+      inv.payment_status === 'unpaid' || inv.payment_status === 'partially_paid'
+    ) || [];
+    
+    const overdueInvoices = unpaidInvoices.filter(inv => 
+      inv.due_date && inv.due_date < currentDate
+    );
+    
+    const draftInvoices = allInvoices?.filter(inv => inv.status === 'draft') || [];
+    const sentInvoices = allInvoices?.filter(inv => inv.status === 'sent') || [];
+    
+    // Calculate financial summaries
+    const totalOutstanding = unpaidInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+    const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+    
+    // Group by customers for customer-specific analysis
+    const customerMap = new Map();
+    unpaidInvoices.forEach(inv => {
+      const customerId = inv.customers?.id;
+      if (customerId) {
+        if (!customerMap.has(customerId)) {
+          customerMap.set(customerId, {
+            customer: inv.customers,
+            invoices: [],
+            total_owed: 0,
+            overdue_amount: 0
+          });
+        }
+        const customerData = customerMap.get(customerId);
+        customerData.invoices.push(inv);
+        customerData.total_owed += inv.total_amount || 0;
+        if (inv.due_date && inv.due_date < currentDate) {
+          customerData.overdue_amount += inv.total_amount || 0;
+        }
+      }
+    });
+    
+    const customersWithDebt = Array.from(customerMap.values());
+    
+    data.invoice_analysis = {
+      total_invoices: allInvoices?.length || 0,
+      unpaid_invoices: {
+        count: unpaidInvoices.length,
+        total_amount: totalOutstanding,
+        invoices: unpaidInvoices.slice(0, 10) // Show latest 10
+      },
+      overdue_invoices: {
+        count: overdueInvoices.length,
+        total_amount: totalOverdue,
+        invoices: overdueInvoices.slice(0, 10)
+      },
+      draft_invoices: {
+        count: draftInvoices.length,
+        invoices: draftInvoices.slice(0, 5)
+      },
+      sent_invoices: {
+        count: sentInvoices.length
+      },
+      customers_with_debt: {
+        count: customersWithDebt.length,
+        customers: customersWithDebt.slice(0, 10)
+      }
+    };
+    
+    // Legacy format for backward compatibility
     data.unpaid_customers = customersWithDebt;
-    
-    // Calculate total outstanding
-    const totalOutstanding = customersWithDebt?.reduce((sum, customer) => {
-      return sum + customer.invoices.reduce((invSum: number, inv: any) => invSum + (inv.total_amount || 0), 0);
-    }, 0) || 0;
-    
     data.outstanding_summary = {
       total_outstanding: totalOutstanding,
-      customers_count: customersWithDebt?.length || 0
+      customers_count: customersWithDebt.length
     };
   }
 
