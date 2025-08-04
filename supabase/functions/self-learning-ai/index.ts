@@ -42,11 +42,11 @@ serve(async (req) => {
     if (existingPatterns && existingPatterns.length > 0) {
       for (const pattern of existingPatterns) {
         const patternData = pattern.pattern_data as any;
-        if (patternData.embedding) {
-          const similarity = cosineSimilarity(queryEmbedding, patternData.embedding);
+        if (patternData.query_embedding) {
+          const similarity = cosineSimilarity(queryEmbedding, patternData.query_embedding);
           console.log(`🔍 Pattern similarity: ${similarity} for pattern: ${pattern.pattern_type}`);
           
-          if (similarity > highestSimilarity && similarity > 0.7) {
+          if (similarity > highestSimilarity && similarity > 0.4) { // Lowered threshold
             highestSimilarity = similarity;
             bestMatch = pattern;
           }
@@ -54,9 +54,25 @@ serve(async (req) => {
       }
     }
 
+    // Step 2.5: Check for simple/clear queries that don't need clarification
+    const isSimpleQuery = await isQuerySimpleAndClear(query);
+    console.log(`🎯 Query is simple and clear: ${isSimpleQuery}`);
+
     // Step 3: Determine if clarification is needed
-    const needsClarification = highestSimilarity < 0.6;
-    console.log(`🤔 Needs clarification: ${needsClarification}, similarity: ${highestSimilarity}`);
+    // Only ask for clarification if:
+    // 1. No patterns exist AND query is not simple/clear
+    // 2. OR similarity is very low AND query is complex
+    let needsClarification = false;
+    
+    if (existingPatterns && existingPatterns.length === 0) {
+      // No patterns exist - only clarify if query is not simple
+      needsClarification = !isSimpleQuery;
+    } else {
+      // Patterns exist - only clarify if similarity is very low AND query is complex
+      needsClarification = highestSimilarity < 0.3 && !isSimpleQuery;
+    }
+    
+    console.log(`🤔 Needs clarification: ${needsClarification}, similarity: ${highestSimilarity}, isSimple: ${isSimpleQuery}`);
 
     if (needsClarification) {
       // Generate intelligent clarification questions
@@ -279,6 +295,33 @@ async function processWithPattern(query: string, pattern: any, context: any) {
 }
 
 async function processNewQuery(query: string, context: any) {
+  // Enhanced keyword-based processing for common queries
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // Arabic keywords for contract/agreement counting
+  const contractCountKeywords = ['كم عقد', 'كم اتفاقية', 'عدد العقود', 'عدد الاتفاقيات'];
+  const customerCountKeywords = ['كم عميل', 'عدد العملاء', 'كم زبون'];
+  
+  // Check for simple count queries
+  if (contractCountKeywords.some(keyword => normalizedQuery.includes(keyword))) {
+    return {
+      response: 'لمساعدتك في معرفة عدد العقود، أحتاج للوصول إلى قاعدة البيانات. هل تقصد العقود النشطة فقط أم جميع العقود؟',
+      intent: 'contract_count_query',
+      confidence: 0.9,
+      usedPattern: false
+    };
+  }
+  
+  if (customerCountKeywords.some(keyword => normalizedQuery.includes(keyword))) {
+    return {
+      response: 'لعرض إحصائيات العملاء، هل تريد معرفة العملاء النشطين أم جميع العملاء المسجلين في النظام؟',
+      intent: 'customer_count_query',
+      confidence: 0.9,
+      usedPattern: false
+    };
+  }
+
+  // Fallback to AI processing for complex queries
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -290,7 +333,8 @@ async function processNewQuery(query: string, context: any) {
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful AI assistant. Analyze the user query and provide a helpful response while identifying the intent.'
+          content: `You are a helpful legal AI assistant. Provide helpful responses in Arabic for Arabic queries and English for English queries. 
+          Be specific and actionable in your responses.`
         },
         {
           role: 'user',
@@ -304,16 +348,17 @@ async function processNewQuery(query: string, context: any) {
   const data = await response.json();
   const responseText = data.choices[0].message.content;
   
-  // Basic intent classification
+  // Enhanced intent classification
   let intent = 'general_query';
-  if (query.includes('عقد') || query.includes('contract')) intent = 'contract_query';
-  if (query.includes('عميل') || query.includes('customer')) intent = 'customer_query';
-  if (query.includes('كم') || query.includes('عدد')) intent = 'statistics_query';
+  if (query.includes('عقد') || query.includes('contract') || query.includes('اتفاقية')) intent = 'contract_query';
+  if (query.includes('عميل') || query.includes('customer') || query.includes('زبون')) intent = 'customer_query';
+  if (query.includes('كم') || query.includes('عدد') || query.includes('count') || query.includes('how many')) intent = 'statistics_query';
+  if (query.includes('بحث') || query.includes('search') || query.includes('find')) intent = 'search_query';
   
   return {
     response: responseText,
     intent,
-    confidence: 0.5,
+    confidence: 0.7, // Increased confidence for better processing
     usedPattern: false
   };
 }
@@ -330,31 +375,55 @@ async function selfEvaluateAndLearn(
   console.log('🎓 Self-evaluating and learning from interaction...');
   
   try {
-    // Create or update learning pattern
+    // Always create learning patterns, even with low confidence
     const patternData = {
       query_embedding: queryEmbedding,
-      response_quality: 0.8, // Initial assumption, will be updated by user feedback
+      response_quality: Math.max(0.6, responseData.confidence), // Minimum quality threshold
       processing_type: processingType,
       intent_detected: responseData.intent,
       confidence_level: responseData.confidence,
       context_features: extractContextFeatures(query),
+      original_query: query,
       timestamp: new Date().toISOString()
     };
 
-    await supabaseClient
+    // Check if similar pattern already exists
+    const { data: existingPattern } = await supabaseClient
       .from('ai_learning_patterns')
-      .insert({
-        company_id: companyId,
-        pattern_type: responseData.intent,
-        pattern_data: patternData,
-        success_rate: 0.8,
-        usage_count: 1,
-        is_active: true
-      });
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('pattern_type', responseData.intent)
+      .single();
 
-    console.log('✅ Created new learning pattern');
+    if (existingPattern) {
+      // Update existing pattern
+      await supabaseClient
+        .from('ai_learning_patterns')
+        .update({
+          usage_count: existingPattern.usage_count + 1,
+          last_used_at: new Date().toISOString(),
+          success_rate: Math.min(0.95, existingPattern.success_rate + 0.05) // Gradually improve
+        })
+        .eq('id', existingPattern.id);
+      
+      console.log('✅ Updated existing learning pattern');
+    } else {
+      // Create new pattern
+      await supabaseClient
+        .from('ai_learning_patterns')
+        .insert({
+          company_id: companyId,
+          pattern_type: responseData.intent,
+          pattern_data: patternData,
+          success_rate: Math.max(0.6, responseData.confidence), // Minimum success rate
+          usage_count: 1,
+          is_active: true
+        });
+
+      console.log('✅ Created new learning pattern');
+    }
   } catch (error) {
-    console.error('Failed to create learning pattern:', error);
+    console.error('Failed to create/update learning pattern:', error);
   }
 }
 
@@ -368,10 +437,39 @@ function extractContextFeatures(query: string): any {
   };
 }
 
-async function generateFollowUpSuggestions(query: string, responseData: any): Promise<string[]> {
-  return [
-    `More details about ${responseData.intent}`,
-    'Related statistics',
-    'Export this information'
+async function isQuerySimpleAndClear(query: string): Promise<boolean> {
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // Define patterns for simple, clear queries
+  const simplePatterns = [
+    // Arabic patterns
+    /كم\s+(عقد|اتفاقية|عميل|زبون)/,
+    /عدد\s+(العقود|الاتفاقيات|العملاء)/,
+    /ما\s+عدد/,
+    
+    // English patterns  
+    /how\s+many\s+(contracts?|agreements?|customers?)/,
+    /number\s+of\s+(contracts?|agreements?|customers?)/,
+    /count\s+(contracts?|agreements?|customers?)/,
+    
+    // Status queries
+    /حالة\s+(العقد|الاتفاقية)/,
+    /status\s+of/
   ];
+  
+  return simplePatterns.some(pattern => pattern.test(normalizedQuery));
+}
+
+async function generateFollowUpSuggestions(query: string, responseData: any): Promise<string[]> {
+  const suggestions = [];
+  
+  if (responseData.intent.includes('contract')) {
+    suggestions.push('عرض تفاصيل العقود', 'البحث في العقود النشطة', 'إحصائيات العقود الشهرية');
+  } else if (responseData.intent.includes('customer')) {
+    suggestions.push('قائمة العملاء', 'إضافة عميل جديد', 'تقارير العملاء');
+  } else {
+    suggestions.push('المزيد من التفاصيل', 'الإحصائيات ذات الصلة', 'تصدير هذه المعلومات');
+  }
+  
+  return suggestions;
 }
