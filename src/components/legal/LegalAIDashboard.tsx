@@ -24,8 +24,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { SmartRecommendationSystem } from './SmartRecommendationSystem';
-import EnhancedLegalAIInterface from './EnhancedLegalAIInterface';
-import { LegalAIConsultant } from './LegalAIConsultant';
+import { SmartLegalAssistant } from './SmartLegalAssistant';
 import DocumentAnalyzer from './DocumentAnalyzer';
 import LegalDocumentGenerator from './LegalDocumentGenerator';
 import PredictiveAnalysis from './PredictiveAnalysis';
@@ -105,20 +104,20 @@ export const LegalAIDashboard: React.FC = () => {
 
   const quickActions: QuickAction[] = [
     {
-      id: 'quick-analysis',
-      title: 'تحليل سريع للوثيقة',
-      description: 'تحليل فوري للعقود والوثائق القانونية',
-      icon: <Zap className="h-5 w-5" />,
-      category: 'analysis',
-      action: () => setActiveTab('analysis')
+      id: 'smart-assistant',
+      title: 'المساعد القانوني الذكي',
+      description: 'استشارات وتحليل قانوني ذكي ومتطور',
+      icon: <Brain className="h-5 w-5" />,
+      category: 'consultation',
+      action: () => setActiveTab('smart-assistant')
     },
     {
-      id: 'legal-consultation',
-      title: 'استشارة قانونية',
-      description: 'احصل على مشورة قانونية متخصصة',
-      icon: <MessageSquare className="h-5 w-5" />,
-      category: 'consultation',
-      action: () => setActiveTab('consultation')
+      id: 'document-analysis',
+      title: 'تحليل الوثائق',
+      description: 'تحليل فوري للعقود والوثائق القانونية',
+      icon: <FileText className="h-5 w-5" />,
+      category: 'analysis',
+      action: () => setActiveTab('document-analyzer')
     },
     {
       id: 'contract-insights',
@@ -129,12 +128,12 @@ export const LegalAIDashboard: React.FC = () => {
       action: () => setActiveTab('insights')
     },
     {
-      id: 'risk-assessment',
-      title: 'تقييم المخاطر',
-      description: 'تحديد وتقييم المخاطر القانونية',
-      icon: <Shield className="h-5 w-5" />,
-      category: 'analysis',
-      action: () => setActiveTab('risk-assessment')
+      id: 'document-generator',
+      title: 'مولد الوثائق',
+      description: 'إنشاء وثائق قانونية ذكية ومخصصة',
+      icon: <Lightbulb className="h-5 w-5" />,
+      category: 'documentation',
+      action: () => setActiveTab('document-generator')
     }
   ];
 
@@ -233,18 +232,14 @@ export const LegalAIDashboard: React.FC = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             نظرة عامة
           </TabsTrigger>
-          <TabsTrigger value="consultation" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            الاستشارات
-          </TabsTrigger>
-          <TabsTrigger value="analysis" className="flex items-center gap-2">
+          <TabsTrigger value="smart-assistant" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
-            التحليل الذكي
+            المساعد الذكي
           </TabsTrigger>
           <TabsTrigger value="document-analyzer" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -253,10 +248,6 @@ export const LegalAIDashboard: React.FC = () => {
           <TabsTrigger value="document-generator" className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4" />
             مولد الوثائق
-          </TabsTrigger>
-          <TabsTrigger value="predictive-analysis" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            التحليل التنبؤي
           </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
@@ -382,12 +373,8 @@ export const LegalAIDashboard: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="consultation">
-          <LegalAIConsultant companyId={user?.profile?.company_id || ''} />
-        </TabsContent>
-
-        <TabsContent value="analysis">
-          <EnhancedLegalAIInterface company_id={user?.profile?.company_id || ''} />
+        <TabsContent value="smart-assistant">
+          <SmartLegalAssistant />
         </TabsContent>
 
         <TabsContent value="document-analyzer">
@@ -402,36 +389,11 @@ export const LegalAIDashboard: React.FC = () => {
           }} />
         </TabsContent>
 
-        <TabsContent value="predictive-analysis">
-          <PredictiveAnalysis onAnalysisComplete={(result) => {
-            console.log('Predictive analysis completed:', result);
-          }} />
-        </TabsContent>
 
         <TabsContent value="insights">
           <SmartRecommendationSystem />
         </TabsContent>
 
-        <TabsContent value="risk-assessment">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
-                تقييم المخاطر القانونية
-              </CardTitle>
-              <CardDescription>
-                تحليل وتقييم المخاطر القانونية المحتملة
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>سيتم تطوير هذه الميزة قريباً</p>
-                <p className="text-sm">تقييم شامل للمخاطر القانونية والتوصيات الوقائية</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="performance">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
