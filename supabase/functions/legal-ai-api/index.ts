@@ -48,16 +48,47 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
   try {
     // Check user permissions for system data queries
     if (user_id) {
-      const userProfile = await getUserPermissions(user_id);
-      if (!userProfile || userProfile.company_id !== company_id) {
-        console.error('User permission check failed:', { user_id, company_id, userProfile });
+      const userPermissions = await getUserPermissions(user_id);
+      if (!userPermissions) {
+        console.error('User permission check failed: No user permissions found', { user_id, company_id });
+        return new Response(
+          JSON.stringify({ success: false, message: 'User not found or unauthorized' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (userPermissions.company_id !== company_id) {
+        console.error('User permission check failed: Company mismatch', { 
+          user_id, 
+          expected_company_id: company_id, 
+          user_company_id: userPermissions.company_id 
+        });
         return new Response(
           JSON.stringify({ success: false, message: 'Unauthorized access to system data' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      
+      // Check if user has system access permissions
+      if (!userPermissions.hasSystemAccess()) {
+        console.error('User permission check failed: Insufficient permissions', { 
+          user_id, 
+          company_id, 
+          roles: userPermissions.roles 
+        });
+        return new Response(
+          JSON.stringify({ success: false, message: 'Insufficient permissions for system data queries' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('User permission check passed:', { 
+        user_id, 
+        company_id, 
+        roles: userPermissions.roles 
+      });
     } else {
-      console.warn('No user_id provided for system data query - proceeding without user validation');
+      console.warn('No user_id provided for system data query - allowing for backward compatibility');
     }
 
     // Analyze query intent and fetch relevant data
@@ -258,13 +289,55 @@ async function getUserPermissions(userId: string) {
       return null;
     }
     
-    const { data: profile } = await supabase
+    // Get user profile first
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('user_role, company_id')
+      .select('company_id, first_name, last_name, email')
       .eq('user_id', userId)
       .single();
     
-    return profile;
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      return null;
+    }
+    
+    if (!profile) {
+      console.error('No profile found for user:', userId);
+      return null;
+    }
+    
+    // Get user roles from user_roles table
+    const { data: userRoles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+    
+    if (rolesError) {
+      console.error('Error fetching user roles:', rolesError);
+      // Continue without roles - user might not have specific roles assigned
+    }
+    
+    // Extract roles array
+    const roles = userRoles?.map(r => r.role) || [];
+    
+    console.log('User permissions retrieved:', {
+      userId,
+      companyId: profile.company_id,
+      roles,
+      hasProfile: !!profile
+    });
+    
+    return {
+      company_id: profile.company_id,
+      user_id: userId,
+      roles: roles,
+      profile: profile,
+      // Helper methods for permission checking
+      hasRole: (role: string) => roles.includes(role),
+      isAdmin: () => roles.includes('super_admin') || roles.includes('company_admin'),
+      isManager: () => roles.includes('manager'),
+      hasSystemAccess: () => roles.includes('super_admin') || roles.includes('company_admin') || roles.includes('manager') || roles.includes('sales_agent')
+    };
   } catch (error) {
     console.error('Error getting user permissions:', error);
     return null;
