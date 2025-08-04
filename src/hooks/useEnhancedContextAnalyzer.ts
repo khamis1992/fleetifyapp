@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { useSupabase } from '@/integrations/supabase/useSupabase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContextualRelationship {
   entity1: string;
@@ -34,7 +34,6 @@ export const useEnhancedContextAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [entityRegistry, setEntityRegistry] = useState<Map<string, EntityContext>>(new Map());
   const [relationshipMap, setRelationshipMap] = useState<Map<string, ContextualRelationship[]>>(new Map());
-  const supabase = useSupabase();
   const contextCache = useRef<Map<string, ContextualQuery>>(new Map());
 
   // Initialize entity registry with database schema and business context
@@ -42,10 +41,14 @@ export const useEnhancedContextAnalyzer = () => {
     try {
       setIsAnalyzing(true);
 
-      // Fetch database schema information
-      const { data: tables, error: tablesError } = await supabase.rpc('get_table_info');
-      if (tablesError) {
-        console.error('Error fetching table info:', tablesError);
+      // Fetch database schema information (this will fail gracefully in development)
+      try {
+        const { data: tables, error: tablesError } = await supabase.rpc('get_table_info');
+        if (tablesError) {
+          console.warn('Could not fetch table info (this is normal in development):', tablesError);
+        }
+      } catch (error) {
+        console.warn('Table info fetch failed (this is normal in development):', error);
       }
 
       // Predefined business entities with Arabic and English context

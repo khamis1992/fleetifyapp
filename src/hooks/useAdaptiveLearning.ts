@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { useSupabase } from '@/integrations/supabase/useSupabase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LearningPattern {
   id: string;
@@ -32,7 +32,6 @@ export const useAdaptiveLearning = () => {
   const [isLearning, setIsLearning] = useState(false);
   const [learningPatterns, setLearningPatterns] = useState<LearningPattern[]>([]);
   const [insights, setInsights] = useState<AdaptiveInsight[]>([]);
-  const supabase = useSupabase();
   const learningCache = useRef<Map<string, LearningPattern[]>>(new Map());
 
   // Record user feedback and learn from it

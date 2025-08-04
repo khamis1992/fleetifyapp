@@ -63,11 +63,6 @@ export const EnhancedAIPanel: React.FC = () => {
   } = useEnhancedAI();
 
   // Load quick stats on component mount
-  useEffect(() => {
-    loadQuickStats();
-    initializeEntityRegistry();
-  }, [loadQuickStats, initializeEntityRegistry]);
-
   const loadQuickStats = async () => {
     try {
       const stats = await getQuickStats();
@@ -76,6 +71,11 @@ export const EnhancedAIPanel: React.FC = () => {
       console.error('Error loading quick stats:', error);
     }
   };
+
+  useEffect(() => {
+    loadQuickStats();
+    initializeEntityRegistry();
+  }, []);
 
   const handleSendQuery = async () => {
     if (!inputQuery.trim()) return;
