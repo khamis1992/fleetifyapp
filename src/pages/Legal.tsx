@@ -9,7 +9,7 @@ import { useLegalCases, useLegalCaseStats, type LegalCase } from '@/hooks/useLeg
 import { LegalCaseForm } from '@/components/legal/LegalCaseForm';
 import { LegalCaseDetailsDialog } from '@/components/legal/LegalCaseDetailsDialog';
 import { LegalCaseDashboard } from '@/components/legal/LegalCaseDashboard';
-import { LegalAIConsultant } from '@/components/legal/LegalAIConsultant';
+import { LegalAIDashboard } from '@/components/legal/LegalAIDashboard';
 import { usePermissionCheck } from '@/hooks/usePermissionCheck';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -293,7 +293,7 @@ const Legal = () => {
         </TabsContent>
 
         <TabsContent value="ai-consultant">
-          <LegalAIConsultant companyId={companyId} />
+          <LegalAIDashboard />
         </TabsContent>
 
         <TabsContent value="reports">
