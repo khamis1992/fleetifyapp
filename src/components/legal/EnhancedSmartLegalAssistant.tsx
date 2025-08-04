@@ -41,6 +41,9 @@ import {
   Filter
 } from 'lucide-react';
 import { useUnifiedLegalAI, UnifiedLegalQuery, UnifiedLegalResponse } from '@/hooks/useUnifiedLegalAI';
+import { useSelfLearningAI } from '@/hooks/useSelfLearningAI';
+import { ClarificationDialog } from '@/components/ai/ClarificationDialog';
+import { LearningFeedbackDialog } from '@/components/ai/LearningFeedbackDialog';
 import { UnpaidCustomerSearchInterface } from './UnpaidCustomerSearchInterface';
 import { useUnpaidCustomerSearch } from '@/hooks/useUnpaidCustomerSearch';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
@@ -56,6 +59,8 @@ interface Message {
     processingTime?: number;
     confidence?: number;
     adaptiveRecommendations?: string[];
+    intent?: string;
+    learningApplied?: boolean;
   };
   reactions?: {
     helpful?: boolean;
@@ -113,9 +118,14 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
   const [activeQueryType, setActiveQueryType] = useState<'auto' | 'consultation' | 'document_analysis' | 'document_generation' | 'contract_comparison' | 'predictive_analysis' | 'smart_recommendations'>('auto');
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showUnpaidCustomersInterface, setShowUnpaidCustomersInterface] = useState(false);
+  const [showClarificationDialog, setShowClarificationDialog] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [clarificationSession, setClarificationSession] = useState<any>(null);
+  const [lastQueryData, setLastQueryData] = useState<any>(null);
   
   const { user, loading: authLoading } = useAuth();
   const { submitUnifiedQuery, isProcessing, error, processingStatus, clearError } = useUnifiedLegalAI();
+  const { processQueryWithLearning, processClarificationResponse, submitLearningFeedback, isProcessing: isLearning, currentSession } = useSelfLearningAI();
   const { generateLegalNoticeData } = useUnpaidCustomerSearch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -158,6 +168,61 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
     setUploadedFiles([]);
 
     try {
+      // First try self-learning AI
+      const learningQueryData = {
+        query: currentInput,
+        company_id: user.company.id,
+        user_id: user.id,
+        context: {
+          conversationHistory: messages,
+          queryType: activeQueryType,
+          attachedFiles: currentFiles.map(f => f.name)
+        }
+      };
+
+      setLastQueryData(learningQueryData);
+      const learningResponse = await processQueryWithLearning(learningQueryData);
+
+      // Check if clarification is needed
+      if (learningResponse.clarification_questions && learningResponse.clarification_questions.length > 0) {
+        setClarificationSession({
+          id: learningResponse.session_id,
+          original_query: currentInput,
+          clarification_questions: learningResponse.clarification_questions
+        });
+        setShowClarificationDialog(true);
+        
+        const clarificationMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: 'أحتاج إلى بعض التوضيحات لتقديم إجابة أكثر دقة. يرجى الإجابة على الأسئلة التالية:',
+          type: 'system',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, clarificationMessage]);
+        return;
+      }
+
+      // If we have a direct response from learning AI, use it
+      if (learningResponse.response) {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: learningResponse.response,
+          type: 'ai',
+          timestamp: new Date(),
+          metadata: {
+            confidence: learningResponse.confidence,
+            intent: learningResponse.intent_classification,
+            learningApplied: learningResponse.learning_applied,
+            adaptiveRecommendations: learningResponse.adaptive_recommendations
+          }
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+        generateSmartSuggestions(learningResponse, messages);
+        return;
+      }
+
+      // Fallback to unified legal AI if learning response is insufficient
       const queryData: UnifiedLegalQuery = {
         query: currentInput,
         country: 'Kuwait',
@@ -205,10 +270,21 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
     }
   };
 
-  const generateSmartSuggestions = (response: UnifiedLegalResponse, history: Message[]) => {
+  const generateSmartSuggestions = (response: any, history: Message[]) => {
     const suggestions: SmartSuggestion[] = [];
     
-    // Add suggestions based on response type
+    // Handle learning AI responses
+    if (response.adaptive_recommendations) {
+      response.adaptive_recommendations.forEach((suggestion: string) => {
+        suggestions.push({
+          text: suggestion,
+          type: 'follow_up',
+          confidence: 0.8
+        });
+      });
+    }
+    
+    // Handle unified AI responses
     if (response.responseType === 'interactive') {
       suggestions.push({
         text: 'هل تحتاج إلى مساعدة في استخدام هذه الأدوات؟',
@@ -225,7 +301,8 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
       });
     }
     
-    if (response.classification.confidence < 0.7) {
+    const confidence = response.classification?.confidence || response.confidence || 0;
+    if (confidence < 0.7) {
       suggestions.push({
         text: 'هل يمكنك توضيح المزيد من التفاصيل؟',
         type: 'clarification',
@@ -234,6 +311,54 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
     }
     
     setSmartSuggestions(suggestions);
+  };
+
+  const handleClarificationSubmit = async (responses: Record<string, string>) => {
+    try {
+      if (!clarificationSession?.id || !lastQueryData) return;
+
+      const result = await processClarificationResponse(clarificationSession.id, responses);
+      
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        content: result.response || 'شكراً لك على التوضيحات. تم تحديث فهمي للموضوع.',
+        type: 'ai',
+        timestamp: new Date(),
+        metadata: {
+          confidence: result.confidence || 0.8,
+          intent: result.query_intent || 'updated',
+          learningApplied: true
+        }
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      setShowClarificationDialog(false);
+      setClarificationSession(null);
+      
+      // Show feedback dialog
+      setTimeout(() => setShowFeedbackDialog(true), 1000);
+      
+    } catch (error) {
+      console.error('Error processing clarification:', error);
+      toast.error('حدث خطأ في معالجة التوضيحات');
+    }
+  };
+
+  const handleFeedbackSubmit = async (feedbackData: any) => {
+    try {
+      await submitLearningFeedback({
+        feedback_type: feedbackData.feedbackType,
+        feedback_rating: feedbackData.rating,
+        feedback_comments: feedbackData.comments,
+        improvement_suggestions: feedbackData.suggestions
+      });
+      
+      toast.success('شكراً لك على تقييمك! سيساعدني هذا في التحسن.');
+      setShowFeedbackDialog(false);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('حدث خطأ في إرسال التقييم');
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -539,12 +664,30 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
                         <Button size="sm" variant="ghost">
                           <ThumbsDown className="h-4 w-4" />
                         </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => setShowFeedbackDialog(true)}
+                          title="تقييم الإجابة"
+                        >
+                          <Brain className="h-4 w-4" />
+                        </Button>
                         <Button size="sm" variant="ghost">
                           <Copy className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost">
                           <Share className="h-4 w-4" />
                         </Button>
+                        {message.metadata?.learningApplied && (
+                          <Badge variant="secondary" className="text-xs">
+                            تطبيق التعلم
+                          </Badge>
+                        )}
+                        {message.metadata?.confidence && (
+                          <Badge variant="outline" className="text-xs">
+                            ثقة: {Math.round(message.metadata.confidence * 100)}%
+                          </Badge>
+                        )}
                       </div>
                     )}
                   </div>
@@ -655,11 +798,15 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
                 </Button>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={(!inputMessage.trim() && uploadedFiles.length === 0) || isProcessing}
+                  disabled={(!inputMessage.trim() && uploadedFiles.length === 0) || isProcessing || isLearning}
                   size="sm"
                   title="إرسال"
                 >
-                  <Send className="h-4 w-4" />
+                  {(isProcessing || isLearning) ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -692,6 +839,28 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
             />
           </CardContent>
         </Card>
+      )}
+
+      {/* Clarification Dialog */}
+      {showClarificationDialog && clarificationSession && (
+        <ClarificationDialog
+          isOpen={showClarificationDialog}
+          onClose={() => setShowClarificationDialog(false)}
+          session={clarificationSession}
+          onSubmitResponses={handleClarificationSubmit}
+          isProcessing={isLearning}
+        />
+      )}
+
+      {/* Learning Feedback Dialog */}
+      {showFeedbackDialog && (
+        <LearningFeedbackDialog
+          isOpen={showFeedbackDialog}
+          onClose={() => setShowFeedbackDialog(false)}
+          onSubmitFeedback={handleFeedbackSubmit}
+          queryData={lastQueryData}
+          isSubmitting={false}
+        />
       )}
 
       {/* File Upload Dialog */}
