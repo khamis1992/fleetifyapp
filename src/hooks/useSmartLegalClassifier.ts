@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export interface SmartQueryClassification {
-  type: 'simple' | 'complex' | 'mixed' | 'system_data';
+  type: 'simple' | 'complex' | 'mixed' | 'system_data' | 'memo_generation' | 'document_creation';
   complexity: 'low' | 'medium' | 'high';
   confidence: number;
   requiredSources: string[];
@@ -9,10 +9,15 @@ export interface SmartQueryClassification {
   contextual: {
     conversationStage: 'initial' | 'followup' | 'clarification' | 'deep_dive';
     previousTopics: string[];
-    userIntent: 'consultation' | 'research' | 'document_analysis' | 'compliance';
+    userIntent: 'consultation' | 'research' | 'document_analysis' | 'compliance' | 'memo_generation' | 'legal_action';
   };
-  processingStrategy: 'cache_first' | 'local_knowledge' | 'ai_analysis' | 'hybrid';
+  processingStrategy: 'cache_first' | 'local_knowledge' | 'ai_analysis' | 'hybrid' | 'memo_generation';
   estimatedResponseTime: number;
+  memoContext?: {
+    targetCustomer?: string;
+    memoType?: 'payment_demand' | 'legal_notice' | 'compliance_warning' | 'contract_breach';
+    urgency?: 'low' | 'medium' | 'high' | 'urgent';
+  };
 }
 
 export const useSmartLegalClassifier = () => {
@@ -44,6 +49,9 @@ export const useSmartLegalClassifier = () => {
       // Estimate response time
       const estimatedResponseTime = estimateResponseTime(processingStrategy, complexity);
 
+      // Extract memo context if applicable
+      const memoContext = type === 'memo_generation' ? extractMemoContext(query) : undefined;
+
       return {
         type,
         complexity,
@@ -52,7 +60,8 @@ export const useSmartLegalClassifier = () => {
         suggestedAnalysisDepth,
         contextual,
         processingStrategy,
-        estimatedResponseTime
+        estimatedResponseTime,
+        memoContext
       };
     } finally {
       setIsClassifying(false);
@@ -84,12 +93,28 @@ function analyzeComplexity(query: string): 'low' | 'medium' | 'high' {
   return 'low';
 }
 
-function determineQueryType(query: string): 'simple' | 'complex' | 'mixed' | 'system_data' {
+function determineQueryType(query: string): 'simple' | 'complex' | 'mixed' | 'system_data' | 'memo_generation' | 'document_creation' {
   const systemDataKeywords = ['statistics', 'data', 'report', 'analytics', 'metrics'];
   const simpleKeywords = ['definition', 'meaning', 'what is', 'explain'];
   const complexKeywords = ['analysis', 'recommendation', 'strategy', 'assessment'];
+  const memoKeywords = ['memo', 'مذكرة', 'notice', 'إنذار', 'demand', 'مطالبة', 'write', 'اكتب', 'send', 'أرسل', 'payment', 'دفع', 'tenant', 'مستأجر', 'client', 'عميل'];
+  const documentKeywords = ['create', 'انشئ', 'generate', 'ولد', 'draft', 'مسودة', 'letter', 'خطاب', 'contract', 'عقد'];
 
   const words = query.toLowerCase();
+  
+  // Check for memo generation intent
+  if (memoKeywords.some(keyword => words.includes(keyword))) {
+    // Look for specific memo triggers
+    if (words.includes('payment') || words.includes('دفع') || words.includes('overdue') || words.includes('متأخر') ||
+        words.includes('tenant') || words.includes('مستأجر') || words.includes('rent') || words.includes('ايجار')) {
+      return 'memo_generation';
+    }
+  }
+  
+  // Check for document creation
+  if (documentKeywords.some(keyword => words.includes(keyword))) {
+    return 'document_creation';
+  }
   
   if (systemDataKeywords.some(keyword => words.includes(keyword))) {
     return 'system_data';
@@ -121,7 +146,8 @@ function calculateConfidence(query: string, type: string, complexity: string): n
   return Math.min(Math.max(confidence, 0.1), 1.0);
 }
 
-function determineProcessingStrategy(query: string, type: string, complexity: string): 'cache_first' | 'local_knowledge' | 'ai_analysis' | 'hybrid' {
+function determineProcessingStrategy(query: string, type: string, complexity: string): 'cache_first' | 'local_knowledge' | 'ai_analysis' | 'hybrid' | 'memo_generation' {
+  if (type === 'memo_generation' || type === 'document_creation') return 'memo_generation';
   if (type === 'system_data') return 'cache_first';
   if (complexity === 'low') return 'local_knowledge';
   if (complexity === 'high') return 'ai_analysis';
@@ -131,7 +157,7 @@ function determineProcessingStrategy(query: string, type: string, complexity: st
 function analyzeConversationContext(query: string, history: any[]): {
   conversationStage: 'initial' | 'followup' | 'clarification' | 'deep_dive';
   previousTopics: string[];
-  userIntent: 'consultation' | 'research' | 'document_analysis' | 'compliance';
+  userIntent: 'consultation' | 'research' | 'document_analysis' | 'compliance' | 'memo_generation' | 'legal_action';
 } {
   const conversationStage: 'initial' | 'followup' | 'clarification' | 'deep_dive' = 
     history.length === 0 ? 'initial' : 
@@ -157,8 +183,19 @@ function extractTopics(content: string): string[] {
   return topicKeywords.filter(topic => content.toLowerCase().includes(topic));
 }
 
-function determineUserIntent(query: string, history: any[]): 'consultation' | 'research' | 'document_analysis' | 'compliance' {
+function determineUserIntent(query: string, history: any[]): 'consultation' | 'research' | 'document_analysis' | 'compliance' | 'memo_generation' | 'legal_action' {
   const words = query.toLowerCase();
+  
+  // Check for memo generation intent
+  if (words.includes('memo') || words.includes('مذكرة') || words.includes('notice') || words.includes('إنذار') ||
+      words.includes('write') || words.includes('اكتب') || words.includes('send') || words.includes('أرسل')) {
+    return 'memo_generation';
+  }
+  
+  // Check for legal action intent
+  if (words.includes('action') || words.includes('إجراء') || words.includes('sue') || words.includes('court') || words.includes('محكمة')) {
+    return 'legal_action';
+  }
   
   if (words.includes('compliance') || words.includes('audit')) return 'compliance';
   if (words.includes('document') || words.includes('contract')) return 'document_analysis';
@@ -196,7 +233,8 @@ function estimateResponseTime(strategy: string, complexity: string): number {
     cache_first: 1000,
     local_knowledge: 2000,
     ai_analysis: 5000,
-    hybrid: 3000
+    hybrid: 3000,
+    memo_generation: 4000
   };
   
   const complexityMultiplier = {
@@ -206,4 +244,37 @@ function estimateResponseTime(strategy: string, complexity: string): number {
   };
   
   return baseTimes[strategy as keyof typeof baseTimes] * complexityMultiplier[complexity as keyof typeof complexityMultiplier];
+}
+
+function extractMemoContext(query: string): {
+  targetCustomer?: string;
+  memoType?: 'payment_demand' | 'legal_notice' | 'compliance_warning' | 'contract_breach';
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+} {
+  const words = query.toLowerCase();
+  const context: any = {};
+  
+  // Determine memo type
+  if (words.includes('payment') || words.includes('دفع') || words.includes('rent') || words.includes('ايجار')) {
+    context.memoType = 'payment_demand';
+  } else if (words.includes('breach') || words.includes('violation') || words.includes('انتهاك')) {
+    context.memoType = 'contract_breach';
+  } else if (words.includes('compliance') || words.includes('امتثال')) {
+    context.memoType = 'compliance_warning';
+  } else {
+    context.memoType = 'legal_notice';
+  }
+  
+  // Determine urgency
+  if (words.includes('urgent') || words.includes('عاجل') || words.includes('immediate') || words.includes('فوري')) {
+    context.urgency = 'urgent';
+  } else if (words.includes('overdue') || words.includes('متأخر') || words.includes('late') || words.includes('متأخر')) {
+    context.urgency = 'high';
+  } else if (words.includes('soon') || words.includes('قريب')) {
+    context.urgency = 'medium';
+  } else {
+    context.urgency = 'low';
+  }
+  
+  return context;
 }
