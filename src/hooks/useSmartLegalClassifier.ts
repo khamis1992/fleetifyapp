@@ -13,6 +13,7 @@ export interface SmartQueryClassification {
   };
   processingStrategy: 'cache_first' | 'local_knowledge' | 'ai_analysis' | 'hybrid' | 'memo_generation';
   estimatedResponseTime: number;
+  isStatisticalQuery?: boolean;
   memoContext?: {
     targetCustomer?: string;
     memoType?: 'payment_demand' | 'legal_notice' | 'compliance_warning' | 'contract_breach';
