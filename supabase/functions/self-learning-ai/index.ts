@@ -24,6 +24,20 @@ serve(async (req) => {
     
     console.log('🧠 Self-Learning AI Processing:', { query, context, sessionId, companyId });
 
+    // Check for anti-loop mechanism: detect recent clarification requests for similar queries
+    const recentClarifications = await supabaseClient
+      .from('ai_clarification_sessions')
+      .select('*')
+      .eq('company_id', companyId)
+      .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Last 5 minutes
+      .eq('session_status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    // Analyze conversation context to detect if user is answering a previous question
+    const conversationContext = analyzeConversationContext(query, context);
+    console.log('💬 Conversation context:', conversationContext);
+
     // Step 1: Analyze query against existing learning patterns
     const { data: existingPatterns } = await supabaseClient
       .from('ai_learning_patterns')
@@ -58,21 +72,40 @@ serve(async (req) => {
     const isSimpleQuery = await isQuerySimpleAndClear(query);
     console.log(`🎯 Query is simple and clear: ${isSimpleQuery}`);
 
-    // Step 3: Determine if clarification is needed
-    // Only ask for clarification if:
-    // 1. No patterns exist AND query is not simple/clear
-    // 2. OR similarity is very low AND query is complex
+    // Step 2.6: Check if this is an answer to a previous question
+    const isAnswerToPreviousQuestion = conversationContext.isAnswerToQuestion;
+    console.log(`💡 Is answer to previous question: ${isAnswerToPreviousQuestion}`);
+
+    // Step 3: Enhanced clarification decision with anti-loop protection
     let needsClarification = false;
+    let clarificationReason = '';
     
-    if (existingPatterns && existingPatterns.length === 0) {
-      // No patterns exist - only clarify if query is not simple
-      needsClarification = !isSimpleQuery;
+    // Anti-loop mechanism: Don't ask for clarification if we recently did for similar queries
+    const hasRecentClarification = recentClarifications.data && recentClarifications.data.length > 0;
+    
+    if (hasRecentClarification) {
+      console.log('🚫 Skipping clarification due to recent clarification requests');
+      needsClarification = false;
+      clarificationReason = 'Recently asked for clarification, preventing loop';
+    } else if (isAnswerToPreviousQuestion) {
+      console.log('💭 User is answering a previous question, processing directly');
+      needsClarification = false;
+      clarificationReason = 'User is answering a previous question';
+    } else if (isSimpleQuery) {
+      console.log('✅ Query is simple and clear, processing directly');
+      needsClarification = false;
+      clarificationReason = 'Query is simple and clear';
+    } else if (existingPatterns && existingPatterns.length === 0) {
+      // No patterns exist - only clarify if query is complex and unclear
+      needsClarification = conversationContext.complexityScore > 0.7 && conversationContext.clarityScore < 0.4;
+      clarificationReason = 'No patterns exist and query is complex/unclear';
     } else {
       // Patterns exist - only clarify if similarity is very low AND query is complex
-      needsClarification = highestSimilarity < 0.3 && !isSimpleQuery;
+      needsClarification = highestSimilarity < 0.2 && conversationContext.complexityScore > 0.7;
+      clarificationReason = 'Low pattern similarity and high query complexity';
     }
     
-    console.log(`🤔 Needs clarification: ${needsClarification}, similarity: ${highestSimilarity}, isSimple: ${isSimpleQuery}`);
+    console.log(`🤔 Needs clarification: ${needsClarification}, similarity: ${highestSimilarity}, isSimple: ${isSimpleQuery}, reason: ${clarificationReason}`);
 
     if (needsClarification) {
       // Generate intelligent clarification questions
@@ -297,6 +330,56 @@ async function processWithPattern(query: string, pattern: any, context: any) {
 async function processNewQuery(query: string, context: any) {
   // Enhanced keyword-based processing for common queries
   const normalizedQuery = query.toLowerCase().trim();
+  const conversationHistory = context?.conversationHistory || [];
+  
+  // Check if this is a follow-up response to a previous AI question
+  const lastAIMessage = getLastAIMessage(conversationHistory);
+  const isFollowUpAnswer = checkIfAnswerToQuestion(normalizedQuery, conversationHistory);
+  
+  if (isFollowUpAnswer && lastAIMessage) {
+    // Process follow-up answers based on context
+    if (lastAIMessage.content.includes('العقود النشطة') || lastAIMessage.content.includes('جميع العقود')) {
+      // This is answering a contract count question
+      if (normalizedQuery.includes('جميع') || normalizedQuery.includes('كل')) {
+        return {
+          response: 'حسناً، سأقوم بعرض إجمالي عدد العقود في النظام. للوصول إلى هذه المعلومات، أحتاج للاتصال بقاعدة البيانات. سيتم عرض جميع العقود بما في ذلك النشطة والمنتهية الصلاحية.',
+          intent: 'contract_count_all',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: ['عرض تفاصيل العقود', 'تصنيف العقود حسب الحالة', 'إحصائيات شهرية للعقود']
+        };
+      } else if (normalizedQuery.includes('نشطة') || normalizedQuery.includes('النشطة')) {
+        return {
+          response: 'ممتاز، سأعرض لك العقود النشطة فقط. هذا سيشمل العقود التي لم تنته صلاحيتها وما زالت سارية المفعول.',
+          intent: 'contract_count_active',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: ['عرض تفاصيل العقود النشطة', 'تواريخ انتهاء العقود', 'العقود القريبة من الانتهاء']
+        };
+      }
+    }
+    
+    if (lastAIMessage.content.includes('العملاء النشطين') || lastAIMessage.content.includes('جميع العملاء')) {
+      // This is answering a customer count question
+      if (normalizedQuery.includes('جميع') || normalizedQuery.includes('كل')) {
+        return {
+          response: 'سأعرض لك إجمالي عدد العملاء المسجلين في النظام، بما في ذلك النشطين وغير النشطين.',
+          intent: 'customer_count_all',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: ['قائمة العملاء', 'تقارير العملاء', 'إحصائيات العملاء']
+        };
+      } else if (normalizedQuery.includes('نشط') || normalizedQuery.includes('النشطين')) {
+        return {
+          response: 'سأعرض لك العملاء النشطين فقط الذين لديهم تعاملات حالية مع الشركة.',
+          intent: 'customer_count_active',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: ['تفاصيل العملاء النشطين', 'آخر تعاملات العملاء', 'عقود العملاء النشطة']
+        };
+      }
+    }
+  }
   
   // Arabic keywords for contract/agreement counting
   const contractCountKeywords = ['كم عقد', 'كم اتفاقية', 'عدد العقود', 'عدد الاتفاقيات'];
@@ -308,7 +391,8 @@ async function processNewQuery(query: string, context: any) {
       response: 'لمساعدتك في معرفة عدد العقود، أحتاج للوصول إلى قاعدة البيانات. هل تقصد العقود النشطة فقط أم جميع العقود؟',
       intent: 'contract_count_query',
       confidence: 0.9,
-      usedPattern: false
+      usedPattern: false,
+      adaptiveRecommendations: ['عرض العقود النشطة', 'عرض جميع العقود', 'إحصائيات العقود']
     };
   }
   
@@ -317,7 +401,8 @@ async function processNewQuery(query: string, context: any) {
       response: 'لعرض إحصائيات العملاء، هل تريد معرفة العملاء النشطين أم جميع العملاء المسجلين في النظام؟',
       intent: 'customer_count_query',
       confidence: 0.9,
-      usedPattern: false
+      usedPattern: false,
+      adaptiveRecommendations: ['عرض العملاء النشطين', 'عرض جميع العملاء', 'تقارير العملاء']
     };
   }
 
@@ -446,18 +531,128 @@ async function isQuerySimpleAndClear(query: string): Promise<boolean> {
     /كم\s+(عقد|اتفاقية|عميل|زبون)/,
     /عدد\s+(العقود|الاتفاقيات|العملاء)/,
     /ما\s+عدد/,
+    /جميع\s+(العقود|الاتفاقيات|العملاء)/,
+    /كل\s+(العقود|الاتفاقيات|العملاء)/,
+    /نشطة؟?\s*(فقط)?/,
+    /النشطة\s*(فقط)?/,
     
     // English patterns  
     /how\s+many\s+(contracts?|agreements?|customers?)/,
     /number\s+of\s+(contracts?|agreements?|customers?)/,
     /count\s+(contracts?|agreements?|customers?)/,
+    /all\s+(contracts?|agreements?|customers?)/,
+    /active\s+(contracts?|agreements?|customers?)/,
     
     // Status queries
     /حالة\s+(العقد|الاتفاقية)/,
-    /status\s+of/
+    /status\s+of/,
+    
+    // Simple answers and confirmations
+    /^(نعم|لا|yes|no)$/,
+    /^(جميع|كل|all)$/,
+    /^(النشطة|active)$/
   ];
   
+  // Also consider short responses (likely answers) as simple
+  if (normalizedQuery.length < 20 && normalizedQuery.split(' ').length <= 3) {
+    return true;
+  }
+  
   return simplePatterns.some(pattern => pattern.test(normalizedQuery));
+}
+
+function analyzeConversationContext(query: string, context: any) {
+  const normalizedQuery = query.toLowerCase().trim();
+  const conversationHistory = context?.conversationHistory || [];
+  
+  // Check if this looks like an answer to a previous question
+  const isAnswerToQuestion = checkIfAnswerToQuestion(normalizedQuery, conversationHistory);
+  
+  // Calculate complexity and clarity scores
+  const complexityScore = calculateComplexityScore(query);
+  const clarityScore = calculateClarityScore(query);
+  
+  return {
+    isAnswerToQuestion,
+    complexityScore,
+    clarityScore,
+    conversationLength: conversationHistory.length,
+    recentAIMessage: getLastAIMessage(conversationHistory)
+  };
+}
+
+function checkIfAnswerToQuestion(query: string, conversationHistory: any[]): boolean {
+  if (conversationHistory.length < 2) return false;
+  
+  // Get the last AI message
+  const lastAIMessage = getLastAIMessage(conversationHistory);
+  if (!lastAIMessage) return false;
+  
+  // Check if the last AI message was asking a question
+  const wasQuestion = lastAIMessage.content.includes('?') || 
+                     lastAIMessage.content.includes('هل') ||
+                     lastAIMessage.content.includes('ما') ||
+                     lastAIMessage.content.includes('كم') ||
+                     lastAIMessage.content.includes('أيهما') ||
+                     lastAIMessage.content.includes('أحتاج');
+  
+  if (!wasQuestion) return false;
+  
+  // Check if current query looks like an answer
+  const answerPatterns = [
+    /^(جميع|كل|النشطة|نعم|لا|all|active|yes|no)/,
+    /العقود\s*(النشطة|جميع)?/,
+    /الاتفاقيات\s*(النشطة|جميع)?/,
+    /العملاء\s*(النشطين|جميع)?/
+  ];
+  
+  return answerPatterns.some(pattern => pattern.test(query));
+}
+
+function getLastAIMessage(conversationHistory: any[]) {
+  return conversationHistory
+    .filter(msg => msg.type === 'ai')
+    .slice(-1)[0];
+}
+
+function calculateComplexityScore(query: string): number {
+  let score = 0;
+  
+  // Length factor
+  if (query.length > 100) score += 0.3;
+  else if (query.length > 50) score += 0.2;
+  else if (query.length > 20) score += 0.1;
+  
+  // Word count factor
+  const wordCount = query.split(' ').length;
+  if (wordCount > 10) score += 0.3;
+  else if (wordCount > 5) score += 0.2;
+  
+  // Complex keywords
+  const complexKeywords = ['تفصيلي', 'شامل', 'تحليل', 'مقارنة', 'comprehensive', 'detailed', 'analysis'];
+  if (complexKeywords.some(keyword => query.includes(keyword))) score += 0.4;
+  
+  return Math.min(score, 1.0);
+}
+
+function calculateClarityScore(query: string): number {
+  let score = 1.0;
+  
+  // Reduce score for vague words
+  const vageWords = ['شيء', 'أمر', 'حاجة', 'موضوع', 'thing', 'stuff', 'something'];
+  if (vageWords.some(word => query.includes(word))) score -= 0.4;
+  
+  // Reduce score for questions without specific objects
+  if (query.includes('؟') || query.includes('?')) {
+    const hasSpecificObject = /عقد|اتفاقية|عميل|زبون|contract|agreement|customer/.test(query);
+    if (!hasSpecificObject) score -= 0.3;
+  }
+  
+  // Increase score for clear intent keywords
+  const clearKeywords = ['عدد', 'كم', 'قائمة', 'count', 'list', 'show'];
+  if (clearKeywords.some(keyword => query.includes(keyword))) score += 0.2;
+  
+  return Math.max(score, 0.0);
 }
 
 async function generateFollowUpSuggestions(query: string, responseData: any): Promise<string[]> {
