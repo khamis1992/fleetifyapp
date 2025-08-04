@@ -25,7 +25,7 @@ export const useOptimizedRecentActivities = () => {
         return [];
       }
 
-      // Use optimized single query with joins to avoid N+1 queries
+      // Use optimized query without the problematic foreign key relationship
       const { data: activities, error } = await supabase
         .from('system_logs')
         .select(`
@@ -35,7 +35,7 @@ export const useOptimizedRecentActivities = () => {
           message,
           level,
           created_at,
-          profiles!system_logs_user_id_fkey(first_name, last_name, avatar_url)
+          user_id
         `)
         .eq('company_id', user.profile.company_id)
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())

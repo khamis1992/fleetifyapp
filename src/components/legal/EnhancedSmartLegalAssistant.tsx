@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Send, 
   Mic, 
@@ -113,6 +114,7 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showUnpaidCustomersInterface, setShowUnpaidCustomersInterface] = useState(false);
   
+  const { user, loading: authLoading } = useAuth();
   const { submitUnifiedQuery, isProcessing, error, processingStatus, clearError } = useUnifiedLegalAI();
   const { generateLegalNoticeData } = useUnpaidCustomerSearch();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +138,12 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && uploadedFiles.length === 0) return;
 
+    // Validate user authentication and company access
+    if (!user?.company?.id) {
+      toast.error('خطأ في الصلاحيات: لم يتم العثور على معلومات الشركة');
+      return;
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage || 'ملفات مرفقة للتحليل',
@@ -153,7 +161,8 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
       const queryData: UnifiedLegalQuery = {
         query: currentInput,
         country: 'Kuwait',
-        company_id: 'default-company',
+        company_id: user.company.id,
+        user_id: user.id,
         conversationHistory: messages,
         queryType: activeQueryType === 'auto' ? undefined : activeQueryType,
         files: currentFiles.map(f => f.file),
@@ -429,6 +438,31 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
       default: return 'تلقائي';
     }
   };
+
+  // Show loading state while authentication is in progress
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">جاري تحميل المساعد القانوني...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if user is not authenticated or missing company info
+  if (!user || !user.company?.id) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Alert className="max-w-md">
+          <AlertDescription>
+            عذراً، لا يمكن الوصول إلى المساعد القانوني. يرجى التأكد من تسجيل الدخول وتحديد الشركة.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto">

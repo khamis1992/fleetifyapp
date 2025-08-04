@@ -211,8 +211,8 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
         );
       }
       
-      // For system queries, allow if company_id is 'default-company' or matches user's company
-      if (userPermissions.company_id !== company_id && company_id !== 'default-company') {
+      // For system queries, require valid UUID company_id that matches user's company
+      if (userPermissions.company_id !== company_id) {
         console.error('User permission check failed: Company mismatch', { 
           user_id, 
           expected_company_id: company_id, 
@@ -733,6 +733,21 @@ serve(async (req) => {
           JSON.stringify({ 
             success: false, 
             message: 'Missing required fields: query, country, company_id' 
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Validate company_id is a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(body.company_id)) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Invalid company_id format. Must be a valid UUID.' 
           }),
           {
             status: 400,
