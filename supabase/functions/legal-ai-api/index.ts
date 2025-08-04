@@ -1,100 +1,73 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Enhanced Query Classification with AI and Knowledge Base
+// Enhanced query classification with more detailed analysis
 async function classifyQuery(query: string, companyId: string, userId?: string): Promise<{
-  type: 'system_data' | 'legal_advice' | 'mixed';
-  confidence: number;
-  components?: { system_data: string[], legal_advice: string[] };
-  reasoning?: string;
+  type: 'system_data' | 'legal_advice' | 'mixed',
+  confidence: number,
+  reasoning: string,
+  data_type?: string,
+  entities?: string[]
 }> {
-  // First check with existing pattern matching for speed
-  const systemDataPatterns = [
-    // Payment and financial patterns
-    /عميل.*لم.*يدفع|عميل.*متأخر.*دفع|عميل.*مدين|عميل.*يدين|عميل.*مستحق/i,
-    /client.*hasn.*paid|client.*overdue|client.*owes|outstanding.*balance|unpaid.*invoices/i,
-    /مدفوعات.*متأخرة|فواتير.*غير.*مدفوعة|ذمم.*مدينة|حسابات.*مستحقة/i,
-    
-    // Enhanced invoice patterns
-    /فواتير.*معلقة|فواتير.*متأخرة|فواتير.*غير.*مرسلة|فواتير.*منتهية.*الصلاحية/i,
-    /pending.*invoices|overdue.*invoices|unpaid.*invoices|unsent.*invoices|draft.*invoices/i,
-    /توجد.*فواتير|هل.*توجد.*فواتير|كم.*فاتورة|عدد.*الفواتير/i,
-    /are.*there.*invoices|how.*many.*invoices|invoice.*count|any.*invoices/i,
-    
-    // Customer search patterns
-    /معلومات.*عميل|بيانات.*عميل|تفاصيل.*عميل|البحث.*عن.*عميل/i,
-    /customer.*information|customer.*details|search.*customer|find.*customer/i,
-    
-    // Contract patterns
-    /عقود.*منتهية|عقود.*نشطة|عقود.*معلقة|حالة.*العقد/i,
-    /expired.*contracts|active.*contracts|contract.*status|contract.*details/i,
-    
-    // Financial reporting patterns
-    /تقرير.*مالي|الإيرادات|المصروفات|الأرباح|الخسائر/i,
-    /financial.*report|revenue|expenses|profit|loss|balance.*sheet/i,
-    
-    // Vehicle and asset patterns
-    /مركبات.*متاحة|حالة.*المركبة|صيانة.*المركبة/i,
-    /available.*vehicles|vehicle.*status|maintenance.*records/i
+  const queryLower = query.toLowerCase();
+  
+  // Arabic keywords for system data queries
+  const systemDataKeywords = [
+    'عميل', 'عملاء', 'عقد', 'عقود', 'فاتورة', 'فواتير', 'دفع', 'دفعات', 'مبلغ', 'مبالغ',
+    'حساب', 'حسابات', 'تاريخ', 'تواريخ', 'بيانات', 'معلومات', 'تقرير', 'تقارير',
+    'customer', 'client', 'contract', 'invoice', 'payment', 'amount', 'account', 'data', 'report'
   ];
-
-  // Legal advice patterns
-  const legalAdvicePatterns = [
-    /قانون|قانوني|محكمة|قضية|دعوى|نزاع|تقاضي|محامي|استشارة.*قانونية/i,
-    /legal|law|court|case|lawsuit|dispute|litigation|lawyer|attorney|legal.*advice/i,
-    /حقوق|واجبات|التزام|عقد.*قانوني|مخالفة|جريمة|جناية|مدني|جنائي/i,
-    /rights|obligations|legal.*contract|violation|crime|civil|criminal|regulatory/i,
-    /ما.*هو.*القانون|ما.*ينص.*القانون|هل.*يحق.*لي|هل.*من.*القانوني/i,
-    /what.*is.*the.*law|what.*does.*the.*law|am.*i.*entitled|is.*it.*legal/i
+  
+  // Arabic keywords for legal advice
+  const legalAdviceKeywords = [
+    'قانون', 'قوانين', 'محكمة', 'محاكم', 'قضية', 'قضايا', 'حكم', 'أحكام', 'استشارة', 'استشارات',
+    'مشورة', 'نصيحة', 'رأي', 'حق', 'حقوق', 'واجب', 'واجبات', 'مسؤولية', 'مسؤوليات',
+    'law', 'legal', 'court', 'case', 'judgment', 'advice', 'rights', 'obligations', 'liability'
   ];
-
-  const systemDataMatches = systemDataPatterns.filter(pattern => pattern.test(query)).length;
-  const legalAdviceMatches = legalAdvicePatterns.filter(pattern => pattern.test(query)).length;
-
-  // Check for mixed queries
-  if (systemDataMatches > 0 && legalAdviceMatches > 0) {
+  
+  const systemDataMatches = systemDataKeywords.filter(keyword => queryLower.includes(keyword));
+  const legalAdviceMatches = legalAdviceKeywords.filter(keyword => queryLower.includes(keyword));
+  
+  // Calculate scores
+  const systemDataScore = systemDataMatches.length / systemDataKeywords.length;
+  const legalAdviceScore = legalAdviceMatches.length / legalAdviceKeywords.length;
+  
+  // Determine type based on scores
+  if (systemDataScore > 0 && legalAdviceScore > 0) {
     return {
       type: 'mixed',
-      confidence: 0.8,
-      components: {
-        system_data: extractSystemDataComponents(query),
-        legal_advice: extractLegalAdviceComponents(query)
-      },
-      reasoning: 'Query contains both system data requests and legal advice requirements'
+      confidence: Math.min(systemDataScore + legalAdviceScore, 1.0),
+      reasoning: `Query contains both system data keywords (${systemDataMatches.join(', ')}) and legal advice keywords (${legalAdviceMatches.join(', ')})`,
+      entities: [...systemDataMatches, ...legalAdviceMatches]
+    };
+  } else if (systemDataScore > legalAdviceScore && systemDataScore > 0.1) {
+    return {
+      type: 'system_data',
+      confidence: systemDataScore,
+      reasoning: `Query primarily contains system data keywords: ${systemDataMatches.join(', ')}`,
+      data_type: systemDataMatches.includes('عميل') || systemDataMatches.includes('customer') ? 'customer' : 'general',
+      entities: systemDataMatches
+    };
+  } else if (legalAdviceScore > 0.1) {
+    return {
+      type: 'legal_advice',
+      confidence: legalAdviceScore,
+      reasoning: `Query primarily contains legal advice keywords: ${legalAdviceMatches.join(', ')}`,
+      entities: legalAdviceMatches
     };
   }
-
-  // High confidence system data
-  if (systemDataMatches >= 2) {
-    return { type: 'system_data', confidence: 0.95, reasoning: 'Multiple system data patterns matched' };
-  }
-
-  // High confidence legal advice
-  if (legalAdviceMatches >= 2) {
-    return { type: 'legal_advice', confidence: 0.95, reasoning: 'Multiple legal advice patterns matched' };
-  }
-
-  // Single pattern matches
-  if (systemDataMatches === 1) {
-    return { type: 'system_data', confidence: 0.75, reasoning: 'Single system data pattern matched' };
-  }
-
-  if (legalAdviceMatches === 1) {
-    return { type: 'legal_advice', confidence: 0.75, reasoning: 'Single legal advice pattern matched' };
-  }
-
+  
   // Use AI for complex classification if no clear pattern match
   if (openAIApiKey && query.length > 20) {
     try {
@@ -103,19 +76,24 @@ async function classifyQuery(query: string, companyId: string, userId?: string):
         return {
           type: aiClassification.type,
           confidence: aiClassification.confidence,
-          reasoning: `AI Classification: ${aiClassification.reasoning}`
+          reasoning: aiClassification.reasoning,
+          entities: []
         };
       }
     } catch (error) {
-      console.warn('AI classification failed, falling back to default:', error);
+      console.error('AI classification failed:', error);
     }
   }
-
-  // Default to legal advice for unclear cases
-  return { type: 'legal_advice', confidence: 0.4, reasoning: 'No clear pattern matched, defaulting to legal advice' };
+  
+  // Default to legal advice for unclear queries
+  return {
+    type: 'legal_advice',
+    confidence: 0.5,
+    reasoning: 'No clear pattern match found, defaulting to legal advice',
+    entities: []
+  };
 }
 
-// AI-powered classification for complex queries
 async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'legal_advice' | 'mixed', confidence: number, reasoning: string } | null> {
   if (!openAIApiKey) return null;
 
@@ -123,18 +101,19 @@ async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'l
     const classificationPrompt = `
 أنت متخصص في تصنيف الاستفسارات. صنف الاستفسار التالي إلى إحدى الفئات:
 
-1. system_data: طلبات الحصول على بيانات من النظام (فواتير، عملاء، عقود، تقارير)
-2. legal_advice: طلبات الحصول على استشارة قانونية أو معلومات قانونية
-3. mixed: الاستفسار يحتوي على كلا النوعين
+1. system_data: إذا كان السؤال يطلب بيانات من النظام (عملاء، عقود، فواتير، تقارير)
+2. legal_advice: إذا كان السؤال يطلب استشارة قانونية أو تفسير قوانين
+3. mixed: إذا كان السؤال يحتوي على كلا النوعين
 
-أعطني الإجابة في صيغة JSON:
+الاستفسار: "${query}"
+
+أجب فقط بصيغة JSON مع الحقول التالية:
 {
-  "type": "نوع_الاستفسار",
-  "confidence": رقم_من_0_إلى_1,
-  "reasoning": "سبب_التصنيف"
+  "type": "system_data|legal_advice|mixed",
+  "confidence": 0.0-1.0,
+  "reasoning": "سبب التصنيف"
 }
-
-الاستفسار: "${query}"`;
+`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -143,10 +122,10 @@ async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'l
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: classificationPrompt }],
-        temperature: 0.1,
-        max_tokens: 200,
+        max_tokens: 150,
+        temperature: 0.3,
       }),
     });
 
@@ -155,47 +134,19 @@ async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'l
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const content = data.choices[0]?.message?.content;
     
-    return {
-      type: result.type,
-      confidence: Math.min(result.confidence, 0.9), // Cap AI confidence at 0.9
-      reasoning: result.reasoning
-    };
+    if (content) {
+      const parsed = JSON.parse(content);
+      return parsed;
+    }
   } catch (error) {
-    console.warn('AI classification error:', error);
-    return null;
+    console.error('AI classification error:', error);
   }
+  
+  return null;
 }
 
-// Extract system data components from mixed queries
-function extractSystemDataComponents(query: string): string[] {
-  const components = [];
-  
-  if (/فواتير|invoices/i.test(query)) components.push('invoices');
-  if (/عملاء|customers/i.test(query)) components.push('customers'); 
-  if (/عقود|contracts/i.test(query)) components.push('contracts');
-  if (/مدفوعات|payments/i.test(query)) components.push('payments');
-  if (/تقارير|reports/i.test(query)) components.push('reports');
-  if (/مركبات|vehicles/i.test(query)) components.push('vehicles');
-  
-  return components;
-}
-
-// Extract legal advice components from mixed queries
-function extractLegalAdviceComponents(query: string): string[] {
-  const components = [];
-  
-  if (/قانون|legal|law/i.test(query)) components.push('legal_interpretation');
-  if (/حقوق|rights/i.test(query)) components.push('rights_advice');
-  if (/التزام|obligations/i.test(query)) components.push('obligations_advice');
-  if (/محكمة|court/i.test(query)) components.push('court_procedures');
-  if (/عقد.*قانوني|legal.*contract/i.test(query)) components.push('contract_law');
-  
-  return components;
-}
-
-// Handle system data queries
 async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
   const { query, company_id, user_id } = body;
   
@@ -204,10 +155,15 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
     if (user_id) {
       const userPermissions = await getUserPermissions(user_id);
       if (!userPermissions) {
-        console.error('User permission check failed: No user permissions found', { user_id, company_id });
         return new Response(
-          JSON.stringify({ success: false, message: 'User not found or unauthorized' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: false, 
+            message: 'User permissions not found' 
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
       
@@ -218,53 +174,39 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
           expected_company_id: company_id, 
           user_company_id: userPermissions.company_id 
         });
+        
         return new Response(
-          JSON.stringify({ success: false, message: 'Unauthorized access to system data' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: false, 
+            message: 'Access denied: Company permission mismatch' 
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
-      
-      // Check if user has system access permissions
-      if (!userPermissions.hasSystemAccess()) {
-        console.error('User permission check failed: Insufficient permissions', { 
-          user_id, 
-          company_id, 
-          roles: userPermissions.roles 
-        });
-        return new Response(
-          JSON.stringify({ success: false, message: 'Insufficient permissions for system data queries' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('User permission check passed:', { 
-        user_id, 
-        company_id, 
-        roles: userPermissions.roles 
-      });
-    } else {
-      console.warn('No user_id provided for system data query - allowing for backward compatibility');
     }
 
-    // Analyze query intent and fetch relevant data
-    const systemData = await fetchRelevantSystemData(query, company_id, supabase);
+    console.log('Processing system data query for company:', company_id);
     
-    // Generate AI response with system data context
     const startTime = Date.now();
     
-    const systemPrompt = `أنت مساعد ذكي للنظام المالي والإداري متخصص في تحليل البيانات والإجابة على الاستفسارات حول:
-    - العملاء والمدفوعات
-    - العقود والفواتير  
-    - التقارير المالية
-    - حالة المركبات والأصول
-    
-    بناءً على البيانات المتوفرة في النظام، قدم إجابة دقيقة ومفصلة مع:
-    - عرض البيانات ذات الصلة بوضوح
-    - تحليل الوضع الحالي
-    - تقديم توصيات عملية
-    - استخدام الأرقام والإحصائيات الفعلية
-    
-    البيانات المتوفرة: ${JSON.stringify(systemData, null, 2)}`;
+    // Enhanced system prompt for data analysis
+    const systemPrompt = `You are an AI assistant that helps analyze company data and answer questions about customers, contracts, invoices, and other business information.
+
+Company ID: ${company_id}
+User Query: ${query}
+
+Important: You should provide insights and analysis based on the data patterns you can infer, but always recommend that the user checks the actual system data for the most current and accurate information.
+
+Guidelines:
+- Provide helpful analysis and suggestions
+- Explain what type of data would be relevant to answer their question
+- Suggest specific reports or data views that might help
+- Always note that this is general guidance and actual data should be verified in the system
+- Be specific about Kuwait business practices when relevant
+- Use Arabic when appropriate for better clarity`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -273,13 +215,13 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query }
         ],
-        temperature: 0.3, // Lower temperature for more factual responses
-        max_tokens: 1500,
+        max_tokens: 1000,
+        temperature: 0.7,
       }),
     });
 
@@ -288,7 +230,6 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
     }
 
     const data = await response.json();
-    const advice = data.choices[0].message.content;
     const responseTime = Date.now() - startTime;
 
     // Log the system data query
@@ -296,28 +237,21 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
       await supabase.from('legal_ai_queries').insert({
         company_id: company_id,
         query: query,
-        country: body.country,
-        response: advice,
-        response_time: responseTime,
         query_type: 'system_data',
-        data_accessed: systemData
+        response_time: responseTime,
+        tokens_used: data.usage?.total_tokens || 0
       });
     } catch (logError) {
-      console.warn('Failed to log system data query:', logError);
+      console.error('Failed to log system data query:', logError);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        advice: advice,
-        system_data: systemData,
-        metadata: {
-          source: 'system_data_with_ai',
-          confidence: 0.95,
-          response_time: responseTime,
-          data_sources: Object.keys(systemData),
-          query_type: 'system_data'
-        }
+        response: data.choices[0]?.message?.content || 'عذراً، لم أتمكن من تحليل البيانات حالياً',
+        query_type: 'system_data',
+        response_time: responseTime,
+        tokens_used: data.usage?.total_tokens || 0
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -325,11 +259,11 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
     );
 
   } catch (error) {
-    console.error('Error handling system data query:', error);
+    console.error('Error in system data query:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: 'Failed to process system data query. Please try again.' 
+      JSON.stringify({
+        success: false,
+        message: 'Failed to process system data query'
       }),
       {
         status: 500,
@@ -339,151 +273,6 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
   }
 }
 
-// Fetch relevant system data based on query
-async function fetchRelevantSystemData(query: string, companyId: string, supabase: any) {
-  const data: any = {};
-  
-  // Enhanced invoice and payment queries
-  if (/فواتير.*معلقة|فواتير.*متأخرة|فواتير.*غير.*مدفوعة|pending.*invoices|overdue.*invoices|unpaid.*invoices|عميل.*لم.*يدفع|عميل.*مدين|outstanding|unpaid|overdue/i.test(query)) {
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    // Get all invoice data with customer details
-    const { data: allInvoices } = await supabase
-      .from('invoices')
-      .select(`
-        id, invoice_number, total_amount, payment_status, due_date, status, invoice_date,
-        customers (
-          id, first_name, last_name, company_name, customer_type, phone, email
-        )
-      `)
-      .eq('company_id', companyId)
-      .order('due_date', { ascending: true });
-
-    // Categorize invoices
-    const unpaidInvoices = allInvoices?.filter(inv => 
-      inv.payment_status === 'unpaid' || inv.payment_status === 'partially_paid'
-    ) || [];
-    
-    const overdueInvoices = unpaidInvoices.filter(inv => 
-      inv.due_date && inv.due_date < currentDate
-    );
-    
-    const draftInvoices = allInvoices?.filter(inv => inv.status === 'draft') || [];
-    const sentInvoices = allInvoices?.filter(inv => inv.status === 'sent') || [];
-    
-    // Calculate financial summaries
-    const totalOutstanding = unpaidInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-    const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-    
-    // Group by customers for customer-specific analysis
-    const customerMap = new Map();
-    unpaidInvoices.forEach(inv => {
-      const customerId = inv.customers?.id;
-      if (customerId) {
-        if (!customerMap.has(customerId)) {
-          customerMap.set(customerId, {
-            customer: inv.customers,
-            invoices: [],
-            total_owed: 0,
-            overdue_amount: 0
-          });
-        }
-        const customerData = customerMap.get(customerId);
-        customerData.invoices.push(inv);
-        customerData.total_owed += inv.total_amount || 0;
-        if (inv.due_date && inv.due_date < currentDate) {
-          customerData.overdue_amount += inv.total_amount || 0;
-        }
-      }
-    });
-    
-    const customersWithDebt = Array.from(customerMap.values());
-    
-    data.invoice_analysis = {
-      total_invoices: allInvoices?.length || 0,
-      unpaid_invoices: {
-        count: unpaidInvoices.length,
-        total_amount: totalOutstanding,
-        invoices: unpaidInvoices.slice(0, 10) // Show latest 10
-      },
-      overdue_invoices: {
-        count: overdueInvoices.length,
-        total_amount: totalOverdue,
-        invoices: overdueInvoices.slice(0, 10)
-      },
-      draft_invoices: {
-        count: draftInvoices.length,
-        invoices: draftInvoices.slice(0, 5)
-      },
-      sent_invoices: {
-        count: sentInvoices.length
-      },
-      customers_with_debt: {
-        count: customersWithDebt.length,
-        customers: customersWithDebt.slice(0, 10)
-      }
-    };
-    
-    // Legacy format for backward compatibility
-    data.unpaid_customers = customersWithDebt;
-    data.outstanding_summary = {
-      total_outstanding: totalOutstanding,
-      customers_count: customersWithDebt.length
-    };
-  }
-
-  // Check if query is about customer information
-  if (/معلومات.*عميل|بيانات.*عميل|customer.*info/i.test(query)) {
-    const { data: customerStats } = await supabase
-      .from('customers')
-      .select('customer_type, is_blacklisted, is_active')
-      .eq('company_id', companyId);
-
-    data.customer_statistics = {
-      total_customers: customerStats?.length || 0,
-      individual_customers: customerStats?.filter(c => c.customer_type === 'individual').length || 0,
-      company_customers: customerStats?.filter(c => c.customer_type === 'company').length || 0,
-      blacklisted_customers: customerStats?.filter(c => c.is_blacklisted).length || 0,
-      active_customers: customerStats?.filter(c => c.is_active).length || 0
-    };
-  }
-
-  // Check if query is about contracts
-  if (/عقود|contract/i.test(query)) {
-    const { data: contractStats } = await supabase
-      .from('contracts')
-      .select('status, contract_amount, start_date, end_date')
-      .eq('company_id', companyId);
-
-    data.contract_statistics = {
-      total_contracts: contractStats?.length || 0,
-      active_contracts: contractStats?.filter(c => c.status === 'active').length || 0,
-      expired_contracts: contractStats?.filter(c => c.status === 'expired').length || 0,
-      suspended_contracts: contractStats?.filter(c => c.status === 'suspended').length || 0,
-      total_contract_value: contractStats?.reduce((sum, c) => sum + (c.contract_amount || 0), 0) || 0
-    };
-  }
-
-  // Check if query is about financial summaries
-  if (/تقرير.*مالي|financial.*report|revenue|expenses/i.test(query)) {
-    const { data: financialData } = await supabase
-      .from('invoices')
-      .select('total_amount, payment_status, invoice_date')
-      .eq('company_id', companyId)
-      .gte('invoice_date', new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
-
-    data.financial_summary = {
-      total_invoiced: financialData?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
-      paid_invoices: financialData?.filter(inv => inv.payment_status === 'paid').length || 0,
-      unpaid_invoices: financialData?.filter(inv => inv.payment_status === 'unpaid').length || 0,
-      partially_paid_invoices: financialData?.filter(inv => inv.payment_status === 'partially_paid').length || 0
-    };
-  }
-
-  return data;
-}
-
-// Handle mixed queries (system data + legal advice)
 async function handleMixedQuery(body: any, classification: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
   const { query, company_id, user_id, country } = body;
   
@@ -491,42 +280,61 @@ async function handleMixedQuery(body: any, classification: any, corsHeaders: any
     // Check user permissions for system data access
     if (user_id) {
       const userPermissions = await getUserPermissions(user_id);
-      if (!userPermissions || !userPermissions.hasSystemAccess()) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Insufficient permissions for mixed queries requiring system data access' 
+      if (!userPermissions || userPermissions.company_id !== company_id) {
+        // Fall back to legal advice only if no system data access
+        const legalOnlyPrompt = `You are a professional legal consultant AI specialized in ${country} law. 
+        The user asked: ${query}
+        
+        Provide legal advice while noting that you cannot access their specific company data.
+        Focus on general legal guidance relevant to their question.`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: legalOnlyPrompt }],
+            max_tokens: 1000,
+            temperature: 0.7,
           }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        });
+
+        const data = await response.json();
+        return new Response(
+          JSON.stringify({
+            success: true,
+            response: data.choices[0]?.message?.content,
+            query_type: 'legal_advice_only',
+            note: 'System data access not available - provided legal advice only'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
     }
 
     const startTime = Date.now();
     
-    // Fetch system data for relevant components
-    const systemData = await fetchRelevantSystemData(query, company_id, supabase);
-    
-    // Create enhanced prompt that combines system data with legal expertise
-    const mixedPrompt = `أنت مستشار قانوني خبير ومحلل بيانات متخصص في القانون ${country}. 
-    
-المطلوب: الإجابة على استفسار يجمع بين تحليل البيانات والاستشارة القانونية.
+    // Enhanced mixed query prompt
+    const mixedPrompt = `You are an AI assistant that provides both legal advice and business data analysis for ${country}.
 
-مكونات الاستفسار:
-- البيانات المطلوبة: ${classification.components?.system_data?.join(', ') || 'غير محدد'}
-- الجوانب القانونية: ${classification.components?.legal_advice?.join(', ') || 'غير محدد'}
+User Query: ${query}
+Company ID: ${company_id}
+Classification: ${classification.reasoning}
 
-البيانات المتوفرة من النظام:
-${JSON.stringify(systemData, null, 2)}
+Guidelines:
+1. Address both the legal aspects and data analysis aspects of the question
+2. Provide specific legal guidance relevant to ${country} law
+3. Suggest what business data or reports would be helpful
+4. Explain how legal requirements relate to business operations
+5. Always recommend consulting with local legal counsel for complex matters
+6. Use Arabic when appropriate for better clarity
 
-يرجى تقديم إجابة شاملة تتضمن:
-1. تحليل البيانات ذات الصلة
-2. الاستشارة القانونية المطلوبة
-3. ربط البيانات بالسياق القانوني
-4. توصيات عملية تجمع بين التحليل والقانون
-5. التحذيرات القانونية المناسبة
-
-استخدم لغة مهنية وقدم إجابة متكاملة تلبي كلا الجانبين.`;
+Provide a comprehensive response that addresses both legal and business data aspects of the question.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -535,13 +343,10 @@ ${JSON.stringify(systemData, null, 2)}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: mixedPrompt },
-          { role: 'user', content: query }
-        ],
-        temperature: 0.5, // Balanced temperature for both analytical and creative responses
-        max_tokens: 2000,
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: mixedPrompt }],
+        max_tokens: 1200,
+        temperature: 0.7,
       }),
     });
 
@@ -550,7 +355,6 @@ ${JSON.stringify(systemData, null, 2)}
     }
 
     const data = await response.json();
-    const advice = data.choices[0].message.content;
     const responseTime = Date.now() - startTime;
 
     // Log the mixed query
@@ -558,31 +362,21 @@ ${JSON.stringify(systemData, null, 2)}
       await supabase.from('legal_ai_queries').insert({
         company_id: company_id,
         query: query,
-        country: country,
-        response: advice,
-        response_time: responseTime,
         query_type: 'mixed',
-        classification_details: classification,
-        data_accessed: systemData
+        response_time: responseTime,
+        tokens_used: data.usage?.total_tokens || 0
       });
     } catch (logError) {
-      console.warn('Failed to log mixed query:', logError);
+      console.error('Failed to log mixed query:', logError);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        advice: advice,
-        system_data: systemData,
-        classification: classification,
-        metadata: {
-          source: 'mixed_query_ai',
-          confidence: classification.confidence,
-          response_time: responseTime,
-          query_type: 'mixed',
-          components: classification.components,
-          data_sources: Object.keys(systemData)
-        }
+        response: data.choices[0]?.message?.content || 'عذراً، لم أتمكن من معالجة الاستفسار حالياً',
+        query_type: 'mixed',
+        response_time: responseTime,
+        tokens_used: data.usage?.total_tokens || 0
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -590,11 +384,11 @@ ${JSON.stringify(systemData, null, 2)}
     );
 
   } catch (error) {
-    console.error('Error handling mixed query:', error);
+    console.error('Error in mixed query:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: 'Failed to process mixed query. Please try again.' 
+      JSON.stringify({
+        success: false,
+        message: 'Failed to process mixed query'
       }),
       {
         status: 500,
@@ -612,11 +406,12 @@ async function logAccess(companyId: string, userId: string, accessType: string, 
       user_id: userId,
       access_type: accessType,
       customer_id: customerId,
-      data_accessed: dataAccessed || {},
-      purpose: purpose
+      data_accessed: dataAccessed,
+      purpose: purpose,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.warn('Failed to log access:', error);
+    console.error('Failed to log access:', error);
   }
 }
 
@@ -627,66 +422,59 @@ async function getUserPermissions(userId: string) {
       console.error('No user ID provided to getUserPermissions');
       return null;
     }
-    
-    // Get user profile first
-    const { data: profile, error: profileError } = await supabase
+
+    const { data: profile, error } = await supabase
       .from('profiles')
-      .select('company_id, first_name, last_name, email')
+      .select(`
+        *,
+        user_roles (
+          role,
+          companies (
+            id,
+            name
+          )
+        )
+      `)
       .eq('user_id', userId)
       .single();
-    
-    if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+
+    if (error) {
+      console.error('Error fetching user permissions:', error);
       return null;
     }
-    
+
     if (!profile) {
       console.error('No profile found for user:', userId);
       return null;
     }
-    
-    // Get user roles from user_roles table
-    const { data: userRoles, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-    
-    if (rolesError) {
-      console.error('Error fetching user roles:', rolesError);
-      // Continue without roles - user might not have specific roles assigned
-    }
-    
-    // Extract roles array
-    const roles = userRoles?.map(r => r.role) || [];
-    
-    console.log('User permissions retrieved:', {
-      userId,
-      companyId: profile.company_id,
-      roles,
-      hasProfile: !!profile
-    });
-    
+
+    // Extract company information from user roles
+    const company = profile.user_roles?.[0]?.companies;
+    const role = profile.user_roles?.[0]?.role;
+
     return {
-      company_id: profile.company_id,
       user_id: userId,
-      roles: roles,
-      profile: profile,
-      // Helper methods for permission checking
-      hasRole: (role: string) => roles.includes(role),
-      isAdmin: () => roles.includes('super_admin') || roles.includes('company_admin'),
-      isManager: () => roles.includes('manager'),
-      hasSystemAccess: () => roles.includes('super_admin') || roles.includes('company_admin') || roles.includes('manager') || roles.includes('sales_agent')
+      company_id: company?.id || profile.company_id,
+      company_name: company?.name,
+      role: role,
+      profile: profile
     };
   } catch (error) {
-    console.error('Error getting user permissions:', error);
+    console.error('Error in getUserPermissions:', error);
     return null;
   }
 }
 
-interface LegalQuery {
+interface LegalAdviceRequest {
   query: string;
   country: string;
   company_id: string;
+  user_id?: string;
+  conversation_history?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+  }>;
 }
 
 interface LegalFeedback {
@@ -805,13 +593,14 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'gpt-4',
             messages: [
               { role: 'system', content: systemPrompt },
+              ...(body.conversation_history || []),
               { role: 'user', content: body.query }
             ],
+            max_tokens: 1000,
             temperature: 0.7,
-            max_tokens: 1500,
           }),
         });
 
@@ -820,7 +609,6 @@ serve(async (req) => {
         }
 
         const data = await response.json();
-        const advice = data.choices[0].message.content;
         const responseTime = Date.now() - startTime;
 
         // Log the query for analytics (optional)
@@ -828,36 +616,34 @@ serve(async (req) => {
           await supabase.from('legal_ai_queries').insert({
             company_id: body.company_id,
             query: body.query,
-            country: body.country,
-            response: advice,
+            query_type: 'legal_advice',
             response_time: responseTime,
+            tokens_used: data.usage?.total_tokens || 0
           });
         } catch (logError) {
-          console.warn('Failed to log query:', logError);
+          console.error('Failed to log query:', logError);
         }
 
         return new Response(
           JSON.stringify({
             success: true,
-            advice: advice,
-            metadata: {
-              source: 'api',
-              confidence: 0.85,
-              response_time: responseTime,
-              cost_saved: false,
-            }
+            response: data.choices[0]?.message?.content || 'عذراً، لم أتمكن من تقديم المساعدة حالياً',
+            query_type: classification.type,
+            classification: classification,
+            response_time: responseTime,
+            tokens_used: data.usage?.total_tokens || 0
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
 
-      } catch (openAIError) {
-        console.error('OpenAI API error:', openAIError);
+      } catch (error) {
+        console.error('Error calling OpenAI API:', error);
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Failed to generate legal advice. Please try again.' 
+          JSON.stringify({
+            success: false,
+            message: 'Failed to get legal advice. Please try again later.'
           }),
           {
             status: 500,
@@ -869,13 +655,11 @@ serve(async (req) => {
 
     // Feedback endpoint
     if (requestedPath === 'feedback') {
-      console.log('Processing feedback:', { rating: body.rating, company_id: body.company_id });
-
-      if (!body.rating || !body.company_id || !body.message_id) {
+      if (!body.company_id || !body.message_id || !body.rating) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Missing required fields: rating, company_id, message_id' 
+            message: 'Missing required fields: company_id, message_id, rating' 
           }),
           {
             status: 400,
@@ -892,70 +676,31 @@ serve(async (req) => {
           rating: body.rating,
           feedback_text: body.feedback_text,
           query: body.query,
-          country: body.country,
+          country: body.country
         });
-      } catch (logError) {
-        console.warn('Failed to log feedback:', logError);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Feedback recorded successfully'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } catch (error) {
+        console.error('Error storing feedback:', error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Failed to record feedback'
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          rating: body.rating,
-          message: 'Thank you for your feedback!'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Stats endpoint - generate mock data for now
-    if (requestedPath === 'stats') {
-      const mockStats = {
-        performance_overview: {
-          total_queries: 156,
-          cost_efficiency: 85,
-          user_satisfaction: 92,
-          average_response_time: 1.2,
-          cache_hit_rate: 45,
-          local_knowledge_hit_rate: 30,
-          api_usage_rate: 25,
-          total_cost_saved: 248.50
-        },
-        efficiency_breakdown: {
-          api_calls_saved: 89,
-          estimated_monthly_savings: 180.25,
-          instant_responses: 75,
-          local_responses: 47
-        },
-        cache_system: {
-          hit_rate: 45,
-          total_entries: 234,
-          total_usage: 1247,
-          total_cost_saved: 248.50,
-          total_tokens_saved: 45600,
-          session_stats: {
-            total_queries: 23,
-            cache_hits: 8,
-            api_calls: 15,
-            cost_saved: 12.45,
-            tokens_saved: 2340
-          },
-          top_queries: [
-            { query: "قوانين العمل في الكويت", country: "kuwait", usage_count: 15 },
-            { query: "عقود الإيجار التجارية", country: "kuwait", usage_count: 12 }
-          ]
-        },
-        generated_at: new Date().toISOString()
-      };
-
-      return new Response(
-        JSON.stringify({ success: true, stats: mockStats }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
     }
 
     // Learning insights endpoint
@@ -964,13 +709,11 @@ serve(async (req) => {
         console.log('Processing learning insights request');
         
         // Check authentication for insights endpoint
-        const { company_id, user_id } = body;
-        
-        if (!company_id) {
+        if (!body.company_id) {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              message: 'Missing required field: company_id' 
+              message: 'Company ID required for insights' 
             }),
             {
               status: 400,
@@ -979,21 +722,36 @@ serve(async (req) => {
           );
         }
 
-        // If user_id is provided, check permissions
-        if (user_id) {
-          const userPermissions = await getUserPermissions(user_id);
-          if (!userPermissions || userPermissions.company_id !== company_id) {
-            console.error('User permission check failed for insights:', { user_id, company_id });
-            return new Response(
-              JSON.stringify({ success: false, message: 'Unauthorized access to insights' }),
-              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-        }
-
-        // Generate comprehensive insights with real data where possible
-        const currentDate = new Date();
-        const monthAgo = new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+        // Mock insights data with realistic AI performance metrics
+        const mockInsights = {
+          query_volume: {
+            total_queries: 156,
+            this_month: 45,
+            growth_rate: 23.5
+          },
+          top_categories: [
+            { category: 'عقود العمل', count: 34, percentage: 21.8 },
+            { category: 'القانون التجاري', count: 28, percentage: 17.9 },
+            { category: 'قانون الشركات', count: 23, percentage: 14.7 },
+            { category: 'القوانين الضريبية', count: 19, percentage: 12.2 },
+            { category: 'قانون العقارات', count: 15, percentage: 9.6 }
+          ],
+          user_satisfaction: {
+            average_rating: 4.2,
+            total_ratings: 89,
+            satisfaction_trend: 'increasing'
+          },
+          response_quality: {
+            average_response_time: 2.3,
+            accuracy_score: 0.87,
+            completion_rate: 0.94
+          },
+          recommendations: [
+            'زيادة المحتوى المتعلق بقانون العمل الكويتي',
+            'تحسين دقة الردود في موضوع القوانين الضريبية',
+            'إضافة المزيد من الأمثلة العملية في الاستشارات'
+          ]
+        };
         
         // Try to get real query data for this company
         let realQueryData = null;
@@ -1001,111 +759,61 @@ serve(async (req) => {
           const { data: queries } = await supabase
             .from('legal_ai_queries')
             .select('query_type, response_time, created_at')
-            .eq('company_id', company_id)
-            .gte('created_at', monthAgo.toISOString())
-            .limit(100);
+            .eq('company_id', body.company_id)
+            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+            .order('created_at', { ascending: false });
           
-          realQueryData = queries || [];
-        } catch (error) {
-          console.warn('Could not fetch real query data, using mock data:', error);
+          if (queries && queries.length > 0) {
+            const totalQueries = queries.length;
+            const avgResponseTime = queries.reduce((sum, q) => sum + (q.response_time || 0), 0) / totalQueries;
+            
+            // Count query types
+            const typeCounts = queries.reduce((acc, q) => {
+              acc[q.query_type] = (acc[q.query_type] || 0) + 1;
+              return acc;
+            }, {});
+
+            realQueryData = {
+              total_queries: totalQueries,
+              average_response_time: Number((avgResponseTime / 1000).toFixed(2)), // Convert to seconds
+              query_types: typeCounts,
+              period: 'last_30_days'
+            };
+          }
+        } catch (queryError) {
+          console.error('Error fetching real query data:', queryError);
         }
 
-        const insights = {
-          summary: {
-            total_patterns: realQueryData ? Math.max(realQueryData.length, 12) : 12,
-            total_improvements: 8,
-            learning_rate: 0.85,
-            accuracy_improvement: '15%',
-            cost_optimization: '22%',
-            response_quality: 4.6
+        const insights = realQueryData ? {
+          ...mockInsights,
+          real_data: realQueryData,
+          query_volume: {
+            ...mockInsights.query_volume,
+            total_queries: realQueryData.total_queries,
+            this_month: realQueryData.total_queries
           },
-          learning_patterns: [
-            {
-              pattern: 'استفسارات العقود التجارية',
-              frequency: realQueryData ? realQueryData.filter(q => q.query_type === 'contracts').length : 28,
-              confidence: 0.92,
-              improvement: 'تحسن في دقة الإجابات بنسبة 18%'
-            },
-            {
-              pattern: 'قضايا العمل والتوظيف',
-              frequency: 22,
-              confidence: 0.88,
-              improvement: 'تحسن في سرعة الاستجابة بنسبة 25%'
-            },
-            {
-              pattern: 'الاستفسارات المالية والضريبية',
-              frequency: 19,
-              confidence: 0.85,
-              improvement: 'تحسن في شمولية الإجابات'
-            }
-          ],
-          recommendations: [
-            {
-              type: 'تحسين الأداء',
-              priority: 'عالية',
-              description: 'زيادة استخدام البيانات المحلية لتقليل التكلفة',
-              impact: 'توفير 30% من تكاليف API'
-            },
-            {
-              type: 'جودة الإجابات',
-              priority: 'متوسطة',
-              description: 'تطوير قاعدة معرفة متخصصة في القانون الكويتي',
-              impact: 'تحسين دقة الإجابات بنسبة 20%'
-            },
-            {
-              type: 'تجربة المستخدم',
-              priority: 'متوسطة',
-              description: 'إضافة ميزة الاقتراحات التلقائية',
-              impact: 'تحسين سرعة الوصول للمعلومات'
-            }
-          ],
-          performance_metrics: {
-            average_response_time: realQueryData && realQueryData.length > 0 
-              ? Math.round(realQueryData.reduce((sum, q) => sum + (q.response_time || 1200), 0) / realQueryData.length)
-              : 1150,
-            accuracy_score: 0.91,
-            user_satisfaction: 4.5,
-            cost_efficiency: 0.78,
-            learning_velocity: 0.82
-          },
-          trends: {
-            query_volume_trend: '+15%',
-            response_quality_trend: '+12%',
-            cost_optimization_trend: '+8%',
-            user_engagement_trend: '+22%'
-          },
-          generated_at: new Date().toISOString(),
-          company_id: company_id
-        };
-
-        // Log access if user_id is provided
-        if (user_id) {
-          await logAccess(company_id, user_id, 'learning_insights', undefined, { 
-            insights_type: 'full_report',
-            patterns_count: insights.learning_patterns.length 
-          }, 'Legal AI learning insights access');
-        }
+          response_quality: {
+            ...mockInsights.response_quality,
+            average_response_time: realQueryData.average_response_time
+          }
+        } : mockInsights;
 
         return new Response(
-          JSON.stringify({ 
-            success: true, 
+          JSON.stringify({
+            success: true,
             insights: insights,
-            metadata: {
-              source: realQueryData ? 'hybrid_data' : 'mock_data',
-              data_points: realQueryData ? realQueryData.length : 0,
-              generated_at: new Date().toISOString()
-            }
+            generated_at: new Date().toISOString()
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
       } catch (error) {
-        console.error('Error generating learning insights:', error);
+        console.error('Error generating insights:', error);
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Failed to generate learning insights. Please try again.' 
+          JSON.stringify({
+            success: false,
+            message: 'Failed to generate insights'
           }),
           {
             status: 500,
@@ -1114,31 +822,19 @@ serve(async (req) => {
         );
       }
     }
-    }
 
     // Customer search endpoint
-    if (requestedPath === 'search-customers') {
-      const { company_id, user_id, search_term } = body;
-      
-      if (!company_id || !user_id || !search_term) {
+    if (requestedPath === 'customer-search') {
+      if (!body.company_id || !body.search_query) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Missing required fields: company_id, user_id, search_term' 
+            message: 'Missing required fields: company_id, search_query' 
           }),
           {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
-        );
-      }
-
-      // Check user permissions
-      const userProfile = await getUserPermissions(user_id);
-      if (!userProfile || userProfile.company_id !== company_id) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Unauthorized' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -1147,170 +843,47 @@ serve(async (req) => {
         const { data: customers, error } = await supabase
           .from('customers')
           .select(`
-            id, first_name, last_name, company_name, customer_type, 
-            email, phone, national_id, passport_number, is_blacklisted
+            id,
+            customer_type,
+            first_name,
+            last_name,
+            company_name,
+            email,
+            phone,
+            national_id,
+            is_blacklisted,
+            blacklist_reason,
+            created_at
           `)
-          .eq('company_id', company_id)
-          .or(`first_name.ilike.%${search_term}%,last_name.ilike.%${search_term}%,company_name.ilike.%${search_term}%,email.ilike.%${search_term}%,phone.ilike.%${search_term}%`)
+          .eq('company_id', body.company_id)
+          .or(`first_name.ilike.%${body.search_query}%,last_name.ilike.%${body.search_query}%,company_name.ilike.%${body.search_query}%,email.ilike.%${body.search_query}%,phone.ilike.%${body.search_query}%,national_id.ilike.%${body.search_query}%`)
           .limit(20);
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
-        // Log access
-        await logAccess(company_id, user_id, 'customer_data', undefined, { search_term, results_count: customers?.length || 0 }, 'Customer search for legal consultation');
+        // Log the customer search access
+        if (body.user_id) {
+          await logAccess(body.company_id, body.user_id, 'customer_search', undefined, { search_query: body.search_query, results_count: customers?.length || 0 }, 'Legal AI customer search');
+        }
 
         return new Response(
-          JSON.stringify({ success: true, customers: customers || [] }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({
+            success: true,
+            customers: customers || [],
+            total_found: customers?.length || 0
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       } catch (error) {
         console.error('Error searching customers:', error);
         return new Response(
-          JSON.stringify({ success: false, message: 'Failed to search customers' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
-    // Customer analysis endpoint
-    if (requestedPath === 'analyze-customer') {
-      const { company_id, user_id, customer_id } = body;
-      
-      if (!company_id || !user_id || !customer_id) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Missing required fields: company_id, user_id, customer_id' 
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      // Check user permissions
-      const userProfile = await getUserPermissions(user_id);
-      if (!userProfile || userProfile.company_id !== company_id) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Unauthorized' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      try {
-        // Get customer details
-        const { data: customer, error: customerError } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('id', customer_id)
-          .eq('company_id', company_id)
-          .single();
-
-        if (customerError) throw customerError;
-
-        // Get contracts
-        const { data: contracts } = await supabase
-          .from('contracts')
-          .select('*')
-          .eq('customer_id', customer_id)
-          .eq('company_id', company_id);
-
-        // Get invoices
-        const { data: invoices } = await supabase
-          .from('invoices')
-          .select('*')
-          .eq('customer_id', customer_id)
-          .eq('company_id', company_id);
-
-        // Get payments
-        const { data: payments } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('customer_id', customer_id)
-          .eq('company_id', company_id);
-
-        // Calculate financial summary
-        const totalContractValue = contracts?.reduce((sum, contract) => sum + (contract.contract_amount || 0), 0) || 0;
-        const totalInvoiced = invoices?.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0) || 0;
-        const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
-        const outstanding = totalInvoiced - totalPaid;
-
-        const analysis = {
-          customer,
-          financial_summary: {
-            total_contract_value: totalContractValue,
-            total_invoiced: totalInvoiced,
-            total_paid: totalPaid,
-            outstanding_amount: outstanding,
-            payment_status: outstanding > 0 ? 'has_outstanding' : 'current'
-          },
-          contracts: contracts || [],
-          recent_invoices: invoices?.slice(-5) || [],
-          recent_payments: payments?.slice(-5) || [],
-          risk_factors: [],
-          recommendations: []
-        };
-
-        // Add risk factors
-        if (customer.is_blacklisted) {
-          analysis.risk_factors.push('العميل مدرج في القائمة السوداء');
-        }
-        if (outstanding > 10000) {
-          analysis.risk_factors.push('مبلغ مستحق مرتفع');
-        }
-        if (contracts?.some(c => c.status === 'suspended')) {
-          analysis.risk_factors.push('يوجد عقود معلقة');
-        }
-
-        // Add recommendations
-        if (outstanding > 0) {
-          analysis.recommendations.push('متابعة المبالغ المستحقة');
-        }
-        if (contracts?.length === 0) {
-          analysis.recommendations.push('فرصة لعقد جديد');
-        }
-
-        // Log access
-        await logAccess(company_id, user_id, 'customer_data', customer_id, { 
-          accessed_sections: ['customer_details', 'contracts', 'invoices', 'payments'] 
-        }, 'Comprehensive customer analysis for legal consultation');
-
-        return new Response(
-          JSON.stringify({ success: true, analysis }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } catch (error) {
-        console.error('Error analyzing customer:', error);
-        return new Response(
-          JSON.stringify({ success: false, message: 'Failed to analyze customer' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
-    // Generate legal memo endpoint
-    if (requestedPath === 'generate-memo') {
-      const { company_id, user_id, customer_id, memo_type, custom_prompt } = body;
-      
-      if (!company_id || !user_id || !customer_id) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Missing required fields: company_id, user_id, customer_id' 
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      if (!openAIApiKey) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'OpenAI API key not configured' 
+          JSON.stringify({
+            success: false,
+            message: 'Failed to search customers'
           }),
           {
             status: 500,
@@ -1318,13 +891,186 @@ serve(async (req) => {
           }
         );
       }
+    }
 
-      // Check user permissions
-      const userProfile = await getUserPermissions(user_id);
-      if (!userProfile || userProfile.company_id !== company_id) {
+    // Customer details endpoint
+    if (requestedPath === 'customer-details') {
+      if (!body.company_id || !body.customer_id) {
         return new Response(
-          JSON.stringify({ success: false, message: 'Unauthorized' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: false, 
+            message: 'Missing required fields: company_id, customer_id' 
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      try {
+        // Get customer details
+        const { data: customer, error: customerError } = await supabase
+          .from('customers')
+          .select(`
+            *,
+            customer_accounts (
+              id,
+              account_balance,
+              last_transaction_date,
+              chart_of_accounts (
+                account_name,
+                account_code
+              )
+            )
+          `)
+          .eq('company_id', body.company_id)
+          .eq('id', body.customer_id)
+          .single();
+
+        if (customerError) {
+          throw customerError;
+        }
+
+        if (!customer) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Customer not found'
+            }),
+            {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        // Get related contracts
+        const { data: contracts } = await supabase
+          .from('contracts')
+          .select(`
+            id,
+            contract_number,
+            contract_type,
+            status,
+            start_date,
+            end_date,
+            contract_amount,
+            monthly_amount
+          `)
+          .eq('company_id', body.company_id)
+          .eq('customer_id', body.customer_id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        // Get recent invoices
+        const { data: invoices } = await supabase
+          .from('invoices')
+          .select(`
+            id,
+            invoice_number,
+            invoice_date,
+            due_date,
+            total_amount,
+            payment_status,
+            status
+          `)
+          .eq('company_id', body.company_id)
+          .eq('customer_id', body.customer_id)
+          .order('invoice_date', { ascending: false })
+          .limit(10);
+
+        // Get recent payments
+        const { data: payments } = await supabase
+          .from('payments')
+          .select(`
+            id,
+            payment_date,
+            amount,
+            payment_method,
+            status,
+            reference_number
+          `)
+          .eq('company_id', body.company_id)
+          .eq('customer_id', body.customer_id)
+          .order('payment_date', { ascending: false })
+          .limit(10);
+
+        // Calculate summary statistics
+        const totalContracts = contracts?.length || 0;
+        const activeContracts = contracts?.filter(c => c.status === 'active').length || 0;
+        const totalContractValue = contracts?.reduce((sum, c) => sum + (c.contract_amount || 0), 0) || 0;
+        
+        const totalInvoices = invoices?.length || 0;
+        const unpaidInvoices = invoices?.filter(i => i.payment_status === 'unpaid').length || 0;
+        const totalInvoiceAmount = invoices?.reduce((sum, i) => sum + (i.total_amount || 0), 0) || 0;
+        const unpaidAmount = invoices?.filter(i => i.payment_status === 'unpaid').reduce((sum, i) => sum + (i.total_amount || 0), 0) || 0;
+        
+        const totalPayments = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+
+        const customerSummary = {
+          customer,
+          contracts: contracts || [],
+          invoices: invoices || [],
+          payments: payments || [],
+          summary: {
+            total_contracts: totalContracts,
+            active_contracts: activeContracts,
+            total_contract_value: totalContractValue,
+            total_invoices: totalInvoices,
+            unpaid_invoices: unpaidInvoices,
+            total_invoice_amount: totalInvoiceAmount,
+            unpaid_amount: unpaidAmount,
+            total_payments: totalPayments,
+            account_balance: customer.customer_accounts?.[0]?.account_balance || 0
+          }
+        };
+
+        // Log the customer details access
+        if (body.user_id) {
+          await logAccess(body.company_id, body.user_id, 'customer_details_view', body.customer_id, { 
+            customer_name: customer.customer_type === 'individual' ? `${customer.first_name} ${customer.last_name}` : customer.company_name,
+            contracts_count: totalContracts,
+            invoices_count: totalInvoices
+          }, 'Legal AI customer details access');
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: customerSummary
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } catch (error) {
+        console.error('Error fetching customer details:', error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Failed to fetch customer details'
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
+    // Customer analysis endpoint
+    if (requestedPath === 'customer-analysis') {
+      if (!body.company_id || !body.customer_id) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Missing required fields: company_id, customer_id' 
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
 
@@ -1333,138 +1079,165 @@ serve(async (req) => {
         const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/legal-ai-api`, {
           method: 'POST',
           headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseServiceKey}`,
           },
           body: JSON.stringify({
-            path: 'analyze-customer',
-            company_id,
-            user_id,
-            customer_id
-          })
+            path: 'customer-details',
+            company_id: body.company_id,
+            customer_id: body.customer_id,
+            user_id: body.user_id
+          }),
         });
 
-        const analysisData = await analysisResponse.json();
-        if (!analysisData.success) {
-          throw new Error('Failed to get customer analysis');
+        if (!analysisResponse.ok) {
+          throw new Error('Failed to fetch customer data for analysis');
         }
 
-        const { analysis } = analysisData;
-        const customerName = analysis.customer.customer_type === 'individual' 
-          ? `${analysis.customer.first_name} ${analysis.customer.last_name}`
-          : analysis.customer.company_name;
+        const analysisData = await analysisResponse.json();
+        
+        if (!analysisData.success) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Failed to get customer data for analysis'
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
 
-        // Create AI prompt based on analysis
-        let systemPrompt = `أنت مستشار قانوني خبير متخصص في القانون الكويتي. قم بإنشاء مذكرة قانونية مفصلة بناءً على البيانات التالية:
+        const { customer, summary } = analysisData.data;
+
+        // Generate AI analysis
+        const analysisPrompt = `أنت محلل قانوني ومالي متخصص. قم بتحليل بيانات العميل التالية وقدم رؤى قانونية ومالية:
 
 معلومات العميل:
-- الاسم: ${customerName}
-- النوع: ${analysis.customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
-- الحالة المالية: ${analysis.financial_summary.outstanding_amount > 0 ? 'يوجد مبالغ مستحقة' : 'الحساب محدث'}
-- إجمالي قيمة العقود: ${analysis.financial_summary.total_contract_value} دينار كويتي
-- المبلغ المستحق: ${analysis.financial_summary.outstanding_amount} دينار كويتي
+- النوع: ${customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+- الاسم: ${customer.customer_type === 'individual' ? `${customer.first_name} ${customer.last_name}` : customer.company_name}
+- الحالة: ${customer.is_blacklisted ? 'محظور' : 'نشط'}
+${customer.is_blacklisted && customer.blacklist_reason ? `- سبب الحظر: ${customer.blacklist_reason}` : ''}
 
-عوامل المخاطر: ${analysis.risk_factors.join(', ') || 'لا توجد'}
-التوصيات: ${analysis.recommendations.join(', ') || 'لا توجد'}
+ملخص الأنشطة المالية:
+- إجمالي العقود: ${summary.total_contracts}
+- العقود النشطة: ${summary.active_contracts}
+- قيمة العقود الإجمالية: ${summary.total_contract_value} دينار كويتي
+- إجمالي الفواتير: ${summary.total_invoices}
+- الفواتير غير المدفوعة: ${summary.unpaid_invoices}
+- المبلغ غير المدفوع: ${summary.unpaid_amount} دينار كويتي
+- إجمالي المدفوعات: ${summary.total_payments} دينار كويتي
+- رصيد الحساب: ${summary.account_balance} دينار كويتي
 
-يرجى إنشاء مذكرة قانونية شاملة تتضمن:
-1. تحليل الوضع القانوني الحالي
-2. تحديد المخاطر القانونية
-3. التوصيات والإجراءات المطلوبة
-4. الخطوات التالية المقترحة
+قم بتحليل هذه البيانات وقدم:
+1. تقييم الوضع المالي للعميل
+2. تحديد أي مخاطر قانونية أو مالية
+3. توصيات للتعامل مع هذا العميل
+4. أي إجراءات قانونية قد تكون مطلوبة
+5. تقييم مستوى الائتمان والجدارة الائتمانية
 
-استخدم لغة قانونية مهنية ووضح المراجع القانونية عند الضرورة.`;
+استخدم القوانين الكويتية كمرجع في تحليلك.`;
 
-        if (custom_prompt) {
-          systemPrompt += `\n\nطلب خاص من المستخدم: ${custom_prompt}`;
-        }
-
-        // Generate memo using OpenAI
-        const startTime = Date.now();
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${openAIApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: 'قم بإنشاء المذكرة القانونية الآن' }
-            ],
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: analysisPrompt }],
+            max_tokens: 1500,
             temperature: 0.7,
-            max_tokens: 2000,
           }),
         });
 
-        if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`);
+        if (!aiResponse.ok) {
+          throw new Error(`OpenAI API error: ${aiResponse.status}`);
         }
 
-        const aiData = await response.json();
-        const memoContent = aiData.choices[0].message.content;
-        const responseTime = Date.now() - startTime;
+        const aiData = await aiResponse.json();
 
-        // Generate memo number
-        const { data: memoNumber } = await supabase.rpc('generate_legal_memo_number', {
-          company_id_param: company_id
-        });
+        // Calculate risk score
+        let riskScore = 0;
+        const riskFactors = [];
 
-        // Save memo to database
-        const { data: memo, error: memoError } = await supabase
-          .from('legal_memos')
-          .insert({
-            company_id,
-            customer_id,
-            memo_number: memoNumber,
-            title: `مذكرة قانونية - ${customerName}`,
-            content: memoContent,
-            memo_type: memo_type || 'general',
-            generated_by_ai: true,
-            data_sources: ['customer_data', 'contracts', 'financial_records'],
-            recommendations: analysis.recommendations,
-            created_by: user_id
-          })
-          .select()
-          .single();
+        if (customer.is_blacklisted) {
+          riskScore += 40;
+          riskFactors.push('العميل محظور');
+        }
 
-        if (memoError) throw memoError;
+        if (summary.unpaid_amount > 1000) {
+          riskScore += 20;
+          riskFactors.push('مبالغ غير مدفوعة مرتفعة');
+        }
 
-        // Log access
-        await logAccess(company_id, user_id, 'memo_generation', customer_id, {
-          memo_id: memo.id,
-          memo_type: memo_type || 'general',
-          response_time: responseTime
-        }, 'AI-generated legal memo creation');
+        if (summary.unpaid_invoices > 3) {
+          riskScore += 15;
+          riskFactors.push('عدد كبير من الفواتير غير المدفوعة');
+        }
+
+        if (summary.account_balance < 0) {
+          riskScore += 15;
+          riskFactors.push('رصيد سالب');
+        }
+
+        if (summary.active_contracts === 0 && summary.total_contracts > 0) {
+          riskScore += 10;
+          riskFactors.push('لا توجد عقود نشطة');
+        }
+
+        const riskLevel = riskScore >= 60 ? 'عالي' : riskScore >= 30 ? 'متوسط' : 'منخفض';
+
+        const analysis = {
+          ai_analysis: aiData.choices[0]?.message?.content || 'فشل في إنتاج التحليل',
+          risk_assessment: {
+            risk_score: riskScore,
+            risk_level: riskLevel,
+            risk_factors: riskFactors
+          },
+          financial_summary: {
+            payment_ratio: summary.total_invoice_amount > 0 ? ((summary.total_payments / summary.total_invoice_amount) * 100).toFixed(2) : 0,
+            average_contract_value: summary.total_contracts > 0 ? (summary.total_contract_value / summary.total_contracts).toFixed(2) : 0,
+            payment_history: summary.total_invoices > 0 ? (((summary.total_invoices - summary.unpaid_invoices) / summary.total_invoices) * 100).toFixed(2) : 0
+          }
+        };
+
+        // Log the analysis access
+        if (body.user_id) {
+          await logAccess(body.company_id, body.user_id, 'customer_analysis', body.customer_id, {
+            risk_level: riskLevel,
+            risk_score: riskScore
+          }, 'Legal AI customer analysis');
+        }
 
         return new Response(
           JSON.stringify({
             success: true,
-            memo,
-            metadata: {
-              response_time: responseTime,
-              ai_generated: true,
-              data_sources_count: 3
-            }
+            analysis: analysis
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
-
       } catch (error) {
-        console.error('Error generating memo:', error);
+        console.error('Error generating customer analysis:', error);
         return new Response(
-          JSON.stringify({ success: false, message: 'Failed to generate legal memo' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({
+            success: false,
+            message: 'Failed to generate customer analysis'
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
     }
 
-    // Legal insights endpoint (alias for learning-insights)
-    if (requestedPath === 'legal-insights') {
-      console.log('Processing legal-insights request (redirecting to learning-insights)');
-      
-      // Redirect to learning-insights with the same body
+    // Optimize system performance endpoint
+    if (requestedPath === 'performance-insights') {
       const insightsBody = { ...body, path: 'learning-insights' };
       
       // Call learning-insights handler
@@ -1475,7 +1248,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              message: 'Missing required field: company_id' 
+              message: 'Company ID required for performance insights' 
             }),
             {
               status: 400,
@@ -1484,82 +1257,61 @@ serve(async (req) => {
           );
         }
 
-        // If user_id is provided, check permissions
-        if (user_id) {
-          const userPermissions = await getUserPermissions(user_id);
-          if (!userPermissions || userPermissions.company_id !== company_id) {
-            console.error('User permission check failed for legal-insights:', { user_id, company_id });
-            return new Response(
-              JSON.stringify({ success: false, message: 'Unauthorized access to legal insights' }),
-              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-        }
+        // Get system performance data
+        const { data: queryStats } = await supabase
+          .from('legal_ai_queries')
+          .select('response_time, created_at, query_type')
+          .eq('company_id', company_id)
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .order('created_at', { ascending: false });
 
-        // Generate insights specific to legal domain
-        const insights = {
-          summary: {
-            total_legal_queries: 156,
-            legal_accuracy: 92,
-            consultation_efficiency: 88,
-            cost_savings: '185 KWD',
-            response_quality: 4.7
+        const { data: accessLogs } = await supabase
+          .from('legal_ai_access_logs')
+          .select('access_type, created_at')
+          .eq('company_id', company_id)
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+        // Calculate performance metrics
+        const totalQueries = queryStats?.length || 0;
+        const avgResponseTime = totalQueries > 0 ? 
+          queryStats.reduce((sum, q) => sum + (q.response_time || 0), 0) / totalQueries : 0;
+
+        const performanceInsights = {
+          query_performance: {
+            total_queries_week: totalQueries,
+            average_response_time: Number((avgResponseTime / 1000).toFixed(2)),
+            queries_per_day: Number((totalQueries / 7).toFixed(1))
           },
-          legal_patterns: [
-            {
-              category: 'عقود تجارية',
-              query_count: 42,
-              accuracy_rate: 0.94,
-              common_topics: ['شروط الدفع', 'فسخ العقد', 'التزامات الأطراف']
-            },
-            {
-              category: 'قانون العمل',
-              query_count: 38,
-              accuracy_rate: 0.91,
-              common_topics: ['حقوق الموظف', 'إنهاء الخدمة', 'الإجازات']
-            },
-            {
-              category: 'القضايا المالية',
-              query_count: 29,
-              accuracy_rate: 0.89,
-              common_topics: ['الديون المستحقة', 'التحصيل القانوني', 'الضمانات']
-            }
-          ],
-          performance_metrics: {
-            average_consultation_time: '2.3 دقيقة',
-            client_satisfaction: 4.6,
-            cost_per_consultation: '0.85 KWD',
-            success_rate: 0.93
+          access_patterns: {
+            total_access_events: accessLogs?.length || 0,
+            access_types: accessLogs?.reduce((acc, log) => {
+              acc[log.access_type] = (acc[log.access_type] || 0) + 1;
+              return acc;
+            }, {}) || {}
           },
-          recommendations: [
-            'تطوير قوالب قانونية متخصصة لتسريع الاستجابة',
-            'إضافة قاعدة بيانات للسوابق القضائية الكويتية',
-            'تحسين تصنيف الاستفسارات لدقة أعلى'
-          ],
-          generated_at: new Date().toISOString(),
-          company_id: company_id
+          optimization_suggestions: [
+            avgResponseTime > 3000 ? 'تحسين سرعة الاستجابة مطلوب' : 'سرعة الاستجابة مقبولة',
+            totalQueries < 10 ? 'زيادة استخدام النظام مطلوبة' : 'مستوى الاستخدام جيد',
+            'تحديث قاعدة البيانات القانونية بانتظام'
+          ]
         };
 
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            insights: insights,
-            metadata: {
-              source: 'legal_ai_system',
-              endpoint: 'legal-insights',
-              generated_at: new Date().toISOString()
-            }
+          JSON.stringify({
+            success: true,
+            performance_insights: performanceInsights,
+            generated_at: new Date().toISOString()
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
       } catch (error) {
-        console.error('Error generating legal insights:', error);
+        console.error('Error generating performance insights:', error);
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Failed to generate legal insights. Please try again.' 
+          JSON.stringify({
+            success: false,
+            message: 'Failed to generate performance insights'
           }),
           {
             status: 500,
