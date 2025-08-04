@@ -26,6 +26,9 @@ import {
 } from 'lucide-react';
 import { useEnhancedAI, EnhancedAIResponse, QuickStats } from '@/hooks/useEnhancedAI';
 import { SmartAnalyticsPanel } from '@/components/analytics/SmartAnalyticsPanel';
+import { SelfLearningAIPanel } from './SelfLearningAIPanel';
+import { IntelligentInsightsPanel } from './IntelligentInsightsPanel';
+import { ComprehensiveAIDashboard } from './ComprehensiveAIDashboard';
 import { toast } from 'sonner';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
@@ -478,9 +481,11 @@ export const EnhancedAIPanel: React.FC = () => {
           {renderQuickStats()}
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
               <TabsTrigger value="analytics">التحليل الذكي</TabsTrigger>
+              <TabsTrigger value="learning">التعلم الذاتي</TabsTrigger>
+              <TabsTrigger value="insights">الرؤى الذكية</TabsTrigger>
               <TabsTrigger value="chat">المحادثة</TabsTrigger>
             </TabsList>
 
@@ -502,6 +507,14 @@ export const EnhancedAIPanel: React.FC = () => {
 
             <TabsContent value="analytics" className="space-y-4">
               <SmartAnalyticsPanel />
+            </TabsContent>
+
+            <TabsContent value="learning" className="space-y-4">
+              <SelfLearningAIPanel />
+            </TabsContent>
+
+            <TabsContent value="insights" className="space-y-4">
+              <IntelligentInsightsPanel />
             </TabsContent>
 
             <TabsContent value="chat" className="space-y-4">
