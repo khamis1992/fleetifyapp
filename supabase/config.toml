@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.self-learning-ai]
 verify_jwt = true
+
+[functions.intelligent-clarification]
+verify_jwt = true
+
+[functions.clarification-learning]
+verify_jwt = true
