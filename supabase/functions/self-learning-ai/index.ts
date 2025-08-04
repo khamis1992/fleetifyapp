@@ -48,7 +48,8 @@ serve(async (req) => {
 
     console.log(`📚 Found ${existingPatterns?.length || 0} existing learning patterns`);
 
-    // Step 2: Calculate similarity to existing patterns
+
+    // Step 2: Calculate similarity to existing patterns and check for keyword matches
     const queryEmbedding = await generateEmbedding(query);
     let bestMatch = null;
     let highestSimilarity = 0;
@@ -56,11 +57,27 @@ serve(async (req) => {
     if (existingPatterns && existingPatterns.length > 0) {
       for (const pattern of existingPatterns) {
         const patternData = pattern.pattern_data as any;
-        if (patternData.query_embedding) {
-          const similarity = cosineSimilarity(queryEmbedding, patternData.query_embedding);
-          console.log(`🔍 Pattern similarity: ${similarity} for pattern: ${pattern.pattern_type}`);
+        
+        // First try keyword matching for patterns that have intent_keywords
+        if (patternData.intent_keywords && Array.isArray(patternData.intent_keywords)) {
+          const keywordMatch = patternData.intent_keywords.some((keyword: string) => 
+            query.toLowerCase().includes(keyword.toLowerCase())
+          );
           
-          if (similarity > highestSimilarity && similarity > 0.4) { // Lowered threshold
+          if (keywordMatch) {
+            console.log(`🎯 Keyword match found for pattern: ${pattern.pattern_type}`);
+            highestSimilarity = 0.95; // High confidence for keyword matches
+            bestMatch = pattern;
+            break; // Use the first keyword match found
+          }
+        }
+        
+        // Fallback to embedding similarity if available
+        if (patternData.query_embedding && !bestMatch) {
+          const similarity = cosineSimilarity(queryEmbedding, patternData.query_embedding);
+          console.log(`🔍 Embedding similarity: ${similarity} for pattern: ${pattern.pattern_type}`);
+          
+          if (similarity > highestSimilarity && similarity > 0.4) {
             highestSimilarity = similarity;
             bestMatch = pattern;
           }
@@ -319,11 +336,24 @@ async function generateClarificationQuestions(
 async function processWithPattern(query: string, pattern: any, context: any) {
   const patternData = pattern.pattern_data as any;
   
+  // Use the response template if available, otherwise fall back to a generic response
+  let response;
+  if (patternData.response_template) {
+    response = patternData.response_template;
+  } else {
+    response = `Based on learned pattern "${pattern.pattern_type}", I can help you with: ${query}`;
+  }
+  
+  // Include adaptive recommendations if available
+  const adaptiveRecommendations = patternData.adaptive_recommendations || [];
+  
   return {
-    response: `Based on learned pattern "${pattern.pattern_type}", I can help you with: ${query}`,
+    response: response,
     intent: pattern.pattern_type,
-    confidence: 0.9,
-    usedPattern: true
+    confidence: patternData.confidence_level || 0.9,
+    usedPattern: true,
+    learningApplied: true,
+    adaptiveRecommendations
   };
 }
 
