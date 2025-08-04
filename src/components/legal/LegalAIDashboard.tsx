@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FormattedResponse } from './FormattedResponse';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { 
   MessageSquare, 
   Brain, 
@@ -24,11 +21,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
-import { SmartRecommendationSystem } from './SmartRecommendationSystem';
 import { SmartLegalAssistant } from './SmartLegalAssistant';
-import DocumentAnalyzer from './DocumentAnalyzer';
-import LegalDocumentGenerator from './LegalDocumentGenerator';
-import PredictiveAnalysis from './PredictiveAnalysis';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -60,6 +53,7 @@ export const LegalAIDashboard: React.FC = () => {
   
   const [activeSession, setActiveSession] = useState<AISession | null>(null);
   const [quickQuery, setQuickQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
   const [sessions, setSessions] = useState<AISession[]>([]);
   const [recentInsights, setRecentInsights] = useState<any[]>([]);
 
@@ -137,8 +131,6 @@ export const LegalAIDashboard: React.FC = () => {
       action: () => setActiveTab('document-generator')
     }
   ];
-
-  const [activeTab, setActiveTab] = useState('overview');
 
   const handleQuickQuery = async () => {
     if (!quickQuery.trim()) return;
@@ -379,20 +371,87 @@ export const LegalAIDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="document-analyzer">
-          <DocumentAnalyzer onAnalysisComplete={(analysis) => {
-            console.log('Analysis completed:', analysis);
-          }} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-6 w-6" />
+                تحليل الوثائق القانونية
+              </CardTitle>
+              <CardDescription>
+                تم دمج جميع أدوات تحليل الوثائق في المساعد القانوني الذكي
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">استخدم المساعد الذكي</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    المساعد القانوني الذكي يقوم بتحليل الوثائق والعقود بدقة عالية مع تقديم تفسيرات مفصلة
+                  </p>
+                  <Button onClick={() => setActiveTab('smart-assistant')} className="w-full">
+                    الانتقال للمساعد الذكي
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="document-generator">
-          <LegalDocumentGenerator onDocumentGenerated={(document) => {
-            console.log('Document generated:', document);
-          }} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-6 w-6" />
+                مولد الوثائق القانونية
+              </CardTitle>
+              <CardDescription>
+                تم دمج جميع أدوات إنشاء الوثائق في المساعد القانوني الذكي
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">استخدم المساعد الذكي</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    المساعد القانوني الذكي يقوم بإنشاء جميع أنواع الوثائق القانونية بناءً على احتياجاتك
+                  </p>
+                  <Button onClick={() => setActiveTab('smart-assistant')} className="w-full">
+                    الانتقال للمساعد الذكي
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-
         <TabsContent value="insights">
-          <SmartRecommendationSystem />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-6 w-6" />
+                الرؤى والتوصيات القانونية
+              </CardTitle>
+              <CardDescription>
+                تم دمج جميع أدوات التحليل والتوصيات في المساعد القانوني الذكي
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">استخدم المساعد الذكي</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    المساعد القانوني الذكي يقدم رؤى وتوصيات ذكية بناءً على تحليل شامل للقضايا
+                  </p>
+                  <Button onClick={() => setActiveTab('smart-assistant')} className="w-full">
+                    الانتقال للمساعد الذكي
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
 
