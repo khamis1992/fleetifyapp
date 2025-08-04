@@ -172,33 +172,6 @@ export const LegalAIDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Query Bar */}
-      <Card className="border-primary/20 bg-gradient-subtle">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Search className="h-5 w-5" />
-            استعلام سريع
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="اطرح سؤالاً قانونياً سريعاً..."
-              value={quickQuery}
-              onChange={(e) => setQuickQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleQuickQuery()}
-              className="flex-1"
-            />
-            <Button 
-              onClick={handleQuickQuery}
-              disabled={aiLoading || !quickQuery.trim()}
-              className="px-6"
-            >
-              {aiLoading ? 'جاري المعالجة...' : 'استعلام'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* المساعد القانوني الذكي */}
       <SmartLegalAssistant />
