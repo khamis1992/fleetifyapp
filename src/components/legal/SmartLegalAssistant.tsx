@@ -53,4 +53,6 @@ interface SmartSuggestion {
   confidence: number;
 }
 
-export { EnhancedSmartLegalAssistant as SmartLegalAssistant } from './EnhancedSmartLegalAssistant';
+import { EnhancedSmartLegalAssistant } from './EnhancedSmartLegalAssistant';
+
+export const SmartLegalAssistant = EnhancedSmartLegalAssistant;

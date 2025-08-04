@@ -170,6 +170,204 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_clarification_sessions: {
+        Row: {
+          clarification_questions: Json
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          final_intent: string | null
+          id: string
+          original_query: string
+          session_status: string
+          user_responses: Json
+        }
+        Insert: {
+          clarification_questions?: Json
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          final_intent?: string | null
+          id?: string
+          original_query: string
+          session_status?: string
+          user_responses?: Json
+        }
+        Update: {
+          clarification_questions?: Json
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          final_intent?: string | null
+          id?: string
+          original_query?: string
+          session_status?: string
+          user_responses?: Json
+        }
+        Relationships: []
+      }
+      ai_learning_feedback: {
+        Row: {
+          clarification_session_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          feedback_comments: string | null
+          feedback_rating: number | null
+          feedback_type: string
+          id: string
+          improvement_suggestions: Json | null
+          query_intent_id: string | null
+        }
+        Insert: {
+          clarification_session_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          feedback_comments?: string | null
+          feedback_rating?: number | null
+          feedback_type: string
+          id?: string
+          improvement_suggestions?: Json | null
+          query_intent_id?: string | null
+        }
+        Update: {
+          clarification_session_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          feedback_comments?: string | null
+          feedback_rating?: number | null
+          feedback_type?: string
+          id?: string
+          improvement_suggestions?: Json | null
+          query_intent_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_learning_patterns: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          pattern_data: Json
+          pattern_type: string
+          success_rate: number | null
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          pattern_data: Json
+          pattern_type: string
+          success_rate?: number | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          pattern_data?: Json
+          pattern_type?: string
+          success_rate?: number | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      ai_performance_metrics: {
+        Row: {
+          clarification_requests: number | null
+          company_id: string
+          created_at: string
+          id: string
+          learning_improvements: number | null
+          metric_date: string
+          response_time_avg: number | null
+          successful_classifications: number | null
+          total_queries: number | null
+          user_satisfaction_avg: number | null
+        }
+        Insert: {
+          clarification_requests?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          learning_improvements?: number | null
+          metric_date?: string
+          response_time_avg?: number | null
+          successful_classifications?: number | null
+          total_queries?: number | null
+          user_satisfaction_avg?: number | null
+        }
+        Update: {
+          clarification_requests?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          learning_improvements?: number | null
+          metric_date?: string
+          response_time_avg?: number | null
+          successful_classifications?: number | null
+          total_queries?: number | null
+          user_satisfaction_avg?: number | null
+        }
+        Relationships: []
+      }
+      ai_query_intents: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          context_data: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          intent_classification: string
+          normalized_query: string | null
+          original_query: string
+          updated_at: string
+          user_confirmed: boolean | null
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          context_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intent_classification: string
+          normalized_query?: string | null
+          original_query: string
+          updated_at?: string
+          user_confirmed?: boolean | null
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          context_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intent_classification?: string
+          normalized_query?: string | null
+          original_query?: string
+          updated_at?: string
+          user_confirmed?: boolean | null
+        }
+        Relationships: []
+      }
       approval_notifications: {
         Row: {
           id: string
@@ -9808,6 +10006,10 @@ export type Database = {
         Returns: undefined
       }
       update_account_levels_manually: {
+        Args: { company_id_param: string }
+        Returns: undefined
+      }
+      update_ai_performance_metrics: {
         Args: { company_id_param: string }
         Returns: undefined
       }
