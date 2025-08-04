@@ -297,7 +297,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
 
   // مكون الإحصائيات
   const StatsDisplay = () => {
-    if (!stats) return <div>جاري تحميل الإحصائيات...</div>;
+    if (!stats || !stats.performance_overview) return <div>جاري تحميل الإحصائيات...</div>;
 
     const performance = stats.performance_overview;
 
@@ -430,7 +430,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
         </div>
         
         {/* حالة النظام */}
-        {healthStatus && (
+        {healthStatus && healthStatus.performance && (
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-green-600">
               <CheckCircle className="w-3 h-3 mr-1" />
@@ -619,18 +619,22 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                     <CardTitle className="text-lg">إحصائيات سريعة</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm">الاستفسارات اليوم</span>
-                      <span className="font-semibold">{stats.performance_overview.total_queries}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">كفاءة التكلفة</span>
-                      <span className="font-semibold">{stats.performance_overview.cost_efficiency}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">متوسط الاستجابة</span>
-                      <span className="font-semibold">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
-                    </div>
+                    {stats?.performance_overview && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-sm">الاستفسارات اليوم</span>
+                          <span className="font-semibold">{stats.performance_overview.total_queries}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">كفاءة التكلفة</span>
+                          <span className="font-semibold">{stats.performance_overview.cost_efficiency}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">متوسط الاستجابة</span>
+                          <span className="font-semibold">{stats.performance_overview.average_response_time.toFixed(2)}s</span>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               )}
