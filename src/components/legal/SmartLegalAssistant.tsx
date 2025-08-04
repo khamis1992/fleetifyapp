@@ -53,7 +53,9 @@ interface SmartSuggestion {
   confidence: number;
 }
 
-export const SmartLegalAssistant: React.FC = () => {
+export { EnhancedSmartLegalAssistant as SmartLegalAssistant } from './EnhancedSmartLegalAssistant';
+
+export const OriginalSmartLegalAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
