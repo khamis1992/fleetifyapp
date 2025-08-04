@@ -415,7 +415,7 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
 
       {/* Query Type Selector */}
       <Card className="mb-4">
-        <CardContent className="p-4">
+        <CardContent className="p-4 text-right" dir="rtl">
           <div className="flex items-center gap-2 mb-2">
             <Settings className="h-4 w-4" />
             <span className="text-sm font-medium">نوع الاستعلام</span>
