@@ -9,6 +9,7 @@ import { useLegalCases, useLegalCaseStats, type LegalCase } from '@/hooks/useLeg
 import { LegalCaseForm } from '@/components/legal/LegalCaseForm';
 import { LegalCaseDetailsDialog } from '@/components/legal/LegalCaseDetailsDialog';
 import { LegalCaseDashboard } from '@/components/legal/LegalCaseDashboard';
+import { LegalAIConsultant } from '@/components/legal/LegalAIConsultant';
 import { usePermissionCheck } from '@/hooks/usePermissionCheck';
 import { useDebounce } from '@/hooks/useDebounce';
 import { 
@@ -22,7 +23,8 @@ import {
   AlertTriangle,
   Clock,
   Scale,
-  Building
+  Building,
+  Brain
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -35,6 +37,9 @@ const Legal = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
+
+  // الحصول على company_id من السياق أو localStorage
+  const companyId = localStorage.getItem('company_id') || 'fleetify_default';
 
   const debouncedSearch = useDebounce(searchTerm, 300);
   const canManageCases = usePermissionCheck('company_admin') || usePermissionCheck('manager') || usePermissionCheck('sales_agent');
@@ -124,9 +129,10 @@ const Legal = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
           <TabsTrigger value="cases">القضايا</TabsTrigger>
+          <TabsTrigger value="ai-consultant">المستشار الذكي</TabsTrigger>
           <TabsTrigger value="reports">التقارير</TabsTrigger>
         </TabsList>
 
@@ -283,6 +289,10 @@ const Legal = () => {
               ))
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="ai-consultant">
+          <LegalAIConsultant companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="reports">
