@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.legal-ai-enhanced]
 verify_jwt = false
+
+[functions.self-learning-ai]
+verify_jwt = true

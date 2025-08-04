@@ -22,6 +22,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { SmartLegalAssistant } from './SmartLegalAssistant';
+import { SelfLearningChat } from '@/components/ai/SelfLearningChat';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -174,7 +175,16 @@ export const LegalAIDashboard: React.FC = () => {
 
 
       {/* المساعد القانوني الذكي */}
-      <SmartLegalAssistant />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Legal AI Assistant</h3>
+            <SmartLegalAssistant />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Self-Learning AI (New!)</h3>
+            <SelfLearningChat />
+          </div>
+        </div>
     </div>
   );
 };

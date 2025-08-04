@@ -57,6 +57,10 @@ export interface SelfLearningResponse {
   suggested_actions?: string[];
   learning_applied: boolean;
   session_id?: string;
+  processing_time?: number;
+  adaptive_recommendations?: string[];
+  query_intent_id?: string;
+  processing_type?: string;
 }
 
 export const useSelfLearningAI = () => {
@@ -68,35 +72,74 @@ export const useSelfLearningAI = () => {
   const processQueryWithLearning = useCallback(async (
     queryData: SelfLearningQuery
   ): Promise<SelfLearningResponse> => {
+    if (!queryData.query.trim()) {
+      throw new Error('Query cannot be empty');
+    }
+
     setIsProcessing(true);
+    setIsLearning(true);
     
     try {
-      // First, analyze the query intent and check against learned patterns
-      const intentAnalysis = await analyzeQueryIntent(queryData.query, queryData.context);
-      
-      // Check if we need clarification
-      if (intentAnalysis.confidence < 0.7) {
-        const clarificationSession = await initiateClarificationSession(queryData.query);
-        
+      console.log('🧠 Processing query with self-learning AI:', queryData);
+
+      // Get user company from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.company_id) {
+        throw new Error('User company not found');
+      }
+
+      // Call the enhanced self-learning AI edge function
+      const { data: response, error } = await supabase.functions.invoke('self-learning-ai', {
+        body: {
+          query: queryData.query,
+          context: queryData.context || {},
+          sessionId: crypto.randomUUID(),
+          companyId: profile.company_id,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+      if (error) {
+        console.error('❌ Self-learning AI error:', error);
+        throw new Error(`AI processing failed: ${error.message}`);
+      }
+
+      console.log('🎯 Self-learning AI response:', response);
+
+      if (response.type === 'clarification_needed') {
+        setCurrentSession(response.session);
         return {
           response: "I need some clarification to better understand your request.",
-          confidence: intentAnalysis.confidence,
-          intent_classification: intentAnalysis.intent,
+          confidence: response.confidence,
+          intent_classification: 'clarification_needed',
           requires_clarification: true,
-          clarification_questions: clarificationSession.clarification_questions,
+          clarification_questions: response.session.clarification_questions,
           suggested_actions: [],
           learning_applied: false,
-          session_id: clarificationSession.id
+          session_id: response.session.id
         };
       }
 
-      // Process the query with high confidence
-      const response = await processHighConfidenceQuery(intentAnalysis, queryData);
-      
-      // Record the successful interaction for learning
-      await recordSuccessfulInteraction(intentAnalysis, queryData, response);
-      
-      return response;
+      // Process successful response
+      return {
+        response: response.response,
+        confidence: response.confidence,
+        intent_classification: response.intent,
+        requires_clarification: false,
+        clarification_questions: [],
+        suggested_actions: response.suggestions || [],
+        learning_applied: true,
+        session_id: null,
+        processing_time: Date.now(),
+        adaptive_recommendations: response.suggestions,
+        query_intent_id: response.queryIntentId,
+        processing_type: response.processingType
+      };
       
     } catch (error) {
       console.error('Error in self-learning AI processing:', error);
@@ -111,6 +154,7 @@ export const useSelfLearningAI = () => {
       };
     } finally {
       setIsProcessing(false);
+      setIsLearning(false);
     }
   }, []);
 
