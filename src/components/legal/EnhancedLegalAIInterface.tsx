@@ -468,31 +468,37 @@ const EnhancedLegalAIInterface: React.FC<{ company_id: string }> = ({ company_id
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Controls */}
-                  <div className="flex space-x-4">
-                    <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kuwait">🇰🇼 الكويت</SelectItem>
-                        <SelectItem value="saudi_arabia">🇸🇦 السعودية</SelectItem>
-                        <SelectItem value="qatar">🇶🇦 قطر</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">اختر الدولة</label>
+                      <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="kuwait">🇰🇼 الكويت</SelectItem>
+                          <SelectItem value="saudi_arabia">🇸🇦 السعودية</SelectItem>
+                          <SelectItem value="qatar">🇶🇦 قطر</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     
-                    <Select value={selectedClient} onValueChange={(value) => {
-                      setSelectedClient(value);
-                      if (value) loadClientData(value);
-                    }}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="اختر عميل (اختياري)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="client_1">أحمد محمد الكويتي</SelectItem>
-                        <SelectItem value="client_2">فاطمة علي السعودية</SelectItem>
-                        <SelectItem value="client_3">محمد حسن القطري</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">اختر العميل (اختياري)</label>
+                      <Select value={selectedClient} onValueChange={(value) => {
+                        setSelectedClient(value);
+                        if (value) loadClientData(value);
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="بدون عميل محدد" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="client_1">أحمد محمد الكويتي</SelectItem>
+                          <SelectItem value="client_2">فاطمة علي السعودية</SelectItem>
+                          <SelectItem value="client_3">محمد حسن القطري</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {/* Conversation History */}
@@ -516,14 +522,14 @@ const EnhancedLegalAIInterface: React.FC<{ company_id: string }> = ({ company_id
                               <div className="flex items-center space-x-2 mb-2">
                                 {getSourceIcon(entry.response.source)}
                                 <Badge variant="outline" className="text-xs">
-                                  {entry.response.source === 'cache' ? 'ذاكرة' :
-                                   entry.response.source === 'local' ? 'محلي' : 'API'}
+                                  {entry.response.source === 'cache' ? 'من الذاكرة' :
+                                   entry.response.source === 'local' ? 'محلي' : 'ذكي'}
                                 </Badge>
                                 <Badge variant="outline" className="text-xs">
-                                  {entry.response.processing_time.toFixed(2)}s
+                                  {entry.response.processing_time.toFixed(1)}ث
                                 </Badge>
                                 {entry.response.urgency_level && (
-                                  <Badge className={`text-xs ${getUrgencyColor(entry.response.urgency_level)}`}>
+                                  <Badge className={`text-xs text-white ${getUrgencyColor(entry.response.urgency_level)}`}>
                                     {entry.response.urgency_level}
                                   </Badge>
                                 )}
@@ -558,29 +564,15 @@ const EnhancedLegalAIInterface: React.FC<{ company_id: string }> = ({ company_id
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => copyToClipboard(entry.response.response)}
+                                    title="نسخ النص"
                                   >
                                     <Copy className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <ThumbsUp className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <ThumbsDown className="h-3 w-3" />
+                                    <span className="ml-1 text-xs">نسخ</span>
                                   </Button>
                                 </div>
                                 <div className="flex items-center space-x-1">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`h-3 w-3 ${
-                                        i < Math.floor(entry.response.confidence * 5)
-                                          ? 'text-yellow-400 fill-current'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  ))}
-                                  <span className="text-xs text-gray-500 ml-1">
-                                    {Math.round(entry.response.confidence * 100)}%
+                                  <span className="text-xs text-gray-500">
+                                    دقة: {Math.round(entry.response.confidence * 100)}%
                                   </span>
                                 </div>
                               </div>
@@ -607,20 +599,25 @@ const EnhancedLegalAIInterface: React.FC<{ company_id: string }> = ({ company_id
                       }}
                     />
                     <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-500">
-                        اضغط Enter للإرسال، Shift+Enter لسطر جديد
+                      <div className="text-sm text-muted-foreground">
+                        Enter للإرسال • Shift+Enter لسطر جديد
                       </div>
                       <Button 
                         onClick={handleLegalConsultation}
                         disabled={isLoading || !query.trim()}
-                        className="flex items-center space-x-2"
+                        className="flex items-center gap-2"
                       >
                         {isLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>جاري المعالجة...</span>
+                          </>
                         ) : (
-                          <Send className="h-4 w-4" />
+                          <>
+                            <Send className="h-4 w-4" />
+                            <span>إرسال الاستفسار</span>
+                          </>
                         )}
-                        <span>إرسال</span>
                       </Button>
                     </div>
                   </div>
