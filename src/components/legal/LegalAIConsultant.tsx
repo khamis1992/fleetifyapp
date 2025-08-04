@@ -46,15 +46,22 @@ interface ChatMessage {
   content: string;
   timestamp: number; // تغيير من Date إلى number للـ unix timestamp
   system_data?: any;
+  classification?: {
+    type: 'system_data' | 'legal_advice' | 'mixed';
+    confidence: number;
+    components?: { system_data: string[], legal_advice: string[] };
+    reasoning?: string;
+  };
   metadata?: {
-    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai';
+    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai' | 'mixed_query_ai';
     confidence: number;
     response_time: number;
     cost_saved?: boolean;
     usage_count?: number;
     match_score?: number;
     data_sources?: string[];
-    query_type?: 'legal_advice' | 'system_data';
+    query_type?: 'legal_advice' | 'system_data' | 'mixed';
+    components?: { system_data: string[], legal_advice: string[] };
   };
 }
 
@@ -154,6 +161,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
           content: response.advice || '',
           timestamp: Date.now(), // استخدام timestamp رقمي
           system_data: response.system_data,
+          classification: response.classification,
           metadata: response.metadata
         };
 
@@ -269,13 +277,20 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
                         <Brain className="w-3 h-3" />
                         <span>ذكاء اصطناعي</span>
                       </>
-                    )}
-                    {message.metadata.source === 'system_data_with_ai' && (
-                      <>
-                        <Database className="w-3 h-3" />
-                        <span>بيانات النظام + AI</span>
-                      </>
-                    )}
+                     )}
+                     {message.metadata.source === 'system_data_with_ai' && (
+                       <>
+                         <Database className="w-3 h-3" />
+                         <span>بيانات النظام + AI</span>
+                       </>
+                     )}
+                     {message.metadata.source === 'mixed_query_ai' && (
+                       <>
+                         <Brain className="w-3 h-3" />
+                         <Database className="w-3 h-3" />
+                         <span>استفسار مختلط</span>
+                       </>
+                     )}
                   </div>
                   
                    <div className="flex items-center gap-1">
@@ -305,6 +320,44 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
               </div>
             )}
             
+            {/* عرض معلومات التصنيف للاستفسارات المختلطة */}
+            {!isUser && message.classification && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="text-xs text-gray-600 mb-2">تحليل الاستفسار:</div>
+                <div className="text-xs space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`text-xs ${
+                      message.classification.type === 'mixed' ? 'bg-purple-50 text-purple-700' :
+                      message.classification.type === 'system_data' ? 'bg-blue-50 text-blue-700' :
+                      'bg-green-50 text-green-700'
+                    }`}>
+                      {message.classification.type === 'mixed' ? 'استفسار مختلط' :
+                       message.classification.type === 'system_data' ? 'بيانات النظام' :
+                       'استشارة قانونية'}
+                    </Badge>
+                    <span className="text-xs text-gray-500">
+                      ({(message.classification.confidence * 100).toFixed(0)}% ثقة)
+                    </span>
+                  </div>
+                  {message.classification.components && (
+                    <div className="text-xs text-gray-500">
+                      {message.classification.components.system_data?.length > 0 && (
+                        <div>بيانات: {message.classification.components.system_data.join(', ')}</div>
+                      )}
+                      {message.classification.components.legal_advice?.length > 0 && (
+                        <div>قانوني: {message.classification.components.legal_advice.join(', ')}</div>
+                      )}
+                    </div>
+                  )}
+                  {message.classification.reasoning && (
+                    <div className="text-xs text-gray-400 italic">
+                      {message.classification.reasoning}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* عرض البيانات الإضافية من النظام */}
             {!isUser && message.system_data && (
               <div className="mt-2 pt-2 border-t border-gray-200">
@@ -683,6 +736,35 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
           </div>
         </TabsContent>
 
+        {/* تبويب المذكرات الذكية */}
+        <TabsContent value="memos" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                المذكرات القانونية الذكية
+              </CardTitle>
+              <CardDescription>
+                إنشاء وإدارة المذكرات القانونية المبنية على استفساراتك وبيانات النظام
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  المذكرات الذكية قيد التطوير
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  ستتمكن قريباً من إنشاء مذكرات قانونية ذكية بناءً على الاستفسارات والبيانات
+                </p>
+                <Button variant="outline" disabled>
+                  قريباً
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* تبويب الإحصائيات */}
         <TabsContent value="stats" className="space-y-6">
           <div className="flex justify-between items-center">
@@ -747,12 +829,130 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
           </Card>
         </TabsContent>
 
-        {/* تبويب الإعدادات */}
-        <TabsContent value="settings" className="space-y-6">
-          <APIKeySettings onApiKeyChange={(key) => {
-            // يمكن إضافة منطق إضافي هنا عند تغيير API Key
-            console.log('API Key updated:', key ? 'Set' : 'Removed');
-          }} />
+        {/* تبويب المساعدة */}
+        <TabsContent value="help" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>دليل استخدام المستشار القانوني الذكي</CardTitle>
+              <CardDescription>
+                تعرف على الميزات الجديدة والمطورة في نظام التصنيف الذكي
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* أنواع الاستفسارات */}
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  أنواع الاستفسارات المدعومة
+                </h4>
+                <div className="space-y-3">
+                  <div className="border rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-green-50 text-green-700">استشارة قانونية</Badge>
+                      <span className="text-sm text-gray-600">للأسئلة القانونية العامة</span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      مثال: "ما هي حقوق المستأجر في الكويت؟" أو "هل يحق للعامل رفض العمل الإضافي؟"
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-blue-50 text-blue-700">بيانات النظام</Badge>
+                      <span className="text-sm text-gray-600">لاستعلام بيانات الشركة</span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      مثال: "كم عدد الفواتير المتأخرة؟" أو "أعطني قائمة بالعملاء المدينين"
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-purple-50 text-purple-700">استفسار مختلط</Badge>
+                      <span className="text-sm text-gray-600">يجمع بين النوعين</span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      مثال: "ما هي الإجراءات القانونية ضد العملاء المتأخرين في السداد وأعطني قائمة بهم؟"
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ميزات النظام الجديد */}
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  الميزات الجديدة
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="border rounded-lg p-3">
+                    <h5 className="font-medium mb-1">تصنيف ذكي بالذكاء الاصطناعي</h5>
+                    <p className="text-sm text-gray-600">
+                      يحدد النظام تلقائياً نوع استفسارك ويوجهه للمعالج المناسب
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-3">
+                    <h5 className="font-medium mb-1">معالجة الاستفسارات المختلطة</h5>
+                    <p className="text-sm text-gray-600">
+                      قدرة على التعامل مع الأسئلة التي تحتاج بيانات واستشارة قانونية معاً
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-3">
+                    <h5 className="font-medium mb-1">تحليل مفصل للاستفسار</h5>
+                    <p className="text-sm text-gray-600">
+                      عرض تفاصيل التصنيف ومستوى الثقة والمكونات المختلفة
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-3">
+                    <h5 className="font-medium mb-1">تعلم تدريجي</h5>
+                    <p className="text-sm text-gray-600">
+                      النظام يتعلم من تقييماتك ويحسن أداءه تدريجياً
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* نصائح للاستخدام الأمثل */}
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  نصائح للاستخدام الأمثل
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>اكتب أسئلتك بوضوح وتفصيل لتحصل على إجابات أكثر دقة</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>استخدم كلمات مفتاحية محددة مثل "فواتير متأخرة" أو "قانون العمل"</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>قيم الإجابات لمساعدة النظام على التعلم والتحسن</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>تأكد من اختيار الدولة الصحيحة للحصول على استشارة قانونية دقيقة</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* معلومات تقنية */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold mb-2">معلومات تقنية</h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div>• يستخدم النظام نماذج ذكاء اصطناعي متقدمة للتصنيف والإجابة</div>
+                  <div>• يحتفظ بسجل محادثاتك محلياً لضمان الخصوصية</div>
+                  <div>• يدعم معالجة النصوص العربية والإنجليزية</div>
+                  <div>• يتكامل مع قاعدة بيانات شركتك لتقديم معلومات فورية</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

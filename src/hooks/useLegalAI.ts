@@ -23,15 +23,22 @@ export interface LegalAIResponse {
   success: boolean;
   advice?: string;
   system_data?: any;
+  classification?: {
+    type: 'system_data' | 'legal_advice' | 'mixed';
+    confidence: number;
+    components?: { system_data: string[], legal_advice: string[] };
+    reasoning?: string;
+  };
   metadata?: {
-    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai';
+    source: 'cache' | 'local_knowledge' | 'api' | 'system_data_with_ai' | 'mixed_query_ai';
     confidence: number;
     response_time: number;
     cost_saved?: boolean;
     usage_count?: number;
     match_score?: number;
     data_sources?: string[];
-    query_type?: 'legal_advice' | 'system_data';
+    query_type?: 'legal_advice' | 'system_data' | 'mixed';
+    components?: { system_data: string[], legal_advice: string[] };
   };
   message?: string;
 }

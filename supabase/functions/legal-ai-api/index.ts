@@ -13,8 +13,14 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Query classification function
-async function classifyQuery(query: string, companyId: string, userId?: string): Promise<'system_data' | 'legal_advice'> {
+// Enhanced Query Classification with AI and Knowledge Base
+async function classifyQuery(query: string, companyId: string, userId?: string): Promise<{
+  type: 'system_data' | 'legal_advice' | 'mixed';
+  confidence: number;
+  components?: { system_data: string[], legal_advice: string[] };
+  reasoning?: string;
+}> {
+  // First check with existing pattern matching for speed
   const systemDataPatterns = [
     // Payment and financial patterns
     /عميل.*لم.*يدفع|عميل.*متأخر.*دفع|عميل.*مدين|عميل.*يدين|عميل.*مستحق/i,
@@ -44,7 +50,149 @@ async function classifyQuery(query: string, companyId: string, userId?: string):
     /available.*vehicles|vehicle.*status|maintenance.*records/i
   ];
 
-  return systemDataPatterns.some(pattern => pattern.test(query)) ? 'system_data' : 'legal_advice';
+  // Legal advice patterns
+  const legalAdvicePatterns = [
+    /قانون|قانوني|محكمة|قضية|دعوى|نزاع|تقاضي|محامي|استشارة.*قانونية/i,
+    /legal|law|court|case|lawsuit|dispute|litigation|lawyer|attorney|legal.*advice/i,
+    /حقوق|واجبات|التزام|عقد.*قانوني|مخالفة|جريمة|جناية|مدني|جنائي/i,
+    /rights|obligations|legal.*contract|violation|crime|civil|criminal|regulatory/i,
+    /ما.*هو.*القانون|ما.*ينص.*القانون|هل.*يحق.*لي|هل.*من.*القانوني/i,
+    /what.*is.*the.*law|what.*does.*the.*law|am.*i.*entitled|is.*it.*legal/i
+  ];
+
+  const systemDataMatches = systemDataPatterns.filter(pattern => pattern.test(query)).length;
+  const legalAdviceMatches = legalAdvicePatterns.filter(pattern => pattern.test(query)).length;
+
+  // Check for mixed queries
+  if (systemDataMatches > 0 && legalAdviceMatches > 0) {
+    return {
+      type: 'mixed',
+      confidence: 0.8,
+      components: {
+        system_data: extractSystemDataComponents(query),
+        legal_advice: extractLegalAdviceComponents(query)
+      },
+      reasoning: 'Query contains both system data requests and legal advice requirements'
+    };
+  }
+
+  // High confidence system data
+  if (systemDataMatches >= 2) {
+    return { type: 'system_data', confidence: 0.95, reasoning: 'Multiple system data patterns matched' };
+  }
+
+  // High confidence legal advice
+  if (legalAdviceMatches >= 2) {
+    return { type: 'legal_advice', confidence: 0.95, reasoning: 'Multiple legal advice patterns matched' };
+  }
+
+  // Single pattern matches
+  if (systemDataMatches === 1) {
+    return { type: 'system_data', confidence: 0.75, reasoning: 'Single system data pattern matched' };
+  }
+
+  if (legalAdviceMatches === 1) {
+    return { type: 'legal_advice', confidence: 0.75, reasoning: 'Single legal advice pattern matched' };
+  }
+
+  // Use AI for complex classification if no clear pattern match
+  if (openAIApiKey && query.length > 20) {
+    try {
+      const aiClassification = await classifyWithAI(query);
+      if (aiClassification) {
+        return {
+          type: aiClassification.type,
+          confidence: aiClassification.confidence,
+          reasoning: `AI Classification: ${aiClassification.reasoning}`
+        };
+      }
+    } catch (error) {
+      console.warn('AI classification failed, falling back to default:', error);
+    }
+  }
+
+  // Default to legal advice for unclear cases
+  return { type: 'legal_advice', confidence: 0.4, reasoning: 'No clear pattern matched, defaulting to legal advice' };
+}
+
+// AI-powered classification for complex queries
+async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'legal_advice' | 'mixed', confidence: number, reasoning: string } | null> {
+  if (!openAIApiKey) return null;
+
+  try {
+    const classificationPrompt = `
+أنت متخصص في تصنيف الاستفسارات. صنف الاستفسار التالي إلى إحدى الفئات:
+
+1. system_data: طلبات الحصول على بيانات من النظام (فواتير، عملاء، عقود، تقارير)
+2. legal_advice: طلبات الحصول على استشارة قانونية أو معلومات قانونية
+3. mixed: الاستفسار يحتوي على كلا النوعين
+
+أعطني الإجابة في صيغة JSON:
+{
+  "type": "نوع_الاستفسار",
+  "confidence": رقم_من_0_إلى_1,
+  "reasoning": "سبب_التصنيف"
+}
+
+الاستفسار: "${query}"`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: classificationPrompt }],
+        temperature: 0.1,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = JSON.parse(data.choices[0].message.content);
+    
+    return {
+      type: result.type,
+      confidence: Math.min(result.confidence, 0.9), // Cap AI confidence at 0.9
+      reasoning: result.reasoning
+    };
+  } catch (error) {
+    console.warn('AI classification error:', error);
+    return null;
+  }
+}
+
+// Extract system data components from mixed queries
+function extractSystemDataComponents(query: string): string[] {
+  const components = [];
+  
+  if (/فواتير|invoices/i.test(query)) components.push('invoices');
+  if (/عملاء|customers/i.test(query)) components.push('customers'); 
+  if (/عقود|contracts/i.test(query)) components.push('contracts');
+  if (/مدفوعات|payments/i.test(query)) components.push('payments');
+  if (/تقارير|reports/i.test(query)) components.push('reports');
+  if (/مركبات|vehicles/i.test(query)) components.push('vehicles');
+  
+  return components;
+}
+
+// Extract legal advice components from mixed queries
+function extractLegalAdviceComponents(query: string): string[] {
+  const components = [];
+  
+  if (/قانون|legal|law/i.test(query)) components.push('legal_interpretation');
+  if (/حقوق|rights/i.test(query)) components.push('rights_advice');
+  if (/التزام|obligations/i.test(query)) components.push('obligations_advice');
+  if (/محكمة|court/i.test(query)) components.push('court_procedures');
+  if (/عقد.*قانوني|legal.*contract/i.test(query)) components.push('contract_law');
+  
+  return components;
 }
 
 // Handle system data queries
@@ -334,6 +482,127 @@ async function fetchRelevantSystemData(query: string, companyId: string, supabas
   return data;
 }
 
+// Handle mixed queries (system data + legal advice)
+async function handleMixedQuery(body: any, classification: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
+  const { query, company_id, user_id, country } = body;
+  
+  try {
+    // Check user permissions for system data access
+    if (user_id) {
+      const userPermissions = await getUserPermissions(user_id);
+      if (!userPermissions || !userPermissions.hasSystemAccess()) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Insufficient permissions for mixed queries requiring system data access' 
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    const startTime = Date.now();
+    
+    // Fetch system data for relevant components
+    const systemData = await fetchRelevantSystemData(query, company_id, supabase);
+    
+    // Create enhanced prompt that combines system data with legal expertise
+    const mixedPrompt = `أنت مستشار قانوني خبير ومحلل بيانات متخصص في القانون ${country}. 
+    
+المطلوب: الإجابة على استفسار يجمع بين تحليل البيانات والاستشارة القانونية.
+
+مكونات الاستفسار:
+- البيانات المطلوبة: ${classification.components?.system_data?.join(', ') || 'غير محدد'}
+- الجوانب القانونية: ${classification.components?.legal_advice?.join(', ') || 'غير محدد'}
+
+البيانات المتوفرة من النظام:
+${JSON.stringify(systemData, null, 2)}
+
+يرجى تقديم إجابة شاملة تتضمن:
+1. تحليل البيانات ذات الصلة
+2. الاستشارة القانونية المطلوبة
+3. ربط البيانات بالسياق القانوني
+4. توصيات عملية تجمع بين التحليل والقانون
+5. التحذيرات القانونية المناسبة
+
+استخدم لغة مهنية وقدم إجابة متكاملة تلبي كلا الجانبين.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: mixedPrompt },
+          { role: 'user', content: query }
+        ],
+        temperature: 0.5, // Balanced temperature for both analytical and creative responses
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const advice = data.choices[0].message.content;
+    const responseTime = Date.now() - startTime;
+
+    // Log the mixed query
+    try {
+      await supabase.from('legal_ai_queries').insert({
+        company_id: company_id,
+        query: query,
+        country: country,
+        response: advice,
+        response_time: responseTime,
+        query_type: 'mixed',
+        classification_details: classification,
+        data_accessed: systemData
+      });
+    } catch (logError) {
+      console.warn('Failed to log mixed query:', logError);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        advice: advice,
+        system_data: systemData,
+        classification: classification,
+        metadata: {
+          source: 'mixed_query_ai',
+          confidence: classification.confidence,
+          response_time: responseTime,
+          query_type: 'mixed',
+          components: classification.components,
+          data_sources: Object.keys(systemData)
+        }
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+
+  } catch (error) {
+    console.error('Error handling mixed query:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        message: 'Failed to process mixed query. Please try again.' 
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+}
+
 // Helper function to log access
 async function logAccess(companyId: string, userId: string, accessType: string, customerId?: string, dataAccessed?: any, purpose?: string) {
   try {
@@ -485,11 +754,17 @@ serve(async (req) => {
       }
 
       // Classify the query to determine if it's about system data or general legal advice
-      const queryType = await classifyQuery(body.query, body.company_id, body.user_id);
+      const classification = await classifyQuery(body.query, body.company_id, body.user_id);
+      console.log('Query classification result:', classification);
       
-      if (queryType === 'system_data') {
+      if (classification.type === 'system_data') {
         // Route to system data analysis
         return await handleSystemDataQuery(body, corsHeaders, supabase, openAIApiKey);
+      }
+      
+      if (classification.type === 'mixed') {
+        // Handle mixed queries - process both system data and legal advice
+        return await handleMixedQuery(body, classification, corsHeaders, supabase, openAIApiKey);
       }
 
       // Handle general legal advice
