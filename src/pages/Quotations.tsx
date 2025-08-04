@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown, MessageCircle } from "lucide-react"
+import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown, MessageCircle, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 
 interface QuotationFormData {
   customer_id: string
@@ -31,6 +32,7 @@ export default function Quotations() {
   const [showQuotationForm, setShowQuotationForm] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
   const { user } = useAuth()
+  const { filter, companyId, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess()
   const queryClient = useQueryClient()
   
   const { register, handleSubmit, watch, reset, setValue } = useForm<QuotationFormData>({
@@ -54,43 +56,88 @@ export default function Quotations() {
     setValue('total_amount', calculatedAmount)
   }
 
-  // Fetch quotations
+  // Fetch quotations with company scoping
   const { data: quotations, isLoading } = useQuery({
-    queryKey: ['quotations'],
+    queryKey: getQueryKey(['quotations']),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('quotations')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            company_name,
+            customer_type,
+            phone,
+            alternative_phone
+          ),
+          vehicles (
+            id,
+            make,
+            model,
+            year,
+            plate_number
+          ),
+          companies (
+            id,
+            name,
+            name_ar,
+            logo_url
+          )
+        `)
         .order('created_at', { ascending: false })
+
+      // Apply company filter for non-global access users
+      if (!hasGlobalAccess && filter.company_id) {
+        query = query.eq('company_id', filter.company_id)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
       return data
     }
   })
 
-  // Fetch customers for dropdown
+  // Fetch customers for dropdown with company scoping
   const { data: customers } = useQuery({
-    queryKey: ['customers-list'],
+    queryKey: getQueryKey(['customers-list']),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select('id, first_name, last_name, company_name, customer_type, phone, alternative_phone')
         .eq('is_active', true)
 
+      // Apply company filter for non-global access users
+      if (!hasGlobalAccess && filter.company_id) {
+        query = query.eq('company_id', filter.company_id)
+      }
+
+      const { data, error } = await query
+
       if (error) throw error
       return data
     }
   })
 
-  // Fetch available vehicles for dropdown
+  // Fetch available vehicles for dropdown with company scoping
   const { data: vehicles } = useQuery({
-    queryKey: ['available-vehicles'],
+    queryKey: getQueryKey(['available-vehicles']),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('vehicles')
         .select('id, plate_number, make, model, year')
         .eq('is_active', true)
         .in('status', ['available', 'reserved'])
+
+      // Apply company filter for non-global access users
+      if (!hasGlobalAccess && filter.company_id) {
+        query = query.eq('company_id', filter.company_id)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
       return data
@@ -108,7 +155,7 @@ export default function Quotations() {
         .insert([{
           ...quotationData,
           quotation_number: quotationNumber,
-          company_id: user?.profile?.company_id || user?.company?.id,
+          company_id: companyId,
           created_by: user?.id,
           status: 'pending'
         }])
@@ -119,7 +166,7 @@ export default function Quotations() {
       return { ...data, quotation_number: quotationNumber }
     },
     onSuccess: (newQuotation) => {
-      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['quotations']) })
       setShowQuotationForm(false)
       reset()
       toast.success('تم إنشاء عرض السعر بنجاح', {
@@ -187,7 +234,7 @@ export default function Quotations() {
       if (updateError) throw updateError
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['quotations']) })
       toast.success('تم تحويل عرض السعر إلى عقد بنجاح')
     },
     onError: (error) => {
@@ -259,8 +306,9 @@ export default function Quotations() {
 
   // Share quotation via WhatsApp with approval link
   const shareViaWhatsApp = async (quotation: any) => {
-    const customer = customers?.find(c => c.id === quotation.customer_id)
-    const vehicle = vehicles?.find(v => v.id === quotation.vehicle_id)
+    // Get customer and vehicle data from quotation relations or fallback to lookup
+    const customer = quotation.customers || customers?.find(c => c.id === quotation.customer_id)
+    const vehicle = quotation.vehicles || vehicles?.find(v => v.id === quotation.vehicle_id)
     
     // Get customer phone number (prefer phone over alternative_phone)
     const customerPhone = customer?.phone || customer?.alternative_phone
@@ -299,7 +347,7 @@ export default function Quotations() {
     const durationType = quotation.quotation_type === 'daily' ? 'يوم' : 
                         quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
 
-    const message = `*عرض سعر من شركة ${user?.company?.name || 'شركتنا'}*
+    const message = `*عرض سعر من شركة ${quotation.companies?.name || user?.company?.name || 'شركتنا'}*
 
 *رقم العرض:* ${quotation.quotation_number}${vehicleInfo}
 
@@ -324,7 +372,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
     window.open(whatsappUrl, '_blank')
     
     // Refresh quotations to show updated data
-    queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    queryClient.invalidateQueries({ queryKey: getQueryKey(['quotations']) });
     
     toast.success('تم إرسال العرض مع رابط الموافقة عبر واتساب');
   }
@@ -432,13 +480,25 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                          quotation.status === 'rejected' ? 'مرفوض' : 'محول'}
                       </span>
                     </Badge>
+                    {hasGlobalAccess && quotation.companies && (
+                      <Badge variant="outline" className="text-xs">
+                        <Building className="h-3 w-3 mr-1" />
+                        {quotation.companies.name}
+                      </Badge>
+                    )}
                   </div>
                   
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        عرض سعر رقم {quotation.quotation_number}
+                        {quotation.customers ? (
+                          quotation.customers.customer_type === 'corporate'
+                            ? quotation.customers.company_name
+                            : `${quotation.customers.first_name} ${quotation.customers.last_name}`
+                        ) : (
+                          'عميل غير محدد'
+                        )}
                       </span>
                     </div>
                     
