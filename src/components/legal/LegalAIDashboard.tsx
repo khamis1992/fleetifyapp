@@ -105,30 +105,6 @@ export const LegalAIDashboard: React.FC = () => {
       icon: <Brain className="h-5 w-5" />,
       category: 'consultation',
       action: () => setActiveTab('smart-assistant')
-    },
-    {
-      id: 'document-analysis',
-      title: 'تحليل الوثائق',
-      description: 'تحليل فوري للعقود والوثائق القانونية',
-      icon: <FileText className="h-5 w-5" />,
-      category: 'analysis',
-      action: () => setActiveTab('document-analyzer')
-    },
-    {
-      id: 'contract-insights',
-      title: 'رؤى العقود',
-      description: 'تحليل ذكي لأداء وجودة العقود',
-      icon: <TrendingUp className="h-5 w-5" />,
-      category: 'insights',
-      action: () => setActiveTab('insights')
-    },
-    {
-      id: 'document-generator',
-      title: 'مولد الوثائق',
-      description: 'إنشاء وثائق قانونية ذكية ومخصصة',
-      icon: <Lightbulb className="h-5 w-5" />,
-      category: 'documentation',
-      action: () => setActiveTab('document-generator')
     }
   ];
 
@@ -225,7 +201,7 @@ export const LegalAIDashboard: React.FC = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             نظرة عامة
@@ -233,22 +209,6 @@ export const LegalAIDashboard: React.FC = () => {
           <TabsTrigger value="smart-assistant" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             المساعد الذكي
-          </TabsTrigger>
-          <TabsTrigger value="document-analyzer" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            تحليل الوثائق
-          </TabsTrigger>
-          <TabsTrigger value="document-generator" className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4" />
-            مولد الوثائق
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            الرؤى والتوصيات
-          </TabsTrigger>
-          <TabsTrigger value="performance" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            الأداء
           </TabsTrigger>
         </TabsList>
 
@@ -370,142 +330,6 @@ export const LegalAIDashboard: React.FC = () => {
           <SmartLegalAssistant />
         </TabsContent>
 
-        <TabsContent value="document-analyzer">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-6 w-6" />
-                تحليل الوثائق القانونية
-              </CardTitle>
-              <CardDescription>
-                تم دمج جميع أدوات تحليل الوثائق في المساعد القانوني الذكي
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <div className="max-w-md mx-auto space-y-4">
-                <div className="p-4 rounded-lg bg-primary/10">
-                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">استخدم المساعد الذكي</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    المساعد القانوني الذكي يقوم بتحليل الوثائق والعقود بدقة عالية مع تقديم تفسيرات مفصلة
-                  </p>
-                  <Button onClick={() => setActiveTab('smart-assistant')} className="w-full">
-                    الانتقال للمساعد الذكي
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="document-generator">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-6 w-6" />
-                مولد الوثائق القانونية
-              </CardTitle>
-              <CardDescription>
-                تم دمج جميع أدوات إنشاء الوثائق في المساعد القانوني الذكي
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <div className="max-w-md mx-auto space-y-4">
-                <div className="p-4 rounded-lg bg-primary/10">
-                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">استخدم المساعد الذكي</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    المساعد القانوني الذكي يقوم بإنشاء جميع أنواع الوثائق القانونية بناءً على احتياجاتك
-                  </p>
-                  <Button onClick={() => setActiveTab('smart-assistant')} className="w-full">
-                    الانتقال للمساعد الذكي
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="insights">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-6 w-6" />
-                الرؤى والتوصيات القانونية
-              </CardTitle>
-              <CardDescription>
-                تم دمج جميع أدوات التحليل والتوصيات في المساعد القانوني الذكي
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <div className="max-w-md mx-auto space-y-4">
-                <div className="p-4 rounded-lg bg-primary/10">
-                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">استخدم المساعد الذكي</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    المساعد القانوني الذكي يقدم رؤى وتوصيات ذكية بناءً على تحليل شامل للقضايا
-                  </p>
-                  <Button onClick={() => setActiveTab('smart-assistant')} className="w-full">
-                    الانتقال للمساعد الذكي
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-
-        <TabsContent value="performance">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>إحصائيات الأداء</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>دقة التحليل</span>
-                    <span className="font-bold text-green-600">94%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>معدل رضا المستخدمين</span>
-                    <span className="font-bold text-blue-600">4.8/5</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>وقت الاستجابة المتوسط</span>
-                    <span className="font-bold">2.3 ثانية</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>الاستعلامات المكتملة</span>
-                    <span className="font-bold">1,247</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>التحسينات المقترحة</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                    <h4 className="font-medium text-blue-900">تحسين قاعدة البيانات القانونية</h4>
-                    <p className="text-sm text-blue-700">إضافة المزيد من السوابق القضائية</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                    <h4 className="font-medium text-green-900">تطوير الذاكرة السياقية</h4>
-                    <p className="text-sm text-green-700">تحسين فهم السياق التاريخي للقضايا</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
-                    <h4 className="font-medium text-orange-900">زيادة سرعة المعالجة</h4>
-                    <p className="text-sm text-orange-700">تحسين خوارزميات التحليل</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
