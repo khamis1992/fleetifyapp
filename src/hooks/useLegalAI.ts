@@ -37,10 +37,8 @@ export interface LegalAIFeedbackResponse {
   message?: string;
 }
 
-// عنوان API - يمكن تغييره حسب البيئة
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/legal-ai'  // في الإنتاج
-  : 'http://localhost:5000/api'; // في التطوير
+// عنوان API - استخدام Supabase Edge Function
+const API_BASE_URL = '/functions/v1/legal-ai-api';
 
 export const useLegalAI = () => {
   const [isLoading, setIsLoading] = useState(false);

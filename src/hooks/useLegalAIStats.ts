@@ -74,10 +74,8 @@ export interface LearningInsights {
   }>;
 }
 
-// عنوان API
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/legal-ai'
-  : 'http://localhost:5000/api';
+// عنوان API - استخدام Supabase Edge Function
+const API_BASE_URL = '/functions/v1/legal-ai-api';
 
 export const useLegalAIStats = () => {
   const [stats, setStats] = useState<LegalAIStats | null>(null);
