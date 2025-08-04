@@ -696,15 +696,6 @@ export const SmartLegalAssistant = () => {
 
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto">
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6" />
-            المساعد القانوني الذكي المتكامل
-            <Badge variant="secondary" className="ml-2">مدعوم بالذكاء الاصطناعي</Badge>
-          </CardTitle>
-        </CardHeader>
-      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <TabsList className="grid w-full grid-cols-4">
