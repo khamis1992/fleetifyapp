@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.quotation-approval]
 verify_jwt = false
+
+[functions.legal-ai-api]
+verify_jwt = false
