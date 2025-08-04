@@ -1099,32 +1099,6 @@ serve(async (req) => {
         );
       }
     }
-          ratings_trend: 4.2
-        },
-        patterns: [
-          {
-            pattern_type: "query_similarity",
-            description: "استفسارات متشابهة حول قوانين العمل",
-            frequency: 15,
-            impact: "high"
-          }
-        ],
-        improvements: [
-          {
-            improvement_type: "response_optimization",
-            description: "تحسين سرعة الاستجابة للاستفسارات المتكررة",
-            applied_at: new Date().toISOString(),
-            impact_score: 8.5
-          }
-        ]
-      };
-
-      return new Response(
-        JSON.stringify({ success: true, insights: mockInsights }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
     }
 
     // Customer search endpoint
