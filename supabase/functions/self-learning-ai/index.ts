@@ -167,10 +167,10 @@ serve(async (req) => {
         })
         .eq('id', bestMatch.id);
 
-      responseData = await processWithPattern(query, bestMatch, context);
+      responseData = await processWithPattern(query, bestMatch, context, supabaseClient, companyId);
     } else {
       console.log('🆕 Creating new learning experience');
-      responseData = await processNewQuery(query, context);
+      responseData = await processNewQuery(query, context, supabaseClient, companyId);
     }
 
     // Step 5: Record the interaction for learning
@@ -333,8 +333,24 @@ async function generateClarificationQuestions(
   }
 }
 
-async function processWithPattern(query: string, pattern: any, context: any) {
+async function processWithPattern(query: string, pattern: any, context: any, supabaseClient: any, companyId: string) {
   const patternData = pattern.pattern_data as any;
+  
+  // Check if this pattern requires data retrieval
+  if (shouldExecuteDataQuery(pattern.pattern_type, query)) {
+    const dataResult = await executeDataQuery(pattern.pattern_type, query, supabaseClient, companyId);
+    if (dataResult.success) {
+      return {
+        response: dataResult.response,
+        intent: pattern.pattern_type,
+        confidence: patternData.confidence_level || 0.9,
+        usedPattern: true,
+        learningApplied: true,
+        adaptiveRecommendations: dataResult.recommendations || patternData.adaptive_recommendations || [],
+        data: dataResult.data
+      };
+    }
+  }
   
   // Use the response template if available, otherwise fall back to a generic response
   let response;
@@ -357,7 +373,7 @@ async function processWithPattern(query: string, pattern: any, context: any) {
   };
 }
 
-async function processNewQuery(query: string, context: any) {
+async function processNewQuery(query: string, context: any, supabaseClient: any, companyId: string) {
   // Enhanced keyword-based processing for common queries
   const normalizedQuery = query.toLowerCase().trim();
   const conversationHistory = context?.conversationHistory || [];
@@ -367,46 +383,62 @@ async function processNewQuery(query: string, context: any) {
   const isFollowUpAnswer = checkIfAnswerToQuestion(normalizedQuery, conversationHistory);
   
   if (isFollowUpAnswer && lastAIMessage) {
-    // Process follow-up answers based on context
+    // Process follow-up answers based on context with actual data retrieval
     if (lastAIMessage.content.includes('العقود النشطة') || lastAIMessage.content.includes('جميع العقود')) {
-      // This is answering a contract count question
+      // This is answering a contract count question - execute the query
       if (normalizedQuery.includes('جميع') || normalizedQuery.includes('كل')) {
-        return {
-          response: 'حسناً، سأقوم بعرض إجمالي عدد العقود في النظام. للوصول إلى هذه المعلومات، أحتاج للاتصال بقاعدة البيانات. سيتم عرض جميع العقود بما في ذلك النشطة والمنتهية الصلاحية.',
-          intent: 'contract_count_all',
-          confidence: 0.9,
-          usedPattern: false,
-          adaptiveRecommendations: ['عرض تفاصيل العقود', 'تصنيف العقود حسب الحالة', 'إحصائيات شهرية للعقود']
-        };
+        const dataResult = await executeDataQuery('contract_count_all', query, supabaseClient, companyId);
+        if (dataResult.success) {
+          return {
+            response: dataResult.response,
+            intent: 'contract_count_all',
+            confidence: 0.9,
+            usedPattern: false,
+            adaptiveRecommendations: dataResult.recommendations,
+            data: dataResult.data
+          };
+        }
       } else if (normalizedQuery.includes('نشطة') || normalizedQuery.includes('النشطة')) {
-        return {
-          response: 'ممتاز، سأعرض لك العقود النشطة فقط. هذا سيشمل العقود التي لم تنته صلاحيتها وما زالت سارية المفعول.',
-          intent: 'contract_count_active',
-          confidence: 0.9,
-          usedPattern: false,
-          adaptiveRecommendations: ['عرض تفاصيل العقود النشطة', 'تواريخ انتهاء العقود', 'العقود القريبة من الانتهاء']
-        };
+        const dataResult = await executeDataQuery('contract_count_active', query, supabaseClient, companyId);
+        if (dataResult.success) {
+          return {
+            response: dataResult.response,
+            intent: 'contract_count_active',
+            confidence: 0.9,
+            usedPattern: false,
+            adaptiveRecommendations: dataResult.recommendations,
+            data: dataResult.data
+          };
+        }
       }
     }
     
     if (lastAIMessage.content.includes('العملاء النشطين') || lastAIMessage.content.includes('جميع العملاء')) {
-      // This is answering a customer count question
+      // This is answering a customer count question - execute the query
       if (normalizedQuery.includes('جميع') || normalizedQuery.includes('كل')) {
-        return {
-          response: 'سأعرض لك إجمالي عدد العملاء المسجلين في النظام، بما في ذلك النشطين وغير النشطين.',
-          intent: 'customer_count_all',
-          confidence: 0.9,
-          usedPattern: false,
-          adaptiveRecommendations: ['قائمة العملاء', 'تقارير العملاء', 'إحصائيات العملاء']
-        };
+        const dataResult = await executeDataQuery('customer_count_all', query, supabaseClient, companyId);
+        if (dataResult.success) {
+          return {
+            response: dataResult.response,
+            intent: 'customer_count_all',
+            confidence: 0.9,
+            usedPattern: false,
+            adaptiveRecommendations: dataResult.recommendations,
+            data: dataResult.data
+          };
+        }
       } else if (normalizedQuery.includes('نشط') || normalizedQuery.includes('النشطين')) {
-        return {
-          response: 'سأعرض لك العملاء النشطين فقط الذين لديهم تعاملات حالية مع الشركة.',
-          intent: 'customer_count_active',
-          confidence: 0.9,
-          usedPattern: false,
-          adaptiveRecommendations: ['تفاصيل العملاء النشطين', 'آخر تعاملات العملاء', 'عقود العملاء النشطة']
-        };
+        const dataResult = await executeDataQuery('customer_count_active', query, supabaseClient, companyId);
+        if (dataResult.success) {
+          return {
+            response: dataResult.response,
+            intent: 'customer_count_active',
+            confidence: 0.9,
+            usedPattern: false,
+            adaptiveRecommendations: dataResult.recommendations,
+            data: dataResult.data
+          };
+        }
       }
     }
   }
@@ -415,25 +447,80 @@ async function processNewQuery(query: string, context: any) {
   const contractCountKeywords = ['كم عقد', 'كم اتفاقية', 'عدد العقود', 'عدد الاتفاقيات'];
   const customerCountKeywords = ['كم عميل', 'عدد العملاء', 'كم زبون'];
   
-  // Check for simple count queries
+  // Check for simple count queries - try to execute immediately if clear intent
   if (contractCountKeywords.some(keyword => normalizedQuery.includes(keyword))) {
-    return {
-      response: 'لمساعدتك في معرفة عدد العقود، أحتاج للوصول إلى قاعدة البيانات. هل تقصد العقود النشطة فقط أم جميع العقود؟',
-      intent: 'contract_count_query',
-      confidence: 0.9,
-      usedPattern: false,
-      adaptiveRecommendations: ['عرض العقود النشطة', 'عرض جميع العقود', 'إحصائيات العقود']
-    };
+    // Try to determine if they want all or active contracts
+    if (normalizedQuery.includes('نشط') || normalizedQuery.includes('النشطة')) {
+      const dataResult = await executeDataQuery('contract_count_active', query, supabaseClient, companyId);
+      if (dataResult.success) {
+        return {
+          response: dataResult.response,
+          intent: 'contract_count_active',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: dataResult.recommendations,
+          data: dataResult.data
+        };
+      }
+    } else if (normalizedQuery.includes('جميع') || normalizedQuery.includes('كل')) {
+      const dataResult = await executeDataQuery('contract_count_all', query, supabaseClient, companyId);
+      if (dataResult.success) {
+        return {
+          response: dataResult.response,
+          intent: 'contract_count_all',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: dataResult.recommendations,
+          data: dataResult.data
+        };
+      }
+    } else {
+      // Ask for clarification only if intent is unclear
+      return {
+        response: 'لمساعدتك في معرفة عدد العقود، أحتاج للوصول إلى قاعدة البيانات. هل تقصد العقود النشطة فقط أم جميع العقود؟',
+        intent: 'contract_count_query',
+        confidence: 0.9,
+        usedPattern: false,
+        adaptiveRecommendations: ['عرض العقود النشطة', 'عرض جميع العقود', 'إحصائيات العقود']
+      };
+    }
   }
   
   if (customerCountKeywords.some(keyword => normalizedQuery.includes(keyword))) {
-    return {
-      response: 'لعرض إحصائيات العملاء، هل تريد معرفة العملاء النشطين أم جميع العملاء المسجلين في النظام؟',
-      intent: 'customer_count_query',
-      confidence: 0.9,
-      usedPattern: false,
-      adaptiveRecommendations: ['عرض العملاء النشطين', 'عرض جميع العملاء', 'تقارير العملاء']
-    };
+    // Try to determine if they want all or active customers
+    if (normalizedQuery.includes('نشط') || normalizedQuery.includes('النشطين')) {
+      const dataResult = await executeDataQuery('customer_count_active', query, supabaseClient, companyId);
+      if (dataResult.success) {
+        return {
+          response: dataResult.response,
+          intent: 'customer_count_active',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: dataResult.recommendations,
+          data: dataResult.data
+        };
+      }
+    } else if (normalizedQuery.includes('جميع') || normalizedQuery.includes('كل')) {
+      const dataResult = await executeDataQuery('customer_count_all', query, supabaseClient, companyId);
+      if (dataResult.success) {
+        return {
+          response: dataResult.response,
+          intent: 'customer_count_all',
+          confidence: 0.9,
+          usedPattern: false,
+          adaptiveRecommendations: dataResult.recommendations,
+          data: dataResult.data
+        };
+      }
+    } else {
+      return {
+        response: 'لعرض إحصائيات العملاء، هل تريد معرفة العملاء النشطين أم جميع العملاء المسجلين في النظام؟',
+        intent: 'customer_count_query',
+        confidence: 0.9,
+        usedPattern: false,
+        adaptiveRecommendations: ['عرض العملاء النشطين', 'عرض جميع العملاء', 'تقارير العملاء']
+      };
+    }
   }
 
   // Fallback to AI processing for complex queries
@@ -697,4 +784,134 @@ async function generateFollowUpSuggestions(query: string, responseData: any): Pr
   }
   
   return suggestions;
+}
+
+// Data Access Layer - Safe database queries
+function shouldExecuteDataQuery(intent: string, query: string): boolean {
+  const dataQueryIntents = [
+    'contract_count_all',
+    'contract_count_active', 
+    'customer_count_all',
+    'customer_count_active',
+    'contract_count_query',
+    'customer_count_query'
+  ];
+  
+  return dataQueryIntents.includes(intent);
+}
+
+async function executeDataQuery(intent: string, query: string, supabaseClient: any, companyId: string) {
+  console.log(`🔍 Executing data query for intent: ${intent}`);
+  
+  try {
+    switch (intent) {
+      case 'contract_count_all':
+        const { data: allContracts, error: allContractsError } = await supabaseClient
+          .from('contracts')
+          .select('id, status, contract_number, created_at')
+          .eq('company_id', companyId);
+        
+        if (allContractsError) throw allContractsError;
+        
+        const totalContracts = allContracts?.length || 0;
+        const activeContracts = allContracts?.filter(c => c.status === 'active').length || 0;
+        const draftContracts = allContracts?.filter(c => c.status === 'draft').length || 0;
+        const cancelledContracts = allContracts?.filter(c => c.status === 'cancelled').length || 0;
+        
+        return {
+          success: true,
+          response: `إجمالي عدد العقود في النظام: ${totalContracts} عقد\n\nتفصيل العقود:\n• العقود النشطة: ${activeContracts}\n• العقود المسودة: ${draftContracts}\n• العقود الملغية: ${cancelledContracts}`,
+          data: {
+            total: totalContracts,
+            active: activeContracts,
+            draft: draftContracts,
+            cancelled: cancelledContracts
+          },
+          recommendations: ['عرض تفاصيل العقود النشطة', 'تصدير قائمة العقود', 'إحصائيات العقود الشهرية']
+        };
+        
+      case 'contract_count_active':
+        const { data: activeContractsOnly, error: activeError } = await supabaseClient
+          .from('contracts')
+          .select('id, contract_number, start_date, end_date')
+          .eq('company_id', companyId)
+          .eq('status', 'active');
+        
+        if (activeError) throw activeError;
+        
+        const activeCount = activeContractsOnly?.length || 0;
+        
+        return {
+          success: true,
+          response: `عدد العقود النشطة في النظام: ${activeCount} عقد نشط\n\nهذه العقود سارية المفعول حالياً ولم تنته صلاحيتها.`,
+          data: {
+            active: activeCount,
+            contracts: activeContractsOnly
+          },
+          recommendations: ['عرض تفاصيل العقود النشطة', 'العقود القريبة من الانتهاء', 'تجديد العقود']
+        };
+        
+      case 'customer_count_all':
+        const { data: allCustomers, error: allCustomersError } = await supabaseClient
+          .from('customers')
+          .select('id, customer_type, is_active, created_at')
+          .eq('company_id', companyId);
+        
+        if (allCustomersError) throw allCustomersError;
+        
+        const totalCustomers = allCustomers?.length || 0;
+        const activeCustomers = allCustomers?.filter(c => c.is_active === true).length || 0;
+        const individualCustomers = allCustomers?.filter(c => c.customer_type === 'individual').length || 0;
+        const corporateCustomers = allCustomers?.filter(c => c.customer_type === 'corporate').length || 0;
+        
+        return {
+          success: true,
+          response: `إجمالي عدد العملاء في النظام: ${totalCustomers} عميل\n\nتفصيل العملاء:\n• العملاء النشطون: ${activeCustomers}\n• العملاء الأفراد: ${individualCustomers}\n• العملاء الشركات: ${corporateCustomers}`,
+          data: {
+            total: totalCustomers,
+            active: activeCustomers,
+            individual: individualCustomers,
+            corporate: corporateCustomers
+          },
+          recommendations: ['عرض قائمة العملاء', 'إضافة عميل جديد', 'تقارير العملاء']
+        };
+        
+      case 'customer_count_active':
+        const { data: activeCustomersOnly, error: activeCustomersError } = await supabaseClient
+          .from('customers')
+          .select('id, customer_type, first_name, last_name, company_name')
+          .eq('company_id', companyId)
+          .eq('is_active', true);
+        
+        if (activeCustomersError) throw activeCustomersError;
+        
+        const activeCustomersCount = activeCustomersOnly?.length || 0;
+        
+        return {
+          success: true,
+          response: `عدد العملاء النشطين في النظام: ${activeCustomersCount} عميل نشط\n\nهؤلاء العملاء لديهم حسابات نشطة ويمكنهم التعامل مع الشركة.`,
+          data: {
+            active: activeCustomersCount,
+            customers: activeCustomersOnly
+          },
+          recommendations: ['عرض تفاصيل العملاء النشطين', 'آخر تعاملات العملاء', 'عقود العملاء النشطة']
+        };
+        
+      default:
+        return {
+          success: false,
+          response: 'عذراً، لا يمكنني تنفيذ هذا الاستعلام حالياً.',
+          data: null,
+          recommendations: []
+        };
+    }
+  } catch (error) {
+    console.error(`❌ Database query error for intent ${intent}:`, error);
+    return {
+      success: false,
+      response: 'حدث خطأ أثناء الوصول إلى قاعدة البيانات. يرجى المحاولة مرة أخرى.',
+      data: null,
+      recommendations: []
+    };
+  }
 }
