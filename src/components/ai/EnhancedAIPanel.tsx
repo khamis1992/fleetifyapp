@@ -65,7 +65,8 @@ export const EnhancedAIPanel: React.FC = () => {
   // Load quick stats on component mount
   useEffect(() => {
     loadQuickStats();
-  }, []);
+    initializeEntityRegistry();
+  }, [loadQuickStats, initializeEntityRegistry]);
 
   const loadQuickStats = async () => {
     try {
