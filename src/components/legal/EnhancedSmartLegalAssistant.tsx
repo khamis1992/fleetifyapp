@@ -40,6 +40,8 @@ import {
   Filter
 } from 'lucide-react';
 import { useUnifiedLegalAI, UnifiedLegalQuery, UnifiedLegalResponse } from '@/hooks/useUnifiedLegalAI';
+import { UnpaidCustomerSearchInterface } from './UnpaidCustomerSearchInterface';
+import { useUnpaidCustomerSearch } from '@/hooks/useUnpaidCustomerSearch';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 interface Message {
@@ -109,8 +111,10 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [activeQueryType, setActiveQueryType] = useState<'auto' | 'consultation' | 'document_analysis' | 'document_generation' | 'contract_comparison' | 'predictive_analysis' | 'smart_recommendations'>('auto');
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showUnpaidCustomersInterface, setShowUnpaidCustomersInterface] = useState(false);
   
   const { submitUnifiedQuery, isProcessing, error, processingStatus, clearError } = useUnifiedLegalAI();
+  const { generateLegalNoticeData } = useUnpaidCustomerSearch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -259,8 +263,24 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
       case 'implement_recommendation':
         setInputMessage(`كيف يمكنني تنفيذ: ${data?.recommendation}`);
         break;
+      case 'show_unpaid_customers_interface':
+        setShowUnpaidCustomersInterface(true);
+        break;
+      case 'generate_detailed_report':
+        setInputMessage('أنشئ تقرير مفصل عن العملاء المتأخرين في السداد');
+        break;
       default:
         console.log('Unknown action:', action);
+    }
+  };
+
+  const handleGenerateLegalNotice = async (customerId: string) => {
+    try {
+      const noticeData = await generateLegalNoticeData(customerId);
+      setInputMessage(`أنشئ إشعار قانوني لمطالبة العميل ${noticeData.customer.first_name || noticeData.customer.company_name} بسداد المبلغ المتأخر ${noticeData.totalOverdueAmount.toFixed(3)} د.ك`);
+      setShowUnpaidCustomersInterface(false);
+    } catch (error) {
+      toast.error('حدث خطأ في تحضير بيانات الإشعار القانوني');
     }
   };
 
@@ -449,7 +469,7 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
                   <p className="text-muted-foreground mb-4">
                     يمكنني مساعدتك في الاستشارات القانونية، تحليل الوثائق، إنشاء العقود، والمزيد
                   </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-w-md mx-auto">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-w-2xl mx-auto">
                     <Button size="sm" variant="outline" onClick={() => setInputMessage('ما هي خطوات إنهاء عقد الإيجار؟')}>
                       استشارة سريعة
                     </Button>
@@ -458,6 +478,9 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setInputMessage('أنشئ عقد إيجار سكني')}>
                       إنشاء عقد
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setInputMessage('ابحث عن العملاء المتأخرين في السداد')}>
+                      العملاء المدينين
                     </Button>
                   </div>
                 </div>
@@ -609,6 +632,43 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Unpaid Customers Interface */}
+      {showUnpaidCustomersInterface && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>العملاء المتأخرين في السداد</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowUnpaidCustomersInterface(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UnpaidCustomerSearchInterface 
+              onGenerateLegalNotice={handleGenerateLegalNotice}
+              onCustomerSelect={(customer) => {
+                setInputMessage(`أريد معلومات مفصلة عن العميل ${customer.customer_name || customer.customer_name_ar} والمبالغ المتأخرة عليه`);
+                setShowUnpaidCustomersInterface(false);
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* File Upload Dialog */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+        multiple
+        accept=".pdf,.doc,.docx,.txt"
+      />
     </div>
   );
 };

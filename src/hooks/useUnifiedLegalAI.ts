@@ -4,6 +4,7 @@ import { useLegalAI, LegalAIQuery, LegalAIResponse } from './useLegalAI';
 import { useAdvancedLegalAI, AdvancedLegalQuery, EnhancedLegalResponse } from './useAdvancedLegalAI';
 import { useSmartLegalClassifier, SmartQueryClassification } from './useSmartLegalClassifier';
 import { useLegalMemos } from './useLegalMemos';
+import { useUnpaidCustomerSearch } from './useUnpaidCustomerSearch';
 
 export interface UnifiedLegalQuery {
   query: string;
@@ -69,6 +70,7 @@ export const useUnifiedLegalAI = () => {
   const { submitAdvancedQuery, isLoading: isAdvancedLoading } = useAdvancedLegalAI();
   const { classifyQuery, isClassifying } = useSmartLegalClassifier();
   const { searchCustomers, analyzeCustomer, generateMemo, isLoading: isMemoLoading } = useLegalMemos();
+  const { searchUnpaidCustomers, generateLegalNoticeData } = useUnpaidCustomerSearch();
 
   // Document Analysis Handler
   const handleDocumentAnalysis = useCallback(async (
@@ -422,7 +424,114 @@ export const useUnifiedLegalAI = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [submitBasicQuery, submitAdvancedQuery, classifyQuery, searchCustomers, analyzeCustomer, generateMemo, handleDocumentAnalysis, handleDocumentGeneration, handleContractComparison, handlePredictiveAnalysis, handleSmartRecommendations]);
+  }, [submitBasicQuery, submitAdvancedQuery, classifyQuery, searchCustomers, analyzeCustomer, generateMemo, searchUnpaidCustomers, generateLegalNoticeData, handleDocumentAnalysis, handleDocumentGeneration, handleContractComparison, handlePredictiveAnalysis, handleSmartRecommendations]);
+
+  // Handle unpaid customers queries
+  const handleUnpaidCustomersQuery = async (
+    queryData: UnifiedLegalQuery,
+    classification: SmartQueryClassification
+  ): Promise<any> => {
+    setProcessingStatus('Searching for unpaid customers...');
+
+    try {
+      const unpaidCustomers = await searchUnpaidCustomers();
+      
+      if (unpaidCustomers.length === 0) {
+        return {
+          success: true,
+          advice: `✅ أخبار جيدة! لا يوجد عملاء متأخرين في السداد حالياً.
+
+جميع العملاء يقومون بسداد مستحقاتهم في الوقت المحدد.
+
+**للمراجعة الدورية:**
+- تحقق من الفواتير المرسلة
+- راجع تواريخ الاستحقاق القادمة
+- تأكد من تحديث بيانات العملاء`,
+          responseType: 'text',
+          metadata: { source: 'database', confidence: 1.0, response_time: 500 }
+        };
+      }
+
+      // Calculate statistics
+      const totalOverdueAmount = unpaidCustomers.reduce((sum, c) => sum + c.overdue_amount, 0);
+      const averageOverdueDays = Math.round(unpaidCustomers.reduce((sum, c) => sum + c.overdue_days, 0) / unpaidCustomers.length);
+      const criticalCases = unpaidCustomers.filter(c => c.overdue_days >= 90).length;
+
+      return {
+        success: true,
+        advice: `📊 **تقرير العملاء المتأخرين في السداد**
+
+**إحصائيات عامة:**
+• عدد العملاء المتأخرين: ${unpaidCustomers.length}
+• إجمالي المبالغ المتأخرة: ${totalOverdueAmount.toFixed(3)} د.ك
+• متوسط أيام التأخير: ${averageOverdueDays} يوم
+• الحالات الحرجة (أكثر من 90 يوم): ${criticalCases}
+
+**أهم الحالات المتأخرة:**
+${unpaidCustomers.slice(0, 5).map((customer, index) => 
+  `${index + 1}. ${customer.customer_name || customer.customer_name_ar} - ${customer.overdue_amount.toFixed(3)} د.ك (${customer.overdue_days} يوم)`
+).join('\n')}
+
+**إجراءات مقترحة:**
+• إرسال إشعارات قانونية للحالات الحرجة
+• متابعة هاتفية مع العملاء المتأخرين
+• مراجعة شروط السداد للعقود الجديدة
+
+يمكنك اختيار عميل محدد لإنشاء إشعار قانوني أو مذكرة مطالبة.`,
+        responseType: 'interactive',
+        interactiveElements: [
+          {
+            type: 'button',
+            label: 'عرض تفاصيل العملاء المتأخرين',
+            action: 'show_unpaid_customers_interface',
+            data: { customers: unpaidCustomers }
+          },
+          {
+            type: 'button',
+            label: 'إنشاء تقرير مفصل',
+            action: 'generate_detailed_report',
+            data: { type: 'unpaid_customers' }
+          }
+        ],
+        analysisData: {
+          insights: [
+            `يوجد ${unpaidCustomers.length} عميل متأخر في السداد`,
+            `إجمالي المبالغ المتأخرة ${totalOverdueAmount.toFixed(3)} د.ك`,
+            `${criticalCases} حالة تحتاج لتدخل عاجل`
+          ],
+          tables: [{
+            title: 'أهم العملاء المتأخرين',
+            data: unpaidCustomers.slice(0, 10).map(c => ({
+              name: c.customer_name || c.customer_name_ar,
+              amount: `${c.overdue_amount.toFixed(3)} د.ك`,
+              days: `${c.overdue_days} يوم`,
+              phone: c.phone
+            }))
+          }]
+        },
+        metadata: { source: 'database', confidence: 0.95, response_time: 1000 }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        advice: 'حدث خطأ أثناء البحث عن العملاء المتأخرين في السداد. يرجى المحاولة مرة أخرى.',
+        metadata: { source: 'database', confidence: 0, response_time: 500 }
+      };
+    }
+  };
+
+  // Check if query is about unpaid customers
+  const isUnpaidCustomersQuery = (query: string): boolean => {
+    const unpaidKeywords = [
+      'متأخر', 'متأخرين', 'متأخرة', 'سداد', 'دفع', 'مدين', 'مدينين',
+      'unpaid', 'overdue', 'late payment', 'outstanding', 'debt', 'debtors',
+      'مستحق', 'مستحقات', 'ذمم', 'إيجار متأخر', 'فواتير متأخرة'
+    ];
+    
+    return unpaidKeywords.some(keyword => 
+      query.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
 
   // Handle memo generation requests
   const handleMemoGeneration = async (
@@ -431,6 +540,11 @@ export const useUnifiedLegalAI = () => {
   ): Promise<LegalAIResponse> => {
     setProcessingStatus('Searching for relevant customers...');
     
+  // Check if query is about unpaid customers or late payments
+    if (isUnpaidCustomersQuery(queryData.query)) {
+      return await handleUnpaidCustomersQuery(queryData, classification);
+    }
+
     // Extract customer information from query
     const customerSearchTerm = extractCustomerFromQuery(queryData.query);
     
@@ -446,6 +560,9 @@ export const useUnifiedLegalAI = () => {
 
 **مثال للاستفسار الصحيح:**
 "اكتب مذكرة مطالبة بدفع الإيجار المتأخر للعميل أحمد علي"
+
+أو يمكنك البحث عن العملاء المتأخرين في السداد بكتابة:
+"ابحث عن العملاء المتأخرين في السداد" أو "عرض قائمة العملاء المدينين"
 
 بعد تقديم هذه المعلومات، سأتمكن من البحث عن بيانات العميل وإنشاء مذكرة قانونية مخصصة تتضمن كافة التفاصيل اللازمة.`,
         metadata: {
