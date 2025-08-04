@@ -131,10 +131,10 @@ const Legal = () => {
 
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
-          <TabsTrigger value="cases">القضايا</TabsTrigger>
-          <TabsTrigger value="ai-consultant">المستشار الذكي</TabsTrigger>
           <TabsTrigger value="reports">التقارير</TabsTrigger>
+          <TabsTrigger value="ai-consultant">المستشار الذكي</TabsTrigger>
+          <TabsTrigger value="cases">القضايا</TabsTrigger>
+          <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
