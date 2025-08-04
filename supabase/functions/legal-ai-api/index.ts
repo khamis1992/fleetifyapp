@@ -24,9 +24,11 @@ async function classifyQuery(query: string, companyId: string, userId?: string):
   
   // Arabic keywords for system data queries
   const systemDataKeywords = [
-    'عميل', 'عملاء', 'عقد', 'عقود', 'فاتورة', 'فواتير', 'دفع', 'دفعات', 'مبلغ', 'مبالغ',
-    'حساب', 'حسابات', 'تاريخ', 'تواريخ', 'بيانات', 'معلومات', 'تقرير', 'تقارير',
-    'customer', 'client', 'contract', 'invoice', 'payment', 'amount', 'account', 'data', 'report'
+    'عميل', 'عملاء', 'عقد', 'عقود', 'اتفاقية', 'اتفاقيات', 'فاتورة', 'فواتير', 'دفع', 'دفعات', 'مبلغ', 'مبالغ',
+    'حساب', 'حسابات', 'تاريخ', 'تواريخ', 'بيانات', 'معلومات', 'تقرير', 'تقارير', 'نشط', 'نشطة', 'كم', 'عدد',
+    'إحصائية', 'إحصائيات', 'قائمة', 'قوائم', 'مجموع', 'إجمالي',
+    'customer', 'client', 'contract', 'agreement', 'invoice', 'payment', 'amount', 'account', 'data', 'report',
+    'active', 'count', 'how many', 'statistics', 'total', 'list'
   ];
   
   // Arabic keywords for legal advice
@@ -147,6 +149,63 @@ async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'l
   return null;
 }
 
+// Helper function to get active contracts count
+async function getActiveContractsCount(companyId: string, supabase: any) {
+  try {
+    const { count, error } = await supabase
+      .from('contracts')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('status', 'active');
+
+    if (error) {
+      console.error('Error fetching active contracts count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getActiveContractsCount:', error);
+    return 0;
+  }
+}
+
+// Helper function to get contract statistics
+async function getContractStatistics(companyId: string, supabase: any) {
+  try {
+    const { data: contracts, error } = await supabase
+      .from('contracts')
+      .select('status, contract_amount, contract_type, created_at')
+      .eq('company_id', companyId);
+
+    if (error) {
+      console.error('Error fetching contract statistics:', error);
+      return null;
+    }
+
+    const stats = {
+      total_contracts: contracts.length,
+      active_contracts: contracts.filter(c => c.status === 'active').length,
+      draft_contracts: contracts.filter(c => c.status === 'draft').length,
+      cancelled_contracts: contracts.filter(c => c.status === 'cancelled').length,
+      total_value: contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0),
+      by_type: contracts.reduce((acc, c) => {
+        acc[c.contract_type] = (acc[c.contract_type] || 0) + 1;
+        return acc;
+      }, {}),
+      by_status: contracts.reduce((acc, c) => {
+        acc[c.status] = (acc[c.status] || 0) + 1;
+        return acc;
+      }, {})
+    };
+
+    return stats;
+  } catch (error) {
+    console.error('Error in getContractStatistics:', error);
+    return null;
+  }
+}
+
 async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
   const { query, company_id, user_id } = body;
   
@@ -189,24 +248,53 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
     }
 
     console.log('Processing system data query for company:', company_id);
+    console.log('Query details:', { query: query.substring(0, 100) });
     
     const startTime = Date.now();
     
-    // Enhanced system prompt for data analysis
+    // Fetch actual data based on query content
+    let systemData = null;
+    let dataType = 'general';
+    
+    const queryLower = query.toLowerCase();
+    
+    // Check if query is about contracts/agreements
+    if (queryLower.includes('عقد') || queryLower.includes('اتفاقية') || queryLower.includes('contract') || queryLower.includes('agreement')) {
+      console.log('Detected contract-related query, fetching contract data...');
+      systemData = await getContractStatistics(company_id, supabase);
+      dataType = 'contracts';
+      
+      // Specific handling for active contracts count queries
+      if ((queryLower.includes('نشط') || queryLower.includes('active')) && 
+          (queryLower.includes('كم') || queryLower.includes('عدد') || queryLower.includes('how many') || queryLower.includes('count'))) {
+        const activeCount = await getActiveContractsCount(company_id, supabase);
+        console.log('Active contracts count:', activeCount);
+        
+        systemData = {
+          ...systemData,
+          active_contracts_count: activeCount,
+          query_specific_answer: `يوجد حالياً ${activeCount} اتفاقية نشطة في النظام`
+        };
+      }
+    }
+    
+    // Enhanced system prompt with actual data
     const systemPrompt = `You are an AI assistant that helps analyze company data and answer questions about customers, contracts, invoices, and other business information.
 
 Company ID: ${company_id}
 User Query: ${query}
-
-Important: You should provide insights and analysis based on the data patterns you can infer, but always recommend that the user checks the actual system data for the most current and accurate information.
+Data Type: ${dataType}
+${systemData ? `Actual System Data: ${JSON.stringify(systemData, null, 2)}` : ''}
 
 Guidelines:
-- Provide helpful analysis and suggestions
-- Explain what type of data would be relevant to answer their question
-- Suggest specific reports or data views that might help
-- Always note that this is general guidance and actual data should be verified in the system
-- Be specific about Kuwait business practices when relevant
-- Use Arabic when appropriate for better clarity`;
+- If actual system data is provided, use it to give specific, accurate answers
+- Provide the exact numbers and statistics from the data
+- Include insights and analysis based on the real data
+- Suggest follow-up actions or related queries
+- Use Arabic when appropriate for better clarity
+- Be specific and factual when data is available
+
+Important: You now have access to real system data. Use it to provide accurate, specific answers.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -221,7 +309,7 @@ Guidelines:
           { role: 'user', content: query }
         ],
         max_tokens: 1000,
-        temperature: 0.7,
+        temperature: 0.3, // Lower temperature for more factual responses
       }),
     });
 
@@ -232,6 +320,12 @@ Guidelines:
     const data = await response.json();
     const responseTime = Date.now() - startTime;
 
+    console.log('System data query processed successfully:', {
+      data_type: dataType,
+      has_system_data: !!systemData,
+      response_time: responseTime
+    });
+
     // Log the system data query
     try {
       await supabase.from('legal_ai_queries').insert({
@@ -239,7 +333,12 @@ Guidelines:
         query: query,
         query_type: 'system_data',
         response_time: responseTime,
-        tokens_used: data.usage?.total_tokens || 0
+        tokens_used: data.usage?.total_tokens || 0,
+        metadata: {
+          data_type: dataType,
+          has_system_data: !!systemData,
+          system_data_summary: systemData ? Object.keys(systemData) : null
+        }
       });
     } catch (logError) {
       console.error('Failed to log system data query:', logError);
@@ -250,6 +349,8 @@ Guidelines:
         success: true,
         response: data.choices[0]?.message?.content || 'عذراً، لم أتمكن من تحليل البيانات حالياً',
         query_type: 'system_data',
+        data_type: dataType,
+        system_data: systemData,
         response_time: responseTime,
         tokens_used: data.usage?.total_tokens || 0
       }),
@@ -263,7 +364,8 @@ Guidelines:
     return new Response(
       JSON.stringify({
         success: false,
-        message: 'Failed to process system data query'
+        message: 'Failed to process system data query',
+        error: error.message
       }),
       {
         status: 500,
