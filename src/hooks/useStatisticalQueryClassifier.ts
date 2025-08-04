@@ -24,7 +24,7 @@ interface StatisticalPattern {
 }
 
 const STATISTICAL_PATTERNS: StatisticalPattern[] = [
-  // Contract patterns
+  // Contract patterns - using "عقد"
   {
     pattern: /كم.*عقد.*(ملغي|ملغى|منتهي|منتهى|مكتمل)/,
     category: 'contracts',
@@ -59,6 +59,50 @@ const STATISTICAL_PATTERNS: StatisticalPattern[] = [
     type: 'sum',
     visualization: 'mixed',
     keywords: ['إجمالي', 'عقود']
+  },
+  
+  // Agreement patterns - using "اتفاقية" 
+  {
+    pattern: /كم.*اتفاقية.*(موجودة|موجود|متوفرة|متوفر)/,
+    category: 'contracts',
+    type: 'count',
+    visualization: 'card',
+    keywords: ['اتفاقية', 'موجودة', 'كم']
+  },
+  {
+    pattern: /كم.*اتفاقية.*(ملغي|ملغى|منتهي|منتهى|مكتمل)/,
+    category: 'contracts',
+    type: 'count',
+    visualization: 'card',
+    keywords: ['اتفاقية', 'ملغي', 'كم']
+  },
+  {
+    pattern: /كم.*اتفاقية.*(نشط|نشطة|فعال|فعالة|جاري|جارية)/,
+    category: 'contracts',
+    type: 'count',
+    visualization: 'card',
+    keywords: ['اتفاقية', 'نشط', 'كم']
+  },
+  {
+    pattern: /كم.*اتفاقية.*معلق/,
+    category: 'contracts',
+    type: 'count',
+    visualization: 'card',
+    keywords: ['اتفاقية', 'معلق', 'كم']
+  },
+  {
+    pattern: /عدد.*الاتفاقيات/,
+    category: 'contracts',
+    type: 'count',
+    visualization: 'chart',
+    keywords: ['عدد', 'اتفاقيات']
+  },
+  {
+    pattern: /إجمالي.*الاتفاقيات/,
+    category: 'contracts',
+    type: 'sum',
+    visualization: 'mixed',
+    keywords: ['إجمالي', 'اتفاقيات']
   },
   
   // Customer patterns
@@ -156,6 +200,7 @@ export const useStatisticalQueryClassifier = () => {
     
     try {
       const normalizedQuery = query.toLowerCase().trim();
+      console.log('🔍 Statistical Query Classifier - Processing query:', { original: query, normalized: normalizedQuery });
       
       // Check for statistical patterns
       let bestMatch: StatisticalPattern | null = null;
@@ -169,6 +214,14 @@ export const useStatisticalQueryClassifier = () => {
           ).length;
           const score = keywordMatches / pattern.keywords.length;
           
+          console.log('✅ Pattern matched:', {
+            pattern: pattern.pattern.toString(),
+            category: pattern.category,
+            keywords: pattern.keywords,
+            keywordMatches,
+            score
+          });
+          
           if (score > highestScore) {
             highestScore = score;
             bestMatch = pattern;
@@ -178,7 +231,7 @@ export const useStatisticalQueryClassifier = () => {
       
       if (!bestMatch) {
         // Check for general statistical indicators
-        const hasStatisticalKeywords = /كم|عدد|احصائ|تقرير|مجموع|إجمالي/.test(normalizedQuery);
+        const hasStatisticalKeywords = /كم|عدد|احصائ|تقرير|مجموع|إجمالي|اتفاقية|اتفاقيات/.test(normalizedQuery);
         
         return {
           isStatisticalQuery: hasStatisticalKeywords,
@@ -214,7 +267,7 @@ export const useStatisticalQueryClassifier = () => {
       
       const confidence = Math.min(0.95, 0.7 + (highestScore * 0.25));
       
-      return {
+      const result = {
         isStatisticalQuery: true,
         queryCategory: bestMatch.category,
         statisticalType: bestMatch.type,
@@ -223,6 +276,9 @@ export const useStatisticalQueryClassifier = () => {
         confidence,
         suggestedVisualization: bestMatch.visualization
       };
+      
+      console.log('📊 Statistical Query Classification Result:', result);
+      return result;
       
     } finally {
       setIsClassifying(false);
