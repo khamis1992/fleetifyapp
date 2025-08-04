@@ -26,13 +26,19 @@ import {
   Download,
   Upload,
   Play,
-  Pause
+  Pause,
+  Layout,
+  Sparkles,
+  Clock
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { QueryTemplates } from './QueryTemplates';
+import { PDFExport } from './PDFExport';
+import { EnhancedTypingIndicator } from './EnhancedTypingIndicator';
 
 interface ConversationMessage {
   id: string;
@@ -77,6 +83,8 @@ export const UnifiedLegalInterface: React.FC = () => {
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [contextMemory, setContextMemory] = useState<Map<string, any>>(new Map());
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [currentOperation, setCurrentOperation] = useState<'thinking' | 'analyzing' | 'searching' | 'generating'>('thinking');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -329,6 +337,15 @@ export const UnifiedLegalInterface: React.FC = () => {
     });
   };
 
+  const handleTemplateSelect = (template: any) => {
+    setCurrentInput(template.template);
+    setShowTemplates(false);
+    toast({
+      title: "تم اختيار القالب",
+      description: template.title
+    });
+  };
+
   const getMessageTypeColor = (type: ConversationMessage['type']) => {
     switch (type) {
       case 'user': return 'bg-primary text-primary-foreground';
@@ -344,6 +361,16 @@ export const UnifiedLegalInterface: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col max-w-4xl mx-auto">
+      {/* Templates Modal */}
+      {showTemplates && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <QueryTemplates 
+            onSelectTemplate={handleTemplateSelect}
+            onClose={() => setShowTemplates(false)}
+          />
+        </div>
+      )}
+      
       {/* Header */}
       <Card className="mb-4">
         <CardHeader className="pb-3">
@@ -360,6 +387,20 @@ export const UnifiedLegalInterface: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <PDFExport 
+                messages={messages} 
+                conversationTitle={`جلسة قانونية - ${new Date().toLocaleDateString('ar-KW')}`}
+                userName={`${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim() || 'المستخدم'}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTemplates(true)}
+                className="flex items-center gap-2"
+              >
+                <Layout className="h-4 w-4" />
+                القوالب
+              </Button>
               <Badge variant="outline" className="bg-green-50 text-green-700">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
                 متصل
@@ -478,20 +519,10 @@ export const UnifiedLegalInterface: React.FC = () => {
                 </div>
               ))}
               
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-muted p-3 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                      </div>
-                      <span className="text-sm text-muted-foreground">المساعد يكتب...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <EnhancedTypingIndicator 
+                isTyping={isTyping} 
+                currentOperation={currentOperation} 
+              />
               
               <div ref={messagesEndRef} />
             </div>
