@@ -54,11 +54,12 @@ export const useLegalAI = () => {
     setError(null);
 
     try {
+      const { data: user } = await supabase.auth.getUser();
       const { data, error } = await supabase.functions.invoke('legal-ai-api', {
         body: {
           ...queryData,
           path: 'legal-advice',
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: user?.user?.id
         }
       });
 

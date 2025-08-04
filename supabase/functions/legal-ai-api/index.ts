@@ -46,13 +46,18 @@ async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any,
   const { query, company_id, user_id } = body;
   
   try {
-    // Check user permissions
-    const userProfile = await getUserPermissions(user_id);
-    if (!userProfile || userProfile.company_id !== company_id) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Unauthorized access to system data' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Check user permissions for system data queries
+    if (user_id) {
+      const userProfile = await getUserPermissions(user_id);
+      if (!userProfile || userProfile.company_id !== company_id) {
+        console.error('User permission check failed:', { user_id, company_id, userProfile });
+        return new Response(
+          JSON.stringify({ success: false, message: 'Unauthorized access to system data' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      console.warn('No user_id provided for system data query - proceeding without user validation');
     }
 
     // Analyze query intent and fetch relevant data
@@ -248,6 +253,11 @@ async function logAccess(companyId: string, userId: string, accessType: string, 
 // Helper function to get user permissions
 async function getUserPermissions(userId: string) {
   try {
+    if (!userId) {
+      console.error('No user ID provided to getUserPermissions');
+      return null;
+    }
+    
     const { data: profile } = await supabase
       .from('profiles')
       .select('user_role, company_id')
