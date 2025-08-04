@@ -62,19 +62,39 @@ export const useLegalAI = () => {
 
     try {
       const { data: user } = await supabase.auth.getUser();
+      
+      // Get better company_id from user profile if possible
+      let effectiveCompanyId = queryData.company_id;
+      if (user?.user?.id && (!effectiveCompanyId || effectiveCompanyId === 'default-company')) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('user_id', user.user.id)
+            .single();
+          if (profile?.company_id) {
+            effectiveCompanyId = profile.company_id;
+          }
+        } catch (profileError) {
+          console.warn('Could not fetch user profile for company ID');
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('legal-ai-api', {
         body: {
           ...queryData,
+          company_id: effectiveCompanyId,
           path: 'legal-advice',
           user_id: user?.user?.id
         }
       });
 
       if (error) {
+        console.error('Supabase function error:', error);
         throw new Error(error.message);
       }
 
-      if (data.success) {
+      if (data?.success) {
         // رسائل محسنة بناءً على نوع الاستفسار وتصنيفه
         if (data.metadata?.query_type === 'system_data') {
           toast.success('📊 تم جلب البيانات المطلوبة من النظام بنجاح');
@@ -90,14 +110,23 @@ export const useLegalAI = () => {
           toast.success('✅ تم الحصول على الاستشارة القانونية بنجاح');
         }
       } else {
-        toast.error(data.message || 'حدث خطأ في معالجة الطلب');
+        console.error('API returned unsuccessful response:', data);
+        toast.error(data?.message || 'حدث خطأ في معالجة الطلب');
       }
 
-      return data;
+      return data || { success: false, message: 'No response data received' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
       setError(errorMessage);
-      toast.error('حدث خطأ في الاتصال بالخادم');
+      
+      // Show more specific error messages
+      if (errorMessage.includes('Unauthorized')) {
+        toast.error('غير مخول للوصول - تحقق من صلاحياتك');
+      } else if (errorMessage.includes('Company mismatch')) {
+        toast.error('خطأ في معرف الشركة - اتصل بالدعم التقني');
+      } else {
+        toast.error('حدث خطأ في الاتصال بالخادم');
+      }
       
       return {
         success: false,

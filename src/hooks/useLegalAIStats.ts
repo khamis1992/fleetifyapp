@@ -59,20 +59,41 @@ export interface LearningInsights {
   summary: {
     total_patterns: number;
     total_improvements: number;
-    ratings_trend: number;
+    ratings_trend?: number;
+    learning_rate?: number;
+    accuracy_improvement?: string;
+    cost_optimization?: string;
+    response_quality?: number;
   };
-  patterns: Array<{
+  patterns?: Array<{
     pattern_type: string;
     description: string;
     frequency: number;
     impact: string;
   }>;
-  improvements: Array<{
+  improvements?: Array<{
     improvement_type: string;
     description: string;
     applied_at: string;
     impact_score: number;
   }>;
+  learning_patterns?: any[];
+  recommendations?: string[];
+  performance_metrics?: {
+    average_response_time: number;
+    accuracy_score: number;
+    user_satisfaction: number;
+    cost_efficiency: number;
+    learning_velocity: number;
+  };
+  trends?: {
+    query_volume_trend: string;
+    response_quality_trend: string;
+    cost_optimization_trend: string;
+    user_engagement_trend: string;
+  };
+  generated_at: string;
+  error_state?: boolean;
 }
 
 // استخدام Supabase Edge Function
@@ -130,15 +151,78 @@ export const useLegalAIStats = () => {
   // جلب رؤى التعلم
   const fetchLearningInsights = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
-        body: { path: 'learning-insights' }
-      });
+      const { data: user } = await supabase.auth.getUser();
       
-      if (!error && data.success) {
+      // Get user's company_id from profile for better accuracy
+      let companyId = 'default-company';
+      if (user?.user?.id) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('user_id', user.user.id)
+            .single();
+          companyId = profile?.company_id || companyId;
+        } catch (profileError) {
+          console.warn('Could not fetch user profile, using default company ID');
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+        body: {
+          path: 'legal-insights',
+          company_id: companyId,
+          user_id: user?.user?.id
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message);
+      }
+
+      if (data?.success) {
         setLearningInsights(data.insights);
+      } else {
+        console.error('API returned unsuccessful response:', data);
+        throw new Error(data?.message || 'Failed to fetch learning insights');
       }
     } catch (error) {
       console.error('Error fetching learning insights:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch learning insights');
+      
+      // Set comprehensive fallback data to prevent UI crashes
+      setLearningInsights({
+        summary: {
+          total_patterns: 0,
+          total_improvements: 0,
+          learning_rate: 0,
+          accuracy_improvement: '0%',
+          cost_optimization: '0%',
+          response_quality: 0
+        },
+        learning_patterns: [],
+        recommendations: [
+          'تحقق من الاتصال بالإنترنت',
+          'تأكد من صحة بيانات المصادقة',
+          'اتصل بالدعم التقني إذا استمرت المشكلة'
+        ],
+        performance_metrics: {
+          average_response_time: 0,
+          accuracy_score: 0,
+          user_satisfaction: 0,
+          cost_efficiency: 0,
+          learning_velocity: 0
+        },
+        trends: {
+          query_volume_trend: '0%',
+          response_quality_trend: '0%',
+          cost_optimization_trend: '0%',
+          user_engagement_trend: '0%'
+        },
+        generated_at: new Date().toISOString(),
+        error_state: true
+      });
     }
   };
 
