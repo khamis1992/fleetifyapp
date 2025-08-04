@@ -5,6 +5,8 @@ import { useAdvancedLegalAI, AdvancedLegalQuery, EnhancedLegalResponse } from '.
 import { useSmartLegalClassifier, SmartQueryClassification } from './useSmartLegalClassifier';
 import { useLegalMemos } from './useLegalMemos';
 import { useUnpaidCustomerSearch } from './useUnpaidCustomerSearch';
+import { useStatisticalQueryClassifier } from './useStatisticalQueryClassifier';
+import { useStatisticalQueryHandler } from './useStatisticalQueryHandler';
 
 export interface UnifiedLegalQuery {
   query: string;
@@ -71,6 +73,8 @@ export const useUnifiedLegalAI = () => {
   const { classifyQuery, isClassifying } = useSmartLegalClassifier();
   const { searchCustomers, analyzeCustomer, generateMemo, isLoading: isMemoLoading } = useLegalMemos();
   const { searchUnpaidCustomers, generateLegalNoticeData } = useUnpaidCustomerSearch();
+  const { classifyStatisticalQuery } = useStatisticalQueryClassifier();
+  const { processStatisticalQuery } = useStatisticalQueryHandler();
 
   // Document Analysis Handler
   const handleDocumentAnalysis = useCallback(async (
@@ -304,7 +308,40 @@ export const useUnifiedLegalAI = () => {
     const startTime = Date.now();
 
     try {
-      // Step 1: Classify the query
+      // Step 1: Check for statistical queries first
+      const statisticalClassification = classifyStatisticalQuery(queryData.query);
+      
+      if (statisticalClassification.isStatisticalQuery && statisticalClassification.confidence > 0.7) {
+        setProcessingStatus('Processing statistical query...');
+        const statisticalResponse = await processStatisticalQuery(
+          queryData.query,
+          statisticalClassification,
+          queryData.company_id
+        );
+        
+        return {
+          success: true,
+          response: {
+            success: true,
+            advice: `📊 **نتائج الاستفسار الإحصائي**\n\n${statisticalResponse.data.description}\n\n**القيمة:** ${statisticalResponse.data.value}\n\n**اقتراحات للمتابعة:**\n${statisticalResponse.suggestions.map(s => `• ${s}`).join('\n')}`,
+            responseType: 'chart',
+            analysisData: {
+              charts: statisticalResponse.visualizations.filter(v => v.type !== 'card' && v.type !== 'table'),
+              tables: statisticalResponse.visualizations.filter(v => v.type === 'table').map(v => v.data)
+            },
+            metadata: statisticalResponse.metadata
+          },
+          classification: { ...await classifyQuery(queryData.query, [], {}), isStatisticalQuery: true },
+          processingType: 'basic',
+          metadata: {
+            processingTime: statisticalResponse.metadata.executionTime,
+            dataSource: statisticalResponse.metadata.dataSource,
+            adaptiveRecommendations: statisticalResponse.suggestions
+          }
+        };
+      }
+
+      // Step 2: Regular classification for non-statistical queries
       setProcessingStatus('Analyzing query...');
       const classification = await classifyQuery(
         queryData.query,
@@ -312,7 +349,7 @@ export const useUnifiedLegalAI = () => {
         queryData.context
       );
 
-      // Step 2: Determine processing strategy
+      // Step 3: Determine processing strategy
       const processingType = determineProcessingType(classification);
       setProcessingStatus(`Processing with ${processingType} analysis...`);
 
