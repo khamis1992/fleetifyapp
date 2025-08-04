@@ -4131,6 +4131,123 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_ai_access_logs: {
+        Row: {
+          access_type: string
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          data_accessed: Json | null
+          id: string
+          purpose: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type: string
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          data_accessed?: Json | null
+          id?: string
+          purpose?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          data_accessed?: Json | null
+          id?: string
+          purpose?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      legal_ai_feedback: {
+        Row: {
+          company_id: string
+          country: string | null
+          created_at: string
+          feedback_text: string | null
+          id: string
+          message_id: string
+          query: string | null
+          rating: number
+        }
+        Insert: {
+          company_id: string
+          country?: string | null
+          created_at?: string
+          feedback_text?: string | null
+          id?: string
+          message_id: string
+          query?: string | null
+          rating: number
+        }
+        Update: {
+          company_id?: string
+          country?: string | null
+          created_at?: string
+          feedback_text?: string | null
+          id?: string
+          message_id?: string
+          query?: string | null
+          rating?: number
+        }
+        Relationships: []
+      }
+      legal_ai_queries: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          cost_saved: boolean | null
+          country: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          metadata: Json | null
+          query: string
+          response: string | null
+          response_time: number | null
+          source_type: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          cost_saved?: boolean | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          metadata?: Json | null
+          query: string
+          response?: string | null
+          response_time?: number | null
+          source_type?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          cost_saved?: boolean | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          metadata?: Json | null
+          query?: string
+          response?: string | null
+          response_time?: number | null
+          source_type?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       legal_case_account_mappings: {
         Row: {
           auto_create_journal_entries: boolean | null
@@ -4653,6 +4770,111 @@ export type Database = {
           statute_limitations?: string | null
           tags?: Json | null
           total_costs?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      legal_memo_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          memo_type: string
+          template_content: string
+          template_name: string
+          template_name_ar: string | null
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          memo_type: string
+          template_content: string
+          template_name: string
+          template_name_ar?: string | null
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          memo_type?: string
+          template_content?: string
+          template_name?: string
+          template_name_ar?: string | null
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: []
+      }
+      legal_memos: {
+        Row: {
+          approved_by: string | null
+          company_id: string
+          content: string
+          created_at: string
+          created_by: string
+          customer_id: string
+          data_sources: Json | null
+          generated_by_ai: boolean | null
+          id: string
+          memo_number: string
+          memo_type: string
+          recommendations: Json | null
+          sent_at: string | null
+          status: string
+          template_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          company_id: string
+          content: string
+          created_at?: string
+          created_by: string
+          customer_id: string
+          data_sources?: Json | null
+          generated_by_ai?: boolean | null
+          id?: string
+          memo_number: string
+          memo_type?: string
+          recommendations?: Json | null
+          sent_at?: string | null
+          status?: string
+          template_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          company_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          data_sources?: Json | null
+          generated_by_ai?: boolean | null
+          id?: string
+          memo_number?: string
+          memo_type?: string
+          recommendations?: Json | null
+          sent_at?: string | null
+          status?: string
+          template_id?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -9066,6 +9288,10 @@ export type Database = {
         Returns: string
       }
       generate_legal_case_number: {
+        Args: { company_id_param: string }
+        Returns: string
+      }
+      generate_legal_memo_number: {
         Args: { company_id_param: string }
         Returns: string
       }

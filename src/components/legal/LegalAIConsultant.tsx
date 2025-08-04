@@ -31,6 +31,9 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useLegalAIStats } from '@/hooks/useLegalAIStats';
+import { useLegalMemos } from '@/hooks/useLegalMemos';
+import { CustomerSearchDialog } from './CustomerSearchDialog';
+import { CustomerAnalysisPanel } from './CustomerAnalysisPanel';
 import APIKeySettings from './APIKeySettings';
 
 interface LegalAIConsultantProps {
@@ -441,8 +444,9 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
       </div>
 
       <Tabs defaultValue="consultant" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="consultant">الاستشارة</TabsTrigger>
+          <TabsTrigger value="memos">المذكرات الذكية</TabsTrigger>
           <TabsTrigger value="stats">الإحصائيات</TabsTrigger>
           <TabsTrigger value="settings">الإعدادات</TabsTrigger>
           <TabsTrigger value="help">المساعدة</TabsTrigger>
