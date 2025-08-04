@@ -184,11 +184,14 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
       const learningResponse = await processQueryWithLearning(learningQueryData);
 
       // Check if clarification is needed
-      if (learningResponse.clarification_questions && learningResponse.clarification_questions.length > 0) {
+      if (learningResponse.requires_clarification && learningResponse.clarification_questions && learningResponse.clarification_questions.length > 0) {
         setClarificationSession({
-          id: learningResponse.session_id,
+          id: learningResponse.session_id || 'temp-session',
           original_query: currentInput,
-          clarification_questions: learningResponse.clarification_questions
+          clarification_questions: learningResponse.clarification_questions,
+          company_id: user.company.id,
+          session_status: 'active' as const,
+          created_at: new Date().toISOString()
         });
         setShowClarificationDialog(true);
         

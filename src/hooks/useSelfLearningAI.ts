@@ -126,10 +126,10 @@ export const useSelfLearningAI = () => {
           confidence: response.confidence,
           intent_classification: 'clarification_needed',
           requires_clarification: true,
-          clarification_questions: response.session.clarification_questions,
+          clarification_questions: response.session?.clarification_questions || [],
           suggested_actions: [],
           learning_applied: false,
-          session_id: response.session.id
+          session_id: response.session?.id || null
         };
       }
 
