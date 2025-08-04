@@ -20,8 +20,15 @@ import {
   Star,
   TrendingUp,
   Users,
-  Target
+  Target,
+  User,
+  Bot,
+  Database,
+  ThumbsUp,
+  AlertCircle,
+  History
 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useLegalAIStats } from '@/hooks/useLegalAIStats';
 import APIKeySettings from './APIKeySettings';
@@ -430,6 +437,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
               النظام يعمل بكفاءة {healthStatus.performance.cost_efficiency}%
             </Badge>
           </div>
+        )}
       </div>
 
       <Tabs defaultValue="consultant" className="w-full">
@@ -635,7 +643,7 @@ export const LegalAIConsultant: React.FC<LegalAIConsultantProps> = ({ companyId 
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold">إحصائيات مفصلة</h3>
             <Button variant="outline" onClick={refreshStats}>
-              <BarChart className="w-4 h-4 mr-2" />
+              <BarChart3 className="w-4 h-4 mr-2" />
               تحديث الإحصائيات
             </Button>
           </div>
