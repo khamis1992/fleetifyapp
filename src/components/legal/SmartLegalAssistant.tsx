@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { FormattedResponse } from './FormattedResponse';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -292,7 +293,11 @@ export const SmartLegalAssistant: React.FC = () => {
                       </div>
                     )}
                     
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    {message.type === 'ai' ? (
+                      <FormattedResponse content={message.content} className="text-sm leading-relaxed" />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                    )}
                     
                     {message.metadata?.adaptiveRecommendations && message.metadata.adaptiveRecommendations.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-border/50">

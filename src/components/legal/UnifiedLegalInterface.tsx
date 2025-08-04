@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FormattedResponse } from './FormattedResponse';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -425,10 +426,15 @@ export const UnifiedLegalInterface: React.FC = () => {
                           <AvatarFallback>AI</AvatarFallback>
                         </Avatar>
                       )}
-                      <div className="flex-1">
-                        <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                          {message.content}
-                        </div>
+                       <div className="flex-1">
+                         {message.type === 'ai' ? (
+                           <FormattedResponse content={message.content} className="text-sm leading-relaxed" />
+                         ) : (
+                           <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                             {message.content}
+                           </div>
+                         )}
+                         
                         
                         {message.confidence && (
                           <div className="mt-2 flex items-center gap-2">

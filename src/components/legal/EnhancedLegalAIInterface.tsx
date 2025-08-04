@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FormattedResponse } from './FormattedResponse';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -534,7 +535,7 @@ const EnhancedLegalAIInterface: React.FC<{ company_id: string }> = ({ company_id
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-sm whitespace-pre-wrap">{entry.response.response}</p>
+                              <FormattedResponse content={entry.response.response} className="text-sm" />
                               
                               {entry.response.legal_basis && entry.response.legal_basis.length > 0 && (
                                 <div className="mt-2 p-2 bg-blue-50 rounded">

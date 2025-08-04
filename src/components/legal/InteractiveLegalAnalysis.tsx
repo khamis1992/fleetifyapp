@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { FormattedResponse } from './FormattedResponse';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -260,7 +261,7 @@ const InteractiveLegalAnalysis: React.FC<InteractiveLegalAnalysisProps> = ({
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-48">
-                  <p className="text-sm leading-relaxed">{response.advice}</p>
+                  <FormattedResponse content={response.advice} className="text-sm leading-relaxed" />
                 </ScrollArea>
                 <div className="flex gap-2 mt-4">
                   <Button variant="outline" size="sm">
