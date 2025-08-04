@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  MessageSquare, 
   Brain, 
   TrendingUp, 
   Shield, 
@@ -19,10 +18,10 @@ import {
   BarChart3,
   Zap,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  MessageSquare
 } from 'lucide-react';
 import { SmartLegalAssistant } from './SmartLegalAssistant';
-import { SelfLearningChat } from '@/components/ai/SelfLearningChat';
 import { AdvancedLearningDashboard } from '@/components/ai/AdvancedLearningDashboard';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
@@ -175,17 +174,19 @@ export const LegalAIDashboard: React.FC = () => {
       </div>
 
 
-      {/* المساعد القانوني الذكي */}
+      {/* المساعد القانوني الذكي المتكامل */}
         <div className="space-y-8">
-          {/* AI Assistants */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Integrated Smart Legal Assistant */}
+          <div className="grid grid-cols-1 gap-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">المساعد القانوني</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <Brain className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">المساعد القانوني الذكي المتكامل</h3>
+                <Badge variant="secondary" className="text-xs">
+                  مع الذكاء التعلمي
+                </Badge>
+              </div>
               <SmartLegalAssistant />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">الذكاء الاصطناعي التعلمي</h3>
-              <SelfLearningChat />
             </div>
           </div>
 
