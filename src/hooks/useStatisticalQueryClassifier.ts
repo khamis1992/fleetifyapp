@@ -3,16 +3,23 @@ import { useState } from 'react';
 export interface StatisticalQueryClassification {
   isStatisticalQuery: boolean;
   queryCategory: 'contracts' | 'customers' | 'legal_cases' | 'financial' | 'general' | null;
-  statisticalType: 'count' | 'sum' | 'percentage' | 'trend' | 'comparison' | null;
+  statisticalType: 'count' | 'count_active' | 'count_all' | 'count_smart' | 'count_blacklisted' | 'count_inactive' | 'detailed_analytics' | 'breakdown' | 'sum' | 'percentage' | 'trend' | 'comparison' | null;
   timeframe?: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all_time' | null;
   filters?: {
     status?: string;
     type?: string;
+    active?: boolean;
+    blacklisted?: boolean;
     dateRange?: { start: Date; end: Date };
     amount?: { min?: number; max?: number };
   };
   confidence: number;
   suggestedVisualization: 'chart' | 'table' | 'card' | 'mixed' | null;
+  smartContext?: {
+    needsClarification: boolean;
+    clarificationPrompt?: string;
+    suggestedRefinements: string[];
+  };
 }
 
 interface StatisticalPattern {
@@ -24,6 +31,57 @@ interface StatisticalPattern {
 }
 
 const STATISTICAL_PATTERNS: StatisticalPattern[] = [
+  // Enhanced Customer patterns with smart classification
+  {
+    pattern: /(عدد|كم).*(عملاء|عميل).*(نشط|نشطة|نشطين|فعال|فعالة|فعالين|متفاعل)/i,
+    category: 'customers',
+    type: 'count_active',
+    visualization: 'card',
+    keywords: ['عملاء', 'نشط', 'فعال', 'عدد', 'كم']
+  },
+  {
+    pattern: /(عدد|كم).*(عملاء|عميل).*(مسجل|مسجلة|مسجلين|جميع|كل|إجمالي|total|all)/i,
+    category: 'customers',
+    type: 'count_all',
+    visualization: 'card',
+    keywords: ['عملاء', 'مسجل', 'جميع', 'كل', 'إجمالي', 'عدد']
+  },
+  {
+    pattern: /(عدد|كم).*(عملاء|عميل).*(محظور|محظورة|محظورين|أسود|سوداء|blacklist)/i,
+    category: 'customers',
+    type: 'count_blacklisted',
+    visualization: 'card',
+    keywords: ['عملاء', 'محظور', 'أسود', 'عدد']
+  },
+  {
+    pattern: /(عدد|كم).*(عملاء|عميل).*(غير نشط|معطل|معطلة|معطلين|متوقف|inactive)/i,
+    category: 'customers',
+    type: 'count_inactive',
+    visualization: 'card',
+    keywords: ['عملاء', 'غير نشط', 'معطل', 'متوقف', 'عدد']
+  },
+  {
+    pattern: /(عدد|كم).*(عملاء|عميل)(?!.*(نشط|محظور|معطل|مسجل))/i,
+    category: 'customers',
+    type: 'count_smart',
+    visualization: 'card',
+    keywords: ['عملاء', 'عدد', 'كم']
+  },
+  {
+    pattern: /(إحصائيات|تفاصيل|تحليل).*(عملاء|عميل).*(تفصيل|مفصل|شامل|كامل)/i,
+    category: 'customers',
+    type: 'detailed_analytics',
+    visualization: 'mixed',
+    keywords: ['إحصائيات', 'تفاصيل', 'عملاء', 'تحليل']
+  },
+  {
+    pattern: /(توزيع|نوع|أنواع).*(عملاء|عميل)/i,
+    category: 'customers',
+    type: 'breakdown',
+    visualization: 'chart',
+    keywords: ['توزيع', 'نوع', 'عملاء']
+  },
+
   // Contract patterns - using "عقد"
   {
     pattern: /كم.*عقد.*(ملغي|ملغى|منتهي|منتهى|مكتمل)/,
@@ -105,29 +163,6 @@ const STATISTICAL_PATTERNS: StatisticalPattern[] = [
     keywords: ['إجمالي', 'اتفاقيات']
   },
   
-  // Customer patterns
-  {
-    pattern: /كم.*عميل.*(متأخر|مدين|مستحق)/,
-    category: 'customers',
-    type: 'count',
-    visualization: 'card',
-    keywords: ['عميل', 'متأخر', 'كم']
-  },
-  {
-    pattern: /عدد.*العملاء/,
-    category: 'customers',
-    type: 'count',
-    visualization: 'chart',
-    keywords: ['عدد', 'عملاء']
-  },
-  {
-    pattern: /كم.*عميل.*نشط/,
-    category: 'customers',
-    type: 'count',
-    visualization: 'card',
-    keywords: ['عميل', 'نشط', 'كم']
-  },
-  
   // Legal cases patterns
   {
     pattern: /كم.*قضية.*(مفتوحة|مغلقة|جارية)/,
@@ -192,6 +227,59 @@ const TIME_PATTERNS = [
   { pattern: /السنة|سنوي|السنوية/, timeframe: 'year' as const }
 ];
 
+// Smart context generation function
+const generateSmartContext = (
+  pattern: StatisticalPattern,
+  normalizedQuery: string
+): StatisticalQueryClassification['smartContext'] => {
+  const context: StatisticalQueryClassification['smartContext'] = {
+    needsClarification: false,
+    suggestedRefinements: []
+  };
+
+  if (pattern.category === 'customers') {
+    if (pattern.type === 'count_smart') {
+      // This is the ambiguous "عدد العملاء" case
+      context.needsClarification = true;
+      context.clarificationPrompt = 'هل تريد معرفة العملاء النشطين أم جميع العملاء المسجلين؟';
+      context.suggestedRefinements = [
+        'عدد العملاء النشطين',
+        'عدد جميع العملاء المسجلين',
+        'العملاء النشطين فقط',
+        'كل العملاء بما فيهم المعطلين'
+      ];
+    } else if (pattern.type === 'count_active') {
+      context.suggestedRefinements = [
+        'العملاء النشطين اليوم',
+        'العملاء النشطين هذا الشهر',
+        'مقارنة العملاء النشطين بالشهر الماضي'
+      ];
+    } else if (pattern.type === 'count_all') {
+      context.suggestedRefinements = [
+        'توزيع العملاء حسب النوع',
+        'العملاء المسجلين الجدد',
+        'إحصائيات شاملة للعملاء'
+      ];
+    } else if (pattern.type === 'detailed_analytics') {
+      context.suggestedRefinements = [
+        'تحليل نشاط العملاء',
+        'اتجاهات نمو العملاء',
+        'معدل نشاط العملاء'
+      ];
+    }
+  }
+
+  if (pattern.category === 'contracts') {
+    context.suggestedRefinements = [
+      'العقود حسب الحالة',
+      'قيمة العقود الإجمالية',
+      'العقود منتهية الصلاحية'
+    ];
+  }
+
+  return context;
+};
+
 export const useStatisticalQueryClassifier = () => {
   const [isClassifying, setIsClassifying] = useState(false);
 
@@ -254,16 +342,31 @@ export const useStatisticalQueryClassifier = () => {
       // Extract filters based on query content
       const filters: StatisticalQueryClassification['filters'] = {};
       
-      // Status filters
+      // Status filters for contracts
       if (/ملغي|ملغى|منتهي|منتهى/.test(normalizedQuery)) {
         filters.status = 'cancelled';
       } else if (/نشط|فعال|جاري/.test(normalizedQuery)) {
         filters.status = 'active';
+        filters.active = true;
       } else if (/معلق/.test(normalizedQuery)) {
         filters.status = 'suspended';
       } else if (/مكتمل/.test(normalizedQuery)) {
         filters.status = 'completed';
       }
+
+      // Customer-specific filters
+      if (bestMatch.category === 'customers') {
+        if (bestMatch.type === 'count_active') {
+          filters.active = true;
+        } else if (bestMatch.type === 'count_inactive') {
+          filters.active = false;
+        } else if (bestMatch.type === 'count_blacklisted') {
+          filters.blacklisted = true;
+        }
+      }
+      
+      // Smart context generation
+      const smartContext = generateSmartContext(bestMatch, normalizedQuery);
       
       const confidence = Math.min(0.95, 0.7 + (highestScore * 0.25));
       
@@ -274,7 +377,8 @@ export const useStatisticalQueryClassifier = () => {
         timeframe,
         filters: Object.keys(filters).length > 0 ? filters : undefined,
         confidence,
-        suggestedVisualization: bestMatch.visualization
+        suggestedVisualization: bestMatch.visualization,
+        smartContext
       };
       
       console.log('📊 Statistical Query Classification Result:', result);
