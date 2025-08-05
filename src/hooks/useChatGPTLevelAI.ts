@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAISystemMonitor } from './useAISystemMonitor';
 
 // تعريف أنواع البيانات المتقدمة
 interface AdvancedAIConfig {
-  model: 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo';
+  model: 'gpt-4.1-2025-04-14' | 'o3-2025-04-16' | 'o4-mini-2025-04-16' | 'gpt-4.1-mini-2025-04-14';
   temperature: number;
   maxTokens: number;
   topP: number;
@@ -118,8 +119,11 @@ export const useChatGPTLevelAI = () => {
     userSatisfaction: 0
   });
 
+  // Integrated system monitoring
+  const monitor = useAISystemMonitor();
+
   const [aiConfig, setAiConfig] = useState<AdvancedAIConfig>({
-    model: 'gpt-4-turbo',
+    model: 'gpt-4.1-2025-04-14', // Use the latest flagship model
     temperature: 0.1, // دقة عالية للمجال القانوني
     maxTokens: 4000,
     topP: 0.9,
@@ -669,31 +673,71 @@ ${reasoning.legal_analysis.risk_factors.join(', ')}
 ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مراجعة بشرية متخصصة.' : ''}`;
 
     try {
-      // استدعاء OpenAI API الفعلي
-      const response = await fetch('/api/openai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: aiConfig.model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: query }
-          ],
-          temperature: aiConfig.temperature,
-          max_tokens: aiConfig.maxTokens,
-          top_p: aiConfig.topP,
-          frequency_penalty: aiConfig.frequencyPenalty,
-          presence_penalty: aiConfig.presencePenalty
-        })
-      });
+      // استدعاء OpenAI API عبر Supabase Edge Function مع إعادة المحاولة التلقائية
+      let lastError: Error | null = null;
+      let data: any = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`Attempting OpenAI call - attempt ${attempt}/3`);
+          
+          const { data: responseData, error } = await supabase.functions.invoke('openai-chat', {
+            body: {
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: query }
+              ],
+              model: 'gpt-4.1-2025-04-14', // Use the latest flagship model
+              temperature: aiConfig.temperature,
+              max_tokens: aiConfig.maxTokens,
+              stream: false
+            }
+          });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+          if (error) {
+            throw new Error(`Supabase function error: ${error.message}`);
+          }
+
+          if (!responseData) {
+            throw new Error('No response data received from OpenAI API');
+          }
+
+          // Handle the response structure from the edge function
+          if (responseData.error) {
+            throw new Error(`OpenAI API error: ${responseData.error}`);
+          }
+
+          data = responseData;
+          lastError = null;
+          
+          // Record successful API call
+          monitor.recordMetric('openai_api_call', Date.now() - startTime, true, undefined, false);
+          break; // Success, exit retry loop
+          
+        } catch (error) {
+          lastError = error as Error;
+          console.warn(`Attempt ${attempt} failed:`, error);
+          
+          // Record failed attempt
+          monitor.recordMetric('openai_api_call', Date.now() - startTime, false, error.message, false);
+          
+          if (attempt < 3) {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          }
+        }
       }
 
-      const data = await response.json();
+      // If all retries failed, throw the last error
+      if (lastError) {
+        // Record final failure
+        monitor.recordMetric('openai_api_call_final_failure', Date.now() - startTime, false, lastError.message, false);
+        throw lastError;
+      }
+
+      if (!data || !data.choices || !data.choices[0]) {
+        throw new Error('Invalid response structure from OpenAI API');
+      }
       const aiContent = data.choices[0].message.content;
 
       // تحليل المخاطر المتقدم
@@ -752,6 +796,20 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
     } catch (error) {
       console.error('Error generating AI response:', error);
       
+      // Improved error logging with more details
+      const errorDetails = {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        query: query.substring(0, 100) + '...',
+        context: context.primaryIntent,
+        attempt: 'generateAdvancedAIResponse',
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error('Detailed error information:', errorDetails);
+      
+      // تحديث إحصائيات الأخطاء
+      updateSystemStats('api_error', Date.now() - startTime);
+      
       // Fallback إلى نظام محلي في حالة فشل API
       return generateFallbackResponse(query, context, entities, knowledge, reasoning);
     }
@@ -781,6 +839,9 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
         // تحديث إحصائيات النظام
         updateSystemStats('cache_hit', cached.response.metadata.processingTime);
         
+        // Record cache hit for monitoring
+        monitor.recordMetric('process_query', cached.response.metadata.processingTime, true, undefined, true);
+        
         setIsProcessing(false);
         return cached.response;
       }
@@ -809,6 +870,9 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
       // 7. تحديث الإحصائيات
       const totalProcessingTime = Date.now() - overallStartTime;
       updateSystemStats('successful_query', totalProcessingTime);
+      
+      // Record successful query completion
+      monitor.recordMetric('process_query', totalProcessingTime, true, undefined, response.metadata.cacheHit);
 
       return response;
 
@@ -1310,25 +1374,67 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
     knowledge: any[],
     reasoning: any
   ): Promise<AIResponse> => {
-    // استجابة احتياطية في حالة فشل API
-    const fallbackContent = `عذراً، واجهنا مشكلة تقنية مؤقتة في الاتصال بنظام الذكاء الاصطناعي المتقدم.
+    // Enhanced fallback response with better error explanation and guidance
+    const fallbackContent = `🔧 **حدث خطأ تقني مؤقت في نظام الذكاء الاصطناعي المتقدم**
 
-بناءً على التحليل المحلي لاستفسارك:
+نعتذر للإزعاج، لكن يمكننا تقديم تحليل أولي بناءً على الأنظمة المحلية:
 
-**تحليل الاستفسار:**
-- النية المحددة: ${context.primaryIntent}
-- مستوى الإلحاح: ${context.urgencyLevel}
-- درجة التعقيد: ${(context.complexityScore * 100).toFixed(1)}%
+---
 
-**التوصيات الأولية:**
+📊 **تحليل الاستفسار:**
+• **النية المحددة:** ${getIntentDisplayName(context.primaryIntent)}
+• **مستوى الإلحاح:** ${getUrgencyDisplayName(context.urgencyLevel)}
+• **درجة التعقيد:** ${(context.complexityScore * 100).toFixed(1)}%
+• **مستوى الثقة:** ${(context.confidence * 100).toFixed(1)}%
+
+${entities.entities.clientNames.length > 0 ? `👤 **العملاء المحددون:** ${entities.entities.clientNames.join(', ')}\n` : ''}
+${entities.entities.contractNumbers.length > 0 ? `📄 **أرقام العقود:** ${entities.entities.contractNumbers.join(', ')}\n` : ''}
+${entities.entities.amounts.length > 0 ? `💰 **المبالغ المالية:** ${entities.entities.amounts.map(a => `${a.value} ${a.currency}`).join(', ')}\n` : ''}
+
+---
+
+✅ **التوصيات الأولية المبنية على التحليل:**
 ${reasoning.legal_analysis.recommendations.map((r: string) => `• ${r}`).join('\n')}
 
-**الخطوات التالية:**
-• مراجعة الوثائق القانونية ذات الصلة
-• التأكد من الامتثال للقوانين المحلية
-• استشارة مختص قانوني للحالات المعقدة
+🔍 **الخطوات التالية المقترحة:**
+• مراجعة الوثائق القانونية ذات الصلة بالموضوع
+• التأكد من الامتثال للقوانين والأنظمة المحلية
+• ${context.urgencyLevel === 'critical' || context.urgencyLevel === 'high' 
+    ? 'التواصل الفوري مع مختص قانوني نظراً لأهمية الموضوع' 
+    : 'استشارة مختص قانوني للحالات المعقدة'}
+• توثيق جميع المراسلات والإجراءات المتخذة
 
-يرجى المحاولة مرة أخرى خلال دقائق قليلة، أو التواصل مع الدعم التقني إذا استمرت المشكلة.`;
+---
+
+🔄 **إعادة المحاولة:**
+• يرجى المحاولة مرة أخرى خلال 2-3 دقائق
+• إذا استمرت المشكلة، يمكنك التواصل مع الدعم التقني
+• في الحالات العاجلة، يرجى التواصل المباشر مع القسم القانوني
+
+⚠️ ${context.requiresHumanReview ? '**تنبيه مهم:** هذه الحالة تتطلب مراجعة بشرية متخصصة' : ''}`;
+
+    // Helper functions to display names in Arabic
+    function getIntentDisplayName(intent: string): string {
+      const intentNames: Record<string, string> = {
+        'legal_consultation': 'استشارة قانونية',
+        'document_creation': 'إنشاء وثيقة قانونية',
+        'contract_analysis': 'تحليل عقد',
+        'risk_assessment': 'تقييم مخاطر',
+        'legal_action': 'إجراء قانوني',
+        'compliance_check': 'فحص امتثال'
+      };
+      return intentNames[intent] || intent;
+    }
+
+    function getUrgencyDisplayName(urgency: string): string {
+      const urgencyNames: Record<string, string> = {
+        'low': 'منخفض',
+        'medium': 'متوسط',
+        'high': 'عالي',
+        'critical': 'حرج'
+      };
+      return urgencyNames[urgency] || urgency;
+    }
 
     return {
       content: fallbackContent,
@@ -1410,7 +1516,12 @@ ${reasoning.legal_analysis.recommendations.map((r: string) => `• ${r}`).join('
     
     // الذاكرة والتخزين المؤقت
     memorySystem: memorySystem.current,
-    cacheSize: intelligentCache.current.size
+    cacheSize: intelligentCache.current.size,
+    
+    // System monitoring
+    systemHealth: monitor.systemHealth,
+    alerts: monitor.alerts,
+    performanceReport: monitor.getPerformanceReport
   };
 };
 
