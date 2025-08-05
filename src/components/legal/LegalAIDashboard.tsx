@@ -154,24 +154,6 @@ export const LegalAIDashboard: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            النظام نشط
-          </Badge>
-        </div>
-        <div className="text-right">
-          <h1 className="text-3xl font-bold text-black">
-            المستشار القانوني
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            نظام متكامل للاستشارات والتحليل القانوني الذكي
-          </p>
-        </div>
-      </div>
-
 
       {/* المساعد القانوني الذكي المتكامل */}
         <div className="space-y-8">
