@@ -698,24 +698,6 @@ export const SmartLegalAssistant = () => {
     <div className="flex flex-col h-full max-w-6xl mx-auto">
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="chat" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            المحادثة
-          </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <Gauge className="h-4 w-4" />
-            لوحة التحكم
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            التحليلات
-          </TabsTrigger>
-          <TabsTrigger value="learning" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            التعلم الذكي
-          </TabsTrigger>
-        </TabsList>
 
         <TabsContent value="chat" className="flex-1 flex flex-col mt-4">
           {/* Query Type Selector */}
