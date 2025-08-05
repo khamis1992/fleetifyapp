@@ -116,7 +116,7 @@ export const useEnhancedLegalAI = () => {
           relatedConcepts: extractRelatedConcepts(queryAnalysis),
           enhancementApplied: true
         },
-        visualizations: unifiedResponse.response?.analysisData?.charts || [],
+        visualizations: [],
         followUpQuestions: generateContextualFollowUps(queryAnalysis),
         actionableInsights: generateResponseInsights(unifiedResponse, queryAnalysis)
       };

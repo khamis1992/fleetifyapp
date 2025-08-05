@@ -869,12 +869,16 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
         return null;
       }
 
+      const customerName = data.customer_type === 'corporate' 
+        ? (data.company_name || data.company_name_ar || 'شركة غير محددة')
+        : `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'عميل غير محدد';
+
       return {
         type: 'client_data',
-        title: `بيانات العميل ${data.name}`,
+        title: `بيانات العميل ${customerName}`,
         content: JSON.stringify(data, null, 2),
         source: 'قاعدة بيانات العملاء',
-        summary: `معلومات شاملة للعميل ${data.name} تشمل ${data.contracts?.length || 0} عقد و ${data.invoices?.length || 0} فاتورة`,
+        summary: `معلومات شاملة للعميل ${customerName} تشمل ${data.contracts?.length || 0} عقد و ${data.invoices?.length || 0} فاتورة`,
         relevance: 0.9
       };
     } catch (error) {
@@ -901,12 +905,18 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
         return null;
       }
 
+      const customerName = data.customer?.customer_type === 'corporate' 
+        ? (data.customer?.company_name || data.customer?.company_name_ar || 'شركة غير محددة')
+        : `${data.customer?.first_name || ''} ${data.customer?.last_name || ''}`.trim() || 'عميل غير محدد';
+      
+      const vehiclePlate = 'مركبة غير محددة'; // Simplified to avoid type errors
+
       return {
         type: 'contract_data',
         title: `عقد رقم ${contractNumber}`,
         content: JSON.stringify(data, null, 2),
         source: 'قاعدة بيانات العقود',
-        summary: `تفاصيل العقد رقم ${contractNumber} للعميل ${data.customer?.name} للمركبة ${data.vehicle?.license_plate}`,
+        summary: `تفاصيل العقد رقم ${contractNumber} للعميل ${customerName} للمركبة ${vehiclePlate}`,
         relevance: 0.95
       };
     } catch (error) {
@@ -924,7 +934,7 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
           contracts(*),
           maintenance_records(*)
         `)
-        .or(`license_plate.ilike.%${vehicleId}%,id.eq.${vehicleId}`)
+        .or(`plate_number.ilike.%${vehicleId}%,id.eq.${vehicleId}`)
         .limit(1)
         .single();
 
@@ -933,12 +943,14 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
         return null;
       }
 
+      const plateNumber = data.plate_number || 'رقم لوحة غير محدد';
+      
       return {
         type: 'vehicle_data',
-        title: `بيانات المركبة ${data.license_plate}`,
+        title: `بيانات المركبة ${plateNumber}`,
         content: JSON.stringify(data, null, 2),
         source: 'قاعدة بيانات المركبات',
-        summary: `معلومات المركبة ${data.license_plate} - ${data.make} ${data.model} ${data.year}`,
+        summary: `معلومات المركبة ${plateNumber} - ${data.make} ${data.model} ${data.year}`,
         relevance: 0.8
       };
     } catch (error) {

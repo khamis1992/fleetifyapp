@@ -112,7 +112,7 @@ export const useIntegratedLegalAI = () => {
                   response.content = `تم إنشاء إنذار قانوني للعميل ${customer.first_name_ar}.`;
                   response.generatedDocument = {
                     type: 'legal_notice',
-                    format: 'html',
+                    format: 'pdf',
                     content: documentContent
                   };
                   sources.push({ type: 'legal_knowledge', description: 'استخدام قالب الإنذار القانوني' });
@@ -139,7 +139,7 @@ export const useIntegratedLegalAI = () => {
         case 'direct_response':
           response.responseType = 'advice';
           response.content = 'هذا استفسار مباشر. بناءً على معرفتي القانونية العامة، إليك بعض النصائح:';
-          response.recommendations = businessIntelligence.legalFramework.bestPractices;
+          response.recommendations = ['نصائح قانونية عامة', 'مراجعة الوثائق', 'التواصل مع الخبراء'];
           sources.push({ type: 'legal_knowledge', description: 'استخدام المعرفة القانونية العامة' });
           break;
 

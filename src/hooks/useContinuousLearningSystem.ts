@@ -169,22 +169,23 @@ export const useContinuousLearningSystem = () => {
     // إضافة للمخزن المؤقت
     learningDataBuffer.current.push(learningData);
 
-    // حفظ في قاعدة البيانات
+    // حفظ في قاعدة البيانات - تم تعطيله مؤقتاً لحين إنشاء جدول learning_interactions
     try {
-      await supabase
-        .from('learning_interactions')
-        .insert({
-          id: learningData.id,
-          query: learningData.query,
-          response: learningData.response,
-          context_data: learningData.contextData,
-          performance_metrics: learningData.performanceMetrics,
-          user_id: userId,
-          session_id: sessionId,
-          created_at: learningData.timestamp.toISOString()
-        });
+      // TODO: إنشاء جدول learning_interactions
+      // await supabase
+      //   .from('learning_interactions')
+      //   .insert({
+      //     id: learningData.id,
+      //     query: learningData.query,
+      //     response: learningData.response,
+      //     context_data: learningData.contextData,
+      //     performance_metrics: learningData.performanceMetrics,
+      //     user_id: userId,
+      //     session_id: sessionId,
+      //     created_at: learningData.timestamp.toISOString()
+      //   });
 
-      console.log('Learning interaction recorded:', learningData.id);
+      console.log('Learning interaction recorded (in memory):', learningData.id);
     } catch (error) {
       console.error('Error recording learning interaction:', error);
     }
@@ -215,11 +216,11 @@ export const useContinuousLearningSystem = () => {
         interaction.userFeedback = { ...interaction.userFeedback, ...feedback };
       }
 
-      // تحديث في قاعدة البيانات
-      await supabase
-        .from('learning_interactions')
-        .update({ user_feedback: feedback })
-        .eq('id', interactionId);
+      // تحديث في قاعدة البيانات - تم تعطيله مؤقتاً
+      // await supabase
+      //   .from('learning_interactions')
+      //   .update({ user_feedback: feedback })
+      //   .eq('id', interactionId);
 
       // تشغيل التعلم من التقييم
       await learnFromFeedback(interactionId, feedback);
@@ -376,8 +377,7 @@ export const useContinuousLearningSystem = () => {
           const newConcept: ConceptNode = {
             id: conceptId,
             name: concept,
-            type: determineConcept
-(concept),
+            type: determineConceptType(concept),
             frequency: 1,
             confidence: item.userFeedback.rating > 0 ? item.userFeedback.rating / 5 : 0.5,
             relatedConcepts: [],
@@ -720,20 +720,27 @@ export const useContinuousLearningSystem = () => {
   // تصدير البيانات للتحليل
   const exportLearningData = useCallback(async (dateRange?: { start: Date; end: Date }) => {
     try {
-      let query = supabase.from('learning_interactions').select('*');
+      // تم تعطيل استعلام قاعدة البيانات مؤقتاً لحين إنشاء الجدول
+      // let query = supabase.from('learning_interactions').select('*');
       
-      if (dateRange) {
-        query = query
-          .gte('created_at', dateRange.start.toISOString())
-          .lte('created_at', dateRange.end.toISOString());
-      }
+      // if (dateRange) {
+      //   query = query
+      //     .gte('created_at', dateRange.start.toISOString())
+      //     .lte('created_at', dateRange.end.toISOString());
+      // }
 
-      const { data, error } = await query;
-      
-      if (error) throw error;
+      // const { data, error } = await query;
+      // if (error) throw error;
+
+      // إرجاع البيانات من الذاكرة مؤقتاً
+      const filteredData = dateRange 
+        ? learningDataBuffer.current.filter(item => 
+            item.timestamp >= dateRange.start && item.timestamp <= dateRange.end
+          )
+        : learningDataBuffer.current;
 
       return {
-        interactions: data,
+        interactions: filteredData,
         patterns: Array.from(learningPatterns.current.values()),
         rules: Array.from(adaptiveRules.current.values()),
         performance: performanceHistory.current,
