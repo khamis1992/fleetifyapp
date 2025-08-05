@@ -1,5 +1,5 @@
 import React from 'react';
-import { EnhancedLegalAIInterface_v2 } from '@/components/legal/EnhancedLegalAIInterface_v2';
+import EnhancedLegalAIInterface_v2 from '@/components/legal/EnhancedLegalAIInterface_v2';
 
 const Legal = () => {
   return (

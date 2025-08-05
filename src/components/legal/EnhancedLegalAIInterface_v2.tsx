@@ -1,22 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
-  Button,
-  Input,
-  Badge,
-  Alert,
-  AlertDescription,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  ScrollArea,
-  Separator,
-  Progress
-} from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { 
   Send, 
   MessageSquare, 
@@ -63,7 +54,7 @@ interface SystemStatus {
   cache: boolean;
 }
 
-const EnhancedLegalAIInterface: React.FC = () => {
+const EnhancedLegalAIInterface_v2: React.FC = () => {
   // حالات المكون
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -568,5 +559,5 @@ const EnhancedLegalAIInterface: React.FC = () => {
   );
 };
 
-export default EnhancedLegalAIInterface;
+export default EnhancedLegalAIInterface_v2;
 
