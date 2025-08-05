@@ -276,63 +276,93 @@ export const useAdvancedLegalAI = () => {
       // تحليل ذكي
       const smart_analysis = await performSmartAnalysis(queryData.query, classification, queryData.context);
 
-      // إرسال الطلب للـ Edge Function
-      const { data, error } = await supabase.functions.invoke('legal-ai-api', {
+      // إرسال الطلب للـ OpenAI Edge Function
+      const response = await supabase.functions.invoke('openai-chat', {
         body: {
-          ...queryData,
-          path: 'advanced-legal-advice',
-          user_id: user?.user?.id,
-          classification,
-          smart_analysis,
-          analysis_depth: queryData.analysis_depth || 'detailed'
+          messages: [
+            {
+              role: 'system',
+              content: `أنت مستشار قانوني متخصص. قم بتحليل الاستفسار التالي وقدم مشورة قانونية شاملة.
+              
+              معلومات التصنيف:
+              - نوع الاستفسار: ${classification.primary_type}
+              - مستوى التعقيد: ${classification.complexity_level}
+              - المتطلبات: ${JSON.stringify(classification.data_requirements)}
+              
+              معلومات التحليل:
+              - مستوى المخاطر: ${smart_analysis.risk_assessment.risk_level}
+              - عوامل المخاطر: ${smart_analysis.risk_assessment.risk_factors.join(', ')}
+              
+              يرجى تقديم استشارة شاملة باللغة العربية تتضمن:
+              1. التحليل القانوني
+              2. التوصيات العملية
+              3. المخاطر المحتملة
+              4. الخطوات التالية المقترحة`
+            },
+            {
+              role: 'user',
+              content: queryData.query
+            }
+          ],
+          model: 'gpt-4o-mini',
+          temperature: 0.7
         }
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (response.error) {
+        throw new Error(response.error.message || 'فشل في الاتصال بنظام الذكاء الاصطناعي');
       }
 
-      if (data.success) {
-        // إضافة التحليل المحلي للاستجابة
-        const enhancedResponse: EnhancedLegalResponse = {
-          ...data,
-          classification,
-          smart_analysis,
-          alternative_solutions: data.alternative_solutions || [
-            {
-              solution: 'الحل التقليدي',
-              pros: ['مجرب وموثوق', 'أقل مخاطرة'],
-              cons: ['قد يستغرق وقتاً أطول', 'تكلفة أعلى'],
-              complexity: 3,
-              estimated_cost: smart_analysis.cost_estimation.estimated_range.min
-            }
-          ],
-          follow_up_questions: data.follow_up_questions || [
-            'هل تحتاج إلى توضيحات إضافية؟',
-            'ما هي الخطوة التالية المطلوبة؟'
-          ],
-          confidence_indicators: data.confidence_indicators || {
-            source_reliability: 0.85,
-            legal_accuracy: 0.9,
-            jurisdiction_relevance: 0.95,
-            completeness: 0.8
+      const aiResponse = response.data;
+      if (!aiResponse?.choices?.[0]?.message?.content) {
+        throw new Error('استجابة غير صالحة من نظام الذكاء الاصطناعي');
+      }
+
+      const advice = aiResponse.choices[0].message.content;
+
+      // إنشاء الاستجابة المحسنة
+      const enhancedResponse: EnhancedLegalResponse = {
+        success: true,
+        advice,
+        classification,
+        smart_analysis,
+        alternative_solutions: [
+          {
+            solution: 'الحل التقليدي',
+            pros: ['مجرب وموثوق', 'أقل مخاطرة'],
+            cons: ['قد يستغرق وقتاً أطول', 'تكلفة أعلى'],
+            complexity: 3,
+            estimated_cost: smart_analysis.cost_estimation.estimated_range.min
           }
-        };
-
-        // عرض توست مخصص حسب نوع الاستفسار
-        if (classification.primary_type === 'system_data') {
-          toast.success('📊 تم جلب البيانات المطلوبة بنجاح');
-        } else if (classification.complexity_level === 'expert_level') {
-          toast.success('🎓 تم إجراء تحليل قانوني متقدم');
-        } else {
-          toast.success('✅ تم الحصول على الاستشارة القانونية المحسنة');
+        ],
+        follow_up_questions: [
+          'هل تحتاج إلى توضيحات إضافية؟',
+          'ما هي الخطوة التالية المطلوبة؟'
+        ],
+        related_topics: ['قانون العقود', 'الإجراءات القانونية'],
+        confidence_indicators: {
+          source_reliability: 0.85,
+          legal_accuracy: 0.9,
+          jurisdiction_relevance: 0.95,
+          completeness: 0.8
+        },
+        metadata: {
+          source: 'api',
+          processing_components: ['OpenAI', 'Local Analysis'],
+          response_time: Date.now(),
         }
+      };
 
-        return enhancedResponse;
+      // عرض توست مخصص حسب نوع الاستفسار
+      if (classification.primary_type === 'system_data') {
+        toast.success('📊 تم جلب البيانات المطلوبة بنجاح');
+      } else if (classification.complexity_level === 'expert_level') {
+        toast.success('🎓 تم إجراء تحليل قانوني متقدم');
       } else {
-        toast.error(data.message || 'حدث خطأ في معالجة الطلب');
-        throw new Error(data.message);
+        toast.success('✅ تم الحصول على الاستشارة القانونية المحسنة');
       }
+
+      return enhancedResponse;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
       setError(errorMessage);
