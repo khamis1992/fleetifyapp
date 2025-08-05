@@ -6,6 +6,34 @@ import { useAdvancedContextEngine } from './useAdvancedContextEngine';
 import { useUniversalDataReader } from './useUniversalDataReader';
 import { useIntegratedLegalAI } from './useIntegratedLegalAI';
 
+// Types that components expect
+export interface UnifiedLegalQuery {
+  query: string;
+  mode?: 'advisory' | 'executive';
+  context?: any;
+  // Additional properties that components expect
+  country?: string;
+  company_id?: string;
+  user_id?: string;
+  conversationHistory?: any[];
+  queryType?: string;
+}
+
+export interface UnifiedLegalResponse {
+  content: string;
+  confidence: number;
+  processingTime: number;
+  metadata?: any;
+  // Additional properties that components expect
+  response?: string;
+  classification?: string;
+  processingType?: string;
+  responseType?: string;
+  attachments?: any[];
+  interactiveElements?: any[];
+  analysisData?: any;
+}
+
 export interface UnifiedMessage {
   id: string;
   type: 'user' | 'assistant' | 'system' | 'warning' | 'success' | 'error';
@@ -57,6 +85,8 @@ export interface SystemStats {
 
 export const useUnifiedLegalAI = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('idle');
   const [currentMode, setCurrentMode] = useState<'advisory' | 'executive'>('advisory');
   const [systemStats, setSystemStats] = useState<SystemStats>({
     totalOperations: 1247,
@@ -71,9 +101,9 @@ export const useUnifiedLegalAI = () => {
     uptime: 99.97
   });
 
-  // استخدام جميع الأنظمة المطورة
-  const executiveSystem = useExecutiveAISystem();
-  const commandEngine = useAdvancedCommandEngine();
+  // استخدام جميع الأنظمة المطورة (with required parameters)
+  const executiveSystem = useExecutiveAISystem('company_123', 'user_123');
+  const commandEngine = useAdvancedCommandEngine('company_123', 'user_123');
   const chatGPTAI = useChatGPTLevelAI();
   const contextEngine = useAdvancedContextEngine();
   const dataReader = useUniversalDataReader();
@@ -431,17 +461,57 @@ export const useUnifiedLegalAI = () => {
     };
   }, []);
 
+  // Submit unified query function that components expect
+  const submitUnifiedQuery = useCallback(async (query: UnifiedLegalQuery): Promise<UnifiedLegalResponse> => {
+    setError(null);
+    setProcessingStatus('processing');
+    
+    try {
+      const result = await processMessage(query.query, query.mode);
+      setProcessingStatus('completed');
+      
+      return {
+        content: result.content,
+        confidence: result.metadata?.confidence || 90,
+        processingTime: result.metadata?.executionTime || 100,
+        response: result.content,
+        classification: 'legal_response',
+        processingType: 'unified',
+        responseType: result.type,
+        attachments: [],
+        interactiveElements: [],
+        analysisData: result.metadata,
+        metadata: result.metadata
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      setProcessingStatus('error');
+      throw err;
+    }
+  }, [processMessage]);
+
+  // Clear error function
+  const clearError = useCallback(() => {
+    setError(null);
+    setProcessingStatus('idle');
+  }, []);
+
   return {
     // الحالة
     isProcessing,
     currentMode,
     systemStats: getSystemStats(),
+    error,
+    processingStatus,
 
     // الوظائف الأساسية
     processMessage,
     executeOperation,
     analyzeCommand,
     getSuggestions,
+    submitUnifiedQuery,
+    clearError,
 
     // إدارة الوضع
     switchMode,

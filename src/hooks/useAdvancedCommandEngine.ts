@@ -40,7 +40,7 @@ export const useAdvancedCommandEngine = (companyId: string, userId: string) => {
   const [commandHistory, setCommandHistory] = useState<CommandAnalysis[]>([]);
   const [contextMemory, setContextMemory] = useState<Record<string, any>>({});
   
-  const { processQuery } = useChatGPTLevelAI(companyId, userId);
+  const { processAdvancedQuery } = useChatGPTLevelAI();
   const executiveSystem = useExecutiveAISystem(companyId, userId);
   
   const analysisCounter = useRef(0);
@@ -268,10 +268,10 @@ export const useAdvancedCommandEngine = (companyId: string, userId: string) => {
       أجب بصيغة JSON فقط.
       `;
 
-      const aiResponse = await processQuery(analysisPrompt);
+      const aiResponse = await processAdvancedQuery(analysisPrompt, userId, companyId);
       
       // محاولة استخراج JSON من الاستجابة
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
