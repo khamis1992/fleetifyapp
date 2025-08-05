@@ -269,6 +269,7 @@ export const useSmartAlerts = () => {
       return alerts.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
     },
     enabled: !!companyId,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - much longer cache
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
 };
