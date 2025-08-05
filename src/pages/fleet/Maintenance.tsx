@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react"
 import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
-import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
+import { useMaintenanceStats, useVehicleMaintenanceOptimized } from "@/hooks/useVehicleMaintenanceOptimized"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -82,6 +82,8 @@ export default function Maintenance() {
     }
   }, [maintenanceData?.data, activeTab])
 
+  const isLoading = statsLoading || maintenanceLoading || alertsLoading
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -89,6 +91,9 @@ export default function Maintenance() {
       </div>
     )
   }
+
+  // Get all records for the "all" tab
+  const allRecords = maintenanceData?.data || []
 
   const MaintenanceTable = ({ records }: { records: any[] }) => (
     <Table>
@@ -265,7 +270,7 @@ export default function Maintenance() {
             مكتملة ({completedMaintenance.length})
           </TabsTrigger>
           <TabsTrigger value="all">
-            الكل ({maintenanceRecords?.length || 0})
+            الكل ({allRecords?.length || 0})
           </TabsTrigger>
         </TabsList>
 
@@ -333,8 +338,8 @@ export default function Maintenance() {
               <CardDescription>تاريخ الصيانة الكامل</CardDescription>
             </CardHeader>
             <CardContent>
-              {maintenanceRecords && maintenanceRecords.length > 0 ? (
-                <MaintenanceTable records={maintenanceRecords} />
+              {allRecords && allRecords.length > 0 ? (
+                <MaintenanceTable records={allRecords} />
               ) : (
                 <div className="text-center py-8">
                   <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
