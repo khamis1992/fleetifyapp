@@ -1,18 +1,12 @@
 import React from 'react';
-import { LegalAIDashboard } from '@/components/legal/LegalAIDashboard';
+import { UnifiedLegalAIAssistant } from '@/components/legal/UnifiedLegalAIAssistant';
 
 const Legal = () => {
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">المستشار القانوني الذكي</h1>
-          <p className="text-muted-foreground">محادثة مع المستشار القانوني المدعوم بالذكاء الاصطناعي</p>
-        </div>
+    <div className="h-screen flex flex-col">
+      <div className="flex-1">
+        <UnifiedLegalAIAssistant />
       </div>
-
-      <LegalAIDashboard />
     </div>
   );
 };
