@@ -124,12 +124,12 @@ export const UltraIntelligentLegalAssistant: React.FC<UltraIntelligentLegalAssis
   }, [query, isProcessing, processRequest, companyId, userId]);
 
   // تنزيل الوثيقة المُنشأة
-  const downloadDocument = useCallback((document: NonNullable<LegalAIResponse['generatedDocument']>) => {
-    const blob = new Blob([document.content], { type: 'text/html' });
+  const downloadDocument = useCallback((doc: NonNullable<LegalAIResponse['generatedDocument']>) => {
+    const blob = new Blob([doc.content], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${document.type}_${Date.now()}.html`;
+    a.download = `${doc.type}_${Date.now()}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

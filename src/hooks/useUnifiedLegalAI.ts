@@ -17,6 +17,8 @@ export interface UnifiedLegalQuery {
   user_id?: string;
   conversationHistory?: any[];
   queryType?: string;
+  files?: any[];
+  comparisonDocuments?: any[];
 }
 
 export interface UnifiedLegalResponse {
@@ -477,10 +479,13 @@ export const useUnifiedLegalAI = () => {
         response: result.content,
         classification: 'legal_response',
         processingType: 'unified',
-        responseType: result.type,
+        responseType: result.type as any,
         attachments: [],
         interactiveElements: [],
-        analysisData: result.metadata,
+        analysisData: {
+          advice: result.content,
+          confidence: result.metadata?.confidence || 90
+        },
         metadata: result.metadata
       };
     } catch (err) {

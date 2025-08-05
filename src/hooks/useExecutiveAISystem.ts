@@ -40,6 +40,13 @@ export interface ExecutionResult {
   affectedRecords: string[];
   executionTime: number;
   warnings?: string[];
+  // Additional properties that components expect
+  id?: string;
+  type?: string;
+  content?: string;
+  suggestions?: string[];
+  commands?: any[];
+  timestamp?: Date;
 }
 
 // واجهة سجل العمليات

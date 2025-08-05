@@ -382,20 +382,20 @@ export const SmartLegalAssistant = () => {
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response.response.advice || ('message' in response.response ? response.response.message : '') || 'لم يتم العثور على إجابة مناسبة',
+        content: response.content || 'لم يتم العثور على إجابة مناسبة',
         type: 'ai',
         timestamp: new Date(),
         metadata: {
-          classification: response.classification,
-          processingType: response.processingType,
-          processingTime: response.metadata.processingTime,
-          confidence: response.classification.confidence,
-          adaptiveRecommendations: response.metadata.adaptiveRecommendations
+          classification: response.classification || 'general',
+          processingType: response.processingType || 'unified',
+          processingTime: response.processingTime || 100,
+          confidence: response.confidence || 95,
+          adaptiveRecommendations: response.metadata?.adaptiveRecommendations || []
         },
-        responseType: response.responseType,
-        attachments: response.attachments,
-        interactiveElements: response.interactiveElements,
-        analysisData: response.analysisData
+        responseType: 'text' as any,
+        attachments: response.attachments || [],
+        interactiveElements: response.interactiveElements || [],
+        analysisData: response.analysisData || {}
       };
 
       setMessages(prev => [...prev, aiMessage]);
