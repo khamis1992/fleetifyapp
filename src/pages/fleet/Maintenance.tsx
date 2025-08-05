@@ -57,13 +57,30 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export default function Maintenance() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
-  const { data: maintenanceRecords, isLoading } = useVehicleMaintenance()
+  const [activeTab, setActiveTab] = useState("pending")
+  
+  // Use optimized hooks
+  const { data: maintenanceStats, isLoading: statsLoading } = useMaintenanceStats()
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
+  
+  // Only load data for the active tab to improve performance
+  const { data: maintenanceData, isLoading: maintenanceLoading } = useVehicleMaintenanceOptimized(
+    undefined, // vehicleId
+    activeTab === 'all' ? undefined : activeTab, // status filter
+    50, // limit
+    0 // offset
+  )
 
-  const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
-  const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
-  const completedMaintenance = maintenanceRecords?.filter(m => m.status === 'completed') || []
-  const cancelledMaintenance = maintenanceRecords?.filter(m => m.status === 'cancelled') || []
+  // Memoize filtered data to prevent unnecessary recalculations
+  const { pendingMaintenance, inProgressMaintenance, completedMaintenance, cancelledMaintenance } = useMemo(() => {
+    const records = maintenanceData?.data || []
+    return {
+      pendingMaintenance: activeTab === 'pending' || activeTab === 'all' ? records.filter(m => m.status === 'pending') : [],
+      inProgressMaintenance: activeTab === 'in_progress' || activeTab === 'all' ? records.filter(m => m.status === 'in_progress') : [],
+      completedMaintenance: activeTab === 'completed' || activeTab === 'all' ? records.filter(m => m.status === 'completed') : [],
+      cancelledMaintenance: activeTab === 'cancelled' || activeTab === 'all' ? records.filter(m => m.status === 'cancelled') : []
+    }
+  }, [maintenanceData?.data, activeTab])
 
   if (isLoading) {
     return (
