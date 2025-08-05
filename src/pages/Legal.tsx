@@ -1,11 +1,11 @@
 import React from 'react';
-import { UnifiedLegalAIAssistant } from '@/components/legal/UnifiedLegalAIAssistant';
+import { EnhancedLegalAIInterface_v2 } from '@/components/legal/EnhancedLegalAIInterface_v2';
 
 const Legal = () => {
   return (
     <div className="h-screen flex flex-col">
       <div className="flex-1">
-        <UnifiedLegalAIAssistant />
+        <EnhancedLegalAIInterface_v2 />
       </div>
     </div>
   );
