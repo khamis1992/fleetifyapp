@@ -160,13 +160,6 @@ export const LegalAIDashboard: React.FC = () => {
           {/* Integrated Smart Legal Assistant */}
           <div className="grid grid-cols-1 gap-6">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Brain className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold">المساعد القانوني الذكي المتكامل</h3>
-                <Badge variant="secondary" className="text-xs">
-                  مع الذكاء التعلمي
-                </Badge>
-              </div>
               <SmartLegalAssistant />
             </div>
           </div>
