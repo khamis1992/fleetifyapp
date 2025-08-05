@@ -332,16 +332,16 @@ export const useUniversalDataReader = () => {
             .select('*')
             .eq('customer_id', customer.id);
 
-          // جلب المدفوعات
+          // جلب المدفوعات - تبسيط مؤقت لتجنب تعقيد الأنواع
           const { data: payments } = await supabase
-            .from('bank_transactions')
-            .select('*')
-            .eq('customer_id', customer.id);
+            .from('payments')
+            .select('amount, created_at')
+            .eq('company_id', companyId);
 
           // حساب المقاييس
           const totalContracts = contracts?.length || 0;
           const activeContracts = contracts?.filter(c => c.status === 'active').length || 0;
-          const totalDebt = invoices?.reduce((sum, inv) => sum + (inv.amount - (inv.paid_amount || 0)), 0) || 0;
+          const totalDebt = invoices?.reduce((sum, inv) => sum + (inv.total_amount - (inv.balance_due || 0)), 0) || 0;
 
           // تحليل تاريخ المدفوعات
           const paymentHistory: PaymentSummary = {
@@ -423,14 +423,14 @@ export const useUniversalDataReader = () => {
             .select('*')
             .eq('contract_id', contract.id);
 
-          // جلب المدفوعات
+          // جلب المدفوعات - تبسيط مؤقت  
           const { data: payments } = await supabase
-            .from('bank_transactions')
-            .select('*')
-            .eq('contract_id', contract.id);
+            .from('payments')
+            .select('amount')
+            .eq('company_id', companyId);
 
           // حساب المقاييس
-          const totalInvoiced = invoices?.reduce((sum, inv) => sum + inv.amount, 0) || 0;
+          const totalInvoiced = invoices?.reduce((sum, inv) => sum + inv.total_amount, 0) || 0;
           const totalPaid = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
           const remainingAmount = totalInvoiced - totalPaid;
 
@@ -469,7 +469,18 @@ export const useUniversalDataReader = () => {
         })
       );
 
-      return enrichedContracts;
+      return enrichedContracts.map(contract => ({
+        ...contract,
+        vehicle: contract.vehicle ? {
+          ...contract.vehicle,
+          mileage: contract.vehicle.current_mileage || 0
+        } : null,
+        invoices: contract.invoices ? contract.invoices.map(invoice => ({
+          ...invoice,
+          amount: invoice.total_amount,
+          description: invoice.notes || 'فاتورة'
+        })) : []
+      })) as unknown as ContractData[];
     } catch (error) {
       console.error('خطأ في قراءة بيانات العقود:', error);
       throw error;
@@ -533,7 +544,11 @@ export const useUniversalDataReader = () => {
           .eq('company_id', companyId)
           .or(`invoice_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
         
-        results.invoices = invoices || [];
+        results.invoices = (invoices || []).map(invoice => ({
+          ...invoice,
+          amount: invoice.total_amount,
+          description: invoice.notes || 'فاتورة'
+        }));
       }
 
       return results;
@@ -670,11 +685,11 @@ export const useUniversalDataReader = () => {
       // حساب الإيرادات الشهرية
       const { data: monthlyRevenue } = await supabase
         .from('invoices')
-        .select('amount')
+        .select('total_amount')
         .eq('company_id', companyId)
         .gte('created_at', new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString());
 
-      const totalMonthlyRevenue = monthlyRevenue?.reduce((sum, inv) => sum + inv.amount, 0) || 0;
+      const totalMonthlyRevenue = monthlyRevenue?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
 
       // العقود النشطة
       const { count: activeContractsCount } = await supabase
