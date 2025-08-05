@@ -90,9 +90,9 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { executeOperation, analyzeCommand } = useExecutiveAISystem();
-  const { parseCommand, validateSecurity } = useAdvancedCommandEngine();
-  const { generateResponse, getConfidence } = useChatGPTLevelAI();
+  const executiveSystem = useExecutiveAISystem('company_123', 'user_123');
+  const commandEngine = useAdvancedCommandEngine('company_123', 'user_123');
+  const aiSystem = useChatGPTLevelAI();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -119,84 +119,63 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
     try {
       const startTime = Date.now();
       
-      // تحليل الأمر لتحديد النوع
-      const commandAnalysis = await analyzeCommand(inputValue);
-      const securityCheck = await validateSecurity(inputValue);
-      
-      if (!securityCheck.safe) {
-        const securityMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant',
-          content: `🚫 **تم حجب الأمر لأسباب أمنية**\n\nالسبب: ${securityCheck.reason}\n\nيرجى إعادة صياغة طلبك بطريقة آمنة.`,
-          timestamp: new Date(),
-          confidence: 100,
-          executionTime: Date.now() - startTime
-        };
+      if (currentMode === 'executive') {
+        // الوضع التنفيذي - استخدام النظام التنفيذي
+        const commandResult = await executiveSystem.processNaturalLanguageCommand(inputValue);
         
-        setMessages(prev => [...prev, securityMessage]);
-        setSystemStats(prev => ({ ...prev, securityBlocks: prev.securityBlocks + 1 }));
-        return;
-      }
-
-      if (commandAnalysis.isExecutive && currentMode === 'executive') {
-        // الوضع التنفيذي
-        if (commandAnalysis.requiresConfirmation) {
-          const pendingCommand: PendingCommand = {
-            id: Date.now().toString(),
-            command: inputValue,
-            operation: commandAnalysis.operation,
-            riskLevel: commandAnalysis.riskLevel,
-            timestamp: new Date(),
-            status: 'pending'
-          };
-          
-          setPendingCommands(prev => [...prev, pendingCommand]);
-          
-          const confirmationMessage: Message = {
+        if (commandResult.success) {
+          const successMessage: Message = {
             id: (Date.now() + 1).toString(),
             type: 'assistant',
-            content: `⚠️ **تأكيد العملية المطلوبة**\n\n**العملية**: ${commandAnalysis.operation.type}\n**التفاصيل**: ${commandAnalysis.operation.description}\n**مستوى المخاطر**: ${commandAnalysis.riskLevel === 'high' ? '🔴 عالي' : commandAnalysis.riskLevel === 'medium' ? '🟡 متوسط' : '🟢 منخفض'}\n\nيرجى مراجعة تبويب "الأوامر المعلقة" للموافقة أو الرفض.`,
+            content: commandResult.message,
             timestamp: new Date(),
-            confidence: commandAnalysis.confidence,
             executionTime: Date.now() - startTime
           };
           
-          setMessages(prev => [...prev, confirmationMessage]);
+          setMessages(prev => [...prev, successMessage]);
+          
+          // إضافة الأوامر المعلقة
+          if (commandResult.commands && commandResult.commands.length > 0) {
+            const newPendingCommands = commandResult.commands.map(cmd => ({
+              id: cmd.id,
+              command: inputValue,
+              operation: {
+                type: cmd.operation,
+                description: cmd.description
+              },
+              riskLevel: cmd.estimatedImpact as 'low' | 'medium' | 'high',
+              timestamp: new Date(),
+              status: 'pending' as const
+            }));
+            
+            setPendingCommands(prev => [...prev, ...newPendingCommands]);
+          }
         } else {
-          // تنفيذ مباشر للعمليات منخفضة المخاطر
-          const result = await executeOperation(commandAnalysis.operation);
-          
-          const resultMessage: Message = {
+          const errorMessage: Message = {
             id: (Date.now() + 1).toString(),
             type: 'assistant',
-            content: result.success 
-              ? `✅ **تم تنفيذ العملية بنجاح**\n\n${result.message}\n\n**التفاصيل**: ${JSON.stringify(result.data, null, 2)}`
-              : `❌ **فشل في تنفيذ العملية**\n\n${result.message}`,
+            content: `❌ **خطأ في معالجة الأمر**\n\n${commandResult.message}`,
             timestamp: new Date(),
-            operation: commandAnalysis.operation,
-            confidence: commandAnalysis.confidence,
             executionTime: Date.now() - startTime
           };
           
-          setMessages(prev => [...prev, resultMessage]);
-          setOperationHistory(prev => [...prev, { ...result, timestamp: new Date() }]);
-          setSystemStats(prev => ({ 
-            ...prev, 
-            totalOperations: prev.totalOperations + 1,
-            successRate: result.success ? prev.successRate + 0.1 : prev.successRate - 0.1
-          }));
+          setMessages(prev => [...prev, errorMessage]);
         }
       } else {
-        // الوضع الاستشاري
-        const response = await generateResponse(inputValue, 'legal_advisory');
-        const confidence = getConfidence(response);
+        // الوضع الاستشاري - استخدام النظام المتقدم للذكاء الاصطناعي
+        const response = await aiSystem.processAdvancedQuery(
+          inputValue,
+          'user_123',
+          'company_123',
+          { analysisType: 'legal_consultation' }
+        );
         
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: 'assistant',
-          content: response,
+          content: response.content || 'تم معالجة استفسارك بنجاح',
           timestamp: new Date(),
-          confidence: confidence,
+          confidence: response.confidence || 95,
           executionTime: Date.now() - startTime
         };
         
@@ -222,7 +201,18 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
     if (!command) return;
 
     try {
-      const result = await executeOperation(command.operation);
+      // Create ExecutiveCommand from operation
+      const execCommand = {
+        id: command.id,
+        operation: command.operation.type as any,
+        parameters: {},
+        description: command.operation.description,
+        requiresConfirmation: false,
+        estimatedImpact: command.riskLevel as any,
+        affectedRecords: []
+      };
+      
+      const result = await executiveSystem.confirmAndExecuteCommand(command.id);
       
       setPendingCommands(prev => 
         prev.map(cmd => 
