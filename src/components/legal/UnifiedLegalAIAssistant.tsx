@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   MessageCircle, 
   Send, 
@@ -31,7 +32,8 @@ import {
   Activity,
   Database,
   Cpu,
-  Lock
+  Lock,
+  Globe
 } from 'lucide-react';
 import { useExecutiveAISystem } from '@/hooks/useExecutiveAISystem';
 import { useAdvancedCommandEngine } from '@/hooks/useAdvancedCommandEngine';
@@ -65,6 +67,33 @@ interface SystemStats {
   systemLoad: number;
 }
 
+interface Country {
+  code: string;
+  name: string;
+  nameAr: string;
+  flag: string;
+}
+
+const SUPPORTED_COUNTRIES: Country[] = [
+  { code: 'KW', name: 'Kuwait', nameAr: 'الكويت', flag: '🇰🇼' },
+  { code: 'SA', name: 'Saudi Arabia', nameAr: 'السعودية', flag: '🇸🇦' },
+  { code: 'AE', name: 'UAE', nameAr: 'الإمارات', flag: '🇦🇪' },
+  { code: 'QA', name: 'Qatar', nameAr: 'قطر', flag: '🇶🇦' },
+  { code: 'BH', name: 'Bahrain', nameAr: 'البحرين', flag: '🇧🇭' },
+  { code: 'OM', name: 'Oman', nameAr: 'عُمان', flag: '🇴🇲' },
+  { code: 'JO', name: 'Jordan', nameAr: 'الأردن', flag: '🇯🇴' },
+  { code: 'EG', name: 'Egypt', nameAr: 'مصر', flag: '🇪🇬' },
+  { code: 'LB', name: 'Lebanon', nameAr: 'لبنان', flag: '🇱🇧' },
+  { code: 'SY', name: 'Syria', nameAr: 'سوريا', flag: '🇸🇾' },
+  { code: 'IQ', name: 'Iraq', nameAr: 'العراق', flag: '🇮🇶' },
+  { code: 'MA', name: 'Morocco', nameAr: 'المغرب', flag: '🇲🇦' },
+  { code: 'TN', name: 'Tunisia', nameAr: 'تونس', flag: '🇹🇳' },
+  { code: 'DZ', name: 'Algeria', nameAr: 'الجزائر', flag: '🇩🇿' },
+  { code: 'LY', name: 'Libya', nameAr: 'ليبيا', flag: '🇱🇾' },
+  { code: 'SD', name: 'Sudan', nameAr: 'السودان', flag: '🇸🇩' },
+  { code: 'YE', name: 'Yemen', nameAr: 'اليمن', flag: '🇾🇪' },
+];
+
 export const UnifiedLegalAIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -88,6 +117,7 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
     activeUsers: 8,
     systemLoad: 67
   });
+  const [selectedCountry, setSelectedCountry] = useState<string>('KW');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const executiveSystem = useExecutiveAISystem('company_123', 'user_123');
@@ -163,11 +193,17 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
         }
       } else {
         // الوضع الاستشاري - استخدام النظام المتقدم للذكاء الاصطناعي
+        const selectedCountryData = SUPPORTED_COUNTRIES.find(c => c.code === selectedCountry);
         const response = await aiSystem.processAdvancedQuery(
           inputValue,
           'user_123',
           'company_123',
-          { analysisType: 'legal_consultation' }
+          { 
+            analysisType: 'legal_consultation',
+            country: selectedCountry,
+            countryName: selectedCountryData?.nameAr || selectedCountryData?.name,
+            legalJurisdiction: selectedCountry
+          }
         );
         
         const assistantMessage: Message = {
@@ -296,7 +332,30 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            {/* Country Selection */}
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Globe className="h-4 w-4 text-gray-500" />
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger className="w-40">
+                  <SelectValue>
+                    {SUPPORTED_COUNTRIES.find(c => c.code === selectedCountry)?.flag}{' '}
+                    {SUPPORTED_COUNTRIES.find(c => c.code === selectedCountry)?.nameAr}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_COUNTRIES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <span>{country.flag}</span>
+                        <span>{country.nameAr}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <Badge variant={currentMode === 'advisory' ? 'default' : 'secondary'}>
               {currentMode === 'advisory' ? '🎯 استشاري' : '⚡ تنفيذي'}
             </Badge>
@@ -347,10 +406,18 @@ export const UnifiedLegalAIAssistant: React.FC = () => {
               <Alert className={`m-4 ${currentMode === 'executive' ? 'border-orange-200 bg-orange-50' : 'border-blue-200 bg-blue-50'}`}>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  {currentMode === 'executive' 
-                    ? '⚡ **الوضع التنفيذي نشط**: يمكن للنظام تنفيذ العمليات مباشرة في قاعدة البيانات'
-                    : '🎯 **الوضع الاستشاري نشط**: النظام سيقدم المشورة دون تنفيذ عمليات'
-                  }
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {currentMode === 'executive' 
+                        ? '⚡ **الوضع التنفيذي نشط**: يمكن للنظام تنفيذ العمليات مباشرة في قاعدة البيانات'
+                        : '🎯 **الوضع الاستشاري نشط**: النظام سيقدم المشورة دون تنفيذ عمليات'
+                      }
+                    </span>
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm">
+                      <Globe className="h-4 w-4" />
+                      <span>القوانين المطبقة: {SUPPORTED_COUNTRIES.find(c => c.code === selectedCountry)?.nameAr}</span>
+                    </div>
+                  </div>
                 </AlertDescription>
               </Alert>
 

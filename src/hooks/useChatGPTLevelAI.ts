@@ -29,7 +29,9 @@ interface ConversationContext {
     conversationType: 'legal_consultation' | 'document_analysis' | 'contract_review' | 'general_inquiry';
   };
   legalContext: {
-    jurisdiction: 'kuwait' | 'saudi' | 'qatar';
+    jurisdiction: string;
+    country: string;
+    countryName: string;
     caseType: string;
     clientId?: string;
     contractId?: string;
@@ -437,7 +439,8 @@ export const useChatGPTLevelAI = () => {
   const retrieveAdvancedKnowledge = useCallback(async (
     query: string, 
     context: IntentAnalysisResult,
-    entities: EntityExtractionResult
+    entities: EntityExtractionResult,
+    countryContext?: { country: string; countryName: string; legalJurisdiction: string }
   ) => {
     const knowledgeSources = [];
     const startTime = Date.now();
@@ -503,7 +506,8 @@ export const useChatGPTLevelAI = () => {
     query: string, 
     context: IntentAnalysisResult,
     entities: EntityExtractionResult,
-    knowledge: any[]
+    knowledge: any[],
+    countryContext?: { country: string; countryName: string; legalJurisdiction: string }
   ) => {
     const reasoning = {
       premises: [] as string[],
@@ -624,19 +628,23 @@ export const useChatGPTLevelAI = () => {
     context: IntentAnalysisResult,
     entities: EntityExtractionResult,
     knowledge: any[],
-    reasoning: any
+    reasoning: any,
+    countryContext?: { country: string; countryName: string; legalJurisdiction: string }
   ): Promise<AIResponse> => {
     const startTime = Date.now();
 
-    // بناء الـ system prompt المتقدم
-    const systemPrompt = `أنت مستشار قانوني ذكي متخصص في قوانين دول الخليج (الكويت، السعودية، قطر) مع التركيز على قطاع تأجير السيارات والليموزين.
+    // بناء الـ system prompt المتقدم مع معلومات الدولة
+    const systemPrompt = `أنت مستشار قانوني ذكي متخصص في قوانين ${countryContext?.countryName || 'دول الخليج'} مع التركيز على قطاع تأجير السيارات والليموزين.
+
+الاختصاص القانوني: ${countryContext?.countryName || 'الكويت'}
+رمز الدولة: ${countryContext?.country || 'KW'}
 
 الخبرات والمهارات:
-- فهم عميق للقوانين التجارية وقوانين المرور في دول الخليج
-- تحليل العقود والاتفاقيات القانونية المتخصصة
-- صياغة الوثائق القانونية (إنذارات، مطالبات، عقود، اتفاقيات)
-- تقييم المخاطر القانونية وتقديم التوصيات الاستراتيجية
-- فهم السياق التجاري لشركات تأجير السيارات والليموزين
+- فهم عميق للقوانين التجارية وقوانين المرور في ${countryContext?.countryName || 'دول الخليج'}
+- تحليل العقود والاتفاقيات القانونية وفقاً للقوانين المحلية
+- صياغة الوثائق القانونية (إنذارات، مطالبات، عقود، اتفاقيات) طبقاً للأنظمة المعمول بها في ${countryContext?.countryName || 'الكويت'}
+- تقييم المخاطر القانونية وتقديم التوصيات الاستراتيجية ضمن الإطار القانوني المحلي
+- فهم السياق التجاري لشركات تأجير السيارات والليموزين في ${countryContext?.countryName || 'المنطقة'}
 
 تحليل الاستفسار الحالي:
 - النية الأساسية: ${context.primaryIntent}
@@ -662,13 +670,14 @@ ${reasoning.legal_analysis.applicable_laws.slice(0, 3).join(', ')}
 ${reasoning.legal_analysis.risk_factors.join(', ')}
 
 تعليمات الاستجابة:
-1. قدم إجابة شاملة ودقيقة باللغة العربية
-2. اذكر المصادر القانونية المعتمدة والمراجع
-3. قدم توصيات عملية قابلة للتطبيق فوراً
-4. حدد المخاطر المحتملة وطرق تجنبها
-5. اقترح الخطوات التالية بترتيب الأولوية
-6. استخدم لغة قانونية واضحة ومفهومة
-7. تأكد من الدقة والموضوعية في المشورة
+1. قدم إجابة شاملة ودقيقة باللغة العربية وفقاً لقوانين ${countryContext?.countryName || 'الكويت'}
+2. اذكر المصادر القانونية المعتمدة والمراجع في ${countryContext?.countryName || 'الدولة المعنية'}
+3. قدم توصيات عملية قابلة للتطبيق فوراً ضمن النظام القانوني المحلي
+4. حدد المخاطر المحتملة وطرق تجنبها طبقاً للقوانين النافذة
+5. اقترح الخطوات التالية بترتيب الأولوية مع مراعاة الإجراءات المحلية
+6. استخدم لغة قانونية واضحة ومفهومة ومتوافقة مع المصطلحات القانونية المحلية
+7. تأكد من الدقة والموضوعية في المشورة القانونية المحلية
+8. أشر إلى خصوصية النظام القانوني في ${countryContext?.countryName || 'الدولة المعنية'} عند الضرورة
 
 ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مراجعة بشرية متخصصة.' : ''}`;
 
@@ -846,6 +855,11 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
         return cached.response;
       }
 
+      // Extract country information from additional context
+      const country = additionalContext?.country || 'KW';
+      const countryName = additionalContext?.countryName || 'الكويت';
+      const legalJurisdiction = additionalContext?.legalJurisdiction || 'KW';
+
       // 2. تحليل السياق المتقدم
       const contextAnalysis = await analyzeAdvancedContext(query, userId, companyId);
 
@@ -853,10 +867,18 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
       const entities = extractAdvancedEntities(query);
 
       // 4. استرجاع المعرفة ذات الصلة
-      const relevantKnowledge = await retrieveAdvancedKnowledge(query, contextAnalysis, entities);
+      const relevantKnowledge = await retrieveAdvancedKnowledge(query, contextAnalysis, entities, {
+        country,
+        countryName,
+        legalJurisdiction
+      });
 
       // 5. التفكير المنطقي القانوني المتقدم
-      const reasoning = performAdvancedLegalReasoning(query, contextAnalysis, entities, relevantKnowledge);
+      const reasoning = performAdvancedLegalReasoning(query, contextAnalysis, entities, relevantKnowledge, {
+        country,
+        countryName,
+        legalJurisdiction
+      });
 
       // 6. توليد الاستجابة المتقدمة
       const response = await generateAdvancedAIResponse(
@@ -864,7 +886,12 @@ ${context.requiresHumanReview ? 'تنبيه: هذه الحالة تتطلب مر
         contextAnalysis,
         entities,
         relevantKnowledge,
-        reasoning
+        reasoning,
+        {
+          country,
+          countryName,
+          legalJurisdiction
+        }
       );
 
       // 7. تحديث الإحصائيات
