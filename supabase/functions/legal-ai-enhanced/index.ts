@@ -6,6 +6,11 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
+console.log('Legal AI Enhanced Function Starting...');
+console.log('OpenAI API Key configured:', !!openAIApiKey);
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Key configured:', !!supabaseKey);
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -63,8 +68,16 @@ async function logActivity(
 
 async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
   const startTime = Date.now();
+  
+  console.log('Processing legal query:', {
+    query: query.query?.substring(0, 100) + '...',
+    analysis_type: query.analysis_type,
+    company_id: query.company_id,
+    user_id: query.user_id
+  });
 
   if (!openAIApiKey) {
+    console.error('OpenAI API key not configured');
     throw new Error('OpenAI API key not configured');
   }
 
@@ -102,6 +115,8 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
     - recommendations: التوصيات
     `;
 
+    console.log('Sending request to OpenAI with model: gpt-4.1-2025-04-14');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -109,21 +124,35 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query.query }
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        temperature: 0.3,
+        max_tokens: 3000,
+        response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('OpenAI response received:', {
+      choices_length: data.choices?.length,
+      finish_reason: data.choices?.[0]?.finish_reason,
+      model: data.model,
+      usage: data.usage
+    });
+    
     const analysis = data.choices[0].message.content;
     
     const processingTime = Date.now() - startTime;

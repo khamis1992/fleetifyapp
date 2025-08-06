@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useUnifiedLegalAI } from '@/hooks/useUnifiedLegalAI';
+import { useEnhancedLegalAI } from '@/hooks/useEnhancedLegalAI';
+import LegalAITestPanel from './LegalAITestPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,8 +74,16 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // استخدام الهوك في المستوى الأعلى للمكون
-  const { submitUnifiedQuery, error, clearError } = useUnifiedLegalAI();
+  // استخدام الهوك المحسن للنظام القانوني
+  const { 
+    processLegalQuery, 
+    checkSystemHealth,
+    isProcessing: legalAIProcessing, 
+    error, 
+    clearError,
+    conversationHistory,
+    processingStatus
+  } = useEnhancedLegalAI();
 
   // الاقتراحات الافتراضية
   const defaultSuggestions: QuerySuggestion[] = [
@@ -165,21 +174,21 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
       // فحص حالة النظام أولاً
       await checkSystemStatus();
 
-      // استخدام الهوك للحصول على استجابة شاملة
-      const response = await submitUnifiedQuery({
+      // استخدام الهوك المحسن للحصول على استجابة شاملة
+      const response = await processLegalQuery({
         query: currentQuery,
-        mode: 'advisory'
+        analysis_type: 'comprehensive'
       });
 
       const result: LegalAIResponse = {
-        success: true,
-        response_type: response.responseType === 'assistant' ? 'legal_advice' : 'data_query',
-        response_text: response.content,
+        success: response.success,
+        response_type: 'legal_advice',
+        response_text: response.analysis,
         confidence: response.confidence / 100,
-        execution_time: response.processingTime / 1000,
+        execution_time: response.processing_time / 1000,
         query_understood: true,
-        suggestions: [],
-        legal_references: []
+        suggestions: response.suggestions || [],
+        legal_references: response.legal_references || []
       };
       
       setResponses(prev => [...prev, {
@@ -594,6 +603,9 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
 
         {/* تبويب المساعدة */}
         <TabsContent value="help" className="space-y-4">
+          {/* إضافة لوحة الاختبار */}
+          <LegalAITestPanel />
+          
           <Card>
             <CardHeader>
               <CardTitle>الاقتراحات السريعة</CardTitle>

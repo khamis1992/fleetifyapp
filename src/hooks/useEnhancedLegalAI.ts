@@ -78,10 +78,18 @@ export const useEnhancedLegalAI = () => {
     try {
       const sessionId = queryData.session_id || currentSessionId || generateSessionId();
 
+      console.log('Processing legal query:', {
+        query: queryData.query.substring(0, 100) + '...',
+        analysis_type: queryData.analysis_type,
+        company_id: companyId,
+        user_id: user?.id,
+        session_id: sessionId
+      });
+
       const response = await supabase.functions.invoke('legal-ai-enhanced', {
         body: {
           query: queryData.query,
-          analysis_type: queryData.analysis_type || 'basic',
+          analysis_type: queryData.analysis_type || 'comprehensive',
           context: queryData.context,
           company_id: companyId,
           user_id: user?.id,
@@ -89,14 +97,26 @@ export const useEnhancedLegalAI = () => {
         }
       });
 
+      console.log('Legal AI response received:', response);
+
       if (response.error) {
+        console.error('Legal AI Error:', response.error);
         throw new Error(response.error.message || 'فشل في الاتصال بنظام الذكاء الاصطناعي القانوني');
       }
 
       const result = response.data as EnhancedLegalResponse;
       
+      if (!result) {
+        throw new Error('لم يتم استلام رد من النظام');
+      }
+
       if (!result.success) {
-        throw new Error('فشل في معالجة الاستعلام القانوني');
+        throw new Error(result.analysis || 'فشل في معالجة الاستعلام القانوني');
+      }
+
+      // Validate response quality for real results
+      if (!result.analysis || result.analysis.length < 50) {
+        throw new Error('الرد المستلم غير مكتمل أو غير صالح');
       }
 
       // Add to conversation history
@@ -112,11 +132,19 @@ export const useEnhancedLegalAI = () => {
       setConversationHistory(prev => [historyItem, ...prev]);
       setProcessingStatus('');
       
+      // Show success toast with confidence level
+      toast.success(`تمت معالجة الاستعلام بنجاح (الثقة: ${result.confidence}%)`);
+      
       return result;
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
+      console.error('Legal AI processing error:', err);
       setError(errorMessage);
+      
+      // Show error toast
+      toast.error(`خطأ في معالجة الاستعلام: ${errorMessage}`);
+      
       throw err;
     } finally {
       setIsProcessing(false);
