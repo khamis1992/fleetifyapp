@@ -266,21 +266,20 @@ export const useEnhancedLegalAI = () => {
   // Health check function
   const checkSystemHealth = useCallback(async (): Promise<boolean> => {
     try {
-      const supabaseUrl = 'https://qwhunliohlkkahbspfiu.supabase.co';
-      const response = await fetch(`${supabaseUrl}/functions/v1/legal-ai-enhanced/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      console.log('Performing health check...');
       
-      if (!response.ok) {
-        console.error('Health check failed with status:', response.status);
+      // Use Supabase's authenticated function call
+      const { data, error } = await supabase.functions.invoke('legal-ai-enhanced/health', {
+        method: 'GET'
+      });
+
+      if (error) {
+        console.error('Health check error:', error);
         return false;
       }
-      
-      const data = await response.json();
-      return data?.status === 'healthy';
+
+      console.log('Health check response:', data);
+      return data?.status === 'healthy' && data?.openai_configured === true;
     } catch (error) {
       console.error('Health check failed:', error);
       return false;
