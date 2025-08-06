@@ -2029,6 +2029,39 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_vehicles: {
+        Row: {
+          allocated_amount: number
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          updated_at: string
+          vehicle_id: string
+          vehicle_installment_id: string
+        }
+        Insert: {
+          allocated_amount?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          vehicle_id: string
+          vehicle_installment_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_installment_id?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           account_id: string | null
@@ -7910,6 +7943,7 @@ export type Database = {
           agreement_date: string
           agreement_number: string
           company_id: string
+          contract_type: string | null
           created_at: string
           created_by: string | null
           down_payment: number
@@ -7922,6 +7956,7 @@ export type Database = {
           start_date: string
           status: string
           total_amount: number
+          total_vehicles_count: number | null
           updated_at: string
           vehicle_id: string
           vendor_id: string
@@ -7930,6 +7965,7 @@ export type Database = {
           agreement_date?: string
           agreement_number: string
           company_id: string
+          contract_type?: string | null
           created_at?: string
           created_by?: string | null
           down_payment?: number
@@ -7942,6 +7978,7 @@ export type Database = {
           start_date: string
           status?: string
           total_amount?: number
+          total_vehicles_count?: number | null
           updated_at?: string
           vehicle_id: string
           vendor_id: string
@@ -7950,6 +7987,7 @@ export type Database = {
           agreement_date?: string
           agreement_number?: string
           company_id?: string
+          contract_type?: string | null
           created_at?: string
           created_by?: string | null
           down_payment?: number
@@ -7962,6 +8000,7 @@ export type Database = {
           start_date?: string
           status?: string
           total_amount?: number
+          total_vehicles_count?: number | null
           updated_at?: string
           vehicle_id?: string
           vendor_id?: string
@@ -9143,6 +9182,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_vehicles_to_installment: {
+        Args: {
+          p_installment_id: string
+          p_vehicle_ids: string[]
+          p_vehicle_amounts?: number[]
+        }
+        Returns: undefined
+      }
       analyze_system_performance: {
         Args: { company_id_param: string; hours_back?: number }
         Returns: Json
@@ -9597,6 +9644,14 @@ export type Database = {
       decrypt_sensitive_data: {
         Args: { encrypted_data: string }
         Returns: string
+      }
+      distribute_vehicle_installment_amount: {
+        Args: {
+          p_installment_id: string
+          p_total_amount: number
+          p_vehicle_amounts?: Json
+        }
+        Returns: undefined
       }
       encrypt_sensitive_data: {
         Args: { data: string }

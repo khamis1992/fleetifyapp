@@ -104,18 +104,68 @@ export const useCreateVehicleInstallment = () => {
 
       if (!profile?.company_id) throw new Error('Company not found');
 
+      // Determine contract type
+      const isMultiVehicle = data.contract_type === 'multi_vehicle' || (data.vehicle_ids && data.vehicle_ids.length > 1);
+      
+      // Prepare installment data
+      const installmentData = {
+        vendor_id: data.vendor_id,
+        vehicle_id: isMultiVehicle ? null : data.vehicle_id,
+        agreement_number: data.agreement_number,
+        total_amount: data.total_amount,
+        down_payment: data.down_payment,
+        installment_amount: data.installment_amount,
+        number_of_installments: data.number_of_installments,
+        interest_rate: data.interest_rate,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        agreement_date: data.agreement_date,
+        notes: data.notes,
+        status: 'draft' as const,
+        contract_type: isMultiVehicle ? 'multi_vehicle' as const : 'single_vehicle' as const,
+        total_vehicles_count: isMultiVehicle ? (data.vehicle_ids?.length || 1) : 1,
+        company_id: profile.company_id,
+        created_by: user.id,
+      };
+
       // Create the installment agreement
       const { data: installment, error: installmentError } = await supabase
         .from('vehicle_installments')
-        .insert({
-          ...data,
-          company_id: profile.company_id,
-          created_by: user.id,
-        })
+        .insert(installmentData)
         .select()
         .single();
 
       if (installmentError) throw installmentError;
+
+      // Handle multi-vehicle setup
+      if (isMultiVehicle && data.vehicle_ids) {
+        const vehicleAmounts = data.vehicle_amounts || {};
+        const vehicleIds = data.vehicle_ids;
+        const amounts = vehicleIds.map(id => vehicleAmounts[id] || 0);
+
+        const { error: vehicleError } = await supabase.rpc(
+          'add_vehicles_to_installment',
+          {
+            p_installment_id: installment.id,
+            p_vehicle_ids: vehicleIds,
+            p_vehicle_amounts: amounts,
+          }
+        );
+
+        if (vehicleError) throw vehicleError;
+
+        // Distribute amounts
+        const { error: distributeError } = await supabase.rpc(
+          'distribute_vehicle_installment_amount',
+          {
+            p_installment_id: installment.id,
+            p_total_amount: data.total_amount - data.down_payment,
+            p_vehicle_amounts: vehicleAmounts,
+          }
+        );
+
+        if (distributeError) throw distributeError;
+      }
 
       // Create the installment schedule using the database function
       const { error: scheduleError } = await supabase.rpc(

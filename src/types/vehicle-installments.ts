@@ -3,7 +3,7 @@ export interface VehicleInstallment {
   id: string
   company_id: string
   vendor_id: string
-  vehicle_id: string
+  vehicle_id?: string // Made optional for multi-vehicle contracts
   agreement_number: string
   total_amount: number
   down_payment: number
@@ -18,6 +18,8 @@ export interface VehicleInstallment {
   created_by?: string
   created_at: string
   updated_at: string
+  contract_type?: 'single_vehicle' | 'multi_vehicle'
+  total_vehicles_count?: number
 }
 
 export type VehicleInstallmentStatus = 'draft' | 'active' | 'completed' | 'cancelled'
@@ -63,7 +65,9 @@ export interface VehicleInstallmentWithDetails extends VehicleInstallment {
 
 export interface VehicleInstallmentCreateData {
   vendor_id: string
-  vehicle_id: string
+  vehicle_id?: string // Optional for multi-vehicle contracts
+  vehicle_ids?: string[] // For multi-vehicle contracts
+  vehicle_amounts?: { [vehicleId: string]: number } // Individual amounts per vehicle
   agreement_number: string
   total_amount: number
   down_payment: number
@@ -74,6 +78,25 @@ export interface VehicleInstallmentCreateData {
   end_date: string
   notes?: string
   agreement_date: string
+  contract_type?: 'single_vehicle' | 'multi_vehicle'
+}
+
+export interface ContractVehicle {
+  id: string
+  company_id: string
+  vehicle_installment_id: string
+  vehicle_id: string
+  allocated_amount: number
+  notes?: string
+  created_at: string
+  updated_at: string
+  vehicles?: {
+    id: string
+    plate_number: string
+    model: string
+    make: string
+    year: number
+  }
 }
 
 export interface VehicleInstallmentPaymentData {

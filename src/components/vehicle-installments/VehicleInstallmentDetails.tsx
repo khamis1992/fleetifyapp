@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CreditCard, Calendar, AlertCircle, CheckCircle } from "lucide-react";
 import { useVehicleInstallmentSchedules, useProcessInstallmentPayment } from "@/hooks/useVehicleInstallments";
+import { useContractVehicles } from "@/hooks/useContractVehicles";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -27,7 +28,10 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   const { data: schedules, isLoading } = useVehicleInstallmentSchedules(installment.id);
+  const { data: contractVehicles } = useContractVehicles(installment.id);
   const processPayment = useProcessInstallmentPayment();
+  
+  const isMultiVehicle = installment.contract_type === 'multi_vehicle' || (contractVehicles && contractVehicles.length > 1);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -130,10 +134,30 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
                 </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">المركبة:</span>
-                <p className="font-semibold">
-                  {installment.vehicles?.plate_number} - {installment.vehicles?.make} {installment.vehicles?.model}
-                </p>
+                <span className="font-medium text-muted-foreground">
+                  {isMultiVehicle ? 'المركبات:' : 'المركبة:'}
+                </span>
+                {isMultiVehicle ? (
+                  <div className="space-y-2 mt-2">
+                    {contractVehicles?.map((cv) => (
+                      <div key={cv.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                        <span className="font-semibold">
+                          {cv.vehicles?.plate_number} - {cv.vehicles?.make} {cv.vehicles?.model}
+                        </span>
+                        <Badge variant="outline">
+                          {formatCurrency(cv.allocated_amount)}
+                        </Badge>
+                      </div>
+                    ))}
+                    <div className="text-sm text-muted-foreground">
+                      إجمالي {contractVehicles?.length || 0} مركبة
+                    </div>
+                  </div>
+                ) : (
+                  <p className="font-semibold">
+                    {installment.vehicles?.plate_number} - {installment.vehicles?.make} {installment.vehicles?.model}
+                  </p>
+                )}
               </div>
               <div>
                 <span className="font-medium text-muted-foreground">تاريخ الاتفاقية:</span>

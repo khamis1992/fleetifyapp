@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import VehicleInstallmentForm from "./VehicleInstallmentForm";
+import MultiVehicleContractForm from "./MultiVehicleContractForm";
 import VehicleInstallmentDetails from "./VehicleInstallmentDetails";
 import type { VehicleInstallmentWithDetails } from "@/types/vehicle-installments";
 
@@ -70,10 +71,13 @@ const VehicleInstallmentsDashboard = () => {
           <h1 className="text-3xl font-bold">أقساط المركبات</h1>
           <p className="text-muted-foreground">إدارة اتفاقيات الأقساط مع التجار</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          إضافة اتفاقية جديدة
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            اتفاقية مركبة واحدة
+          </Button>
+          <MultiVehicleContractForm />
+        </div>
       </div>
 
       {summary && (
