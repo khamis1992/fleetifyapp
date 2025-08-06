@@ -47,7 +47,7 @@ export type VehicleInstallmentScheduleStatus = 'pending' | 'paid' | 'overdue' | 
 export interface VehicleInstallmentWithDetails extends VehicleInstallment {
   vehicles: {
     id: string
-    license_plate: string
+    plate_number: string
     model: string
     make: string
     year: number

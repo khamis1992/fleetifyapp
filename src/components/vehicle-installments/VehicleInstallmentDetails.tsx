@@ -132,7 +132,7 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
               <div>
                 <span className="font-medium text-muted-foreground">المركبة:</span>
                 <p className="font-semibold">
-                  {installment.vehicles?.vehicle_plate} - {installment.vehicles?.make} {installment.vehicles?.model}
+                  {installment.vehicles?.plate_number} - {installment.vehicles?.make} {installment.vehicles?.model}
                 </p>
               </div>
               <div>

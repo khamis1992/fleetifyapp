@@ -187,7 +187,7 @@ const VehicleInstallmentsDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
                       <div>
                         <span className="font-medium">المركبة: </span>
-                        {installment.vehicles?.vehicle_plate} - {installment.vehicles?.make} {installment.vehicles?.model}
+                        {installment.vehicles?.plate_number} - {installment.vehicles?.make} {installment.vehicles?.model}
                       </div>
                       <div>
                         <span className="font-medium">التاجر: </span>

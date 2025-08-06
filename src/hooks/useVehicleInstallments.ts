@@ -33,7 +33,7 @@ export const useVehicleInstallments = () => {
           *,
           vehicles:vehicle_id (
             id,
-            license_plate,
+            plate_number,
             model,
             make,
             year
@@ -50,7 +50,7 @@ export const useVehicleInstallments = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as VehicleInstallmentWithDetails[];
+      return data as unknown as VehicleInstallmentWithDetails[];
     },
     enabled: !!user?.id,
   });

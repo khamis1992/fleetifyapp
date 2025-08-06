@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
+import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
 
 const installmentSchema = z.object({
   vendor_id: z.string().min(1, "يجب اختيار التاجر"),
@@ -108,9 +109,9 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
 
       const { data, error } = await supabase
         .from('vehicles')
-        .select('id, license_plate, make, model, year')
+        .select('id, plate_number, make, model, year')
         .eq('company_id', profile.company_id)
-        .order('license_plate', { ascending: true });
+        .order('plate_number', { ascending: true });
 
       if (error) throw error;
       return data;
@@ -161,10 +162,19 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
       return;
     }
 
-    const formData = {
-      ...data,
+    const formData: VehicleInstallmentCreateData = {
+      vendor_id: data.vendor_id,
+      vehicle_id: data.vehicle_id,
+      agreement_number: data.agreement_number,
+      total_amount: data.total_amount,
+      down_payment: data.down_payment,
       installment_amount: calculatedData.installmentAmount,
+      number_of_installments: data.number_of_installments,
+      interest_rate: data.interest_rate,
+      start_date: data.start_date,
       end_date: calculatedData.endDate,
+      agreement_date: data.agreement_date,
+      notes: data.notes,
     };
 
     await createInstallment.mutateAsync(formData);
@@ -234,7 +244,7 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
                   <SelectContent>
                     {vehicles?.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.license_plate} - {vehicle.make} {vehicle.model} ({vehicle.year})
+                        {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
                       </SelectItem>
                     ))}
                   </SelectContent>
