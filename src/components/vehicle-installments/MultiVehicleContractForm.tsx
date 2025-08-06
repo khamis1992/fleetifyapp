@@ -37,6 +37,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useCreateVehicleInstallment } from "@/hooks/useVehicleInstallments";
 import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
 import { toast } from "sonner";
+import { VehicleSelector } from "./VehicleSelector";
 
 const multiVehicleSchema = z.object({
   vendor_id: z.string().min(1, "يجب اختيار التاجر"),
@@ -460,22 +461,15 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                   <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
                     <div className="flex-1">
                       <label className="text-sm font-medium">المركبة</label>
-                      <Select
-                        value={allocation.vehicle_id}
-                        onValueChange={(value) => updateVehicleAllocation(index, 'vehicle_id', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر المركبة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vehicles?.filter(v => !vehicleAllocations.some((a, i) => i !== index && a.vehicle_id === v.id))
-                            .map((vehicle) => (
-                            <SelectItem key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <VehicleSelector
+                        vehicles={vehicles || []}
+                        selectedVehicleId={allocation.vehicle_id}
+                        excludeVehicleIds={vehicleAllocations
+                          .map((a, i) => i !== index ? a.vehicle_id : '')
+                          .filter(Boolean)}
+                        onSelect={(vehicleId) => updateVehicleAllocation(index, 'vehicle_id', vehicleId)}
+                        placeholder="اختر المركبة..."
+                      />
                     </div>
                     
                     <div className="flex-1">
