@@ -1,309 +1,270 @@
 import { useState, useCallback } from 'react';
-import { useContextualQueryAnalyzer } from './useContextualQueryAnalyzer';
-import { useStatisticalQueryHandler } from './useStatisticalQueryHandler';
-import { useStatisticalQueryClassifier } from './useStatisticalQueryClassifier';
-import { useSemanticDictionary } from './useSemanticDictionary';
-import { useUnifiedLegalAI } from './useUnifiedLegalAI';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
 export interface EnhancedLegalQuery {
   query: string;
-  context?: {
-    conversationHistory?: any[];
-    userPreferences?: any;
-    domainHint?: string;
-    company_id?: string;
-    user_id?: string;
-  };
+  analysis_type?: 'basic' | 'comprehensive' | 'predictive';
+  context?: any;
+  session_id?: string;
+}
+
+export interface RiskAssessment {
+  level: 'low' | 'medium' | 'high';
+  factors: string[];
+  recommendations: string[];
 }
 
 export interface EnhancedLegalResponse {
-  response: string;
+  success: boolean;
+  analysis: string;
   confidence: number;
-  processingStrategy: 'semantic_enhanced' | 'statistical' | 'legal_analysis' | 'hybrid' | 'unified';
-  metadata: {
-    queryAnalysis: any;
-    semanticMatches?: any[];
-    processingTime: number;
-    suggestions?: string[];
-    relatedConcepts?: string[];
-    enhancementApplied: boolean;
-  };
-  visualizations?: any[];
-  followUpQuestions?: string[];
-  actionableInsights?: string[];
+  processing_time: number;
+  sources: string[];
+  suggestions?: string[];
+  legal_references?: string[];
+  action_items?: string[];
+  risk_assessment?: RiskAssessment;
+}
+
+export interface LegalAnalytics {
+  total_queries: number;
+  successful_queries: number;
+  failed_queries: number;
+  average_confidence: number;
+  average_processing_time: number;
+  daily_usage: Record<string, number>;
+  success_rate: number;
+}
+
+export interface ConversationHistory {
+  id: string;
+  query: string;
+  response: string;
+  timestamp: Date;
+  confidence: number;
+  session_id: string;
 }
 
 export const useEnhancedLegalAI = () => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const { analyzeQuery } = useContextualQueryAnalyzer();
-  const { processStatisticalQuery } = useStatisticalQueryHandler();
-  const { classifyStatisticalQuery } = useStatisticalQueryClassifier();
-  const { expandQuery, getRelatedConcepts } = useSemanticDictionary();
-  const { submitUnifiedQuery } = useUnifiedLegalAI();
+  const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [conversationHistory, setConversationHistory] = useState<ConversationHistory[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  
+  const { companyId, user } = useUnifiedCompanyAccess();
 
-  const processEnhancedQuery = useCallback(async (
-    enhancedQuery: EnhancedLegalQuery
-  ): Promise<EnhancedLegalResponse> => {
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const generateSessionId = useCallback(() => {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setCurrentSessionId(sessionId);
+    return sessionId;
+  }, []);
+
+  const processLegalQuery = useCallback(async (queryData: EnhancedLegalQuery): Promise<EnhancedLegalResponse> => {
+    if (!companyId) {
+      throw new Error('معرف الشركة مطلوب');
+    }
+
     setIsProcessing(true);
-    const startTime = Date.now();
+    setError(null);
+    setProcessingStatus('جاري معالجة الاستعلام القانوني...');
 
     try {
-      // Step 1: Enhanced semantic analysis
-      const queryAnalysis = await analyzeQuery(enhancedQuery.query);
-      
-      // Step 2: Apply semantic enhancement to the query
-      const enhancedQueryText = enhanceQueryWithSemantics(enhancedQuery.query, queryAnalysis);
-      
-      // Step 3: Determine if we need statistical processing
-      if (queryAnalysis.isStatisticalQuery && queryAnalysis.context.confidence > 0.7) {
-        // First classify the query statistically
-        const statisticalClassification = classifyStatisticalQuery(enhancedQuery.query);
-        const statisticalResult = await processStatisticalQuery(
-          enhancedQuery.query,
-          statisticalClassification,
-          enhancedQuery.context?.company_id || ''
-        );
-        
-        return {
-          response: generateEnhancedStatisticalResponse(statisticalResult, queryAnalysis),
-          confidence: queryAnalysis.context.confidence,
-          processingStrategy: 'statistical',
-          metadata: {
-            queryAnalysis,
-            semanticMatches: queryAnalysis.semanticMatches,
-            processingTime: Date.now() - startTime,
-            suggestions: queryAnalysis.suggestedQueries,
-            relatedConcepts: extractRelatedConcepts(queryAnalysis),
-            enhancementApplied: true
-          },
-          visualizations: statisticalResult.success ? statisticalResult.visualizations || [] : [],
-          followUpQuestions: generateContextualFollowUps(queryAnalysis),
-          actionableInsights: generateActionableInsights(statisticalResult, queryAnalysis)
-        };
+      const sessionId = queryData.session_id || currentSessionId || generateSessionId();
+
+      const response = await supabase.functions.invoke('legal-ai-enhanced', {
+        body: {
+          query: queryData.query,
+          analysis_type: queryData.analysis_type || 'basic',
+          context: queryData.context,
+          company_id: companyId,
+          user_id: user?.id,
+          session_id: sessionId
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'فشل في الاتصال بنظام الذكاء الاصطناعي القانوني');
       }
 
-      // Step 4: Use unified AI with enhanced context
-      const unifiedQuery = {
-        query: enhancedQueryText,
-        country: 'Kuwait', // Default for legal context
-        company_id: enhancedQuery.context?.company_id || '',
-        user_id: enhancedQuery.context?.user_id,
-        context: {
-          ...enhancedQuery.context,
-          semanticAnalysis: queryAnalysis,
-          enhancedQuery: true
-        },
-        conversationHistory: enhancedQuery.context?.conversationHistory || []
+      const result = response.data as EnhancedLegalResponse;
+      
+      if (!result.success) {
+        throw new Error('فشل في معالجة الاستعلام القانوني');
+      }
+
+      // Add to conversation history
+      const historyItem: ConversationHistory = {
+        id: Date.now().toString(),
+        query: queryData.query,
+        response: result.analysis,
+        timestamp: new Date(),
+        confidence: result.confidence,
+        session_id: sessionId
       };
 
-      const unifiedResponse = await submitUnifiedQuery(unifiedQuery);
+      setConversationHistory(prev => [historyItem, ...prev]);
+      setProcessingStatus('');
+      
+      return result;
 
-      // Step 5: Apply additional semantic enhancements to the response
-      const enhancedResponseText = enhanceResponseWithContext(
-        unifiedResponse.response,
-        queryAnalysis
-      );
-
-      return {
-        response: enhancedResponseText,
-        confidence: queryAnalysis.context.confidence,
-        processingStrategy: 'unified',
-        metadata: {
-          queryAnalysis,
-          semanticMatches: queryAnalysis.semanticMatches,
-          processingTime: Date.now() - startTime,
-          suggestions: queryAnalysis.suggestedQueries,
-          relatedConcepts: extractRelatedConcepts(queryAnalysis),
-          enhancementApplied: true
-        },
-        visualizations: [],
-        followUpQuestions: generateContextualFollowUps(queryAnalysis),
-        actionableInsights: generateResponseInsights(unifiedResponse, queryAnalysis)
-      };
-
-    } catch (error) {
-      console.error('Error in enhanced legal AI processing:', error);
-      return {
-        response: 'I encountered an error while processing your enhanced query. Please try rephrasing your question with more specific terms.',
-        confidence: 0.1,
-        processingStrategy: 'semantic_enhanced',
-        metadata: {
-          queryAnalysis: null,
-          processingTime: Date.now() - startTime,
-          enhancementApplied: false
-        },
-        followUpQuestions: ['Could you provide more specific details?', 'Would you like me to suggest related topics?']
-      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
+      setError(errorMessage);
+      throw err;
     } finally {
       setIsProcessing(false);
     }
-  }, [analyzeQuery, processStatisticalQuery, submitUnifiedQuery]);
+  }, [companyId, user, currentSessionId, generateSessionId]);
 
-  // Helper functions for semantic enhancement
-  const enhanceQueryWithSemantics = (originalQuery: string, analysis: any): string => {
-    let enhancedQuery = originalQuery;
-    
-    // Add context-aware terms based on domain
-    if (analysis.context.domain === 'legal') {
-      enhancedQuery = `Legal context: ${enhancedQuery}`;
-    } else if (analysis.context.domain === 'financial') {
-      enhancedQuery = `Financial analysis: ${enhancedQuery}`;
-    } else if (analysis.context.domain === 'fleet_management') {
-      enhancedQuery = `Fleet operations: ${enhancedQuery}`;
+  const getQuerySuggestions = useCallback(async (context?: string): Promise<string[]> => {
+    try {
+      const response = await supabase.functions.invoke('legal-ai-enhanced', {
+        body: { context }
+      });
+
+      if (response.error) {
+        console.error('Error getting suggestions:', response.error);
+        return [];
+      }
+
+      return response.data?.suggestions || [];
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      return [];
+    }
+  }, []);
+
+  const getLegalAnalytics = useCallback(async (days: number = 30): Promise<LegalAnalytics> => {
+    if (!companyId) {
+      throw new Error('معرف الشركة مطلوب');
     }
 
-    // Add temporal context if detected
-    if (analysis.context.temporal.isRealTime) {
-      enhancedQuery += ' (current status required)';
-    } else if (analysis.context.temporal.isHistorical) {
-      enhancedQuery += ' (historical data analysis)';
+    try {
+      const response = await supabase.functions.invoke('legal-ai-enhanced', {
+        body: { 
+          company_id: companyId,
+          days 
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'فشل في جلب الإحصائيات');
+      }
+
+      const data = response.data;
+      return {
+        ...data,
+        success_rate: data.total_queries > 0 ? (data.successful_queries / data.total_queries) * 100 : 0
+      };
+
+    } catch (error) {
+      console.error('Error getting analytics:', error);
+      throw error;
     }
+  }, [companyId]);
 
-    return enhancedQuery;
-  };
+  const saveConversation = useCallback(async (name: string): Promise<void> => {
+    if (!companyId || conversationHistory.length === 0) return;
 
-  const enhanceResponseWithContext = (response: any, analysis: any): string => {
-    let enhancedResponse = '';
-    
-    if (typeof response === 'string') {
-      enhancedResponse = response;
-    } else if (response?.advice) {
-      enhancedResponse = response.advice;
-    } else {
-      enhancedResponse = 'I processed your query based on the semantic analysis.';
+    try {
+      const { error } = await supabase
+        .from('saved_conversations')
+        .insert({
+          name,
+          company_id: companyId,
+          user_id: user?.id,
+          session_id: currentSessionId,
+          conversation_data: conversationHistory as any,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast.success('تم حفظ المحادثة بنجاح');
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+      toast.error('فشل في حفظ المحادثة');
     }
+  }, [companyId, user, currentSessionId, conversationHistory]);
 
-    // Add context-aware enhancements
-    if (analysis.semanticMatches.length > 0) {
-      const concepts = analysis.semanticMatches.map(m => m.concept).join(', ');
-      enhancedResponse += `\n\n🔍 **Context detected:** ${concepts}`;
+  const loadSavedConversations = useCallback(async () => {
+    if (!companyId) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_conversations')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      return [];
     }
+  }, [companyId]);
 
-    if (analysis.context.complexity === 'high') {
-      enhancedResponse += '\n\n💡 **Note:** This is a complex query. I recommend breaking it down into specific questions for more detailed assistance.';
-    }
+  const clearConversationHistory = useCallback(() => {
+    setConversationHistory([]);
+    generateSessionId();
+  }, [generateSessionId]);
 
-    return enhancedResponse;
-  };
+  const retryLastQuery = useCallback(async (): Promise<EnhancedLegalResponse | null> => {
+    const lastUserQuery = conversationHistory.find(item => item.query);
+    if (!lastUserQuery) return null;
 
-  const generateEnhancedStatisticalResponse = (result: any, analysis: any): string => {
-    if (!result.success) {
-      return `I understand you're looking for statistical information about ${analysis.expandedTerms.join(', ')}. Let me help you access this data with a different approach.`;
-    }
-
-    let response = `📊 **Enhanced Statistical Analysis**\n\n`;
-    response += `**Query Context:** ${analysis.context.domain} domain, ${analysis.context.complexity} complexity\n\n`;
-    
-    if (result.data?.statisticalData) {
-      response += `**Results:** ${result.data.description || 'Statistical data processed'}\n`;
-      response += `**Value:** ${result.data.value || 'Data available'}\n\n`;
-    }
-
-    if (result.suggestions?.length > 0) {
-      response += `**Enhanced Insights:**\n${result.suggestions.map((s: string) => `• ${s}`).join('\n')}\n\n`;
-    }
-
-    response += `**Semantic Context:** Based on your query about "${analysis.originalQuery}", I identified key concepts: ${analysis.semanticMatches.map((m: any) => m.concept).join(', ')}`;
-
-    return response;
-  };
-
-  const extractRelatedConcepts = (analysis: any): string[] => {
-    const concepts = new Set<string>();
-    
-    analysis.semanticMatches.forEach((match: any) => {
-      concepts.add(match.concept);
-      // Get related concepts using semantic dictionary
-      const related = getRelatedConcepts(match.concept, 2);
-      related.forEach(r => concepts.add(r.primary));
+    return await processLegalQuery({
+      query: lastUserQuery.query,
+      analysis_type: 'basic'
     });
+  }, [conversationHistory, processLegalQuery]);
 
-    return Array.from(concepts).slice(0, 5);
-  };
-
-  const generateContextualFollowUps = (analysis: any): string[] => {
-    const questions: string[] = [];
-    const { domain, intent, entities } = analysis.context;
-
-    switch (domain) {
-      case 'legal':
-        questions.push(
-          'Would you like specific legal precedents for this matter?',
-          'Do you need help drafting related legal documents?',
-          'Should I provide compliance requirements for this area?'
-        );
-        break;
-      case 'financial':
-        questions.push(
-          'Would you like a detailed financial breakdown?',
-          'Do you need budget projections for this area?',
-          'Should I analyze trends and patterns?'
-        );
-        break;
-      case 'fleet_management':
-        questions.push(
-          'Would you like vehicle utilization reports?',
-          'Do you need maintenance cost analysis?',
-          'Should I provide optimization recommendations?'
-        );
-        break;
-      default:
-        questions.push(
-          'Would you like more specific information?',
-          'Do you need help with related topics?',
-          'Should I provide detailed analysis?'
-        );
+  // Health check function
+  const checkSystemHealth = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await supabase.functions.invoke('legal-ai-enhanced', {
+        body: { health_check: true }
+      });
+      return response.data?.status === 'healthy';
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return false;
     }
-
-    // Add intent-specific questions
-    if (intent === 'action') {
-      questions.push('Would you like me to help execute this action?');
-    } else if (intent === 'analysis') {
-      questions.push('Should I provide deeper analytical insights?');
-    }
-
-    return questions.slice(0, 3);
-  };
-
-  const generateActionableInsights = (result: any, analysis: any): string[] => {
-    const insights: string[] = [];
-
-    if (analysis.context.domain === 'financial' && result.success) {
-      insights.push('Consider setting up automated reporting for this metric');
-      insights.push('Monitor trends to identify potential issues early');
-    }
-
-    if (analysis.context.domain === 'legal') {
-      insights.push('Document this inquiry for compliance records');
-      insights.push('Consider creating a template for similar requests');
-    }
-
-    if (analysis.context.complexity === 'high') {
-      insights.push('Break down complex queries into smaller, specific questions');
-      insights.push('Use filters and specific criteria for better results');
-    }
-
-    return insights.slice(0, 3);
-  };
-
-  const generateResponseInsights = (response: any, analysis: any): string[] => {
-    const insights: string[] = [];
-
-    if (response.success && response.response?.responseType === 'interactive') {
-      insights.push('Use the interactive elements to get more specific results');
-    }
-
-    if (analysis.context.temporal.isRealTime) {
-      insights.push('Consider setting up real-time monitoring for this information');
-    }
-
-    insights.push('Save frequently used queries for quick access');
-    
-    return insights.slice(0, 3);
-  };
+  }, []);
 
   return {
-    processEnhancedQuery,
-    isProcessing
+    // Core functions
+    processLegalQuery,
+    getQuerySuggestions,
+    getLegalAnalytics,
+    
+    // Conversation management
+    saveConversation,
+    loadSavedConversations,
+    clearConversationHistory,
+    retryLastQuery,
+    
+    // System health
+    checkSystemHealth,
+    
+    // State
+    isProcessing,
+    error,
+    processingStatus,
+    conversationHistory,
+    currentSessionId,
+    
+    // Utilities
+    clearError,
+    generateSessionId
   };
 };

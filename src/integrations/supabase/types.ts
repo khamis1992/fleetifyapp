@@ -170,6 +170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_activity_logs: {
+        Row: {
+          activity_type: string
+          company_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          session_id: string | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          company_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          session_id?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          company_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          session_id?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_analysis_results: {
         Row: {
           analysis_type: string
@@ -6319,6 +6352,39 @@ export type Database = {
           operation_type?: string
           user_id?: string | null
           window_start?: string | null
+        }
+        Relationships: []
+      }
+      saved_conversations: {
+        Row: {
+          company_id: string
+          conversation_data: Json
+          created_at: string
+          id: string
+          name: string
+          session_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          conversation_data: Json
+          created_at?: string
+          id?: string
+          name: string
+          session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          conversation_data?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

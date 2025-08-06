@@ -35,7 +35,7 @@ import {
   Trash2,
   Play
 } from 'lucide-react';
-import { useEnhancedLegalAI, EnhancedLegalResponse, ConversationHistory } from '@/hooks/useEnhancedLegalAI';
+import { useEnhancedLegalAI, EnhancedLegalResponse } from '@/hooks/useEnhancedLegalAI';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
