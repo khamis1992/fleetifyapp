@@ -13,6 +13,7 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
+import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
@@ -25,6 +26,7 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
   const [showInvoiceForm, setShowInvoiceForm] = useState(false)
   const [invoiceCustomerId, setInvoiceCustomerId] = useState<string | null>(null)
+  const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [filters, setFilters] = useState({
     customer_type: undefined as 'individual' | 'corporate' | undefined,
     is_blacklisted: undefined as boolean | undefined,
@@ -114,6 +116,8 @@ export default function Customers() {
     user?.roles?.includes('company_admin') || 
     user?.roles?.includes('manager') || 
     user?.roles?.includes('sales_agent')
+  
+  const isSuperAdmin = user?.roles?.includes('super_admin')
 
   return (
     <div className="space-y-6">
@@ -125,14 +129,26 @@ export default function Customers() {
             إدارة وتتبع معلومات العملاء
           </p>
         </div>
-        <Button 
-          onClick={() => setShowCustomerForm(true)}
-          disabled={!canAddCustomers}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          إضافة عميل جديد
-        </Button>
+        <div className="flex gap-2">
+          {isSuperAdmin && (
+            <Button 
+              onClick={() => setShowCSVUpload(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              رفع من CSV
+            </Button>
+          )}
+          <Button 
+            onClick={() => setShowCustomerForm(true)}
+            disabled={!canAddCustomers}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            إضافة عميل جديد
+          </Button>
+        </div>
       </div>
 
       {/* رسالة عدم وجود صلاحيات */}
@@ -445,6 +461,15 @@ export default function Customers() {
         }}
         customerId={invoiceCustomerId}
         type="sales"
+      />
+
+      <CustomerCSVUpload
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          setShowCSVUpload(false)
+          // Refresh customer list - the query will automatically refetch
+        }}
       />
     </div>
   )
