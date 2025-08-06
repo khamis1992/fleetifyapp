@@ -36,6 +36,11 @@ import Budgets from "./finance/Budgets"
 import Vendors from "./finance/Vendors"
 import FinancialAnalysis from "./finance/FinancialAnalysis"
 import AccountMappings from "./finance/AccountMappings"
+import JournalEntriesSettings from "./finance/settings/JournalEntriesSettings"
+import AccountsSettings from "./finance/settings/AccountsSettings"
+import CostCentersSettings from "./finance/settings/CostCentersSettings"
+import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSettings"
+import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()
@@ -431,6 +436,40 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.accounts.view">
             <AccountMappings />
           </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* Finance Settings - Super Admin Only */}
+      <Route 
+        path="settings/journal-entries" 
+        element={
+          <SuperAdminRoute>
+            <JournalEntriesSettings />
+          </SuperAdminRoute>
+        } 
+      />
+      <Route 
+        path="settings/accounts" 
+        element={
+          <SuperAdminRoute>
+            <AccountsSettings />
+          </SuperAdminRoute>
+        } 
+      />
+      <Route 
+        path="settings/cost-centers" 
+        element={
+          <SuperAdminRoute>
+            <CostCentersSettings />
+          </SuperAdminRoute>
+        } 
+      />
+      <Route 
+        path="settings/automatic-accounts" 
+        element={
+          <SuperAdminRoute>
+            <AutomaticAccountsSettings />
+          </SuperAdminRoute>
         } 
       />
     </Routes>

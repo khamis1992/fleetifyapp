@@ -3007,6 +3007,54 @@ export type Database = {
           },
         ]
       }
+      essential_account_mappings: {
+        Row: {
+          account_id: string | null
+          account_type: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_configured: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_type: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_configured?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          account_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_configured?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_essential_mappings_account"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_essential_mappings_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_gates: {
         Row: {
           created_at: string | null

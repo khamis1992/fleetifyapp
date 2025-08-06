@@ -38,7 +38,8 @@ import {
   Database,
   CheckSquare,
   Headphones,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 import {
   Sidebar,
@@ -147,6 +148,30 @@ const financeSubItems = [
     name: 'التحليل المالي',
     href: '/finance/analysis',
     icon: PieChart
+  },
+]
+
+// Finance Settings for Super Admin only
+const financeSettingsItems = [
+  {
+    name: 'إدارة القيود',
+    href: '/finance/settings/journal-entries',
+    icon: FileText
+  },
+  {
+    name: 'إدارة الحسابات',
+    href: '/finance/settings/accounts',
+    icon: BookOpen
+  },
+  {
+    name: 'إدارة مراكز التكلفة',
+    href: '/finance/settings/cost-centers',
+    icon: MapPin
+  },
+  {
+    name: 'الحسابات التلقائية',
+    href: '/finance/settings/automatic-accounts',
+    icon: Zap
   },
   {
     name: 'التقارير المالية',
@@ -359,20 +384,53 @@ export function AppSidebar() {
                           )}
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {financeSubItems.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.href}>
-                              <SidebarMenuSubButton asChild>
-                                <NavLink to={subItem.href} className={getNavClassName}>
-                                  <subItem.icon className="h-4 w-4" />
-                                  {!collapsed && <span>{subItem.name}</span>}
-                                </NavLink>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
+                       <CollapsibleContent>
+                         <SidebarMenuSub>
+                           {financeSubItems.map((subItem) => (
+                             <SidebarMenuSubItem key={subItem.href}>
+                               <SidebarMenuSubButton asChild>
+                                 <NavLink to={subItem.href} className={getNavClassName}>
+                                   <subItem.icon className="h-4 w-4" />
+                                   {!collapsed && <span>{subItem.name}</span>}
+                                 </NavLink>
+                               </SidebarMenuSubButton>
+                             </SidebarMenuSubItem>
+                           ))}
+                           
+                           {/* Finance Settings - Super Admin Only */}
+                           <SuperAdminOnly hideIfNoAccess>
+                             <SidebarMenuSubItem>
+                               <Collapsible>
+                                 <CollapsibleTrigger asChild>
+                                   <SidebarMenuSubButton>
+                                     <Settings className="h-4 w-4" />
+                                     {!collapsed && (
+                                       <>
+                                         <span>إعدادات المالية</span>
+                                         <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                                       </>
+                                     )}
+                                   </SidebarMenuSubButton>
+                                 </CollapsibleTrigger>
+                                 <CollapsibleContent>
+                                   <SidebarMenuSub>
+                                     {financeSettingsItems.map((settingItem) => (
+                                       <SidebarMenuSubItem key={settingItem.href}>
+                                         <SidebarMenuSubButton asChild>
+                                           <NavLink to={settingItem.href} className={getNavClassName}>
+                                             <settingItem.icon className="h-3 w-3" />
+                                             {!collapsed && <span className="text-xs">{settingItem.name}</span>}
+                                           </NavLink>
+                                         </SidebarMenuSubButton>
+                                       </SidebarMenuSubItem>
+                                     ))}
+                                   </SidebarMenuSub>
+                                 </CollapsibleContent>
+                               </Collapsible>
+                             </SidebarMenuSubItem>
+                           </SuperAdminOnly>
+                         </SidebarMenuSub>
+                       </CollapsibleContent>
                     </Collapsible>
                   </SidebarMenuItem>
                 </AdminOnly>
