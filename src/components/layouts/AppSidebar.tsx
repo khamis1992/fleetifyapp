@@ -410,15 +410,42 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 </AdminOnly>
 
-               {/* Legal */}
-               <SidebarMenuItem>
-                 <SidebarMenuButton asChild className="h-10">
-                   <NavLink to="/legal" className={getNavClassName}>
-                     <Shield className="h-4 w-4" />
-                     {!collapsed && <span className="font-medium">الشؤون القانونية</span>}
-                   </NavLink>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
+                {/* Legal Section with Submenu */}
+                <SidebarMenuItem>
+                  <Collapsible defaultOpen={location.pathname.startsWith('/legal')}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="h-10">
+                        <Shield className="h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span className="font-medium">الشؤون القانونية</span>
+                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/legal/advisor" className={getNavClassName}>
+                              <UserCog className="h-4 w-4" />
+                              {!collapsed && <span>المستشار القانوني</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/legal/cases" className={getNavClassName}>
+                              <FileText className="h-4 w-4" />
+                              {!collapsed && <span>تتبع القضايا</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
 
                {/* Reports */}
                <SidebarMenuItem>
