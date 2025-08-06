@@ -48,6 +48,8 @@ const formSchema = z.object({
   billing_status: z.string().min(1, 'حالة الفوترة مطلوبة'),
   notes: z.string().optional(),
   is_confidential: z.boolean(),
+  police_station: z.string().optional(),
+  police_report_number: z.string().optional(),
 });
 
 interface LegalCaseFormProps {
@@ -86,6 +88,8 @@ export const LegalCaseForm: React.FC<LegalCaseFormProps> = ({
       billing_status: 'pending',
       notes: '',
       is_confidential: false,
+      police_station: '',
+      police_report_number: '',
       legal_team: [],
       tags: [],
     },
@@ -431,6 +435,39 @@ export const LegalCaseForm: React.FC<LegalCaseFormProps> = ({
                         <SelectItem value="overdue">متأخرة</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Police Information */}
+              <div className="col-span-full mt-6">
+                <h3 className="text-lg font-semibold mb-4">معلومات الشرطة</h3>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="police_station"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اسم مركز الشرطة</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="أدخل اسم مركز الشرطة" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="police_report_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رقم البلاغ</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="أدخل رقم البلاغ" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

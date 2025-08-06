@@ -35,6 +35,8 @@ export interface LegalCase {
   tags: string[];
   notes?: string;
   is_confidential: boolean;
+  police_station?: string;
+  police_report_number?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -67,6 +69,8 @@ export interface LegalCaseFormData {
   tags: string[];
   notes?: string;
   is_confidential: boolean;
+  police_station?: string;
+  police_report_number?: string;
 }
 
 interface UseLegalCasesFilters {

@@ -4989,6 +4989,8 @@ export type Database = {
           legal_team: Json | null
           notes: string | null
           other_expenses: number | null
+          police_report_number: string | null
+          police_station: string | null
           primary_lawyer_id: string | null
           priority: string
           statute_limitations: string | null
@@ -5024,6 +5026,8 @@ export type Database = {
           legal_team?: Json | null
           notes?: string | null
           other_expenses?: number | null
+          police_report_number?: string | null
+          police_station?: string | null
           primary_lawyer_id?: string | null
           priority?: string
           statute_limitations?: string | null
@@ -5059,6 +5063,8 @@ export type Database = {
           legal_team?: Json | null
           notes?: string | null
           other_expenses?: number | null
+          police_report_number?: string | null
+          police_station?: string | null
           primary_lawyer_id?: string | null
           priority?: string
           statute_limitations?: string | null
