@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator } from "lucide-react"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { VehicleForm } from "@/components/fleet/VehicleForm"
 import { VehicleCard } from "@/components/fleet/VehicleCard"
 import { VehicleGroupManagement } from "@/components/fleet/VehicleGroupManagement"
+import { VehicleCSVUpload } from "@/components/fleet/VehicleCSVUpload"
 import { useVehicles } from "@/hooks/useVehicles"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -15,6 +16,7 @@ export default function Fleet() {
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
   const [showGroupManagement, setShowGroupManagement] = useState(false)
+  const [showCSVUpload, setShowCSVUpload] = useState(false)
   
   const { user } = useAuth()
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles()
@@ -65,6 +67,12 @@ export default function Fleet() {
               )}
             </DialogContent>
           </Dialog>
+          {user?.roles?.includes('super_admin') && (
+            <Button variant="outline" size="sm" onClick={() => setShowCSVUpload(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              رفع CSV
+            </Button>
+          )}
           <Button onClick={() => setShowVehicleForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             إضافة مركبة
@@ -191,6 +199,16 @@ export default function Fleet() {
           onOpenChange={setShowVehicleForm}
         />
       )}
+
+      {/* Vehicle CSV Upload Dialog */}
+      <VehicleCSVUpload
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          setShowCSVUpload(false)
+          // Refresh vehicle list - the query will automatically refetch
+        }}
+      />
     </div>
   )
 }
