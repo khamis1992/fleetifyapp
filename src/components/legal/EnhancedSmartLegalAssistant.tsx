@@ -41,11 +41,13 @@ import {
   Filter
 } from 'lucide-react';
 import { useUnifiedLegalAI, UnifiedLegalQuery, UnifiedLegalResponse } from '@/hooks/useUnifiedLegalAI';
+import { useEnhancedLegalAI, EnhancedLegalResponse } from '@/hooks/useEnhancedLegalAI';
 import { useSelfLearningAI } from '@/hooks/useSelfLearningAI';
 import { ClarificationDialog } from '@/components/ai/ClarificationDialog';
 import { LearningFeedbackDialog } from '@/components/ai/LearningFeedbackDialog';
 import { UnpaidCustomerSearchInterface } from './UnpaidCustomerSearchInterface';
 import { useUnpaidCustomerSearch } from '@/hooks/useUnpaidCustomerSearch';
+import { HybridResponseDisplay } from './HybridResponseDisplay';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 interface Message {
@@ -90,6 +92,7 @@ interface Message {
     recommendations?: any[];
     comparison?: any;
   };
+  enhancedResponse?: EnhancedLegalResponse;
 }
 
 interface SmartSuggestion {
@@ -127,6 +130,7 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
   const { submitUnifiedQuery, isProcessing, error, processingStatus, clearError } = useUnifiedLegalAI();
   const { processQueryWithLearning, processClarificationResponse, submitLearningFeedback, isProcessing: isLearning, currentSession } = useSelfLearningAI();
   const { generateLegalNoticeData } = useUnpaidCustomerSearch();
+  const { processLegalQuery, isProcessing: isEnhancedProcessing } = useEnhancedLegalAI();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -225,41 +229,52 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
         return;
       }
 
-      // Fallback to unified legal AI if learning response is insufficient
-      const queryData: UnifiedLegalQuery = {
+      // Use Enhanced Legal AI for hybrid queries (data + legal advice)
+      const enhancedQueryData = {
         query: currentInput,
-        country: 'Kuwait',
+        analysis_type: (activeQueryType === 'consultation' ? 'basic' : 
+                       activeQueryType === 'predictive_analysis' ? 'predictive' : 'comprehensive') as 'basic' | 'comprehensive' | 'predictive',
+        context: {
+          conversationHistory: messages,
+          queryType: activeQueryType,
+          attachedFiles: currentFiles.map(f => f.name)
+        },
         company_id: user.company.id,
         user_id: user.id,
-        conversationHistory: messages,
-        queryType: activeQueryType === 'auto' ? undefined : activeQueryType,
-        files: currentFiles.map(f => f.file),
-        comparisonDocuments: activeQueryType === 'contract_comparison' ? currentFiles : undefined,
-        context: { attachedFiles: currentFiles.map(f => f.name) }
+        session_id: Date.now().toString()
       };
 
-      const response: UnifiedLegalResponse = await submitUnifiedQuery(queryData);
+      const enhancedResponse: EnhancedLegalResponse = await processLegalQuery(enhancedQueryData);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response.content || 'لم يتم العثور على إجابة مناسبة',
+        content: enhancedResponse.analysis || 'لم يتم العثور على إجابة مناسبة',
         type: 'ai',
         timestamp: new Date(),
         metadata: {
-          classification: response.classification || 'general',
-          processingType: response.processingType || 'unified',
-          processingTime: response.processingTime || 100,
-          confidence: response.confidence || 95,
-          adaptiveRecommendations: response.metadata?.adaptiveRecommendations || []
+          classification: enhancedResponse.query_classification,
+          processingType: enhancedResponse.query_type || 'enhanced',
+          processingTime: enhancedResponse.processing_time || 100,
+          confidence: enhancedResponse.confidence || 95,
+          adaptiveRecommendations: enhancedResponse.suggestions || []
         },
-        responseType: 'text' as any,
-        attachments: response.attachments || [],
-        interactiveElements: response.interactiveElements || [],
-        analysisData: response.analysisData || {}
+        responseType: enhancedResponse.query_type === 'data_query' ? 'analysis' : 
+                     enhancedResponse.query_type === 'hybrid' ? 'interactive' : 'text',
+        attachments: [],
+        interactiveElements: [],
+        analysisData: {
+          insights: enhancedResponse.legal_references || [],
+          recommendations: enhancedResponse.action_items || [],
+          risks: enhancedResponse.risk_assessment ? [{
+            level: enhancedResponse.risk_assessment.level,
+            description: `عوامل المخاطر: ${enhancedResponse.risk_assessment.factors.join(', ')}`
+          }] : []
+        },
+        enhancedResponse // Store the full enhanced response for rendering
       };
 
       setMessages(prev => [...prev, aiMessage]);
-      generateSmartSuggestions(response, messages);
+      generateSmartSuggestions(enhancedResponse, messages);
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -424,6 +439,11 @@ export const EnhancedSmartLegalAssistant: React.FC = () => {
   const renderResponseContent = (message: Message) => {
     if (message.type !== 'ai') {
       return <div className="whitespace-pre-wrap">{message.content}</div>;
+    }
+
+    // Use HybridResponseDisplay for enhanced responses
+    if (message.enhancedResponse) {
+      return <HybridResponseDisplay response={message.enhancedResponse} />;
     }
 
     return (

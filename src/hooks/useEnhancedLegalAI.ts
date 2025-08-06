@@ -16,6 +16,17 @@ export interface RiskAssessment {
   recommendations: string[];
 }
 
+export interface QueryClassification {
+  type: 'data_query' | 'legal_consultation' | 'hybrid';
+  intent: string;
+  data_query?: {
+    entity: 'customers' | 'contracts' | 'invoices' | 'payments' | 'vehicles';
+    action: 'count' | 'list' | 'find' | 'analyze';
+    filters?: any;
+  };
+  confidence: number;
+}
+
 export interface EnhancedLegalResponse {
   success: boolean;
   analysis: string;
@@ -26,6 +37,9 @@ export interface EnhancedLegalResponse {
   legal_references?: string[];
   action_items?: string[];
   risk_assessment?: RiskAssessment;
+  query_classification?: QueryClassification;
+  data_results?: any;
+  query_type?: 'data_query' | 'legal_consultation' | 'hybrid';
 }
 
 export interface LegalAnalytics {
@@ -139,8 +153,14 @@ export const useEnhancedLegalAI = () => {
       setConversationHistory(prev => [historyItem, ...prev]);
       setProcessingStatus('');
       
-      // Show success toast with confidence level
-      toast.success(`تمت معالجة الاستعلام بنجاح (الثقة: ${result.confidence}%)`);
+      // Show success toast with different messages based on query type
+      if (result.query_type === 'data_query') {
+        toast.success('تم استرداد البيانات بنجاح');
+      } else if (result.query_type === 'hybrid') {
+        toast.success('تم تحليل البيانات وتقديم الاستشارة القانونية');
+      } else {
+        toast.success(`تمت معالجة الاستعلام بنجاح (الثقة: ${result.confidence}%)`);
+      }
       
       return result;
 

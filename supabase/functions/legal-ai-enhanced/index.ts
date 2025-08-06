@@ -25,6 +25,17 @@ interface LegalQuery {
   session_id?: string;
 }
 
+interface QueryClassification {
+  type: 'data_query' | 'legal_consultation' | 'hybrid';
+  intent: string;
+  data_query?: {
+    entity: 'customers' | 'contracts' | 'invoices' | 'payments' | 'vehicles';
+    action: 'count' | 'list' | 'find' | 'analyze';
+    filters?: any;
+  };
+  confidence: number;
+}
+
 interface LegalResponse {
   success: boolean;
   analysis: string;
@@ -39,6 +50,9 @@ interface LegalResponse {
     factors: string[];
     recommendations: string[];
   };
+  query_classification?: QueryClassification;
+  data_results?: any;
+  query_type?: 'data_query' | 'legal_consultation' | 'hybrid';
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -66,6 +80,202 @@ async function logActivity(
   }
 }
 
+async function classifyQuery(query: string): Promise<QueryClassification> {
+  const dataKeywords = {
+    customers: ['عميل', 'عملاء', 'زبون', 'زبائن', 'customer', 'client'],
+    payments: ['دفع', 'مدفوع', 'دين', 'ديون', 'متأخر', 'payment', 'pay', 'debt', 'overdue'],
+    contracts: ['عقد', 'عقود', 'contract', 'agreement'],
+    invoices: ['فاتورة', 'فواتير', 'invoice', 'bill'],
+    vehicles: ['مركبة', 'مركبات', 'سيارة', 'سيارات', 'vehicle', 'car']
+  };
+
+  const countKeywords = ['كم', 'عدد', 'count', 'how many', 'number of'];
+  const listKeywords = ['قائمة', 'اعرض', 'أظهر', 'list', 'show', 'display'];
+  
+  let classification: QueryClassification = {
+    type: 'legal_consultation',
+    intent: 'general_legal_advice',
+    confidence: 0.5
+  };
+
+  // Check for data query patterns
+  const queryLower = query.toLowerCase();
+  let isDataQuery = false;
+  let entity: any = null;
+  let action = 'list';
+
+  // Detect entity
+  for (const [entityName, keywords] of Object.entries(dataKeywords)) {
+    if (keywords.some(keyword => queryLower.includes(keyword))) {
+      entity = entityName;
+      isDataQuery = true;
+      break;
+    }
+  }
+
+  // Detect action
+  if (countKeywords.some(keyword => queryLower.includes(keyword))) {
+    action = 'count';
+  } else if (listKeywords.some(keyword => queryLower.includes(keyword))) {
+    action = 'list';
+  }
+
+  // Classify the query
+  if (isDataQuery && entity) {
+    classification = {
+      type: 'data_query',
+      intent: `get_${entity}_${action}`,
+      data_query: {
+        entity,
+        action,
+        filters: extractFilters(query)
+      },
+      confidence: 0.9
+    };
+  } else if (isDataQuery) {
+    classification = {
+      type: 'hybrid',
+      intent: 'data_with_legal_advice',
+      confidence: 0.8
+    };
+  }
+
+  return classification;
+}
+
+function extractFilters(query: string): any {
+  const filters: any = {};
+  const queryLower = query.toLowerCase();
+
+  // Extract payment status filters
+  if (queryLower.includes('لم يدفع') || queryLower.includes('متأخر') || queryLower.includes('unpaid') || queryLower.includes('overdue')) {
+    filters.payment_status = 'unpaid';
+  }
+
+  return filters;
+}
+
+async function executeDataQuery(classification: QueryClassification, company_id: string): Promise<any> {
+  if (!classification.data_query) return null;
+
+  const { entity, action, filters } = classification.data_query;
+
+  try {
+    switch (entity) {
+      case 'customers':
+        if (action === 'count' && filters?.payment_status === 'unpaid') {
+          return await getUnpaidCustomersCount(company_id);
+        } else if (action === 'list' && filters?.payment_status === 'unpaid') {
+          return await getUnpaidCustomersList(company_id);
+        }
+        break;
+      case 'contracts':
+        if (action === 'count') {
+          return await getContractsCount(company_id);
+        }
+        break;
+      case 'invoices':
+        if (action === 'count') {
+          return await getInvoicesCount(company_id);
+        }
+        break;
+    }
+  } catch (error) {
+    console.error('Error executing data query:', error);
+    return { error: error.message };
+  }
+
+  return null;
+}
+
+async function getUnpaidCustomersCount(company_id: string): Promise<any> {
+  const { data: customers, error } = await supabase
+    .from('customers')
+    .select(`
+      id,
+      first_name,
+      last_name,
+      company_name,
+      customer_type,
+      invoices:invoices(
+        id,
+        balance_due,
+        due_date,
+        payment_status
+      )
+    `)
+    .eq('company_id', company_id)
+    .eq('is_active', true);
+
+  if (error) throw error;
+
+  const unpaidCustomers = customers?.filter(customer => {
+    const invoices = customer.invoices || [];
+    return invoices.some(invoice => 
+      invoice.payment_status !== 'paid' && 
+      invoice.due_date && 
+      new Date(invoice.due_date) < new Date()
+    );
+  }) || [];
+
+  const totalOverdue = unpaidCustomers.reduce((sum, customer) => {
+    const overdue = customer.invoices
+      .filter(inv => inv.payment_status !== 'paid' && inv.due_date && new Date(inv.due_date) < new Date())
+      .reduce((invSum, inv) => invSum + (inv.balance_due || 0), 0);
+    return sum + overdue;
+  }, 0);
+
+  return {
+    count: unpaidCustomers.length,
+    total_customers: customers?.length || 0,
+    total_overdue_amount: totalOverdue,
+    customers: unpaidCustomers.slice(0, 5) // First 5 for preview
+  };
+}
+
+async function getUnpaidCustomersList(company_id: string): Promise<any> {
+  const result = await getUnpaidCustomersCount(company_id);
+  return result;
+}
+
+async function getContractsCount(company_id: string): Promise<any> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('id, status')
+    .eq('company_id', company_id);
+
+  if (error) throw error;
+
+  const statusCount = data?.reduce((acc, contract) => {
+    acc[contract.status] = (acc[contract.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  return {
+    total: data?.length || 0,
+    by_status: statusCount
+  };
+}
+
+async function getInvoicesCount(company_id: string): Promise<any> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id, payment_status')
+    .eq('company_id', company_id);
+
+  if (error) throw error;
+
+  const statusCount = data?.reduce((acc, invoice) => {
+    acc[invoice.payment_status] = (acc[invoice.payment_status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  return {
+    total: data?.length || 0,
+    by_payment_status: statusCount
+  };
+}
+
 async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
   const startTime = Date.now();
   
@@ -81,39 +291,87 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
     throw new Error('OpenAI API key not configured');
   }
 
+  // Step 1: Classify the query
+  const classification = await classifyQuery(query.query);
+  let dataResults = null;
+
+  // Step 2: Execute data query if needed
+  if ((classification.type === 'data_query' || classification.type === 'hybrid') && query.company_id) {
+    dataResults = await executeDataQuery(classification, query.company_id);
+  }
+
   try {
-    // Enhanced system prompt for legal AI
-    const systemPrompt = `أنت مساعد قانوني ذكي متخصص في القانون الكويتي والقوانين التجارية. 
-    تتمتع بخبرة واسعة في:
-    - قانون الشركات الكويتي
-    - العقود التجارية وتأجير المركبات
-    - قانون المرور والنقل
-    - القوانين المالية والضرائب
-    - حل النزاعات التجارية
-    
-    مهامك:
-    1. تحليل الاستفسار القانوني بدقة
-    2. تقديم استشارة قانونية مفصلة
-    3. تحديد المخاطر القانونية المحتملة
-    4. اقتراح خطوات عملية للحل
-    5. تقديم مراجع قانونية عند الإمكان
-    
-    يجب أن تكون إجابتك:
-    - دقيقة ومفصلة
-    - مدعمة بالمراجع القانونية
-    - تتضمن تقييم للمخاطر
-    - تحتوي على خطوات عملية
-    
-    نوع التحليل المطلوب: ${query.analysis_type || 'basic'}
-    
-    قدم الاستجابة بتنسيق JSON مع الحقول التالية:
-    - analysis: التحليل المفصل
-    - legal_references: المراجع القانونية
-    - action_items: الخطوات العملية
-    - risk_level: مستوى المخاطر (low/medium/high)
-    - risk_factors: عوامل المخاطر
-    - recommendations: التوصيات
-    `;
+    // Step 3: Prepare context for AI based on query type
+    let aiPrompt = query.query;
+    let systemPrompt = '';
+
+    if (classification.type === 'data_query' && dataResults) {
+      // For data queries, provide a direct response based on the data
+      const analysis = formatDataResponse(classification, dataResults);
+      
+      return {
+        success: true,
+        analysis,
+        confidence: 95,
+        processing_time: Date.now() - startTime,
+        sources: ['Company Database'],
+        query_classification: classification,
+        data_results: dataResults,
+        query_type: 'data_query'
+      };
+    } else if (classification.type === 'hybrid' && dataResults) {
+      // For hybrid queries, combine data with legal advice
+      systemPrompt = `أنت مساعد قانوني ذكي متخصص في القانون الكويتي. لديك بيانات من قاعدة بيانات الشركة وتحتاج لتقديم استشارة قانونية بناءً على هذه البيانات.
+
+البيانات المتوفرة:
+${JSON.stringify(dataResults, null, 2)}
+
+مهامك:
+1. تحليل البيانات المقدمة
+2. تقديم استشارة قانونية مناسبة للوضع
+3. اقتراح خطوات عملية للتعامل مع الوضع
+4. تقديم تحذيرات قانونية إن وجدت
+
+قدم إجابة شاملة تتضمن:
+- تحليل البيانات الرقمية
+- الاستشارة القانونية المناسبة
+- الخطوات العملية الموصى بها
+- المخاطر القانونية المحتملة`;
+
+      aiPrompt = `${query.query}\n\nبناءً على البيانات المرفقة، ما هي النصائح القانونية التي تقدمها؟`;
+    } else {
+      // Standard legal consultation
+      systemPrompt = `أنت مساعد قانوني ذكي متخصص في القانون الكويتي والقوانين التجارية. 
+      تتمتع بخبرة واسعة في:
+      - قانون الشركات الكويتي
+      - العقود التجارية وتأجير المركبات
+      - قانون المرور والنقل
+      - القوانين المالية والضرائب
+      - حل النزاعات التجارية
+      
+      مهامك:
+      1. تحليل الاستفسار القانوني بدقة
+      2. تقديم استشارة قانونية مفصلة
+      3. تحديد المخاطر القانونية المحتملة
+      4. اقتراح خطوات عملية للحل
+      5. تقديم مراجع قانونية عند الإمكان
+      
+      يجب أن تكون إجابتك:
+      - دقيقة ومفصلة
+      - مدعمة بالمراجع القانونية
+      - تتضمن تقييم للمخاطر
+      - تحتوي على خطوات عملية
+      
+      نوع التحليل المطلوب: ${query.analysis_type || 'basic'}
+      
+      قدم الاستجابة بتنسيق JSON مع الحقول التالية:
+      - analysis: التحليل المفصل
+      - legal_references: المراجع القانونية
+      - action_items: الخطوات العملية
+      - risk_level: مستوى المخاطر (low/medium/high)
+      - risk_factors: عوامل المخاطر
+      - recommendations: التوصيات`;
+    }
 
     console.log('Sending request to OpenAI with model: gpt-4o-mini');
     
@@ -127,7 +385,7 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: query.query }
+          { role: 'user', content: aiPrompt }
         ],
         temperature: 0.3,
         max_tokens: 3000,
@@ -177,7 +435,7 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
       analysis: structuredResponse.analysis || analysis,
       confidence: 85,
       processing_time: processingTime,
-      sources: ['OpenAI GPT-4o-mini', 'Kuwait Legal Database'],
+      sources: dataResults ? ['Company Database', 'OpenAI GPT-4o-mini', 'Kuwait Legal Database'] : ['OpenAI GPT-4o-mini', 'Kuwait Legal Database'],
       suggestions: structuredResponse.recommendations || [],
       legal_references: structuredResponse.legal_references || [],
       action_items: structuredResponse.action_items || [],
@@ -185,7 +443,10 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
         level: structuredResponse.risk_level || 'medium',
         factors: structuredResponse.risk_factors || [],
         recommendations: structuredResponse.recommendations || []
-      }
+      },
+      query_classification: classification,
+      data_results: dataResults,
+      query_type: classification.type
     };
 
     // Log successful query
@@ -223,6 +484,61 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
 
     throw error;
   }
+}
+
+function formatDataResponse(classification: QueryClassification, dataResults: any): string {
+  if (!classification.data_query || !dataResults) return 'لم يتم العثور على بيانات.';
+
+  const { entity, action } = classification.data_query;
+
+  if (entity === 'customers' && action === 'count' && dataResults.count !== undefined) {
+    let response = `📊 **نتائج البحث عن العملاء المتأخرين في الدفع:**\n\n`;
+    response += `• عدد العملاء المتأخرين: **${dataResults.count}** من أصل ${dataResults.total_customers} عميل\n`;
+    response += `• إجمالي المبالغ المتأخرة: **${dataResults.total_overdue_amount.toFixed(3)} د.ك**\n\n`;
+    
+    if (dataResults.customers && dataResults.customers.length > 0) {
+      response += `📋 **أمثلة على العملاء المتأخرين:**\n`;
+      dataResults.customers.slice(0, 3).forEach((customer: any, index: number) => {
+        const name = customer.customer_type === 'individual' 
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+          : customer.company_name || 'غير محدد';
+        response += `${index + 1}. ${name}\n`;
+      });
+    }
+    
+    response += `\n💡 **توصية**: يُنصح بمراجعة هذه الحالات واتخاذ الإجراءات القانونية المناسبة للتحصيل.`;
+    return response;
+  }
+
+  if (entity === 'contracts' && dataResults.total !== undefined) {
+    let response = `📊 **إحصائيات العقود:**\n\n`;
+    response += `• إجمالي العقود: **${dataResults.total}**\n\n`;
+    
+    if (dataResults.by_status) {
+      response += `📋 **توزيع العقود حسب الحالة:**\n`;
+      Object.entries(dataResults.by_status).forEach(([status, count]) => {
+        response += `• ${status}: ${count}\n`;
+      });
+    }
+    
+    return response;
+  }
+
+  if (entity === 'invoices' && dataResults.total !== undefined) {
+    let response = `📊 **إحصائيات الفواتير:**\n\n`;
+    response += `• إجمالي الفواتير: **${dataResults.total}**\n\n`;
+    
+    if (dataResults.by_payment_status) {
+      response += `📋 **توزيع الفواتير حسب حالة الدفع:**\n`;
+      Object.entries(dataResults.by_payment_status).forEach(([status, count]) => {
+        response += `• ${status}: ${count}\n`;
+      });
+    }
+    
+    return response;
+  }
+
+  return JSON.stringify(dataResults, null, 2);
 }
 
 async function getQuerySuggestions(context?: string): Promise<string[]> {
