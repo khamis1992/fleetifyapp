@@ -86,24 +86,24 @@ const CaseManagement = () => {
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="تصفية حسب الحالة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الحالات</SelectItem>
+                <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="active">نشطة</SelectItem>
                 <SelectItem value="pending">معلقة</SelectItem>
                 <SelectItem value="on_hold">موقوفة</SelectItem>
                 <SelectItem value="closed">مغلقة</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value === "all" ? "" : value)}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="تصفية حسب الأولوية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الأولويات</SelectItem>
+                <SelectItem value="all">جميع الأولويات</SelectItem>
                 <SelectItem value="high">عالية</SelectItem>
                 <SelectItem value="medium">متوسطة</SelectItem>
                 <SelectItem value="low">منخفضة</SelectItem>
