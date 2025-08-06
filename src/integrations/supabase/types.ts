@@ -7845,6 +7845,129 @@ export type Database = {
           },
         ]
       }
+      vehicle_installment_schedules: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          due_date: string
+          id: string
+          installment_id: string
+          installment_number: number
+          interest_amount: number | null
+          invoice_id: string | null
+          journal_entry_id: string | null
+          notes: string | null
+          paid_amount: number | null
+          paid_date: string | null
+          payment_reference: string | null
+          principal_amount: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          company_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_id: string
+          installment_number: number
+          interest_amount?: number | null
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_reference?: string | null
+          principal_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_id?: string
+          installment_number?: number
+          interest_amount?: number | null
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_reference?: string | null
+          principal_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vehicle_installments: {
+        Row: {
+          agreement_date: string
+          agreement_number: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          down_payment: number
+          end_date: string
+          id: string
+          installment_amount: number
+          interest_rate: number | null
+          notes: string | null
+          number_of_installments: number
+          start_date: string
+          status: string
+          total_amount: number
+          updated_at: string
+          vehicle_id: string
+          vendor_id: string
+        }
+        Insert: {
+          agreement_date?: string
+          agreement_number: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          down_payment?: number
+          end_date: string
+          id?: string
+          installment_amount?: number
+          interest_rate?: number | null
+          notes?: string | null
+          number_of_installments?: number
+          start_date: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          vehicle_id: string
+          vendor_id: string
+        }
+        Update: {
+          agreement_date?: string
+          agreement_number?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          down_payment?: number
+          end_date?: string
+          id?: string
+          installment_amount?: number
+          interest_rate?: number | null
+          notes?: string | null
+          number_of_installments?: number
+          start_date?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          vehicle_id?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       vehicle_insurance: {
         Row: {
           contact_email: string | null
@@ -9446,6 +9569,19 @@ export type Database = {
         Args: { vehicle_id_param: string }
         Returns: string
       }
+      create_vehicle_installment_schedule: {
+        Args: {
+          p_installment_id: string
+          p_company_id: string
+          p_total_amount: number
+          p_down_payment: number
+          p_installment_amount: number
+          p_number_of_installments: number
+          p_interest_rate?: number
+          p_start_date?: string
+        }
+        Returns: number
+      }
       create_vehicle_purchase_journal_entry: {
         Args: { vehicle_id_param: string }
         Returns: string
@@ -10144,6 +10280,10 @@ export type Database = {
         Returns: undefined
       }
       update_payment_schedule_status: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      update_vehicle_installment_status: {
         Args: Record<PropertyKey, never>
         Returns: number
       }

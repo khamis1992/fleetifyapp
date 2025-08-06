@@ -37,7 +37,8 @@ import {
   Activity,
   Database,
   CheckSquare,
-  Headphones
+  Headphones,
+  TrendingUp
 } from 'lucide-react';
 import {
   Sidebar,
@@ -185,6 +186,11 @@ const fleetSubItems = [
     name: 'التقارير والتحليلات',
     href: '/fleet/reports',
     icon: BarChart3
+  },
+  {
+    name: 'أقساط المركبات',
+    href: '/fleet/vehicle-installments',
+    icon: TrendingUp
   }
 ];
 
