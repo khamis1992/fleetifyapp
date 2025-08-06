@@ -442,7 +442,7 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
                             {response.data && <DataVisualization data={response.data} />}
 
                             {/* المراجع القانونية */}
-                            {response.legal_references && response.legal_references.length > 0 && (
+                            {Array.isArray(response.legal_references) && response.legal_references.length > 0 && (
                               <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                                 <h4 className="font-medium text-blue-900 mb-2">المراجع القانونية:</h4>
                                 <ul className="list-disc list-inside text-sm text-blue-800">
