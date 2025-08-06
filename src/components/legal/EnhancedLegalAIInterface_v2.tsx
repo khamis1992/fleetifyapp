@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { useUnifiedLegalAI } from '@/hooks/useUnifiedLegalAI';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,8 @@ import {
   AlertTriangle,
   Lightbulb,
   Database,
-  Zap
+  Zap,
+  Settings
 } from 'lucide-react';
 
 // أنواع البيانات
@@ -69,6 +71,7 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // استخدام الهوك في المستوى الأعلى للمكون
   const { submitUnifiedQuery, error, clearError } = useUnifiedLegalAI();
@@ -149,7 +152,7 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, retryCount = 0) => {
     e.preventDefault();
     if (!query.trim() || isLoading) return;
 
@@ -159,6 +162,9 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
     setShowSuggestions(false);
 
     try {
+      // فحص حالة النظام أولاً
+      await checkSystemStatus();
+
       // استخدام الهوك للحصول على استجابة شاملة
       const response = await submitUnifiedQuery({
         query: currentQuery,
@@ -194,17 +200,28 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
       }));
       
       setSuggestions(contextualSuggestions);
+      toast.success('تم الحصول على الاستجابة بنجاح');
 
     } catch (error) {
       console.error('خطأ في إرسال الاستفسار:', error);
       
-      // استجابة خطأ مع إمكانية إعادة المحاولة
+      // محاولة الإعادة مرة واحدة فقط
+      if (retryCount < 1) {
+        toast.warning('فشل في الاتصال، جاري المحاولة مرة أخرى...');
+        setIsLoading(false);
+        setTimeout(() => {
+          setQuery(currentQuery);
+          const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+          handleSubmit(syntheticEvent, retryCount + 1);
+        }, 2000);
+        return;
+      }
+      
+      // استجابة خطأ مع تشخيص مفصل
       const errorResponse: LegalAIResponse = {
         success: false,
         response_type: 'error',
-        response_text: error instanceof Error ? 
-          `عذراً، حدث خطأ: ${error.message}. يرجى المحاولة مرة أخرى.` : 
-          'عذراً، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+        response_text: `❌ **خطأ في النظام**\n\n${error instanceof Error ? error.message : 'خطأ غير معروف'}\n\n**التشخيص:**\n- ${!systemStatus.legal_ai ? '❌ نظام الذكاء الاصطناعي القانوني غير متاح' : '✅ نظام الذكاء الاصطناعي يعمل'}\n- ${!systemStatus.database ? '❌ قاعدة البيانات غير متاحة' : '✅ قاعدة البيانات تعمل'}\n\n**الإجراءات المقترحة:**\n- تحقق من الاتصال بالإنترنت\n- تأكد من صحة مفتاح OpenAI API\n- جرب صياغة السؤال بطريقة مختلفة\n- اتصل بالدعم الفني إذا استمرت المشكلة`,
         confidence: 0,
         execution_time: 0,
         query_understood: false,
@@ -214,8 +231,12 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
       setResponses(prev => [...prev, {
         ...errorResponse,
         query: currentQuery,
-        timestamp: new Date()
+        timestamp: new Date(),
+        canRetry: true,
+        originalQuery: currentQuery
       } as any]);
+      
+      toast.error('فشل في معالجة الاستفسار');
     } finally {
       setIsLoading(false);
     }
@@ -229,6 +250,12 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
   const clearChat = () => {
     setResponses([]);
     setShowSuggestions(true);
+  };
+
+  const retryQuery = (originalQuery: string) => {
+    setQuery(originalQuery);
+    const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+    handleSubmit(syntheticEvent, 0);
   };
 
   const getResponseTypeColor = (type: string) => {
@@ -480,19 +507,33 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
               </form>
 
               {/* أزرار التحكم */}
-              {responses.length > 0 && (
-                <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                  <Button variant="outline" size="sm" onClick={clearChat}>
-                    مسح المحادثة
-                  </Button>
+              <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                <div className="flex space-x-2">
+                  {responses.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={clearChat}>
+                      مسح المحادثة
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={checkSystemStatus}>
                     تحديث الحالة
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick(query)} disabled={!query.trim()}>
-                    إعادة المحاولة
-                  </Button>
+                  {query.trim() && (
+                    <Button variant="outline" size="sm" onClick={() => handleSuggestionClick(query)}>
+                      إعادة المحاولة
+                    </Button>
+                  )}
                 </div>
-              )}
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.open('/legal-ai-settings', '_blank')}
+                  className="flex items-center space-x-1"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>إعدادات النظام</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

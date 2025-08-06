@@ -124,7 +124,7 @@ async function classifyWithAI(query: string): Promise<{ type: 'system_data' | 'l
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: classificationPrompt }],
         max_tokens: 150,
         temperature: 0.3,
@@ -303,7 +303,7 @@ Important: You now have access to real system data. Use it to provide accurate, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+            model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query }
@@ -397,7 +397,7 @@ async function handleMixedQuery(body: any, classification: any, corsHeaders: any
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [{ role: 'user', content: legalOnlyPrompt }],
             max_tokens: 1000,
             temperature: 0.7,
@@ -445,7 +445,7 @@ Provide a comprehensive response that addresses both legal and business data asp
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+            model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: mixedPrompt }],
         max_tokens: 1200,
         temperature: 0.7,
@@ -695,7 +695,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               ...(body.conversation_history || []),
