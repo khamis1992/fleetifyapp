@@ -300,10 +300,10 @@ export const useAdvancedLegalAI = () => {
       // تحليل ذكي للبيانات إذا كان الاستفسار يتطلب ذلك
       let smartAnalysisResult = null;
       if (queryIntent.data_requirements.requires_database_query) {
-        smartAnalysisResult = await smartAnalytics.performComprehensiveAnalysis(
-          queryData.query,
-          queryData.company_id,
-          queryData.user_id
+        smartAnalysisResult = await smartAnalytics.performSmartAnalysis(
+          'comprehensive',
+          '30d',
+          true
         );
       }
       
