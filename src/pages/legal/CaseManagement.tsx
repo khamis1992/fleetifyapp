@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLegalCases } from '@/hooks/useLegalCases';
+import { LegalCaseForm } from '@/components/legal/LegalCaseForm';
 import { Plus, Search, FileText, Calendar, User, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -13,6 +14,7 @@ const CaseManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: legalCases = [], isLoading } = useLegalCases({
     search: searchTerm,
@@ -65,7 +67,7 @@ const CaseManagement = () => {
           <h1 className="text-3xl font-bold">إدارة القضايا القانونية</h1>
           <p className="text-muted-foreground">تتبع ومتابعة جميع القضايا القانونية</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           قضية جديدة
         </Button>
@@ -193,6 +195,11 @@ const CaseManagement = () => {
           )}
         </div>
       )}
+
+      <LegalCaseForm 
+        open={isFormOpen} 
+        onOpenChange={setIsFormOpen} 
+      />
     </div>
   );
 };
