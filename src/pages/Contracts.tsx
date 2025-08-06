@@ -21,6 +21,7 @@ import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDia
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
 import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress"
 import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog"
+import { ContractCSVUpload } from "@/components/contracts/ContractCSVUpload"
 
 // Hook imports
 import { useContractsData } from "@/hooks/useContractsData"
@@ -43,6 +44,7 @@ export default function Contracts() {
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showCreationProgress, setShowCreationProgress] = useState(false)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
+  const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [filters, setFilters] = useState<any>({})
 
   // Hooks
@@ -144,6 +146,10 @@ export default function Contracts() {
     setShowExportDialog(true)
   }
 
+  const handleShowCSVUpload = () => {
+    setShowCSVUpload(true)
+  }
+
   const handleClearFilters = () => {
     setFilters({})
   }
@@ -167,6 +173,7 @@ export default function Contracts() {
         onCreateContract={handleCreateContract}
         onShowTemplates={handleShowTemplates}
         onShowExport={handleShowExport}
+        onShowCSVUpload={handleShowCSVUpload}
       />
 
       {/* Statistics Cards */}
@@ -278,6 +285,16 @@ export default function Contracts() {
         open={showCancellationDialog}
         onOpenChange={setShowCancellationDialog}
         contract={selectedContract}
+      />
+
+      {/* Contract CSV Upload Dialog */}
+      <ContractCSVUpload
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          setShowCSVUpload(false)
+          refetch()
+        }}
       />
 
       {showTemplateManager && (

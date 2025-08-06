@@ -1,17 +1,19 @@
 import React from 'react';
-import { Plus, Settings, FileText } from 'lucide-react';
+import { Plus, Settings, FileText, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ContractsHeaderProps {
   onCreateContract: () => void;
   onShowTemplates: () => void;
   onShowExport: () => void;
+  onShowCSVUpload: () => void;
 }
 
 export const ContractsHeader: React.FC<ContractsHeaderProps> = ({
   onCreateContract,
   onShowTemplates,
-  onShowExport
+  onShowExport,
+  onShowCSVUpload
 }) => {
   return (
     <div className="flex items-center justify-between">
@@ -25,6 +27,10 @@ export const ContractsHeader: React.FC<ContractsHeaderProps> = ({
         <Button variant="outline" onClick={onShowTemplates}>
           <Settings className="h-4 w-4 mr-2" />
           القوالب
+        </Button>
+        <Button variant="outline" onClick={onShowCSVUpload}>
+          <Upload className="h-4 w-4 mr-2" />
+          رفع CSV
         </Button>
         <Button variant="outline" onClick={onShowExport}>
           <FileText className="h-4 w-4 mr-2" />
