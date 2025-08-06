@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useUnifiedLegalAI } from '@/hooks/useUnifiedLegalAI';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +69,9 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // استخدام الهوك في المستوى الأعلى للمكون
+  const { submitUnifiedQuery, error, clearError } = useUnifiedLegalAI();
 
   // الاقتراحات الافتراضية
   const defaultSuggestions: QuerySuggestion[] = [
@@ -155,10 +159,7 @@ const EnhancedLegalAIInterface_v2: React.FC = () => {
     setShowSuggestions(false);
 
     try {
-      // استخدام useUnifiedLegalAI للحصول على استجابة شاملة
-      const { useUnifiedLegalAI } = await import('@/hooks/useUnifiedLegalAI');
-      const { submitUnifiedQuery } = useUnifiedLegalAI();
-      
+      // استخدام الهوك للحصول على استجابة شاملة
       const response = await submitUnifiedQuery({
         query: currentQuery,
         mode: 'advisory'
