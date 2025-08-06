@@ -5,6 +5,8 @@ import { useContextualMemory } from './useContextualMemory';
 import { useArabicNLP } from './useArabicNLP';
 import { useSmartAnalytics } from './useSmartAnalytics';
 import { useInteractiveClarification } from './useInteractiveClarification';
+import { useNumericalQueryHandler } from './useNumericalQueryHandler';
+import { useStatisticalQueryClassifier } from './useStatisticalQueryClassifier';
 
 // تحسين أنواع البيانات لتشمل التحليل المتقدم
 export interface AdvancedLegalQuery {
@@ -23,7 +25,7 @@ export interface AdvancedLegalQuery {
 }
 
 export interface QueryClassification {
-  primary_type: 'legal_advice' | 'system_data' | 'mixed' | 'document_generation' | 'case_analysis';
+  primary_type: 'legal_advice' | 'system_data' | 'numerical_query' | 'mixed' | 'document_generation' | 'case_analysis';
   confidence_score: number;
   sub_categories: string[];
   complexity_level: 'simple' | 'moderate' | 'complex' | 'expert_level';
@@ -35,6 +37,11 @@ export interface QueryClassification {
     needs_case_history: boolean;
     needs_legal_precedents: boolean;
     needs_jurisdiction_specific: boolean;
+    requires_database_query: boolean;
+  };
+  numerical_context?: {
+    is_direct_answer_expected: boolean;
+    expected_response_format: 'number' | 'list' | 'chart';
   };
 }
 
@@ -88,7 +95,7 @@ export interface EnhancedLegalResponse {
     completeness: number;
   };
   metadata: {
-    source: 'cache' | 'local_knowledge' | 'api' | 'hybrid';
+    source: 'cache' | 'local_knowledge' | 'api' | 'hybrid' | 'direct_query';
     processing_components: string[];
     response_time: number;
     cost_saved?: boolean;
@@ -133,12 +140,19 @@ export const useAdvancedLegalAI = () => {
   const arabicNLP = useArabicNLP();
   const smartAnalytics = useSmartAnalytics();
   const interactiveClarification = useInteractiveClarification();
+  const numericalQueryHandler = useNumericalQueryHandler();
+  const statisticalClassifier = useStatisticalQueryClassifier();
 
   // خوارزمية تصنيف الاستفسارات المحسنة
   const classifyQuery = useCallback(async (query: string, context?: any): Promise<QueryClassification> => {
+    // Check if it's a numerical/statistical query first
+    const isNumerical = numericalQueryHandler.isNumericalQuery(query);
+    const statisticalResult = statisticalClassifier.classifyStatisticalQuery(query);
+    
     const keywords = {
       legal_advice: ['استشارة', 'حكم', 'قانون', 'حق', 'واجب', 'مسؤولية', 'عقوبة', 'تعويض'],
       system_data: ['بيانات', 'معلومات', 'تقرير', 'إحصائية', 'عرض', 'قائمة', 'سجل'],
+      numerical_query: ['كم', 'عدد', 'إجمالي', 'مجموع', 'اعرض', 'أظهر'],
       document_generation: ['عقد', 'وثيقة', 'مذكرة', 'خطاب', 'بيان', 'تقرير قانوني'],
       case_analysis: ['قضية', 'نزاع', 'دعوى', 'محكمة', 'حكم قضائي', 'استئناف']
     };
@@ -154,9 +168,15 @@ export const useAdvancedLegalAI = () => {
     const scores = {
       legal_advice: 0,
       system_data: 0,
+      numerical_query: 0,
       document_generation: 0,
       case_analysis: 0
     };
+
+    // Give high priority to numerical queries if detected
+    if (isNumerical || statisticalResult.isStatisticalQuery) {
+      scores.numerical_query += 3;
+    }
 
     Object.entries(keywords).forEach(([type, words]) => {
       words.forEach(word => {
@@ -187,8 +207,16 @@ export const useAdvancedLegalAI = () => {
       needs_client_data: query.includes('عميل') || query.includes('عقد') || context?.client_id,
       needs_case_history: query.includes('قضية') || query.includes('تاريخ'),
       needs_legal_precedents: complexity_level === 'expert_level' || query.includes('سابقة'),
-      needs_jurisdiction_specific: query.includes('كويت') || query.includes('سعودي') || query.includes('قطر')
+      needs_jurisdiction_specific: query.includes('كويت') || query.includes('سعودي') || query.includes('قطر'),
+      requires_database_query: primary_type === 'numerical_query' || primary_type === 'system_data'
     };
+
+    // Add numerical context if it's a numerical query
+    const numerical_context = primary_type === 'numerical_query' ? {
+      is_direct_answer_expected: true,
+      expected_response_format: statisticalResult.suggestedVisualization === 'card' ? 'number' as const : 
+                                statisticalResult.suggestedVisualization === 'chart' ? 'chart' as const : 'list' as const
+    } : undefined;
 
     return {
       primary_type,
@@ -197,10 +225,15 @@ export const useAdvancedLegalAI = () => {
         .filter(([_, score]) => score > 0)
         .map(([type, _]) => type),
       complexity_level,
-      required_expertise: primary_type === 'legal_advice' ? ['قانوني عام'] : ['تقني'],
-      estimated_response_time: complexity_level === 'simple' ? 2 : complexity_level === 'moderate' ? 5 : 10,
-      suggested_approach: primary_type === 'system_data' ? 'database_query' : 'ai_analysis',
-      data_requirements
+      required_expertise: primary_type === 'legal_advice' ? ['قانوني عام'] : 
+                         primary_type === 'numerical_query' ? ['استعلام بيانات'] : ['تقني'],
+      estimated_response_time: primary_type === 'numerical_query' ? 1 : 
+                             complexity_level === 'simple' ? 2 : 
+                             complexity_level === 'moderate' ? 5 : 10,
+      suggested_approach: primary_type === 'numerical_query' ? 'direct_query' :
+                         primary_type === 'system_data' ? 'database_query' : 'ai_analysis',
+      data_requirements,
+      numerical_context
     };
   }, []);
 
@@ -297,6 +330,54 @@ export const useAdvancedLegalAI = () => {
         // يمكن هنا إظهار واجهة التوضيح للمستخدم
       }
       
+      // تصنيف الاستفسار (محسن)
+      const classification = await classifyQuery(queryData.query, queryData.context);
+
+      // Handle numerical queries directly
+      if (classification.primary_type === 'numerical_query') {
+        try {
+          const numericalResult = await numericalQueryHandler.processNumericalQuery(queryData.query);
+          
+          return {
+            success: true,
+            advice: numericalResult.description,
+            classification,
+            smart_analysis: await performSmartAnalysis(queryData.query, classification, queryData.context),
+            alternative_solutions: [],
+            follow_up_questions: [
+              'هل تريد تفاصيل إضافية حول هذه البيانات؟',
+              'هل تحتاج إلى مقارنة مع فترة سابقة؟'
+            ],
+            related_topics: ['إحصائيات', 'تقارير', 'بيانات'],
+            confidence_indicators: {
+              source_reliability: 0.95,
+              legal_accuracy: 1.0,
+              jurisdiction_relevance: 1.0,
+              completeness: 0.9
+            },
+            metadata: {
+              source: 'direct_query',
+              processing_components: ['Database Query', 'Statistical Analysis'],
+              response_time: numericalResult.processing_time || 0,
+            },
+            interactive_elements: {
+              clarification_needed: false,
+              document_templates: [],
+              suggested_actions: [
+                {
+                  action: 'عرض التفاصيل',
+                  priority: 1,
+                  estimated_time: '5 ثوانٍ'
+                }
+              ]
+            }
+          };
+        } catch (numericalError) {
+          console.error('خطأ في معالجة الاستعلام الرقمي:', numericalError);
+          // Continue with normal AI processing if numerical processing fails
+        }
+      }
+
       // تحليل ذكي للبيانات إذا كان الاستفسار يتطلب ذلك
       let smartAnalysisResult = null;
       if (queryIntent.data_requirements.requires_database_query) {
@@ -314,9 +395,6 @@ export const useAdvancedLegalAI = () => {
           query_intent: queryIntent
         });
       }
-      
-      // تصنيف الاستفسار (محسن)
-      const classification = await classifyQuery(queryData.query, queryData.context);
       
       // تحليل ذكي (محسن)
       const smart_analysis = await performSmartAnalysis(queryData.query, classification, queryData.context);
@@ -399,7 +477,9 @@ export const useAdvancedLegalAI = () => {
       };
 
       // عرض توست مخصص حسب نوع الاستفسار
-      if (classification.primary_type === 'system_data') {
+      if (classification.primary_type === 'numerical_query') {
+        toast.success('🔢 تم الحصول على البيانات الرقمية بنجاح');
+      } else if (classification.primary_type === 'system_data') {
         toast.success('📊 تم جلب البيانات المطلوبة بنجاح');
       } else if (classification.complexity_level === 'expert_level') {
         toast.success('🎓 تم إجراء تحليل قانوني متقدم');

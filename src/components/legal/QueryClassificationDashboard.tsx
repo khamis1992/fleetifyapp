@@ -139,7 +139,8 @@ const QueryClassificationDashboard: React.FC = () => {
               needs_client_data: false,
               needs_case_history: false,
               needs_legal_precedents: true,
-              needs_jurisdiction_specific: true
+              needs_jurisdiction_specific: true,
+              requires_database_query: false
             }
           },
           timestamp: new Date(),
@@ -162,7 +163,8 @@ const QueryClassificationDashboard: React.FC = () => {
               needs_client_data: true,
               needs_case_history: false,
               needs_legal_precedents: false,
-              needs_jurisdiction_specific: false
+              needs_jurisdiction_specific: false,
+              requires_database_query: true
             }
           },
           timestamp: new Date(Date.now() - 120000),

@@ -3,7 +3,7 @@ import { useState } from 'react';
 export interface StatisticalQueryClassification {
   isStatisticalQuery: boolean;
   queryCategory: 'contracts' | 'customers' | 'legal_cases' | 'financial' | 'general' | null;
-  statisticalType: 'count' | 'count_active' | 'count_all' | 'count_smart' | 'count_blacklisted' | 'count_inactive' | 'detailed_analytics' | 'breakdown' | 'sum' | 'percentage' | 'trend' | 'comparison' | null;
+  statisticalType: 'count' | 'count_active' | 'count_all' | 'count_smart' | 'count_blacklisted' | 'count_inactive' | 'count_unpaid' | 'detailed_analytics' | 'breakdown' | 'sum' | 'percentage' | 'trend' | 'comparison' | null;
   timeframe?: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all_time' | null;
   filters?: {
     status?: string;
@@ -31,7 +31,14 @@ interface StatisticalPattern {
 }
 
 const STATISTICAL_PATTERNS: StatisticalPattern[] = [
-  // Enhanced Customer patterns with smart classification
+// Enhanced Customer patterns with smart classification and unpaid detection
+  {
+    pattern: /(عدد|كم).*(عملاء|عميل).*(لم يسدد|ما دفع|ما سدد|متأخر|مدين|لم يدفع)/i,
+    category: 'customers',
+    type: 'count_unpaid',
+    visualization: 'card',
+    keywords: ['عملاء', 'لم يسدد', 'متأخر', 'مدين', 'عدد', 'كم']
+  },
   {
     pattern: /(عدد|كم).*(عملاء|عميل).*(نشط|نشطة|نشطين|فعال|فعالة|فعالين|متفاعل)/i,
     category: 'customers',
