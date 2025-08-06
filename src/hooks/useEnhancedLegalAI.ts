@@ -116,7 +116,14 @@ export const useEnhancedLegalAI = () => {
 
       // Validate response quality for real results
       if (!result.analysis || result.analysis.length < 50) {
-        throw new Error('الرد المستلم غير مكتمل أو غير صالح');
+        console.error('Invalid response received:', result);
+        throw new Error('الرد المستلم غير مكتمل أو غير صالح - Response too short or empty');
+      }
+
+      // Additional validation for real AI responses
+      if (result.analysis.includes('I cannot') || result.analysis.includes('I\'m unable')) {
+        console.error('AI refusal detected in response:', result.analysis);
+        throw new Error('تم رفض الاستعلام من قبل النظام - يرجى المحاولة مرة أخرى');
       }
 
       // Add to conversation history
@@ -259,10 +266,21 @@ export const useEnhancedLegalAI = () => {
   // Health check function
   const checkSystemHealth = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await supabase.functions.invoke('legal-ai-enhanced', {
-        body: { health_check: true }
+      const supabaseUrl = 'https://qwhunliohlkkahbspfiu.supabase.co';
+      const response = await fetch(`${supabaseUrl}/functions/v1/legal-ai-enhanced/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      return response.data?.status === 'healthy';
+      
+      if (!response.ok) {
+        console.error('Health check failed with status:', response.status);
+        return false;
+      }
+      
+      const data = await response.json();
+      return data?.status === 'healthy';
     } catch (error) {
       console.error('Health check failed:', error);
       return false;

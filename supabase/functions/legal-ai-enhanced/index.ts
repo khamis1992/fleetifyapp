@@ -115,7 +115,7 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
     - recommendations: التوصيات
     `;
 
-    console.log('Sending request to OpenAI with model: gpt-4.1-2025-04-14');
+    console.log('Sending request to OpenAI with model: gpt-4o-mini');
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -124,7 +124,7 @@ async function processLegalQuery(query: LegalQuery): Promise<LegalResponse> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query.query }
