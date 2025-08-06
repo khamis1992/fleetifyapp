@@ -1,6 +1,10 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useContextualMemory } from './useContextualMemory';
+import { useArabicNLP } from './useArabicNLP';
+import { useSmartAnalytics } from './useSmartAnalytics';
+import { useInteractiveClarification } from './useInteractiveClarification';
 
 // تحسين أنواع البيانات لتشمل التحليل المتقدم
 export interface AdvancedLegalQuery {
@@ -123,6 +127,12 @@ export const useAdvancedLegalAI = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [insights, setInsights] = useState<LegalInsights | null>(null);
+  
+  // استخدام الوحدات المحسنة
+  const contextualMemory = useContextualMemory();
+  const arabicNLP = useArabicNLP();
+  const smartAnalytics = useSmartAnalytics();
+  const interactiveClarification = useInteractiveClarification();
 
   // خوارزمية تصنيف الاستفسارات المحسنة
   const classifyQuery = useCallback(async (query: string, context?: any): Promise<QueryClassification> => {
@@ -262,7 +272,7 @@ export const useAdvancedLegalAI = () => {
     };
   }, []);
 
-  // إرسال استفسار متقدم
+  // إرسال استفسار متقدم محسن
   const submitAdvancedQuery = async (queryData: AdvancedLegalQuery): Promise<EnhancedLegalResponse> => {
     setIsLoading(true);
     setError(null);
@@ -270,10 +280,45 @@ export const useAdvancedLegalAI = () => {
     try {
       const { data: user } = await supabase.auth.getUser();
       
-      // تصنيف الاستفسار
+      // تحليل لغوي متقدم
+      const linguisticAnalysis = await arabicNLP.analyzeArabicText(queryData.query);
+      const queryIntent = arabicNLP.extractQueryIntent(linguisticAnalysis);
+      
+      // فحص الحاجة للتوضيح
+      const clarificationCheck = await interactiveClarification.assessClarificationNeed(
+        queryData.query,
+        contextualMemory.context ? {
+          recent_topics: contextualMemory.context.implicit_context.conversation_flow.slice(-3)
+        } : undefined
+      );
+      
+      if (clarificationCheck.needs_clarification) {
+        toast.info('يحتاج الاستفسار إلى توضيح إضافي');
+        // يمكن هنا إظهار واجهة التوضيح للمستخدم
+      }
+      
+      // تحليل ذكي للبيانات إذا كان الاستفسار يتطلب ذلك
+      let smartAnalysisResult = null;
+      if (queryIntent.data_requirements.requires_database_query) {
+        smartAnalysisResult = await smartAnalytics.performComprehensiveAnalysis(
+          queryData.query,
+          queryData.company_id,
+          queryData.user_id
+        );
+      }
+      
+      // إضافة الرسالة للذاكرة السياقية
+      if (contextualMemory.isInitialized) {
+        contextualMemory.addMessage('user', queryData.query, {
+          linguistic_analysis: linguisticAnalysis,
+          query_intent: queryIntent
+        });
+      }
+      
+      // تصنيف الاستفسار (محسن)
       const classification = await classifyQuery(queryData.query, queryData.context);
       
-      // تحليل ذكي
+      // تحليل ذكي (محسن)
       const smart_analysis = await performSmartAnalysis(queryData.query, classification, queryData.context);
 
       // إرسال الطلب للـ OpenAI Edge Function
