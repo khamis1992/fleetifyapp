@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { fixOrphanedUsers } from '@/utils/fix-orphaned-users';
 
 export interface SuperAdminUser {
   id: string;
@@ -612,6 +613,42 @@ export const useSuperAdminUsers = () => {
     initializeData();
   }, []);
 
+  // Fix orphaned users utility function
+  const fixOrphanedUsersForCompany = async (companyId: string) => {
+    try {
+      const result = await fixOrphanedUsers(companyId);
+      
+      if (result.fixed > 0) {
+        toast({
+          title: 'تم إصلاح السجلات',
+          description: `تم إصلاح ${result.fixed} من سجلات المستخدمين المتضررة`,
+        });
+        
+        // Refresh data after fixing
+        await Promise.all([fetchUsers(), fetchCompanies()]);
+      }
+      
+      if (result.errors.length > 0) {
+        console.error('Fix errors:', result.errors);
+        toast({
+          title: 'تحذير',
+          description: `تم إصلاح ${result.fixed} سجل مع ${result.errors.length} أخطاء`,
+          variant: 'destructive',
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error fixing orphaned users:', error);
+      toast({
+        title: 'خطأ',
+        description: 'فشل في إصلاح السجلات المتضررة',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   return {
     users,
     companies,
@@ -624,6 +661,7 @@ export const useSuperAdminUsers = () => {
     isUpdating,
     isDeleting,
     isResettingPassword,
-    refetch: () => Promise.all([fetchUsers(), fetchCompanies()])
+    refetch: () => Promise.all([fetchUsers(), fetchCompanies()]),
+    fixOrphanedUsers: fixOrphanedUsersForCompany,
   };
 };
