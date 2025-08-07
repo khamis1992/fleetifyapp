@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSuperAdminUsers } from '@/hooks/useSuperAdminUsers';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { UserPlusIcon, SearchIcon, FilterIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { UserPlusIcon, SearchIcon, FilterIcon, AlertTriangleIcon, WrenchIcon, CheckCircleIcon } from 'lucide-react';
 import { CreateUserDialog } from '@/components/super-admin/CreateUserDialog';
 import { UserDetailsDialog } from '@/components/super-admin/UserDetailsDialog';
 import { format } from 'date-fns';
@@ -34,24 +35,46 @@ const SuperAdminUsers: React.FC = () => {
     isCreating,
     isUpdating,
     isDeleting,
-    isResettingPassword
+    isResettingPassword,
+    isFixingOrphans,
+    fixOrphanedUsers
   } = useSuperAdminUsers();
 
-  // Filter users based on search and filters
+  // Filter users based on search and filters, including orphaned users
   const filteredUsers = users?.filter(user => {
+    const firstName = user.profiles?.first_name || user.orphaned_employee?.first_name || '';
+    const lastName = user.profiles?.last_name || user.orphaned_employee?.last_name || '';
+    const firstNameAr = user.profiles?.first_name_ar || user.orphaned_employee?.first_name_ar || '';
+    const lastNameAr = user.profiles?.last_name_ar || user.orphaned_employee?.last_name_ar || '';
+    
     const matchesSearch = 
-      user.profiles?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.profiles?.first_name_ar?.includes(searchTerm) ||
-      user.profiles?.last_name_ar?.includes(searchTerm);
+      firstNameAr.includes(searchTerm) ||
+      lastNameAr.includes(searchTerm);
 
-    const matchesCompany = selectedCompany === 'all' || user.profiles?.company_id === selectedCompany;
+    const companyId = user.profiles?.company_id || user.orphaned_employee?.company_id;
+    const matchesCompany = selectedCompany === 'all' || companyId === selectedCompany;
     
     const matchesRole = selectedRole === 'all' || user.user_roles?.some(role => role.role === selectedRole);
 
     return matchesSearch && matchesCompany && matchesRole;
   }) || [];
+
+  // Get orphaned users count and companies with orphans
+  const orphanedData = useMemo(() => {
+    const orphaned = users?.filter(user => !user.profiles && user.orphaned_employee) || [];
+    const companiesWithOrphans = new Set(
+      orphaned.map(user => user.orphaned_employee?.company_id).filter(Boolean)
+    );
+    
+    return {
+      count: orphaned.length,
+      users: orphaned,
+      companiesWithOrphans: Array.from(companiesWithOrphans)
+    };
+  }, [users]);
 
   const handleCreateUser = async (userData: any) => {
     try {
@@ -81,6 +104,13 @@ const SuperAdminUsers: React.FC = () => {
   };
 
   const getStatusBadge = (user: any) => {
+    if (!user.profiles && user.orphaned_employee) {
+      return <Badge variant="destructive" className="bg-orange-100 text-orange-800 border-orange-300">
+        <AlertTriangleIcon className="ml-1 h-3 w-3" />
+        حساب متضرر
+      </Badge>;
+    }
+    
     if (!user.profiles) {
       return <Badge variant="destructive">بدون ملف شخصي</Badge>;
     }
@@ -90,6 +120,20 @@ const SuperAdminUsers: React.FC = () => {
     }
     
     return <Badge variant="secondary">غير مفعل</Badge>;
+  };
+
+  const handleFixOrphansForCompany = async (companyId: string) => {
+    try {
+      await fixOrphanedUsers(companyId);
+    } catch (error) {
+      console.error('Failed to fix orphaned users:', error);
+    }
+  };
+
+  const handleCompleteUserSetup = async (user: any) => {
+    if (user.orphaned_employee) {
+      await handleFixOrphansForCompany(user.orphaned_employee.company_id);
+    }
   };
 
   if (loading) {
@@ -109,14 +153,42 @@ const SuperAdminUsers: React.FC = () => {
             إدارة جميع المستخدمين في النظام ({filteredUsers.length} مستخدم)
           </p>
         </div>
-        <Button 
-          onClick={() => setCreateUserOpen(true)}
-          disabled={isCreating}
-        >
-          <UserPlusIcon className="ml-2 h-4 w-4" />
-          إضافة مستخدم جديد
-        </Button>
+        <div className="flex gap-2">
+          {orphanedData.count > 0 && (
+            <Button 
+              onClick={() => {
+                orphanedData.companiesWithOrphans.forEach(companyId => {
+                  handleFixOrphansForCompany(companyId);
+                });
+              }}
+              disabled={isFixingOrphans}
+              variant="outline"
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+            >
+              <WrenchIcon className="ml-2 h-4 w-4" />
+              {isFixingOrphans ? 'جاري الإصلاح...' : `إصلاح الحسابات المتضررة (${orphanedData.count})`}
+            </Button>
+          )}
+          <Button 
+            onClick={() => setCreateUserOpen(true)}
+            disabled={isCreating}
+          >
+            <UserPlusIcon className="ml-2 h-4 w-4" />
+            إضافة مستخدم جديد
+          </Button>
+        </div>
       </div>
+
+      {/* Orphaned Users Alert */}
+      {orphanedData.count > 0 && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertTriangleIcon className="h-4 w-4" />
+          <AlertDescription>
+            تم العثور على {orphanedData.count} حساب مستخدم متضرر (يحتوي على بيانات موظف ولكن بدون ملف شخصي أو أدوار). 
+            يُنصح بإصلاح هذه الحسابات لضمان عمل النظام بشكل صحيح.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Filters */}
       <Card>
@@ -192,18 +264,23 @@ const SuperAdminUsers: React.FC = () => {
                   <TableCell>
                     <div>
                       <div className="font-medium">
-                        {user.profiles?.first_name} {user.profiles?.last_name}
+                        {user.profiles?.first_name || user.orphaned_employee?.first_name || 'غير محدد'} {user.profiles?.last_name || user.orphaned_employee?.last_name || ''}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {user.profiles?.first_name_ar} {user.profiles?.last_name_ar}
+                        {user.profiles?.first_name_ar || user.orphaned_employee?.first_name_ar || ''} {user.profiles?.last_name_ar || user.orphaned_employee?.last_name_ar || ''}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {user.email}
                       </div>
+                      {user.orphaned_employee && (
+                        <div className="text-xs text-orange-600 font-medium">
+                          حساب متضرر - يحتاج إصلاح
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {user.profiles?.companies?.name || 'غير محدد'}
+                    {user.profiles?.companies?.name || user.orphaned_employee?.companies?.name || 'غير محدد'}
                   </TableCell>
                   <TableCell>
                     {getRolesBadges(user.user_roles)}
@@ -215,16 +292,34 @@ const SuperAdminUsers: React.FC = () => {
                     {user.created_at ? format(new Date(user.created_at), 'dd/MM/yyyy', { locale: ar }) : 'غير محدد'}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewUser(user);
-                      }}
-                    >
-                      عرض التفاصيل
-                    </Button>
+                    <div className="flex gap-2">
+                      {user.orphaned_employee ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCompleteUserSetup(user);
+                          }}
+                          disabled={isFixingOrphans}
+                          className="border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          <CheckCircleIcon className="ml-1 h-3 w-3" />
+                          إكمال الإعداد
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewUser(user);
+                          }}
+                        >
+                          عرض التفاصيل
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

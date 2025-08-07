@@ -24,6 +24,18 @@ export interface SuperAdminUser {
     id: string;
     role: string;
   }>;
+  orphaned_employee?: {
+    first_name?: string;
+    last_name?: string;
+    first_name_ar?: string;
+    last_name_ar?: string;
+    company_id?: string;
+    companies?: {
+      id: string;
+      name: string;
+      name_ar?: string;
+    };
+  };
 }
 
 export interface Company {
@@ -57,12 +69,36 @@ export const useSuperAdminUsers = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isFixingOrphans, setIsFixingOrphans] = useState(false);
   const { toast } = useToast();
 
-  // Fetch all users with their profiles and roles
+  // Fetch all users with their profiles and roles, including orphaned users
   const fetchUsers = async () => {
     try {
-      // Get all profiles with companies and user roles in a single query
+      // First, get all users from auth.users through employees table (for orphaned users)
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select(`
+          user_id,
+          email,
+          first_name,
+          last_name,
+          first_name_ar,
+          last_name_ar,
+          company_id,
+          companies (
+            id,
+            name,
+            name_ar
+          )
+        `)
+        .not('user_id', 'is', null);
+
+      if (employeesError) {
+        console.error('Error fetching employees:', employeesError);
+      }
+
+      // Get all profiles with companies
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -74,6 +110,7 @@ export const useSuperAdminUsers = () => {
           first_name_ar,
           last_name_ar,
           company_id,
+          is_active,
           companies (
             id,
             name,
@@ -97,11 +134,14 @@ export const useSuperAdminUsers = () => {
         throw rolesError;
       }
 
-      // Combine profiles with roles
-      const combinedUsers: SuperAdminUser[] = (profilesData || []).map(profile => {
+      // Combine all users - start with profiles, then add orphaned users
+      const userMap = new Map<string, SuperAdminUser>();
+
+      // Add users with profiles
+      (profilesData || []).forEach(profile => {
         const userRoles = rolesData?.filter(r => r.user_id === profile.user_id) || [];
         
-        return {
+        userMap.set(profile.user_id, {
           id: profile.user_id,
           email: profile.email || '',
           created_at: profile.created_at,
@@ -118,9 +158,37 @@ export const useSuperAdminUsers = () => {
             id: role.id,
             role: role.role
           }))
-        };
+        });
       });
 
+      // Add orphaned users (employees with user_id but no profile)
+      (employeesData || []).forEach(employee => {
+        if (!userMap.has(employee.user_id)) {
+          const userRoles = rolesData?.filter(r => r.user_id === employee.user_id) || [];
+          
+          userMap.set(employee.user_id, {
+            id: employee.user_id,
+            email: employee.email || '',
+            created_at: new Date().toISOString(), // Default for orphaned users
+            profiles: undefined, // No profile exists
+            user_roles: userRoles.map(role => ({
+              id: role.id,
+              role: role.role
+            })),
+            // Add orphaned user info
+            orphaned_employee: {
+              first_name: employee.first_name,
+              last_name: employee.last_name,
+              first_name_ar: employee.first_name_ar,
+              last_name_ar: employee.last_name_ar,
+              company_id: employee.company_id,
+              companies: employee.companies
+            }
+          });
+        }
+      });
+
+      const combinedUsers = Array.from(userMap.values());
       setUsers(combinedUsers);
     } catch (error) {
       console.error('Error in fetchUsers:', error);
@@ -615,6 +683,7 @@ export const useSuperAdminUsers = () => {
 
   // Fix orphaned users utility function
   const fixOrphanedUsersForCompany = async (companyId: string) => {
+    setIsFixingOrphans(true);
     try {
       const result = await fixOrphanedUsers(companyId);
       
@@ -626,6 +695,11 @@ export const useSuperAdminUsers = () => {
         
         // Refresh data after fixing
         await Promise.all([fetchUsers(), fetchCompanies()]);
+      } else {
+        toast({
+          title: 'لا توجد سجلات متضررة',
+          description: 'جميع سجلات المستخدمين سليمة',
+        });
       }
       
       if (result.errors.length > 0) {
@@ -646,6 +720,8 @@ export const useSuperAdminUsers = () => {
         variant: 'destructive',
       });
       throw error;
+    } finally {
+      setIsFixingOrphans(false);
     }
   };
 
@@ -661,6 +737,7 @@ export const useSuperAdminUsers = () => {
     isUpdating,
     isDeleting,
     isResettingPassword,
+    isFixingOrphans,
     refetch: () => Promise.all([fetchUsers(), fetchCompanies()]),
     fixOrphanedUsers: fixOrphanedUsersForCompany,
   };
