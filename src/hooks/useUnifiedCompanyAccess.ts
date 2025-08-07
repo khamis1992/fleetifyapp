@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanyContext } from '@/contexts/CompanyContext';
 import { getCompanyScopeContext, getCompanyFilter, hasGlobalAccess, hasCompanyAdminAccess } from '@/lib/companyScope';
 
 /**
@@ -8,9 +9,21 @@ import { getCompanyScopeContext, getCompanyFilter, hasGlobalAccess, hasCompanyAd
  */
 export const useUnifiedCompanyAccess = () => {
   const { user } = useAuth();
+  const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
   return useMemo(() => {
-    const context = getCompanyScopeContext(user);
+    // If in browsing mode, override context with browsed company
+    let context = getCompanyScopeContext(user);
+    
+    if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
+      context = {
+        ...context,
+        companyId: browsedCompany.id,
+        isSystemLevel: false, // Act as if we're scoped to the browsed company
+        isCompanyScoped: true
+      };
+    }
+    
     const filter = getCompanyFilter(context);
     
     return {
@@ -53,9 +66,14 @@ export const useUnifiedCompanyAccess = () => {
       getQueryKey: (baseKey: string[], additionalKeys: unknown[] = []) => {
         const keys = [baseKey, context.companyId, ...additionalKeys].filter(Boolean);
         return keys;
-      }
+      },
+      
+      // Browse mode information
+      isBrowsingMode,
+      browsedCompany,
+      actualUserCompanyId: user?.profile?.company_id || null
     };
-  }, [user]);
+  }, [user, isBrowsingMode, browsedCompany]);
 };
 
 /**

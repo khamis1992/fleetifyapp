@@ -4,8 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CompanyContextProvider } from "@/contexts/CompanyContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
+import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout";
 import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -62,10 +64,11 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <CompanyContextProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -211,11 +214,136 @@ const App = () => (
               <Route path="support" element={<Support />} />
               <Route path="support/ticket/:ticketId" element={<SupportTicketDetail />} />
             </Route>
+            
+            {/* Company Browser Layout - Super Admin browsing company data */}
+            <Route path="/browse-company/*" element={
+              <SuperAdminRoute>
+                <CompanyBrowserLayout />
+              </SuperAdminRoute>
+            }>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="subscription" element={<SubscriptionPage />} />
+              
+              <Route path="fleet" element={
+                <AdminRoute>
+                  <Fleet />
+                </AdminRoute>
+              } />
+              <Route path="fleet/dispatch-permits" element={
+                <AdminRoute>
+                  <DispatchPermits />
+                </AdminRoute>
+              } />
+              <Route path="fleet/vehicle-condition-check" element={
+                <AdminRoute>
+                  <VehicleConditionCheck />
+                </AdminRoute>
+              } />
+              <Route path="fleet/maintenance" element={
+                <AdminRoute>
+                  <Maintenance />
+                </AdminRoute>
+              } />
+              <Route path="fleet/traffic-violations" element={
+                <AdminRoute>
+                  <TrafficViolations />
+                </AdminRoute>
+              } />
+              <Route path="fleet/traffic-violation-payments" element={
+                <AdminRoute>
+                  <TrafficViolationPayments />
+                </AdminRoute>
+              } />
+              <Route path="fleet/reports" element={
+                <AdminRoute>
+                  <FleetReports />
+                </AdminRoute>
+              } />
+              <Route path="fleet/financial-analysis" element={
+                <AdminRoute>
+                  <FleetFinancialAnalysis />
+                </AdminRoute>
+              } />
+              <Route path="fleet/vehicle-installments" element={
+                <AdminRoute>
+                  <VehicleInstallments />
+                </AdminRoute>
+              } />
+              <Route path="contracts" element={<Contracts />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="quotations" element={<Quotations />} />
+              <Route path="finance/*" element={<Finance />} />
+              <Route path="hr/employees" element={
+                <AdminRoute>
+                  <Employees />
+                </AdminRoute>
+              } />
+              <Route path="hr/user-management" element={
+                <AdminRoute>
+                  <UserManagement />
+                </AdminRoute>
+              } />
+              <Route path="hr/attendance" element={
+                <AdminRoute>
+                  <Attendance />
+                </AdminRoute>
+              } />
+              <Route path="hr/leave-management" element={
+                <AdminRoute>
+                  <LeaveManagement />
+                </AdminRoute>
+              } />
+              <Route path="hr/location-settings" element={
+                <AdminRoute>
+                  <LocationSettings />
+                </AdminRoute>
+              } />
+              <Route path="hr/payroll" element={
+                <AdminRoute>
+                  <Payroll />
+                </AdminRoute>
+              } />
+              <Route path="hr/reports" element={
+                <AdminRoute>
+                  <HRReports />
+                </AdminRoute>
+              } />
+              <Route path="hr/settings" element={
+                <AdminRoute>
+                  <HRSettings />
+                </AdminRoute>
+              } />
+              <Route path="reports" element={<Reports />} />
+              <Route path="legal" element={
+                <AdminRoute>
+                  <Legal />
+                </AdminRoute>
+              } />
+              <Route path="legal/advisor" element={
+                <AdminRoute>
+                  <LegalAdvisor />
+                </AdminRoute>
+              } />
+              <Route path="legal/cases" element={
+                <AdminRoute>
+                  <CaseManagement />
+                </AdminRoute>
+              } />
+              <Route path="approvals" element={
+                <AdminRoute>
+                  <ApprovalSystem />
+                </AdminRoute>
+              } />
+              <Route path="support" element={<Support />} />
+              <Route path="support/ticket/:ticketId" element={<SupportTicketDetail />} />
+            </Route>
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </CompanyContextProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

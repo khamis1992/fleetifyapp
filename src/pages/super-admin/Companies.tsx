@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCompanies, Company } from '@/hooks/useCompanies';
+import { useCompanyContext } from '@/contexts/CompanyContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +25,8 @@ import { formatCurrency } from '@/lib/utils';
 
 const Companies: React.FC = () => {
   const { data: companies = [], isLoading: loading, refetch } = useCompanies();
+  const { setBrowsedCompany } = useCompanyContext();
+  const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -80,6 +84,11 @@ const Companies: React.FC = () => {
   const handleEditCompany = (company: Company) => {
     setSelectedCompany(company);
     setShowCreateForm(true);
+  };
+
+  const handleBrowseCompany = (company: Company) => {
+    setBrowsedCompany(company);
+    navigate('/browse-company/dashboard');
   };
 
   if (loading) {
@@ -254,6 +263,15 @@ const Companies: React.FC = () => {
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleBrowseCompany(company)}
+                  className="flex-1 gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  تصفح
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
