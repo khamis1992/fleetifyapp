@@ -412,6 +412,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                           <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                           <SelectItem value="EUR">يورو (EUR)</SelectItem>
                           <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
+                          <SelectItem value="QAR">ريال قطري (QAR)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
