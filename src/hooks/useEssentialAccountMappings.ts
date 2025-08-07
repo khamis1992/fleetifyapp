@@ -69,6 +69,10 @@ export const useEssentialAccountMappings = () => {
           (!result.errors || result.errors.length === 0)) {
         toast.info('جميع ربط الحسابات الأساسية موجودة مسبقاً')
       }
+
+      if (!result.created?.length && !result.existing?.length && !result.errors?.length) {
+        toast.info('لا توجد حسابات أساسية بحاجة لربط')
+      }
     },
     onError: (error: any) => {
       console.error('Auto-configuration error:', error)
@@ -79,7 +83,7 @@ export const useEssentialAccountMappings = () => {
   // Check if essential mappings are missing
   const hasMissingMappings = mappingStatus?.errors && mappingStatus.errors.length > 0
   const hasExistingMappings = mappingStatus?.existing && mappingStatus.existing.length > 0
-  const canAutoCreate = mappingStatus?.created && mappingStatus.created.length > 0
+  const canAutoCreate = mappingStatus && !mappingStatus.created?.length && !mappingStatus.errors?.length
 
   return {
     mappingStatus,
