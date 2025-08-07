@@ -188,6 +188,22 @@ export const useSuperAdminUsers = () => {
         if (!employees) {
           // Create new employee if none found
           console.log('Creating new employee...');
+          
+          // Generate a unique employee number using UUID suffix for better uniqueness
+          const uniqueSuffix = Math.random().toString(36).substr(2, 8).toUpperCase();
+          const employeeNumber = `EMP-${new Date().getFullYear()}-${uniqueSuffix}`;
+          
+          console.log('Generated employee number:', employeeNumber);
+          console.log('Employee data to insert:', {
+            company_id: userData.company_id,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            first_name_ar: userData.first_name_ar,
+            last_name_ar: userData.last_name_ar,
+            email: userData.email,
+            employee_number: employeeNumber
+          });
+
           const { data: newEmployee, error: createEmployeeError } = await supabase
             .from('employees')
             .insert({
@@ -197,7 +213,7 @@ export const useSuperAdminUsers = () => {
               first_name_ar: userData.first_name_ar,
               last_name_ar: userData.last_name_ar,
               email: userData.email,
-              employee_number: `EMP-${Date.now()}`,
+              employee_number: employeeNumber,
               hire_date: new Date().toISOString().split('T')[0],
               basic_salary: 0,
               is_active: true
@@ -207,10 +223,57 @@ export const useSuperAdminUsers = () => {
 
           if (createEmployeeError) {
             console.error('Error creating employee:', createEmployeeError);
-            throw new Error('Failed to create employee record. Please try again.');
+            console.error('Error code:', createEmployeeError.code);
+            console.error('Error details:', createEmployeeError.details);
+            console.error('Error hint:', createEmployeeError.hint);
+            
+            // Enhanced error handling for specific database errors
+            if (createEmployeeError.code === '23505') {
+              if (createEmployeeError.message?.includes('employees_email_unique')) {
+                throw new Error('An employee with this email already exists in this company. Please use a different email address.');
+              } else if (createEmployeeError.message?.includes('employee_number')) {
+                // Retry with a different employee number
+                console.log('Employee number conflict, retrying with new number...');
+                const retryEmployeeNumber = `EMP-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 10).toUpperCase()}`;
+                
+                const { data: retryEmployee, error: retryError } = await supabase
+                  .from('employees')
+                  .insert({
+                    company_id: userData.company_id,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    first_name_ar: userData.first_name_ar,
+                    last_name_ar: userData.last_name_ar,
+                    email: userData.email,
+                    employee_number: retryEmployeeNumber,
+                    hire_date: new Date().toISOString().split('T')[0],
+                    basic_salary: 0,
+                    is_active: true
+                  })
+                  .select()
+                  .single();
+
+                if (retryError) {
+                  console.error('Retry also failed:', retryError);
+                  throw new Error('Failed to create employee record due to data conflicts. Please try again.');
+                }
+                
+                employeeId = retryEmployee.id;
+                console.log('Employee created on retry:', retryEmployee);
+              } else {
+                throw new Error('An employee with similar details already exists. Please check the data and try again.');
+              }
+            } else if (createEmployeeError.code === '23503') {
+              throw new Error('Invalid company selected. Please refresh the page and try again.');
+            } else if (createEmployeeError.code === '42501') {
+              throw new Error('You do not have permission to create employees for this company.');
+            } else {
+              throw new Error(`Failed to create employee record: ${createEmployeeError.message || 'Unknown database error'}`);
+            }
+          } else {
+            employeeId = newEmployee.id;
+            console.log('New employee created:', newEmployee);
           }
-          employeeId = newEmployee.id;
-          console.log('New employee created:', newEmployee);
         } else {
           employeeId = employees.id;
           console.log('Found existing employee:', employees);
