@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
@@ -9,10 +11,14 @@ import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
 import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem';
-import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Eye, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
+  const { exitBrowseMode } = useCompanyContext();
   const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
@@ -77,6 +83,40 @@ const Dashboard: React.FC = () => {
     <>
       <ProfessionalBackground />
       <div className="relative z-10 space-y-8">
+        {/* Browse Mode Indicator */}
+        {isBrowsingMode && browsedCompany && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-warning/10 border border-warning/20 rounded-lg p-4 mb-6"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-warning/10 text-warning">
+                  <Eye size={16} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-warning">
+                    وضع المشاهدة مفعل
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    تصفح بيانات: {browsedCompany.name_ar || browsedCompany.name}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exitBrowseMode}
+                className="h-8"
+              >
+                <ArrowLeft size={14} className="ml-1" />
+                العودة لشركتي
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Professional Hero Section */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -91,14 +131,27 @@ const Dashboard: React.FC = () => {
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
                     <Target size={20} />
                   </div>
-                  <span className="text-sm font-medium text-primary">لوحة التحكم المهنية</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-primary">لوحة التحكم المهنية</span>
+                    {isBrowsingMode && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Eye size={10} className="ml-1" />
+                        معاينة
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
                   <h1 className="text-4xl font-bold text-foreground mb-2">
                     {getGreeting()}, {user?.profile?.first_name_ar || user?.profile?.first_name || 'أهلاً وسهلاً'}
                   </h1>
-                  <p className="text-lg text-muted-foreground">نظرة عامة على أداء شركتك اليوم</p>
+                  <p className="text-lg text-muted-foreground">
+                    {isBrowsingMode && browsedCompany
+                      ? `نظرة عامة على أداء ${browsedCompany.name_ar || browsedCompany.name}`
+                      : 'نظرة عامة على أداء شركتك اليوم'
+                    }
+                  </p>
                 </div>
               </div>
               

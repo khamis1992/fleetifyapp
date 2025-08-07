@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface FinancialOverview {
   totalRevenue: number;
@@ -44,16 +44,14 @@ export interface FinancialOverview {
 }
 
 export const useFinancialOverview = () => {
-  const { user } = useAuth();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['financial-overview', user?.profile?.company_id],
+    queryKey: getQueryKey(['financial-overview']),
     queryFn: async (): Promise<FinancialOverview> => {
-      if (!user?.profile?.company_id) {
+      if (!companyId) {
         return getEmptyFinancialOverview();
       }
-
-      const companyId = user.profile.company_id;
       const currentDate = new Date();
       const sixMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, 1);
 
@@ -149,7 +147,7 @@ export const useFinancialOverview = () => {
         projectedAnnualRevenue
       };
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };

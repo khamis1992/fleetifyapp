@@ -1,29 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface OptimizedDashboardStats {
   // Core Stats
   totalVehicles: number;
-  vehiclesChange: number;
-  vehiclesChangeText: string;
+  vehiclesChange: string;
   
   activeContracts: number;
-  contractsChange: number;
-  contractsChangeText: string;
+  contractsChange: string;
   
   totalCustomers: number;
-  customersChange: number;
-  customersChangeText: string;
+  customersChange: string;
   
   totalEmployees: number;
-  employeesChange: number;
-  employeesChangeText: string;
+  employeesChange: string;
   
   // Financial Stats
   monthlyRevenue: number;
-  revenueChange: number;
-  revenueChangeText: string;
+  revenueChange: string;
   totalRevenue: number;
   
   // Operational Stats
@@ -39,21 +34,19 @@ export interface OptimizedDashboardStats {
 }
 
 export const useOptimizedDashboardStats = () => {
-  const { user } = useAuth();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['optimized-dashboard-stats', user?.profile?.company_id],
+    queryKey: getQueryKey(['optimized-dashboard-stats']),
     queryFn: async (): Promise<OptimizedDashboardStats> => {
-      if (!user?.profile?.company_id) {
+      if (!companyId) {
         return getEmptyStats();
       }
-
-      const companyId = user.profile.company_id;
 
       // Use optimized direct queries with our new indexes
       return await fetchStatsDirectly(companyId);
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -132,24 +125,19 @@ async function fetchStatsMultiQuery(companyId: string): Promise<OptimizedDashboa
 
   return {
     totalVehicles,
-    vehiclesChange: 0, // Would need historical data
-    vehiclesChangeText: '+0',
+    vehiclesChange: '+0',
     
     activeContracts,
-    contractsChange: 0,
-    contractsChangeText: '+0',
+    contractsChange: '+0',
     
     totalCustomers,
-    customersChange: 0,
-    customersChangeText: '+0',
+    customersChange: '+0',
     
     totalEmployees,
-    employeesChange: 0,
-    employeesChangeText: '+0',
+    employeesChange: '+0',
     
     monthlyRevenue,
-    revenueChange: 0,
-    revenueChangeText: '+0%',
+    revenueChange: '+0%',
     totalRevenue,
     
     maintenanceRequests,
@@ -166,24 +154,19 @@ async function fetchStatsMultiQuery(companyId: string): Promise<OptimizedDashboa
 function getEmptyStats(): OptimizedDashboardStats {
   return {
     totalVehicles: 0,
-    vehiclesChange: 0,
-    vehiclesChangeText: '+0',
+    vehiclesChange: '+0',
     
     activeContracts: 0,
-    contractsChange: 0,
-    contractsChangeText: '+0',
+    contractsChange: '+0',
     
     totalCustomers: 0,
-    customersChange: 0,
-    customersChangeText: '+0',
+    customersChange: '+0',
     
     totalEmployees: 0,
-    employeesChange: 0,
-    employeesChangeText: '+0',
+    employeesChange: '+0',
     
     monthlyRevenue: 0,
-    revenueChange: 0,
-    revenueChangeText: '+0%',
+    revenueChange: '+0%',
     totalRevenue: 0,
     
     maintenanceRequests: 0,

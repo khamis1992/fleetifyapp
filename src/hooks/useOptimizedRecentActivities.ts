@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface OptimizedActivity {
   id: string;
@@ -16,12 +16,12 @@ export interface OptimizedActivity {
 }
 
 export const useOptimizedRecentActivities = () => {
-  const { user } = useAuth();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['optimized-recent-activities', user?.profile?.company_id],
+    queryKey: getQueryKey(['optimized-recent-activities']),
     queryFn: async (): Promise<OptimizedActivity[]> => {
-      if (!user?.profile?.company_id) {
+      if (!companyId) {
         return [];
       }
 
@@ -37,7 +37,7 @@ export const useOptimizedRecentActivities = () => {
           created_at,
           user_id
         `)
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
         .limit(15);
@@ -60,7 +60,7 @@ export const useOptimizedRecentActivities = () => {
         status: activity.action
       })) || [];
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
