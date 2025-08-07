@@ -197,7 +197,7 @@ serve(async (req) => {
 
     // Enhanced Scenario 1: Check for incomplete accounts first
     if (employeeData.user_id && employeeData.has_system_access) {
-      // Check if this is an incomplete account (user exists but missing roles/company)
+      // Check if this is an incomplete account (user exists but missing roles/profile)
       const { data: userRoles, error: rolesCheckError } = await supabaseClient
         .from('user_roles')
         .select('role')
@@ -205,37 +205,38 @@ serve(async (req) => {
 
       const { data: userProfile, error: profileCheckError } = await supabaseClient
         .from('profiles')
-        .select('company_id')
+        .select('company_id, is_active')
         .eq('user_id', employeeData.user_id)
-        .single();
+        .maybeSingle();
 
       const hasRoles = userRoles && userRoles.length > 0;
-      const hasValidProfile = userProfile && userProfile.company_id;
+      const hasValidProfile = userProfile && userProfile.company_id && userProfile.is_active;
 
       if (!hasRoles || !hasValidProfile) {
         console.log('Detected incomplete account, attempting to complete it');
         
-        // This is an incomplete account - let's complete it
-        const { data: completionResult, error: completionError } = await supabaseClient
-          .rpc('handle_incomplete_user_account', {
-            p_user_id: employeeData.user_id,
-            p_employee_id: employee_id,
-            p_company_id: company_id,
-            p_roles: roles
-          });
-
-        if (completionError) {
-          console.error('Error completing incomplete account:', completionError);
-          throw new Error(`Failed to complete existing account: ${completionError.message}`);
-        }
-
-        if (completionResult && completionResult.success) {
+        // Verify the auth user still exists
+        const { data: authUser, error: authUserError } = await supabaseClient.auth.admin.getUserById(employeeData.user_id);
+        
+        if (authUserError || !authUser.user) {
+          console.log('Auth user does not exist, cleaning up orphaned employee record');
+          // Clean up the employee record by removing the user_id
+          await supabaseClient
+            .from('employees')
+            .update({ user_id: null, has_system_access: false })
+            .eq('id', employee_id);
+          
+          // Continue to create new user section
+        } else {
+          // Complete the incomplete account
+          console.log('Auth user exists, completing profile setup');
+          
           // Generate new temporary password for the completed account
           const tempPassword = temporary_password || generateTemporaryPassword();
           const passwordExpiresAt = new Date();
           passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 7);
 
-          // Update user's password
+          // Update user's password and metadata
           const { error: passwordError } = await supabaseClient.auth.admin.updateUserById(
             employeeData.user_id,
             {
@@ -252,6 +253,51 @@ serve(async (req) => {
 
           if (passwordError) {
             console.error('Error updating password for completed account:', passwordError);
+          }
+
+          // Create or update profile if missing
+          if (!hasValidProfile) {
+            const { error: profileError } = await supabaseClient
+              .from('profiles')
+              .upsert({
+                user_id: employeeData.user_id,
+                first_name,
+                last_name,
+                first_name_ar,
+                last_name_ar,
+                email,
+                company_id,
+                is_active: true
+              });
+
+            if (profileError) {
+              console.error('Error creating/updating profile:', profileError);
+              throw new Error(`Failed to create profile: ${profileError.message}`);
+            }
+          }
+
+          // Clear existing roles and assign new ones if missing
+          if (!hasRoles) {
+            await supabaseClient
+              .from('user_roles')
+              .delete()
+              .eq('user_id', employeeData.user_id);
+
+            if (roles && roles.length > 0) {
+              const roleInserts = roles.map(role => ({
+                user_id: employeeData.user_id,
+                role: role
+              }));
+
+              const { error: rolesError } = await supabaseClient
+                .from('user_roles')
+                .insert(roleInserts);
+
+              if (rolesError) {
+                console.error('Error assigning roles:', rolesError);
+                throw new Error(`Failed to assign roles: ${rolesError.message}`);
+              }
+            }
           }
 
           // Create account creation request record
@@ -281,14 +327,12 @@ serve(async (req) => {
               status: 200,
             }
           );
-        } else {
-          throw new Error(completionResult?.error || 'Failed to complete account');
         }
-      }
-
-      // If account is complete and for the same company, it's truly a duplicate
-      if (employeeData.company_id === company_id) {
-        throw new Error('Employee already has a complete system account for this company');
+      } else {
+        // If account is complete and for the same company, it's truly a duplicate
+        if (employeeData.company_id === company_id) {
+          throw new Error('Employee already has a complete system account for this company');
+        }
       }
     }
 

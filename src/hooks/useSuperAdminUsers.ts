@@ -169,118 +169,170 @@ export const useSuperAdminUsers = () => {
         throw new Error('Please enter a valid email address.');
       }
 
-      // Find employee by email to link account or use provided employee_id
+      // Enhanced employee checking with proper completion logic
       let employeeId = userData.employee_id;
       
       if (!employeeId) {
         console.log('No employee_id provided, searching by email...');
-        const { data: employees, error: employeeError } = await supabase
+        
+        // First, check for complete employees (with profiles)
+        const { data: completeEmployee, error: completeCheckError } = await supabase
           .from('employees')
-          .select('*')
+          .select(`
+            id,
+            user_id,
+            email,
+            first_name,
+            last_name,
+            has_system_access,
+            profiles!inner(id, is_active)
+          `)
           .eq('email', userData.email)
           .eq('company_id', userData.company_id)
-          .single();
+          .maybeSingle();
 
-        if (employeeError && employeeError.code !== 'PGRST116') {
-          throw new Error('Error searching for employee. Please try again.');
+        if (completeCheckError && completeCheckError.code !== 'PGRST116') {
+          console.error('Error checking for complete employee:', completeCheckError);
+          throw new Error('Error checking for existing employee. Please try again.');
         }
 
-        if (!employees) {
-          // Create new employee if none found
-          console.log('Creating new employee...');
-          
-          // Generate a unique employee number using UUID suffix for better uniqueness
-          const uniqueSuffix = Math.random().toString(36).substr(2, 8).toUpperCase();
-          const employeeNumber = `EMP-${new Date().getFullYear()}-${uniqueSuffix}`;
-          
-          console.log('Generated employee number:', employeeNumber);
-          console.log('Employee data to insert:', {
-            company_id: userData.company_id,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            first_name_ar: userData.first_name_ar,
-            last_name_ar: userData.last_name_ar,
-            email: userData.email,
-            employee_number: employeeNumber
-          });
+        // If complete employee exists, show error
+        if (completeEmployee && completeEmployee.profiles?.length > 0) {
+          throw new Error('An active user with this email already exists in this company.');
+        }
 
-          const { data: newEmployee, error: createEmployeeError } = await supabase
+        // Check for incomplete employees (have user_id but no profile)
+        const { data: incompleteEmployee, error: incompleteCheckError } = await supabase
+          .from('employees')
+          .select(`
+            id, 
+            user_id, 
+            email, 
+            first_name, 
+            last_name,
+            has_system_access
+          `)
+          .eq('email', userData.email)
+          .eq('company_id', userData.company_id)
+          .not('user_id', 'is', null)
+          .maybeSingle();
+
+        if (incompleteCheckError && incompleteCheckError.code !== 'PGRST116') {
+          console.error('Error checking for incomplete employee:', incompleteCheckError);
+        }
+
+        // If incomplete employee exists, we'll complete their setup via edge function
+        if (incompleteEmployee) {
+          console.log('Found incomplete employee record, will complete setup...', incompleteEmployee);
+          employeeId = incompleteEmployee.id;
+        } else {
+          // Check for any employee with this email (could be without user_id)
+          const { data: anyEmployee, error: anyEmployeeError } = await supabase
             .from('employees')
-            .insert({
+            .select('id, user_id, email, first_name, last_name, has_system_access')
+            .eq('email', userData.email)
+            .eq('company_id', userData.company_id)
+            .maybeSingle();
+
+          if (anyEmployeeError && anyEmployeeError.code !== 'PGRST116') {
+            throw new Error('Error searching for employee. Please try again.');
+          }
+
+          if (anyEmployee) {
+            if (anyEmployee.has_system_access && anyEmployee.user_id) {
+              throw new Error('This employee already has a system account. Please select a different employee.');
+            }
+            employeeId = anyEmployee.id;
+            console.log('Found existing employee without complete system access:', anyEmployee);
+          } else {
+            // Create new employee if none found
+            console.log('Creating new employee...');
+            
+            // Generate a unique employee number using UUID suffix for better uniqueness
+            const uniqueSuffix = Math.random().toString(36).substr(2, 8).toUpperCase();
+            const employeeNumber = `EMP-${new Date().getFullYear()}-${uniqueSuffix}`;
+            
+            console.log('Generated employee number:', employeeNumber);
+            console.log('Employee data to insert:', {
               company_id: userData.company_id,
               first_name: userData.first_name,
               last_name: userData.last_name,
               first_name_ar: userData.first_name_ar,
               last_name_ar: userData.last_name_ar,
               email: userData.email,
-              employee_number: employeeNumber,
-              hire_date: new Date().toISOString().split('T')[0],
-              basic_salary: 0,
-              is_active: true
-            })
-            .select()
-            .single();
+              employee_number: employeeNumber
+            });
 
-          if (createEmployeeError) {
-            console.error('Error creating employee:', createEmployeeError);
-            console.error('Error code:', createEmployeeError.code);
-            console.error('Error details:', createEmployeeError.details);
-            console.error('Error hint:', createEmployeeError.hint);
-            
-            // Enhanced error handling for specific database errors
-            if (createEmployeeError.code === '23505') {
-              if (createEmployeeError.message?.includes('employees_email_unique')) {
-                throw new Error('An employee with this email already exists in this company. Please use a different email address.');
-              } else if (createEmployeeError.message?.includes('employee_number')) {
-                // Retry with a different employee number
-                console.log('Employee number conflict, retrying with new number...');
-                const retryEmployeeNumber = `EMP-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 10).toUpperCase()}`;
-                
-                const { data: retryEmployee, error: retryError } = await supabase
-                  .from('employees')
-                  .insert({
-                    company_id: userData.company_id,
-                    first_name: userData.first_name,
-                    last_name: userData.last_name,
-                    first_name_ar: userData.first_name_ar,
-                    last_name_ar: userData.last_name_ar,
-                    email: userData.email,
-                    employee_number: retryEmployeeNumber,
-                    hire_date: new Date().toISOString().split('T')[0],
-                    basic_salary: 0,
-                    is_active: true
-                  })
-                  .select()
-                  .single();
+            const { data: newEmployee, error: createEmployeeError } = await supabase
+              .from('employees')
+              .insert({
+                company_id: userData.company_id,
+                first_name: userData.first_name,
+                last_name: userData.last_name,
+                first_name_ar: userData.first_name_ar,
+                last_name_ar: userData.last_name_ar,
+                email: userData.email,
+                employee_number: employeeNumber,
+                hire_date: new Date().toISOString().split('T')[0],
+                basic_salary: 0,
+                is_active: true
+              })
+              .select()
+              .single();
 
-                if (retryError) {
-                  console.error('Retry also failed:', retryError);
-                  throw new Error('Failed to create employee record due to data conflicts. Please try again.');
+            if (createEmployeeError) {
+              console.error('Error creating employee:', createEmployeeError);
+              console.error('Error code:', createEmployeeError.code);
+              console.error('Error details:', createEmployeeError.details);
+              console.error('Error hint:', createEmployeeError.hint);
+              
+              // Enhanced error handling for specific database errors
+              if (createEmployeeError.code === '23505') {
+                if (createEmployeeError.message?.includes('employees_email_unique')) {
+                  throw new Error('An employee with this email already exists in this company. Please use a different email address.');
+                } else if (createEmployeeError.message?.includes('employee_number')) {
+                  // Retry with a different employee number
+                  console.log('Employee number conflict, retrying with new number...');
+                  const retryEmployeeNumber = `EMP-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 10).toUpperCase()}`;
+                  
+                  const { data: retryEmployee, error: retryError } = await supabase
+                    .from('employees')
+                    .insert({
+                      company_id: userData.company_id,
+                      first_name: userData.first_name,
+                      last_name: userData.last_name,
+                      first_name_ar: userData.first_name_ar,
+                      last_name_ar: userData.last_name_ar,
+                      email: userData.email,
+                      employee_number: retryEmployeeNumber,
+                      hire_date: new Date().toISOString().split('T')[0],
+                      basic_salary: 0,
+                      is_active: true
+                    })
+                    .select()
+                    .single();
+
+                  if (retryError) {
+                    console.error('Retry also failed:', retryError);
+                    throw new Error('Failed to create employee record due to data conflicts. Please try again.');
+                  }
+                  
+                  employeeId = retryEmployee.id;
+                  console.log('Employee created on retry:', retryEmployee);
+                } else {
+                  throw new Error('An employee with similar details already exists. Please check the data and try again.');
                 }
-                
-                employeeId = retryEmployee.id;
-                console.log('Employee created on retry:', retryEmployee);
+              } else if (createEmployeeError.code === '23503') {
+                throw new Error('Invalid company selected. Please refresh the page and try again.');
+              } else if (createEmployeeError.code === '42501') {
+                throw new Error('You do not have permission to create employees for this company.');
               } else {
-                throw new Error('An employee with similar details already exists. Please check the data and try again.');
+                throw new Error(`Failed to create employee record: ${createEmployeeError.message || 'Unknown database error'}`);
               }
-            } else if (createEmployeeError.code === '23503') {
-              throw new Error('Invalid company selected. Please refresh the page and try again.');
-            } else if (createEmployeeError.code === '42501') {
-              throw new Error('You do not have permission to create employees for this company.');
             } else {
-              throw new Error(`Failed to create employee record: ${createEmployeeError.message || 'Unknown database error'}`);
+              employeeId = newEmployee.id;
+              console.log('New employee created:', newEmployee);
             }
-          } else {
-            employeeId = newEmployee.id;
-            console.log('New employee created:', newEmployee);
-          }
-        } else {
-          employeeId = employees.id;
-          console.log('Found existing employee:', employees);
-          
-          // Check if employee already has system access
-          if (employees.has_system_access && employees.user_id) {
-            throw new Error('This employee already has a system account. Please select a different employee.');
           }
         }
       }
