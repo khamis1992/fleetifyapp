@@ -184,11 +184,11 @@ export const useSuperAdminUsers = () => {
             email,
             first_name,
             last_name,
-            has_system_access,
-            profiles!inner(id, is_active)
+            has_system_access
           `)
           .eq('email', userData.email)
           .eq('company_id', userData.company_id)
+          .not('user_id', 'is', null)
           .maybeSingle();
 
         if (completeCheckError && completeCheckError.code !== 'PGRST116') {
@@ -196,9 +196,22 @@ export const useSuperAdminUsers = () => {
           throw new Error('Error checking for existing employee. Please try again.');
         }
 
-        // If complete employee exists, show error
-        if (completeEmployee && completeEmployee.profiles?.length > 0) {
-          throw new Error('An active user with this email already exists in this company.');
+        // If employee with user_id exists, check if they have a complete profile
+        if (completeEmployee && completeEmployee.user_id) {
+          const { data: existingProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, is_active')
+            .eq('user_id', completeEmployee.user_id)
+            .maybeSingle();
+
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error checking profile:', profileError);
+            throw new Error('Error verifying user account status. Please try again.');
+          }
+
+          if (existingProfile) {
+            throw new Error('An active user with this email already exists in this company.');
+          }
         }
 
         // Check for incomplete employees (have user_id but no profile)
