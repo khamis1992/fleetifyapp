@@ -158,8 +158,21 @@ export function useCSVUpload() {
   }
 
   const uploadCustomers = async (file: File) => {
+    console.log('📝 [CSV] Starting CSV upload for user:', user?.id);
+    console.log('📝 [CSV] User company info:', {
+      company: user?.company,
+      profile_company_id: user?.profile?.company_id,
+      has_company: !!user?.company?.id
+    });
+    
     if (!user?.company?.id) {
-      throw new Error('معرف الشركة غير متوفر')
+      console.error('📝 [CSV] Company ID not available. User data:', {
+        user_id: user?.id,
+        email: user?.email,
+        company: user?.company,
+        profile: user?.profile
+      });
+      throw new Error('معرف الشركة غير متوفر. تأكد من تسجيل الدخول بحساب مرتبط بشركة.')
     }
 
     setIsUploading(true)
@@ -223,6 +236,8 @@ export function useCSVUpload() {
             notes: customerData.notes || undefined,
           }
 
+          console.log(`📝 [CSV] Inserting customer row ${customerData.rowNumber} for company ${user.company.id}`);
+
           const { error } = await supabase
             .from('customers')
             .insert({
@@ -233,15 +248,18 @@ export function useCSVUpload() {
             })
 
           if (error) {
+            console.error(`📝 [CSV] Database error for row ${customerData.rowNumber}:`, error);
             results.failed++
             results.errors.push({
               row: customerData.rowNumber,
               message: `خطأ في قاعدة البيانات: ${error.message}`
             })
           } else {
+            console.log(`📝 [CSV] Successfully inserted customer row ${customerData.rowNumber}`);
             results.successful++
           }
         } catch (error: any) {
+          console.error(`📝 [CSV] Unexpected error for row ${customerData.rowNumber}:`, error);
           results.failed++
           results.errors.push({
             row: customerData.rowNumber,

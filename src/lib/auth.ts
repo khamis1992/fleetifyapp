@@ -72,7 +72,7 @@ export const authService = {
 
     console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
-    // Get user profile
+    // Get user profile with company info from both profiles and employees tables
     let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select(`
@@ -81,6 +81,14 @@ export const authService = {
           id,
           name,
           name_ar
+        ),
+        employee_companies:employees!inner (
+          company_id,
+          companies (
+            id,
+            name,
+            name_ar
+          )
         )
       `)
       .eq('user_id', user.id)
@@ -136,17 +144,30 @@ export const authService = {
       console.error('📝 [AUTH] Roles fetch error:', rolesError);
     }
 
+    // Get company info - prioritize from profiles, fallback to employees
+    let companyInfo = profile?.companies;
+    let companyId = profile?.company_id;
+    
+    // If no company from profiles, try from employees table
+    if (!companyInfo && profile?.employee_companies?.length > 0) {
+      const employeeCompany = profile.employee_companies[0];
+      companyInfo = employeeCompany.companies;
+      companyId = employeeCompany.company_id;
+      
+      console.log('📝 [AUTH] Using company info from employees table:', companyInfo);
+    }
+
     const authUser: AuthUser = {
       ...user,
-      profile: profile || undefined,
-      company: profile?.companies || undefined,
+      profile: profile ? { ...profile, company_id: companyId } : undefined,
+      company: companyInfo || undefined,
       roles: roles?.map(r => r.role) || []
     };
 
     console.log('📝 [AUTH] Final authUser:', {
       id: authUser.id,
       email: authUser.email,
-      company_id: authUser.profile?.company_id,
+      company_id: companyId,
       company: authUser.company,
       roles: authUser.roles
     });
