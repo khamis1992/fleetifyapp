@@ -7340,6 +7340,60 @@ export type Database = {
           },
         ]
       }
+      user_transfer_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          data_handling_strategy: Json
+          error_message: string | null
+          from_company_id: string
+          id: string
+          new_roles: string[] | null
+          old_roles: string[] | null
+          rollback_data: Json | null
+          status: string
+          to_company_id: string
+          transfer_reason: string | null
+          transferred_by: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          data_handling_strategy?: Json
+          error_message?: string | null
+          from_company_id: string
+          id?: string
+          new_roles?: string[] | null
+          old_roles?: string[] | null
+          rollback_data?: Json | null
+          status?: string
+          to_company_id: string
+          transfer_reason?: string | null
+          transferred_by: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          data_handling_strategy?: Json
+          error_message?: string | null
+          from_company_id?: string
+          id?: string
+          new_roles?: string[] | null
+          old_roles?: string[] | null
+          rollback_data?: Json | null
+          status?: string
+          to_company_id?: string
+          transfer_reason?: string | null
+          transferred_by?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vehicle_activity_log: {
         Row: {
           activity_date: string
@@ -10454,6 +10508,14 @@ export type Database = {
       validate_user_input: {
         Args: { input_text: string; max_length?: number }
         Returns: boolean
+      }
+      validate_user_transfer: {
+        Args: {
+          p_user_id: string
+          p_from_company_id: string
+          p_to_company_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

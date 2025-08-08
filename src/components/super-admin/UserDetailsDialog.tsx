@@ -26,7 +26,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SuperAdminUser, Company, ResetPasswordData } from '@/hooks/useSuperAdminUsers';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { UserIcon, MailIcon, BuildingIcon, ShieldIcon, TrashIcon, KeyIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { UserIcon, MailIcon, BuildingIcon, ShieldIcon, TrashIcon, KeyIcon, EyeIcon, EyeOffIcon, ArrowRightIcon } from 'lucide-react';
+import { TransferUserDialog } from './TransferUserDialog';
 
 interface UserDetailsDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 }) => {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -137,6 +139,11 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     setNewPassword('');
     setConfirmPassword('');
     setShowPassword(false);
+  };
+
+  const handleTransferComplete = () => {
+    setShowTransferDialog(false);
+    onOpenChange(false);
   };
 
   if (!user) return null;
@@ -404,20 +411,41 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
               <h3 className="text-lg font-medium text-destructive">منطقة الخطر</h3>
               <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">حذف المستخدم</h4>
-                    <p className="text-sm text-muted-foreground">
-                      حذف المستخدم نهائياً من النظام. هذا الإجراء لا يمكن التراجع عنه.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">نقل المستخدم لشركة أخرى</h4>
+                        <p className="text-sm text-muted-foreground">
+                          نقل المستخدم إلى شركة أخرى مع إمكانية نقل البيانات المرتبطة به
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowTransferDialog(true)}
+                        disabled={isUpdating || isDeleting || isResettingPassword}
+                      >
+                        <ArrowRightIcon className="h-4 w-4 ml-2" />
+                        نقل لشركة أخرى
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">حذف المستخدم</h4>
+                        <p className="text-sm text-muted-foreground">
+                          حذف المستخدم نهائياً من النظام. هذا الإجراء لا يمكن التراجع عنه.
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowDeleteDialog(true)}
+                        disabled={isDeleting}
+                      >
+                        <TrashIcon className="h-4 w-4 ml-2" />
+                        حذف المستخدم
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                    disabled={isDeleting}
-                  >
-                    <TrashIcon className="h-4 w-4 ml-2" />
-                    حذف المستخدم
-                  </Button>
                 </div>
               </div>
             </div>
@@ -480,6 +508,15 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Transfer User Dialog */}
+      <TransferUserDialog
+        open={showTransferDialog}
+        onOpenChange={setShowTransferDialog}
+        user={user}
+        companies={companies}
+        onTransferComplete={handleTransferComplete}
+      />
     </>
   );
 };
