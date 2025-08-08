@@ -26,6 +26,15 @@ export const CompanyBrowserLayout: React.FC = () => {
   const [alertsOpen, setAlertsOpen] = useState(false);
   const { totalAlerts, criticalAlerts } = useRealTimeAlerts();
 
+  // Debug logging for browser layout
+  console.log('🖥️ [COMPANY_BROWSER_LAYOUT] Rendering with state:', {
+    user: user?.id,
+    userRoles: user?.roles,
+    isBrowsingMode,
+    browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+    loading
+  });
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -35,8 +44,13 @@ export const CompanyBrowserLayout: React.FC = () => {
   };
 
   const handleExitBrowseMode = () => {
-    exitBrowseMode();
-    navigate('/super-admin/companies');
+    console.log('🖥️ [COMPANY_BROWSER_LAYOUT] Exiting browse mode');
+    try {
+      exitBrowseMode();
+      navigate('/super-admin/companies');
+    } catch (error) {
+      console.error('🖥️ [COMPANY_BROWSER_LAYOUT] Error exiting browse mode:', error);
+    }
   };
 
   if (loading) {
@@ -53,13 +67,20 @@ export const CompanyBrowserLayout: React.FC = () => {
 
   // Only super admins can access this layout
   if (!user.roles?.includes('super_admin')) {
+    console.warn('🖥️ [COMPANY_BROWSER_LAYOUT] User is not super admin, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
   // Must be in browsing mode
   if (!isBrowsingMode || !browsedCompany) {
+    console.warn('🖥️ [COMPANY_BROWSER_LAYOUT] Not in browse mode or no browsed company, redirecting:', {
+      isBrowsingMode,
+      browsedCompany: browsedCompany?.id
+    });
     return <Navigate to="/super-admin/companies" replace />;
   }
+
+  console.log('🖥️ [COMPANY_BROWSER_LAYOUT] All checks passed, rendering layout');
 
   return (
     <SidebarProvider defaultOpen={true}>

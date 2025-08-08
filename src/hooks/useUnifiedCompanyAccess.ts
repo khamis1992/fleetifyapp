@@ -12,19 +12,43 @@ export const useUnifiedCompanyAccess = () => {
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
   return useMemo(() => {
+    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Computing access context:', {
+      userId: user?.id,
+      userCompanyId: user?.company?.id,
+      userRoles: user?.roles,
+      isBrowsingMode,
+      browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null
+    });
+
     // If in browsing mode, override context with browsed company
     let context = getCompanyScopeContext(user);
     
+    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Original context:', {
+      companyId: context.companyId,
+      isSystemLevel: context.isSystemLevel,
+      isCompanyScoped: context.isCompanyScoped,
+      userRoles: context.user?.roles
+    });
+    
     if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
+      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Overriding context for browse mode');
       context = {
         ...context,
         companyId: browsedCompany.id,
         isSystemLevel: false, // Act as if we're scoped to the browsed company
         isCompanyScoped: true
       };
+      
+      console.log('🔧 [UNIFIED_COMPANY_ACCESS] New context for browse mode:', {
+        companyId: context.companyId,
+        isSystemLevel: context.isSystemLevel,
+        isCompanyScoped: context.isCompanyScoped
+      });
     }
     
     const filter = getCompanyFilter(context);
+    
+    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Final filter:', filter);
     
     return {
       // Core context information

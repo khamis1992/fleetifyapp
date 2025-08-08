@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompanies, Company } from '@/hooks/useCompanies';
 import { useCompanyContext } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,7 @@ import { formatCurrency } from '@/lib/utils';
 const Companies: React.FC = () => {
   const { data: companies = [], isLoading: loading, refetch } = useCompanies();
   const { setBrowsedCompany } = useCompanyContext();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -87,8 +89,25 @@ const Companies: React.FC = () => {
   };
 
   const handleBrowseCompany = (company: Company) => {
-    setBrowsedCompany(company);
-    navigate('/browse-company/dashboard');
+    console.log('🏢 [COMPANIES_PAGE] Attempting to browse company:', {
+      companyId: company.id,
+      companyName: company.name,
+      userRoles: user?.roles,
+      isSuperAdmin: user?.roles?.includes('super_admin')
+    });
+
+    if (!user?.roles?.includes('super_admin')) {
+      console.error('🏢 [COMPANIES_PAGE] User is not super admin, cannot browse companies');
+      return;
+    }
+
+    try {
+      setBrowsedCompany(company);
+      console.log('🏢 [COMPANIES_PAGE] Successfully set browsed company, navigating to dashboard');
+      navigate('/browse-company/dashboard');
+    } catch (error) {
+      console.error('🏢 [COMPANIES_PAGE] Error setting browsed company:', error);
+    }
   };
 
   if (loading) {
