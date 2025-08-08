@@ -16,12 +16,28 @@ interface User {
   profiles?: {
     first_name?: string;
     last_name?: string;
+    company_id?: string;
     company?: {
       id: string;
       name: string;
     };
+    companies?: {
+      id: string;
+      name: string;
+    };
   };
+  user_roles?: Array<{ role: string }>;
   roles?: Array<{ role: string }>;
+  orphaned_employee?: {
+    first_name?: string;
+    last_name?: string;
+    company_id?: string;
+    companies?: {
+      id: string;
+      name: string;
+      name_ar?: string;
+    };
+  };
 }
 
 interface TransferUserDialogProps {
@@ -86,10 +102,45 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
       return;
     }
 
+    // Extract current company ID - prioritize profiles data, fallback to orphaned employee data
+    let currentCompanyId: string;
+    
+    if (user.profiles?.company?.id) {
+      currentCompanyId = user.profiles.company.id;
+    } else if (user.orphaned_employee?.company_id) {
+      currentCompanyId = user.orphaned_employee.company_id;
+    } else if (user.profiles?.companies?.id) {
+      currentCompanyId = user.profiles.companies.id;
+    } else if (user.orphaned_employee?.companies?.id) {
+      currentCompanyId = user.orphaned_employee.companies.id;
+    } else {
+      toast.error('Unable to determine user\'s current company. Please refresh and try again.');
+      return;
+    }
+
+    if (!currentCompanyId) {
+      toast.error('User has no valid company association. Cannot proceed with transfer.');
+      return;
+    }
+
+    if (currentCompanyId === selectedCompany) {
+      toast.error('User is already in the selected company. Please choose a different target company.');
+      return;
+    }
+
     try {
+      console.log('Transfer request:', {
+        userId: user.id,
+        fromCompanyId: currentCompanyId,
+        toCompanyId: selectedCompany,
+        newRoles: selectedRoles,
+        transferReason,
+        dataHandlingStrategy: dataHandling
+      });
+
       await transferMutation.mutateAsync({
         userId: user.id,
-        fromCompanyId: user.profiles?.company?.id || '',
+        fromCompanyId: currentCompanyId,
         toCompanyId: selectedCompany,
         newRoles: selectedRoles,
         transferReason,
@@ -117,8 +168,18 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
     }
   };
 
+  // Get current company ID for filtering
+  const getCurrentCompanyId = () => {
+    if (user?.profiles?.company?.id) return user.profiles.company.id;
+    if (user?.orphaned_employee?.company_id) return user.orphaned_employee.company_id;
+    if (user?.profiles?.companies?.id) return user.profiles.companies.id;
+    if (user?.orphaned_employee?.companies?.id) return user.orphaned_employee.companies.id;
+    return null;
+  };
+
+  const currentCompanyId = getCurrentCompanyId();
   const availableCompanies = companies.filter(
-    company => company.id !== user?.profiles?.company?.id
+    company => company.id !== currentCompanyId
   );
 
   if (!user) return null;
@@ -127,7 +188,15 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
     ? `${user.profiles.first_name} ${user.profiles.last_name}`
     : user.email || 'Unknown User';
 
-  const currentCompanyName = user.profiles?.company?.name || 'Unknown Company';
+  const getCurrentCompanyName = () => {
+    if (user?.profiles?.company?.name) return user.profiles.company.name;
+    if (user?.orphaned_employee?.companies?.name) return user.orphaned_employee.companies.name;
+    if (user?.profiles?.companies?.name) return user.profiles.companies.name;
+    if (user?.orphaned_employee?.companies?.name_ar) return user.orphaned_employee.companies.name_ar;
+    return 'Unknown Company';
+  };
+
+  const currentCompanyName = getCurrentCompanyName();
   const selectedCompanyName = companies.find(c => c.id === selectedCompany)?.name || '';
 
   return (
@@ -151,7 +220,7 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
               <div><strong>Name:</strong> {userName}</div>
               <div><strong>Email:</strong> {user.email}</div>
               <div><strong>Current Company:</strong> {currentCompanyName}</div>
-              <div><strong>Current Roles:</strong> {user.roles?.map(r => r.role).join(', ') || 'None'}</div>
+              <div><strong>Current Roles:</strong> {(user.roles?.map(r => r.role) || user.user_roles?.map(r => r.role) || []).join(', ') || 'None'}</div>
             </div>
           </div>
 

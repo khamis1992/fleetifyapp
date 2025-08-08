@@ -44,6 +44,23 @@ serve(async (req) => {
 
     console.log('Starting user transfer:', { userId, fromCompanyId, toCompanyId, newRoles })
 
+    // Validate input parameters
+    if (!userId) {
+      throw new Error('User ID is required')
+    }
+    
+    if (!fromCompanyId) {
+      throw new Error('Source company ID is required')
+    }
+    
+    if (!toCompanyId) {
+      throw new Error('Target company ID is required')
+    }
+    
+    if (!newRoles || newRoles.length === 0) {
+      throw new Error('At least one role must be specified')
+    }
+
     // Get current user (must be super admin)
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -78,7 +95,8 @@ serve(async (req) => {
       })
 
     if (!validationResult?.valid) {
-      throw new Error(`Transfer validation failed: ${validationResult?.errors?.join(', ')}`)
+      const errors = validationResult?.errors || ['Unknown validation error']
+      throw new Error(`Transfer validation failed: ${errors.join(', ')}`)
     }
 
     // Get current user data for rollback
