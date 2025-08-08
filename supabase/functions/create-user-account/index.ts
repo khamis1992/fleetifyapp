@@ -182,7 +182,22 @@ serve(async (req) => {
       throw new Error('Failed to check user permissions');
     }
     
+    console.log('Current user roles:', currentUserRoles);
+    
+    if (!currentUserRoles || currentUserRoles.length === 0) {
+      console.error('No roles found for user:', tokenData.user.id);
+      throw new Error('Permission denied: User has no role assigned');
+    }
+    
     const isSuperAdmin = currentUserRoles?.some(r => r.role === 'super_admin');
+    const isCompanyAdmin = currentUserRoles?.some(r => r.role === 'company_admin');
+    const isManager = currentUserRoles?.some(r => r.role === 'manager');
+    
+    console.log('User permissions:', { isSuperAdmin, isCompanyAdmin, isManager });
+    
+    if (!isSuperAdmin && !isCompanyAdmin && !isManager) {
+      throw new Error('Permission denied: Insufficient privileges to create user accounts');
+    }
     
     // Check if employee already exists for this company
     const { data: employeeData, error: employeeCheckError } = await supabaseClient
@@ -268,6 +283,8 @@ serve(async (req) => {
                 email,
                 company_id,
                 is_active: true
+              }, {
+                onConflict: 'user_id'
               });
 
             if (profileError) {
@@ -408,11 +425,15 @@ serve(async (req) => {
           first_name_ar,
           last_name_ar,
           email,
-          company_id
+          company_id,
+          is_active: true
+        }, {
+          onConflict: 'user_id'
         });
 
       if (profileError) {
         console.error('Error updating profile:', profileError);
+        throw new Error(`Failed to update profile: ${profileError.message}`);
       }
 
       // Clear existing roles for this user and assign new ones
@@ -497,22 +518,25 @@ serve(async (req) => {
       throw new Error(`Failed to update employee: ${employeeError.message}`);
     }
 
-    // Create user profile
+    // Create user profile - use upsert to handle duplicates
     const { error: profileError } = await supabaseClient
       .from('profiles')
-      .insert({
+      .upsert({
         user_id: userData.user?.id,
         first_name: first_name,
         last_name: last_name,
         first_name_ar: first_name_ar,
         last_name_ar: last_name_ar,
         email: email,
-        company_id: company_id
+        company_id: company_id,
+        is_active: true
+      }, {
+        onConflict: 'user_id'
       });
 
     if (profileError) {
-      console.error('Error creating profile:', profileError);
-      // Don't fail here, profile might already exist from trigger
+      console.error('Error creating/updating profile:', profileError);
+      throw new Error(`Failed to create profile: ${profileError.message}`);
     }
 
     // Assign roles and create request record
