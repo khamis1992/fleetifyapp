@@ -13,7 +13,7 @@ import {
   TrendingUp, Clock, Plus, AlertTriangle, DollarSign, Calendar,
   User, Shield, MessageSquare
 } from "lucide-react";
-import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useCustomers";
+import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useEnhancedCustomers";
 import { CustomerInvoicesTab } from "./CustomerInvoicesTab";
 import { CustomerAccountSelector } from "./CustomerAccountSelector";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";

@@ -7,7 +7,7 @@ import { Customer, CustomerFilters } from '@/types/customer';
 export type EnhancedCustomer = Customer;
 
 export const useCustomers = (filters?: CustomerFilters) => {
-  const { companyId, getQueryKey, validateCompanyAccess } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const { 
     includeInactive = false, 
     searchTerm, 
@@ -16,6 +16,14 @@ export const useCustomers = (filters?: CustomerFilters) => {
     customer_type,
     is_blacklisted 
   } = filters || {};
+  
+  // Debug logging for company context
+  console.log('🏢 [useCustomers] Company context:', {
+    companyId,
+    isBrowsingMode,
+    browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+    filters
+  });
   
   return useQuery({
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, limit, customer_type, is_blacklisted]),
@@ -74,7 +82,15 @@ export const useCustomers = (filters?: CustomerFilters) => {
 };
 
 export const useCustomerById = (customerId: string) => {
-  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  
+  // Debug logging for company context
+  console.log('🏢 [useCustomerById] Company context:', {
+    customerId,
+    companyId,
+    isBrowsingMode,
+    browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null
+  });
   
   return useQuery({
     queryKey: getQueryKey(['customer'], [customerId]),
@@ -131,3 +147,215 @@ export const useToggleCustomerBlacklist = () => {
     }
   });
 };
+
+export const useCreateCustomer = () => {
+  const queryClient = useQueryClient();
+  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const targetCompanyId = data.selectedCompanyId || companyId;
+      
+      if (!targetCompanyId) {
+        throw new Error("No company access available");
+      }
+
+      validateCompanyAccess(targetCompanyId);
+
+      const { error } = await supabase
+        .from('customers')
+        .insert({
+          ...data,
+          company_id: targetCompanyId,
+          is_active: true
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('تم إنشاء العميل بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error creating customer:', error);
+      toast.error('حدث خطأ أثناء إنشاء العميل');
+    }
+  });
+};
+
+export const useUpdateCustomer = () => {
+  const queryClient = useQueryClient();
+  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      if (!companyId) {
+        throw new Error("No company access available");
+      }
+
+      // Clean data by removing undefined values
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined)
+      );
+
+      const { error } = await supabase
+        .from('customers')
+        .update(cleanData)
+        .eq('id', id)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('تم تحديث بيانات العميل بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error updating customer:', error);
+      toast.error('حدث خطأ أثناء تحديث بيانات العميل');
+    }
+  });
+};
+
+export const useCustomerNotes = (customerId: string) => {
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: getQueryKey(['customer-notes'], [customerId]),
+    queryFn: async () => {
+      if (!companyId || !customerId) return [];
+
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId && !!customerId,
+    staleTime: 2 * 60 * 1000 // 2 minutes
+  });
+};
+
+export const useCreateCustomerNote = () => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async ({ customerId, content, noteData }: { 
+      customerId: string; 
+      content?: string;
+      noteData?: any; 
+    }) => {
+      if (!companyId) {
+        throw new Error("No company access available");
+      }
+
+      const insertData = noteData ? {
+        customer_id: customerId,
+        title: noteData.title || 'ملاحظة',
+        content: noteData.content || content,
+        note_type: noteData.note_type || 'general',
+        is_important: noteData.is_important || false,
+        company_id: companyId
+      } : {
+        customer_id: customerId,
+        content: content || '',
+        title: 'ملاحظة',
+        company_id: companyId
+      };
+
+      const { error } = await supabase
+        .from('customer_notes')
+        .insert(insertData);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-notes', variables.customerId] });
+      toast.success('تم إضافة الملاحظة بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error creating customer note:', error);
+      toast.error('حدث خطأ أثناء إضافة الملاحظة');
+    }
+  });
+};
+
+export const useCustomerFinancialSummary = (customerId: string) => {
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: getQueryKey(['customer-financial-summary'], [customerId]),
+    queryFn: async () => {
+      if (!companyId || !customerId) return null;
+
+      // Enhanced placeholder with required properties
+      return {
+        totalRevenue: 0,
+        outstandingBalance: 0,
+        creditLimit: 0,
+        lastPaymentDate: null,
+        currentBalance: 0,
+        totalContracts: 0,
+        totalPayments: 0,
+        totalInvoices: 0,
+        invoicesCount: 0,
+        totalInvoicesOutstanding: 0,
+        activeContracts: 0,
+        contractsCount: 0,
+        totalInvoicesPaid: 0
+      };
+    },
+    enabled: !!companyId && !!customerId,
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+};
+
+export const useCustomerDiagnostics = () => {
+  const { companyId, user } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: ['customer-diagnostics'],
+    queryFn: async () => {
+      if (!user) return null;
+
+      return {
+        userInfo: {
+          id: user.id,
+          email: user.email,
+          roles: user.roles || [],
+          hasProfile: !!user.company,
+          profileCompanyId: user.company?.id,
+          userCompanyId: user.company?.id
+        },
+        permissions: {
+          isSuperAdmin: user.roles?.includes('super_admin') || false,
+          isCompanyAdmin: user.roles?.includes('company_admin') || false,
+          isManager: user.roles?.includes('manager') || false,
+          isSalesAgent: user.roles?.includes('sales_agent') || false,
+          companyId,
+          canCreateCustomers: user.roles?.some(role => 
+            ['super_admin', 'company_admin', 'manager', 'sales_agent'].includes(role)
+          ) || false
+        },
+        database: {
+          companyExists: !!companyId,
+          canAccessCustomers: !!companyId,
+          canInsertCustomers: !!companyId,
+          error: null
+        },
+        companyId,
+        timestamp: new Date().toISOString()
+      };
+    },
+    enabled: !!user,
+    staleTime: 30 * 1000 // 30 seconds
+  });
+};
+
+// Alias for backwards compatibility
+export const useCustomer = useCustomerById;

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useCreateCustomerWithAccount } from "@/hooks/useCreateCustomerWithAccount";
-import { useUpdateCustomer } from "@/hooks/useCustomers";
+import { useUpdateCustomer } from "@/hooks/useEnhancedCustomers";
 import { Customer } from "@/types/customer";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Building, CreditCard, AlertCircle } from "lucide-react";
@@ -94,7 +94,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
       // Update existing customer
       updateMutation.mutate(
         { 
-          customerId: customer.id, 
+          id: customer.id,
           data: {
             customer_type: values.customer_type,
             first_name: values.first_name,

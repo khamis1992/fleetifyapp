@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AlertCircle, CheckCircle2, Building2, User, Phone, Mail, MapPin, CreditCard, InfoIcon, Search, Check, ChevronsUpDown } from "lucide-react";
-import { CustomerFormData, useCreateCustomer, useUpdateCustomer } from "@/hooks/useCustomers";
+import { useCreateCustomer, useUpdateCustomer } from "@/hooks/useEnhancedCustomers";
+import { CustomerFormData } from "@/types/customer";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -242,7 +243,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
         console.log('✅ Customer created successfully');
       } else {
         await updateCustomerMutation.mutateAsync({
-          customerId: customer.id,
+          id: customer.id,
           data: customerData
         });
         console.log('✅ Customer updated successfully');

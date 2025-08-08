@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useInvoiceCostCenterAnalysis, useInvoiceBudgetComparison, useFixedAssetInvoiceAnalysis } from "@/hooks/useInvoiceAnalysis";
 import { useVehicles } from "@/hooks/useVehicles";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomers } from "@/hooks/useEnhancedCustomers";
 import { useContracts } from "@/hooks/useContracts";
 import { useNavigate } from 'react-router-dom';
 

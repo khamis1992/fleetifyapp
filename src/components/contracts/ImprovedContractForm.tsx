@@ -12,7 +12,7 @@ import { FileText, AlertTriangle, CheckCircle, Clock, Save, Search } from 'lucid
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 import { useContractValidation } from '@/hooks/useContractValidation'
-import { useCustomers } from '@/hooks/useCustomers'
+import { useCustomers } from '@/hooks/useEnhancedCustomers'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useContractCreation } from '@/hooks/useContractCreation'
 import { ContractCreationProgress } from './ContractCreationProgress'

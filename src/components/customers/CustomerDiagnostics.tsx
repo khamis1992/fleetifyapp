@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { useCustomerDiagnostics } from '@/hooks/useCustomers';
+import { useCustomerDiagnostics } from '@/hooks/useEnhancedCustomers';
 import { 
   AlertCircle, 
   CheckCircle2, 
