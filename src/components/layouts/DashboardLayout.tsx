@@ -15,6 +15,7 @@ import { User, Settings, LogOut, Bell, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
+import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
 import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -64,6 +65,7 @@ export const DashboardLayout: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <CompanySelector />
               <QuickSearch />
               
               {/* Combined Alerts Bell */}
