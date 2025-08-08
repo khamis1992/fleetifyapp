@@ -14,6 +14,7 @@ import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
+import { CustomerDisplayName } from "@/components/customers/CustomerDisplayName"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
@@ -313,11 +314,13 @@ export default function Customers() {
                         ) : (
                           <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
                         )}
-                        <h3 className="font-semibold text-lg truncate">
-                          {customer.customer_type === 'corporate' 
-                            ? customer.company_name 
-                            : `${customer.first_name} ${customer.last_name}`}
-                        </h3>
+                        <div className="flex-1 min-w-0">
+                          <CustomerDisplayName 
+                            customer={customer} 
+                            showBadges={false}
+                            className="font-semibold text-lg"
+                          />
+                        </div>
                         {customer.is_blacklisted && (
                           <Badge variant="destructive" className="flex-shrink-0">
                             <UserX className="h-3 w-3 mr-1" />
