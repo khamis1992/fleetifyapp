@@ -49,16 +49,16 @@ interface TransferUserDialogProps {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'company_admin', label: 'Company Admin' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'sales_agent', label: 'Sales Agent' },
-  { value: 'employee', label: 'Employee' }
+  { value: 'company_admin', label: 'مدير الشركة' },
+  { value: 'manager', label: 'مدير' },
+  { value: 'sales_agent', label: 'مندوب مبيعات' },
+  { value: 'employee', label: 'موظف' }
 ];
 
 const DATA_HANDLING_OPTIONS = [
-  { value: 'move', label: 'Move to new company' },
-  { value: 'keep', label: 'Keep in original company' },
-  { value: 'copy', label: 'Copy to both companies' }
+  { value: 'move', label: 'نقل إلى الشركة الجديدة' },
+  { value: 'keep', label: 'الاحتفاظ في الشركة الأصلية' },
+  { value: 'copy', label: 'نسخ إلى كلا الشركتين' }
 ];
 
 export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
@@ -98,7 +98,7 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
 
   const handleTransfer = async () => {
     if (!user || !selectedCompany || selectedRoles.length === 0 || !confirmTransfer) {
-      toast.error('Please fill in all required fields and confirm the transfer');
+      toast.error('يرجى ملء جميع الحقول المطلوبة وتأكيد النقل');
       return;
     }
 
@@ -114,17 +114,17 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
     } else if (user.orphaned_employee?.companies?.id) {
       currentCompanyId = user.orphaned_employee.companies.id;
     } else {
-      toast.error('Unable to determine user\'s current company. Please refresh and try again.');
+      toast.error('تعذر تحديد الشركة الحالية للمستخدم. يرجى التحديث والمحاولة مرة أخرى.');
       return;
     }
 
     if (!currentCompanyId) {
-      toast.error('User has no valid company association. Cannot proceed with transfer.');
+      toast.error('المستخدم ليس لديه ارتباط صحيح بشركة. لا يمكن المتابعة بالنقل.');
       return;
     }
 
     if (currentCompanyId === selectedCompany) {
-      toast.error('User is already in the selected company. Please choose a different target company.');
+      toast.error('المستخدم موجود بالفعل في الشركة المحددة. يرجى اختيار شركة مختلفة.');
       return;
     }
 
@@ -147,7 +147,7 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
         dataHandlingStrategy: dataHandling
       });
 
-      toast.success('User transferred successfully');
+      toast.success('تم نقل المستخدم بنجاح');
       onTransferComplete();
       onOpenChange(false);
       
@@ -164,7 +164,7 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
       setConfirmTransfer(false);
     } catch (error) {
       console.error('Transfer failed:', error);
-      toast.error('Transfer failed. Please try again.');
+      toast.error('فشل النقل. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -203,36 +203,36 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-right" dir="rtl">
             <ArrowRight className="h-5 w-5" />
-            Transfer User to Another Company
+            نقل المستخدم إلى شركة أخرى
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6" dir="rtl">
           {/* User Info */}
           <div className="bg-background-soft p-4 rounded-lg border">
             <div className="flex items-center gap-3 mb-2">
               <User className="h-5 w-5 text-primary" />
-              <h3 className="font-medium">User Information</h3>
+              <h3 className="font-medium">معلومات المستخدم</h3>
             </div>
             <div className="space-y-1 text-sm">
-              <div><strong>Name:</strong> {userName}</div>
-              <div><strong>Email:</strong> {user.email}</div>
-              <div><strong>Current Company:</strong> {currentCompanyName}</div>
-              <div><strong>Current Roles:</strong> {(user.roles?.map(r => r.role) || user.user_roles?.map(r => r.role) || []).join(', ') || 'None'}</div>
+              <div><strong>الاسم:</strong> {userName}</div>
+              <div><strong>البريد الإلكتروني:</strong> {user.email}</div>
+              <div><strong>الشركة الحالية:</strong> {currentCompanyName}</div>
+              <div><strong>الأدوار الحالية:</strong> {(user.roles?.map(r => r.role) || user.user_roles?.map(r => r.role) || []).join(', ') || 'لا يوجد'}</div>
             </div>
           </div>
 
           {/* Target Company */}
           <div className="space-y-2">
             <Label htmlFor="target-company">
-              <Building2 className="h-4 w-4 inline mr-2" />
-              Target Company *
+              <Building2 className="h-4 w-4 inline ml-2" />
+              الشركة المستهدفة *
             </Label>
             <Select value={selectedCompany} onValueChange={setSelectedCompany}>
               <SelectTrigger>
-                <SelectValue placeholder="Select target company" />
+                <SelectValue placeholder="اختر الشركة المستهدفة" />
               </SelectTrigger>
               <SelectContent>
                 {availableCompanies.map(company => (
@@ -247,12 +247,12 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
           {/* New Roles */}
           <div className="space-y-2">
             <Label>
-              <Shield className="h-4 w-4 inline mr-2" />
-              New Roles in Target Company *
+              <Shield className="h-4 w-4 inline ml-2" />
+              الأدوار الجديدة في الشركة المستهدفة *
             </Label>
             <div className="grid grid-cols-2 gap-2">
               {ROLE_OPTIONS.map(role => (
-                <div key={role.value} className="flex items-center space-x-2">
+                <div key={role.value} className="flex items-center space-x-2 space-x-reverse">
                   <Checkbox
                     id={role.value}
                     checked={selectedRoles.includes(role.value)}
@@ -268,11 +268,16 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
 
           {/* Data Handling Strategy */}
           <div className="space-y-4">
-            <Label className="text-base font-medium">Data Handling Strategy</Label>
+            <Label className="text-base font-medium">استراتيجية التعامل مع البيانات</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(dataHandling).map(([type, value]) => (
                 <div key={type} className="space-y-2">
-                  <Label className="text-sm capitalize">{type}</Label>
+                  <Label className="text-sm">{
+                    type === 'contracts' ? 'العقود' :
+                    type === 'invoices' ? 'الفواتير' :
+                    type === 'vehicles' ? 'المركبات' :
+                    'أخرى'
+                  }</Label>
                   <Select 
                     value={value} 
                     onValueChange={(val) => handleDataHandlingChange(type as keyof typeof dataHandling, val)}
@@ -295,10 +300,10 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
 
           {/* Transfer Reason */}
           <div className="space-y-2">
-            <Label htmlFor="transfer-reason">Transfer Reason</Label>
+            <Label htmlFor="transfer-reason">سبب النقل</Label>
             <Textarea
               id="transfer-reason"
-              placeholder="Enter reason for transfer (optional)"
+              placeholder="أدخل سبب النقل (اختياري)"
               value={transferReason}
               onChange={(e) => setTransferReason(e.target.value)}
               rows={3}
@@ -310,12 +315,20 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
             <div className="bg-background-soft p-4 rounded-lg border">
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <ArrowRight className="h-4 w-4" />
-                Transfer Preview
+                معاينة النقل
               </h4>
               <div className="text-sm space-y-1">
-                <div>{userName} will be transferred from <strong>{currentCompanyName}</strong> to <strong>{selectedCompanyName}</strong></div>
-                <div>New roles: <strong>{selectedRoles.join(', ')}</strong></div>
-                <div>Data handling: {Object.entries(dataHandling).map(([key, val]) => `${key}: ${val}`).join(', ')}</div>
+                <div>سيتم نقل {userName} من <strong>{currentCompanyName}</strong> إلى <strong>{selectedCompanyName}</strong></div>
+                <div>الأدوار الجديدة: <strong>{selectedRoles.map(role => 
+                  ROLE_OPTIONS.find(r => r.value === role)?.label || role
+                ).join(', ')}</strong></div>
+                <div>التعامل مع البيانات: {Object.entries(dataHandling).map(([key, val]) => {
+                  const keyAr = key === 'contracts' ? 'العقود' :
+                               key === 'invoices' ? 'الفواتير' :
+                               key === 'vehicles' ? 'المركبات' : 'أخرى';
+                  const valAr = DATA_HANDLING_OPTIONS.find(opt => opt.value === val)?.label || val;
+                  return `${keyAr}: ${valAr}`;
+                }).join(', ')}</div>
               </div>
             </div>
           )}
@@ -326,21 +339,21 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
               <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium text-destructive">Warning: This action cannot be easily undone</h4>
+                  <h4 className="font-medium text-destructive">تحذير: لا يمكن التراجع عن هذا الإجراء بسهولة</h4>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Transferring a user will immediately change their company association and roles. 
-                    Associated data will be handled according to your selected strategy.
+                    نقل المستخدم سيؤدي فوراً إلى تغيير ارتباط الشركة والأدوار. 
+                    سيتم التعامل مع البيانات المرتبطة وفقاً للاستراتيجية المحددة.
                   </p>
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 space-x-reverse">
                   <Checkbox
                     id="confirm-transfer"
                     checked={confirmTransfer}
                     onCheckedChange={(checked) => setConfirmTransfer(checked as boolean)}
                   />
                   <Label htmlFor="confirm-transfer" className="text-sm">
-                    I understand and confirm this transfer
+                    أفهم وأؤكد هذا النقل
                   </Label>
                 </div>
               </div>
@@ -348,16 +361,16 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-start gap-3 pt-4 border-t" dir="ltr">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              إلغاء
             </Button>
             <Button 
               onClick={handleTransfer}
               disabled={!selectedCompany || selectedRoles.length === 0 || !confirmTransfer || transferMutation.isPending}
               className="min-w-[120px]"
             >
-              {transferMutation.isPending ? 'Transferring...' : 'Transfer User'}
+              {transferMutation.isPending ? 'جاري النقل...' : 'نقل المستخدم'}
             </Button>
           </div>
         </div>
