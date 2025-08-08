@@ -42,6 +42,33 @@ export const hasCompanyAdminAccess = (context: CompanyScopeContext): boolean => 
 };
 
 /**
+ * Check if a super admin is browsing as a company admin
+ */
+export const isBrowsingAsCompanyAdmin = (
+  context: CompanyScopeContext,
+  isBrowsingMode: boolean,
+  originalUserRoles: string[]
+): boolean => {
+  return isBrowsingMode && 
+         originalUserRoles.includes('super_admin') && 
+         context.isCompanyScoped && 
+         !context.isSystemLevel;
+};
+
+/**
+ * Check if the user has full control over the current company
+ * (either as company admin or super admin browsing as company admin)
+ */
+export const hasFullCompanyControl = (
+  context: CompanyScopeContext,
+  isBrowsingMode: boolean = false,
+  originalUserRoles: string[] = []
+): boolean => {
+  return hasCompanyAdminAccess(context) || 
+         isBrowsingAsCompanyAdmin(context, isBrowsingMode, originalUserRoles);
+};
+
+/**
  * Get the appropriate WHERE clause for filtering data by company
  */
 export const getCompanyFilter = (context: CompanyScopeContext): { company_id?: string } => {
@@ -117,6 +144,17 @@ export const canManageSystemSettings = (context: CompanyScopeContext): boolean =
  */
 export const canManageCompanySettings = (context: CompanyScopeContext): boolean => {
   return context.isSystemLevel || context.isCompanyScoped;
+};
+
+/**
+ * Check if a user can manage company as admin (including super admin browsing mode)
+ */
+export const canManageCompanyAsAdmin = (
+  context: CompanyScopeContext,
+  isBrowsingMode: boolean = false,
+  originalUserRoles: string[] = []
+): boolean => {
+  return hasFullCompanyControl(context, isBrowsingMode, originalUserRoles);
 };
 
 /**

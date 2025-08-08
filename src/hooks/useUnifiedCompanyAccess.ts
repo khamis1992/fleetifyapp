@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyContext } from '@/contexts/CompanyContext';
-import { getCompanyScopeContext, getCompanyFilter, hasGlobalAccess, hasCompanyAdminAccess } from '@/lib/companyScope';
+import { 
+  getCompanyScopeContext, 
+  getCompanyFilter, 
+  hasGlobalAccess, 
+  hasCompanyAdminAccess,
+  hasFullCompanyControl,
+  isBrowsingAsCompanyAdmin,
+  canManageCompanyAsAdmin
+} from '@/lib/companyScope';
 
 /**
  * Unified hook for all company-related access control and filtering
@@ -29,6 +37,9 @@ export const useUnifiedCompanyAccess = () => {
       isCompanyScoped: context.isCompanyScoped,
       userRoles: context.user?.roles
     });
+    
+    // Store original user roles before modifying context
+    const originalUserRoles = user?.roles || [];
     
     if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
       console.log('🔧 [UNIFIED_COMPANY_ACCESS] Overriding context for browse mode');
@@ -63,6 +74,9 @@ export const useUnifiedCompanyAccess = () => {
       // Access control helpers
       hasGlobalAccess: hasGlobalAccess(context),
       hasCompanyAdminAccess: hasCompanyAdminAccess(context),
+      hasFullCompanyControl: hasFullCompanyControl(context, isBrowsingMode, originalUserRoles),
+      isBrowsingAsCompanyAdmin: isBrowsingAsCompanyAdmin(context, isBrowsingMode, originalUserRoles),
+      canManageCompanyAsAdmin: canManageCompanyAsAdmin(context, isBrowsingMode, originalUserRoles),
       
       // Query filters
       filter,
@@ -112,8 +126,8 @@ export const useCompanyFilter = () => {
  * Hook for checking if user has admin access
  */
 export const useHasAdminAccess = () => {
-  const { hasCompanyAdminAccess } = useUnifiedCompanyAccess();
-  return hasCompanyAdminAccess;
+  const { hasFullCompanyControl } = useUnifiedCompanyAccess();
+  return hasFullCompanyControl;
 };
 
 /**

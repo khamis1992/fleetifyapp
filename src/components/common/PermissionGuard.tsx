@@ -35,6 +35,8 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   const { 
     hasCompanyAdminAccess, 
     hasGlobalAccess, 
+    hasFullCompanyControl,
+    isBrowsingAsCompanyAdmin,
     user,
     context 
   } = useUnifiedCompanyAccess();
@@ -68,8 +70,8 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
     return hideIfNoAccess ? null : renderAccessDenied('insufficient_role');
   }
 
-  // Check company admin access
-  if (requireCompanyAdmin && !hasCompanyAdminAccess) {
+  // Check company admin access (including super admin browsing mode)
+  if (requireCompanyAdmin && !hasFullCompanyControl) {
     return hideIfNoAccess ? null : renderAccessDenied('require_admin');
   }
 
