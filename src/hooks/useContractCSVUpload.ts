@@ -154,8 +154,21 @@ export function useContractCSVUpload() {
   }
 
   const uploadContracts = async (file: File) => {
-    if (!user?.profile?.company_id) {
-      throw new Error('معرف الشركة غير متوفر')
+    console.log('📝 [Contract CSV] Starting CSV upload for user:', user?.id);
+    console.log('📝 [Contract CSV] User company info:', {
+      company: user?.company,
+      profile_company_id: user?.profile?.company_id,
+      has_company: !!user?.company?.id
+    });
+    
+    if (!user?.company?.id) {
+      console.error('📝 [Contract CSV] Company ID not available. User data:', {
+        user_id: user?.id,
+        email: user?.email,
+        company: user?.company,
+        profile: user?.profile
+      });
+      throw new Error('معرف الشركة غير متوفر. تأكد من تسجيل الدخول بحساب مرتبط بشركة.')
     }
 
     setIsUploading(true)
@@ -195,9 +208,11 @@ export function useContractCSVUpload() {
         try {
           // Generate contract number if not provided
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`
+          
+          console.log(`📝 [Contract CSV] Inserting contract row ${contractData.rowNumber} for company ${user.company.id}`);
 
           const contractPayload = {
-            company_id: user.profile.company_id,
+            company_id: user.company.id,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
             contract_number: contractNumber,
@@ -219,15 +234,18 @@ export function useContractCSVUpload() {
             .insert(contractPayload)
 
           if (error) {
+            console.error(`📝 [Contract CSV] Database error for row ${contractData.rowNumber}:`, error);
             results.failed++
             results.errors.push({
               row: contractData.rowNumber,
               message: `خطأ في قاعدة البيانات: ${error.message}`
             })
           } else {
+            console.log(`📝 [Contract CSV] Successfully inserted contract row ${contractData.rowNumber}`);
             results.successful++
           }
         } catch (error: any) {
+          console.error(`📝 [Contract CSV] Unexpected error for row ${contractData.rowNumber}:`, error);
           results.failed++
           results.errors.push({
             row: contractData.rowNumber,

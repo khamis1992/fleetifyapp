@@ -72,7 +72,7 @@ export const authService = {
 
     console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
-    // Get user profile with company info from both profiles and employees tables
+    // Get user profile with company info
     let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select(`
@@ -81,18 +81,29 @@ export const authService = {
           id,
           name,
           name_ar
-        ),
-        employee_companies:employees!inner (
+        )
+      `)
+      .eq('user_id', user.id)
+      .single();
+
+    // If no company from profile, try to get from employees table
+    let employeeCompany = null;
+    if (!profile?.company_id) {
+      const { data: empData } = await supabase
+        .from('employees')
+        .select(`
           company_id,
           companies (
             id,
             name,
             name_ar
           )
-        )
-      `)
-      .eq('user_id', user.id)
-      .single();
+        `)
+        .eq('user_id', user.id)
+        .single();
+      
+      employeeCompany = empData;
+    }
 
     if (profileError) {
       console.error('📝 [AUTH] Profile fetch error:', profileError);
@@ -149,8 +160,7 @@ export const authService = {
     let companyId = profile?.company_id;
     
     // If no company from profiles, try from employees table
-    if (!companyInfo && profile?.employee_companies?.length > 0) {
-      const employeeCompany = profile.employee_companies[0];
+    if (!companyInfo && employeeCompany) {
       companyInfo = employeeCompany.companies;
       companyId = employeeCompany.company_id;
       
