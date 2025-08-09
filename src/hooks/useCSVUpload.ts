@@ -17,6 +17,35 @@ export function useCSVUpload() {
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
 
+  // تعريف أنواع الحقول للعملاء
+  const customerFieldTypes = {
+    customer_type: 'text' as const,
+    first_name: 'text' as const,
+    last_name: 'text' as const,
+    first_name_ar: 'text' as const,
+    last_name_ar: 'text' as const,
+    company_name: 'text' as const,
+    company_name_ar: 'text' as const,
+    email: 'email' as const,
+    phone: 'phone' as const,
+    alternative_phone: 'phone' as const,
+    national_id: 'text' as const,
+    passport_number: 'text' as const,
+    license_number: 'text' as const,
+    license_expiry: 'date' as const,
+    address: 'text' as const,
+    address_ar: 'text' as const,
+    city: 'text' as const,
+    country: 'text' as const,
+    date_of_birth: 'date' as const,
+    credit_limit: 'number' as const,
+    emergency_contact_name: 'text' as const,
+    emergency_contact_phone: 'phone' as const,
+    notes: 'text' as const,
+  };
+
+  const customerRequiredFields = ['customer_type', 'phone'];
+
   const downloadTemplate = () => {
     const headers = [
       'customer_type',
@@ -279,11 +308,84 @@ export function useCSVUpload() {
     }
   }
 
+  // دالة رفع ذكية للعملاء
+  const smartUploadCustomers = async (fixedData: any[]) => {
+    setIsUploading(true);
+    setProgress(0);
+    
+    const uploadResults: CSVUploadResults = {
+      total: fixedData.length,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      for (let i = 0; i < fixedData.length; i++) {
+        const customerData = fixedData[i];
+        setProgress(((i + 1) / fixedData.length) * 100);
+        
+        try {
+          const customerPayload = {
+            customer_type: customerData.customer_type,
+            first_name: customerData.first_name || undefined,
+            last_name: customerData.last_name || undefined,
+            first_name_ar: customerData.first_name_ar || undefined,
+            last_name_ar: customerData.last_name_ar || undefined,
+            company_name: customerData.company_name || undefined,
+            company_name_ar: customerData.company_name_ar || undefined,
+            email: customerData.email || undefined,
+            phone: customerData.phone,
+            alternative_phone: customerData.alternative_phone || undefined,
+            national_id: customerData.national_id || undefined,
+            passport_number: customerData.passport_number || undefined,
+            license_number: customerData.license_number || undefined,
+            license_expiry: customerData.license_expiry || undefined,
+            address: customerData.address || undefined,
+            address_ar: customerData.address_ar || undefined,
+            city: customerData.city || undefined,
+            country: customerData.country || undefined,
+            date_of_birth: customerData.date_of_birth || undefined,
+            credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
+            emergency_contact_name: customerData.emergency_contact_name || undefined,
+            emergency_contact_phone: customerData.emergency_contact_phone || undefined,
+            notes: customerData.notes || undefined,
+            company_id: user?.company?.id,
+            is_active: true,
+            created_by: user?.id
+          };
+
+          const { data, error } = await supabase
+            .from('customers')
+            .insert([customerPayload])
+            .select();
+
+          if (error) throw error;
+          uploadResults.successful++;
+        } catch (error: any) {
+          uploadResults.failed++;
+          uploadResults.errors.push({
+            row: customerData.rowNumber || i + 1,
+            message: error.message
+          });
+        }
+      }
+    } finally {
+      setIsUploading(false);
+      setResults(uploadResults);
+    }
+
+    return uploadResults;
+  };
+
   return {
     uploadCustomers,
+    smartUploadCustomers,
     downloadTemplate,
     isUploading,
     progress,
-    results
+    results,
+    customerFieldTypes,
+    customerRequiredFields
   }
 }

@@ -17,6 +17,34 @@ export function useVehicleCSVUpload() {
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
 
+  // تعريف أنواع الحقول للمركبات
+  const vehicleFieldTypes = {
+    plate_number: 'text' as const,
+    make: 'text' as const,
+    model: 'text' as const,
+    year: 'number' as const,
+    color: 'text' as const,
+    color_ar: 'text' as const,
+    vin_number: 'text' as const,
+    registration_number: 'text' as const,
+    insurance_policy: 'text' as const,
+    insurance_expiry: 'date' as const,
+    license_expiry: 'date' as const,
+    status: 'text' as const,
+    daily_rate: 'number' as const,
+    weekly_rate: 'number' as const,
+    monthly_rate: 'number' as const,
+    deposit_amount: 'number' as const,
+    minimum_rental_price: 'number' as const,
+    enforce_minimum_price: 'boolean' as const,
+    fuel_type: 'text' as const,
+    transmission_type: 'text' as const,
+    seating_capacity: 'number' as const,
+    notes: 'text' as const,
+  };
+
+  const vehicleRequiredFields = ['plate_number', 'make', 'model', 'year'];
+
   const downloadTemplate = () => {
     const headers = [
       'plate_number',
@@ -260,11 +288,82 @@ export function useVehicleCSVUpload() {
     }
   }
 
+  // دالة رفع ذكية للمركبات
+  const smartUploadVehicles = async (fixedData: any[]) => {
+    setIsUploading(true);
+    setProgress(0);
+    
+    const uploadResults: CSVUploadResults = {
+      total: fixedData.length,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      for (let i = 0; i < fixedData.length; i++) {
+        const vehicleData = fixedData[i];
+        setProgress(((i + 1) / fixedData.length) * 100);
+        
+        try {
+          const vehiclePayload = {
+            plate_number: vehicleData.plate_number,
+            make: vehicleData.make,
+            model: vehicleData.model,
+            year: Number(vehicleData.year),
+            color: vehicleData.color || undefined,
+            color_ar: vehicleData.color_ar || undefined,
+            vin_number: vehicleData.vin_number || undefined,
+            registration_number: vehicleData.registration_number || undefined,
+            insurance_policy: vehicleData.insurance_policy || undefined,
+            insurance_expiry: vehicleData.insurance_expiry || undefined,
+            license_expiry: vehicleData.license_expiry || undefined,
+            status: vehicleData.status || 'available',
+            daily_rate: vehicleData.daily_rate ? Number(vehicleData.daily_rate) : undefined,
+            weekly_rate: vehicleData.weekly_rate ? Number(vehicleData.weekly_rate) : undefined,
+            monthly_rate: vehicleData.monthly_rate ? Number(vehicleData.monthly_rate) : undefined,
+            deposit_amount: vehicleData.deposit_amount ? Number(vehicleData.deposit_amount) : undefined,
+            minimum_rental_price: vehicleData.minimum_rental_price ? Number(vehicleData.minimum_rental_price) : undefined,
+            enforce_minimum_price: vehicleData.enforce_minimum_price ? ['true', '1'].includes(vehicleData.enforce_minimum_price.toLowerCase()) : false,
+            fuel_type: vehicleData.fuel_type || undefined,
+            transmission_type: vehicleData.transmission_type || undefined,
+            seating_capacity: vehicleData.seating_capacity ? Number(vehicleData.seating_capacity) : undefined,
+            notes: vehicleData.notes || undefined,
+            company_id: user?.profile?.company_id,
+            is_active: true
+          };
+
+          const { data, error } = await supabase
+            .from('vehicles')
+            .insert([vehiclePayload])
+            .select();
+
+          if (error) throw error;
+          uploadResults.successful++;
+        } catch (error: any) {
+          uploadResults.failed++;
+          uploadResults.errors.push({
+            row: vehicleData.rowNumber || i + 1,
+            message: error.message
+          });
+        }
+      }
+    } finally {
+      setIsUploading(false);
+      setResults(uploadResults);
+    }
+
+    return uploadResults;
+  };
+
   return {
     uploadVehicles,
+    smartUploadVehicles,
     downloadTemplate,
     isUploading,
     progress,
-    results
+    results,
+    vehicleFieldTypes,
+    vehicleRequiredFields
   }
 }

@@ -17,6 +17,24 @@ export function useContractCSVUpload() {
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
 
+  // تعريف أنواع الحقول للعقود
+  const contractFieldTypes = {
+    customer_id: 'text' as const,
+    vehicle_id: 'text' as const,
+    contract_number: 'text' as const,
+    contract_type: 'text' as const,
+    contract_date: 'date' as const,
+    start_date: 'date' as const,
+    end_date: 'date' as const,
+    contract_amount: 'number' as const,
+    monthly_amount: 'number' as const,
+    description: 'text' as const,
+    terms: 'text' as const,
+    cost_center_id: 'text' as const,
+  };
+
+  const contractRequiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount'];
+
   const downloadTemplate = () => {
     const headers = [
       'customer_id',
@@ -265,11 +283,75 @@ export function useContractCSVUpload() {
     }
   }
 
+  // دالة رفع ذكية للعقود
+  const smartUploadContracts = async (fixedData: any[]) => {
+    setIsUploading(true);
+    setProgress(0);
+    
+    const uploadResults: CSVUploadResults = {
+      total: fixedData.length,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      for (let i = 0; i < fixedData.length; i++) {
+        const contractData = fixedData[i];
+        setProgress(((i + 1) / fixedData.length) * 100);
+        
+        try {
+          const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
+          
+          const contractPayload = {
+            company_id: user?.company?.id,
+            customer_id: contractData.customer_id,
+            vehicle_id: contractData.vehicle_id || null,
+            contract_number: contractNumber,
+            contract_type: contractData.contract_type,
+            contract_date: contractData.contract_date || new Date().toISOString().split('T')[0],
+            start_date: contractData.start_date,
+            end_date: contractData.end_date,
+            contract_amount: Number(contractData.contract_amount),
+            monthly_amount: contractData.monthly_amount ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
+            description: contractData.description || null,
+            terms: contractData.terms || null,
+            cost_center_id: contractData.cost_center_id || null,
+            status: 'draft',
+            created_by: user?.id
+          };
+
+          const { data, error } = await supabase
+            .from('contracts')
+            .insert([contractPayload])
+            .select();
+
+          if (error) throw error;
+          uploadResults.successful++;
+        } catch (error: any) {
+          uploadResults.failed++;
+          uploadResults.errors.push({
+            row: contractData.rowNumber || i + 1,
+            message: error.message
+          });
+        }
+      }
+    } finally {
+      setIsUploading(false);
+      setResults(uploadResults);
+    }
+
+    return uploadResults;
+  };
+
   return {
     uploadContracts,
+    smartUploadContracts,
     downloadTemplate,
     isUploading,
     progress,
-    results
+    results,
+    contractFieldTypes,
+    contractRequiredFields
   }
 }
