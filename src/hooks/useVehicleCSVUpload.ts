@@ -197,8 +197,23 @@ export function useVehicleCSVUpload() {
   }
 
   const uploadVehicles = async (file: File) => {
+    console.log('🚀 [VEHICLE_CSV_UPLOAD] Starting upload process...')
+    console.log('📊 [VEHICLE_CSV_UPLOAD] Context:', {
+      user: user?.id,
+      userEmail: user?.email,
+      companyId,
+      fileName: file.name,
+      fileSize: file.size
+    })
+
+    if (!user) {
+      console.error('❌ [VEHICLE_CSV_UPLOAD] No authenticated user')
+      throw new Error('يجب تسجيل الدخول أولاً')
+    }
+
     if (!companyId) {
-      throw new Error('معرف الشركة غير متوفر')
+      console.error('❌ [VEHICLE_CSV_UPLOAD] No company ID available')
+      throw new Error('معرف الشركة غير متوفر - يرجى تسجيل الدخول مرة أخرى')
     }
 
     setIsUploading(true)
@@ -276,26 +291,36 @@ export function useVehicleCSVUpload() {
             is_active: true
           }
 
+          console.log(`🔄 [VEHICLE_CSV_UPLOAD] Inserting row ${rowFix.rowNumber}:`, {
+            plate_number: vehiclePayload.plate_number,
+            company_id: vehiclePayload.company_id
+          })
+
           const { error } = await supabase
             .from('vehicles')
             .insert(vehiclePayload)
 
           if (error) {
+            console.error(`❌ [VEHICLE_CSV_UPLOAD] Database error for row ${rowFix.rowNumber}:`, error)
             results.failed++
             results.errors.push({ row: rowFix.rowNumber, message: `خطأ في قاعدة البيانات: ${error.message}` })
           } else {
+            console.log(`✅ [VEHICLE_CSV_UPLOAD] Successfully inserted row ${rowFix.rowNumber}`)
             results.successful++
           }
         } catch (error: any) {
+          console.error(`❌ [VEHICLE_CSV_UPLOAD] Unexpected error for row ${rowFix.rowNumber}:`, error)
           results.failed++
           results.errors.push({ row: rowFix.rowNumber, message: `خطأ غير متوقع: ${error.message}` })
         }
       }
 
+      console.log('📈 [VEHICLE_CSV_UPLOAD] Final results:', results)
       setResults(results)
       await queryClient.invalidateQueries({ queryKey: ['vehicles', companyId] })
       
     } catch (error: any) {
+      console.error('💥 [VEHICLE_CSV_UPLOAD] Process failed:', error)
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
       throw error
     } finally {
@@ -306,6 +331,24 @@ export function useVehicleCSVUpload() {
 
   // دالة رفع ذكية للمركبات
   const smartUploadVehicles = async (fixedData: any[]) => {
+    console.log('🚀 [SMART_VEHICLE_UPLOAD] Starting smart upload process...')
+    console.log('📊 [SMART_VEHICLE_UPLOAD] Context:', {
+      user: user?.id,
+      userEmail: user?.email,
+      companyId,
+      recordsCount: fixedData.length
+    })
+
+    if (!user) {
+      console.error('❌ [SMART_VEHICLE_UPLOAD] No authenticated user')
+      throw new Error('يجب تسجيل الدخول أولاً')
+    }
+
+    if (!companyId) {
+      console.error('❌ [SMART_VEHICLE_UPLOAD] No company ID available')
+      throw new Error('معرف الشركة غير متوفر - يرجى تسجيل الدخول مرة أخرى')
+    }
+
     setIsUploading(true);
     setProgress(0);
     
