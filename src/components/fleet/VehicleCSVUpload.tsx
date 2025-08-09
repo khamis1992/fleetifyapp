@@ -50,9 +50,21 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
 
     try {
       await uploadVehicles(file)
-      if (results && results.successful > 0) {
-        toast.success(`تم رفع ${results.successful} مركبة بنجاح`)
-        onUploadComplete()
+      
+      // Handle results after upload completes
+      if (results) {
+        if (results.successful > 0) {
+          if (results.failed > 0) {
+            toast.success(`تم رفع ${results.successful} مركبة بنجاح، فشل رفع ${results.failed} مركبة`)
+          } else {
+            toast.success(`تم رفع جميع المركبات بنجاح (${results.successful} مركبة)`)
+          }
+          onUploadComplete()
+        } else if (results.failed > 0) {
+          toast.error(`فشل رفع جميع المركبات (${results.failed} مركبة). يرجى مراجعة الأخطاء أدناه.`)
+        } else {
+          toast.error('لم يتم رفع أي مركبة. يرجى التحقق من تنسيق الملف.')
+        }
       }
     } catch (error: any) {
       console.error('❌ [VEHICLE_CSV_UPLOAD_COMPONENT] Upload failed:', error)
