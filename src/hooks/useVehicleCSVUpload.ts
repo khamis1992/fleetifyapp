@@ -293,7 +293,7 @@ export function useVehicleCSVUpload() {
       }
 
       setResults(results)
-      await queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+      await queryClient.invalidateQueries({ queryKey: ['vehicles', companyId] })
       
     } catch (error: any) {
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
@@ -369,7 +369,7 @@ export function useVehicleCSVUpload() {
     } finally {
       setIsUploading(false);
       setResults(uploadResults);
-      await queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+      await queryClient.invalidateQueries({ queryKey: ['vehicles', companyId] })
     }
 
     return uploadResults;
