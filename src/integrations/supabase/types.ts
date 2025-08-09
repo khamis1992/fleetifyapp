@@ -10204,6 +10204,10 @@ export type Database = {
         Args: { account_id_param: string }
         Returns: boolean
       }
+      is_super_admin: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       log_contract_creation_step: {
         Args: {
           company_id_param: string
