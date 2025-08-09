@@ -196,6 +196,27 @@ export function useVehicleCSVUpload() {
     return { isValid: errors.length === 0, errors }
   }
 
+  // Helpers for duplicate detection
+  const normalizePlate = (p: any) => String(p ?? '').trim().toLowerCase()
+
+  const fetchExistingPlates = async (targetCompanyId: string): Promise<Set<string>> => {
+    try {
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('plate_number')
+        .eq('company_id', targetCompanyId)
+
+      if (error) {
+        console.error('⚠️ [VEHICLE_CSV_UPLOAD] Failed to fetch existing plates:', error)
+        return new Set()
+      }
+      return new Set((data || []).map((d: any) => normalizePlate(d.plate_number)))
+    } catch (e) {
+      console.error('⚠️ [VEHICLE_CSV_UPLOAD] Unexpected while fetching plates:', e)
+      return new Set()
+    }
+  }
+
   const uploadVehicles = async (file: File) => {
     console.log('🚀 [VEHICLE_CSV_UPLOAD] Starting upload process...')
     console.log('📊 [VEHICLE_CSV_UPLOAD] Context:', {
@@ -240,6 +261,16 @@ export function useVehicleCSVUpload() {
         errors: []
       }
 
+      // Pre-check duplicates
+      const existingPlates = await fetchExistingPlates(companyId)
+      const counts = new Map<string, number>()
+      fixedRows.forEach(r => {
+        const p = normalizePlate(r.fixedData?.plate_number)
+        if (!p) return
+        counts.set(p, (counts.get(p) || 0) + 1)
+      })
+      const processedSeen = new Map<string, number>()
+
       for (let i = 0; i < fixedRows.length; i++) {
         const rowFix = fixedRows[i]
         const fixed = rowFix.fixedData
@@ -259,6 +290,23 @@ export function useVehicleCSVUpload() {
           results.failed++
           results.errors.push({ row: rowFix.rowNumber, message: validation.errors.join(', ') })
           continue
+        }
+
+        const plateKey = normalizePlate(fixed.plate_number)
+        if (plateKey) {
+          const seenCount = (processedSeen.get(plateKey) || 0) + 1
+          processedSeen.set(plateKey, seenCount)
+          if ((counts.get(plateKey) || 0) > 1 && seenCount > 1) {
+            results.failed++
+            results.errors.push({ row: rowFix.rowNumber, message: `رقم اللوحة مكرر داخل الملف: ${fixed.plate_number}` })
+            continue
+          }
+
+          if (existingPlates.has(plateKey)) {
+            results.failed++
+            results.errors.push({ row: rowFix.rowNumber, message: `رقم اللوحة موجود مسبقاً لهذه الشركة: ${fixed.plate_number}` })
+            continue
+          }
         }
 
         try {
@@ -303,7 +351,10 @@ export function useVehicleCSVUpload() {
           if (error) {
             console.error(`❌ [VEHICLE_CSV_UPLOAD] Database error for row ${rowFix.rowNumber}:`, error)
             results.failed++
-            results.errors.push({ row: rowFix.rowNumber, message: `خطأ في قاعدة البيانات: ${error.message}` })
+            const message = (error.code === '23505' && String(error.message).toLowerCase().includes('plate'))
+              ? `لا يمكن الإدراج لأن رقم اللوحة موجود مسبقاً: ${fixed.plate_number}`
+              : `خطأ في قاعدة البيانات: ${error.message}`
+            results.errors.push({ row: rowFix.rowNumber, message })
           } else {
             console.log(`✅ [VEHICLE_CSV_UPLOAD] Successfully inserted row ${rowFix.rowNumber}`)
             results.successful++
@@ -329,14 +380,21 @@ export function useVehicleCSVUpload() {
     }
   }
 
-  // دالة رفع ذكية للمركبات
-  const smartUploadVehicles = async (fixedData: any[]) => {
+  // دالة رفع ذكية للمركبات (تدعم التحديث الاختياري للشركة المستهدفة وميزة upsert)
+  const smartUploadVehicles = async (
+    fixedData: any[],
+    options?: { upsert?: boolean; targetCompanyId?: string }
+  ) => {
     console.log('🚀 [SMART_VEHICLE_UPLOAD] Starting smart upload process...')
+    const targetCompanyId = options?.targetCompanyId || companyId
+    const useUpsert = !!options?.upsert
+
     console.log('📊 [SMART_VEHICLE_UPLOAD] Context:', {
       user: user?.id,
       userEmail: user?.email,
-      companyId,
-      recordsCount: fixedData.length
+      targetCompanyId,
+      recordsCount: fixedData.length,
+      upsert: useUpsert
     })
 
     if (!user) {
@@ -344,28 +402,62 @@ export function useVehicleCSVUpload() {
       throw new Error('يجب تسجيل الدخول أولاً')
     }
 
-    if (!companyId) {
-      console.error('❌ [SMART_VEHICLE_UPLOAD] No company ID available')
-      throw new Error('معرف الشركة غير متوفر - يرجى تسجيل الدخول مرة أخرى')
+    if (!targetCompanyId) {
+      console.error('❌ [SMART_VEHICLE_UPLOAD] No target company ID')
+      throw new Error('لم يتم تحديد الشركة المستهدفة للرفع')
     }
 
-    setIsUploading(true);
-    setProgress(0);
-    
+    setIsUploading(true)
+    setProgress(0)
+
     const uploadResults: CSVUploadResults = {
       total: fixedData.length,
       successful: 0,
       failed: 0,
       errors: []
-    };
+    }
 
     try {
+      // Deduplicate inside file and optionally pre-check DB
+      const counts = new Map<string, number>()
+      fixedData.forEach(row => {
+        const key = normalizePlate(row?.plate_number)
+        if (!key) return
+        counts.set(key, (counts.get(key) || 0) + 1)
+      })
+      const processedSeen = new Map<string, number>()
+
+      const existingPlates = useUpsert ? new Set<string>() : await fetchExistingPlates(targetCompanyId)
+
       for (let i = 0; i < fixedData.length; i++) {
-        const vehicleData = fixedData[i];
-        setProgress(((i + 1) / fixedData.length) * 100);
-        
+        const vehicleData = fixedData[i]
+        setProgress(((i + 1) / fixedData.length) * 100)
+
         try {
-          const vehiclePayload = {
+          const plateKey = normalizePlate(vehicleData.plate_number)
+          if (plateKey) {
+            const seenCount = (processedSeen.get(plateKey) || 0) + 1
+            processedSeen.set(plateKey, seenCount)
+            if ((counts.get(plateKey) || 0) > 1 && seenCount > 1) {
+              uploadResults.failed++
+              uploadResults.errors.push({
+                row: vehicleData.rowNumber || i + 1,
+                message: `رقم اللوحة مكرر داخل الملف: ${vehicleData.plate_number}`
+              })
+              continue
+            }
+
+            if (!useUpsert && existingPlates.has(plateKey)) {
+              uploadResults.failed++
+              uploadResults.errors.push({
+                row: vehicleData.rowNumber || i + 1,
+                message: `رقم اللوحة موجود مسبقاً لهذه الشركة: ${vehicleData.plate_number}`
+              })
+              continue
+            }
+          }
+
+          const payload = {
             plate_number: vehicleData.plate_number,
             make: vehicleData.make,
             model: vehicleData.model,
@@ -390,33 +482,46 @@ export function useVehicleCSVUpload() {
             transmission_type: vehicleData.transmission_type || undefined,
             seating_capacity: typeof vehicleData.seating_capacity === 'number' ? vehicleData.seating_capacity : (vehicleData.seating_capacity ? Number(vehicleData.seating_capacity) : undefined),
             notes: vehicleData.notes || undefined,
-            company_id: companyId,
+            company_id: targetCompanyId,
             is_active: true
-          };
+          }
 
-          const { data, error } = await supabase
-            .from('vehicles')
-            .insert([vehiclePayload])
-            .select();
+          let error
+          if (useUpsert) {
+            ;({ error } = await supabase
+              .from('vehicles')
+              .upsert([payload], { onConflict: 'company_id,plate_number' }))
+          } else {
+            ;({ error } = await supabase
+              .from('vehicles')
+              .insert([payload]))
+          }
 
-          if (error) throw error;
-          uploadResults.successful++;
+          if (error) {
+            uploadResults.failed++
+            const msg = (error.code === '23505' && String(error.message).toLowerCase().includes('plate'))
+              ? `لا يمكن الإدراج لأن رقم اللوحة موجود مسبقاً: ${vehicleData.plate_number}`
+              : error.message
+            uploadResults.errors.push({ row: vehicleData.rowNumber || i + 1, message: msg })
+          } else {
+            uploadResults.successful++
+          }
         } catch (error: any) {
-          uploadResults.failed++;
+          uploadResults.failed++
           uploadResults.errors.push({
             row: vehicleData.rowNumber || i + 1,
-            message: error.message
-          });
+            message: error.message || 'خطأ غير متوقع'
+          })
         }
       }
     } finally {
-      setIsUploading(false);
-      setResults(uploadResults);
-      await queryClient.invalidateQueries({ queryKey: ['vehicles', companyId] })
+      setIsUploading(false)
+      setResults(uploadResults)
+      await queryClient.invalidateQueries({ queryKey: ['vehicles', targetCompanyId] })
     }
 
-    return uploadResults;
-  };
+    return uploadResults
+  }
 
   return {
     uploadVehicles,
@@ -429,3 +534,4 @@ export function useVehicleCSVUpload() {
     vehicleRequiredFields
   }
 }
+

@@ -11,12 +11,13 @@ import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
+import { Checkbox } from "@/components/ui/checkbox";
 interface SmartCSVUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
   entityType: 'customer' | 'vehicle' | 'contract';
-  uploadFunction: (data: any[]) => Promise<any>;
+  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
   requiredFields: string[];
@@ -38,6 +39,7 @@ export function SmartCSVUpload({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [enableUpsert, setEnableUpsert] = useState(false);
 
   const entityLabels = {
     customer: 'العملاء',
