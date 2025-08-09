@@ -63,7 +63,8 @@ const assignRolesAndCreateRecord = async (
 
       if (rolesError) {
         console.error('Error assigning roles:', rolesError);
-        return { success: false, error: `Failed to assign roles: ${rolesError.message}` };
+        console.error('Full error details:', JSON.stringify(rolesError, null, 2));
+        return { success: false, error: `Failed to assign roles: ${rolesError.message}. Details: ${JSON.stringify(rolesError)}` };
       }
       console.log('Roles assigned successfully');
     }
