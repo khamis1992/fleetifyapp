@@ -9,7 +9,8 @@ import { AlertCircle, Upload, Download, CheckCircle, FileText } from "lucide-rea
 import { toast } from "sonner";
 import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
-
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { CompanySelector } from "@/components/navigation/CompanySelector";
 interface SmartCSVUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,6 +45,13 @@ export function SmartCSVUpload({
     contract: 'العقود'
   };
 
+  const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const isSuperAdmin = !!user?.roles?.includes('super_admin');
+  const targetCompanyName = (
+    isBrowsingMode && browsedCompany
+      ? (browsedCompany.name_ar || browsedCompany.name)
+      : (user?.company?.name_ar || user?.company?.name)
+  ) || 'غير محدد';
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
@@ -128,16 +136,35 @@ export function SmartCSVUpload({
         });
       }, 200);
 
-      console.log('Calling upload function...');
+      console.log('Calling upload function with companyId:', companyId);
       const result = await uploadFunction(dataToUpload);
       console.log('Upload function result:', result);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
-      toast.success(`تم رفع ${dataToUpload.length} صف بنجاح`);
-      onUploadComplete();
-      handleClose();
+
+      const successful = Number(result?.successful ?? 0);
+      const failed = Number(result?.failed ?? 0);
+      const total = Number(result?.total ?? dataToUpload.length);
+
+      if (successful > 0 && failed === 0) {
+        toast.success(`تم رفع جميع السجلات بنجاح (${successful}/${total})`);
+        onUploadComplete();
+        handleClose();
+      } else if (successful > 0 && failed > 0) {
+        toast.success(`تم رفع ${successful} سجل، وفشل ${failed} سجل. راجع الأخطاء ثم أعد المحاولة.`);
+        onUploadComplete();
+        // اترك الحوار مفتوحًا ليستعرض المستخدم الأخطاء في المعاينة
+      } else if (successful === 0) {
+        toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
+        if (isSuperAdmin) {
+          toast.message('تلميح', {
+            description: 'يمكنك تغيير الشركة من أداة اختيار الشركة بالأعلى.',
+          });
+        }
+      } else {
+        toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
+      }
     } catch (error) {
       console.error('Error uploading data:', error);
       toast.error(`خطأ في رفع البيانات: ${error.message}`);
@@ -168,6 +195,17 @@ export function SmartCSVUpload({
           <DialogDescription>
             نظام رفع ذكي يقوم بإصلاح الأخطاء تلقائياً
           </DialogDescription>
+          <div className="flex items-center justify-between mt-2">
+            <div className="text-sm">
+              <span className="text-muted-foreground">سيتم الرفع إلى:</span>
+              <Badge variant="outline" className="ml-2">{targetCompanyName}</Badge>
+            </div>
+            {isSuperAdmin && (
+              <div className="shrink-0">
+                <CompanySelector />
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         {!showPreview ? (
