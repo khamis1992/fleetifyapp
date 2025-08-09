@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { Vehicle } from "@/hooks/useVehicles"
 import { toast } from "sonner"
+import { CSVAutoFix } from "@/utils/csvAutoFix"
+import { useQueryClient } from "@tanstack/react-query"
+import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
 
 interface CSVUploadResults {
   total: number
@@ -13,6 +16,8 @@ interface CSVUploadResults {
 
 export function useVehicleCSVUpload() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const companyId = useCurrentCompanyId()
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
@@ -181,15 +186,18 @@ export function useVehicleCSVUpload() {
     })
 
     // Boolean validation
-    if (data.enforce_minimum_price && !['true', 'false', '1', '0'].includes(data.enforce_minimum_price.toLowerCase())) {
-      errors.push('enforce_minimum_price يجب أن يكون true أو false')
+    if (data.enforce_minimum_price !== undefined && data.enforce_minimum_price !== null) {
+      const v = String(data.enforce_minimum_price).toLowerCase()
+      if (!['true', 'false', '1', '0'].includes(v)) {
+        errors.push('enforce_minimum_price يجب أن يكون true أو false')
+      }
     }
 
     return { isValid: errors.length === 0, errors }
   }
 
   const uploadVehicles = async (file: File) => {
-    if (!user?.profile?.company_id) {
+    if (!companyId) {
       throw new Error('معرف الشركة غير متوفر')
     }
 
@@ -199,59 +207,72 @@ export function useVehicleCSVUpload() {
 
     try {
       const text = await file.text()
-      const data = parseCSV(text)
+      const rawData = parseCSV(text)
       
-      if (data.length === 0) {
+      if (rawData.length === 0) {
         throw new Error('الملف فارغ أو غير صحيح')
       }
 
+      // تنظيف وإصلاح البيانات أولاً لضمان عدم إدخال قيم شكلية كـ 0
+      const fixedRows = rawData.map((row: any) =>
+        CSVAutoFix.fixRow(row, row.rowNumber, vehicleFieldTypes as any, vehicleRequiredFields)
+      )
+
       const results: CSVUploadResults = {
-        total: data.length,
+        total: fixedRows.length,
         successful: 0,
         failed: 0,
         errors: []
       }
 
-      for (let i = 0; i < data.length; i++) {
-        const vehicleData = data[i]
-        const validation = validateVehicleData(vehicleData, vehicleData.rowNumber)
+      for (let i = 0; i < fixedRows.length; i++) {
+        const rowFix = fixedRows[i]
+        const fixed = rowFix.fixedData
 
-        setProgress(Math.round(((i + 1) / data.length) * 100))
+        setProgress(Math.round(((i + 1) / fixedRows.length) * 100))
 
+        // أخطاء التنظيف/التحقق الأولي
+        if (rowFix.hasErrors) {
+          results.failed++
+          results.errors.push({ row: rowFix.rowNumber, message: rowFix.validationErrors.join(', ') })
+          continue
+        }
+
+        // التحقق من قواعد الأعمال الإضافية
+        const validation = validateVehicleData(fixed, rowFix.rowNumber)
         if (!validation.isValid) {
           results.failed++
-          results.errors.push({
-            row: vehicleData.rowNumber,
-            message: validation.errors.join(', ')
-          })
+          results.errors.push({ row: rowFix.rowNumber, message: validation.errors.join(', ') })
           continue
         }
 
         try {
           const vehiclePayload = {
-            plate_number: vehicleData.plate_number,
-            make: vehicleData.make,
-            model: vehicleData.model,
-            year: Number(vehicleData.year),
-            color: vehicleData.color || undefined,
-            color_ar: vehicleData.color_ar || undefined,
-            vin_number: vehicleData.vin_number || undefined,
-            registration_number: vehicleData.registration_number || undefined,
-            insurance_policy: vehicleData.insurance_policy || undefined,
-            insurance_expiry: vehicleData.insurance_expiry || undefined,
-            license_expiry: vehicleData.license_expiry || undefined,
-            status: vehicleData.status || 'available',
-            daily_rate: vehicleData.daily_rate ? Number(vehicleData.daily_rate) : undefined,
-            weekly_rate: vehicleData.weekly_rate ? Number(vehicleData.weekly_rate) : undefined,
-            monthly_rate: vehicleData.monthly_rate ? Number(vehicleData.monthly_rate) : undefined,
-            deposit_amount: vehicleData.deposit_amount ? Number(vehicleData.deposit_amount) : undefined,
-            minimum_rental_price: vehicleData.minimum_rental_price ? Number(vehicleData.minimum_rental_price) : undefined,
-            enforce_minimum_price: vehicleData.enforce_minimum_price ? ['true', '1'].includes(vehicleData.enforce_minimum_price.toLowerCase()) : false,
-            fuel_type: vehicleData.fuel_type || undefined,
-            transmission_type: vehicleData.transmission_type || undefined,
-            seating_capacity: vehicleData.seating_capacity ? Number(vehicleData.seating_capacity) : undefined,
-            notes: vehicleData.notes || undefined,
-            company_id: user.profile.company_id,
+            plate_number: fixed.plate_number,
+            make: fixed.make,
+            model: fixed.model,
+            year: typeof fixed.year === 'number' ? fixed.year : Number(fixed.year),
+            color: fixed.color || undefined,
+            color_ar: fixed.color_ar || undefined,
+            vin_number: fixed.vin_number || undefined,
+            registration_number: fixed.registration_number || undefined,
+            insurance_policy: fixed.insurance_policy || undefined,
+            insurance_expiry: fixed.insurance_expiry || undefined,
+            license_expiry: fixed.license_expiry || undefined,
+            status: fixed.status || 'available',
+            daily_rate: typeof fixed.daily_rate === 'number' ? fixed.daily_rate : (fixed.daily_rate ? Number(fixed.daily_rate) : undefined),
+            weekly_rate: typeof fixed.weekly_rate === 'number' ? fixed.weekly_rate : (fixed.weekly_rate ? Number(fixed.weekly_rate) : undefined),
+            monthly_rate: typeof fixed.monthly_rate === 'number' ? fixed.monthly_rate : (fixed.monthly_rate ? Number(fixed.monthly_rate) : undefined),
+            deposit_amount: typeof fixed.deposit_amount === 'number' ? fixed.deposit_amount : (fixed.deposit_amount ? Number(fixed.deposit_amount) : undefined),
+            minimum_rental_price: typeof fixed.minimum_rental_price === 'number' ? fixed.minimum_rental_price : (fixed.minimum_rental_price ? Number(fixed.minimum_rental_price) : undefined),
+            enforce_minimum_price: typeof fixed.enforce_minimum_price === 'boolean'
+              ? fixed.enforce_minimum_price
+              : (fixed.enforce_minimum_price ? ['true', '1'].includes(String(fixed.enforce_minimum_price).toLowerCase()) : false),
+            fuel_type: fixed.fuel_type || undefined,
+            transmission_type: fixed.transmission_type || undefined,
+            seating_capacity: typeof fixed.seating_capacity === 'number' ? fixed.seating_capacity : (fixed.seating_capacity ? Number(fixed.seating_capacity) : undefined),
+            notes: fixed.notes || undefined,
+            company_id: companyId,
             is_active: true
           }
 
@@ -261,23 +282,18 @@ export function useVehicleCSVUpload() {
 
           if (error) {
             results.failed++
-            results.errors.push({
-              row: vehicleData.rowNumber,
-              message: `خطأ في قاعدة البيانات: ${error.message}`
-            })
+            results.errors.push({ row: rowFix.rowNumber, message: `خطأ في قاعدة البيانات: ${error.message}` })
           } else {
             results.successful++
           }
         } catch (error: any) {
           results.failed++
-          results.errors.push({
-            row: vehicleData.rowNumber,
-            message: `خطأ غير متوقع: ${error.message}`
-          })
+          results.errors.push({ row: rowFix.rowNumber, message: `خطأ غير متوقع: ${error.message}` })
         }
       }
 
       setResults(results)
+      await queryClient.invalidateQueries({ queryKey: ['vehicles'] })
       
     } catch (error: any) {
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
@@ -310,7 +326,7 @@ export function useVehicleCSVUpload() {
             plate_number: vehicleData.plate_number,
             make: vehicleData.make,
             model: vehicleData.model,
-            year: Number(vehicleData.year),
+            year: typeof vehicleData.year === 'number' ? vehicleData.year : Number(vehicleData.year),
             color: vehicleData.color || undefined,
             color_ar: vehicleData.color_ar || undefined,
             vin_number: vehicleData.vin_number || undefined,
@@ -319,17 +335,19 @@ export function useVehicleCSVUpload() {
             insurance_expiry: vehicleData.insurance_expiry || undefined,
             license_expiry: vehicleData.license_expiry || undefined,
             status: vehicleData.status || 'available',
-            daily_rate: vehicleData.daily_rate ? Number(vehicleData.daily_rate) : undefined,
-            weekly_rate: vehicleData.weekly_rate ? Number(vehicleData.weekly_rate) : undefined,
-            monthly_rate: vehicleData.monthly_rate ? Number(vehicleData.monthly_rate) : undefined,
-            deposit_amount: vehicleData.deposit_amount ? Number(vehicleData.deposit_amount) : undefined,
-            minimum_rental_price: vehicleData.minimum_rental_price ? Number(vehicleData.minimum_rental_price) : undefined,
-            enforce_minimum_price: vehicleData.enforce_minimum_price ? ['true', '1'].includes(vehicleData.enforce_minimum_price.toLowerCase()) : false,
+            daily_rate: typeof vehicleData.daily_rate === 'number' ? vehicleData.daily_rate : (vehicleData.daily_rate ? Number(vehicleData.daily_rate) : undefined),
+            weekly_rate: typeof vehicleData.weekly_rate === 'number' ? vehicleData.weekly_rate : (vehicleData.weekly_rate ? Number(vehicleData.weekly_rate) : undefined),
+            monthly_rate: typeof vehicleData.monthly_rate === 'number' ? vehicleData.monthly_rate : (vehicleData.monthly_rate ? Number(vehicleData.monthly_rate) : undefined),
+            deposit_amount: typeof vehicleData.deposit_amount === 'number' ? vehicleData.deposit_amount : (vehicleData.deposit_amount ? Number(vehicleData.deposit_amount) : undefined),
+            minimum_rental_price: typeof vehicleData.minimum_rental_price === 'number' ? vehicleData.minimum_rental_price : (vehicleData.minimum_rental_price ? Number(vehicleData.minimum_rental_price) : undefined),
+            enforce_minimum_price: typeof vehicleData.enforce_minimum_price === 'boolean'
+              ? vehicleData.enforce_minimum_price
+              : (vehicleData.enforce_minimum_price ? ['true', '1'].includes(String(vehicleData.enforce_minimum_price).toLowerCase()) : false),
             fuel_type: vehicleData.fuel_type || undefined,
             transmission_type: vehicleData.transmission_type || undefined,
-            seating_capacity: vehicleData.seating_capacity ? Number(vehicleData.seating_capacity) : undefined,
+            seating_capacity: typeof vehicleData.seating_capacity === 'number' ? vehicleData.seating_capacity : (vehicleData.seating_capacity ? Number(vehicleData.seating_capacity) : undefined),
             notes: vehicleData.notes || undefined,
-            company_id: user?.profile?.company_id,
+            company_id: companyId,
             is_active: true
           };
 
@@ -351,6 +369,7 @@ export function useVehicleCSVUpload() {
     } finally {
       setIsUploading(false);
       setResults(uploadResults);
+      await queryClient.invalidateQueries({ queryKey: ['vehicles'] })
     }
 
     return uploadResults;

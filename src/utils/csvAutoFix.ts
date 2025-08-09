@@ -64,6 +64,20 @@ export class CSVAutoFix {
   }
 
   /**
+   * التعرّف على القيم الشكلية غير الصالحة للأرقام (مثل 0، 0.0، -، N/A)
+   */
+  static isInvalidNumberPlaceholder(value: any): boolean {
+    if (value === null || value === undefined) return true;
+    const s = String(value).trim().toLowerCase();
+    const invalidTokens = new Set(['', '0', '00', '0.0', '0,0', '-', '—', 'n/a', 'na', 'لايوجد', 'لا يوجد']);
+    if (invalidTokens.has(s)) return true;
+    // إذا كانت كل الأرقام أصفار (مع أو بدون فاصلة عشرية)
+    const digits = s.replace(/[^0-9.]/g, '');
+    if (digits === '' || /^0*\.?0*$/.test(digits)) return true;
+    return false;
+  }
+
+  /**
    * إصلاح التواريخ التلقائي
    */
   static fixDate(value: any): FixResult {
@@ -451,7 +465,12 @@ export class CSVAutoFix {
     for (const field of requiredFields) {
       const value = data[field];
       const typeOfField = fieldTypes[field];
-      const isMissing = value === undefined || value === null || String(value).trim() === '' || (typeOfField === 'phone' && this.isInvalidPhonePlaceholder(value));
+      const isMissing =
+        value === undefined ||
+        value === null ||
+        String(value).trim() === '' ||
+        (typeOfField === 'phone' && this.isInvalidPhonePlaceholder(value)) ||
+        (typeOfField === 'number' && this.isInvalidNumberPlaceholder(value));
       if (isMissing) {
         validationErrors.push(`الحقل ${field} مطلوب`);
       }
@@ -485,7 +504,7 @@ export class CSVAutoFix {
         }
 
         if (type === 'phone' && !fixResult.success && !requiredFields.includes(field) && this.isInvalidPhonePlaceholder(data[field])) {
-          // تجاهل القيم الشكلية مثل "0" أو "-" في الحقول غير المطلوبة
+          // تجاهل القيم الشكلية مثل "0" أو "-" في الحقول غير المطلوبة (هاتف)
           const placeholderFix: FixResult = {
             success: true,
             originalValue: data[field],
@@ -495,6 +514,17 @@ export class CSVAutoFix {
           };
           fixedData[field] = undefined;
           fixes.push({ field, fix: placeholderFix });
+        } else if (type === 'number' && !fixResult.success && !requiredFields.includes(field) && this.isInvalidNumberPlaceholder(data[field])) {
+          // تجاهل القيم الشكلية للأرقام في الحقول غير المطلوبة
+          const numPlaceholderFix: FixResult = {
+            success: true,
+            originalValue: data[field],
+            fixedValue: undefined,
+            confidence: 'high',
+            reason: 'تم إهمال قيمة رقمية غير صالحة'
+          };
+          fixedData[field] = undefined;
+          fixes.push({ field, fix: numPlaceholderFix });
         } else if (fixResult.success) {
           fixedData[field] = fixResult.fixedValue;
           if (fixResult.originalValue !== fixResult.fixedValue) {
