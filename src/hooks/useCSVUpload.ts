@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { CustomerFormData } from "@/types/customer"
 import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
+import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
 
 interface CSVUploadResults {
   total: number
@@ -13,6 +15,8 @@ interface CSVUploadResults {
 
 export function useCSVUpload() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const companyId = useCurrentCompanyId()
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)

@@ -48,6 +48,22 @@ const QATAR_PHONE_PATTERNS = [
 
 export class CSVAutoFix {
   /**
+   * التعرّف على القيم الشكلية غير الصالحة لأرقام الهاتف (مثل 0 و N/A و - )
+   */
+  static isInvalidPhonePlaceholder(value: any): boolean {
+    if (value === null || value === undefined) return true;
+    let s = String(value).trim().toLowerCase();
+    // بدائل شائعة للقيم غير الصالحة
+    const invalidTokens = new Set(['', '0', '00', '00000000', '-', '—', 'n/a', 'na', 'لايوجد', 'لا يوجد']);
+    if (invalidTokens.has(s)) return true;
+    // إزالة كل ما هو غير أرقام والتحقق إن كانت كلها أصفار
+    const digits = s.replace(/[^0-9]/g, '');
+    if (digits.length === 0) return true;
+    if (/^0+$/.test(digits)) return true;
+    return false;
+  }
+
+  /**
    * إصلاح التواريخ التلقائي
    */
   static fixDate(value: any): FixResult {
@@ -433,7 +449,10 @@ export class CSVAutoFix {
 
     // التحقق من الحقول المطلوبة
     for (const field of requiredFields) {
-      if (!data[field] || String(data[field]).trim() === '') {
+      const value = data[field];
+      const typeOfField = fieldTypes[field];
+      const isMissing = value === undefined || value === null || String(value).trim() === '' || (typeOfField === 'phone' && this.isInvalidPhonePlaceholder(value));
+      if (isMissing) {
         validationErrors.push(`الحقل ${field} مطلوب`);
       }
     }
@@ -465,7 +484,18 @@ export class CSVAutoFix {
             break;
         }
 
-        if (fixResult.success) {
+        if (type === 'phone' && !fixResult.success && !requiredFields.includes(field) && this.isInvalidPhonePlaceholder(data[field])) {
+          // تجاهل القيم الشكلية مثل "0" أو "-" في الحقول غير المطلوبة
+          const placeholderFix: FixResult = {
+            success: true,
+            originalValue: data[field],
+            fixedValue: undefined,
+            confidence: 'high',
+            reason: 'تم إهمال قيمة هاتف غير صالحة'
+          };
+          fixedData[field] = undefined;
+          fixes.push({ field, fix: placeholderFix });
+        } else if (fixResult.success) {
           fixedData[field] = fixResult.fixedValue;
           if (fixResult.originalValue !== fixResult.fixedValue) {
             fixes.push({ field, fix: fixResult });
