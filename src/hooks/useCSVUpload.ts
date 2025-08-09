@@ -310,6 +310,8 @@ export function useCSVUpload() {
 
   // دالة رفع ذكية للعملاء
   const smartUploadCustomers = async (fixedData: any[]) => {
+    console.log('Smart upload started with data:', fixedData);
+    
     setIsUploading(true);
     setProgress(0);
     
@@ -321,6 +323,8 @@ export function useCSVUpload() {
     };
 
     try {
+      console.log(`Processing ${fixedData.length} customers...`);
+      
       for (let i = 0; i < fixedData.length; i++) {
         const customerData = fixedData[i];
         setProgress(((i + 1) / fixedData.length) * 100);
@@ -355,14 +359,22 @@ export function useCSVUpload() {
             created_by: user?.id
           };
 
+          console.log(`Inserting customer ${i + 1}:`, customerPayload);
+
           const { data, error } = await supabase
             .from('customers')
             .insert([customerPayload])
             .select();
 
-          if (error) throw error;
+          if (error) {
+            console.error(`Error inserting customer ${i + 1}:`, error);
+            throw error;
+          }
+          
+          console.log(`Customer ${i + 1} inserted successfully:`, data);
           uploadResults.successful++;
         } catch (error: any) {
+          console.error(`Failed to insert customer ${i + 1}:`, error);
           uploadResults.failed++;
           uploadResults.errors.push({
             row: customerData.rowNumber || i + 1,
@@ -370,6 +382,8 @@ export function useCSVUpload() {
           });
         }
       }
+      
+      console.log('Upload completed. Results:', uploadResults);
     } finally {
       setIsUploading(false);
       setResults(uploadResults);

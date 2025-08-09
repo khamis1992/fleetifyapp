@@ -100,6 +100,8 @@ export function SmartCSVUpload({
   };
 
   const handleApproveFixes = async (approvedFixes: CSVRowFix[]) => {
+    console.log('Handle approve fixes called with:', approvedFixes);
+    
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -107,6 +109,8 @@ export function SmartCSVUpload({
       const dataToUpload = approvedFixes
         .filter(fix => !fix.hasErrors)
         .map(fix => fix.fixedData);
+
+      console.log('Data to upload:', dataToUpload);
 
       if (dataToUpload.length === 0) {
         toast.error("لا توجد بيانات صحيحة للرفع");
@@ -124,7 +128,9 @@ export function SmartCSVUpload({
         });
       }, 200);
 
-      await uploadFunction(dataToUpload);
+      console.log('Calling upload function...');
+      const result = await uploadFunction(dataToUpload);
+      console.log('Upload function result:', result);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -134,7 +140,7 @@ export function SmartCSVUpload({
       handleClose();
     } catch (error) {
       console.error('Error uploading data:', error);
-      toast.error("خطأ في رفع البيانات");
+      toast.error(`خطأ في رفع البيانات: ${error.message}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
