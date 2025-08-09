@@ -109,7 +109,7 @@ export const useUnifiedCompanyAccess = () => {
       // Browse mode information
       isBrowsingMode,
       browsedCompany,
-      actualUserCompanyId: user?.profile?.company_id || null
+      actualUserCompanyId: user?.company?.id || null
     };
   }, [user, isBrowsingMode, browsedCompany]);
 };
