@@ -39,6 +39,13 @@ const KUWAIT_PHONE_PATTERNS = [
   /^(\+965\s?)?([2569]\d{3}-\d{4})$/,
 ];
 
+// أرقام الهواتف القطرية
+const QATAR_PHONE_PATTERNS = [
+  /^(\+974\s?)?([3567]\d{7})$/,
+  /^(\+974\s?)?([3567]\d{3}\s?\d{4})$/,
+  /^(\+974\s?)?([3567]\d{3}-\d{4})$/,
+];
+
 export class CSVAutoFix {
   /**
    * إصلاح التواريخ التلقائي
@@ -146,6 +153,56 @@ export class CSVAutoFix {
   }
 
   /**
+   * إصلاح رقم الهاتف القطري
+   */
+  static fixQatarPhone(value: any): FixResult {
+    if (!value || value === '') {
+      return {
+        success: false,
+        originalValue: value,
+        fixedValue: value,
+        confidence: 'low',
+        reason: 'القيمة فارغة'
+      };
+    }
+
+    let phoneValue = String(value).trim();
+    
+    // إزالة المسافات والشرطات الإضافية
+    phoneValue = phoneValue.replace(/\s+/g, '').replace(/-+/g, '');
+    
+    // إضافة رمز قطر إذا لم يكن موجوداً
+    if (!phoneValue.startsWith('+974') && !phoneValue.startsWith('974')) {
+      if (phoneValue.length === 8 && /^[3567]/.test(phoneValue)) {
+        phoneValue = '+974' + phoneValue;
+      }
+    } else if (phoneValue.startsWith('974')) {
+      phoneValue = '+' + phoneValue;
+    }
+
+    // التحقق من صحة الرقم
+    for (const pattern of QATAR_PHONE_PATTERNS) {
+      if (pattern.test(phoneValue)) {
+        return {
+          success: true,
+          originalValue: value,
+          fixedValue: phoneValue,
+          confidence: 'high',
+          reason: 'تم تنسيق رقم الهاتف القطري'
+        };
+      }
+    }
+
+    return {
+      success: false,
+      originalValue: value,
+      fixedValue: value,
+      confidence: 'low',
+      reason: 'رقم هاتف قطري غير صحيح'
+    };
+  }
+
+  /**
    * إصلاح رقم الهاتف الكويتي
    */
   static fixKuwaitPhone(value: any): FixResult {
@@ -191,8 +248,19 @@ export class CSVAutoFix {
       originalValue: value,
       fixedValue: value,
       confidence: 'low',
-      reason: 'رقم هاتف غير صحيح'
+      reason: 'رقم هاتف كويتي غير صحيح'
     };
+  }
+
+  /**
+   * إصلاح رقم الهاتف (يحدد البلد تلقائياً)
+   */
+  static fixPhone(value: any, country: 'kuwait' | 'qatar' = 'qatar'): FixResult {
+    if (country === 'kuwait') {
+      return this.fixKuwaitPhone(value);
+    } else {
+      return this.fixQatarPhone(value);
+    }
   }
 
   /**
@@ -356,7 +424,8 @@ export class CSVAutoFix {
     data: Record<string, any>,
     rowNumber: number,
     fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>,
-    requiredFields: string[] = []
+    requiredFields: string[] = [],
+    country: 'kuwait' | 'qatar' = 'qatar'
   ): CSVRowFix {
     const fixedData = { ...data };
     const fixes: Array<{ field: string; fix: FixResult }> = [];
@@ -385,7 +454,7 @@ export class CSVAutoFix {
             fixResult = this.fixEmail(data[field]);
             break;
           case 'phone':
-            fixResult = this.fixKuwaitPhone(data[field]);
+            fixResult = this.fixPhone(data[field], country);
             break;
           case 'boolean':
             fixResult = this.fixBoolean(data[field]);
@@ -423,10 +492,11 @@ export class CSVAutoFix {
   static fixCSVData(
     csvData: Record<string, any>[],
     fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>,
-    requiredFields: string[] = []
+    requiredFields: string[] = [],
+    country: 'kuwait' | 'qatar' = 'qatar'
   ): CSVRowFix[] {
     return csvData.map((row, index) => 
-      this.fixRow(row, index + 1, fieldTypes, requiredFields)
+      this.fixRow(row, index + 1, fieldTypes, requiredFields, country)
     );
   }
 }

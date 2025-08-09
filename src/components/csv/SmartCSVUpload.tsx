@@ -83,7 +83,7 @@ export function SmartCSVUpload({
         return;
       }
 
-      const fixResults = CSVAutoFix.fixCSVData(csvData, fieldTypes, requiredFields);
+      const fixResults = CSVAutoFix.fixCSVData(csvData, fieldTypes, requiredFields, 'qatar');
       setFixes(fixResults);
       setShowPreview(true);
 
@@ -240,7 +240,7 @@ export function SmartCSVUpload({
                   <h4 className="font-medium text-blue-900">الإصلاحات التلقائية تشمل:</h4>
                   <ul className="text-sm text-blue-800 space-y-1">
                     <li>• تنسيق التواريخ إلى الصيغة الصحيحة</li>
-                    <li>• إصلاح أرقام الهواتف الكويتية</li>
+                    <li>• إصلاح أرقام الهواتف القطرية</li>
                     <li>• تصحيح عناوين البريد الإلكتروني</li>
                     <li>• تنظيف النصوص وإزالة المسافات الإضافية</li>
                     <li>• تحويل القيم المنطقية والأرقام</li>
