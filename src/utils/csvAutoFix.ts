@@ -156,13 +156,13 @@ export class CSVAutoFix {
    * إصلاح رقم الهاتف القطري
    */
   static fixQatarPhone(value: any): FixResult {
-    if (!value || value === '') {
+    if (!value || value === '' || value === '0') {
       return {
         success: false,
         originalValue: value,
         fixedValue: value,
         confidence: 'low',
-        reason: 'القيمة فارغة'
+        reason: value === '0' ? 'قيمة غير صحيحة (0)' : 'القيمة فارغة'
       };
     }
 
@@ -206,13 +206,13 @@ export class CSVAutoFix {
    * إصلاح رقم الهاتف الكويتي
    */
   static fixKuwaitPhone(value: any): FixResult {
-    if (!value || value === '') {
+    if (!value || value === '' || value === '0') {
       return {
         success: false,
         originalValue: value,
         fixedValue: value,
         confidence: 'low',
-        reason: 'القيمة فارغة'
+        reason: value === '0' ? 'قيمة غير صحيحة (0)' : 'القيمة فارغة'
       };
     }
 

@@ -354,7 +354,7 @@ export function useCSVUpload() {
             emergency_contact_name: customerData.emergency_contact_name || undefined,
             emergency_contact_phone: customerData.emergency_contact_phone || undefined,
             notes: customerData.notes || undefined,
-            company_id: user?.company?.id,
+            company_id: '24bc0b21-4e2d-4413-9842-31719a3669f4', // العراف لتاجير السيارات
             is_active: true,
             created_by: user?.id
           };
