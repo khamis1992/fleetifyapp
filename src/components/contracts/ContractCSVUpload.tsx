@@ -1,14 +1,15 @@
-import { useState } from "react"
-import { Upload, Download, FileText, AlertCircle, CheckCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { toast } from "sonner"
-import { useContractCSVUpload } from "@/hooks/useContractCSVUpload"
+import { useState } from "react";
+import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
+import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Upload, Download, FileText, AlertCircle, CheckCircle, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 interface ContractCSVUploadProps {
   open: boolean
@@ -17,8 +18,18 @@ interface ContractCSVUploadProps {
 }
 
 export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: ContractCSVUploadProps) {
-  const [file, setFile] = useState<File | null>(null)
-  const { uploadContracts, isUploading, progress, results, downloadTemplate } = useContractCSVUpload()
+  const [uploadMode, setUploadMode] = useState<'classic' | 'smart'>('smart');
+  const [file, setFile] = useState<File | null>(null);
+  const { 
+    uploadContracts, 
+    smartUploadContracts,
+    isUploading, 
+    progress, 
+    results, 
+    downloadTemplate,
+    contractFieldTypes,
+    contractRequiredFields
+  } = useContractCSVUpload();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -56,6 +67,22 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     onOpenChange(false)
   }
 
+  // عرض الرفع الذكي أو التقليدي حسب الاختيار
+  if (uploadMode === 'smart') {
+    return (
+      <SmartCSVUpload
+        open={open}
+        onOpenChange={onOpenChange}
+        onUploadComplete={onUploadComplete}
+        entityType="contract"
+        uploadFunction={smartUploadContracts}
+        downloadTemplate={downloadTemplate}
+        fieldTypes={contractFieldTypes}
+        requiredFields={contractRequiredFields}
+      />
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
@@ -64,6 +91,18 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
             <Upload className="h-5 w-5" />
             رفع العقود من ملف CSV
           </DialogTitle>
+          <DialogDescription className="flex items-center justify-between">
+            <span>الطريقة التقليدية لرفع ملفات CSV</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setUploadMode('smart')}
+              className="flex items-center gap-1"
+            >
+              <Zap className="h-3 w-3" />
+              التبديل للرفع الذكي
+            </Button>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
