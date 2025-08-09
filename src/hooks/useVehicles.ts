@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useSystemLogger } from "@/hooks/useSystemLogger"
+import { useCurrentCompanyId } from "./useUnifiedCompanyAccess"
 
 export interface Vehicle {
   id: string
@@ -289,17 +290,17 @@ export interface VehicleActivityLog {
 }
 
 export const useVehicles = () => {
-  const { user } = useAuth()
+  const companyId = useCurrentCompanyId()
   
   return useQuery({
-    queryKey: ["vehicles", user?.profile?.company_id],
+    queryKey: ["vehicles", companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
+      if (!companyId) return []
       
       const { data, error } = await supabase
         .from("vehicles")
         .select("*")
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("plate_number")
 
@@ -310,22 +311,22 @@ export const useVehicles = () => {
 
       return data as Vehicle[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
 export const useAvailableVehicles = () => {
-  const { user } = useAuth()
+  const companyId = useCurrentCompanyId()
   
   return useQuery({
-    queryKey: ["available-vehicles", user?.profile?.company_id],
+    queryKey: ["available-vehicles", companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
+      if (!companyId) return []
       
       const { data, error } = await supabase
         .from("vehicles")
         .select("*")
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .eq("status", "available")
         .order("plate_number")
@@ -337,7 +338,7 @@ export const useAvailableVehicles = () => {
 
       return data as Vehicle[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
@@ -346,6 +347,7 @@ export const useCreateVehicle = () => {
   const { toast } = useToast()
   const { user } = useAuth()
   const { log } = useSystemLogger()
+  const companyId = useCurrentCompanyId()
   
   return useMutation({
     mutationFn: async (vehicleData: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) => {
@@ -374,10 +376,9 @@ export const useCreateVehicle = () => {
       }
       
       // Check if user has permission to create vehicles for this company
-      const userCompanyId = user?.profile?.company_id || user?.company?.id;
-      if (vehicleData.company_id !== userCompanyId) {
+      if (vehicleData.company_id !== companyId) {
         console.error("❌ [USE_CREATE_VEHICLE] User company mismatch:", {
-          userCompanyId,
+          userCompanyId: companyId,
           vehicleCompanyId: vehicleData.company_id
         });
         throw new Error("ليس لديك صلاحية لإنشاء مركبة لهذه الشركة");
@@ -439,13 +440,13 @@ export const useCreateVehicle = () => {
       console.log("🔄 [USE_CREATE_VEHICLE] Invalidating vehicle queries...");
       
       // Invalidate all related queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
-      queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles", companyId] })
+      queryClient.invalidateQueries({ queryKey: ["available-vehicles", companyId] })
       queryClient.invalidateQueries({ queryKey: ["fleet-analytics"] })
       queryClient.invalidateQueries({ queryKey: ["fleet-status"] })
       
       // Force a refetch to ensure data is updated immediately
-      queryClient.refetchQueries({ queryKey: ["vehicles"] })
+      queryClient.refetchQueries({ queryKey: ["vehicles", companyId] })
       
       console.log("✅ [USE_CREATE_VEHICLE] Success flow completed");
     },
