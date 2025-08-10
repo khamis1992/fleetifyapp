@@ -30,9 +30,12 @@ export function useContractCSVUpload() {
     end_date: 'date' as const,
     contract_amount: 'number' as const,
     monthly_amount: 'number' as const,
+    // دعم تحديد مركز التكلفة بعدة طرق
+    cost_center_id: 'text' as const,          // اختياري
+    cost_center_code: 'text' as const,        // اختياري
+    cost_center_name: 'text' as const,        // اختياري
     description: 'text' as const,
     terms: 'text' as const,
-    // cost_center_id لم يعد مطلوباً من CSV (يتم تحديده تلقائياً)
   };
 
   // الحقول المطلوبة: سنسمح بتحديد العميل عبر الاسم أو المعرّف
@@ -51,6 +54,10 @@ export function useContractCSVUpload() {
       'end_date',
       'contract_amount',
       'monthly_amount',
+      // طرق تحديد مركز التكلفة (اختياري)
+      'cost_center_id',
+      'cost_center_code',
+      'cost_center_name',
       'description',
       'terms'
     ]
@@ -67,6 +74,10 @@ export function useContractCSVUpload() {
       '2025-12-31',
       '6000',
       '500',
+      // cost center (اختياري): اتركها فارغة للتعيين التلقائي
+      '',            // cost_center_id
+      '',            // cost_center_code
+      '',            // cost_center_name
       'عقد إيجار شهري لمركبة تويوتا كامري',
       'يلتزم المستأجر بدفع الإيجار في موعده المحدد'
     ]
@@ -83,6 +94,10 @@ export function useContractCSVUpload() {
       '2025-12-31',
       '0',
       '0',
+      // cost center (اختياري)
+      '',            // cost_center_id
+      '',            // cost_center_code
+      '',            // cost_center_name
       'cancelled - عقد ملغي',
       'تم الإلغاء قبل التفعيل'
     ]
@@ -128,6 +143,8 @@ export function useContractCSVUpload() {
   // ===================== Helpers: Resolve IDs from human-friendly fields =====================
   const nameToIdCache = new Map<string, string>();
   const plateToIdCache = new Map<string, string>();
+  const ccCodeToIdCache = new Map<string, string>();
+  const ccNameToIdCache = new Map<string, string>();
 
   const normalize = (s?: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -139,6 +156,65 @@ export function useContractCSVUpload() {
     return keywords.some((k) => t.includes(k));
   };
 
+  const isUUID = (s?: string) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+
+  const resolveCostCenterId = async (
+    inputs: { cost_center_id?: string; cost_center_code?: string; cost_center_name?: string },
+    companyId: string
+  ): Promise<{ id?: string; error?: string; provided: boolean }> => {
+    const { cost_center_id, cost_center_code, cost_center_name } = inputs || {};
+    const provided = !!(cost_center_id || cost_center_code || cost_center_name);
+
+    // If explicit UUID provided, accept it as-is (validated)
+    if (cost_center_id) {
+      if (!isUUID(cost_center_id)) return { error: 'قيمة cost_center_id ليست UUID صالحاً', provided };
+      return { id: cost_center_id, provided };
+    }
+
+    // Resolve by code
+    if (cost_center_code) {
+      const key = normalize(cost_center_code);
+      if (ccCodeToIdCache.has(key)) return { id: ccCodeToIdCache.get(key)!, provided };
+      const { data, error } = await supabase
+        .from('cost_centers')
+        .select('id, center_code')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .eq('center_code', cost_center_code)
+        .limit(2);
+      if (error) return { error: `تعذر البحث عن مركز التكلفة بالكود: ${error.message}`, provided };
+      if (!data || data.length === 0) return { error: `لم يتم العثور على مركز تكلفة بالكود: ${cost_center_code}`, provided };
+      if (data.length > 1) return { error: `الكود غير فريد لمركز التكلفة: ${cost_center_code}`, provided };
+      const id = (data[0] as any).id as string;
+      ccCodeToIdCache.set(key, id);
+      return { id, provided };
+    }
+
+    // Resolve by name (Arabic/English, case-insensitive, partial allowed with uniqueness check)
+    if (cost_center_name) {
+      const key = normalize(cost_center_name);
+      if (ccNameToIdCache.has(key)) return { id: ccNameToIdCache.get(key)!, provided };
+      const like = `%${cost_center_name}%`;
+      const { data, error } = await supabase
+        .from('cost_centers')
+        .select('id, center_name, center_name_ar')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .or(`center_name.ilike.${like},center_name_ar.ilike.${like}`)
+        .limit(5);
+      if (error) return { error: `تعذر البحث عن مركز التكلفة بالاسم: ${error.message}`, provided };
+      if (!data || data.length === 0) return { error: `لم يتم العثور على مركز تكلفة بالاسم: ${cost_center_name}`, provided };
+      const exact = data.filter((cc: any) => normalize((cc as any).center_name) === key || normalize((cc as any).center_name_ar) === key);
+      const picked = exact.length === 1 ? exact[0] : (data.length === 1 ? data[0] : null);
+      if (!picked) return { error: `اسم مركز التكلفة غير فريد: ${cost_center_name}`, provided };
+      const id = (picked as any).id as string;
+      ccNameToIdCache.set(key, id);
+      return { id, provided };
+    }
+
+    // Not provided -> let DB trigger assign default
+    return { provided, id: undefined };
+  };
   const resolveCustomerIdByName = async (customerName: string): Promise<{ id?: string; error?: string }> => {
     const key = normalize(customerName);
     if (!key) return { error: 'اسم العميل فارغ' };
@@ -344,8 +420,21 @@ export function useContractCSVUpload() {
           contractData.vehicle_id = resolved.id
         }
 
-        // لا نرسل cost_center_id — سيتم تعيينه تلقائياً من التريجر
-        delete contractData.cost_center_id
+        // مركز التكلفة: حل بالمعرّف أو الكود أو الاسم، وإلا اتركه للتعيين التلقائي عبر التريجر
+        const cc = await resolveCostCenterId({
+          cost_center_id: contractData.cost_center_id,
+          cost_center_code: contractData.cost_center_code,
+          cost_center_name: contractData.cost_center_name,
+        }, user.company.id);
+        if (cc.error) {
+          results.failed++
+          results.errors.push({ row: contractData.rowNumber, message: cc.error })
+          setProgress(Math.round(((i + 1) / data.length) * 100))
+          continue
+        }
+        const resolvedCostCenterId = cc.id;
+        delete contractData.cost_center_code;
+        delete contractData.cost_center_name;
 
         const validation = validateContractData(contractData, contractData.rowNumber)
 
@@ -370,6 +459,7 @@ export function useContractCSVUpload() {
             company_id: user.company.id,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
+            cost_center_id: resolvedCostCenterId ?? null,
             contract_number: contractNumber,
             contract_type: contractData.contract_type,
             contract_date: contractData.contract_date || new Date().toISOString().split('T')[0],
@@ -454,7 +544,16 @@ export function useContractCSVUpload() {
             contractData.vehicle_id = resolved.id;
           }
 
-          delete contractData.cost_center_id; // handled by trigger automatically
+          // مركز التكلفة: حل بالمعرّف أو الكود أو الاسم، وإلا اتركه للتعيين التلقائي عبر التريجر
+          const cc = await resolveCostCenterId({
+            cost_center_id: contractData.cost_center_id,
+            cost_center_code: contractData.cost_center_code,
+            cost_center_name: contractData.cost_center_name,
+          }, user?.company?.id!);
+          if (cc.error) throw new Error(cc.error);
+          const resolvedCostCenterId = cc.id;
+          delete contractData.cost_center_code;
+          delete contractData.cost_center_name;
 
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
           
@@ -462,6 +561,7 @@ export function useContractCSVUpload() {
             company_id: user?.company?.id,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
+            cost_center_id: resolvedCostCenterId ?? null,
             contract_number: contractNumber,
             contract_type: contractData.contract_type,
             contract_date: contractData.contract_date || new Date().toISOString().split('T')[0],
