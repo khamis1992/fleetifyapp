@@ -1,20 +1,24 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export const useContractsData = (filters: any = {}) => {
-  const { user } = useAuth();
+  const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
   // Fetch contracts with customer data
   const { data: contracts, isLoading, refetch } = useQuery({
-    queryKey: ['contracts', user?.profile?.company_id],
+    queryKey: getQueryKey(['contracts']),
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
-      
-      console.log('🔍 [CONTRACTS_QUERY] Fetching contracts for company:', user.profile.company_id)
-      
-        const { data, error } = await supabase
+      const companyId = filter?.company_id || null;
+      console.log('🔍 [CONTRACTS_QUERY] Fetching contracts', {
+        companyId,
+        isBrowsingMode,
+        browsedCompanyId: browsedCompany?.id,
+        actualUserCompanyId,
+      });
+
+      let query = supabase
         .from('contracts')
         .select(`
           *,
@@ -26,18 +30,23 @@ export const useContractsData = (filters: any = {}) => {
             customer_type
           )
         `)
-        .eq('company_id', user.profile.company_id)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        console.error('❌ [CONTRACTS_QUERY] Error fetching contracts:', error)
-        throw error
+        console.error('❌ [CONTRACTS_QUERY] Error fetching contracts:', error);
+        throw error;
       }
       
-      console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts:', data?.length || 0)
-      return data || []
+      console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts:', data?.length || 0);
+      return data || [];
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!user?.id,
   });
 
   // Contract statistics
