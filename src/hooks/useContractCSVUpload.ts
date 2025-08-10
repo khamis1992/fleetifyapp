@@ -221,7 +221,9 @@ export function useContractCSVUpload() {
     // Not provided -> let DB trigger assign default
     return { provided, id: undefined };
   };
-  const resolveCustomerIdByName = async (customerName: string, companyId?: string): Promise<{ id?: string; error?: string }> => {
+  async function resolveCustomerIdByName(customerName: string): Promise<{ id?: string; error?: string }>;
+  async function resolveCustomerIdByName(customerName: string, companyId: string): Promise<{ id?: string; error?: string }>;
+  async function resolveCustomerIdByName(customerName: string, companyId?: string): Promise<{ id?: string; error?: string }> {
     const key = normalize(customerName);
     if (!key) return { error: 'اسم العميل فارغ' };
     if (nameToIdCache.has(key)) return { id: nameToIdCache.get(key)! };
@@ -258,9 +260,11 @@ export function useContractCSVUpload() {
     const id = (candidates[0] as any).id as string;
     nameToIdCache.set(key, id);
     return { id };
-  };
+  }
 
-  const resolveVehicleIdByNumber = async (plateOrNumber: string, companyId?: string): Promise<{ id?: string; error?: string }> => {
+  async function resolveVehicleIdByNumber(plateOrNumber: string): Promise<{ id?: string; error?: string }>;
+  async function resolveVehicleIdByNumber(plateOrNumber: string, companyId: string): Promise<{ id?: string; error?: string }>;
+  async function resolveVehicleIdByNumber(plateOrNumber: string, companyId?: string): Promise<{ id?: string; error?: string }> {
     const key = normalize(plateOrNumber);
     if (!key) return { error: 'رقم المركبة فارغ' };
     if (plateToIdCache.has(key)) return { id: plateToIdCache.get(key)! };
@@ -301,7 +305,7 @@ export function useContractCSVUpload() {
     const id = (picked as any).id as string;
     plateToIdCache.set(key, id);
     return { id };
-  };
+  }
   const validateContractData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
