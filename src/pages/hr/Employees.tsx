@@ -20,6 +20,7 @@ import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 interface Employee {
   id: string;
+  company_id: string;
   employee_number: string;
   first_name: string;
   last_name: string;
@@ -84,19 +85,14 @@ export default function Employees() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Company not found');
+      const companyId = companyFilter?.company_id;
+      if (!companyId) throw new Error('Company not found in current context');
 
       // Check for duplicate employee number among active employees
       const { data: existingEmployee } = await supabase
         .from('employees')
         .select('id')
-        .eq('company_id', profile.company_id)
+         .eq('company_id', companyId)
         .eq('employee_number', employeeData.employee_number)
         .eq('is_active', true)
         .single();
@@ -113,7 +109,7 @@ export default function Employees() {
         const { data: existingEmailEmployee } = await supabase
           .from('employees')
           .select('id')
-          .eq('company_id', profile.company_id)
+           .eq('company_id', companyId)
           .eq('email', employeeEmail.trim())
           .eq('is_active', true)
           .single();
@@ -149,7 +145,7 @@ export default function Employees() {
           bank_account: employeeData.bank_account,
           iban: employeeData.iban,
           notes: employeeData.notes,
-          company_id: profile.company_id,
+          company_id: companyId,
           created_by: user.id,
         })
         .select()
@@ -269,19 +265,14 @@ export default function Employees() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Company not found');
+       const companyId = selectedEmployee.company_id;
+       if (!companyId) throw new Error('Company not found');
 
       // Check for duplicate employee number among active employees (excluding current employee)
       const { data: existingEmployee } = await supabase
         .from('employees')
         .select('id')
-        .eq('company_id', profile.company_id)
+         .eq('company_id', companyId)
         .eq('employee_number', employeeData.employee_number)
         .eq('is_active', true)
         .neq('id', selectedEmployee.id)
@@ -296,7 +287,7 @@ export default function Employees() {
         const { data: existingEmailEmployee } = await supabase
           .from('employees')
           .select('id')
-          .eq('company_id', profile.company_id)
+          .eq('company_id', companyId)
           .eq('email', employeeData.email.trim())
           .eq('is_active', true)
           .neq('id', selectedEmployee.id)

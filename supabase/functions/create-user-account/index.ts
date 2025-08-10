@@ -60,11 +60,12 @@ const assignRolesAndCreateRecord = async (
   try {
     console.log('Assigning roles and creating record for user:', userId);
     
-    // Clear existing roles for this user first
+    // Clear existing roles for this user in this company first
     const { error: deleteError } = await supabaseClient
       .from('user_roles')
       .delete()
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('company_id', companyId);
 
     if (deleteError) {
       console.error('Error clearing existing roles:', deleteError);
@@ -75,7 +76,9 @@ const assignRolesAndCreateRecord = async (
     if (roles && roles.length > 0 && userId) {
       const roleInserts = roles.map(role => ({
         user_id: userId,
-        role: role
+        company_id: companyId,
+        role: role,
+        granted_by: requestedBy
       }));
 
       console.log('Inserting roles:', roleInserts);
@@ -321,12 +324,15 @@ serve(async (req) => {
             await supabaseClient
               .from('user_roles')
               .delete()
-              .eq('user_id', employeeData.user_id);
+              .eq('user_id', employeeData.user_id)
+              .eq('company_id', company_id);
 
             if (roles && roles.length > 0) {
               const roleInserts = roles.map(role => ({
                 user_id: employeeData.user_id,
-                role: role
+                company_id: company_id,
+                role: role,
+                granted_by: tokenData.user.id
               }));
 
               const { error: rolesError } = await supabaseClient
@@ -463,7 +469,8 @@ serve(async (req) => {
       await supabaseClient
         .from('user_roles')
         .delete()
-        .eq('user_id', existingUser.id);
+        .eq('user_id', existingUser.id)
+        .eq('company_id', company_id);
 
       const roleResult = await assignRolesAndCreateRecord(
         supabaseClient, 
