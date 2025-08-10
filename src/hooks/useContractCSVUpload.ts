@@ -173,6 +173,8 @@ export function useContractCSVUpload() {
 
     // If explicit UUID provided, accept it as-is (validated)
     if (cost_center_id) {
+      // Treat placeholders as not provided (let triggers assign defaults)
+      if (isPlaceholderValue(cost_center_id)) return { id: undefined, provided };
       if (!isUUID(cost_center_id)) return { error: 'قيمة cost_center_id ليست UUID صالحاً', provided };
       return { id: cost_center_id, provided };
     }
@@ -306,12 +308,63 @@ export function useContractCSVUpload() {
     plateToIdCache.set(key, id);
     return { id };
   }
+  // Preprocess row: resolve non-UUID identifiers and handle placeholders
+  const preprocessAndResolveIds = async (
+    input: any,
+    companyId: string
+  ): Promise<{ data?: any; error?: string }> => {
+    try {
+      const out: any = { ...input };
+      const rowNum = input.rowNumber || 0;
+
+      // Normalize obvious alias fields
+      if (!out.vehicle_number && out.plate_number) out.vehicle_number = out.plate_number;
+
+      // Customer resolution
+      const customerRaw: string | undefined = out.customer_id || out.customer_name;
+      if (!customerRaw) {
+        // keep as is; validate will catch missing
+      } else if (isPlaceholderValue(customerRaw)) {
+        delete out.customer_id;
+      } else if (!isUUID(customerRaw)) {
+        const nameKey = out.customer_name || customerRaw;
+        const resolved = await resolveCustomerIdByName(String(nameKey), companyId);
+        if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من القيمة '${nameKey}' - ${resolved.error}` };
+        out.customer_id = resolved.id;
+      }
+
+      // Vehicle resolution (optional)
+      const vehicleRaw: string | undefined = out.vehicle_id || out.vehicle_number;
+      if (!vehicleRaw) {
+        // optional
+      } else if (isPlaceholderValue(vehicleRaw)) {
+        delete out.vehicle_id;
+      } else if (!isUUID(vehicleRaw)) {
+        const plateKey = out.vehicle_number || vehicleRaw;
+        const resolved = await resolveVehicleIdByNumber(String(plateKey), companyId);
+        if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد المركبة من القيمة '${plateKey}' - ${resolved.error}` };
+        out.vehicle_id = resolved.id;
+      }
+
+      // Cost center placeholders handled in resolver; nothing here
+      return { data: out };
+    } catch (e: any) {
+      return { error: e?.message || 'خطأ غير معروف أثناء التحضير المسبق' };
+    }
+  };
+
   const validateContractData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     // Required fields validation
     if (!data.customer_id) {
       errors.push('العميل مطلوب: يرجى تزويد customer_id أو customer_name قابل للتعرف')
+    } else if (!isUUID(data.customer_id)) {
+      errors.push(`معرّف العميل غير صالح (ليس UUID): ${data.customer_id}`)
+    }
+
+    if (data.vehicle_id && !isUUID(data.vehicle_id)) {
+      errors.push(`معرّف المركبة غير صالح (ليس UUID): ${data.vehicle_id}`)
     }
 
     if (!data.contract_type) {
@@ -416,33 +469,15 @@ export function useContractCSVUpload() {
       for (let i = 0; i < data.length; i++) {
         const originalRow = data[i]
 
-        // محاولة التعرف الذكي على الحقول قبل التحقق
-        const contractData: any = { ...originalRow }
-
-        // العميل: من الاسم إلى المعرّف إذا لزم
-        if (!contractData.customer_id && contractData.customer_name) {
-          const resolved = await resolveCustomerIdByName(contractData.customer_name, user.company.id)
-          if (resolved.error) {
-            results.failed++
-            results.errors.push({ row: contractData.rowNumber, message: resolved.error })
-            setProgress(Math.round(((i + 1) / data.length) * 100))
-            continue
-          }
-          contractData.customer_id = resolved.id
+        // Preprocess and resolve IDs (customer/vehicle)
+        const pre = await preprocessAndResolveIds({ ...originalRow }, user.company.id);
+        if (pre.error) {
+          results.failed++
+          results.errors.push({ row: originalRow.rowNumber || (i + 1), message: pre.error })
+          setProgress(Math.round(((i + 1) / data.length) * 100))
+          continue
         }
-
-        // المركبة: من رقم اللوحة إلى المعرّف إذا لزم
-        const providedPlate = contractData.vehicle_number || contractData.plate_number
-        if (!contractData.vehicle_id && providedPlate) {
-          const resolved = await resolveVehicleIdByNumber(providedPlate, user.company.id)
-          if (resolved.error) {
-            results.failed++
-            results.errors.push({ row: contractData.rowNumber, message: resolved.error })
-            setProgress(Math.round(((i + 1) / data.length) * 100))
-            continue
-          }
-          contractData.vehicle_id = resolved.id
-        }
+        const contractData: any = pre.data;
 
         // مركز التكلفة: حل بالمعرّف أو الكود أو الاسم، وإلا اتركه للتعيين التلقائي عبر التريجر
         const cc = await resolveCostCenterId({
@@ -558,22 +593,10 @@ export function useContractCSVUpload() {
         const rowNum = originalRow.rowNumber || i + 1;
         
         try {
-          const contractData: any = { ...originalRow };
-
-          // Resolve customer by name if needed (scoped by company)
-          if (!contractData.customer_id && contractData.customer_name) {
-            const resolved = await resolveCustomerIdByName(contractData.customer_name, companyId);
-            if (resolved.error) throw new Error(resolved.error);
-            contractData.customer_id = resolved.id;
-          }
-
-          // Resolve vehicle by plate if needed (scoped by company)
-          const providedPlate = contractData.vehicle_number || contractData.plate_number;
-          if (!contractData.vehicle_id && providedPlate) {
-            const resolved = await resolveVehicleIdByNumber(providedPlate, companyId);
-            if (resolved.error) throw new Error(resolved.error);
-            contractData.vehicle_id = resolved.id;
-          }
+          // Preprocess row (resolve IDs, normalize)
+          const pre = await preprocessAndResolveIds({ ...originalRow }, companyId);
+          if (pre.error) throw new Error(pre.error);
+          const contractData: any = pre.data;
 
           // مركز التكلفة
           const cc = await resolveCostCenterId({
