@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, User, CheckCircle, XCircle, RefreshCw, UserCheck } from 'lucide-react';
+import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 
 interface EmployeeAttendanceStatus {
   id: string;
@@ -24,13 +25,16 @@ export const AttendancePermissionsPanel: React.FC = () => {
   const queryClient = useQueryClient();
   const [isFixingAll, setIsFixingAll] = useState(false);
 
+  const companyFilter = useCompanyFilter();
+
   const { data: employeeStatuses, isLoading } = useQuery({
-    queryKey: ['employee-attendance-status'],
+    queryKey: ['employee-attendance-status', companyFilter?.company_id ?? 'all'],
     queryFn: async () => {
-      // Get all employees
+      // Get company-scoped active employees
       const { data: employees, error: empError } = await supabase
         .from('employees')
         .select('id, employee_number, first_name, last_name, user_id, account_status, has_system_access')
+        .match(companyFilter as Record<string, string>)
         .eq('is_active', true)
         .order('first_name');
 
