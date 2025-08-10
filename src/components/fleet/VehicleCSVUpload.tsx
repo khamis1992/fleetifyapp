@@ -49,19 +49,22 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
     }
 
     try {
-      await uploadVehicles(file)
+      const res = await uploadVehicles(file)
       
       // Handle results after upload completes
-      if (results) {
-        if (results.successful > 0) {
-          if (results.failed > 0) {
-            toast.success(`تم رفع ${results.successful} مركبة بنجاح، فشل رفع ${results.failed} مركبة`)
+      if (res) {
+        const skipped = Number((res as any).skipped || 0)
+        if (res.successful > 0) {
+          if ((res.failed > 0) || skipped > 0) {
+            toast.success(`تم رفع ${res.successful} مركبة، تم تخطي ${skipped} مكررة، وفشل ${res.failed} مركبة`)
           } else {
-            toast.success(`تم رفع جميع المركبات بنجاح (${results.successful} مركبة)`)
+            toast.success(`تم رفع جميع المركبات بنجاح (${res.successful} مركبة)`)
           }
           onUploadComplete()
-        } else if (results.failed > 0) {
-          toast.error(`فشل رفع جميع المركبات (${results.failed} مركبة). يرجى مراجعة الأخطاء أدناه.`)
+        } else if (res.successful === 0 && skipped > 0 && res.failed === 0) {
+          toast.message('لا توجد مركبات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${res.total})` })
+        } else if (res.failed > 0) {
+          toast.error(`فشل رفع جميع المركبات (${res.failed} مركبة). يرجى مراجعة الأخطاء أدناه.`)
         } else {
           toast.error('لم يتم رفع أي مركبة. يرجى التحقق من تنسيق الملف.')
         }
@@ -171,10 +174,14 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
           {/* النتائج */}
           {results && (
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{results.successful}</div>
                   <div className="text-sm text-green-700">تم بنجاح</div>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">{Number((results as any).skipped || 0)}</div>
+                  <div className="text-sm text-yellow-700">تم التخطي</div>
                 </div>
                 <div className="text-center p-3 bg-red-50 rounded-lg">
                   <div className="text-2xl font-bold text-red-600">{results.failed}</div>

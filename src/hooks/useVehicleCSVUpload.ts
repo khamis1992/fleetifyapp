@@ -11,6 +11,7 @@ interface CSVUploadResults {
   total: number
   successful: number
   failed: number
+  skipped: number
   errors: Array<{ row: number; message: string }>
 }
 
@@ -258,6 +259,7 @@ export function useVehicleCSVUpload() {
         total: fixedRows.length,
         successful: 0,
         failed: 0,
+        skipped: 0,
         errors: []
       }
 
@@ -297,14 +299,14 @@ export function useVehicleCSVUpload() {
           const seenCount = (processedSeen.get(plateKey) || 0) + 1
           processedSeen.set(plateKey, seenCount)
           if ((counts.get(plateKey) || 0) > 1 && seenCount > 1) {
-            results.failed++
-            results.errors.push({ row: rowFix.rowNumber, message: `رقم اللوحة مكرر داخل الملف: ${fixed.plate_number}` })
+            results.skipped++
+            results.errors.push({ row: rowFix.rowNumber, message: `تم التخطي لأن رقم اللوحة مكرر داخل الملف: ${fixed.plate_number}` })
             continue
           }
 
           if (existingPlates.has(plateKey)) {
-            results.failed++
-            results.errors.push({ row: rowFix.rowNumber, message: `رقم اللوحة موجود مسبقاً لهذه الشركة: ${fixed.plate_number}` })
+            results.skipped++
+            results.errors.push({ row: rowFix.rowNumber, message: `تم التخطي لأن رقم اللوحة موجود مسبقاً لهذه الشركة: ${fixed.plate_number}` })
             continue
           }
         }
@@ -369,7 +371,7 @@ export function useVehicleCSVUpload() {
       console.log('📈 [VEHICLE_CSV_UPLOAD] Final results:', results)
       setResults(results)
       await queryClient.invalidateQueries({ queryKey: ['vehicles', companyId] })
-      
+      return results
     } catch (error: any) {
       console.error('💥 [VEHICLE_CSV_UPLOAD] Process failed:', error)
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
@@ -414,6 +416,7 @@ export function useVehicleCSVUpload() {
       total: fixedData.length,
       successful: 0,
       failed: 0,
+      skipped: 0,
       errors: []
     }
 
@@ -439,19 +442,19 @@ export function useVehicleCSVUpload() {
             const seenCount = (processedSeen.get(plateKey) || 0) + 1
             processedSeen.set(plateKey, seenCount)
             if ((counts.get(plateKey) || 0) > 1 && seenCount > 1) {
-              uploadResults.failed++
+              uploadResults.skipped++
               uploadResults.errors.push({
                 row: vehicleData.rowNumber || i + 1,
-                message: `رقم اللوحة مكرر داخل الملف: ${vehicleData.plate_number}`
+                message: `تم التخطي لأن رقم اللوحة مكرر داخل الملف: ${vehicleData.plate_number}`
               })
               continue
             }
 
             if (!useUpsert && existingPlates.has(plateKey)) {
-              uploadResults.failed++
+              uploadResults.skipped++
               uploadResults.errors.push({
                 row: vehicleData.rowNumber || i + 1,
-                message: `رقم اللوحة موجود مسبقاً لهذه الشركة: ${vehicleData.plate_number}`
+                message: `تم التخطي لأن رقم اللوحة موجود مسبقاً لهذه الشركة: ${vehicleData.plate_number}`
               })
               continue
             }

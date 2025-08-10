@@ -148,15 +148,21 @@ export function SmartCSVUpload({
       const successful = Number(result?.successful ?? 0);
       const failed = Number(result?.failed ?? 0);
       const total = Number(result?.total ?? dataToUpload.length);
+      const skipped = Number(result?.skipped ?? 0);
 
       if (successful > 0 && failed === 0) {
-        toast.success(`تم رفع جميع السجلات بنجاح (${successful}/${total})`);
+        const msg = skipped > 0 
+          ? `تم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
+          : `تم رفع جميع السجلات بنجاح (${successful}/${total})`;
+        toast.success(msg);
         onUploadComplete();
         handleClose();
-      } else if (successful > 0 && failed > 0) {
-        toast.success(`تم رفع ${successful} سجل، وفشل ${failed} سجل. راجع الأخطاء ثم أعد المحاولة.`);
+      } else if (successful > 0 && (failed > 0 || skipped > 0)) {
+        toast.success(`تم رفع ${successful} سجل، تم تخطي ${skipped}، وفشل ${failed}. راجع الأخطاء ثم أعد المحاولة.`);
         onUploadComplete();
         // اترك الحوار مفتوحًا ليستعرض المستخدم الأخطاء في المعاينة
+      } else if (successful === 0 && skipped > 0 && failed === 0) {
+        toast.message('لا توجد سجلات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
       } else if (successful === 0) {
         toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
         if (isSuperAdmin) {
