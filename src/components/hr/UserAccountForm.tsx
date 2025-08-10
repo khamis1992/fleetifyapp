@@ -150,6 +150,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
       const employeeName = `${employee.first_name} ${employee.last_name}`;
       
       if (result.method === 'direct') {
+        console.log('[ACCOUNT_CREATED_WHATSAPP] accountData (UserAccountForm onSuccess):', result.accountData);
         setAccountData(result.accountData);
         setShowAccountDialog(true);
         onOpenChange(false);

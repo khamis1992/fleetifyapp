@@ -205,6 +205,14 @@ export default function Employees() {
         if (!result?.success) throw new Error(result?.error || 'فشل في إنشاء الحساب');
 
         // Show account details dialog
+        console.log('[ACCOUNT_CREATED_WHATSAPP] accountData (Employees createUserAccount):', {
+          employee_name: `${employee.first_name} ${employee.last_name}`,
+          employee_email: employeeData.accountEmail,
+          temporary_password: result.temporary_password || employeeData.accountPassword,
+          password_expires_at: result.password_expires_at,
+          employee_phone: employee.phone,
+          employee_id: employee.id,
+        });
         setAccountData({
           employee_name: `${employee.first_name} ${employee.last_name}`,
           employee_email: employeeData.accountEmail,

@@ -13,7 +13,7 @@ import { Copy, Eye, EyeOff, CheckCircle, AlertTriangle, MessageCircle } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
-import { formatPhoneForWhatsApp } from '@/lib/phone';
+import { formatPhoneForWhatsApp, normalizeDigits } from '@/lib/phone';
 
 interface AccountCreatedDialogProps {
   open: boolean;
@@ -40,23 +40,31 @@ const companyFilter = useCompanyFilter();
 const [resolvedPhone, setResolvedPhone] = useState<string>('');
 
 useEffect(() => {
-  setResolvedPhone(accountData?.employee_phone || '');
+  const v = accountData?.employee_phone || '';
+  setResolvedPhone(v);
+  console.log('[ACCOUNT_CREATED_WHATSAPP] init resolvedPhone from props:', v);
 }, [accountData?.employee_phone, open]);
 
 useEffect(() => {
   const fetchPhone = async () => {
     if (!open) return;
-    if (resolvedPhone && resolvedPhone.trim().length >= 6) return;
+    const current = resolvedPhone?.trim();
+    const digitsLen = normalizeDigits(current || '').replace(/\D/g, '').length;
+    if (current && digitsLen >= 6) return;
     if (!accountData?.employee_id) return;
+    console.log('[ACCOUNT_CREATED_WHATSAPP] fetching phone for employee:', accountData.employee_id);
     const { data, error } = await supabase
       .from('employees')
       .select('phone, emergency_contact_phone')
       .eq('id', accountData.employee_id)
-      .single();
-    if (!error) {
-      const phone = (data as any)?.phone || (data as any)?.emergency_contact_phone || '';
-      if (phone) setResolvedPhone(phone);
+      .maybeSingle();
+    if (error) {
+      console.log('[ACCOUNT_CREATED_WHATSAPP] fetchPhone error:', error);
+      return;
     }
+    const phone = (data as any)?.phone || (data as any)?.emergency_contact_phone || '';
+    console.log('[ACCOUNT_CREATED_WHATSAPP] fetched phone:', phone);
+    if (phone) setResolvedPhone(phone);
   };
   fetchPhone();
 }, [open, accountData?.employee_id, resolvedPhone]);
@@ -124,28 +132,49 @@ useEffect(() => {
     return encodeURIComponent(lines.join('\n'));
   }, [accountData]);
 
-  const handleSendWhatsApp = () => {
-    const phone = resolvedPhone?.trim();
-    if (!phone || phone.length < 6) {
-      toast({
-        variant: 'destructive',
-        title: 'رقم الجوال غير متوفر',
-        description: 'لا يوجد رقم جوال في ملف الموظف لإرسال الرسالة عبر واتساب'
-      });
-      return;
+const handleSendWhatsApp = async () => {
+  let phoneRaw = (resolvedPhone || '').trim();
+  let digits = normalizeDigits(phoneRaw).replace(/\D/g, '');
+  console.log('[ACCOUNT_CREATED_WHATSAPP] sending, initial phone:', phoneRaw, 'digits:', digits);
+  if (!digits || digits.length < 6) {
+    if (accountData.employee_id) {
+      console.log('[ACCOUNT_CREATED_WHATSAPP] trying fetch fallback...');
+      const { data, error } = await supabase
+        .from('employees')
+        .select('phone, emergency_contact_phone')
+        .eq('id', accountData.employee_id)
+        .maybeSingle();
+      if (!error) {
+        const fetched = (data as any)?.phone || (data as any)?.emergency_contact_phone || '';
+        console.log('[ACCOUNT_CREATED_WHATSAPP] fallback fetched phone:', fetched);
+        if (fetched) {
+          setResolvedPhone(fetched);
+          phoneRaw = fetched.trim();
+          digits = normalizeDigits(phoneRaw).replace(/\D/g, '');
+        }
+      }
     }
-    const { waNumber } = formatPhoneForWhatsApp(phone, companyCountry);
-    if (!waNumber) {
-      toast({
-        variant: 'destructive',
-        title: 'رقم غير صالح',
-        description: 'تعذر تنسيق رقم الجوال لإرسال الرسالة'
-      });
-      return;
-    }
-    const url = `https://wa.me/${waNumber}?text=${whatsappMessage}`;
-    window.open(url, '_blank');
-  };
+  }
+  if (!digits || digits.length < 6) {
+    toast({
+      variant: 'destructive',
+      title: 'رقم الجوال غير متوفر',
+      description: 'لا يوجد رقم جوال في ملف الموظف لإرسال الرسالة عبر واتساب'
+    });
+    return;
+  }
+  const { waNumber } = formatPhoneForWhatsApp(phoneRaw, companyCountry);
+  if (!waNumber) {
+    toast({
+      variant: 'destructive',
+      title: 'رقم غير صالح',
+      description: 'تعذر تنسيق رقم الجوال لإرسال الرسالة'
+    });
+    return;
+  }
+  const url = `https://wa.me/${waNumber}?text=${whatsappMessage}`;
+  window.open(url, '_blank');
+};
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md" dir="rtl">
@@ -193,6 +222,26 @@ useEffect(() => {
                 variant="outline"
                 size="sm"
                 onClick={() => copyToClipboard(accountData.employee_email, 'البريد الإلكتروني')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-2">
+            <Label>رقم الجوال</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={normalizeDigits(resolvedPhone || '')}
+                readOnly
+                className="text-left"
+                dir="ltr"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(normalizeDigits(resolvedPhone || ''), 'رقم الجوال')}
               >
                 <Copy className="h-4 w-4" />
               </Button>
