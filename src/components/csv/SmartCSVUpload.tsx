@@ -19,7 +19,7 @@ interface SmartCSVUploadProps {
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
   entityType: 'customer' | 'vehicle' | 'contract';
-  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string }) => Promise<any>;
+  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
   requiredFields: string[];
@@ -42,6 +42,7 @@ export function SmartCSVUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [enableUpsert, setEnableUpsert] = useState(false);
+  const [createMissingCustomers, setCreateMissingCustomers] = useState(false);
   const [lastResult, setLastResult] = useState<any | null>(null);
 
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
@@ -133,7 +134,7 @@ export function SmartCSVUpload({
       }, 200);
 
       console.log('Calling upload function with companyId:', companyId);
-      const result = await uploadFunction(dataToUpload, { upsert: enableUpsert, targetCompanyId: companyId });
+      const result = await uploadFunction(dataToUpload, { upsert: enableUpsert, targetCompanyId: companyId, autoCreateCustomers: createMissingCustomers });
       console.log('Upload function result:', result);
       
       clearInterval(progressInterval);
@@ -263,6 +264,24 @@ export function SmartCSVUpload({
                     <label htmlFor="enableUpsert" className="text-sm">
                       عند وجود رقم لوحة موجود، قم بتحديث السجل بدلاً من تخطيه (Upsert)
                       <div className="text-xs text-muted-foreground mt-1">سيتم التحديث داخل نفس الشركة فقط</div>
+                    </label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {entityType === 'contract' && isSuperAdmin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">خيارات الرفع</CardTitle>
+                  <CardDescription>إنشاء العملاء المفقودين تلقائياً</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="autoCreateCustomers" checked={createMissingCustomers} onCheckedChange={(v) => setCreateMissingCustomers(Boolean(v))} />
+                    <label htmlFor="autoCreateCustomers" className="text-sm">
+                      إذا لم يتم العثور على العميل بالاسم داخل الشركة المستهدفة، قم بإنشائه تلقائياً كعميل شركة
+                      <div className="text-xs text-muted-foreground mt-1">سيتم الإنشاء داخل الشركة المحددة فقط</div>
                     </label>
                   </div>
                 </CardContent>

@@ -300,7 +300,8 @@ export function useContractCSVUpload() {
   // Preprocess row: resolve non-UUID identifiers and handle placeholders
   const preprocessAndResolveIds = async (
     input: any,
-    companyId: string
+    companyId: string,
+    autoCreateCustomers: boolean = false
   ): Promise<{ data?: any; error?: string }> => {
     try {
       const out: any = { ...input };
@@ -318,8 +319,32 @@ export function useContractCSVUpload() {
       } else if (!isUUID(customerRaw)) {
         const nameKey = out.customer_name || customerRaw;
         const resolved = await resolveCustomerIdByName(String(nameKey), companyId);
-        if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من القيمة '${nameKey}' - ${resolved.error}` };
-        out.customer_id = resolved.id;
+        if (resolved.error) {
+          if (autoCreateCustomers && user?.roles?.includes('super_admin')) {
+            // Attempt to auto-create a minimal corporate customer in the target company
+            const { data: created, error: createErr } = await supabase
+              .from('customers')
+              .insert([
+                {
+                  company_id: companyId,
+                  customer_type: 'corporate',
+                  company_name: String(nameKey),
+                  is_active: true,
+                  created_by: user?.id,
+                } as any
+              ])
+              .select('id')
+              .maybeSingle();
+            if (createErr || !created?.id) {
+              return { error: `السطر ${rowNum}: تعذر إنشاء العميل تلقائياً '${nameKey}' - ${createErr?.message || 'سبب غير معروف'}` };
+            }
+            out.customer_id = created.id;
+          } else {
+            return { error: `السطر ${rowNum}: تعذر تحديد العميل من القيمة '${nameKey}' - ${resolved.error}` };
+          }
+        } else {
+          out.customer_id = resolved.id;
+        }
       }
 
       // Vehicle resolution (optional)
@@ -503,22 +528,8 @@ export function useContractCSVUpload() {
     setProgress(0)
     setResults(null)
 
-    // Set browsed company context for database operations
-    if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
-      console.log('📝 [Contract CSV] Setting browsed company context for:', browsedCompany.name, browsedCompany.id);
-      try {
-        const { error } = await supabase.functions.invoke('set-browsed-company', {
-          body: { company_id: browsedCompany.id }
-        });
-        if (error) {
-          console.warn('⚠️ [Contract CSV] Could not set browsed company context:', error);
-        } else {
-          console.log('✅ [Contract CSV] Browsed company context set successfully');
-        }
-      } catch (error) {
-        console.warn('⚠️ [Contract CSV] Failed to set browsed company context:', error);
-      }
-    }
+    // Note: We no longer set browsed company via edge function; we pass company_id explicitly per insert
+
 
     try {
       const text = await file.text()
@@ -539,7 +550,7 @@ export function useContractCSVUpload() {
         const originalRow = data[i];
 
         // Preprocess and resolve IDs (customer/vehicle)
-        const pre = await preprocessAndResolveIds({ ...originalRow }, companyId);
+        const pre = await preprocessAndResolveIds({ ...originalRow }, companyId, false);
         if (pre.error) {
           results.failed++;
           results.errors.push({ row: originalRow.rowNumber || (i + 1), message: pre.error });
@@ -662,7 +673,7 @@ export function useContractCSVUpload() {
   // دالة رفع ذكية للعقود
   const smartUploadContracts = async (
     fixedData: any[],
-    options?: { upsert?: boolean; targetCompanyId?: string }
+    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean }
   ) => {
     console.log('📝 [Smart Contract CSV] Starting upload with companyId:', companyId);
     console.log('📝 [Smart Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
@@ -670,22 +681,8 @@ export function useContractCSVUpload() {
     setIsUploading(true);
     setProgress(0);
 
-    // Set browsed company context for database operations
-    if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
-      console.log('📝 [Smart Contract CSV] Setting browsed company context for:', browsedCompany.name, browsedCompany.id);
-      try {
-        const { error } = await supabase.functions.invoke('set-browsed-company', {
-          body: { company_id: browsedCompany.id }
-        });
-        if (error) {
-          console.warn('⚠️ [Smart Contract CSV] Could not set browsed company context:', error);
-        } else {
-          console.log('✅ [Smart Contract CSV] Browsed company context set successfully');
-        }
-      } catch (error) {
-        console.warn('⚠️ [Smart Contract CSV] Failed to set browsed company context:', error);
-      }
-    }
+    // Note: We no longer set browsed company via edge function; we pass company_id explicitly per insert
+
     
     const uploadResults: CSVUploadResults = {
       total: fixedData.length,
@@ -705,7 +702,7 @@ export function useContractCSVUpload() {
         
         try {
           // Preprocess row (resolve IDs, normalize)
-          const pre = await preprocessAndResolveIds({ ...originalRow }, targetCompanyId);
+          const pre = await preprocessAndResolveIds({ ...originalRow }, targetCompanyId, Boolean(options?.autoCreateCustomers));
           if (pre.error) throw new Error(pre.error);
           const contractData: any = pre.data;
 

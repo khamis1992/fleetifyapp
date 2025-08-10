@@ -197,7 +197,7 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
                   <h4 className="font-medium text-red-900">الأخطاء:</h4>
                   <ScrollArea className="h-32 w-full border rounded-md p-2">
                     <div className="space-y-1">
-                      {results.errors.map((error, index) => (
+                      {results.errors.slice(0, 3).map((error, index) => (
                         <div key={index} className="text-sm">
                           <Badge variant="destructive" className="text-xs">
                             السطر {error.row}
@@ -205,6 +205,11 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
                           <span className="ml-2 text-red-600">{error.message}</span>
                         </div>
                       ))}
+                      {results.errors.length > 3 && (
+                        <div className="text-xs text-muted-foreground mt-2">
+                          وعرض {results.errors.length - 3} أخطاء إضافية...
+                        </div>
+                      )}
                     </div>
                   </ScrollArea>
                 </div>
