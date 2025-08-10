@@ -51,8 +51,16 @@ export const useContractsData = (filters: any = {}) => {
       totalRevenue: 0
     };
 
-    const activeContracts = contracts.filter(c => c.status === 'active');
-    const draftContracts = contracts.filter(c => c.status === 'draft');
+    const isZeroAmount = (c: any) => {
+      const ca = c?.contract_amount
+      const ma = c?.monthly_amount
+      const caNum = ca === undefined || ca === null || ca === '' ? null : Number(ca)
+      const maNum = ma === undefined || ma === null || ma === '' ? null : Number(ma)
+      return (caNum === 0) || (maNum === 0)
+    }
+
+    const activeContracts = contracts.filter(c => c.status === 'active' && !isZeroAmount(c));
+    const draftContracts = contracts.filter(c => c.status === 'draft' || isZeroAmount(c));
     const expiredContracts = contracts.filter(c => c.status === 'expired');
     const suspendedContracts = contracts.filter(c => c.status === 'suspended');
     const cancelledContracts = contracts.filter(c => c.status === 'cancelled');

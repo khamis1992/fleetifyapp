@@ -208,7 +208,8 @@ export function useContractCSVUpload() {
       errors.push('تاريخ نهاية العقد مطلوب')
     }
 
-    if (!data.contract_amount) {
+    const contractAmountMissing = data.contract_amount === undefined || data.contract_amount === null || data.contract_amount === ''
+    if (contractAmountMissing) {
       errors.push('مبلغ العقد مطلوب')
     }
 
@@ -235,17 +236,18 @@ export function useContractCSVUpload() {
     }
 
     // Numeric validation
-    if (data.contract_amount && isNaN(Number(data.contract_amount))) {
+    const hasContractAmount = !contractAmountMissing
+    if (hasContractAmount && isNaN(Number(data.contract_amount))) {
       errors.push('مبلغ العقد يجب أن يكون رقماً')
     }
 
-    if (data.monthly_amount && isNaN(Number(data.monthly_amount))) {
+    if (data.monthly_amount !== undefined && data.monthly_amount !== null && data.monthly_amount !== '' && isNaN(Number(data.monthly_amount))) {
       errors.push('المبلغ الشهري يجب أن يكون رقماً')
     }
 
-    // Amount logic validation
-    if (data.contract_amount && Number(data.contract_amount) <= 0) {
-      errors.push('مبلغ العقد يجب أن يكون أكبر من صفر')
+    // Amount logic validation (allow zero, forbid negatives)
+    if (hasContractAmount && Number(data.contract_amount) < 0) {
+      errors.push('مبلغ العقد لا يمكن أن يكون سالباً')
     }
 
     return { isValid: errors.length === 0, errors }
@@ -351,7 +353,7 @@ export function useContractCSVUpload() {
             start_date: contractData.start_date,
             end_date: contractData.end_date,
             contract_amount: Number(contractData.contract_amount),
-            monthly_amount: contractData.monthly_amount ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
+            monthly_amount: (contractData.monthly_amount !== undefined && contractData.monthly_amount !== null && contractData.monthly_amount !== '') ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
             description: contractData.description || null,
             terms: contractData.terms || null,
             status: 'draft',
@@ -443,7 +445,7 @@ export function useContractCSVUpload() {
             start_date: contractData.start_date,
             end_date: contractData.end_date,
             contract_amount: Number(contractData.contract_amount),
-            monthly_amount: contractData.monthly_amount ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
+            monthly_amount: (contractData.monthly_amount !== undefined && contractData.monthly_amount !== null && contractData.monthly_amount !== '') ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
             description: contractData.description || null,
             terms: contractData.terms || null,
             status: 'draft',
