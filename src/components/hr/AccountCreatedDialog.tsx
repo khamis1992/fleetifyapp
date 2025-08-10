@@ -291,16 +291,6 @@ const handleSendWhatsApp = async () => {
             </div>
           </div>
 
-          {/* Instructions */}
-          <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-            <h4 className="font-medium text-blue-800 mb-2">تعليمات للموظف:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• استخدم البريد الإلكتروني وكلمة المرور المؤقتة لتسجيل الدخول</li>
-              <li>• سيُطلب منك تغيير كلمة المرور عند أول تسجيل دخول</li>
-              <li>• يجب تغيير كلمة المرور قبل انتهاء صلاحيتها</li>
-              <li>• تواصل مع الإدارة إذا واجهت أي مشاكل</li>
-            </ul>
-          </div>
 
           <div className="flex gap-2 pt-4">
             <Button
