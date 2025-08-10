@@ -139,6 +139,16 @@ export function useVehicleCSVUpload() {
     return data
   }
 
+  type VehicleStatus = 'available' | 'rented' | 'maintenance' | 'out_of_service' | 'reserved' | 'accident' | 'stolen' | 'police_station'
+
+  const normalizeStatus = (value?: any): VehicleStatus | undefined => {
+    const v = String(value ?? '').trim().toLowerCase();
+    if (!v) return undefined;
+    if (v === 'reserve') return 'reserved';
+    const allowed: VehicleStatus[] = ['available','rented','maintenance','out_of_service','reserved','accident','stolen','police_station']
+    return allowed.includes(v as VehicleStatus) ? (v as VehicleStatus) : undefined;
+  }
+
   const validateVehicleData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
@@ -164,9 +174,13 @@ export function useVehicleCSVUpload() {
       }
     }
 
-    // Status validation
-    if (data.status && !['available', 'rented', 'maintenance', 'out_of_service', 'reserved'].includes(data.status)) {
-      errors.push('حالة المركبة يجب أن تكون: available, rented, maintenance, out_of_service, أو reserved')
+    // Status validation with normalization (reserve -> reserved) and new statuses
+    if (data.status) {
+      const normalized = normalizeStatus(data.status)
+      const allowed = ['available', 'rented', 'maintenance', 'out_of_service', 'reserved', 'accident', 'stolen', 'police_station']
+      if (!allowed.includes((normalized ?? '') as string)) {
+        errors.push('حالة المركبة يجب أن تكون: available, rented, maintenance, out_of_service, reserved, accident, stolen, أو police_station')
+      }
     }
 
     // Date format validation
@@ -324,7 +338,7 @@ export function useVehicleCSVUpload() {
             insurance_policy: fixed.insurance_policy || undefined,
             insurance_expiry: fixed.insurance_expiry || undefined,
             license_expiry: fixed.license_expiry || undefined,
-            status: fixed.status || 'available',
+            status: normalizeStatus(fixed.status) || 'available',
             daily_rate: typeof fixed.daily_rate === 'number' ? fixed.daily_rate : (fixed.daily_rate ? Number(fixed.daily_rate) : undefined),
             weekly_rate: typeof fixed.weekly_rate === 'number' ? fixed.weekly_rate : (fixed.weekly_rate ? Number(fixed.weekly_rate) : undefined),
             monthly_rate: typeof fixed.monthly_rate === 'number' ? fixed.monthly_rate : (fixed.monthly_rate ? Number(fixed.monthly_rate) : undefined),
@@ -472,7 +486,7 @@ export function useVehicleCSVUpload() {
             insurance_policy: vehicleData.insurance_policy || undefined,
             insurance_expiry: vehicleData.insurance_expiry || undefined,
             license_expiry: vehicleData.license_expiry || undefined,
-            status: vehicleData.status || 'available',
+            status: normalizeStatus(vehicleData.status) || 'available',
             daily_rate: typeof vehicleData.daily_rate === 'number' ? vehicleData.daily_rate : (vehicleData.daily_rate ? Number(vehicleData.daily_rate) : undefined),
             weekly_rate: typeof vehicleData.weekly_rate === 'number' ? vehicleData.weekly_rate : (vehicleData.weekly_rate ? Number(vehicleData.weekly_rate) : undefined),
             monthly_rate: typeof vehicleData.monthly_rate === 'number' ? vehicleData.monthly_rate : (vehicleData.monthly_rate ? Number(vehicleData.monthly_rate) : undefined),

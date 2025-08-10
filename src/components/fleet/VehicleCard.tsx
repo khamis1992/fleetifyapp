@@ -17,7 +17,10 @@ const statusColors = {
   rented: "bg-blue-100 text-blue-800", 
   maintenance: "bg-yellow-100 text-yellow-800",
   out_of_service: "bg-red-100 text-red-800",
-  reserved: "bg-purple-100 text-purple-800"
+  reserved: "bg-purple-100 text-purple-800",
+  accident: "bg-red-100 text-red-800",
+  stolen: "bg-slate-100 text-slate-800",
+  police_station: "bg-amber-100 text-amber-800"
 }
 
 const statusLabels = {
@@ -25,7 +28,10 @@ const statusLabels = {
   rented: "مؤجرة",
   maintenance: "قيد الصيانة", 
   out_of_service: "خارج الخدمة",
-  reserved: "محجوزة"
+  reserved: "محجوزة",
+  accident: "حادث",
+  stolen: "مسروقة",
+  police_station: "في المخفر"
 }
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {

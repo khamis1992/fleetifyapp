@@ -43,6 +43,14 @@ export function EnhancedVehicleDetailsDialog({
         return 'bg-yellow-100 text-yellow-800';
       case 'out_of_service':
         return 'bg-red-100 text-red-800';
+      case 'reserved':
+        return 'bg-purple-100 text-purple-800';
+      case 'accident':
+        return 'bg-red-100 text-red-800';
+      case 'stolen':
+        return 'bg-slate-100 text-slate-800';
+      case 'police_station':
+        return 'bg-amber-100 text-amber-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -60,6 +68,12 @@ export function EnhancedVehicleDetailsDialog({
         return 'خارج الخدمة';
       case 'reserved':
         return 'محجوزة';
+      case 'accident':
+        return 'حادث';
+      case 'stolen':
+        return 'مسروقة';
+      case 'police_station':
+        return 'في المخفر';
       default:
         return status || 'غير محدد';
     }
