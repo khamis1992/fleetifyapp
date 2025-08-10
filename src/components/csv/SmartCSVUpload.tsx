@@ -44,14 +44,13 @@ export function SmartCSVUpload({
   const [enableUpsert, setEnableUpsert] = useState(false);
   const [lastResult, setLastResult] = useState<any | null>(null);
 
+  const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
 
   const entityLabels = {
     customer: 'العملاء',
-    vehicle: 'المركبات', 
+    vehicle: 'المركبات',
     contract: 'العقود'
   };
-
-  const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const isSuperAdmin = !!user?.roles?.includes('super_admin');
   const targetCompanyName = (
     isBrowsingMode && browsedCompany

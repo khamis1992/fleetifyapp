@@ -10032,6 +10032,10 @@ export type Database = {
         Args: { customer_id_param: string }
         Returns: string
       }
+      get_effective_company_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_eligible_contracts_for_renewal: {
         Args: { company_id_param: string }
         Returns: {

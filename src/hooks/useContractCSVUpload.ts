@@ -14,7 +14,7 @@ interface CSVUploadResults {
 }
 
 export function useContractCSVUpload() {
-  const { user, companyId } = useUnifiedCompanyAccess()
+  const { user, companyId, isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess()
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
@@ -369,18 +369,26 @@ export function useContractCSVUpload() {
   const getFriendlyDbError = (message?: string) => {
     const m = (message || '').toLowerCase();
     if (!m) return 'خطأ غير معروف في قاعدة البيانات';
+    
     if (m.includes('row-level security') || m.includes('rls') || m.includes('violates row-level security')) {
-      return 'رفض بواسطة صلاحيات الأمان (RLS). تأكد من اختيار الشركة الصحيحة من أعلى الشاشة ثم أعد المحاولة.';
+      const browsedText = isBrowsingMode && browsedCompany 
+        ? ` أنت تتصفح شركة "${browsedCompany.name}" - تأكد من صحة الشركة المختارة.`
+        : ' تأكد من اختيار الشركة الصحيحة من أعلى الشاشة.';
+      return `رفض بواسطة صلاحيات الأمان (RLS).${browsedText} ثم أعد المحاولة.`;
     }
+    
     if (m.includes('foreign key') && m.includes('customer')) {
-      return 'العميل غير موجود داخل نفس الشركة أو لا تملك صلاحية الوصول إليه.';
+      return `العميل غير موجود داخل الشركة المستهدفة "${browsedCompany?.name || 'الحالية'}" أو لا تملك صلاحية الوصول إليه.`;
     }
+    
     if (m.includes('foreign key') && m.includes('vehicle')) {
-      return 'المركبة غير موجودة داخل نفس الشركة أو لا تملك صلاحية الوصول إليها.';
+      return `المركبة غير موجودة داخل الشركة المستهدفة "${browsedCompany?.name || 'الحالية'}" أو لا تملك صلاحية الوصول إليها.`;
     }
+    
     if (m.includes('not-null constraint') && m.includes('customer_id')) {
       return 'العميل مطلوب. يرجى التأكد من صحة customer_id أو اسم العميل.';
     }
+    
     return message || 'خطأ غير معروف';
   };
 
@@ -484,6 +492,8 @@ export function useContractCSVUpload() {
 
   const uploadContracts = async (file: File) => {
     console.log('📝 [Contract CSV] Starting CSV upload for user:', user?.id, 'target companyId:', companyId);
+    console.log('📝 [Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
+    
     if (!companyId) {
       console.error('📝 [Contract CSV] Missing companyId from unified access.');
       throw new Error('لا يوجد معرف شركة محدد للرفع. الرجاء اختيار الشركة الصحيحة ثم إعادة المحاولة.');
@@ -492,6 +502,23 @@ export function useContractCSVUpload() {
     setIsUploading(true)
     setProgress(0)
     setResults(null)
+
+    // Set browsed company context for database operations
+    if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
+      console.log('📝 [Contract CSV] Setting browsed company context for:', browsedCompany.name, browsedCompany.id);
+      try {
+        const { error } = await supabase.functions.invoke('set-browsed-company', {
+          body: { company_id: browsedCompany.id }
+        });
+        if (error) {
+          console.warn('⚠️ [Contract CSV] Could not set browsed company context:', error);
+        } else {
+          console.log('✅ [Contract CSV] Browsed company context set successfully');
+        }
+      } catch (error) {
+        console.warn('⚠️ [Contract CSV] Failed to set browsed company context:', error);
+      }
+    }
 
     try {
       const text = await file.text()
@@ -637,8 +664,28 @@ export function useContractCSVUpload() {
     fixedData: any[],
     options?: { upsert?: boolean; targetCompanyId?: string }
   ) => {
+    console.log('📝 [Smart Contract CSV] Starting upload with companyId:', companyId);
+    console.log('📝 [Smart Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
+    
     setIsUploading(true);
     setProgress(0);
+
+    // Set browsed company context for database operations
+    if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
+      console.log('📝 [Smart Contract CSV] Setting browsed company context for:', browsedCompany.name, browsedCompany.id);
+      try {
+        const { error } = await supabase.functions.invoke('set-browsed-company', {
+          body: { company_id: browsedCompany.id }
+        });
+        if (error) {
+          console.warn('⚠️ [Smart Contract CSV] Could not set browsed company context:', error);
+        } else {
+          console.log('✅ [Smart Contract CSV] Browsed company context set successfully');
+        }
+      } catch (error) {
+        console.warn('⚠️ [Smart Contract CSV] Failed to set browsed company context:', error);
+      }
+    }
     
     const uploadResults: CSVUploadResults = {
       total: fixedData.length,
