@@ -147,8 +147,14 @@ export function useContractCSVUpload() {
   const ccNameToIdCache = new Map<string, string>();
 
   const normalize = (s?: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
-
+  
   const buildFullName = (first?: string | null, last?: string | null) => normalize(`${first || ''} ${last || ''}`);
+  
+  const isPlaceholderValue = (s?: string) => {
+    const v = (s || '').toString().trim().toLowerCase();
+    if (!v) return false;
+    return ['uuid-here', 'cost-center-uuid-here', 'n/a', 'na', '-', '—', '0', 'null', 'undefined'].includes(v);
+  };
 
   const isCancelledDescription = (desc?: string) => {
     const t = (desc || '').toString().toLowerCase();
@@ -215,17 +221,23 @@ export function useContractCSVUpload() {
     // Not provided -> let DB trigger assign default
     return { provided, id: undefined };
   };
-  const resolveCustomerIdByName = async (customerName: string): Promise<{ id?: string; error?: string }> => {
+  const resolveCustomerIdByName = async (customerName: string, companyId?: string): Promise<{ id?: string; error?: string }> => {
     const key = normalize(customerName);
     if (!key) return { error: 'اسم العميل فارغ' };
     if (nameToIdCache.has(key)) return { id: nameToIdCache.get(key)! };
 
     const like = `%${customerName}%`;
-    const { data, error } = await supabase
+    let query = supabase
       .from('customers')
       .select('id, customer_type, company_name, first_name, last_name')
       .or(`company_name.ilike.${like},first_name.ilike.${like},last_name.ilike.${like}`)
       .limit(20);
+
+    if (companyId) {
+      query = query.eq('company_id', companyId);
+    }
+
+    const { data, error } = await query;
 
     if (error) return { error: `تعذر البحث عن العميل: ${error.message}` };
     if (!data || data.length === 0) return { error: `لم يتم العثور على عميل بالاسم: ${customerName}` };
@@ -397,7 +409,7 @@ export function useContractCSVUpload() {
 
         // العميل: من الاسم إلى المعرّف إذا لزم
         if (!contractData.customer_id && contractData.customer_name) {
-          const resolved = await resolveCustomerIdByName(contractData.customer_name)
+          const resolved = await resolveCustomerIdByName(contractData.customer_name, user.company.id)
           if (resolved.error) {
             results.failed++
             results.errors.push({ row: contractData.rowNumber, message: resolved.error })
@@ -410,7 +422,7 @@ export function useContractCSVUpload() {
         // المركبة: من رقم اللوحة إلى المعرّف إذا لزم
         const providedPlate = contractData.vehicle_number || contractData.plate_number
         if (!contractData.vehicle_id && providedPlate) {
-          const resolved = await resolveVehicleIdByNumber(providedPlate)
+          const resolved = await resolveVehicleIdByNumber(providedPlate, user.company.id)
           if (resolved.error) {
             results.failed++
             results.errors.push({ row: contractData.rowNumber, message: resolved.error })
@@ -510,7 +522,10 @@ export function useContractCSVUpload() {
   }
 
   // دالة رفع ذكية للعقود
-  const smartUploadContracts = async (fixedData: any[]) => {
+  const smartUploadContracts = async (
+    fixedData: any[],
+    options?: { upsert?: boolean; targetCompanyId?: string }
+  ) => {
     setIsUploading(true);
     setProgress(0);
     
@@ -522,43 +537,53 @@ export function useContractCSVUpload() {
     };
 
     try {
+      const companyId = options?.targetCompanyId || user?.company?.id;
+      if (!companyId) throw new Error('لا يوجد معرف شركة محدد للرفع.');
+
       for (let i = 0; i < fixedData.length; i++) {
         const originalRow = fixedData[i];
         setProgress(((i + 1) / fixedData.length) * 100);
+        const rowNum = originalRow.rowNumber || i + 1;
         
         try {
           const contractData: any = { ...originalRow };
 
-          // Resolve customer by name if needed
+          // Resolve customer by name if needed (scoped by company)
           if (!contractData.customer_id && contractData.customer_name) {
-            const resolved = await resolveCustomerIdByName(contractData.customer_name);
+            const resolved = await resolveCustomerIdByName(contractData.customer_name, companyId);
             if (resolved.error) throw new Error(resolved.error);
             contractData.customer_id = resolved.id;
           }
 
-          // Resolve vehicle by plate if needed
+          // Resolve vehicle by plate if needed (scoped by company)
           const providedPlate = contractData.vehicle_number || contractData.plate_number;
           if (!contractData.vehicle_id && providedPlate) {
-            const resolved = await resolveVehicleIdByNumber(providedPlate);
+            const resolved = await resolveVehicleIdByNumber(providedPlate, companyId);
             if (resolved.error) throw new Error(resolved.error);
             contractData.vehicle_id = resolved.id;
           }
 
-          // مركز التكلفة: حل بالمعرّف أو الكود أو الاسم، وإلا اتركه للتعيين التلقائي عبر التريجر
+          // مركز التكلفة
           const cc = await resolveCostCenterId({
             cost_center_id: contractData.cost_center_id,
             cost_center_code: contractData.cost_center_code,
             cost_center_name: contractData.cost_center_name,
-          }, user?.company?.id!);
+          }, companyId);
           if (cc.error) throw new Error(cc.error);
           const resolvedCostCenterId = cc.id;
           delete contractData.cost_center_code;
           delete contractData.cost_center_name;
 
+          // التحقق المسبق
+          const validation = validateContractData(contractData, rowNum);
+          if (!validation.isValid) {
+            throw new Error(validation.errors.join(' | '));
+          }
+
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
           
           const contractPayload: any = {
-            company_id: user?.company?.id,
+            company_id: companyId,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
             cost_center_id: resolvedCostCenterId ?? null,
@@ -575,18 +600,18 @@ export function useContractCSVUpload() {
             created_by: user?.id
           };
 
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('contracts')
-            .insert([contractPayload])
-            .select();
+            .insert([contractPayload]);
 
           if (error) throw error;
           uploadResults.successful++;
         } catch (error: any) {
           uploadResults.failed++;
+          const dbMessage = error?.message || 'خطأ غير معروف';
           uploadResults.errors.push({
-            row: originalRow.rowNumber || i + 1,
-            message: error.message
+            row: rowNum,
+            message: dbMessage,
           });
         }
       }
