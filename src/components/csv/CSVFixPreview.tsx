@@ -25,6 +25,21 @@ export function CSVFixPreview({ fixes, onApprove, onCancel, isProcessing = false
   const errorRows = fixes.filter(fix => fix.hasErrors);
   const totalFixes = fixes.reduce((sum, row) => sum + row.fixes.length, 0);
 
+  const downloadErrorReport = () => {
+    if (errorRows.length === 0) return;
+    const headers = ['row', 'errors'];
+    const rows = errorRows.map(r => [r.rowNumber, (r.validationErrors || []).join('; ')]);
+    const csv = [
+      headers.join(','),
+      ...rows.map(arr => arr.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'csv_error_report.csv';
+    link.click();
+  };
+
   const handleRowSelection = (index: number, checked: boolean) => {
     const newSelected = new Set(selectedFixes);
     if (checked) {
@@ -196,6 +211,14 @@ export function CSVFixPreview({ fixes, onApprove, onCancel, isProcessing = false
         </TabsContent>
 
         <TabsContent value="errors" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">عدد الصفوف التي تحتوي على أخطاء: {errorRows.length}</div>
+            {errorRows.length > 0 && (
+              <Button variant="outline" size="sm" onClick={downloadErrorReport}>
+                تنزيل تقرير الأخطاء CSV
+              </Button>
+            )}
+          </div>
           <ScrollArea className="h-96">
             {errorRows.map((rowFix) => (
               <Card key={rowFix.rowNumber} className="mb-4 border-red-200">

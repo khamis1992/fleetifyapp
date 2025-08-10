@@ -80,6 +80,21 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
     toast.success('تم تحميل القالب')
   }
 
+  const handleDownloadErrors = () => {
+    if (!results?.errors?.length) return
+    const headers = ['row', 'message']
+    const rows = results.errors.map(e => [e.row, e.message])
+    const csv = [
+      headers.join(','),
+      ...rows.map(arr => arr.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'vehicle_upload_errors.csv'
+    link.click()
+  }
+
   const handleClose = () => {
     setFile(null)
     onOpenChange(false)
@@ -196,7 +211,12 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
               {/* أخطاء مفصلة */}
               {results.errors && results.errors.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium text-red-900">الأخطاء:</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-red-900">الأخطاء:</h4>
+                    <Button variant="outline" size="sm" onClick={handleDownloadErrors}>
+                      تنزيل تقرير الأخطاء CSV
+                    </Button>
+                  </div>
                   <ScrollArea className="h-32 w-full border rounded-md p-2">
                     <div className="space-y-1">
                       {results.errors.map((error, index) => (
@@ -245,7 +265,8 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
                 <li>استخدم القالب المحدد لضمان التنسيق الصحيح</li>
                 <li>رقم اللوحة، الشركة المصنعة، الطراز وسنة الصنع مطلوبة</li>
                 <li>التواريخ يجب أن تكون بتنسيق YYYY-MM-DD</li>
-                <li>حالة المركبة: available, rented, maintenance, out_of_service, reserved</li>
+                <li>حالة المركبة: available, rented, maintenance, out_of_service, reserved, accident, stolen, police_station</li>
+                <li>يمكن إدخال القيمة reserve وسيتم تحويلها تلقائياً إلى reserved</li>
                 <li>سيتم تخطي الصفوف التي تحتوي على أخطاء</li>
               </ul>
             </AlertDescription>

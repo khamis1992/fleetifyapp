@@ -139,7 +139,7 @@ export function SmartCSVUpload({
       }, 200);
 
       console.log('Calling upload function with companyId:', companyId);
-      const result = await uploadFunction(dataToUpload);
+      const result = await uploadFunction(dataToUpload, { upsert: enableUpsert, targetCompanyId: companyId });
       console.log('Upload function result:', result);
       
       clearInterval(progressInterval);
@@ -254,8 +254,26 @@ export function SmartCSVUpload({
                     <Badge variant="outline">{(file.size / 1024).toFixed(1)} KB</Badge>
                   </div>
                 )}
-              </CardContent>
+            </CardContent>
             </Card>
+
+            {entityType === 'vehicle' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">خيارات الرفع</CardTitle>
+                  <CardDescription>تحكم في كيفية التعامل مع السجلات المكررة</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="enableUpsert" checked={enableUpsert} onCheckedChange={(v) => setEnableUpsert(Boolean(v))} />
+                    <label htmlFor="enableUpsert" className="text-sm">
+                      عند وجود رقم لوحة موجود، قم بتحديث السجل بدلاً من تخطيه (Upsert)
+                      <div className="text-xs text-muted-foreground mt-1">سيتم التحديث داخل نفس الشركة فقط</div>
+                    </label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
