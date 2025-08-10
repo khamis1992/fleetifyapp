@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Upload, Download, CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
+import Papa from "papaparse";
 import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
@@ -66,18 +67,9 @@ export function SmartCSVUpload({
   };
 
   const parseCSV = (csvText: string): any[] => {
-    const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
-
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    return lines.slice(1).map((line, index) => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: any = { rowNumber: index + 2 };
-      headers.forEach((header, i) => {
-        row[header] = values[i] || '';
-      });
-      return row;
-    });
+    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
+    const rows = (parsed.data as any[]).filter(Boolean);
+    return rows.map((row, index) => ({ ...row, rowNumber: index + 2 }));
   };
 
   const analyzeFile = async () => {

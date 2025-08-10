@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, Download, FileText, AlertCircle, CheckCircle, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { CompanySelector } from "@/components/navigation/CompanySelector";
 
 interface ContractCSVUploadProps {
   open: boolean
@@ -30,6 +32,13 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     contractFieldTypes,
     contractRequiredFields
   } = useContractCSVUpload();
+  const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const isSuperAdmin = !!user?.roles?.includes('super_admin');
+  const targetCompanyName = (
+    isBrowsingMode && browsedCompany
+      ? (browsedCompany.name_ar || browsedCompany.name)
+      : (user?.company?.name_ar || user?.company?.name)
+  ) || 'غير محدد';
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -104,6 +113,17 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
             </Button>
           </DialogDescription>
         </DialogHeader>
+        <div className="flex items-center justify-between mt-2 px-1">
+          <div className="text-sm">
+            <span className="text-muted-foreground">سيتم الرفع إلى:</span>
+            <Badge variant="outline" className="ml-2">{targetCompanyName}</Badge>
+          </div>
+          {isSuperAdmin && (
+            <div className="shrink-0">
+              <CompanySelector />
+            </div>
+          )}
+        </div>
 
         <div className="space-y-6">
           {/* تحميل القالب */}

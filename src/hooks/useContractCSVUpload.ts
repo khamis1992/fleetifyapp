@@ -1,6 +1,7 @@
 import { useState } from "react"
+import Papa from "papaparse"
 import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/contexts/AuthContext"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { ContractCreationData } from "@/types/contracts"
 import { toast } from "sonner"
 
@@ -12,7 +13,7 @@ interface CSVUploadResults {
 }
 
 export function useContractCSVUpload() {
-  const { user } = useAuth()
+  const { user, companyId } = useUnifiedCompanyAccess()
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
@@ -120,24 +121,10 @@ export function useContractCSVUpload() {
   }
 
   const parseCSV = (csvText: string): any[] => {
-    const lines = csvText.split('\n').map(line => line.trim()).filter(line => line)
-    if (lines.length < 2) return []
-
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-    const data = []
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
-      const row: any = {}
-      
-      headers.forEach((header, index) => {
-        row[header] = values[index] || ''
-      })
-      
-      data.push({ ...row, rowNumber: i + 1 })
-    }
-
-    return data
+    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
+    const rows = (parsed.data as any[]).filter(Boolean);
+    // Add row numbers (starting at 2 to account for header)
+    return rows.map((row, idx) => ({ ...row, rowNumber: idx + 2 }));
   }
 
   // ===================== Helpers: Resolve IDs from human-friendly fields =====================
@@ -353,6 +340,57 @@ export function useContractCSVUpload() {
     }
   };
 
+  // ============== Additional Helpers: normalization and membership checks ==============
+  const normalizeContractType = (value?: string) => {
+    const v = (value || '').toString().trim().toLowerCase();
+    // Arabic/English synonyms mapping
+    const map: Record<string, string> = {
+      'شهري': 'monthly_rental',
+      'monthly': 'monthly_rental',
+      'monthly_rental': 'monthly_rental',
+      'يومي': 'daily_rental',
+      'daily': 'daily_rental',
+      'daily_rental': 'daily_rental',
+      'اسبوعي': 'weekly_rental',
+      'أسبوعي': 'weekly_rental',
+      'weekly': 'weekly_rental',
+      'weekly_rental': 'weekly_rental',
+      'سنوي': 'yearly_rental',
+      'سنوى': 'yearly_rental',
+      'yearly': 'yearly_rental',
+      'yearly_rental': 'yearly_rental',
+      'ايجار': 'rental',
+      'إيجار': 'rental',
+      'rental': 'rental',
+      'rent_to_own': 'rent_to_own',
+      'تمليك': 'rent_to_own',
+      'تأجير تمويلي': 'rent_to_own',
+    };
+    return map[v] || v || '';
+  };
+
+  const validateCustomerInCompany = async (customerId: string, companyId: string) => {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('id', customerId)
+      .eq('company_id', companyId)
+      .maybeSingle();
+    if (error) return false;
+    return !!data?.id;
+  };
+
+  const validateVehicleInCompany = async (vehicleId: string, companyId: string) => {
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('id')
+      .eq('id', vehicleId)
+      .eq('company_id', companyId)
+      .maybeSingle();
+    if (error) return false;
+    return !!data?.id;
+  };
+
   const validateContractData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
@@ -430,21 +468,10 @@ export function useContractCSVUpload() {
   }
 
   const uploadContracts = async (file: File) => {
-    console.log('📝 [Contract CSV] Starting CSV upload for user:', user?.id);
-    console.log('📝 [Contract CSV] User company info:', {
-      company: user?.company,
-      profile_company_id: user?.profile?.company_id,
-      has_company: !!user?.company?.id
-    });
-    
-    if (!user?.company?.id) {
-      console.error('📝 [Contract CSV] Company ID not available. User data:', {
-        user_id: user?.id,
-        email: user?.email,
-        company: user?.company,
-        profile: user?.profile
-      });
-      throw new Error('معرف الشركة غير متوفر. تأكد من تسجيل الدخول بحساب مرتبط بشركة.')
+    console.log('📝 [Contract CSV] Starting CSV upload for user:', user?.id, 'target companyId:', companyId);
+    if (!companyId) {
+      console.error('📝 [Contract CSV] Missing companyId from unified access.');
+      throw new Error('لا يوجد معرف شركة محدد للرفع. الرجاء اختيار الشركة الصحيحة ثم إعادة المحاولة.');
     }
 
     setIsUploading(true)
@@ -467,55 +494,77 @@ export function useContractCSVUpload() {
       }
 
       for (let i = 0; i < data.length; i++) {
-        const originalRow = data[i]
+        const originalRow = data[i];
 
         // Preprocess and resolve IDs (customer/vehicle)
-        const pre = await preprocessAndResolveIds({ ...originalRow }, user.company.id);
+        const pre = await preprocessAndResolveIds({ ...originalRow }, companyId);
         if (pre.error) {
-          results.failed++
-          results.errors.push({ row: originalRow.rowNumber || (i + 1), message: pre.error })
-          setProgress(Math.round(((i + 1) / data.length) * 100))
-          continue
+          results.failed++;
+          results.errors.push({ row: originalRow.rowNumber || (i + 1), message: pre.error });
+          setProgress(Math.round(((i + 1) / data.length) * 100));
+          continue;
         }
         const contractData: any = pre.data;
+
+        // Normalize contract type (Arabic/English synonyms)
+        contractData.contract_type = normalizeContractType(contractData.contract_type);
+
+        // Validate that provided UUIDs belong to target company
+        if (isUUID(contractData.customer_id)) {
+          const ok = await validateCustomerInCompany(contractData.customer_id, companyId);
+          if (!ok) {
+            results.failed++;
+            results.errors.push({ row: contractData.rowNumber, message: `معرّف العميل لا ينتمي إلى الشركة المحددة (${contractData.customer_id})` });
+            setProgress(Math.round(((i + 1) / data.length) * 100));
+            continue;
+          }
+        }
+        if (contractData.vehicle_id && isUUID(contractData.vehicle_id)) {
+          const okv = await validateVehicleInCompany(contractData.vehicle_id, companyId);
+          if (!okv) {
+            results.failed++;
+            results.errors.push({ row: contractData.rowNumber, message: `معرّف المركبة لا ينتمي إلى الشركة المحددة (${contractData.vehicle_id})` });
+            setProgress(Math.round(((i + 1) / data.length) * 100));
+            continue;
+          }
+        }
 
         // مركز التكلفة: حل بالمعرّف أو الكود أو الاسم، وإلا اتركه للتعيين التلقائي عبر التريجر
         const cc = await resolveCostCenterId({
           cost_center_id: contractData.cost_center_id,
           cost_center_code: contractData.cost_center_code,
           cost_center_name: contractData.cost_center_name,
-        }, user.company.id);
+        }, companyId);
         if (cc.error) {
-          results.failed++
-          results.errors.push({ row: contractData.rowNumber, message: cc.error })
-          setProgress(Math.round(((i + 1) / data.length) * 100))
-          continue
+          results.failed++;
+          results.errors.push({ row: contractData.rowNumber, message: cc.error });
+          setProgress(Math.round(((i + 1) / data.length) * 100));
+          continue;
         }
         const resolvedCostCenterId = cc.id;
         delete contractData.cost_center_code;
         delete contractData.cost_center_name;
 
-        const validation = validateContractData(contractData, contractData.rowNumber)
+        const validation = validateContractData(contractData, contractData.rowNumber);
 
-        setProgress(Math.round(((i + 1) / data.length) * 100))
+        setProgress(Math.round(((i + 1) / data.length) * 100));
 
         if (!validation.isValid) {
-          results.failed++
+          results.failed++;
           results.errors.push({
             row: contractData.rowNumber,
             message: validation.errors.join(', ')
-          })
-          continue
+          });
+          continue;
         }
 
         try {
           // Generate contract number if not provided
-          const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`
-          
-          console.log(`📝 [Contract CSV] Inserting contract row ${contractData.rowNumber} for company ${user.company.id}`);
+          const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
+          console.log(`📝 [Contract CSV] Inserting contract row ${contractData.rowNumber} for company ${companyId}`);
 
           const contractPayload: any = {
-            company_id: user.company.id,
+            company_id: companyId,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
             cost_center_id: resolvedCostCenterId ?? null,
@@ -529,31 +578,31 @@ export function useContractCSVUpload() {
             description: contractData.description || null,
             terms: contractData.terms || null,
             status: isCancelledDescription(contractData.description) ? 'cancelled' : 'draft',
-            created_by: user.id
-          }
+            created_by: user?.id
+          };
 
           const { error } = await supabase
             .from('contracts')
-            .insert(contractPayload)
+            .insert(contractPayload);
 
           if (error) {
             console.error(`📝 [Contract CSV] Database error for row ${contractData.rowNumber}:`, error);
-            results.failed++
+            results.failed++;
             results.errors.push({
               row: contractData.rowNumber,
               message: `خطأ في قاعدة البيانات: ${error.message}`
-            })
+            });
           } else {
             console.log(`📝 [Contract CSV] Successfully inserted contract row ${contractData.rowNumber}`);
-            results.successful++
+            results.successful++;
           }
         } catch (error: any) {
           console.error(`📝 [Contract CSV] Unexpected error for row ${contractData.rowNumber}:`, error);
-          results.failed++
+          results.failed++;
           results.errors.push({
             row: contractData.rowNumber,
             message: `خطأ غير متوقع: ${error.message}`
-          })
+          });
         }
       }
 
@@ -584,8 +633,8 @@ export function useContractCSVUpload() {
     };
 
     try {
-      const companyId = options?.targetCompanyId || user?.company?.id;
-      if (!companyId) throw new Error('لا يوجد معرف شركة محدد للرفع.');
+      const targetCompanyId = options?.targetCompanyId || companyId;
+      if (!targetCompanyId) throw new Error('لا يوجد معرف شركة محدد للرفع.');
 
       for (let i = 0; i < fixedData.length; i++) {
         const originalRow = fixedData[i];
@@ -594,16 +643,29 @@ export function useContractCSVUpload() {
         
         try {
           // Preprocess row (resolve IDs, normalize)
-          const pre = await preprocessAndResolveIds({ ...originalRow }, companyId);
+          const pre = await preprocessAndResolveIds({ ...originalRow }, targetCompanyId);
           if (pre.error) throw new Error(pre.error);
           const contractData: any = pre.data;
+
+          // Normalize type
+          contractData.contract_type = normalizeContractType(contractData.contract_type);
+
+          // Membership checks when UUIDs provided directly
+          if (isUUID(contractData.customer_id)) {
+            const ok = await validateCustomerInCompany(contractData.customer_id, targetCompanyId);
+            if (!ok) throw new Error(`معرّف العميل لا ينتمي إلى الشركة المحددة (${contractData.customer_id})`);
+          }
+          if (contractData.vehicle_id && isUUID(contractData.vehicle_id)) {
+            const okv = await validateVehicleInCompany(contractData.vehicle_id, targetCompanyId);
+            if (!okv) throw new Error(`معرّف المركبة لا ينتمي إلى الشركة المحددة (${contractData.vehicle_id})`);
+          }
 
           // مركز التكلفة
           const cc = await resolveCostCenterId({
             cost_center_id: contractData.cost_center_id,
             cost_center_code: contractData.cost_center_code,
             cost_center_name: contractData.cost_center_name,
-          }, companyId);
+          }, targetCompanyId);
           if (cc.error) throw new Error(cc.error);
           const resolvedCostCenterId = cc.id;
           delete contractData.cost_center_code;
@@ -618,7 +680,7 @@ export function useContractCSVUpload() {
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
           
           const contractPayload: any = {
-            company_id: companyId,
+            company_id: targetCompanyId,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
             cost_center_id: resolvedCostCenterId ?? null,
