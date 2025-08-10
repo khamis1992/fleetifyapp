@@ -49,6 +49,20 @@ const employeeSchema = z.object({
   accountRoles: z.array(z.string()).optional(),
   creationMethod: z.enum(['direct', 'email']).optional(),
   accountNotes: z.string().optional(),
+  accountSetPassword: z.boolean().optional(),
+  accountPassword: z.string().min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل').optional(),
+  accountPasswordConfirm: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.createAccount && data.creationMethod === 'direct' && data.accountSetPassword) {
+    if (!data.accountPassword) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountPassword'], message: 'يرجى إدخال كلمة المرور' });
+    } else if (data.accountPassword.length < 8) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountPassword'], message: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+    }
+    if (data.accountPassword !== data.accountPasswordConfirm) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountPasswordConfirm'], message: 'تأكيد كلمة المرور غير مطابق' });
+    }
+  }
 });
 
 export type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -88,6 +102,7 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
       createAccount: false,
       accountRoles: ['employee'],
       creationMethod: 'direct',
+      accountSetPassword: false,
       ...initialData,
     },
   });
@@ -466,11 +481,54 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
                 />
 
                 {creationMethod === 'direct' && (
-                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-                    <p className="text-sm text-blue-700">
-                      <Lock className="w-4 h-4 inline mr-1" />
-                      سيتم إنشاء كلمة مرور مؤقتة وعرضها لك بعد إضافة الموظف
-                    </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="accountSetPassword"
+                        checked={!!form.watch('accountSetPassword')}
+                        onCheckedChange={(checked) => form.setValue('accountSetPassword', !!checked)}
+                      />
+                      <FormLabel htmlFor="accountSetPassword">تعيين كلمة المرور يدوياً</FormLabel>
+                    </div>
+
+                    {form.watch('accountSetPassword') ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="accountPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>كلمة المرور</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" dir="ltr" {...field} />
+                              </FormControl>
+                              <p className="text-xs text-muted-foreground mt-1">الحد الأدنى 8 أحرف</p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="accountPasswordConfirm"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>تأكيد كلمة المرور</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" dir="ltr" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+                        <p className="text-sm text-blue-700">
+                          <Lock className="w-4 h-4 inline mr-1" />
+                          سيتم إنشاء كلمة مرور مؤقتة وعرضها لك بعد إضافة الموظف
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 

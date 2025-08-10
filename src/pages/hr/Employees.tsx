@@ -197,6 +197,7 @@ export default function Employees() {
               last_name: employee.last_name,
               email: employeeData.accountEmail,
               roles: employeeData.accountRoles,
+              temporary_password: employeeData.accountSetPassword ? employeeData.accountPassword : undefined,
               requester_name: user.email || 'مدير النظام',
               notes: employeeData.accountNotes,
               user_id: user.id,
@@ -211,7 +212,7 @@ export default function Employees() {
         setAccountData({
           employee_name: `${employee.first_name} ${employee.last_name}`,
           employee_email: employeeData.accountEmail,
-          temporary_password: result.temporary_password,
+          temporary_password: result.temporary_password || employeeData.accountPassword,
           password_expires_at: result.password_expires_at
         });
         setShowAccountDialog(true);

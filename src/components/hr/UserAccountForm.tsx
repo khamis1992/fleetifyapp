@@ -45,7 +45,10 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
     email: employee.email || '',
     selectedRoles: ['employee'],
     sendWelcomeEmail: true,
-    notes: ''
+    notes: '',
+    setCustomPassword: false,
+    password: '',
+    confirmPassword: ''
   });
 
   const createAccountMutation = useMutation({
@@ -59,6 +62,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
             last_name: employee.last_name,
             email: data.email,
             roles: data.selectedRoles,
+            temporary_password: data.setCustomPassword ? data.password : undefined,
             requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
             notes: data.notes,
             user_id: user?.id,
@@ -76,7 +80,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
           accountData: {
             employee_name: `${employee.first_name} ${employee.last_name}`,
             employee_email: data.email,
-            temporary_password: result.temporary_password,
+            temporary_password: data.setCustomPassword ? data.password : result.temporary_password,
             password_expires_at: result.password_expires_at
           }
         };
@@ -212,6 +216,25 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
       return;
     }
 
+    if (creationMethod === 'direct' && formData.setCustomPassword) {
+      if (!formData.password || formData.password.length < 8) {
+        toast({
+          variant: 'destructive',
+          title: 'كلمة المرور غير صالحة',
+          description: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
+        });
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          variant: 'destructive',
+          title: 'تأكيد كلمة المرور غير مطابق',
+          description: 'يرجى التأكد من تطابق كلمة المرور وتأكيدها'
+        });
+        return;
+      }
+    }
+
     createAccountMutation.mutate(formData);
   };
 
@@ -328,12 +351,51 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
                 </div>
 
                 {creationMethod === 'direct' && (
-                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-                    <p className="text-sm text-blue-700">
-                      <Lock className="w-4 h-4 inline mr-1" />
-                      سيتم إنشاء كلمة مرور مؤقتة تلقائياً وعرضها لك لنسخها وإرسالها للموظف.
-                    </p>
-                  </div>
+                  <>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="setCustomPassword"
+                        checked={formData.setCustomPassword}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, setCustomPassword: checked as boolean }))}
+                      />
+                      <Label htmlFor="setCustomPassword">تعيين كلمة المرور يدوياً</Label>
+                    </div>
+
+                    {formData.setCustomPassword ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="password">كلمة المرور</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                            placeholder="••••••••"
+                            dir="ltr"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">الحد الأدنى 8 أحرف</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                            placeholder="••••••••"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+                        <p className="text-sm text-blue-700">
+                          <Lock className="w-4 h-4 inline mr-1" />
+                          سيتم إنشاء كلمة مرور مؤقتة تلقائياً وعرضها لك لنسخها وإرسالها للموظف.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {creationMethod === 'email' && (
