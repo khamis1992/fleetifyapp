@@ -228,13 +228,14 @@ const handleSendWhatsApp = async () => {
             </div>
           </div>
 
-          {/* Phone */}
+          {/* Phone (editable) */}
           <div className="space-y-2">
             <Label>رقم الجوال</Label>
             <div className="flex items-center gap-2">
               <Input
-                value={normalizeDigits(resolvedPhone || '')}
-                readOnly
+                value={resolvedPhone}
+                onChange={(e) => setResolvedPhone(e.target.value)}
+                placeholder="أدخل رقم الجوال"
                 className="text-left"
                 dir="ltr"
               />
