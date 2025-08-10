@@ -17,7 +17,7 @@ import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
 import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import { AttendancePermissionsPanel } from '@/components/hr/AttendancePermissionsPanel';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
-
+import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 interface Employee {
   id: string;
   employee_number: string;
@@ -52,27 +52,30 @@ export default function Employees() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // Company scope filter
+  const companyFilter = useCompanyFilter();
+
   // Payroll mutations
   const createPayrollMutation = useCreatePayroll();
 
   const { data: employees, isLoading } = useQuery({
-    queryKey: ['employees', user?.profile?.company_id],
+    queryKey: ['employees', companyFilter?.company_id ?? 'all'],
     queryFn: async () => {
-      if (!user?.profile?.company_id) {
+      if (!companyFilter?.company_id) {
         return [];
       }
 
       const { data, error } = await supabase
         .from('employees')
         .select('*')
-        .eq('company_id', user.profile.company_id)
+        .match(companyFilter as Record<string, string>)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as Employee[];
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyFilter?.company_id,
   });
 
   const addEmployeeMutation = useMutation({
@@ -157,7 +160,7 @@ export default function Employees() {
       return { employee, employeeData };
     },
     onSuccess: async ({ employee, employeeData }) => {
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
       
       // If account creation is requested, create account after employee is added
       if (employeeData.createAccount && employeeData.accountEmail && employeeData.accountRoles) {
@@ -337,7 +340,7 @@ export default function Employees() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
       setIsEditDialogOpen(false);
       setSelectedEmployee(null);
       toast({
@@ -368,7 +371,7 @@ export default function Employees() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
       setIsDeleteDialogOpen(false);
       setSelectedEmployee(null);
       toast({
