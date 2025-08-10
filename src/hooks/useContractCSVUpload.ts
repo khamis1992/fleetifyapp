@@ -260,15 +260,19 @@ export function useContractCSVUpload() {
     return { id };
   };
 
-  const resolveVehicleIdByNumber = async (plateOrNumber: string): Promise<{ id?: string; error?: string }> => {
+  const resolveVehicleIdByNumber = async (plateOrNumber: string, companyId?: string): Promise<{ id?: string; error?: string }> => {
     const key = normalize(plateOrNumber);
     if (!key) return { error: 'رقم المركبة فارغ' };
     if (plateToIdCache.has(key)) return { id: plateToIdCache.get(key)! };
 
-    // نجرب تطابق دقيق أولاً ثم نfallback إلى بحث جزئي
-    const { data: exact, error: e1 } = await supabase
+    // نجرب تطابق دقيق أولاً ثم نfallback إلى بحث جزئي (مع تقييد الشركة إن وُجد)
+    let exactQuery = supabase
       .from('vehicles')
-      .select('id, plate_number')
+      .select('id, plate_number');
+    if (companyId) {
+      exactQuery = exactQuery.eq('company_id', companyId);
+    }
+    const { data: exact, error: e1 } = await exactQuery
       .eq('plate_number', plateOrNumber)
       .limit(1);
 
@@ -278,9 +282,13 @@ export function useContractCSVUpload() {
 
     if (!picked) {
       const like = `%${plateOrNumber}%`;
-      const { data: partial, error: e2 } = await supabase
+      let partialQuery = supabase
         .from('vehicles')
-        .select('id, plate_number')
+        .select('id, plate_number');
+      if (companyId) {
+        partialQuery = partialQuery.eq('company_id', companyId);
+      }
+      const { data: partial, error: e2 } = await partialQuery
         .ilike('plate_number', like)
         .limit(5);
 
