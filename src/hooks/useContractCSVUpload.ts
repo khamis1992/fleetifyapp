@@ -17,10 +17,12 @@ export function useContractCSVUpload() {
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
 
-  // تعريف أنواع الحقول للعقود
+  // تعريف أنواع الحقول للعقود بما يدعم الحقول الذكية (الاسم/اللوحة)
   const contractFieldTypes = {
     customer_id: 'text' as const,
+    customer_name: 'text' as const,
     vehicle_id: 'text' as const,
+    vehicle_number: 'text' as const,
     contract_number: 'text' as const,
     contract_type: 'text' as const,
     contract_date: 'date' as const,
@@ -30,15 +32,18 @@ export function useContractCSVUpload() {
     monthly_amount: 'number' as const,
     description: 'text' as const,
     terms: 'text' as const,
-    cost_center_id: 'text' as const,
+    // cost_center_id لم يعد مطلوباً من CSV (يتم تحديده تلقائياً)
   };
 
-  const contractRequiredFields = ['customer_id', 'contract_type', 'start_date', 'end_date', 'contract_amount'];
+  // الحقول المطلوبة: سنسمح بتحديد العميل عبر الاسم أو المعرّف
+  const contractRequiredFields = ['contract_type', 'start_date', 'end_date', 'contract_amount'];
 
   const downloadTemplate = () => {
     const headers = [
-      'customer_id',
-      'vehicle_id',
+      'customer_name', // سيتم تحويله تلقائياً إلى customer_id
+      'customer_id',   // بديل اختياري إذا أردت وضع المعرّف مباشرة
+      'vehicle_number', // سيتم تحويله تلقائياً إلى vehicle_id من رقم اللوحة
+      'vehicle_id',     // بديل اختياري
       'contract_number',
       'contract_type',
       'contract_date',
@@ -47,23 +52,23 @@ export function useContractCSVUpload() {
       'contract_amount',
       'monthly_amount',
       'description',
-      'terms',
-      'cost_center_id'
+      'terms'
     ]
 
     const exampleData = [
-      'customer-uuid-here',
-      'vehicle-uuid-here',
-      'CON-2024-001',
+      'شركة الهدى للتجارة',
+      '',
+      'KWT-1234',
+      '',
+      'CON-2025-001',
       'monthly_rental',
-      '2024-01-01',
-      '2024-01-01',
-      '2024-12-31',
-      '6000.000',
-      '500.000',
+      '2025-01-01',
+      '2025-01-01',
+      '2025-12-31',
+      '6000',
+      '500',
       'عقد إيجار شهري لمركبة تويوتا كامري',
-      'يلتزم المستأجر بدفع الإيجار في موعده المحدد',
-      'cost-center-uuid-here'
+      'يلتزم المستأجر بدفع الإيجار في موعده المحدد'
     ]
 
     const csvContent = [
@@ -103,12 +108,87 @@ export function useContractCSVUpload() {
     return data
   }
 
+  // ===================== Helpers: Resolve IDs from human-friendly fields =====================
+  const nameToIdCache = new Map<string, string>();
+  const plateToIdCache = new Map<string, string>();
+
+  const normalize = (s?: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const buildFullName = (first?: string | null, last?: string | null) => normalize(`${first || ''} ${last || ''}`);
+
+  const resolveCustomerIdByName = async (customerName: string): Promise<{ id?: string; error?: string }> => {
+    const key = normalize(customerName);
+    if (!key) return { error: 'اسم العميل فارغ' };
+    if (nameToIdCache.has(key)) return { id: nameToIdCache.get(key)! };
+
+    const like = `%${customerName}%`;
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id, customer_type, company_name, first_name, last_name')
+      .or(`company_name.ilike.${like},first_name.ilike.${like},last_name.ilike.${like}`)
+      .limit(20);
+
+    if (error) return { error: `تعذر البحث عن العميل: ${error.message}` };
+    if (!data || data.length === 0) return { error: `لم يتم العثور على عميل بالاسم: ${customerName}` };
+
+    // حاول إيجاد تطابق دقيق أولاً
+    const exactMatches = data.filter((c) => {
+      const company = normalize((c as any).company_name);
+      const full = buildFullName((c as any).first_name, (c as any).last_name);
+      return company === key || full === key;
+    });
+
+    const candidates = exactMatches.length > 0 ? exactMatches : data;
+
+    if (candidates.length > 1) {
+      return { error: `الاسم غير فريد، تم العثور على ${candidates.length} نتائج لـ: ${customerName}` };
+    }
+
+    const id = (candidates[0] as any).id as string;
+    nameToIdCache.set(key, id);
+    return { id };
+  };
+
+  const resolveVehicleIdByNumber = async (plateOrNumber: string): Promise<{ id?: string; error?: string }> => {
+    const key = normalize(plateOrNumber);
+    if (!key) return { error: 'رقم المركبة فارغ' };
+    if (plateToIdCache.has(key)) return { id: plateToIdCache.get(key)! };
+
+    // نجرب تطابق دقيق أولاً ثم نfallback إلى بحث جزئي
+    const { data: exact, error: e1 } = await supabase
+      .from('vehicles')
+      .select('id, plate_number')
+      .eq('plate_number', plateOrNumber)
+      .limit(1);
+
+    if (e1) return { error: `تعذر البحث عن المركبة: ${e1.message}` };
+
+    let picked = exact && exact[0];
+
+    if (!picked) {
+      const like = `%${plateOrNumber}%`;
+      const { data: partial, error: e2 } = await supabase
+        .from('vehicles')
+        .select('id, plate_number')
+        .ilike('plate_number', like)
+        .limit(5);
+
+      if (e2) return { error: `تعذر البحث عن المركبة: ${e2.message}` };
+      if (!partial || partial.length === 0) return { error: `لم يتم العثور على مركبة بالرقم: ${plateOrNumber}` };
+      if (partial.length > 1) return { error: `رقم المركبة غير فريد، تم العثور على ${partial.length} نتائج لـ: ${plateOrNumber}` };
+      picked = partial[0];
+    }
+
+    const id = (picked as any).id as string;
+    plateToIdCache.set(key, id);
+    return { id };
+  };
   const validateContractData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     // Required fields validation
     if (!data.customer_id) {
-      errors.push('معرف العميل مطلوب')
+      errors.push('العميل مطلوب: يرجى تزويد customer_id أو customer_name قابل للتعرف')
     }
 
     if (!data.contract_type) {
@@ -209,7 +289,39 @@ export function useContractCSVUpload() {
       }
 
       for (let i = 0; i < data.length; i++) {
-        const contractData = data[i]
+        const originalRow = data[i]
+
+        // محاولة التعرف الذكي على الحقول قبل التحقق
+        const contractData: any = { ...originalRow }
+
+        // العميل: من الاسم إلى المعرّف إذا لزم
+        if (!contractData.customer_id && contractData.customer_name) {
+          const resolved = await resolveCustomerIdByName(contractData.customer_name)
+          if (resolved.error) {
+            results.failed++
+            results.errors.push({ row: contractData.rowNumber, message: resolved.error })
+            setProgress(Math.round(((i + 1) / data.length) * 100))
+            continue
+          }
+          contractData.customer_id = resolved.id
+        }
+
+        // المركبة: من رقم اللوحة إلى المعرّف إذا لزم
+        const providedPlate = contractData.vehicle_number || contractData.plate_number
+        if (!contractData.vehicle_id && providedPlate) {
+          const resolved = await resolveVehicleIdByNumber(providedPlate)
+          if (resolved.error) {
+            results.failed++
+            results.errors.push({ row: contractData.rowNumber, message: resolved.error })
+            setProgress(Math.round(((i + 1) / data.length) * 100))
+            continue
+          }
+          contractData.vehicle_id = resolved.id
+        }
+
+        // لا نرسل cost_center_id — سيتم تعيينه تلقائياً من التريجر
+        delete contractData.cost_center_id
+
         const validation = validateContractData(contractData, contractData.rowNumber)
 
         setProgress(Math.round(((i + 1) / data.length) * 100))
@@ -229,7 +341,7 @@ export function useContractCSVUpload() {
           
           console.log(`📝 [Contract CSV] Inserting contract row ${contractData.rowNumber} for company ${user.company.id}`);
 
-          const contractPayload = {
+          const contractPayload: any = {
             company_id: user.company.id,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
@@ -242,7 +354,6 @@ export function useContractCSVUpload() {
             monthly_amount: contractData.monthly_amount ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
             description: contractData.description || null,
             terms: contractData.terms || null,
-            cost_center_id: contractData.cost_center_id || null,
             status: 'draft',
             created_by: user.id
           }
@@ -297,13 +408,32 @@ export function useContractCSVUpload() {
 
     try {
       for (let i = 0; i < fixedData.length; i++) {
-        const contractData = fixedData[i];
+        const originalRow = fixedData[i];
         setProgress(((i + 1) / fixedData.length) * 100);
         
         try {
+          const contractData: any = { ...originalRow };
+
+          // Resolve customer by name if needed
+          if (!contractData.customer_id && contractData.customer_name) {
+            const resolved = await resolveCustomerIdByName(contractData.customer_name);
+            if (resolved.error) throw new Error(resolved.error);
+            contractData.customer_id = resolved.id;
+          }
+
+          // Resolve vehicle by plate if needed
+          const providedPlate = contractData.vehicle_number || contractData.plate_number;
+          if (!contractData.vehicle_id && providedPlate) {
+            const resolved = await resolveVehicleIdByNumber(providedPlate);
+            if (resolved.error) throw new Error(resolved.error);
+            contractData.vehicle_id = resolved.id;
+          }
+
+          delete contractData.cost_center_id; // handled by trigger automatically
+
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
           
-          const contractPayload = {
+          const contractPayload: any = {
             company_id: user?.company?.id,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
@@ -316,7 +446,6 @@ export function useContractCSVUpload() {
             monthly_amount: contractData.monthly_amount ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
             description: contractData.description || null,
             terms: contractData.terms || null,
-            cost_center_id: contractData.cost_center_id || null,
             status: 'draft',
             created_by: user?.id
           };
@@ -331,7 +460,7 @@ export function useContractCSVUpload() {
         } catch (error: any) {
           uploadResults.failed++;
           uploadResults.errors.push({
-            row: contractData.rowNumber || i + 1,
+            row: originalRow.rowNumber || i + 1,
             message: error.message
           });
         }

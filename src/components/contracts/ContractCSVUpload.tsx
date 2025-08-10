@@ -221,8 +221,9 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
               <ul className="list-disc list-inside mt-1 space-y-1 text-sm">
                 <li>يجب أن يكون الملف بصيغة CSV</li>
                 <li>استخدم القالب المحدد لضمان التنسيق الصحيح</li>
-                <li>معرف العميل، نوع العقد، تاريخ البداية والنهاية، ومبلغ العقد مطلوبة</li>
-                <li>التواريخ يجب أن تكون بتنسيق YYYY-MM-DD</li>
+                <li>الحقول المطلوبة: customer_name أو customer_id + نوع العقد + تاريخ البداية + تاريخ النهاية + مبلغ العقد</li>
+                <li>النظام يتعرف تلقائياً على العميل من اسم العميل، وعلى المركبة من رقم اللوحة</li>
+                <li>سيتم تعيين مركز التكلفة تلقائياً حسب إعدادات العميل</li>
                 <li>أنواع العقود المتاحة: rental, daily_rental, weekly_rental, monthly_rental, yearly_rental, rent_to_own</li>
                 <li>سيتم إنشاء العقود بحالة "مسودة" ويمكن تفعيلها لاحقاً</li>
                 <li>سيتم تخطي الصفوف التي تحتوي على أخطاء</li>
