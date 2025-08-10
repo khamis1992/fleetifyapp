@@ -49,12 +49,18 @@ export const useFleetStatus = () => {
         return acc;
       }, {} as Record<string, number>);
 
+      const available = statusCounts.available || 0;
+      const rented = statusCounts.rented || 0;
+      const maintenance = statusCounts.maintenance || 0;
+      const total = vehicles.length;
+      const outOfService = Math.max(0, total - (available + rented + maintenance));
+
       return {
-        available: statusCounts.available || 0,
-        rented: statusCounts.rented || 0,
-        maintenance: statusCounts.maintenance || 0,
-        outOfService: statusCounts.out_of_service || 0,
-        total: vehicles.length
+        available,
+        rented,
+        maintenance,
+        outOfService,
+        total
       };
     },
     enabled: !!user?.profile?.company_id,

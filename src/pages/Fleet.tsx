@@ -24,7 +24,7 @@ export default function Fleet() {
   const availableVehicles = vehicles?.filter(v => v.status === 'available') || []
   const rentedVehicles = vehicles?.filter(v => v.status === 'rented') || []
   const maintenanceVehicles = vehicles?.filter(v => v.status === 'maintenance') || []
-  const outOfServiceVehicles = vehicles?.filter(v => v.status === 'out_of_service') || []
+  const outOfServiceVehicles = vehicles?.filter(v => !['available', 'rented', 'maintenance'].includes(String(v.status))) || []
 
   if (vehiclesLoading) {
     return (
