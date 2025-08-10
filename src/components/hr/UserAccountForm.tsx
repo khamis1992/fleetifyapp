@@ -55,8 +55,9 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
         const { data: result, error } = await supabase.functions.invoke('create-user-account', {
           body: {
             employee_id: employee.id,
-            employee_name: `${employee.first_name} ${employee.last_name}`,
-            employee_email: data.email,
+            first_name: employee.first_name,
+            last_name: employee.last_name,
+            email: data.email,
             roles: data.selectedRoles,
             requester_name: `${user?.profile?.first_name || ''} ${user?.profile?.last_name || ''}`.trim(),
             notes: data.notes,

@@ -187,18 +187,19 @@ export default function Employees() {
 
       if (employeeData.creationMethod === 'direct') {
         // Direct account creation
-        const { data: result, error } = await supabase.functions.invoke('create-user-account', {
-          body: {
-            employee_id: employee.id,
-            employee_name: `${employee.first_name} ${employee.last_name}`,
-            employee_email: employeeData.accountEmail,
-            roles: employeeData.accountRoles,
-            requester_name: user.email || 'مدير النظام',
-            notes: employeeData.accountNotes,
-            user_id: user.id,
-            company_id: employee.company_id
-          }
-        });
+          const { data: result, error } = await supabase.functions.invoke('create-user-account', {
+            body: {
+              employee_id: employee.id,
+              first_name: employee.first_name,
+              last_name: employee.last_name,
+              email: employeeData.accountEmail,
+              roles: employeeData.accountRoles,
+              requester_name: user.email || 'مدير النظام',
+              notes: employeeData.accountNotes,
+              user_id: user.id,
+              company_id: employee.company_id
+            }
+          });
 
         if (error) throw error;
         if (!result?.success) throw new Error(result?.error || 'فشل في إنشاء الحساب');
