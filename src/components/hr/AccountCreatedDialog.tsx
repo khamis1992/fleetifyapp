@@ -23,6 +23,7 @@ interface AccountCreatedDialogProps {
     employee_email: string;
     temporary_password: string;
     password_expires_at: string;
+    employee_id?: string;
     employee_phone?: string;
   } | null;
 }
@@ -32,10 +33,33 @@ export default function AccountCreatedDialog({
   onOpenChange,
   accountData
 }: AccountCreatedDialogProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
-  const [companyCountry, setCompanyCountry] = useState<string | undefined>(undefined);
-  const companyFilter = useCompanyFilter();
+const [showPassword, setShowPassword] = useState(false);
+const { toast } = useToast();
+const [companyCountry, setCompanyCountry] = useState<string | undefined>(undefined);
+const companyFilter = useCompanyFilter();
+const [resolvedPhone, setResolvedPhone] = useState<string>('');
+
+useEffect(() => {
+  setResolvedPhone(accountData?.employee_phone || '');
+}, [accountData?.employee_phone, open]);
+
+useEffect(() => {
+  const fetchPhone = async () => {
+    if (!open) return;
+    if (resolvedPhone && resolvedPhone.trim().length >= 6) return;
+    if (!accountData?.employee_id) return;
+    const { data, error } = await supabase
+      .from('employees')
+      .select('phone, emergency_contact_phone')
+      .eq('id', accountData.employee_id)
+      .single();
+    if (!error) {
+      const phone = (data as any)?.phone || (data as any)?.emergency_contact_phone || '';
+      if (phone) setResolvedPhone(phone);
+    }
+  };
+  fetchPhone();
+}, [open, accountData?.employee_id, resolvedPhone]);
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -101,7 +125,8 @@ export default function AccountCreatedDialog({
   }, [accountData]);
 
   const handleSendWhatsApp = () => {
-    if (!accountData.employee_phone) {
+    const phone = resolvedPhone?.trim();
+    if (!phone || phone.length < 6) {
       toast({
         variant: 'destructive',
         title: 'رقم الجوال غير متوفر',
@@ -109,7 +134,7 @@ export default function AccountCreatedDialog({
       });
       return;
     }
-    const { waNumber } = formatPhoneForWhatsApp(accountData.employee_phone, companyCountry);
+    const { waNumber } = formatPhoneForWhatsApp(phone, companyCountry);
     if (!waNumber) {
       toast({
         variant: 'destructive',

@@ -211,6 +211,7 @@ export default function Employees() {
           temporary_password: result.temporary_password || employeeData.accountPassword,
           password_expires_at: result.password_expires_at,
           employee_phone: employee.phone,
+          employee_id: employee.id,
         });
         setShowAccountDialog(true);
         setIsDialogOpen(false);
