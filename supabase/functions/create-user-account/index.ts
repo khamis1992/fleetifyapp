@@ -20,8 +20,30 @@ interface CreateUserAccountRequest {
 }
 
 const generateTemporaryPassword = (): string => {
-  // Return simple default password for easier onboarding
-  return "123456";
+  // Generate a strong temporary password (12-16 chars, mixed types)
+  const length = 14;
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*()_+[]{}<>?';
+  const all = upper + lower + numbers + symbols;
+
+  // Ensure at least one of each category
+  const getRand = (charset: string) => charset[Math.floor(Math.random() * charset.length)];
+  let pwd = getRand(upper) + getRand(lower) + getRand(numbers) + getRand(symbols);
+
+  // Fill the rest
+  for (let i = pwd.length; i < length; i++) {
+    pwd += getRand(all);
+  }
+
+  // Shuffle to avoid predictable pattern
+  const arr = pwd.split('');
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join('');
 };
 
 const assignRolesAndCreateRecord = async (

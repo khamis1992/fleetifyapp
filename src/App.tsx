@@ -22,6 +22,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AdvancedSettings from "./pages/AdvancedSettings";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import ResetPassword from "./pages/ResetPassword";
 
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
@@ -72,6 +73,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/quotation-approval" element={<QuotationApproval />} />
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/super-admin/*" element={<SuperAdminLayout />}>

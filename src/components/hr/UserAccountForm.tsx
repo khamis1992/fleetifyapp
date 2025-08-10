@@ -297,7 +297,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
                         إرسال دعوة بالإيميل
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        إرسال دعوة عبر البريد الإلكتروني للموظف لإنشاء حسابه بنفسه. (قد لا يعمل بسبب قيود الإيميل)
+                        سيتم إرسال رسالة ترحيبية للموظف. لتسجيل الدخول لأول مرة، سيزوَّد الموظف بكلمة مرور مؤقتة من الإدارة (قد تتأخر الإيميلات).
                       </p>
                     </div>
                   </div>
@@ -339,7 +339,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
                 {creationMethod === 'email' && (
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      ملاحظة: سيتم إرسال دعوة للموظف لإنشاء كلمة المرور الخاصة به عند أول تسجيل دخول
+                      ملاحظة: يتم إرسال رسالة ترحيبية فقط، وسيتم تزويد الموظف بكلمة مرور مؤقتة من الإدارة للدخول لأول مرة.
                     </p>
                   </div>
                 )}
@@ -420,7 +420,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
                 <p className="text-amber-700 mt-1">
                   {creationMethod === 'direct' 
                     ? 'سيتم إنشاء الحساب مباشرة وعرض كلمة مرور مؤقتة. تأكد من إرسال البيانات للموظف بطريقة آمنة.'
-                    : 'سيتم إرسال دعوة للموظف لإنشاء حساب في النظام. سيتمكن من الوصول فقط بعد قبول الدعوة وإنشاء كلمة المرور.'
+                    : 'سيتم إرسال رسالة ترحيبية للموظف. يجب تزويده بكلمة مرور مؤقتة من الإدارة للدخول لأول مرة.'
                   }
                 </p>
               </div>

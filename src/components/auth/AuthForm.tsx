@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AuthForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +64,21 @@ export const AuthForm: React.FC = () => {
       setIsLoading(false);
     }
   };
-
+  
+  const handleResetPassword = async () => {
+    try {
+      if (!formData.email) {
+        toast({ title: 'تنبيه', description: 'يرجى إدخال البريد الإلكتروني أولاً', variant: 'destructive' });
+        return;
+      }
+      await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      toast({ title: 'تم الإرسال', description: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك' });
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'تعذر إرسال رابط إعادة التعيين', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background-soft to-accent-muted p-6" dir="rtl">
@@ -188,6 +203,18 @@ export const AuthForm: React.FC = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+              </div>
+
+              <div className="flex justify-end -mt-2">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0"
+                  onClick={handleResetPassword}
+                  disabled={isLoading || !formData.email}
+                >
+                  هل نسيت كلمة المرور؟
+                </Button>
               </div>
 
               <Button 
