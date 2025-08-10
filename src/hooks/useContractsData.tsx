@@ -60,7 +60,7 @@ export const useContractsData = (filters: any = {}) => {
     }
 
     const activeContracts = contracts.filter(c => c.status === 'active' && !isZeroAmount(c));
-    const draftContracts = contracts.filter(c => c.status === 'draft' || isZeroAmount(c));
+    const draftContracts = contracts.filter(c => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended'].includes(c.status)));
     const expiredContracts = contracts.filter(c => c.status === 'expired');
     const suspendedContracts = contracts.filter(c => c.status === 'suspended');
     const cancelledContracts = contracts.filter(c => c.status === 'cancelled');

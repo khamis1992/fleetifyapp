@@ -71,9 +71,26 @@ export function useContractCSVUpload() {
       'يلتزم المستأجر بدفع الإيجار في موعده المحدد'
     ]
 
+    const exampleDataCancelled = [
+      'شركة مثال',
+      '',
+      'KWT-5678',
+      '',
+      'CON-2025-002',
+      'monthly_rental',
+      '2025-02-01',
+      '2025-02-01',
+      '2025-12-31',
+      '0',
+      '0',
+      'cancelled - عقد ملغي',
+      'تم الإلغاء قبل التفعيل'
+    ]
+
     const csvContent = [
       headers.join(','),
-      exampleData.join(',')
+      exampleData.join(','),
+      exampleDataCancelled.join(',')
     ].join('\n')
 
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -115,6 +132,12 @@ export function useContractCSVUpload() {
   const normalize = (s?: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
   const buildFullName = (first?: string | null, last?: string | null) => normalize(`${first || ''} ${last || ''}`);
+
+  const isCancelledDescription = (desc?: string) => {
+    const t = (desc || '').toString().toLowerCase();
+    const keywords = ['cancelled', 'canceled', 'cancel', 'ملغي', 'ملغى'];
+    return keywords.some((k) => t.includes(k));
+  };
 
   const resolveCustomerIdByName = async (customerName: string): Promise<{ id?: string; error?: string }> => {
     const key = normalize(customerName);
@@ -356,7 +379,7 @@ export function useContractCSVUpload() {
             monthly_amount: (contractData.monthly_amount !== undefined && contractData.monthly_amount !== null && contractData.monthly_amount !== '') ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
             description: contractData.description || null,
             terms: contractData.terms || null,
-            status: 'draft',
+            status: isCancelledDescription(contractData.description) ? 'cancelled' : 'draft',
             created_by: user.id
           }
 
@@ -448,7 +471,7 @@ export function useContractCSVUpload() {
             monthly_amount: (contractData.monthly_amount !== undefined && contractData.monthly_amount !== null && contractData.monthly_amount !== '') ? Number(contractData.monthly_amount) : Number(contractData.contract_amount),
             description: contractData.description || null,
             terms: contractData.terms || null,
-            status: 'draft',
+            status: isCancelledDescription(contractData.description) ? 'cancelled' : 'draft',
             created_by: user?.id
           };
 

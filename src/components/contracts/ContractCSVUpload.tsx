@@ -225,7 +225,7 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
                 <li>النظام يتعرف تلقائياً على العميل من اسم العميل، وعلى المركبة من رقم اللوحة</li>
                 <li>سيتم تعيين مركز التكلفة تلقائياً حسب إعدادات العميل</li>
                 <li>أنواع العقود المتاحة: rental, daily_rental, weekly_rental, monthly_rental, yearly_rental, rent_to_own</li>
-                <li>سيتم إنشاء العقود بحالة "مسودة" ويمكن تفعيلها لاحقاً</li>
+                <li>يتم إنشاء العقود افتراضياً بحالة "مسودة" ما لم يحتوي الوصف على "cancelled" أو "ملغي" ففي هذه الحالة تُسجَّل "ملغي" تلقائياً</li>
                 <li>سيتم تخطي الصفوف التي تحتوي على أخطاء</li>
               </ul>
             </AlertDescription>
