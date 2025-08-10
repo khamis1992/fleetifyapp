@@ -81,7 +81,8 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
             employee_name: `${employee.first_name} ${employee.last_name}`,
             employee_email: data.email,
             temporary_password: data.setCustomPassword ? data.password : result.temporary_password,
-            password_expires_at: result.password_expires_at
+            password_expires_at: result.password_expires_at,
+            employee_phone: employee.phone,
           }
         };
       } else {

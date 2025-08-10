@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,8 +9,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Copy, Eye, EyeOff, CheckCircle, AlertTriangle, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
+import { formatPhoneForWhatsApp } from '@/lib/phone';
 
 interface AccountCreatedDialogProps {
   open: boolean;
@@ -20,6 +23,7 @@ interface AccountCreatedDialogProps {
     employee_email: string;
     temporary_password: string;
     password_expires_at: string;
+    employee_phone?: string;
   } | null;
 }
 
@@ -30,6 +34,8 @@ export default function AccountCreatedDialog({
 }: AccountCreatedDialogProps) {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const [companyCountry, setCompanyCountry] = useState<string | undefined>(undefined);
+  const companyFilter = useCompanyFilter();
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -49,7 +55,8 @@ export default function AccountCreatedDialog({
 
   const formatExpiryDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
+    return date.toLocaleDateString('ar-SA', {
+      calendar: 'gregory',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -57,12 +64,63 @@ export default function AccountCreatedDialog({
       minute: '2-digit'
     });
   };
+  // Fetch company country when dialog opens
+  useEffect(() => {
+    const fetchCompany = async () => {
+      try {
+        if (!open || !companyFilter?.company_id) return;
+        const { data, error } = await supabase
+          .from('companies')
+          .select('country')
+          .eq('id', companyFilter.company_id)
+          .single();
+        if (!error) setCompanyCountry(data?.country);
+      } catch (e) {
+        // silent fail
+      }
+    };
+    fetchCompany();
+  }, [open, companyFilter?.company_id]);
 
   // Add null check to prevent errors
   if (!accountData) {
     return null;
   }
 
+  const whatsappMessage = useMemo(() => {
+    const lines = [
+      `مرحباً ${accountData.employee_name} 👋`,
+      `تم إنشاء حسابك في نظام الشركة.`,
+      `البريد الإلكتروني: ${accountData.employee_email}`,
+      `كلمة المرور المؤقتة: ${accountData.temporary_password}`,
+      `تنتهي صلاحية كلمة المرور: ${formatExpiryDate(accountData.password_expires_at)}`,
+      `رابط الدخول: ${window.location.origin}`,
+      `يرجى تغيير كلمة المرور عند أول تسجيل دخول.`
+    ];
+    return encodeURIComponent(lines.join('\n'));
+  }, [accountData]);
+
+  const handleSendWhatsApp = () => {
+    if (!accountData.employee_phone) {
+      toast({
+        variant: 'destructive',
+        title: 'رقم الجوال غير متوفر',
+        description: 'لا يوجد رقم جوال في ملف الموظف لإرسال الرسالة عبر واتساب'
+      });
+      return;
+    }
+    const { waNumber } = formatPhoneForWhatsApp(accountData.employee_phone, companyCountry);
+    if (!waNumber) {
+      toast({
+        variant: 'destructive',
+        title: 'رقم غير صالح',
+        description: 'تعذر تنسيق رقم الجوال لإرسال الرسالة'
+      });
+      return;
+    }
+    const url = `https://wa.me/${waNumber}?text=${whatsappMessage}`;
+    window.open(url, '_blank');
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md" dir="rtl">
@@ -172,14 +230,11 @@ export default function AccountCreatedDialog({
 
           <div className="flex gap-2 pt-4">
             <Button
-              onClick={() => copyToClipboard(
-                `البريد الإلكتروني: ${accountData.employee_email}\nكلمة المرور المؤقتة: ${accountData.temporary_password}\nتنتهي الصلاحية: ${formatExpiryDate(accountData.password_expires_at)}`,
-                'جميع بيانات الحساب'
-              )}
+              onClick={handleSendWhatsApp}
               className="flex-1"
             >
-              <Copy className="h-4 w-4 ml-2" />
-              نسخ جميع البيانات
+              <MessageCircle className="h-4 w-4 ml-2" />
+              إرسال عبر واتساب
             </Button>
             <Button
               variant="outline"

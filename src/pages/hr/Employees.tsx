@@ -209,7 +209,8 @@ export default function Employees() {
           employee_name: `${employee.first_name} ${employee.last_name}`,
           employee_email: employeeData.accountEmail,
           temporary_password: result.temporary_password || employeeData.accountPassword,
-          password_expires_at: result.password_expires_at
+          password_expires_at: result.password_expires_at,
+          employee_phone: employee.phone,
         });
         setShowAccountDialog(true);
         setIsDialogOpen(false);
