@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { ContractCreationData } from "@/types/contracts"
 import { toast } from "sonner"
+import { normalizeCsvHeaders } from "@/utils/csv"
 
 interface CSVUploadResults {
   total: number
@@ -122,9 +123,10 @@ export function useContractCSVUpload() {
 
   const parseCSV = (csvText: string): any[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-    const rows = (parsed.data as any[]).filter(Boolean);
+    const raw = (parsed.data as any[]).filter(Boolean);
+    const normalized = raw.map((row) => normalizeCsvHeaders(row));
     // Add row numbers (starting at 2 to account for header)
-    return rows.map((row, idx) => ({ ...row, rowNumber: idx + 2 }));
+    return normalized.map((row, idx) => ({ ...row, rowNumber: idx + 2 }));
   }
 
   // ===================== Helpers: Resolve IDs from human-friendly fields =====================
@@ -343,30 +345,43 @@ export function useContractCSVUpload() {
   // ============== Additional Helpers: normalization and membership checks ==============
   const normalizeContractType = (value?: string) => {
     const v = (value || '').toString().trim().toLowerCase();
-    // Arabic/English synonyms mapping
+    // Arabic/English synonyms mapping (expanded)
     const map: Record<string, string> = {
-      'شهري': 'monthly_rental',
-      'monthly': 'monthly_rental',
-      'monthly_rental': 'monthly_rental',
-      'يومي': 'daily_rental',
-      'daily': 'daily_rental',
-      'daily_rental': 'daily_rental',
-      'اسبوعي': 'weekly_rental',
-      'أسبوعي': 'weekly_rental',
-      'weekly': 'weekly_rental',
-      'weekly_rental': 'weekly_rental',
-      'سنوي': 'yearly_rental',
-      'سنوى': 'yearly_rental',
-      'yearly': 'yearly_rental',
-      'yearly_rental': 'yearly_rental',
-      'ايجار': 'rental',
-      'إيجار': 'rental',
-      'rental': 'rental',
-      'rent_to_own': 'rent_to_own',
-      'تمليك': 'rent_to_own',
-      'تأجير تمويلي': 'rent_to_own',
+      // rental base
+      'ايجار': 'rental', 'إيجار': 'rental', 'إيجار عادي': 'rental', 'rent': 'rental', 'rental': 'rental',
+      // daily
+      'يومي': 'daily_rental', 'يومى': 'daily_rental', 'daily': 'daily_rental', 'daily rental': 'daily_rental', 'daily_rental': 'daily_rental',
+      // weekly
+      'اسبوعي': 'weekly_rental', 'أسبوعي': 'weekly_rental', 'weekly': 'weekly_rental', 'weekly rental': 'weekly_rental', 'weekly_rental': 'weekly_rental',
+      // monthly
+      'شهري': 'monthly_rental', 'شهري إيجار': 'monthly_rental', 'إيجار شهري': 'monthly_rental',
+      'monthly': 'monthly_rental', 'monthly rental': 'monthly_rental', 'monthly_rental': 'monthly_rental',
+      // yearly
+      'سنوي': 'yearly_rental', 'سنوى': 'yearly_rental', 'سَنوي': 'yearly_rental', 'سَنوى': 'yearly_rental',
+      'yearly': 'yearly_rental', 'annual': 'yearly_rental', 'yearly rental': 'yearly_rental', 'yearly_rental': 'yearly_rental',
+      // rent to own
+      'تمليك': 'rent_to_own', 'تأجير تمويلي': 'rent_to_own', 'تأجير منتهي بالتمليك': 'rent_to_own', 'إيجار تمليك': 'rent_to_own',
+      'rent to own': 'rent_to_own', 'rent_to_own': 'rent_to_own'
     };
     return map[v] || v || '';
+  };
+
+  const getFriendlyDbError = (message?: string) => {
+    const m = (message || '').toLowerCase();
+    if (!m) return 'خطأ غير معروف في قاعدة البيانات';
+    if (m.includes('row-level security') || m.includes('rls') || m.includes('violates row-level security')) {
+      return 'رفض بواسطة صلاحيات الأمان (RLS). تأكد من اختيار الشركة الصحيحة من أعلى الشاشة ثم أعد المحاولة.';
+    }
+    if (m.includes('foreign key') && m.includes('customer')) {
+      return 'العميل غير موجود داخل نفس الشركة أو لا تملك صلاحية الوصول إليه.';
+    }
+    if (m.includes('foreign key') && m.includes('vehicle')) {
+      return 'المركبة غير موجودة داخل نفس الشركة أو لا تملك صلاحية الوصول إليها.';
+    }
+    if (m.includes('not-null constraint') && m.includes('customer_id')) {
+      return 'العميل مطلوب. يرجى التأكد من صحة customer_id أو اسم العميل.';
+    }
+    return message || 'خطأ غير معروف';
   };
 
   const validateCustomerInCompany = async (customerId: string, companyId: string) => {
@@ -590,7 +605,7 @@ export function useContractCSVUpload() {
             results.failed++;
             results.errors.push({
               row: contractData.rowNumber,
-              message: `خطأ في قاعدة البيانات: ${error.message}`
+              message: getFriendlyDbError(error.message)
             });
           } else {
             console.log(`📝 [Contract CSV] Successfully inserted contract row ${contractData.rowNumber}`);
@@ -708,7 +723,7 @@ export function useContractCSVUpload() {
           const dbMessage = error?.message || 'خطأ غير معروف';
           uploadResults.errors.push({
             row: rowNum,
-            message: dbMessage,
+            message: getFriendlyDbError(dbMessage),
           });
         }
       }

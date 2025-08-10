@@ -13,6 +13,7 @@ import { CSVFixPreview } from "./CSVFixPreview";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
 import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeCsvHeaders } from "@/utils/csv";
 interface SmartCSVUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,6 +42,8 @@ export function SmartCSVUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [enableUpsert, setEnableUpsert] = useState(false);
+  const [lastResult, setLastResult] = useState<any | null>(null);
+
 
   const entityLabels = {
     customer: 'العملاء',
@@ -68,7 +71,7 @@ export function SmartCSVUpload({
 
   const parseCSV = (csvText: string): any[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-    const rows = (parsed.data as any[]).filter(Boolean);
+    const rows = (parsed.data as any[]).filter(Boolean).map((row) => normalizeCsvHeaders(row));
     return rows.map((row, index) => ({ ...row, rowNumber: index + 2 }));
   };
 
