@@ -19,7 +19,7 @@ import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
 import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
 import { motion, AnimatePresence } from 'framer-motion';
-import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
+const ForcePasswordChangeDialog = React.lazy(() => import('@/components/auth/ForcePasswordChangeDialog'));
 
 
 export const DashboardLayout: React.FC = () => {
@@ -175,7 +175,9 @@ export const DashboardLayout: React.FC = () => {
           </main>
         </div>
         <KeyboardShortcuts />
-        <ForcePasswordChangeDialog />
+<React.Suspense fallback={null}>
+          <ForcePasswordChangeDialog />
+        </React.Suspense>
       </div>
     </SidebarProvider>
   );
