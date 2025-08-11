@@ -6,6 +6,7 @@ import { ContractCreationData } from "@/types/contracts"
 import { toast } from "sonner"
 import { normalizeCsvHeaders } from "@/utils/csv"
 import { cleanPhone, normalizeDigits } from "@/lib/phone"
+import { addDays, addMonths, addYears, differenceInMonths, parseISO, isValid as isValidDate, format } from "date-fns"
 
 interface CSVUploadResults {
   total: number
@@ -314,66 +315,76 @@ export function useContractCSVUpload() {
       // Normalize obvious alias fields
       if (!out.vehicle_number && out.plate_number) out.vehicle_number = out.plate_number;
 
-      // Customer resolution
-      const customerRaw: string | undefined = out.customer_id || out.customer_name;
-      if (!customerRaw) {
-        // keep as is; validate will catch missing
-      } else if (isPlaceholderValue(customerRaw)) {
-        delete out.customer_id;
-      } else if (!isUUID(customerRaw)) {
-        const nameKey = out.customer_name || customerRaw;
-        const resolved = await resolveCustomerIdByName(String(nameKey), companyId);
-        if (resolved.error) {
-          if (autoCreateCustomers && user?.roles?.includes('super_admin')) {
-            // Require phone to auto-create
-            const phoneRaw = out.customer_phone;
-            if (!phoneRaw || String(phoneRaw).trim() === '') {
-              return { error: `السطر ${rowNum}: الإنشاء التلقائي للعميل يتطلب رقم هاتف (customer_phone). أضف رقم الهاتف أو عطّل الإنشاء التلقائي.` };
-            }
-            const normalizedPhone = normalizeDigits(String(phoneRaw).trim());
-            const cleanedPhone = cleanPhone(normalizedPhone);
+      // Customer resolution (phone-first, then name; supports auto-create)
+      const rawId: string | undefined = out.customer_id;
+      const rawPhone: string | undefined = out.customer_phone;
+      const rawName: string | undefined = out.customer_name;
 
-            // Try to find existing customer by phone in target company
-            const { data: existingByPhone, error: phoneErr } = await supabase
-              .from('customers')
-              .select('id, phone')
-              .eq('company_id', companyId)
-              .eq('phone', cleanedPhone)
-              .limit(2);
-            if (phoneErr) {
-              return { error: `السطر ${rowNum}: تعذر البحث عن العميل برقم الهاتف - ${phoneErr.message}` };
-            }
-            if (existingByPhone && existingByPhone.length === 1) {
-              out.customer_id = (existingByPhone[0] as any).id;
-            } else if (existingByPhone && existingByPhone.length > 1) {
-              return { error: `السطر ${rowNum}: رقم الهاتف غير فريد داخل الشركة: ${cleanedPhone}` };
-            } else {
-              // Create new corporate customer with phone
-              const { data: created, error: createErr } = await supabase
-                .from('customers')
-                .insert([
-                  {
-                    company_id: companyId,
-                    customer_type: 'corporate',
-                    company_name: String(nameKey),
-                    phone: cleanedPhone,
-                    is_active: true,
-                    created_by: user?.id,
-                  } as any
-                ])
-                .select('id')
-                .maybeSingle();
-              if (createErr || !created?.id) {
-                return { error: `السطر ${rowNum}: تعذر إنشاء العميل تلقائياً '${nameKey}' - ${createErr?.message || 'سبب غير معروف'}` };
-              }
-              out.customer_id = created.id;
-            }
-          } else {
+      if (rawId) {
+        if (isPlaceholderValue(rawId)) {
+          delete out.customer_id;
+        } else if (!isUUID(rawId)) {
+          // Treat as name if not a UUID
+          const nameKey = rawName || rawId;
+          const resolved = await resolveCustomerIdByName(String(nameKey), companyId);
+          if (resolved.error) {
             return { error: `السطر ${rowNum}: تعذر تحديد العميل من القيمة '${nameKey}' - ${resolved.error}` };
           }
-        } else {
           out.customer_id = resolved.id;
         }
+      } else if (rawPhone && String(rawPhone).trim() !== '') {
+        const normalizedPhone = normalizeDigits(String(rawPhone).trim());
+        const cleanedPhone = cleanPhone(normalizedPhone);
+
+        const { data: byPhone, error: phoneErr } = await supabase
+          .from('customers')
+          .select('id, phone')
+          .eq('company_id', companyId)
+          .eq('phone', cleanedPhone)
+          .limit(5);
+        if (phoneErr) return { error: `السطر ${rowNum}: تعذر البحث عن العميل برقم الهاتف - ${phoneErr.message}` };
+
+        if (byPhone && byPhone.length === 1) {
+          out.customer_id = (byPhone[0] as any).id;
+        } else if (byPhone && byPhone.length > 1) {
+          return { error: `السطر ${rowNum}: رقم الهاتف غير فريد داخل الشركة: ${cleanedPhone}` };
+        } else {
+          // Not found by phone
+          if (autoCreateCustomers && user?.roles?.includes('super_admin')) {
+            const nameForCreate = String(rawName || 'عميل بدون اسم').trim() || 'عميل بدون اسم';
+            const { data: created, error: createErr } = await supabase
+              .from('customers')
+              .insert([
+                {
+                  company_id: companyId,
+                  customer_type: 'corporate',
+                  company_name: nameForCreate,
+                  phone: cleanedPhone,
+                  is_active: true,
+                  created_by: user?.id,
+                } as any
+              ])
+              .select('id')
+              .maybeSingle();
+            if (createErr || !created?.id) {
+              return { error: `السطر ${rowNum}: تعذر إنشاء العميل تلقائياً '${nameForCreate}' - ${createErr?.message || 'سبب غير معروف'}` };
+            }
+            out.customer_id = created.id;
+          } else if (rawName) {
+            const resolved = await resolveCustomerIdByName(String(rawName), companyId);
+            if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
+            out.customer_id = resolved.id;
+          } else {
+            // No way to resolve a customer
+            // leave as is; validation will flag missing customer_id
+          }
+        }
+      } else if (rawName) {
+        const resolved = await resolveCustomerIdByName(String(rawName), companyId);
+        if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
+        out.customer_id = resolved.id;
+      } else {
+        // keep as is; validate will catch missing customer
       }
 
       // Vehicle resolution (optional)
@@ -420,6 +431,93 @@ export function useContractCSVUpload() {
     return map[v] || v || '';
   };
 
+  // ====== Auto-complete helpers for contract fields ======
+  const toISODate = (d: Date) => format(d, 'yyyy-MM-dd');
+  const parseDateFlexible = (val?: any): Date | null => {
+    if (!val) return null;
+    const s = String(val).trim();
+    // Try ISO first
+    let d: Date | null = null;
+    try {
+      const iso = parseISO(s);
+      if (isValidDate(iso)) d = iso;
+    } catch {}
+    if (!d) {
+      const tmp = new Date(s);
+      if (!isNaN(tmp.getTime())) d = tmp;
+    }
+    return d;
+  };
+  const toNumber = (val: any): number | undefined => {
+    if (val === undefined || val === null || String(val).trim() === '') return undefined;
+    const cleaned = String(val).replace(/\u066B/g, '.').replace(/[٬,\s]/g, '');
+    const n = Number(cleaned);
+    return isNaN(n) ? undefined : n;
+  };
+  const monthsBetweenInclusive = (start: Date, end: Date): number => {
+    const diff = differenceInMonths(end, start);
+    return diff <= 0 ? 1 : diff + 1; // include the starting month window
+  };
+
+  const autoCompleteContractFields = (row: any) => {
+    const out: any = { ...row };
+
+    // Normalize contract type and set default
+    out.contract_type = normalizeContractType(out.contract_type) || 'monthly_rental';
+
+    // Dates
+    const today = new Date();
+    let contractDate = parseDateFlexible(out.contract_date) || null;
+    let startDate = parseDateFlexible(out.start_date) || null;
+    let endDate = parseDateFlexible(out.end_date) || null;
+
+    if (!contractDate) contractDate = startDate || today;
+    if (!startDate) startDate = contractDate || today;
+
+    if (!endDate && startDate) {
+      switch (out.contract_type) {
+        case 'daily_rental':
+          endDate = addDays(startDate, 1);
+          break;
+        case 'weekly_rental':
+          endDate = addDays(startDate, 7);
+          break;
+        case 'yearly_rental':
+          endDate = addYears(startDate, 1);
+          break;
+        case 'monthly_rental':
+        default:
+          endDate = addMonths(startDate, 1);
+          break;
+      }
+    }
+
+    if (contractDate) out.contract_date = toISODate(contractDate);
+    if (startDate) out.start_date = toISODate(startDate);
+    if (endDate) out.end_date = toISODate(endDate);
+
+    // Amounts
+    const contractAmount = toNumber(out.contract_amount);
+    const monthlyAmount = toNumber(out.monthly_amount);
+
+    if (startDate && endDate) {
+      const months = monthsBetweenInclusive(startDate, endDate);
+      if (contractAmount !== undefined && monthlyAmount === undefined) {
+        out.monthly_amount = Number((contractAmount / months).toFixed(2));
+      } else if (monthlyAmount !== undefined && contractAmount === undefined) {
+        out.contract_amount = Number((monthlyAmount * months).toFixed(2));
+      } else if (contractAmount !== undefined && monthlyAmount !== undefined) {
+        // keep both as provided but normalize numeric formatting
+        out.contract_amount = contractAmount;
+        out.monthly_amount = monthlyAmount;
+      }
+    } else if (contractAmount !== undefined && monthlyAmount === undefined) {
+      // Fallback: align monthly to contract if duration unknown
+      out.monthly_amount = contractAmount;
+    }
+
+    return out;
+  };
   const getFriendlyDbError = (message?: string) => {
     const m = (message || '').toLowerCase();
     if (!m) return 'خطأ غير معروف في قاعدة البيانات';
@@ -578,8 +676,11 @@ export function useContractCSVUpload() {
       for (let i = 0; i < data.length; i++) {
         const originalRow = data[i];
 
+        // Auto-complete missing fields (type, dates, amounts)
+        const filledRow = autoCompleteContractFields({ ...originalRow });
+
         // Preprocess and resolve IDs (customer/vehicle)
-        const pre = await preprocessAndResolveIds({ ...originalRow }, companyId, false);
+        const pre = await preprocessAndResolveIds({ ...filledRow }, companyId, false);
         if (pre.error) {
           results.failed++;
           results.errors.push({ row: originalRow.rowNumber || (i + 1), message: pre.error });
@@ -730,8 +831,9 @@ export function useContractCSVUpload() {
         const rowNum = originalRow.rowNumber || i + 1;
         
         try {
-          // Preprocess row (resolve IDs, normalize)
-          const pre = await preprocessAndResolveIds({ ...originalRow }, targetCompanyId, Boolean(options?.autoCreateCustomers));
+          // Auto-complete first, then preprocess (resolve IDs)
+          const filledRow = autoCompleteContractFields({ ...originalRow });
+          const pre = await preprocessAndResolveIds({ ...filledRow }, targetCompanyId, Boolean(options?.autoCreateCustomers));
           if (pre.error) throw new Error(pre.error);
           const contractData: any = pre.data;
 
