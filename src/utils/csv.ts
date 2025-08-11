@@ -35,6 +35,17 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'تليفون': 'customer_phone',
     'الوصف': 'description',
     'الشروط': 'terms',
+    'البداية': 'start_date',
+    'النهاية': 'end_date',
+    'بداية': 'start_date',
+    'نهاية': 'end_date',
+    'المبلغ': 'contract_amount',
+    'القيمة': 'contract_amount',
+    'السعر': 'monthly_amount',
+    'السعر الشهري': 'monthly_amount',
+    'رقم هاتف العميل': 'customer_phone',
+    'النوع': 'contract_type',
+    'نوع': 'contract_type',
 
     // Common English variations (normalize spaces/casing)
     'customer name': 'customer_name',
@@ -61,6 +72,17 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'customer mobile': 'customer_phone',
     'description': 'description',
     'terms': 'terms',
+    'start': 'start_date',
+    'begin': 'start_date',
+    'beginning': 'start_date',
+    'end': 'end_date',
+    'finish': 'end_date',
+    'amount': 'contract_amount',
+    'value': 'contract_amount',
+    'price': 'monthly_amount',
+    'monthly price': 'monthly_amount',
+    'type': 'contract_type',
+    'category': 'contract_type',
   };
 
 

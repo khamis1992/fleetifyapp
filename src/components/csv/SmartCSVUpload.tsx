@@ -20,7 +20,7 @@ interface SmartCSVUploadProps {
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
   entityType: 'customer' | 'vehicle' | 'contract';
-  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean }) => Promise<any>;
+  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
   requiredFields: string[];
@@ -44,6 +44,9 @@ export function SmartCSVUpload({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [enableUpsert, setEnableUpsert] = useState(false);
   const [createMissingCustomers, setCreateMissingCustomers] = useState(false);
+  const [autoCompleteDates, setAutoCompleteDates] = useState(true);
+  const [autoCompleteType, setAutoCompleteType] = useState(true);
+  const [autoCompleteAmounts, setAutoCompleteAmounts] = useState(true);
   const [lastResult, setLastResult] = useState<any | null>(null);
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
   const [editedRows, setEditedRows] = useState<any[]>([]);
@@ -153,7 +156,14 @@ export function SmartCSVUpload({
       }, 200);
 
       console.log('Calling upload function with companyId:', companyId);
-      const result = await uploadFunction(dataToUpload, { upsert: enableUpsert, targetCompanyId: companyId, autoCreateCustomers: createMissingCustomers });
+      const result = await uploadFunction(dataToUpload, { 
+        upsert: enableUpsert, 
+        targetCompanyId: companyId, 
+        autoCreateCustomers: createMissingCustomers,
+        autoCompleteDates,
+        autoCompleteType, 
+        autoCompleteAmounts 
+      });
       console.log('Upload function result:', result);
       
       clearInterval(progressInterval);
@@ -228,7 +238,14 @@ export function SmartCSVUpload({
         });
       }, 200);
 
-      const result = await uploadFunction(dataToUpload, { upsert: enableUpsert, targetCompanyId: companyId, autoCreateCustomers: createMissingCustomers });
+      const result = await uploadFunction(dataToUpload, { 
+        upsert: enableUpsert, 
+        targetCompanyId: companyId, 
+        autoCreateCustomers: createMissingCustomers,
+        autoCompleteDates,
+        autoCompleteType,
+        autoCompleteAmounts 
+      });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -356,20 +373,46 @@ export function SmartCSVUpload({
               </Card>
             )}
 
-            {entityType === 'contract' && isSuperAdmin && (
+            {entityType === 'contract' && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">خيارات الرفع</CardTitle>
-                  <CardDescription>إنشاء العملاء المفقودين تلقائياً</CardDescription>
+                  <CardTitle className="text-lg">خيارات الإكمال التلقائي</CardTitle>
+                  <CardDescription>تحكم في ميزات الإكمال الذكي للعقود</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <Checkbox id="autoCreateCustomers" checked={createMissingCustomers} onCheckedChange={(v) => setCreateMissingCustomers(Boolean(v))} />
-                    <label htmlFor="autoCreateCustomers" className="text-sm">
-                      إذا لم يتم العثور على العميل بالاسم داخل الشركة المستهدفة، قم بإنشائه تلقائياً كعميل شركة
-                      <div className="text-xs text-muted-foreground mt-1">سيتم الإنشاء داخل الشركة المحددة فقط. عند التفعيل يصبح customer_phone حقلاً مطلوباً.</div>
+                    <Checkbox id="autoCompleteDates" checked={autoCompleteDates} onCheckedChange={(v) => setAutoCompleteDates(Boolean(v))} />
+                    <label htmlFor="autoCompleteDates" className="text-sm">
+                      إكمال التواريخ الناقصة تلقائياً
+                      <div className="text-xs text-muted-foreground mt-1">سيتم حساب end_date من start_date حسب نوع العقد</div>
                     </label>
                   </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="autoCompleteType" checked={autoCompleteType} onCheckedChange={(v) => setAutoCompleteType(Boolean(v))} />
+                    <label htmlFor="autoCompleteType" className="text-sm">
+                      تقدير نوع العقد عند عدم تحديده
+                      <div className="text-xs text-muted-foreground mt-1">سيتم افتراض "إيجار شهري" كنوع افتراضي</div>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="autoCompleteAmounts" checked={autoCompleteAmounts} onCheckedChange={(v) => setAutoCompleteAmounts(Boolean(v))} />
+                    <label htmlFor="autoCompleteAmounts" className="text-sm">
+                      حساب المبالغ المفقودة من المدة
+                      <div className="text-xs text-muted-foreground mt-1">سيتم حساب contract_amount أو monthly_amount بناءً على المدة</div>
+                    </label>
+                  </div>
+                  
+                  {isSuperAdmin && (
+                    <div className="flex items-start gap-3">
+                      <Checkbox id="autoCreateCustomers" checked={createMissingCustomers} onCheckedChange={(v) => setCreateMissingCustomers(Boolean(v))} />
+                      <label htmlFor="autoCreateCustomers" className="text-sm">
+                        إنشاء العملاء المفقودين تلقائياً
+                        <div className="text-xs text-muted-foreground mt-1">عند التفعيل يصبح customer_phone حقلاً مطلوباً</div>
+                      </label>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

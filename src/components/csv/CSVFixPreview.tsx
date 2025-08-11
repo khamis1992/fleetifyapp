@@ -176,11 +176,18 @@ export function CSVFixPreview({ fixes, onApprove, onCancel, isProcessing = false
                   {showDetails.has(originalIndex) && (
                     <CardContent className="space-y-3">
                       {rowFix.fixes.map((fix, fixIndex) => (
-                        <div key={fixIndex} className="border rounded-lg p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{fix.field}</span>
-                            {getConfidenceBadge(fix.fix.confidence)}
-                          </div>
+                         <div key={fixIndex} className="border rounded-lg p-3 space-y-2">
+                           <div className="flex items-center justify-between">
+                             <span className="font-medium">{fix.field}</span>
+                             <div className="flex items-center gap-2">
+                               {fix.fix.reason?.includes('auto-complete') && (
+                                 <Badge variant="outline" className="text-xs">
+                                   مُكمَّل تلقائياً
+                                 </Badge>
+                               )}
+                               {getConfidenceBadge(fix.fix.confidence)}
+                             </div>
+                           </div>
                           
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
