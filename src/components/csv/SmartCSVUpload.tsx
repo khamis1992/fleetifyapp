@@ -50,7 +50,7 @@ export function SmartCSVUpload({
   const [activeView, setActiveView] = useState<'preview' | 'table'>('preview');
 
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
-
+ 
   const entityLabels = {
     customer: 'العملاء',
     vehicle: 'المركبات',
@@ -62,6 +62,10 @@ export function SmartCSVUpload({
       ? (browsedCompany.name_ar || browsedCompany.name)
       : (user?.company?.name_ar || user?.company?.name)
   ) || 'غير محدد';
+
+  const effectiveRequiredFields = (entityType === 'contract' && createMissingCustomers)
+    ? Array.from(new Set([...requiredFields, 'customer_phone']))
+    : requiredFields;
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv'))) {
@@ -102,7 +106,7 @@ export function SmartCSVUpload({
 
       const csvData = rawRows.map((row, index) => ({ ...normalizeCsvHeaders(row), rowNumber: index + 2 }));
 
-      const fixResults = CSVAutoFix.fixCSVData(csvData, fieldTypes, requiredFields, 'qatar');
+      const fixResults = CSVAutoFix.fixCSVData(csvData, fieldTypes, effectiveRequiredFields, 'qatar');
       setFixes(fixResults);
       setShowPreview(true);
       setActiveView('table');
@@ -203,7 +207,7 @@ export function SmartCSVUpload({
       }));
 
       const dataToUpload = normalized.filter((r) =>
-        requiredFields.every((f) => {
+        effectiveRequiredFields.every((f) => {
           const v = r[f];
           return !(v === undefined || v === null || String(v).trim() === '');
         })
@@ -363,7 +367,7 @@ export function SmartCSVUpload({
                     <Checkbox id="autoCreateCustomers" checked={createMissingCustomers} onCheckedChange={(v) => setCreateMissingCustomers(Boolean(v))} />
                     <label htmlFor="autoCreateCustomers" className="text-sm">
                       إذا لم يتم العثور على العميل بالاسم داخل الشركة المستهدفة، قم بإنشائه تلقائياً كعميل شركة
-                      <div className="text-xs text-muted-foreground mt-1">سيتم الإنشاء داخل الشركة المحددة فقط</div>
+                      <div className="text-xs text-muted-foreground mt-1">سيتم الإنشاء داخل الشركة المحددة فقط. عند التفعيل يصبح customer_phone حقلاً مطلوباً.</div>
                     </label>
                   </div>
                 </CardContent>
@@ -395,6 +399,9 @@ export function SmartCSVUpload({
                     </>
                   )}
                 </Button>
+                {entityType === 'contract' && createMissingCustomers && (
+                  <div className="text-xs text-red-600 mt-2">ملاحظة: يجب توفير customer_phone لكل صف ليتم الإنشاء التلقائي للعميل.</div>
+                )}
               </CardContent>
             </Card>
 
@@ -453,7 +460,7 @@ export function SmartCSVUpload({
                   headers={rawHeaders}
                   rows={editedRows}
                   onChange={setEditedRows}
-                  requiredFields={requiredFields}
+                  requiredFields={effectiveRequiredFields}
                   fieldTypes={fieldTypes}
                 />
                 <div className="flex justify-end gap-2">

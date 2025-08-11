@@ -27,6 +27,12 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'كود مركز التكلفة': 'cost_center_code',
     'معرف مركز التكلفة': 'cost_center_id',
     'معرّف مركز التكلفة': 'cost_center_id',
+    'رقم الهاتف': 'customer_phone',
+    'الهاتف': 'customer_phone',
+    'الجوال': 'customer_phone',
+    'رقم الجوال': 'customer_phone',
+    'هاتف العميل': 'customer_phone',
+    'تليفون': 'customer_phone',
     'الوصف': 'description',
     'الشروط': 'terms',
 
@@ -47,9 +53,16 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'cost center name': 'cost_center_name',
     'cost center code': 'cost_center_code',
     'cost center id': 'cost_center_id',
+    'customer phone': 'customer_phone',
+    'phone': 'customer_phone',
+    'mobile': 'customer_phone',
+    'phone number': 'customer_phone',
+    'mobile number': 'customer_phone',
+    'customer mobile': 'customer_phone',
     'description': 'description',
     'terms': 'terms',
   };
+
 
   const normalized: Record<string, any> = {};
   for (const [key, val] of Object.entries(row)) {

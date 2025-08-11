@@ -5,6 +5,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { ContractCreationData } from "@/types/contracts"
 import { toast } from "sonner"
 import { normalizeCsvHeaders } from "@/utils/csv"
+import { cleanPhone, normalizeDigits } from "@/lib/phone"
 
 interface CSVUploadResults {
   total: number
@@ -23,6 +24,7 @@ export function useContractCSVUpload() {
   const contractFieldTypes = {
     customer_id: 'text' as const,
     customer_name: 'text' as const,
+    customer_phone: 'phone' as const, // هاتف العميل (للبحث/الإنشاء التلقائي)
     vehicle_id: 'text' as const,
     vehicle_number: 'text' as const,
     contract_number: 'text' as const,
@@ -39,7 +41,6 @@ export function useContractCSVUpload() {
     description: 'text' as const,
     terms: 'text' as const,
   };
-
   // الحقول المطلوبة: سنسمح بتحديد العميل عبر الاسم أو المعرّف
   const contractRequiredFields = ['contract_type', 'start_date', 'end_date', 'contract_amount'];
 
@@ -47,6 +48,7 @@ export function useContractCSVUpload() {
     const headers = [
       'customer_name', // سيتم تحويله تلقائياً إلى customer_id
       'customer_id',   // بديل اختياري إذا أردت وضع المعرّف مباشرة
+      'customer_phone', // مطلوب فقط عند تفعيل الإنشاء التلقائي
       'vehicle_number', // سيتم تحويله تلقائياً إلى vehicle_id من رقم اللوحة
       'vehicle_id',     // بديل اختياري
       'contract_number',
@@ -67,6 +69,7 @@ export function useContractCSVUpload() {
     const exampleData = [
       'شركة الهدى للتجارة',
       '',
+      '+97450123456',
       'KWT-1234',
       '',
       'CON-2025-001',
@@ -87,6 +90,7 @@ export function useContractCSVUpload() {
     const exampleDataCancelled = [
       'شركة مثال',
       '',
+      '+97455555555',
       'KWT-5678',
       '',
       'CON-2025-002',
@@ -321,24 +325,49 @@ export function useContractCSVUpload() {
         const resolved = await resolveCustomerIdByName(String(nameKey), companyId);
         if (resolved.error) {
           if (autoCreateCustomers && user?.roles?.includes('super_admin')) {
-            // Attempt to auto-create a minimal corporate customer in the target company
-            const { data: created, error: createErr } = await supabase
-              .from('customers')
-              .insert([
-                {
-                  company_id: companyId,
-                  customer_type: 'corporate',
-                  company_name: String(nameKey),
-                  is_active: true,
-                  created_by: user?.id,
-                } as any
-              ])
-              .select('id')
-              .maybeSingle();
-            if (createErr || !created?.id) {
-              return { error: `السطر ${rowNum}: تعذر إنشاء العميل تلقائياً '${nameKey}' - ${createErr?.message || 'سبب غير معروف'}` };
+            // Require phone to auto-create
+            const phoneRaw = out.customer_phone;
+            if (!phoneRaw || String(phoneRaw).trim() === '') {
+              return { error: `السطر ${rowNum}: الإنشاء التلقائي للعميل يتطلب رقم هاتف (customer_phone). أضف رقم الهاتف أو عطّل الإنشاء التلقائي.` };
             }
-            out.customer_id = created.id;
+            const normalizedPhone = normalizeDigits(String(phoneRaw).trim());
+            const cleanedPhone = cleanPhone(normalizedPhone);
+
+            // Try to find existing customer by phone in target company
+            const { data: existingByPhone, error: phoneErr } = await supabase
+              .from('customers')
+              .select('id, phone')
+              .eq('company_id', companyId)
+              .eq('phone', cleanedPhone)
+              .limit(2);
+            if (phoneErr) {
+              return { error: `السطر ${rowNum}: تعذر البحث عن العميل برقم الهاتف - ${phoneErr.message}` };
+            }
+            if (existingByPhone && existingByPhone.length === 1) {
+              out.customer_id = (existingByPhone[0] as any).id;
+            } else if (existingByPhone && existingByPhone.length > 1) {
+              return { error: `السطر ${rowNum}: رقم الهاتف غير فريد داخل الشركة: ${cleanedPhone}` };
+            } else {
+              // Create new corporate customer with phone
+              const { data: created, error: createErr } = await supabase
+                .from('customers')
+                .insert([
+                  {
+                    company_id: companyId,
+                    customer_type: 'corporate',
+                    company_name: String(nameKey),
+                    phone: cleanedPhone,
+                    is_active: true,
+                    created_by: user?.id,
+                  } as any
+                ])
+                .select('id')
+                .maybeSingle();
+              if (createErr || !created?.id) {
+                return { error: `السطر ${rowNum}: تعذر إنشاء العميل تلقائياً '${nameKey}' - ${createErr?.message || 'سبب غير معروف'}` };
+              }
+              out.customer_id = created.id;
+            }
           } else {
             return { error: `السطر ${rowNum}: تعذر تحديد العميل من القيمة '${nameKey}' - ${resolved.error}` };
           }
