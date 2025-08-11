@@ -15,15 +15,24 @@ export interface CompanyScopeContext {
  * Get the company scope context for the current user
  */
 export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeContext => {
-  const userRoles = (user?.roles || []) as UserRole[];
+  // Normalize roles: trim, lowercase, remove falsy and duplicates
+  const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
+  const normalizedRoles = Array.from(
+    new Set(
+      rawRoles
+        .map((r: any) => String(r || '').trim().toLowerCase())
+        .filter((r: string) => !!r)
+    )
+  ) as UserRole[];
+
   const companyId = user?.profile?.company_id;
   
   return {
     user,
-    userRoles,
+    userRoles: normalizedRoles,
     companyId,
-    isSystemLevel: userRoles.includes('super_admin'),
-    isCompanyScoped: userRoles.includes('company_admin') && !userRoles.includes('super_admin')
+    isSystemLevel: normalizedRoles.includes('super_admin'),
+    isCompanyScoped: normalizedRoles.includes('company_admin') && !normalizedRoles.includes('super_admin')
   };
 };
 

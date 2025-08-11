@@ -20,10 +20,16 @@ export const useUnifiedCompanyAccess = () => {
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
   return useMemo(() => {
+    const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
+    const rolesNormalized = Array.from(
+      new Set(
+        rawRoles.map((r: any) => String(r || '').trim().toLowerCase()).filter(Boolean)
+      )
+    ) as string[];
     console.log('🔧 [UNIFIED_COMPANY_ACCESS] Computing access context:', {
       userId: user?.id,
       userCompanyId: user?.company?.id,
-      userRoles: user?.roles,
+      userRoles: rolesNormalized,
       isBrowsingMode,
       browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null
     });
@@ -39,9 +45,9 @@ export const useUnifiedCompanyAccess = () => {
     });
     
     // Store original user roles before modifying context
-    const originalUserRoles = user?.roles || [];
+    const originalUserRoles = rolesNormalized;
     
-    if (isBrowsingMode && browsedCompany && user?.roles?.includes('super_admin')) {
+    if (isBrowsingMode && browsedCompany && rolesNormalized.includes('super_admin')) {
       console.log('🔧 [UNIFIED_COMPANY_ACCESS] Overriding context for browse mode');
       context = {
         ...context,
