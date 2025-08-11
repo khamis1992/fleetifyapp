@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import Papa from "papaparse";
 import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
+import { CSVTableEditor } from "./CSVTableEditor";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,6 +45,9 @@ export function SmartCSVUpload({
   const [enableUpsert, setEnableUpsert] = useState(false);
   const [createMissingCustomers, setCreateMissingCustomers] = useState(false);
   const [lastResult, setLastResult] = useState<any | null>(null);
+  const [rawHeaders, setRawHeaders] = useState<string[]>([]);
+  const [editedRows, setEditedRows] = useState<any[]>([]);
+  const [activeView, setActiveView] = useState<'preview' | 'table'>('preview');
 
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
 
@@ -60,10 +64,13 @@ export function SmartCSVUpload({
   ) || 'غير محدد';
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'text/csv') {
+    if (selectedFile && (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv'))) {
       setFile(selectedFile);
       setFixes([]);
       setShowPreview(false);
+      setRawHeaders([]);
+      setEditedRows([]);
+      setActiveView('table');
     } else {
       toast.error("يرجى اختيار ملف CSV صحيح");
     }
@@ -81,16 +88,24 @@ export function SmartCSVUpload({
     setIsAnalyzing(true);
     try {
       const text = await file.text();
-      const csvData = parseCSV(text);
-      
-      if (csvData.length === 0) {
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' }) as any;
+      const rawRows = (parsed.data as any[]).filter((row) => row && Object.values(row).some((v) => (v ?? '').toString().trim() !== ''));
+      const headers = (parsed.meta?.fields as string[]) || Object.keys(rawRows[0] || {});
+
+      if (rawRows.length === 0) {
         toast.error("الملف فارغ أو غير صحيح");
         return;
       }
 
+      setRawHeaders(headers);
+      setEditedRows(rawRows.map((row, index) => ({ ...row, rowNumber: index + 2 })));
+
+      const csvData = rawRows.map((row, index) => ({ ...normalizeCsvHeaders(row), rowNumber: index + 2 }));
+
       const fixResults = CSVAutoFix.fixCSVData(csvData, fieldTypes, requiredFields, 'qatar');
       setFixes(fixResults);
       setShowPreview(true);
+      setActiveView('table');
 
       const totalFixes = fixResults.reduce((sum, row) => sum + row.fixes.length, 0);
       const errorRows = fixResults.filter(row => row.hasErrors).length;
@@ -177,6 +192,74 @@ export function SmartCSVUpload({
     }
   };
 
+  const handleTableUpload = async () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const normalized = editedRows.map((row, idx) => ({
+        ...normalizeCsvHeaders(row),
+        rowNumber: row?.rowNumber ?? idx + 2,
+      }));
+
+      const dataToUpload = normalized.filter((r) =>
+        requiredFields.every((f) => {
+          const v = r[f];
+          return !(v === undefined || v === null || String(v).trim() === '');
+        })
+      );
+
+      if (dataToUpload.length === 0) {
+        toast.error("لا توجد صفوف مكتملة ال بيانات للرفع");
+        return;
+      }
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const result = await uploadFunction(dataToUpload, { upsert: enableUpsert, targetCompanyId: companyId, autoCreateCustomers: createMissingCustomers });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      const successful = Number(result?.successful ?? 0);
+      const failed = Number(result?.failed ?? 0);
+      const total = Number(result?.total ?? dataToUpload.length);
+      const skipped = Number(result?.skipped ?? 0);
+
+      if (successful > 0 && failed === 0) {
+        const msg = skipped > 0 
+          ? `تم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
+          : `تم رفع جميع السجلات بنجاح (${successful}/${total})`;
+        toast.success(msg);
+        onUploadComplete();
+        handleClose();
+      } else if (successful > 0 && (failed > 0 || skipped > 0)) {
+        toast.success(`تم رفع ${successful} سجل، تم تخطي ${skipped}، وفشل ${failed}. راجع الأخطاء ثم أعد المحاولة.`);
+        onUploadComplete();
+      } else if (successful === 0 && skipped > 0 && failed === 0) {
+        toast.message('لا توجد سجلات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
+      } else if (successful === 0) {
+        toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
+      } else {
+        toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
+      }
+    } catch (error: any) {
+      console.error('Error uploading data (table):', error);
+      toast.error(`خطأ في رفع البيانات: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   const handleClose = () => {
     setFile(null);
     setFixes([]);
@@ -186,7 +269,6 @@ export function SmartCSVUpload({
     setUploadProgress(0);
     onOpenChange(false);
   };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -348,12 +430,49 @@ export function SmartCSVUpload({
               </Card>
             )}
 
-            <CSVFixPreview
-              fixes={fixes}
-              onApprove={handleApproveFixes}
-              onCancel={() => setShowPreview(false)}
-              isProcessing={isUploading}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant={activeView === 'table' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('table')}
+              >
+                تحرير كجدول
+              </Button>
+              <Button
+                variant={activeView === 'preview' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('preview')}
+              >
+                المعاينة الذكية
+              </Button>
+            </div>
+
+            {activeView === 'table' ? (
+              <>
+                <CSVTableEditor
+                  headers={rawHeaders}
+                  rows={editedRows}
+                  onChange={setEditedRows}
+                  requiredFields={requiredFields}
+                  fieldTypes={fieldTypes}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowPreview(false)} disabled={isUploading}>
+                    رجوع
+                  </Button>
+                  <Button onClick={handleTableUpload} disabled={isUploading}>
+                    {isUploading ? 'جاري الرفع...' : 'رفع البيانات'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <CSVFixPreview
+                fixes={fixes}
+                onApprove={handleApproveFixes}
+                onCancel={() => setShowPreview(false)}
+                isProcessing={isUploading}
+              />
+            )}
           </div>
         )}
       </DialogContent>
