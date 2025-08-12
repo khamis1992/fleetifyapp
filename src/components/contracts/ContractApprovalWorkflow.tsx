@@ -20,6 +20,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractApprovalWorkflowProps {
   open: boolean;
@@ -48,6 +49,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { formatCurrency } = useCurrencyFormatter();
 
   // Fetch real approval workflow steps
   const { data: approvalSteps, isLoading } = useQuery({
@@ -243,7 +245,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">قيمة العقد</span>
-                <p className="font-medium">{contract.contract_amount?.toFixed(3)} د.ك</p>
+                <p className="font-medium">{formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">المدة</span>

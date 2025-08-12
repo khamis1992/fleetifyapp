@@ -29,6 +29,7 @@ import { ContractDocuments } from './ContractDocuments';
 import { InvoiceCard } from '@/components/finance/InvoiceCard';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractDetailsDialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(contract || {});
+  const { formatCurrency, currency } = useCurrencyFormatter();
   
   // Payment dialog state
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -331,7 +333,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   {isEditing ? (
                     <div className="space-y-3">
                       <div>
-                        <Label>قيمة العقد (د.ك)</Label>
+                        <Label>قيمة العقد ({currency})</Label>
                         <Input
                           type="number"
                           step="0.001"
@@ -340,7 +342,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         />
                       </div>
                       <div>
-                        <Label>المبلغ الشهري (د.ك)</Label>
+                        <Label>المبلغ الشهري ({currency})</Label>
                         <Input
                           type="number"
                           step="0.001"
@@ -354,28 +356,28 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">قيمة العقد</span>
                         <span className="font-bold text-2xl text-primary">
-                          {contract.contract_amount?.toFixed(3)} د.ك
+                          {formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">المبلغ الشهري</span>
                         <span className="font-medium">
-                          {contract.monthly_amount?.toFixed(3)} د.ك
+                          {formatCurrency(contract.monthly_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">المبلغ المدفوع</span>
                         <span className="font-medium text-green-600">
-                          {(invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0).toFixed(3)} د.ك
+                          {formatCurrency((invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">المبلغ المتبقي</span>
                         <span className="font-medium text-orange-600">
-                          {(contract.contract_amount - (invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0)).toFixed(3)} د.ك
+                          {formatCurrency((contract.contract_amount - (invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0)), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                     </div>

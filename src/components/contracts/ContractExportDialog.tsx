@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractExportDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   const { user } = useAuth();
   const [exportType, setExportType] = useState('pdf');
   const [dateRange, setDateRange] = useState('all');
+  const { formatCurrency, currency } = useCurrencyFormatter();
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [contractStatus, setContractStatus] = useState('all');
@@ -120,7 +122,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
           <h3>ملخص العقود</h3>
           <p>العقود النشطة: ${contracts.filter(c => c.status === 'active').length}</p>
           <p>العقود المنتهية: ${contracts.filter(c => c.status === 'expired').length}</p>
-          <p>إجمالي القيمة: ${contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0).toFixed(3)} د.ك</p>
+          <p>إجمالي القيمة: ${formatCurrency(contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
         </div>
 
         <table>
@@ -132,7 +134,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
               ${includeCustomer ? '<th>العميل</th>' : ''}
               <th>تاريخ البداية</th>
               <th>تاريخ النهاية</th>
-              ${includeFinancial ? '<th>المبلغ (د.ك)</th>' : ''}
+              ${includeFinancial ? `<th>المبلغ (${currency})</th>` : ''}
               ${includeVehicle ? '<th>المركبة</th>' : ''}
             </tr>
           </thead>
@@ -153,7 +155,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                   : (contract.customer as any)?.company_name || 'غير محدد'}</td>` : ''}
                 <td>${new Date(contract.start_date).toLocaleDateString('en-GB')}</td>
                 <td>${new Date(contract.end_date).toLocaleDateString('en-GB')}</td>
-                ${includeFinancial ? `<td>${contract.contract_amount?.toFixed(3) || '0.000'}</td>` : ''}
+                ${includeFinancial ? `<td>${formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>` : ''}
                 ${includeVehicle ? `<td>${(contract.vehicle as any)?.plate_number || 'لا يوجد'}</td>` : ''}
               </tr>
             `).join('')}
@@ -186,7 +188,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       ...(includeCustomer ? ['العميل'] : []),
       'تاريخ البداية',
       'تاريخ النهاية',
-      ...(includeFinancial ? ['المبلغ (د.ك)', 'المبلغ الشهري (د.ك)'] : []),
+      ...(includeFinancial ? [`المبلغ (${currency})`, `المبلغ الشهري (${currency})`] : []),
       ...(includeVehicle ? ['رقم اللوحة'] : [])
     ];
 
@@ -208,8 +210,8 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       new Date(contract.start_date).toLocaleDateString('en-GB'),
       new Date(contract.end_date).toLocaleDateString('en-GB'),
       ...(includeFinancial ? [
-        contract.contract_amount?.toFixed(3) || '0.000',
-        contract.monthly_amount?.toFixed(3) || '0.000'
+        formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+        formatCurrency(contract.monthly_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
       ] : []),
       ...(includeVehicle ? [(contract.vehicle as any)?.plate_number || 'لا يوجد'] : [])
     ]);
@@ -432,7 +434,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                   <div>
                     <span className="text-muted-foreground">إجمالي القيمة:</span>
                     <span className="font-medium mr-2">
-                      {contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0).toFixed(3)} د.ك
+                      {formatCurrency(contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </div>
                 </div>

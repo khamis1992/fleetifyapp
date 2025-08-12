@@ -9,6 +9,7 @@ import { Search, Filter, X, Calendar, DollarSign } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractSearchFiltersProps {
   onFiltersChange: (filters: any) => void;
@@ -227,7 +228,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>الحد الأدنى للمبلغ (د.ك)</Label>
+                <Label>الحد الأدنى للمبلغ ({currency})</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -242,7 +243,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label>الحد الأقصى للمبلغ (د.ك)</Label>
+                <Label>الحد الأقصى للمبلغ ({currency})</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -270,8 +271,8 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
                 {key === 'contract_type' && `النوع: ${value}`}
                 {key === 'start_date' && `من: ${value}`}
                 {key === 'end_date' && `إلى: ${value}`}
-                {key === 'min_amount' && `الحد الأدنى: ${value} د.ك`}
-                {key === 'max_amount' && `الحد الأقصى: ${value} د.ك`}
+                {key === 'min_amount' && `الحد الأدنى: ${value} ${currency}`}
+                {key === 'max_amount' && `الحد الأقصى: ${value} ${currency}`}
                 <X
                   className="h-3 w-3 cursor-pointer"
                   onClick={() => handleFilterChange(key, '')}

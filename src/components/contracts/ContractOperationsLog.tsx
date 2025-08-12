@@ -17,12 +17,14 @@ import { supabase } from '@/integrations/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { formatDistanceToNow } from 'date-fns'
 import { ar } from 'date-fns/locale'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 
 interface ContractOperationsLogProps {
   contractId: string
 }
 
 export const ContractOperationsLog: React.FC<ContractOperationsLogProps> = ({ contractId }) => {
+  const { formatCurrency } = useCurrencyFormatter();
   const { data: operations, isLoading } = useQuery({
     queryKey: ['contract-operations', contractId],
     queryFn: async () => {
@@ -147,7 +149,7 @@ export const ContractOperationsLog: React.FC<ContractOperationsLogProps> = ({ co
                           </p>
                         )}
                         {operation.operation_details.amount && (
-                          <p><span className="font-medium">القيمة:</span> {operation.operation_details.amount} د.ك</p>
+                          <p><span className="font-medium">القيمة:</span> {formatCurrency(operation.operation_details.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
                         )}
                         {operation.operation_details.contract_type && (
                           <p><span className="font-medium">نوع العقد:</span> {operation.operation_details.contract_type}</p>

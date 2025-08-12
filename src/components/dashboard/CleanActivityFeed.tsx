@@ -27,6 +27,7 @@ const CleanActivityFeed: React.FC<CleanActivityFeedProps> = ({
   activities = [], 
   loading = false 
 }) => {
+  const { formatCurrency } = useCurrencyFormatter();
   if (loading) {
     return (
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
@@ -121,7 +122,7 @@ const CleanActivityFeed: React.FC<CleanActivityFeedProps> = ({
               
               {activity.amount && (
                 <span className="text-sm font-medium text-success">
-                  {useCurrencyFormatter().formatCurrency(activity.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {formatCurrency(activity.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
               )}
             </motion.div>

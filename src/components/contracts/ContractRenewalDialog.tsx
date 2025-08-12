@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw, Calendar, DollarSign, Info } from 'lucide-react';
 import { useRenewContract } from '@/hooks/useContractRenewal';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractRenewalDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
 
   const renewContract = useRenewContract();
   const { toast } = useToast();
+  const { formatCurrency, currency } = useCurrencyFormatter();
 
   // Reset form when contract changes or dialog opens
   useEffect(() => {
@@ -131,7 +133,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
               </div>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span>{contract.contract_amount?.toFixed(3)} د.ك</span>
+                <span>{formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
               </div>
             </div>
           </CardContent>
@@ -157,7 +159,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
           
           <div className="space-y-2">
             <Label htmlFor="new_amount" className="text-right">
-              قيمة العقد الجديد (د.ك)
+              قيمة العقد الجديد ({currency})
             </Label>
             <Input
               id="new_amount"

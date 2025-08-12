@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useContractHelpers } from '@/hooks/useContractHelpers';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractCardProps {
   contract: any;
@@ -28,6 +29,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   showCancelButton = false
 }) => {
   const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
+  const { formatCurrency } = useCurrencyFormatter();
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -106,7 +108,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               
               <div className="flex items-center gap-2 justify-end">
                 <span className="text-sm font-medium">
-                  {contract.contract_amount?.toFixed(3)} د.ك
+                  {formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </span>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </div>

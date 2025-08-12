@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, X, Clock, Users, Car, DollarSign, Calendar } from 'lucide-react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ValidationResult } from '@/hooks/useContractValidation';
 
 interface ContractValidationSummaryProps {
@@ -15,7 +16,8 @@ export const ContractValidationSummary: React.FC<ContractValidationSummaryProps>
   validation,
   contractData,
   isValidating = false
-}) => {
+  }) => {
+  const { formatCurrency } = useCurrencyFormatter();
   const totalIssues = validation.errors.length + validation.warnings.length;
   const criticalIssues = validation.errors.filter(e => e.severity === 'critical').length;
   const hasBlockingIssues = validation.errors.length > 0;
@@ -164,8 +166,8 @@ export const ContractValidationSummary: React.FC<ContractValidationSummaryProps>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">المبلغ:</span>
               <span className="font-medium">
-                {contractData.contract_amount} د.ك
-                {contractData.monthly_amount && ` (${contractData.monthly_amount} د.ك/شهر)`}
+                {formatCurrency(contractData.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                {contractData.monthly_amount && ` (${formatCurrency(contractData.monthly_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}/شهر)`}
               </span>
             </div>
           </div>

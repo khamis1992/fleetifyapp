@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Calendar, RefreshCw, Users, DollarSign } from 'lucide-react';
 import { useExpiringContracts } from '@/hooks/useContractRenewal';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractExpirationAlertsProps {
   onRenewContract?: (contract: any) => void;
@@ -18,6 +19,7 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
   daysAhead = 30
 }) => {
   const { data: expiringContracts, isLoading } = useExpiringContracts(daysAhead);
+  const { formatCurrency } = useCurrencyFormatter();
 
   const getDaysUntilExpiry = (endDate: string) => {
     const today = new Date();
@@ -116,7 +118,7 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
                     
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      <span>{contract.contract_amount?.toFixed(3)} د.ك</span>
+                      <span>{formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                     </div>
                     
                     {contract.vehicle && !Array.isArray(contract.vehicle) && (contract.vehicle as any).plate_number && (

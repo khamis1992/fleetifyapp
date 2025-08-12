@@ -31,6 +31,7 @@ import SmartAnalyticsPanel from './SmartAnalyticsPanel';
 import { SelfLearningAIPanel } from './SelfLearningAIPanel';
 import { IntelligentInsightsPanel } from './IntelligentInsightsPanel';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
@@ -84,6 +85,7 @@ export const EnhancedAIPanel: React.FC = () => {
     error,
     processingStatus
   } = useEnhancedAI();
+  const { formatCurrency, currency } = useCurrencyFormatter();
 
   const {
     recordFeedback,
@@ -277,7 +279,7 @@ export const EnhancedAIPanel: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{quickStats.contracts.total}</div>
             <p className="text-xs text-muted-foreground">
-              {quickStats.contracts.active} نشط | {quickStats.contracts.total_value.toFixed(3)} د.ك
+              {quickStats.contracts.active} نشط | {formatCurrency(quickStats.contracts.total_value, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
             </p>
           </CardContent>
         </Card>
@@ -303,7 +305,7 @@ export const EnhancedAIPanel: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{quickStats.financial.collection_rate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
-              معدل التحصيل | {quickStats.financial.outstanding.toFixed(3)} د.ك متأخر
+              معدل التحصيل | {formatCurrency(quickStats.financial.outstanding, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} متأخر
             </p>
           </CardContent>
         </Card>

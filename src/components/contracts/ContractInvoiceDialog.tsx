@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { PaymentScheduleSection } from '@/components/finance/PaymentScheduleSection';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractInvoiceDialogProps {
   open: boolean;
@@ -30,6 +31,8 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentScheduleCreated, setPaymentScheduleCreated] = useState(false);
+  
+  const { formatCurrency, currency } = useCurrencyFormatter();
   
   const [invoiceData, setInvoiceData] = useState({
     invoice_type: 'sales',
@@ -328,7 +331,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
             <PaymentScheduleSection
               contractId={contract.id}
               totalAmount={invoiceData.total_amount}
-              currency="KWD"
+              currency={currency}
               onScheduleCreated={() => {
                 setPaymentScheduleCreated(true);
                 toast.success('تم إنشاء جدول الدفع بنجاح');
@@ -388,7 +391,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>سعر الوحدة (د.ك)</Label>
+                      <Label>سعر الوحدة ({currency})</Label>
                       <Input
                         type="number"
                         step="0.001"
@@ -398,7 +401,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>المجموع (د.ك)</Label>
+                      <Label>المجموع ({currency})</Label>
                       <Input
                         type="number"
                         step="0.001"
@@ -423,7 +426,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>مبلغ الضريبة (د.ك)</Label>
+                      <Label>مبلغ الضريبة ({currency})</Label>
                       <Input
                         type="number"
                         step="0.001"
@@ -446,7 +449,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>المجموع الفرعي (د.ك)</Label>
+                  <Label>المجموع الفرعي ({currency})</Label>
                   <Input
                     type="number"
                     step="0.001"
@@ -457,7 +460,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>الضريبة (د.ك)</Label>
+                  <Label>الضريبة ({currency})</Label>
                   <Input
                     type="number"
                     step="0.001"
@@ -468,7 +471,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>الخصم (د.ك)</Label>
+                  <Label>الخصم ({currency})</Label>
                   <Input
                     type="number"
                     step="0.001"
@@ -488,7 +491,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
                 <div className="flex items-center justify-between text-lg font-semibold">
                   <span>المجموع الإجمالي</span>
                   <span className="text-2xl text-primary">
-                    {invoiceData.total_amount.toFixed(3)} د.ك
+                    {formatCurrency(invoiceData.total_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </span>
                 </div>
               </div>

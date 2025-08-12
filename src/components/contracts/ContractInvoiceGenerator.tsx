@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { PaymentScheduleManager } from './payment-schedules/PaymentScheduleManager'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 
 interface ContractInvoiceGeneratorProps {
   contract: any
@@ -28,6 +29,8 @@ interface ContractInvoiceGeneratorProps {
 export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> = ({ contract }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('monthly')
   const queryClient = useQueryClient()
+
+  const { formatCurrency } = useCurrencyFormatter()
 
   // Get existing invoices for this contract
   const { data: existingInvoices, isLoading: invoicesLoading } = useQuery({
@@ -269,7 +272,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
                   <DollarSign className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-700">القيمة الشهرية</span>
                 </div>
-                <p className="text-xl font-bold text-blue-800">{contract.monthly_amount?.toFixed(3)} د.ك</p>
+                <p className="text-xl font-bold text-blue-800">{formatCurrency(contract.monthly_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
               
               <div className="bg-green-50 p-4 rounded-lg">
@@ -316,7 +319,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
                 <div className="space-y-2">
                   <Label>مبلغ الفاتورة</Label>
                   <div className="p-3 bg-muted rounded-md">
-                    <span className="text-lg font-bold">{getInvoiceAmount(selectedPeriod)?.toFixed(3)} د.ك</span>
+                    <span className="text-lg font-bold">{formatCurrency(getInvoiceAmount(selectedPeriod) ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                   </div>
                 </div>
               </div>
@@ -365,7 +368,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
                          </div>
                        </div>
                       <div className="text-right">
-                        <p className="font-bold">{invoice.total_amount?.toFixed(3)} د.ك</p>
+                        <p className="font-bold">{formatCurrency(invoice.total_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
                         <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
                           {invoice.status === 'paid' ? 'مدفوعة' : 
                            invoice.status === 'sent' ? 'مرسلة' : 'مسودة'}
