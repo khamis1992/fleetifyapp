@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePaymentAnalytics } from "@/hooks/usePaymentAnalytics";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, DollarSign, CreditCard } from "lucide-react";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface PaymentAnalyticsCardProps {
   startDate?: string;
@@ -32,13 +33,7 @@ export const PaymentAnalyticsCard = ({ startDate, endDate }: PaymentAnalyticsCar
 
   if (!analytics) return null;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrencyFormatter();
 
   return (
     <div className="space-y-6">

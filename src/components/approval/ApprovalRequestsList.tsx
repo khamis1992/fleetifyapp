@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useApprovalRequests, ApprovalStatus, RequestSource } from '@/hooks/useApprovalWorkflows';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const STATUS_LABELS: Record<ApprovalStatus, { ar: string; color: string; icon: React.ReactNode }> = {
   pending: { 
@@ -73,12 +74,8 @@ export const ApprovalRequestsList: React.FC<ApprovalRequestsListProps> = ({
     );
   });
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrencyFormatter();
+  const formatAmount = (amount: number) => formatCurrency(amount);
 
   if (isLoading) {
     return (

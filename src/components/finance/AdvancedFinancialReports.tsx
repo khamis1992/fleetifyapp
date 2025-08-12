@@ -24,6 +24,7 @@ import { useActiveContracts } from "@/hooks/useContracts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReportingAccounts } from "@/hooks/useReportingAccounts";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface ReportFilters {
   dateFrom: Date | undefined;
@@ -46,13 +47,7 @@ export function AdvancedFinancialReports() {
   const { data: contracts } = useActiveContracts(undefined, undefined, user?.user_metadata?.company_id);
   const { data: reportingAccounts } = useReportingAccounts();
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrencyFormatter();
 
   const generatePDFReport = (reportType: string) => {
     // سيتم تنفيذ هذه الدالة لاحقاً

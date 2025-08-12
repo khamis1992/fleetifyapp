@@ -26,6 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAccountStatement } from "@/hooks/useAccountStatement";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface AccountStatementDialogProps {
   open: boolean;
@@ -87,13 +88,7 @@ export const AccountStatementDialog = ({
     window.print();
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3,
-    }).format(Math.abs(amount));
-  };
+  const { formatCurrency } = useCurrencyFormatter();
 
   const formatBalance = (balance: number, balanceType: string) => {
     const isDebit = (balanceType === 'debit' && balance > 0) || (balanceType === 'credit' && balance < 0);

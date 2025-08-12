@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Zap
 } from "lucide-react";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface MetricCardProps {
   title: string;
@@ -93,14 +94,8 @@ export const UnifiedFinancialDashboard = () => {
     }
   }, [overview, error]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const { formatCurrency: fmt } = useCurrencyFormatter();
+  const formatCurrency = (amount: number) => fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   const formatPercentage = (percentage: number) => {
     return `${percentage.toFixed(1)}%`;

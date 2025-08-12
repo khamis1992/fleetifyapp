@@ -19,6 +19,7 @@ import { useFinancialOverview } from "@/hooks/useFinancialOverview";
 import { useAdvancedFinancialAnalytics } from "@/hooks/useAdvancedFinancialAnalytics";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface AdvancedFinancialDashboardProps {
   className?: string;
@@ -28,13 +29,7 @@ export function AdvancedFinancialDashboard({ className }: AdvancedFinancialDashb
   const { data: financialOverview, isLoading: isOverviewLoading } = useFinancialOverview();
   const { data: analytics, isLoading: isAnalyticsLoading } = useAdvancedFinancialAnalytics();
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrencyFormatter();
 
   const formatPercentage = (percentage: number) => {
     return `${percentage.toFixed(1)}%`;

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ChartOfAccount } from '@/hooks/useFinance';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface AccountDetailsDialogProps {
   account: ChartOfAccount | null;
@@ -19,6 +20,8 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   onOpenChange,
 }) => {
   if (!account) return null;
+
+  const { formatCurrency } = useCurrencyFormatter();
 
   const getAccountTypeColor = (type: string): string => {
     switch (type) {
@@ -55,12 +58,7 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   };
 
   const formatBalance = (balance: number, balanceType: string) => {
-    const formattedBalance = new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3,
-    }).format(Math.abs(balance));
+    const formattedBalance = formatCurrency(Math.abs(balance));
     
     const isNormalBalance = 
       (['assets', 'expenses'].includes(balanceType) && balance >= 0) ||

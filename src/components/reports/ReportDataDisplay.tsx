@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Minus
 } from 'lucide-react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ReportDataDisplayProps {
   data: any;
@@ -26,6 +27,8 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
       </div>
     );
   }
+
+  const { formatCurrency } = useCurrencyFormatter();
 
   const renderMetrics = (metrics: Record<string, number>) => {
     const getIcon = (key: string) => {
@@ -63,13 +66,8 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
     };
 
     const formatValue = (key: string, value: number) => {
-      if (key.includes('amount') || key.includes('salary') || key.includes('cost') || key.includes('paid') || key.includes('total') && key.includes('payment')) {
-        return new Intl.NumberFormat('ar-KW', { 
-          style: 'currency', 
-          currency: 'KWD',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2 
-        }).format(value);
+      if (key.includes('amount') || key.includes('salary') || key.includes('cost') || key.includes('paid') || (key.includes('total') && key.includes('payment'))) {
+        return formatCurrency(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
       return value.toLocaleString('ar-KW');
     };
@@ -126,10 +124,10 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
                   <tr key={index} className="border-b hover:bg-muted/50">
                     {columns.map((column) => (
                       <td key={column} className="p-2">
-                        {typeof item[column] === 'number' && column.includes('amount') 
-                          ? new Intl.NumberFormat('ar-KW', { style: 'currency', currency: 'KWD' }).format(item[column])
+                          {typeof item[column] === 'number' && column.includes('amount') 
+                          ? formatCurrency(item[column] as number, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                           : String(item[column])
-                        }
+                          }
                       </td>
                     ))}
                   </tr>
