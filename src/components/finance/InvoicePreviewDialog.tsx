@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { FileText, Download } from "lucide-react";
 import html2pdf from "html2pdf.js";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface InvoicePreviewDialogProps {
 
 export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePreviewDialogProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const { formatCurrency } = useCurrencyFormatter();
   
   if (!invoice) return null;
 
@@ -75,6 +77,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
       console.error('البيانات غير متوفرة');
       return;
     }
+
+    const fmt = (amt: number) => formatCurrency(amt, { currency: invoice.currency || 'KWD' });
 
     const invoiceContent = `
       <!DOCTYPE html>
@@ -328,9 +332,9 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                 <tr>
                   <td>${item.description}</td>
                   <td>${item.quantity}</td>
-                  <td>${item.unit_price.toFixed(3)} د.ك</td>
+                  <td>${fmt(item.unit_price)}</td>
                   <td>${item.tax_rate}%</td>
-                  <td>${item.total.toFixed(3)} د.ك</td>
+                  <td>${fmt(item.total)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -340,19 +344,19 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             <table class="totals-table">
               <tr>
                 <td>المجموع الفرعي:</td>
-                <td>${(invoice.subtotal || 225.5).toFixed(3)} د.ك</td>
+                <td>${fmt(invoice.subtotal || 225.5)}</td>
               </tr>
               <tr>
                 <td>الضريبة:</td>
-                <td>${(invoice.tax_amount || 11.275).toFixed(3)} د.ك</td>
+                <td>${fmt(invoice.tax_amount || 11.275)}</td>
               </tr>
               <tr>
                 <td>الخصم:</td>
-                <td>-${(invoice.discount_amount || 0).toFixed(3)} د.ك</td>
+                <td>-${fmt(invoice.discount_amount || 0)}</td>
               </tr>
               <tr>
                 <td><strong>المجموع الإجمالي:</strong></td>
-                <td><strong>${invoice.total_amount.toFixed(3)} د.ك</strong></td>
+                <td><strong>${fmt(invoice.total_amount)}</strong></td>
               </tr>
             </table>
           </div>
@@ -477,9 +481,9 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.description}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{item.unit_price.toFixed(3)} د.ك</TableCell>
+                      <TableCell>{formatCurrency(item.unit_price, { currency: invoice.currency })}</TableCell>
                       <TableCell>{item.tax_rate}%</TableCell>
-                      <TableCell>{item.total.toFixed(3)} د.ك</TableCell>
+                      <TableCell>{formatCurrency(item.total, { currency: invoice.currency })}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -494,20 +498,20 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                 <div className="w-80 space-y-2">
                   <div className="flex justify-between">
                     <span>المجموع الفرعي:</span>
-                    <span>{(invoice.subtotal || 225.5).toFixed(3)} د.ك</span>
+                    <span>{formatCurrency(invoice.subtotal || 225.5, { currency: invoice.currency })}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>الضريبة:</span>
-                    <span>{(invoice.tax_amount || 11.275).toFixed(3)} د.ك</span>
+                    <span>{formatCurrency(invoice.tax_amount || 11.275, { currency: invoice.currency })}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>الخصم:</span>
-                    <span>-{(invoice.discount_amount || 0).toFixed(3)} د.ك</span>
+                    <span>-{formatCurrency(invoice.discount_amount || 0, { currency: invoice.currency })}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>المجموع الإجمالي:</span>
-                    <span>{invoice.total_amount.toFixed(3)} د.ك</span>
+                    <span>{formatCurrency(invoice.total_amount, { currency: invoice.currency })}</span>
                   </div>
                 </div>
               </div>

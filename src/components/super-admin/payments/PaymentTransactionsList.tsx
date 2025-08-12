@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Search, Download, Filter, CreditCard, DollarSign, Building2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface PaymentTransaction {
   id: string;
@@ -28,6 +29,7 @@ export const PaymentTransactionsList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30days');
+  const { formatCurrency } = useCurrencyFormatter();
 
   // Mock data - in real app this would come from usePaymentTransactions hook
   const transactions: PaymentTransaction[] = [
@@ -184,7 +186,7 @@ export const PaymentTransactionsList: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي المبلغ</p>
-                <p className="text-2xl font-bold">{totalAmount.toLocaleString()} د.ك</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalAmount)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -306,7 +308,7 @@ export const PaymentTransactionsList: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-1 font-medium">
                         <DollarSign className="h-3 w-3" />
-                        {transaction.amount} {transaction.currency}
+                        {formatCurrency(transaction.amount, { currency: transaction.currency })}
                       </div>
                     </TableCell>
                     <TableCell>

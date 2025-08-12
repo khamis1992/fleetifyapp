@@ -16,6 +16,7 @@ import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCr
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function Treasury() {
@@ -30,6 +31,7 @@ export default function Treasury() {
   const createBank = useCreateBank();
   const createTransaction = useCreateBankTransaction();
   const deleteTransaction = useDeleteBankTransaction();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const [newBank, setNewBank] = useState<Partial<Bank>>({
     bank_name: '',
@@ -306,7 +308,7 @@ export default function Treasury() {
             <Banknote className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalBalance?.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold">{formatCurrency(summary?.totalBalance || 0)}</div>
             <p className="text-xs text-muted-foreground">
               في {summary?.totalBanks} حساب مصرفي
             </p>
@@ -319,7 +321,7 @@ export default function Treasury() {
             <TrendingDown className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+{summary?.monthlyDeposits?.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-green-600">+{formatCurrency(summary?.monthlyDeposits || 0)}</div>
             <p className="text-xs text-muted-foreground">
               آخر 30 يوم
             </p>
@@ -332,7 +334,7 @@ export default function Treasury() {
             <TrendingUp className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">-{summary?.monthlyWithdrawals?.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-red-600">-{formatCurrency(summary?.monthlyWithdrawals || 0)}</div>
             <p className="text-xs text-muted-foreground">
               آخر 30 يوم
             </p>
@@ -346,7 +348,7 @@ export default function Treasury() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${(summary?.netFlow || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {(summary?.netFlow || 0) >= 0 ? '+' : ''}{summary?.netFlow?.toFixed(3)} د.ك
+              {(summary?.netFlow || 0) >= 0 ? '+' : ''}{formatCurrency(summary?.netFlow || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               آخر 30 يوم
@@ -416,7 +418,7 @@ export default function Treasury() {
                       </TableCell>
                       <TableCell>{bank.currency}</TableCell>
                       <TableCell className="font-medium">
-                        {bank.current_balance.toFixed(3)} {bank.currency}
+                        {formatCurrency(bank.current_balance, { currency: bank.currency })}
                       </TableCell>
                       <TableCell>
                         <Badge variant={bank.is_active ? "default" : "secondary"}>

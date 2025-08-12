@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveContracts } from "@/hooks/useContracts";
 import { PaymentScheduleSection } from "./PaymentScheduleSection";
 import { toast } from "sonner";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface InvoiceItem {
   id: string;
@@ -41,6 +42,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters();
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const createInvoice = useCreateInvoice();
+  const { formatCurrency } = useCurrencyFormatter();
   
   // Fetch contracts for the customer/vendor
   const { data: contracts } = useActiveContracts(customerId, vendorId);
@@ -495,7 +497,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
                         />
                       </TableCell>
                       <TableCell>
-                        {calculateItemTotal(item).toFixed(3)}
+                        {formatCurrency(calculateItemTotal(item), { currency: invoiceData.currency })}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -523,11 +525,11 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>المجموع الفرعي:</span>
-                    <span>{subtotal.toFixed(3)} {invoiceData.currency}</span>
+                    <span>{formatCurrency(subtotal, { currency: invoiceData.currency })}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>الضريبة:</span>
-                    <span>{totalTax.toFixed(3)} {invoiceData.currency}</span>
+                    <span>{formatCurrency(totalTax, { currency: invoiceData.currency })}</span>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="discount">الخصم</Label>
@@ -542,7 +544,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>المجموع الإجمالي:</span>
-                    <span>{total.toFixed(3)} {invoiceData.currency}</span>
+                    <span>{formatCurrency(total, { currency: invoiceData.currency })}</span>
                   </div>
                 </div>
               </div>
