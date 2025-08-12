@@ -16,7 +16,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useHRSettings } from '@/hooks/useHRSettings';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const employeeSchema = z.object({
   employee_number: z.string().min(1, 'رقم الموظف مطلوب'),
@@ -82,6 +83,7 @@ const availableRoles = [
 
 export default function EmployeeForm({ onSubmit, isLoading, initialData }: EmployeeFormProps) {
   const { settings: hrSettings } = useHRSettings();
+  const { formatCurrency } = useCurrencyFormatter();
   
   // Calculate suggested salary based on HR settings
   const getDefaultSalary = () => {

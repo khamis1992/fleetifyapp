@@ -4,6 +4,8 @@ import { useCompanyCurrency } from "./useCompanyCurrency";
 interface FormatOptions {
   minimumFractionDigits?: number;
   maximumFractionDigits?: number;
+  currency?: string; // override currency if needed (e.g., invoice-specific)
+  locale?: string;   // override locale if needed
 }
 
 export const useCurrencyFormatter = () => {
@@ -20,9 +22,9 @@ export const useCurrencyFormatter = () => {
 
   const formatCurrency = (amount: number, opts?: FormatOptions) => {
     if (opts) {
-      const custom = new Intl.NumberFormat(locale, {
+      const custom = new Intl.NumberFormat(opts.locale || locale, {
         style: "currency",
-        currency,
+        currency: opts.currency || currency,
         minimumFractionDigits: opts.minimumFractionDigits ?? 3,
         maximumFractionDigits: opts.maximumFractionDigits ?? opts.minimumFractionDigits ?? 3,
       });
@@ -30,6 +32,5 @@ export const useCurrencyFormatter = () => {
     }
     return formatter.format(amount);
   };
-
   return { formatCurrency, currency, locale };
 };
