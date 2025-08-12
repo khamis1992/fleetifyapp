@@ -521,6 +521,7 @@ export const FinancialStep: React.FC = () => {
   const { user } = useAuth()
   const { data, updateData } = useContractWizard()
   const { validation, isValidating, debouncedValidation } = useContractValidation()
+  const { formatCurrency } = useCurrencyFormatter()
   const [isCustomAmount, setIsCustomAmount] = useState(false)
   
   // Trigger validation when amounts change
@@ -831,6 +832,7 @@ export const ReviewStep: React.FC = () => {
   const { validation, isValidating, validateContract } = useContractValidation()
   const { generateAllSuggestions } = useSmartSuggestions()
   const [suggestions, setSuggestions] = React.useState<any[]>([])
+  const { formatCurrency } = useCurrencyFormatter()
   
   // Final validation and suggestions on component mount
   React.useEffect(() => {

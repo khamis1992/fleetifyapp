@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 
 interface EnhancedContractFormProps {
   open: boolean
