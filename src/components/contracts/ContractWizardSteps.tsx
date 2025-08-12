@@ -29,6 +29,7 @@ import { useSmartSuggestions } from '@/hooks/useSmartSuggestions'
 import { ContractSignatureSection } from './ContractSignatureSection'
 import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -203,6 +204,7 @@ export const CustomerVehicleStep: React.FC = () => {
   // Use filtered vehicles if dates are available, otherwise use all available vehicles
   const vehiclesToShow = (data.start_date && data.end_date) ? availableVehicles : allAvailableVehicles
   const isLoadingVehicles = (data.start_date && data.end_date) ? vehiclesLoading : allVehiclesLoading
+  const { formatCurrency } = useCurrencyFormatter()
 
   return (
     <Card>
@@ -295,9 +297,9 @@ export const CustomerVehicleStep: React.FC = () => {
                     <span className="flex flex-col">
                       <span>{vehicle.make} {vehicle.model} - {vehicle.plate_number}</span>
                       <span className="text-xs text-muted-foreground flex gap-2">
-                        {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate} د.ك</span>}
-                        {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate} د.ك</span>}
-                        {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate} د.ك</span>}
+                        {vehicle.daily_rate && <span>يومي: {formatCurrency(vehicle.daily_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>}
+                        {vehicle.weekly_rate && <span>أسبوعي: {formatCurrency(vehicle.weekly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>}
+                        {vehicle.monthly_rate && <span>شهري: {formatCurrency(vehicle.monthly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>}
                       </span>
                     </span>
                   </SelectItem>
@@ -613,7 +615,7 @@ export const FinancialStep: React.FC = () => {
               </div>
               <div>
                 <span className="text-green-700">المبلغ الإجمالي:</span>
-                <p className="font-medium">{calculations.totalAmount.toFixed(3)} د.ك</p>
+                <p className="font-medium">{formatCurrency(calculations.totalAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
               <div>
                 <span className="text-green-700">
@@ -621,13 +623,13 @@ export const FinancialStep: React.FC = () => {
                   {calculations.periodType === 'weekly' && 'المبلغ الأسبوعي:'}
                   {calculations.periodType === 'monthly' && 'المبلغ الشهري:'}
                 </span>
-                <p className="font-medium">{calculations.periodAmount.toFixed(3)} د.ك</p>
+                <p className="font-medium">{formatCurrency(calculations.periodAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
               {calculations.breakdown.savings && (
                 <div>
                   <span className="text-green-700">التوفير:</span>
                   <p className="font-medium text-green-600">
-                    {calculations.breakdown.savings.toFixed(3)} د.ك
+                    {formatCurrency(calculations.breakdown.savings, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </p>
                 </div>
               )}
@@ -684,7 +686,7 @@ export const FinancialStep: React.FC = () => {
                        'minimum_rental_price' in selectedVehicle && selectedVehicle.minimum_rental_price && (
                         <div className="pt-2 border-t border-amber-200">
                           <p className="text-amber-800 font-medium">
-                            الحد الأدنى المطلوب: <span className="font-bold">{selectedVehicle.minimum_rental_price} د.ك</span>
+                            الحد الأدنى المطلوب: <span className="font-bold">{formatCurrency(selectedVehicle.minimum_rental_price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                           </p>
                         </div>
                       )}
@@ -720,7 +722,7 @@ export const FinancialStep: React.FC = () => {
             />
             {selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle && data.contract_amount > 0 && data.contract_amount < selectedVehicle.minimum_rental_price && (
               <p className="text-sm text-red-600 font-medium">
-                ⚠️ المبلغ أقل من الحد الأدنى المطلوب ({selectedVehicle.minimum_rental_price} د.ك)
+                ⚠️ المبلغ أقل من الحد الأدنى المطلوب ({formatCurrency(selectedVehicle.minimum_rental_price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})
               </p>
             )}
           </div>
@@ -972,7 +974,7 @@ export const ReviewStep: React.FC = () => {
             <AlertDescription>
               <div className="space-y-2">
                 <p className="font-medium">
-                  هذا العقد يتطلب موافقة نظراً لقيمته ({data.contract_amount.toFixed(3)} د.ك)
+                  هذا العقد يتطلب موافقة نظراً لقيمته ({formatCurrency(data.contract_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})
                 </p>
                 <div className="text-sm space-y-1">
                   <p className="font-medium">خطوات الموافقة المطلوبة:</p>
@@ -1015,7 +1017,7 @@ export const ReviewStep: React.FC = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">المبلغ الإجمالي:</span>
-                <p className="font-medium text-primary">{data.contract_amount.toFixed(3)} د.ك</p>
+                <p className="font-medium text-primary">{formatCurrency(data.contract_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
             </div>
           </div>

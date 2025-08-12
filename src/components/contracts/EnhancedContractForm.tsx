@@ -87,6 +87,8 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
 
   const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
+  const { formatCurrency } = useCurrencyFormatter()
+
 
   // Get selected vehicle for calculations
   const selectedVehicle = availableVehicles?.find(v => v.id === contractData.vehicle_id) || null
@@ -173,7 +175,7 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
       setApprovalInfo({
         required: true,
         steps: approvalSteps,
-        message: `هذا العقد يتطلب موافقة نظراً لقيمته (${contractData.contract_amount.toFixed(3)} د.ك)`
+        message: `هذا العقد يتطلب موافقة نظراً لقيمته (${formatCurrency(contractData.contract_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})`
       })
     } else {
       setApprovalInfo(null)
@@ -481,11 +483,11 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <p className="text-sm text-blue-600 font-medium">إجمالي قيمة العقد</p>
-                    <p className="text-2xl font-bold text-blue-800">{calculations.totalAmount.toFixed(3)} د.ك</p>
+                    <p className="text-2xl font-bold text-blue-800">{formatCurrency(calculations.totalAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <p className="text-sm text-green-600 font-medium">القيمة الشهرية</p>
-                    <p className="text-2xl font-bold text-green-800">{calculations.monthlyAmount.toFixed(3)} د.ك</p>
+                    <p className="text-2xl font-bold text-green-800">{formatCurrency(calculations.monthlyAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
                   </div>
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <p className="text-sm text-yellow-600 font-medium">أفضل معدل</p>

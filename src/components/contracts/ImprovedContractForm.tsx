@@ -17,6 +17,8 @@ import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useContractCreation } from '@/hooks/useContractCreation'
 import { ContractCreationProgress } from './ContractCreationProgress'
 import { CustomerDisplayName } from '@/components/customers/CustomerDisplayName'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
+
 
 interface ImprovedContractFormProps {
   open: boolean
@@ -119,6 +121,8 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
   // Find selected customer and vehicle
   const selectedCustomer = customers?.find(c => c.id === formData.customer_id)
   const selectedVehicle = vehicles?.find(v => v.id === formData.vehicle_id)
+  const { formatCurrency } = useCurrencyFormatter()
+
 
   // Auto-calculate monthly amount based on contract duration and vehicle pricing
   useEffect(() => {
@@ -451,9 +455,9 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
                             </div>
                             {(vehicle.daily_rate > 0 || vehicle.weekly_rate > 0 || vehicle.monthly_rate > 0) && (
                               <div className="text-xs text-accent-foreground bg-accent/20 px-2 py-1 rounded">
-                                {vehicle.daily_rate > 0 && `يومي: ${vehicle.daily_rate} د.ك`}
-                                {vehicle.weekly_rate > 0 && ` | أسبوعي: ${vehicle.weekly_rate} د.ك`}
-                                {vehicle.monthly_rate > 0 && ` | شهري: ${vehicle.monthly_rate} د.ك`}
+                                {vehicle.daily_rate > 0 && `يومي: ${formatCurrency(vehicle.daily_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`}
+                                {vehicle.weekly_rate > 0 && ` | أسبوعي: ${formatCurrency(vehicle.weekly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`}
+                                {vehicle.monthly_rate > 0 && ` | شهري: ${formatCurrency(vehicle.monthly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`}
                               </div>
                             )}
                           </div>
@@ -505,19 +509,19 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
                             {selectedVehicle.daily_rate > 0 && (
                               <div className="bg-primary/10 p-2 rounded text-center">
                                 <div className="font-medium">يومي</div>
-                                <div className="text-primary">{selectedVehicle.daily_rate} د.ك</div>
+                                <div className="text-primary">{formatCurrency(selectedVehicle.daily_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
                               </div>
                             )}
                             {selectedVehicle.weekly_rate > 0 && (
                               <div className="bg-primary/10 p-2 rounded text-center">
                                 <div className="font-medium">أسبوعي</div>
-                                <div className="text-primary">{selectedVehicle.weekly_rate} د.ك</div>
+                                <div className="text-primary">{formatCurrency(selectedVehicle.weekly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
                               </div>
                             )}
                             {selectedVehicle.monthly_rate > 0 && (
                               <div className="bg-primary/10 p-2 rounded text-center">
                                 <div className="font-medium">شهري</div>
-                                <div className="text-primary">{selectedVehicle.monthly_rate} د.ك</div>
+                                <div className="text-primary">{formatCurrency(selectedVehicle.monthly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
                               </div>
                             )}
                           </div>

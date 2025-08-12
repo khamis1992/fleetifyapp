@@ -20,6 +20,7 @@ import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText } from "luci
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,6 +35,7 @@ const Payments = () => {
   });
 
   const { data: payments, isLoading, error } = usePayments();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const filteredPayments = payments?.filter(payment => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -302,13 +304,9 @@ const Payments = () => {
                                  {getMethodLabel(payment.payment_method)}
                                </Badge>
                              </TableCell>
-                             <TableCell className="font-mono">
-                               {new Intl.NumberFormat('ar-KW', {
-                                 style: 'currency',
-                                 currency: payment.currency || 'KWD',
-                                 minimumFractionDigits: 3
-                               }).format(payment.amount)}
-                             </TableCell>
+                              <TableCell className="font-mono">
+                                {formatCurrency(payment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                              </TableCell>
                              <TableCell>
                                {new Date(payment.payment_date).toLocaleDateString('en-GB')}
                              </TableCell>
@@ -370,11 +368,7 @@ const Payments = () => {
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">المبلغ</label>
                     <p className="font-medium text-lg font-mono">
-                      {new Intl.NumberFormat('ar-KW', {
-                        style: 'currency',
-                        currency: selectedPayment.currency || 'KWD',
-                        minimumFractionDigits: 3
-                      }).format(selectedPayment.amount)}
+                      {formatCurrency(selectedPayment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </p>
                   </div>
                   <div>
