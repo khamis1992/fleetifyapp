@@ -71,6 +71,21 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     toast.success('تم تحميل القالب')
   }
 
+  const handleDownloadErrors = () => {
+    if (!results?.errors?.length) return;
+    const headers = ['row', 'message'];
+    const rows = results.errors.map(e => [e.row, e.message]);
+    const csv = [
+      headers.join(','),
+      ...rows.map(arr => arr.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'contracts_upload_errors.csv';
+    link.click();
+  }
+
   const handleClose = () => {
     setFile(null)
     onOpenChange(false)
@@ -194,7 +209,12 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
               {/* أخطاء مفصلة */}
               {results.errors && results.errors.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium text-red-900">الأخطاء:</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-red-900">الأخطاء:</h4>
+                    <Button size="sm" variant="outline" onClick={handleDownloadErrors}>
+                      تنزيل تقرير الأخطاء
+                    </Button>
+                  </div>
                   <ScrollArea className="h-32 w-full border rounded-md p-2">
                     <div className="space-y-1">
                       {results.errors.slice(0, 3).map((error, index) => (

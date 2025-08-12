@@ -163,7 +163,8 @@ export function SmartCSVUpload({
         autoCreateCustomers: createMissingCustomers,
         autoCompleteDates,
         autoCompleteType, 
-        autoCompleteAmounts 
+        autoCompleteAmounts,
+        dryRun: enableDryRun 
       });
       console.log('Upload function result:', result);
       
@@ -175,28 +176,44 @@ export function SmartCSVUpload({
       const total = Number(result?.total ?? dataToUpload.length);
       const skipped = Number(result?.skipped ?? 0);
 
-      if (successful > 0 && failed === 0) {
-        const msg = skipped > 0 
-          ? `تم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
-          : `تم رفع جميع السجلات بنجاح (${successful}/${total})`;
-        toast.success(msg);
-        onUploadComplete();
-        handleClose();
-      } else if (successful > 0 && (failed > 0 || skipped > 0)) {
-        toast.success(`تم رفع ${successful} سجل، تم تخطي ${skipped}، وفشل ${failed}. راجع الأخطاء ثم أعد المحاولة.`);
-        onUploadComplete();
-        // اترك الحوار مفتوحًا ليستعرض المستخدم الأخطاء في المعاينة
-      } else if (successful === 0 && skipped > 0 && failed === 0) {
-        toast.message('لا توجد سجلات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
-      } else if (successful === 0) {
-        toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
-        if (isSuperAdmin) {
-          toast.message('تلميح', {
-            description: 'يمكنك تغيير الشركة من أداة اختيار الشركة بالأعلى.',
-          });
+      if (enableDryRun) {
+        if (successful > 0 && failed === 0) {
+          const msg = skipped > 0 
+            ? `تمت المحاكاة: سيتم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
+            : `تمت المحاكاة: سيتم رفع جميع السجلات (${successful}/${total})`;
+          toast.success(msg);
+        } else if (successful > 0 && (failed > 0 || skipped > 0)) {
+          toast.success(`تمت المحاكاة: سيتم رفع ${successful} سجل، سيتم تخطي ${skipped}، وفشل التحقق في ${failed}. راجع الأخطاء.`);
+        } else if (successful === 0 && skipped > 0 && failed === 0) {
+          toast.message('محاكاة: لا توجد سجلات جديدة', { description: `سيتم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
+        } else if (successful === 0) {
+          toast.error(`محاكاة: فشل التحقق لجميع السجلات (${failed}/${total}). تأكد من الشركة والبيانات.`);
+        } else {
+          toast.error('محاكاة: لم يتم التحقق من أي سجل.');
         }
       } else {
-        toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
+        if (successful > 0 && failed === 0) {
+          const msg = skipped > 0 
+            ? `تم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
+            : `تم رفع جميع السجلات بنجاح (${successful}/${total})`;
+          toast.success(msg);
+          onUploadComplete();
+          handleClose();
+        } else if (successful > 0 && (failed > 0 || skipped > 0)) {
+          toast.success(`تم رفع ${successful} سجل، تم تخطي ${skipped}، وفشل ${failed}. راجع الأخطاء ثم أعد المحاولة.`);
+          onUploadComplete();
+        } else if (successful === 0 && skipped > 0 && failed === 0) {
+          toast.message('لا توجد سجلات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
+        } else if (successful === 0) {
+          toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
+          if (isSuperAdmin) {
+            toast.message('تلميح', {
+              description: 'يمكنك تغيير الشركة من أداة اختيار الشركة بالأعلى.',
+            });
+          }
+        } else {
+          toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
+        }
       }
     } catch (error) {
       console.error('Error uploading data:', error);
@@ -245,7 +262,8 @@ export function SmartCSVUpload({
         autoCreateCustomers: createMissingCustomers,
         autoCompleteDates,
         autoCompleteType,
-        autoCompleteAmounts 
+        autoCompleteAmounts,
+        dryRun: enableDryRun 
       });
 
       clearInterval(progressInterval);
@@ -256,22 +274,39 @@ export function SmartCSVUpload({
       const total = Number(result?.total ?? dataToUpload.length);
       const skipped = Number(result?.skipped ?? 0);
 
-      if (successful > 0 && failed === 0) {
-        const msg = skipped > 0 
-          ? `تم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
-          : `تم رفع جميع السجلات بنجاح (${successful}/${total})`;
-        toast.success(msg);
-        onUploadComplete();
-        handleClose();
-      } else if (successful > 0 && (failed > 0 || skipped > 0)) {
-        toast.success(`تم رفع ${successful} سجل، تم تخطي ${skipped}، وفشل ${failed}. راجع الأخطاء ثم أعد المحاولة.`);
-        onUploadComplete();
-      } else if (successful === 0 && skipped > 0 && failed === 0) {
-        toast.message('لا توجد سجلات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
-      } else if (successful === 0) {
-        toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
+      if (enableDryRun) {
+        if (successful > 0 && failed === 0) {
+          const msg = skipped > 0 
+            ? `تمت المحاكاة: سيتم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
+            : `تمت المحاكاة: سيتم رفع جميع السجلات (${successful}/${total})`;
+          toast.success(msg);
+        } else if (successful > 0 && (failed > 0 || skipped > 0)) {
+          toast.success(`تمت المحاكاة: سيتم رفع ${successful} سجل، سيتم تخطي ${skipped}، وفشل التحقق في ${failed}.`);
+        } else if (successful === 0 && skipped > 0 && failed === 0) {
+          toast.message('محاكاة: لا توجد سجلات جديدة', { description: `سيتم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
+        } else if (successful === 0) {
+          toast.error(`محاكاة: فشل التحقق لجميع السجلات (${failed}/${total}).`);
+        } else {
+          toast.error('محاكاة: لم يتم التحقق من أي سجل.');
+        }
       } else {
-        toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
+        if (successful > 0 && failed === 0) {
+          const msg = skipped > 0 
+            ? `تم رفع ${successful} سجل وتخطي ${skipped} مكرر من أصل ${total}`
+            : `تم رفع جميع السجلات بنجاح (${successful}/${total})`;
+          toast.success(msg);
+          onUploadComplete();
+          handleClose();
+        } else if (successful > 0 && (failed > 0 || skipped > 0)) {
+          toast.success(`تم رفع ${successful} سجل، تم تخطي ${skipped}، وفشل ${failed}. راجع الأخطاء ثم أعد المحاولة.`);
+          onUploadComplete();
+        } else if (successful === 0 && skipped > 0 && failed === 0) {
+          toast.message('لا توجد سجلات جديدة', { description: `تم تخطي جميع السجلات لأنها مكررة (${skipped}/${total})` });
+        } else if (successful === 0) {
+          toast.error(`فشل رفع جميع السجلات (${failed}/${total}). تأكد من اختيار الشركة الصحيحة ومن صحة البيانات.`);
+        } else {
+          toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
+        }
       }
     } catch (error: any) {
       console.error('Error uploading data (table):', error);
@@ -402,6 +437,14 @@ export function SmartCSVUpload({
                     <label htmlFor="autoCompleteAmounts" className="text-sm">
                       حساب المبالغ المفقودة من المدة
                       <div className="text-xs text-muted-foreground mt-1">سيتم حساب contract_amount أو monthly_amount بناءً على المدة</div>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="enableDryRun" checked={enableDryRun} onCheckedChange={(v) => setEnableDryRun(Boolean(v))} />
+                    <label htmlFor="enableDryRun" className="text-sm">
+                      تجربة بدون إدراج (Dry-run)
+                      <div className="text-xs text-muted-foreground mt-1">سيتم تنفيذ جميع الفحوصات بدون حفظ أي بيانات في قاعدة البيانات</div>
                     </label>
                   </div>
                   
