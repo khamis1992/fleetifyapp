@@ -22,6 +22,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
 }) => {
   const { user } = useAuth();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { currency } = useCurrencyFormatter();
 
   // Get customers for filter options
   const { data: customers } = useQuery({
