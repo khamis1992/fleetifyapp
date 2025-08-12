@@ -560,11 +560,8 @@ export const FinancialStep: React.FC = () => {
     }
   }, [customerLinkedAccounts, data.account_id, data.customer_id, updateData])
 
-  // Note: Cost center is now handled automatically by the database trigger
-  // No manual cost center selection needed
-
-
-  // Cost center is now automatically assigned by database trigger
+  // Cost center support
+  const { data: costCenters } = useCostCenters();
 
   // Get vehicle for calculations
   const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)

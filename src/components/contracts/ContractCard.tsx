@@ -119,6 +119,17 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               </div>
             </div>
             
+            {/* Cost center badge */}
+            {(contract.cost_center || contract.cost_center_id) && (
+              <div className="flex items-center justify-end mt-1 gap-2 text-sm text-muted-foreground">
+                <span>مركز التكلفة:</span>
+                <Badge variant="outline">
+                  {contract.cost_center?.center_code || '—'}
+                  {contract.cost_center?.center_name ? ` • ${contract.cost_center.center_name}` : ''}
+                </Badge>
+              </div>
+            )}
+            
             {contract.description && (
               <p className="text-sm text-muted-foreground text-right">{contract.description}</p>
             )}

@@ -28,6 +28,12 @@ export const useContractsData = (filters: any = {}) => {
             last_name_ar,
             company_name_ar,
             customer_type
+          ),
+          cost_center:cost_centers(
+            id,
+            center_code,
+            center_name,
+            center_name_ar
           )
         `)
         .order('created_at', { ascending: false });

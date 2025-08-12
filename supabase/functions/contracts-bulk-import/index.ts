@@ -86,17 +86,44 @@ Deno.serve(async (req) => {
     const dupMap = new Map<string, string>()
     ;(existing || []).forEach((r: any) => dupMap.set(String(r.contract_number), r.id))
 
+    // Preload cost centers for mapping by code/name
+    const { data: centers, error: centersErr } = await supabase
+      .from('cost_centers')
+      .select('id, center_code, center_name')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+    if (centersErr) {
+      return new Response(JSON.stringify({ error: `Failed to load cost centers: ${centersErr.message}` }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+    }
+    const byCode = new Map<string, string>()
+    const byName = new Map<string, string>()
+    ;(centers || []).forEach((c: any) => {
+      if (c.center_code) byCode.set(normalize(c.center_code), c.id)
+      if (c.center_name) byName.set(normalize(c.center_name), c.id)
+    })
+
     // Process rows one by one (clear error reporting)
     for (let i = 0; i < rows.length; i++) {
       const raw = rows[i] || {}
       const rowIndex = raw.rowNumber || i + 2
       try {
         const contract_number = raw.contract_number ? String(raw.contract_number) : numbers[i]
+        // Resolve cost center
+        let resolvedCostCenterId: string | null = raw.cost_center_id && isUUID(String(raw.cost_center_id)) ? String(raw.cost_center_id) : null
+        if (!resolvedCostCenterId && raw.cost_center_code) {
+          const ccId = byCode.get(normalize(String(raw.cost_center_code)))
+          if (ccId) resolvedCostCenterId = ccId
+        }
+        if (!resolvedCostCenterId && raw.cost_center_name) {
+          const ccId = byName.get(normalize(String(raw.cost_center_name)))
+          if (ccId) resolvedCostCenterId = ccId
+        }
+
         const payload: any = {
           company_id: companyId,
           customer_id: raw.customer_id || null,
           vehicle_id: raw.vehicle_id || null,
-          cost_center_id: raw.cost_center_id || null,
+          cost_center_id: resolvedCostCenterId,
           contract_number,
           contract_type: normalizeContractType(raw.contract_type),
           contract_date: raw.contract_date || new Date().toISOString().slice(0, 10),
