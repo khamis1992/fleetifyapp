@@ -8,8 +8,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Upload, Download, FileText, AlertCircle, CheckCircle, Zap } from "lucide-react";
 import { toast } from "sonner";
+import Papa from "papaparse";
+import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
 
@@ -20,7 +24,7 @@ interface ContractCSVUploadProps {
 }
 
 export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: ContractCSVUploadProps) {
-  const [uploadMode, setUploadMode] = useState<'classic' | 'smart'>('smart');
+  const [uploadMode, setUploadMode] = useState<'classic' | 'smart' | 'bulk'>('smart');
   const [file, setFile] = useState<File | null>(null);
   const { 
     uploadContracts, 
@@ -33,6 +37,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     contractRequiredFields
   } = useContractCSVUpload();
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const [dryRun, setDryRun] = useState(true);
+  const [upsertDuplicates, setUpsertDuplicates] = useState(true);
   const isSuperAdmin = !!user?.roles?.includes('super_admin');
   const targetCompanyName = (
     isBrowsingMode && browsedCompany
@@ -86,6 +92,30 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     link.click();
   }
 
+  const handleBulkUpload = async () => {
+    if (!file) {
+      toast.error('يرجى اختيار ملف أولاً')
+      return
+    }
+    if (!companyId) {
+      toast.error('لا يوجد معرف شركة محدد')
+      return
+    }
+    try {
+      const text = await file.text();
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
+      const rows = (parsed.data as any[]).filter(Boolean).map((r, idx) => ({ ...r, rowNumber: idx + 2 }));
+      const { data, error } = await supabase.functions.invoke('contracts-bulk-import', {
+        body: { companyId, rows, dryRun, upsertDuplicates }
+      });
+      if (error) throw error;
+      toast.success('تمت المعالجة على الخادم');
+      onUploadComplete();
+    } catch (e: any) {
+      toast.error(e?.message || 'حدث خطأ أثناء الرفع بالجملة');
+    }
+  }
+
   const handleClose = () => {
     setFile(null)
     onOpenChange(false)
@@ -107,6 +137,92 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     );
   }
 
+  // وضع الرفع بالجملة عبر دالة الحافة
+  if (uploadMode === 'bulk') {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[640px] max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              رفع العقود بالجملة (خادم)
+            </DialogTitle>
+            <DialogDescription className="flex items-center justify-between">
+              <span>رفع سريع عبر الخادم مع وضع تجريبي وتحديث التكرارات</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setUploadMode('classic')}
+                className="flex items-center gap-1"
+              >
+                الرجوع للوضع التقليدي
+              </Button>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between mt-2 px-1">
+            <div className="text-sm">
+              <span className="text-muted-foreground">سيتم الرفع إلى:</span>
+              <Badge variant="outline" className="ml-2">{targetCompanyName}</Badge>
+            </div>
+            {isSuperAdmin && (
+              <div className="shrink-0">
+                <CompanySelector />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {/* اختيار الملف */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">اختر ملف CSV</label>
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                disabled={isUploading}
+              />
+              {file && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  تم اختيار الملف: {file.name}
+                </div>
+              )}
+            </div>
+
+            {/* خيارات */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="dryRun">تشغيل تجريبي (بدون إدخال فعلي)</Label>
+                <Switch id="dryRun" checked={dryRun} onCheckedChange={setDryRun} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="upsert">تحديث العقود المكررة بالرقم</Label>
+                <Switch id="upsert" checked={upsertDuplicates} onCheckedChange={setUpsertDuplicates} />
+              </div>
+            </div>
+
+            {/* أزرار */}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleClose} disabled={isUploading}>إلغاء</Button>
+              <Button onClick={handleBulkUpload} disabled={!file || isUploading} className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                {isUploading ? 'جاري المعالجة...' : 'رفع بالجملة'}
+              </Button>
+            </div>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                للوضع بالجملة: يُفضّل أن يحتوي الملف على customer_id و vehicle_id و cost_center_id مباشرة لتسريع الإدخال. إذا كانت لديك أسماء/أرقام لوحات، فاستخدم الرفع الذكي لتحويلها تلقائياً.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
@@ -117,15 +233,25 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
           </DialogTitle>
           <DialogDescription className="flex items-center justify-between">
             <span>الطريقة التقليدية لرفع ملفات CSV</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setUploadMode('smart')}
-              className="flex items-center gap-1"
-            >
-              <Zap className="h-3 w-3" />
-              التبديل للرفع الذكي
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setUploadMode('smart')}
+                className="flex items-center gap-1"
+              >
+                <Zap className="h-3 w-3" />
+                التبديل للرفع الذكي
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setUploadMode('bulk')}
+                className="flex items-center gap-1"
+              >
+                الرفع بالجملة (خادم)
+              </Button>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-between mt-2 px-1">
