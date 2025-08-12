@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { useVehiclePricing, useCreateVehiclePricing } from "@/hooks/useVehicles";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { format } from "date-fns";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface EnhancedVehiclePricingPanelProps {
   vehicleId: string;
@@ -63,7 +64,7 @@ export function EnhancedVehiclePricingPanel({ vehicleId }: EnhancedVehiclePricin
       ...data,
       vehicle_id: vehicleId,
       is_active: true,
-      currency: 'KWD', // Default currency
+      currency: currency,
     });
     
     reset();
@@ -75,6 +76,8 @@ export function EnhancedVehiclePricingPanel({ vehicleId }: EnhancedVehiclePricin
   if (isLoading) {
     return <LoadingSpinner />;
   }
+
+  const { formatCurrency, currency } = useCurrencyFormatter();
 
   return (
     <Card>
@@ -286,22 +289,22 @@ export function EnhancedVehiclePricingPanel({ vehicleId }: EnhancedVehiclePricin
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">الأسعار الأساسية</p>
-                <div className="space-y-1 text-sm">
-                  <div>يومي: {activePricing.daily_rate?.toLocaleString()} د.ك</div>
-                  <div>أسبوعي: {activePricing.weekly_rate?.toLocaleString()} د.ك</div>
-                  <div>شهري: {activePricing.monthly_rate?.toLocaleString()} د.ك</div>
-                  <div>سنوي: {activePricing.annual_rate?.toLocaleString()} د.ك</div>
-                </div>
+                  <div className="space-y-1 text-sm">
+                    <div>يومي: {activePricing.daily_rate ? formatCurrency(activePricing.daily_rate) : '-'}</div>
+                    <div>أسبوعي: {activePricing.weekly_rate ? formatCurrency(activePricing.weekly_rate) : '-'}</div>
+                    <div>شهري: {activePricing.monthly_rate ? formatCurrency(activePricing.monthly_rate) : '-'}</div>
+                    <div>سنوي: {activePricing.annual_rate ? formatCurrency(activePricing.annual_rate) : '-'}</div>
+                  </div>
               </div>
               
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">الرسوم الإضافية</p>
-                <div className="space-y-1 text-sm">
-                  <div>التأمين: {activePricing.security_deposit?.toLocaleString()} د.ك</div>
-                  <div>التنظيف: {activePricing.cleaning_fee?.toLocaleString()} د.ك</div>
-                  <div>الإلغاء: {activePricing.cancellation_fee?.toLocaleString()} د.ك</div>
-                  <div>التأخير: {activePricing.late_return_hourly_rate?.toLocaleString()} د.ك/ساعة</div>
-                </div>
+                  <div className="space-y-1 text-sm">
+                    <div>التأمين: {activePricing.security_deposit ? formatCurrency(activePricing.security_deposit) : '-'}</div>
+                    <div>التنظيف: {activePricing.cleaning_fee ? formatCurrency(activePricing.cleaning_fee) : '-'}</div>
+                    <div>الإلغاء: {activePricing.cancellation_fee ? formatCurrency(activePricing.cancellation_fee) : '-'}</div>
+                    <div>التأخير: {activePricing.late_return_hourly_rate ? formatCurrency(activePricing.late_return_hourly_rate) : '-'} /ساعة</div>
+                  </div>
               </div>
             </div>
 
@@ -341,10 +344,10 @@ export function EnhancedVehiclePricingPanel({ vehicleId }: EnhancedVehiclePricin
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="grid grid-cols-4 gap-2 text-sm">
-                      <div>يومي: {price.daily_rate?.toLocaleString()} د.ك</div>
-                      <div>أسبوعي: {price.weekly_rate?.toLocaleString()} د.ك</div>
-                      <div>شهري: {price.monthly_rate?.toLocaleString()} د.ك</div>
-                      <div>سنوي: {price.annual_rate?.toLocaleString()} د.ك</div>
+                      <div>يومي: {price.daily_rate ? formatCurrency(price.daily_rate) : '-'}</div>
+                      <div>أسبوعي: {price.weekly_rate ? formatCurrency(price.weekly_rate) : '-'}</div>
+                      <div>شهري: {price.monthly_rate ? formatCurrency(price.monthly_rate) : '-'}</div>
+                      <div>سنوي: {price.annual_rate ? formatCurrency(price.annual_rate) : '-'}</div>
                     </div>
                   </div>
                   <Badge variant="outline">سابق</Badge>

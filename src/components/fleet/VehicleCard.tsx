@@ -7,6 +7,7 @@ import { Car, MoreVertical, Wrench, Edit, Trash2, Eye } from "lucide-react"
 import { Vehicle } from "@/hooks/useVehicles"
 import { EnhancedVehicleDetailsDialog } from "./EnhancedVehicleDetailsDialog"
 import { VehicleForm } from "./VehicleForm"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface VehicleCardProps {
   vehicle: Vehicle
@@ -39,6 +40,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
   const [showEditForm, setShowEditForm] = useState(false)
 
   const status = vehicle.status || 'available'
+  const { formatCurrency } = useCurrencyFormatter()
 
   return (
     <>
@@ -109,11 +111,11 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           <div className="flex justify-between items-center w-full">
             <div className="space-y-1">
               <div className="text-sm text-muted-foreground">
-                {vehicle.daily_rate && `${vehicle.daily_rate} KWD/day`}
+                {vehicle.daily_rate && `${formatCurrency(vehicle.daily_rate)}/day`}
               </div>
               {vehicle.minimum_rental_price && vehicle.enforce_minimum_price && (
                 <div className="text-xs text-orange-600 font-medium">
-                  حد أدنى: {vehicle.minimum_rental_price} د.ك
+                  حد أدنى: {formatCurrency(vehicle.minimum_rental_price)}
                 </div>
               )}
             </div>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ChartOfAccount } from '@/hooks/useFinance';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Table,
@@ -41,6 +42,7 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
 }) => {
   const { user } = useAuth();
   const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set());
+  const { formatCurrency } = useCurrencyFormatter();
   
   // Check if user is super admin or company admin
   const isSuperAdmin = user?.roles?.includes('super_admin');
@@ -129,12 +131,7 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   };
 
   const formatBalance = (balance: number, balanceType: string) => {
-    const formattedBalance = new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3,
-    }).format(Math.abs(balance));
+    const formattedBalance = formatCurrency(Math.abs(balance), { minimumFractionDigits: 3, maximumFractionDigits: 3 });
     
     const isNormalBalance = 
       (['assets', 'expenses'].includes(balanceType) && balance >= 0) ||

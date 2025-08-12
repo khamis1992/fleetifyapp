@@ -9,6 +9,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react"
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { MaintenanceForm } from "./MaintenanceForm"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -56,6 +57,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 export function MaintenanceList() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
   const { data: maintenanceRecords, isLoading } = useVehicleMaintenance()
+  const { formatCurrency } = useCurrencyFormatter()
 
   const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
   const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
@@ -116,11 +118,11 @@ export function MaintenanceList() {
             <TableCell>
               <div>
                 {maintenance.actual_cost > 0 && (
-                  <div className="font-medium">{maintenance.actual_cost} KWD</div>
+                  <div className="font-medium">{formatCurrency(maintenance.actual_cost)}</div>
                 )}
                 {maintenance.estimated_cost > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    Est: {maintenance.estimated_cost} KWD
+                    Est: {formatCurrency(maintenance.estimated_cost)}
                   </div>
                 )}
               </div>
@@ -213,9 +215,9 @@ export function MaintenanceList() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {completedMaintenance
-                .reduce((sum, m) => sum + (m.actual_cost || 0), 0)
-                .toFixed(2)} KWD
+              {formatCurrency(
+                completedMaintenance.reduce((sum, m) => sum + (m.actual_cost || 0), 0)
+              )}
             </div>
           </CardContent>
         </Card>

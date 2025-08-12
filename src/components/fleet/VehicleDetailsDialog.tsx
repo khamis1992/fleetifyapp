@@ -9,6 +9,7 @@ import { Car, Wrench, FileText, DollarSign, Calendar, Gauge, Edit } from "lucide
 import { VehicleInsurancePanel } from "@/components/fleet/VehicleInsurancePanel"
 import { VehicleDocumentsPanel } from "@/components/fleet/VehicleDocumentsPanel"
 import { VehiclePricingPanel } from "@/components/fleet/VehiclePricingPanel"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface VehicleDetailsDialogProps {
   vehicle: Vehicle
@@ -35,6 +36,7 @@ const statusLabels = {
 
 export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: VehicleDetailsDialogProps) {
   const status = vehicle.status || 'available'
+  const { formatCurrency } = useCurrencyFormatter()
 
   const handleDocumentAdd = (document: any) => {
     // Handle document addition logic
@@ -167,25 +169,25 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: Ve
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.daily_rate ? `${vehicle.daily_rate} KWD` : 'N/A'}
+                      {vehicle.daily_rate ? formatCurrency(vehicle.daily_rate) : 'N/A'}
                     </div>
                     <div className="text-sm text-muted-foreground">التعرفة اليومية</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.weekly_rate ? `${vehicle.weekly_rate} د.ك` : 'غ/م'}
+                      {vehicle.weekly_rate ? formatCurrency(vehicle.weekly_rate) : 'غ/م'}
                     </div>
                     <div className="text-sm text-muted-foreground">التعرفة الأسبوعية</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.monthly_rate ? `${vehicle.monthly_rate} د.ك` : 'غ/م'}
+                      {vehicle.monthly_rate ? formatCurrency(vehicle.monthly_rate) : 'غ/م'}
                     </div>
                     <div className="text-sm text-muted-foreground">التعرفة الشهرية</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      {vehicle.deposit_amount ? `${vehicle.deposit_amount} د.ك` : 'غ/م'}
+                      {vehicle.deposit_amount ? formatCurrency(vehicle.deposit_amount) : 'غ/م'}
                     </div>
                     <div className="text-sm text-muted-foreground">التأمين</div>
                   </div>
@@ -275,7 +277,7 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: Ve
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Purchase Cost:</span>
                       <span className="font-medium">
-                        {vehicle.purchase_cost ? `${vehicle.purchase_cost} KWD` : 'Not specified'}
+                        {vehicle.purchase_cost ? formatCurrency(vehicle.purchase_cost) : 'Not specified'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -287,7 +289,7 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: Ve
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Residual Value:</span>
                       <span className="font-medium">
-                        {vehicle.residual_value ? `${vehicle.residual_value} KWD` : 'Not specified'}
+                        {vehicle.residual_value ? formatCurrency(vehicle.residual_value) : 'Not specified'}
                       </span>
                     </div>
                   </div>
@@ -305,19 +307,19 @@ export function VehicleDetailsDialog({ vehicle, open, onOpenChange, onEdit }: Ve
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Annual Rate:</span>
                       <span className="font-medium">
-                        {vehicle.annual_depreciation_rate ? `${vehicle.annual_depreciation_rate} KWD` : 'Not calculated'}
+                        {vehicle.annual_depreciation_rate ? formatCurrency(vehicle.annual_depreciation_rate) : 'Not calculated'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Accumulated:</span>
                       <span className="font-medium">
-                        {vehicle.accumulated_depreciation ? `${vehicle.accumulated_depreciation} KWD` : '0 KWD'}
+                        {vehicle.accumulated_depreciation ? formatCurrency(vehicle.accumulated_depreciation) : formatCurrency(0)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Book Value:</span>
                       <span className="font-medium">
-                        {vehicle.book_value ? `${vehicle.book_value} KWD` : 'Not calculated'}
+                        {vehicle.book_value ? formatCurrency(vehicle.book_value) : 'Not calculated'}
                       </span>
                     </div>
                   </div>

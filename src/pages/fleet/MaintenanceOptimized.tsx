@@ -11,6 +11,7 @@ import { useVehicleMaintenanceOptimized, useMaintenanceStats } from "@/hooks/use
 import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -78,6 +79,7 @@ function MaintenanceTableSkeleton() {
 }
 
 function MaintenanceTable({ data }: { data: any[] }) {
+  const { formatCurrency } = useCurrencyFormatter();
   if (data.length === 0) {
     return (
       <Card>
@@ -136,7 +138,7 @@ function MaintenanceTable({ data }: { data: any[] }) {
               </TableCell>
               <TableCell className="text-right">
                 {maintenance.estimated_cost ? 
-                  maintenance.estimated_cost.toLocaleString('en-US', { style: 'currency', currency: 'KWD' }) : 
+                  formatCurrency(maintenance.estimated_cost) : 
                   'N/A'
                 }
               </TableCell>
@@ -175,6 +177,7 @@ export default function MaintenanceOptimized() {
   // Use optimized hooks
   const { data: maintenanceStats, isLoading: statsLoading } = useMaintenanceStats()
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
+  const { formatCurrency } = useCurrencyFormatter()
   
   // Only load data for the active tab to improve performance
   const { data: maintenanceData, isLoading: maintenanceLoading } = useVehicleMaintenanceOptimized(
@@ -274,7 +277,7 @@ export default function MaintenanceOptimized() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(maintenanceStats?.total_cost_month || 0).toLocaleString('en-US', { style: 'currency', currency: 'KWD' })}
+              {formatCurrency(maintenanceStats?.total_cost_month || 0)}
             </div>
             <p className="text-xs text-muted-foreground">total maintenance cost</p>
           </CardContent>

@@ -10,12 +10,15 @@ import {
   exportTrafficViolationReportToHTML 
 } from '@/hooks/useTrafficViolationReportsExport';
 import { format } from 'date-fns';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export const TrafficViolationReports = () => {
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
   });
+
+  const { formatCurrency } = useCurrencyFormatter();
 
   const { data: violationsData, isLoading: violationsLoading, error: violationsError } = useTrafficViolationsReport(
     dateRange.startDate,
@@ -80,7 +83,7 @@ export const TrafficViolationReports = () => {
           <div class="stat-label">المخالفات المؤكدة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${totalAmount.toFixed(3)}</div>
+          <div class="stat-value">${formatCurrency(totalAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
           <div class="stat-label">إجمالي المبلغ</div>
         </div>
         <div class="stat-card">
@@ -108,7 +111,7 @@ export const TrafficViolationReports = () => {
               <td>${item.penalty_number}</td>
               <td>${format(new Date(item.penalty_date), 'dd/MM/yyyy')}</td>
               <td>${item.vehicle?.plate_number || item.vehicle_id || '-'}</td>
-              <td>${item.amount.toFixed(3)}</td>
+              <td>${formatCurrency(item.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
               <td>${item.status === 'confirmed' ? 'مؤكدة' : item.status === 'pending' ? 'معلقة' : item.status}</td>
               <td>${item.payment_status === 'paid' ? 'مدفوعة' : item.payment_status === 'unpaid' ? 'غير مدفوعة' : item.payment_status}</td>
               <td>${item.reason}</td>
@@ -170,7 +173,7 @@ export const TrafficViolationReports = () => {
           <div class="stat-label">المدفوعات المكتملة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${totalAmount.toFixed(3)}</div>
+          <div class="stat-value">${formatCurrency(totalAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
           <div class="stat-label">إجمالي المبلغ</div>
         </div>
         <div class="stat-card">
@@ -199,7 +202,7 @@ export const TrafficViolationReports = () => {
               <td>${item.payment_number}</td>
               <td>${item.penalty_number}</td>
               <td>${format(new Date(item.payment_date), 'dd/MM/yyyy')}</td>
-              <td>${item.amount.toFixed(3)}</td>
+              <td>${formatCurrency(item.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
               <td>${item.payment_method === 'cash' ? 'نقدي' : item.payment_method === 'bank_transfer' ? 'تحويل بنكي' : item.payment_method}</td>
               <td>${item.payment_type}</td>
               <td>${item.status === 'completed' ? 'مكتملة' : item.status === 'pending' ? 'معلقة' : item.status}</td>
@@ -270,7 +273,7 @@ export const TrafficViolationReports = () => {
               </div>
               <div>
                 <div className="font-medium">إجمالي المبلغ</div>
-                <div className="text-lg text-primary">KWD {violationsData.reduce((sum, item) => sum + item.amount, 0).toFixed(3)}</div>
+                <div className="text-lg text-primary">{formatCurrency(violationsData.reduce((sum, item) => sum + item.amount, 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
               </div>
             </div>
           )}
@@ -310,7 +313,7 @@ export const TrafficViolationReports = () => {
               </div>
               <div>
                 <div className="font-medium">إجمالي المبلغ</div>
-                <div className="text-lg text-primary">KWD {paymentsData.reduce((sum, item) => sum + item.amount, 0).toFixed(3)}</div>
+                <div className="text-lg text-primary">{formatCurrency(paymentsData.reduce((sum, item) => sum + item.amount, 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
               </div>
             </div>
           )}

@@ -24,6 +24,7 @@ import { useEnhancedFinancialReports } from "@/hooks/useEnhancedFinancialReports
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "sonner";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 export function EnhancedFinancialReportsViewer() {
   const [reportType, setReportType] = useState<string>('income_statement');
@@ -36,13 +37,7 @@ export function EnhancedFinancialReportsViewer() {
     endDate
   );
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD',
-      minimumFractionDigits: 3
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrencyFormatter();
 
   const handleExportReport = () => {
     if (!reportData) {

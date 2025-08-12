@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle, XCircle, TrendingDown, TrendingUp } from "lucide-react";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface BudgetAlert {
   id: string;
@@ -38,6 +39,7 @@ interface FinancialAlert {
 
 export const FinancialAlertsSystem = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const { data: budgetAlerts, isLoading: budgetLoading } = useQuery({
     queryKey: ["budget-alerts", user?.user_metadata?.company_id],
@@ -148,7 +150,7 @@ export const FinancialAlertsSystem = () => {
                         </span>
                         {alert.amount_exceeded > 0 && (
                           <Badge variant="outline">
-                            +{alert.amount_exceeded.toLocaleString()} KWD exceeded
+                            +{formatCurrency(alert.amount_exceeded)} exceeded
                           </Badge>
                         )}
                       </div>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useVehiclePricing, useCreateVehiclePricing } from "@/hooks/useVehicles";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { Plus, Edit, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
@@ -25,6 +25,7 @@ interface PricingFormData {
 
 export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
   const [showForm, setShowForm] = useState(false);
+  const { formatCurrency, currency } = useCurrencyFormatter();
   const { data: pricing, isLoading } = useVehiclePricing(vehicleId);
   const createPricing = useCreateVehiclePricing();
 
@@ -41,7 +42,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
   const onSubmit = async (data: PricingFormData) => {
     await createPricing.mutateAsync({
       vehicle_id: vehicleId,
-      currency: "KWD",
+      currency: currency,
       is_active: true,
       ...data,
     });
