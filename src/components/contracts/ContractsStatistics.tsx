@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, Clock, XCircle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractsStatisticsProps {
   activeCount: number;
@@ -15,7 +16,7 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
   cancelledCount,
   totalRevenue
 }) => {
-  return (
+  const { formatCurrency } = useCurrencyFormatter();
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -56,7 +57,7 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
           <DollarSign className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{totalRevenue.toFixed(3)} د.ك</div>
+          <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalRevenue, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
           <p className="text-xs text-muted-foreground">من العقود النشطة</p>
         </CardContent>
       </Card>

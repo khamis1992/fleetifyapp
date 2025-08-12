@@ -10,6 +10,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { CreateContractVehicleReturnData } from '@/hooks/useContractVehicleReturn';
 import { useContractVehicle } from '@/hooks/useContractVehicle';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface Damage {
   type: string;
@@ -40,6 +41,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
   isSubmitting = false
 }) => {
   const { data: vehicleData } = useContractVehicle(contract.vehicle_id);
+  const { formatCurrency } = useCurrencyFormatter();
   const [formData, setFormData] = useState<CreateContractVehicleReturnData>({
     contract_id: contract.id,
     vehicle_id: contract.vehicle_id,
@@ -307,7 +309,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
                       </div>
                       <div>
                         {damage.cost_estimate && (
-                          <p className="text-sm">التكلفة المقدرة: {damage.cost_estimate} د.ك</p>
+                          <p className="text-sm">التكلفة المقدرة: {formatCurrency(damage.cost_estimate ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
                         )}
                       </div>
                     </div>

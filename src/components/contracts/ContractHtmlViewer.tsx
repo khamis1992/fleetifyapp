@@ -4,6 +4,7 @@ import { Printer, Download } from 'lucide-react';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
 import { formatDateInGregorian, formatDateForDocument } from '@/utils/dateFormatter';
 import { ContractVehicleConditionReport } from './ContractVehicleConditionReport';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ContractHtmlViewerProps {
   contractData: ContractPdfData;
@@ -28,6 +29,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
   conditionReportData,
   className = "" 
 }) => {
+  const { formatCurrency } = useCurrencyFormatter();
   const handlePrint = () => {
     // اختيار فقط محتوى العقد للطباعة
     const printContent = document.getElementById('contract-print-content');
@@ -330,18 +332,18 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
               <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
                 <div className="info-label font-bold text-gray-700 mb-1">المبلغ الإجمالي</div>
                 <div className="info-value text-gray-900">
-                  {contractData.contract_amount.toFixed(3)} د.ك
+                  {formatCurrency(contractData.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </div>
               </div>
               <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
                 <div className="info-label font-bold text-gray-700 mb-1">المبلغ الشهري</div>
                 <div className="info-value text-gray-900">
-                  {contractData.monthly_amount.toFixed(3)} د.ك
+                  {formatCurrency(contractData.monthly_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </div>
               </div>
             </div>
             <div className="amount-highlight bg-amber-100 p-4 rounded-lg text-center text-lg font-bold text-amber-800">
-              إجمالي قيمة العقد: {contractData.contract_amount.toFixed(3)} د.ك
+              إجمالي قيمة العقد: {formatCurrency(contractData.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
             </div>
           </div>
 

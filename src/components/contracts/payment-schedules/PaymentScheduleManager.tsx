@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, DollarSign, TrendingUp, AlertTriangle, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface PaymentScheduleManagerProps {
   contractId: string;
@@ -18,6 +19,7 @@ export const PaymentScheduleManager = ({
   onCreateInvoice 
 }: PaymentScheduleManagerProps) => {
   const { data: schedules = [], isLoading } = useContractPaymentSchedules(contractId);
+  const { formatCurrency } = useCurrencyFormatter();
 
   if (isLoading) {
     return <div>جاري التحميل...</div>;
@@ -47,7 +49,7 @@ export const PaymentScheduleManager = ({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي المبلغ</p>
-                <p className="text-lg font-semibold">{totalAmount.toFixed(3)} د.ك</p>
+                <p className="text-lg font-semibold">{formatCurrency(totalAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
             </div>
           </CardContent>
@@ -61,7 +63,7 @@ export const PaymentScheduleManager = ({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">المبلغ المدفوع</p>
-                <p className="text-lg font-semibold">{paidAmount.toFixed(3)} د.ك</p>
+                <p className="text-lg font-semibold">{formatCurrency(paidAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
             </div>
           </CardContent>
@@ -118,7 +120,7 @@ export const PaymentScheduleManager = ({
               <div>
                 <h4 className="font-medium">الدفعة القادمة</h4>
                 <p className="text-sm text-muted-foreground">
-                  القسط {nextPayment.installment_number} - {nextPayment.amount.toFixed(3)} د.ك
+                  القسط {nextPayment.installment_number} - {formatCurrency(nextPayment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </p>
               </div>
               <div className="text-left">

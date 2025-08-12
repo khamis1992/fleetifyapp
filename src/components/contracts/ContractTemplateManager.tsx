@@ -13,6 +13,7 @@ import { Plus, Edit, Trash2, Copy, Settings } from 'lucide-react'
 import { useContractTemplates, ContractTemplate } from '@/hooks/useContractTemplates'
 import { useForm } from 'react-hook-form'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 
 interface TemplateFormData {
   template_name: string
@@ -42,6 +43,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
   
   const { templates, isLoading, createTemplate, updateTemplate, deleteTemplate } = useContractTemplates()
   const { data: accounts } = useEntryAllowedAccounts()
+  const { formatCurrency } = useCurrencyFormatter()
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<TemplateFormData>({
     defaultValues: {
@@ -261,7 +263,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                 
                 {watch('requires_approval') && (
                   <div className="space-y-2">
-                    <Label htmlFor="approval_threshold">حد الموافقة المطلوبة (د.ك)</Label>
+                    <Label htmlFor="approval_threshold">حد الموافقة المطلوبة</Label>
                     <Input
                       id="approval_threshold"
                       type="number"
@@ -335,7 +337,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                 {template.requires_approval && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">حد الموافقة:</span>
-                    <span>{template.approval_threshold} د.ك</span>
+                    <span>{formatCurrency(template.approval_threshold ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                   </div>
                 )}
               </div>

@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface PaymentSchedulesListProps {
   schedules: PaymentSchedule[];
@@ -56,6 +57,7 @@ const PaymentRecordDialog = ({
   const [paidAmount, setPaidAmount] = useState(schedule.amount.toString());
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
   const [open, setOpen] = useState(false);
+  const { formatCurrency } = useCurrencyFormatter();
 
   const handleSubmit = () => {
     onRecord(parseFloat(paidAmount), paidDate);
@@ -87,7 +89,7 @@ const PaymentRecordDialog = ({
               max={schedule.amount}
             />
             <p className="text-sm text-muted-foreground mt-1">
-              المبلغ المطلوب: {schedule.amount.toFixed(3)} د.ك
+              المبلغ المطلوب: {formatCurrency(schedule.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
             </p>
           </div>
           <div>
@@ -115,6 +117,7 @@ const PaymentRecordDialog = ({
 
 export const PaymentSchedulesList = ({ schedules, onCreateInvoice }: PaymentSchedulesListProps) => {
   const markAsPaid = useMarkPaymentAsPaid();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const handleRecordPayment = (scheduleId: string, amount: number, date: string) => {
     markAsPaid.mutate({
@@ -170,11 +173,11 @@ export const PaymentSchedulesList = ({ schedules, onCreateInvoice }: PaymentSche
                   </div>
                   <div className="flex items-center gap-1">
                     <DollarSign className="h-4 w-4" />
-                    <span>{schedule.amount.toFixed(3)} د.ك</span>
+                    <span>{formatCurrency(schedule.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                   </div>
                   {schedule.paid_amount > 0 && (
                     <div className="flex items-center gap-1 text-green-600">
-                      <span>مدفوع: {schedule.paid_amount.toFixed(3)} د.ك</span>
+                      <span>مدفوع: {formatCurrency(schedule.paid_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                     </div>
                   )}
                 </div>
