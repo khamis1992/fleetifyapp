@@ -20,7 +20,7 @@ interface SmartCSVUploadProps {
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
   entityType: 'customer' | 'vehicle' | 'contract';
-  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean }) => Promise<any>;
+  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
   requiredFields: string[];
@@ -47,6 +47,7 @@ export function SmartCSVUpload({
   const [autoCompleteDates, setAutoCompleteDates] = useState(true);
   const [autoCompleteType, setAutoCompleteType] = useState(true);
   const [autoCompleteAmounts, setAutoCompleteAmounts] = useState(true);
+  const [enableDryRun, setEnableDryRun] = useState(false);
   const [lastResult, setLastResult] = useState<any | null>(null);
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
   const [editedRows, setEditedRows] = useState<any[]>([]);

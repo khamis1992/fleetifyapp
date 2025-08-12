@@ -529,6 +529,13 @@ export function useContractCSVUpload() {
       return `رفض بواسطة صلاحيات الأمان (RLS).${browsedText} ثم أعد المحاولة.`;
     }
     
+    if (m.includes('duplicate key value') || m.includes('unique constraint')) {
+      if (m.includes('contracts_contract_number') || m.includes('contract_number')) {
+        return 'رقم العقد مكرر داخل نفس الشركة. سيتم توليد رقم بديل تلقائياً أو عدِّل الرقم في الملف ثم أعد المحاولة.';
+      }
+      return 'قيمة مكررة تنتهك شرط التفرد. تحقق من القيم الفريدة.';
+    }
+    
     if (m.includes('foreign key') && m.includes('customer')) {
       return `العميل غير موجود داخل الشركة المستهدفة "${browsedCompany?.name || 'الحالية'}" أو لا تملك صلاحية الوصول إليه.`;
     }
@@ -764,16 +771,29 @@ export function useContractCSVUpload() {
             created_by: user?.id
           };
 
-          const { error } = await supabase
+          let insertError: any = null;
+          let { error: insertErr } = await supabase
             .from('contracts')
             .insert(contractPayload);
 
-          if (error) {
-            console.error(`📝 [Contract CSV] Database error for row ${contractData.rowNumber}:`, error);
+          if (insertErr) {
+            const msg = String(insertErr.message || '').toLowerCase();
+            if ((msg.includes('duplicate') || msg.includes('unique constraint')) && msg.includes('contract_number')) {
+              const altNumber = `${contractNumber}-${Date.now() % 10000}`;
+              const retryPayload = { ...contractPayload, contract_number: altNumber };
+              const retry = await supabase.from('contracts').insert(retryPayload);
+              if (retry.error) insertError = retry.error;
+            } else {
+              insertError = insertErr;
+            }
+          }
+
+          if (insertError) {
+            console.error(`📝 [Contract CSV] Database error for row ${contractData.rowNumber}:`, insertError);
             results.failed++;
             results.errors.push({
               row: contractData.rowNumber,
-              message: getFriendlyDbError(error.message)
+              message: getFriendlyDbError(insertError.message)
             });
           } else {
             console.log(`📝 [Contract CSV] Successfully inserted contract row ${contractData.rowNumber}`);
@@ -803,7 +823,7 @@ export function useContractCSVUpload() {
   // دالة رفع ذكية للعقود
   const smartUploadContracts = async (
     fixedData: any[],
-    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean }
+    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean }
   ) => {
     console.log('📝 [Smart Contract CSV] Starting upload with companyId:', companyId);
     console.log('📝 [Smart Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
@@ -831,8 +851,27 @@ export function useContractCSVUpload() {
         const rowNum = originalRow.rowNumber || i + 1;
         
         try {
-          // Auto-complete first, then preprocess (resolve IDs)
-          const filledRow = autoCompleteContractFields({ ...originalRow });
+          // Auto-complete first, then optionally revert fields based on toggles
+          const autoFilled = autoCompleteContractFields({ ...originalRow });
+          const filledRow = (() => {
+            const out: any = { ...autoFilled };
+            // If user disabled type auto-complete and original had no type, remove default
+            if (options?.autoCompleteType === false && !originalRow.contract_type) {
+              delete out.contract_type;
+            }
+            // Dates
+            if (options?.autoCompleteDates === false) {
+              if (!originalRow.contract_date) delete out.contract_date; else out.contract_date = originalRow.contract_date;
+              if (!originalRow.start_date) delete out.start_date; else out.start_date = originalRow.start_date;
+              if (!originalRow.end_date) delete out.end_date; else out.end_date = originalRow.end_date;
+            }
+            // Amounts
+            if (options?.autoCompleteAmounts === false) {
+              if (!originalRow.contract_amount) delete out.contract_amount; else out.contract_amount = originalRow.contract_amount;
+              if (!originalRow.monthly_amount) delete out.monthly_amount; else out.monthly_amount = originalRow.monthly_amount;
+            }
+            return out;
+          })();
           const pre = await preprocessAndResolveIds({ ...filledRow }, targetCompanyId, Boolean(options?.autoCreateCustomers));
           if (pre.error) throw new Error(pre.error);
           const contractData: any = pre.data;
@@ -887,12 +926,26 @@ export function useContractCSVUpload() {
             created_by: user?.id
           };
 
-          const { error } = await supabase
-            .from('contracts')
-            .insert([contractPayload]);
-
-          if (error) throw error;
-          uploadResults.successful++;
+          // Dry-run: count as success without inserting
+          if (options?.dryRun) {
+            uploadResults.successful++;
+          } else {
+            let insertError: any = null;
+            let { error: insertErr } = await supabase.from('contracts').insert([contractPayload]);
+            if (insertErr) {
+              const msg = String(insertErr.message || '').toLowerCase();
+              if ((msg.includes('duplicate') || msg.includes('unique constraint')) && msg.includes('contract_number')) {
+                const altNumber = `${contractNumber}-${Date.now() % 10000}`;
+                const retryPayload = { ...contractPayload, contract_number: altNumber };
+                const retry = await supabase.from('contracts').insert([retryPayload]);
+                if (retry.error) insertError = retry.error;
+              } else {
+                insertError = insertErr;
+              }
+            }
+            if (insertError) throw insertError;
+            uploadResults.successful++;
+          }
         } catch (error: any) {
           uploadResults.failed++;
           const dbMessage = error?.message || 'خطأ غير معروف';
