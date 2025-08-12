@@ -26,6 +26,7 @@ import { useBudgetAlerts, useAcknowledgeBudgetAlert } from '@/hooks/useBudgetInt
 import { useVehicleAlerts, useAcknowledgeVehicleAlert } from '@/hooks/useVehicleAlerts';
 import { useNotifications, useMarkNotificationAsRead } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface UnifiedAlertsSystemProps {
   compact?: boolean;
@@ -165,7 +166,7 @@ export const UnifiedAlertsSystem: React.FC<UnifiedAlertsSystemProps> = ({
                         <Badge variant="outline">العدد: {alert.count}</Badge>
                       )}
                       {alert.amount && (
-                        <Badge variant="outline">المبلغ: {alert.amount.toFixed(0)} د.ك</Badge>
+                        <Badge variant="outline">المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Badge>
                       )}
                     </div>
                   )}
@@ -217,9 +218,9 @@ export const UnifiedAlertsSystem: React.FC<UnifiedAlertsSystemProps> = ({
                   <Badge variant="outline">
                     تجاوز: {alert.current_percentage.toFixed(1)}%
                   </Badge>
-                  <Badge variant="outline">
-                    المبلغ: {alert.amount_exceeded.toFixed(0)} د.ك
-                  </Badge>
+                    <Badge variant="outline">
+                      المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount_exceeded, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </Badge>
                 </div>
               </div>
               <Button

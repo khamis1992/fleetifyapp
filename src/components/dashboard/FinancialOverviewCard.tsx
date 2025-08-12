@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react';
 import { FinancialOverview } from '@/hooks/useFinancialOverview';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface FinancialOverviewCardProps {
   data: FinancialOverview;
@@ -33,7 +34,8 @@ export const FinancialOverviewCard: React.FC<FinancialOverviewCardProps> = ({ da
     );
   }
 
-  const formatCurrency = (amount: number) => `${amount.toFixed(0)} د.ك`;
+  const { formatCurrency: fmt } = useCurrencyFormatter();
+  const formatCurrency = (amount: number) => fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const formatPercentage = (percentage: number) => `${percentage.toFixed(1)}%`;
 
   const profitTrendIcon = data.profitMargin >= 0 ? TrendingUp : TrendingDown;

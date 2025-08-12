@@ -14,6 +14,7 @@ import {
   Minus
 } from 'lucide-react';
 import { EnhancedDashboardStats } from '@/hooks/useEnhancedDashboardStats';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface EnhancedStatsGridProps {
   stats: EnhancedDashboardStats;
@@ -39,7 +40,8 @@ export const EnhancedStatsGrid: React.FC<EnhancedStatsGridProps> = ({ stats, loa
     );
   }
 
-  const formatCurrency = (amount: number) => `${amount.toFixed(0)} د.ك`;
+  const { formatCurrency: fmt } = useCurrencyFormatter();
+  const formatCurrency = (amount: number) => fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const formatPercentage = (percentage: number) => `${percentage.toFixed(1)}%`;
 
   const getChangeIcon = (change: number) => {

@@ -15,6 +15,7 @@ import {
   Zap,
   Shield
 } from 'lucide-react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface Enhanced3DStatsGridProps {
   stats?: EnhancedDashboardStats;
@@ -67,7 +68,7 @@ export function Enhanced3DStatsGrid({ stats, loading }: Enhanced3DStatsGridProps
     },
     {
       title: 'الإيرادات الشهرية',
-      value: `${stats.monthlyRevenue.toLocaleString()} د.ك`,
+      value: useCurrencyFormatter().formatCurrency(stats.monthlyRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       change: stats.revenueChange,
       changeLabel: 'مقارنة بالشهر الماضي',
       icon: DollarSign,

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, AlertCircle, Info, CheckCircle, ExternalLink } from 'lucide-react';
 import { SmartAlert } from '@/hooks/useSmartAlerts';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface SmartAlertsPanelProps {
   alerts: SmartAlert[];
@@ -120,7 +121,7 @@ export const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ alerts, load
                           )}
                           {alert.amount && (
                             <span className="bg-muted px-2 py-1 rounded-full text-foreground">
-                              المبلغ: {alert.amount.toFixed(0)} د.ك
+                              المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                           )}
                         </div>

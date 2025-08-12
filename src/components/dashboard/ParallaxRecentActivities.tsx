@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { InteractiveDashboardCard } from './InteractiveDashboardCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { 
   Calendar, 
   FileText, 
@@ -174,7 +175,7 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 + index * 0.1 }}
                       >
-                        {activity.amount.toLocaleString()} د.ك
+                        {useCurrencyFormatter().formatCurrency(activity.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </motion.p>
                     )}
                   </div>

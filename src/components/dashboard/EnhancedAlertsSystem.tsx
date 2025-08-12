@@ -28,6 +28,7 @@ import { useVehicleAlerts } from '@/hooks/useVehicleAlerts';
 import { useAcknowledgeBudgetAlert } from '@/hooks/useBudgetIntegration';
 import { useAcknowledgeVehicleAlert } from '@/hooks/useVehicleAlerts';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, UserNotification } from '@/hooks/useNotifications';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface EnhancedAlertsSystemProps {
   compact?: boolean;
@@ -165,7 +166,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
                         <Badge variant="outline">العدد: {alert.count}</Badge>
                       )}
                       {alert.amount && (
-                        <Badge variant="outline">المبلغ: {alert.amount} د.ك</Badge>
+                        <Badge variant="outline">المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Badge>
                       )}
                     </div>
                   )}
@@ -216,7 +217,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
                     تجاوز: {alert.current_percentage.toFixed(1)}%
                   </Badge>
                   <Badge variant="outline">
-                    المبلغ: {alert.amount_exceeded.toFixed(0)} د.ك
+                    المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount_exceeded, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </Badge>
                 </div>
               </div>

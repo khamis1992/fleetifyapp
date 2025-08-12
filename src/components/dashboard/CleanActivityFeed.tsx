@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from 'lucide-react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface Activity {
   id: string;
@@ -120,7 +121,7 @@ const CleanActivityFeed: React.FC<CleanActivityFeedProps> = ({
               
               {activity.amount && (
                 <span className="text-sm font-medium text-success">
-                  {activity.amount.toLocaleString()} د.ك
+                  {useCurrencyFormatter().formatCurrency(activity.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
               )}
             </motion.div>

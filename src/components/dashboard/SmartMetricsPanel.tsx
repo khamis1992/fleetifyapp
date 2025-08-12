@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface FinancialOverview {
   totalRevenue: number;
@@ -69,13 +70,13 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
   const metrics = [
     {
       label: 'الإيرادات الشهرية',
-      value: `${(financialData.monthlyRevenue || 0).toLocaleString()} د.ك`,
+      value: useCurrencyFormatter().formatCurrency(financialData.monthlyRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       change: financialData.monthlyGrowth || 0,
       positive: (financialData.monthlyGrowth || 0) > 0
     },
     {
       label: 'إجمالي الأرباح',
-      value: `${(financialData.totalProfit || 0).toLocaleString()} د.ك`,
+      value: useCurrencyFormatter().formatCurrency(financialData.totalProfit || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       change: financialData.profitMargin || 0,
       positive: (financialData.profitMargin || 0) > 0,
       suffix: '%'
