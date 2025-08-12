@@ -54,7 +54,7 @@ export function SmartCSVUpload({
   const [activeView, setActiveView] = useState<'preview' | 'table'>('preview');
 
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
- 
+  
   const entityLabels = {
     customer: 'العملاء',
     vehicle: 'المركبات',
@@ -66,6 +66,21 @@ export function SmartCSVUpload({
       ? (browsedCompany.name_ar || browsedCompany.name)
       : (user?.company?.name_ar || user?.company?.name)
   ) || 'غير محدد';
+
+  const downloadErrorReport = () => {
+    if (!lastResult?.errors?.length) return;
+    const headers = ['row', 'message'];
+    const rows = lastResult.errors.map((e: any) => [e.row, e.message]);
+    const csv = [
+      headers.join(','),
+      ...rows.map(arr => arr.map((v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${entityLabels[entityType]}_upload_errors.csv`.replace(/\s+/g, '_');
+    link.click();
+  };
 
   const effectiveRequiredFields = (entityType === 'contract' && createMissingCustomers)
     ? Array.from(new Set([...requiredFields, 'customer_phone']))
@@ -167,6 +182,7 @@ export function SmartCSVUpload({
         dryRun: enableDryRun 
       });
       console.log('Upload function result:', result);
+      setLastResult(result);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -265,6 +281,7 @@ export function SmartCSVUpload({
         autoCompleteAmounts,
         dryRun: enableDryRun 
       });
+      setLastResult(result);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -540,6 +557,58 @@ export function SmartCSVUpload({
                 المعاينة الذكية
               </Button>
             </div>
+
+            {enableDryRun && (
+              <div className="p-3 rounded-md border border-blue-200 bg-blue-50 text-blue-800 text-sm">
+                وضع المحاكاة مفعّل: لن يتم حفظ أي تغييرات. استخدمه للتحقق قبل الرفع الحقيقي.
+              </div>
+            )}
+
+            {lastResult && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">نتائج الرفع</CardTitle>
+                  <CardDescription>ملخص العملية</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="text-center p-3 rounded-lg bg-green-50">
+                      <div className="text-xl font-bold text-green-700">{Number(lastResult.successful || 0)}</div>
+                      <div className="text-xs text-green-800">تم بنجاح</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-red-50">
+                      <div className="text-xl font-bold text-red-700">{Number(lastResult.failed || 0)}</div>
+                      <div className="text-xs text-red-800">فشل</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-blue-50">
+                      <div className="text-xl font-bold text-blue-700">{Number(lastResult.total || 0)}</div>
+                      <div className="text-xs text-blue-800">المجموع</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-amber-50">
+                      <div className="text-xl font-bold text-amber-700">{Number(lastResult.skipped || 0)}</div>
+                      <div className="text-xs text-amber-800">تم التخطي</div>
+                    </div>
+                  </div>
+
+                  {Array.isArray(lastResult.errors) && lastResult.errors.length > 0 && (
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-sm text-red-700">
+                        توجد {lastResult.errors.length} أخطاء. يمكنك تنزيل تقرير الأخطاء للاطلاع على التفاصيل.
+                      </div>
+                      <Button size="sm" variant="outline" onClick={downloadErrorReport}>
+                        تنزيل تقرير الأخطاء
+                      </Button>
+                    </div>
+                  )}
+
+                  {Array.isArray(lastResult.errors) && lastResult.errors.some((e: any) => String(e.message || '').toLowerCase().includes('rls') || String(e.message || '').includes('صلاحيات')) && (
+                    <div className="mt-2 text-xs text-amber-700">
+                      تلميح: ظهرت أخطاء صلاحيات (RLS). تأكد من اختيار الشركة الصحيحة أو من صلاحياتك الحالية.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {activeView === 'table' ? (
               <>
