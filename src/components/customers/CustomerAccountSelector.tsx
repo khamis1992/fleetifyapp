@@ -20,6 +20,7 @@ import {
   useUnlinkAccountFromCustomer,
   useCompanyAccountSettings
 } from "@/hooks/useCustomerAccounts";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface CustomerAccountSelectorProps {
   customerId: string;
@@ -40,6 +41,7 @@ export function CustomerAccountSelector({
   const { data: companySettings } = useCompanyAccountSettings();
   const linkAccountMutation = useLinkAccountToCustomer();
   const unlinkAccountMutation = useUnlinkAccountFromCustomer();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const handleLinkAccount = async () => {
     if (!selectedAccountId) return;
@@ -108,7 +110,7 @@ export function CustomerAccountSelector({
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
-                      {link.chart_of_accounts?.current_balance?.toFixed(3) || '0.000'} د.ك
+                      {formatCurrency(link.chart_of_accounts?.current_balance ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </Badge>
                   </div>
                 </div>
@@ -149,7 +151,7 @@ export function CustomerAccountSelector({
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
-                    {link.chart_of_accounts?.current_balance?.toFixed(3) || '0.000'} د.ك
+                    {formatCurrency(link.chart_of_accounts?.current_balance ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </Badge>
                   {mode === 'edit' && (
                     <Button

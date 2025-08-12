@@ -19,6 +19,7 @@ import { CustomerAccountSelector } from "./CustomerAccountSelector";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface CustomerDetailsDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ export function CustomerDetailsDialog({
   const { data: notes } = useCustomerNotes(customerId);
   const { data: financialSummary } = useCustomerFinancialSummary(customerId);
   const createNoteMutation = useCreateCustomerNote();
+  const { formatCurrency, currency } = useCurrencyFormatter();
 
   console.log('🔍 CustomerDetailsDialog state:', {
     customerId,
@@ -298,7 +300,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">
-                      {financialSummary.currentBalance.toFixed(3)} د.ك
+                      {formatCurrency(financialSummary.currentBalance ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </div>
                   </CardContent>
                 </Card>
