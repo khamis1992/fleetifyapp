@@ -208,11 +208,29 @@ export function CustomerAccountSelector({
         )}
 
         {/* رسالة عدم وجود حسابات متاحة */}
-        {mode === 'edit' && availableAccountsForSelection.length === 0 && (
+        {mode === 'edit' && availableAccountsForSelection.length === 0 && availableAccounts && availableAccounts.length > 0 && (
           <Alert>
             <InfoIcon className="h-4 w-4" />
             <AlertDescription>
-              لا توجد حسابات محاسبية متاحة للربط. جميع حسابات العملاء مستخدمة.
+              لا توجد حسابات محاسبية متاحة للربط. جميع الحسابات المناسبة للعملاء مستخدمة حالياً.
+              <br />
+              <span className="text-sm text-muted-foreground mt-1 block">
+                إجمالي الحسابات الموجودة: {availableAccounts.length} - جميعها مرتبطة بعملاء آخرين
+              </span>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* رسالة عدم وجود حسابات في دليل الحسابات */}
+        {mode === 'edit' && (!availableAccounts || availableAccounts.length === 0) && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <InfoIcon className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              لا توجد حسابات مناسبة للعملاء في دليل الحسابات. 
+              <br />
+              <span className="text-sm mt-1 block">
+                يحتاج النظام إلى حسابات من نوع "الأصول" أو حسابات تحتوي على كلمات مثل "مدين"، "ذمم"، "عميل" أو "receivable"
+              </span>
             </AlertDescription>
           </Alert>
         )}
