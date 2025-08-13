@@ -15,6 +15,7 @@ import { useActiveContracts } from "@/hooks/useContracts";
 import { PaymentScheduleSection } from "./PaymentScheduleSection";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 
 interface InvoiceItem {
   id: string;
@@ -43,6 +44,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const createInvoice = useCreateInvoice();
   const { formatCurrency } = useCurrencyFormatter();
+  const { currency: companyCurrency } = useCompanyCurrency();
   
   // Fetch contracts for the customer/vendor
   const { data: contracts } = useActiveContracts(customerId, vendorId);
@@ -53,7 +55,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
     due_date: '',
     terms: '',
     notes: '',
-    currency: 'KWD',
+    currency: companyCurrency,
     discount_amount: 0,
     cost_center_id: '',
     fixed_asset_id: '',
@@ -154,7 +156,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
         due_date: '',
         terms: '',
         notes: '',
-        currency: 'KWD',
+        currency: companyCurrency,
         discount_amount: 0,
         cost_center_id: '',
         fixed_asset_id: '',
@@ -180,7 +182,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
       terms: type === 'sales' ? 'الدفع خلال 30 يوماً من تاريخ الفاتورة' : 'شروط الدفع حسب الاتفاق',
       notes: type === 'sales' ? 'شكراً لثقتكم في خدماتنا' : 'فاتورة مشتريات تجريبية',
-      currency: 'KWD',
+      currency: companyCurrency,
       discount_amount: type === 'sales' ? 50 : 25,
       cost_center_id: costCenters?.[0]?.id || '',
       fixed_asset_id: '',

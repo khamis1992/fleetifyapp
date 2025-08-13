@@ -17,6 +17,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { usePermissions } from "@/hooks/usePermissions";
 import { TestTube, AlertTriangle, Info, FileText, Eye, EyeOff } from "lucide-react";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
+import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 
 interface PaymentFormProps {
   open: boolean;
@@ -47,6 +48,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
 
   // Fetch contracts for the customer/vendor
   const { data: contracts } = useActiveContracts(customerId, vendorId);
+  const { currency: companyCurrency } = useCompanyCurrency();
 
   const [paymentData, setPaymentData] = useState({
     payment_number: '',
@@ -59,7 +61,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
     cost_center_id: 'none',
     bank_id: 'none',
     account_id: 'none',
-    currency: 'KWD',
+    currency: companyCurrency,
     notes: '',
     contract_id: contractId || '',
   });
@@ -209,7 +211,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         cost_center_id: 'none',
         bank_id: 'none',
         account_id: 'none',
-        currency: 'KWD',
+        currency: companyCurrency,
         notes: '',
         contract_id: 'none',
       });
@@ -334,7 +336,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
       cost_center_id: costCenters?.[0]?.id || 'none',
       bank_id: banks?.[0]?.id || 'none',
       account_id: entryAllowedAccounts?.[0]?.id || 'none',
-      currency: 'KWD',
+      currency: companyCurrency,
       notes: 'هذه بيانات تجريبية للاختبار',
       contract_id: contracts?.[0]?.id || 'none'
     });

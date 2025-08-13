@@ -13,7 +13,7 @@ import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-
+import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 interface InvoiceItem {
   id: string;
   description: string;
@@ -39,6 +39,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
   const { data: fixedAssets, isLoading: assetsLoading } = useFixedAssets();
   const updateInvoice = useUpdateInvoice();
   const { formatCurrency } = useCurrencyFormatter();
+  const { currency: companyCurrency } = useCompanyCurrency();
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: '',
@@ -46,7 +47,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
     due_date: '',
     terms: '',
     notes: '',
-    currency: 'KWD',
+    currency: companyCurrency,
     discount_amount: 0,
     cost_center_id: '',
     fixed_asset_id: '',
@@ -72,7 +73,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
         due_date: invoice.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '',
         terms: invoice.terms || '',
         notes: invoice.notes || '',
-        currency: invoice.currency || 'KWD',
+        currency: invoice.currency || companyCurrency,
         discount_amount: invoice.discount_amount || 0,
         cost_center_id: invoice.cost_center_id || '',
         fixed_asset_id: invoice.fixed_asset_id || '',

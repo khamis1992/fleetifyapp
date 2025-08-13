@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface InvoicePreviewDialogProps {
 export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePreviewDialogProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const { formatCurrency } = useCurrencyFormatter();
+  const { currency: companyCurrency } = useCompanyCurrency();
   
   if (!invoice) return null;
 
@@ -78,7 +80,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
       return;
     }
 
-    const fmt = (amt: number) => formatCurrency(amt, { currency: invoice.currency || 'KWD' });
+    const fmt = (amt: number) => formatCurrency(amt, { currency: invoice.currency || companyCurrency });
 
     const invoiceContent = `
       <!DOCTYPE html>
@@ -298,7 +300,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
               <h4>معلومات الفاتورة</h4>
               <p><strong>التاريخ:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</p>
               <p><strong>تاريخ الاستحقاق:</strong> ${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-GB') : 'غير محدد'}</p>
-              <p><strong>العملة:</strong> ${invoice.currency || 'KWD'}</p>
+              <p><strong>العملة:</strong> ${invoice.currency || companyCurrency}</p>
             </div>
             
             <div class="detail-section">
@@ -434,7 +436,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
                   <div className="space-y-1 text-sm">
                     <p><span className="font-medium">التاريخ:</span> {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</p>
                     <p><span className="font-medium">تاريخ الاستحقاق:</span> {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-GB') : 'غير محدد'}</p>
-                    <p><span className="font-medium">العملة:</span> {invoice.currency || 'KWD'}</p>
+                    <p><span className="font-medium">العملة:</span> {invoice.currency || companyCurrency}</p>
                   </div>
                 </div>
                 

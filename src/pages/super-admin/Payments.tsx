@@ -34,6 +34,7 @@ import {
   Globe,
   Shield
 } from 'lucide-react';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 
 const SuperAdminPayments: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -41,6 +42,7 @@ const SuperAdminPayments: React.FC = () => {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const { data: analytics, isLoading, error, refetch } = useSubscriptionsAnalytics();
   const { formatCurrency: fmt } = useCurrencyFormatter();
+  const { currency: companyCurrency } = useCompanyCurrency();
 
   // Debug logging
   console.log('💰 [PAYMENTS_PAGE] Component state:', {
@@ -140,8 +142,8 @@ const SuperAdminPayments: React.FC = () => {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currency">العملة الافتراضية</Label>
-                    <Select defaultValue="KWD">
+                     <Label htmlFor="currency">العملة الافتراضية</Label>
+                    <Select defaultValue={companyCurrency}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

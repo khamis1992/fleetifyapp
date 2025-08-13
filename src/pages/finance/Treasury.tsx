@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,12 +33,13 @@ export default function Treasury() {
   const createTransaction = useCreateBankTransaction();
   const deleteTransaction = useDeleteBankTransaction();
   const { formatCurrency } = useCurrencyFormatter();
+  const { currency: companyCurrency } = useCompanyCurrency();
 
   const [newBank, setNewBank] = useState<Partial<Bank>>({
     bank_name: '',
     account_number: '',
     account_type: 'checking',
-    currency: 'KWD',
+    currency: companyCurrency,
     current_balance: 0,
     opening_balance: 0,
     is_active: true,
@@ -64,7 +66,7 @@ export default function Treasury() {
       bank_name: '',
       account_number: '',
       account_type: 'checking',
-      currency: 'KWD',
+      currency: companyCurrency,
       current_balance: 0,
       opening_balance: 0,
       is_active: true,

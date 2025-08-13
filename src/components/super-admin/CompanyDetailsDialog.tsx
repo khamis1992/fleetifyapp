@@ -18,6 +18,7 @@ import {
   Navigation,
   Shield
 } from 'lucide-react';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 import { formatCurrency } from '@/lib/utils';
 
 interface Company {
@@ -58,6 +59,8 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
   onEdit
 }) => {
   if (!company) return null;
+
+  const { currency: companyCurrency } = useCompanyCurrency();
 
   const getStatusVariant = (status?: string) => {
     switch (status) {
@@ -172,7 +175,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
                     <p className="text-sm font-medium text-muted-foreground mb-1">العملة</p>
                     <p className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-muted-foreground" />
-                      {company.currency || 'KWD'}
+                      {company.currency || companyCurrency}
                     </p>
                   </div>
                 </div>
@@ -283,7 +286,7 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">العملة</p>
-                  <p>{company.currency || 'KWD'}</p>
+                  <p>{company.currency || companyCurrency}</p>
                 </div>
               </div>
             </CardContent>
