@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Upload, Download, CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
 import { CSVTableEditor } from "./CSVTableEditor";
@@ -88,7 +89,10 @@ export function SmartCSVUpload({
     : requiredFields;
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    if (selectedFile && (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv'))) {
+    const name = selectedFile?.name?.toLowerCase() || '';
+    const isCsv = selectedFile && (selectedFile.type === 'text/csv' || name.endsWith('.csv'));
+    const isXlsx = selectedFile && (name.endsWith('.xlsx') || name.endsWith('.xls'));
+    if (selectedFile && (isCsv || isXlsx)) {
       setFile(selectedFile);
       setFixes([]);
       setShowPreview(false);
@@ -96,7 +100,7 @@ export function SmartCSVUpload({
       setEditedRows([]);
       setActiveView('table');
     } else {
-      toast.error("يرجى اختيار ملف CSV صحيح");
+      toast.error("يرجى اختيار ملف CSV أو XLSX صحيح");
     }
   };
 
@@ -111,10 +115,34 @@ export function SmartCSVUpload({
 
     setIsAnalyzing(true);
     try {
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' }) as any;
-      const rawRows = (parsed.data as any[]).filter((row) => row && Object.values(row).some((v) => (v ?? '').toString().trim() !== ''));
-      const headers = (parsed.meta?.fields as string[]) || Object.keys(rawRows[0] || {});
+      const name = file.name.toLowerCase();
+      const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
+      let rawRows: any[] = [];
+      let headers: string[] = [];
+
+      if (isExcel) {
+        const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[];
+        if (!rows || rows.length === 0) {
+          toast.error("الملف فارغ أو غير صحيح");
+          return;
+        }
+        headers = (rows[0] as any[]).map((h) => String(h ?? '').trim());
+        rawRows = rows.slice(1)
+          .map((r) => {
+            const obj: any = {};
+            headers.forEach((h, i) => { obj[h] = (r as any[])[i]; });
+            return obj;
+          })
+          .filter((row) => row && Object.values(row).some((v) => (v ?? '').toString().trim() !== ''));
+      } else {
+        const text = await file.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' }) as any;
+        rawRows = (parsed.data as any[]).filter((row) => row && Object.values(row).some((v) => (v ?? '').toString().trim() !== ''));
+        headers = (parsed.meta?.fields as string[]) || Object.keys(rawRows[0] || {});
+      }
 
       if (rawRows.length === 0) {
         toast.error("الملف فارغ أو غير صحيح");
@@ -380,7 +408,7 @@ export function SmartCSVUpload({
               <CardContent>
                 <Button onClick={downloadTemplate} variant="outline" className="w-full">
                   <Download className="h-4 w-4 mr-2" />
-                  تحميل قالب CSV
+                  تحميل قالب CSV/XLSX
                 </Button>
               </CardContent>
             </Card>
@@ -389,13 +417,13 @@ export function SmartCSVUpload({
               <CardHeader>
                 <CardTitle className="text-lg">الخطوة 2: اختيار الملف</CardTitle>
                 <CardDescription>
-                  اختر ملف CSV الخاص بك
+                  اختر ملف CSV أو XLSX الخاص بك
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Input
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   onChange={handleFileChange}
                 />
                 

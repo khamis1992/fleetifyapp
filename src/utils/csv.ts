@@ -127,7 +127,11 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     const cleanedKey = key?.toString().trim();
     const lowerKey = cleanedKey.toLowerCase();
     const mapped = map[cleanedKey] || map[lowerKey] || cleanedKey;
+    // Preserve both original and normalized keys for ambiguous fields like 'amount'
     normalized[mapped] = typeof val === 'string' ? val.trim() : val;
+    if (mapped !== cleanedKey && (cleanedKey.toLowerCase() === 'amount' || cleanedKey === 'المبلغ')) {
+      normalized['amount'] = typeof val === 'string' ? val.trim() : val;
+    }
   }
   return normalized;
 };

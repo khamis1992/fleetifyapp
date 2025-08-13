@@ -300,6 +300,32 @@ export function usePaymentsCSVUpload() {
           errors.push({ row: rowNumber, message: `فشل الحفظ: ${error.message}` });
           continue;
         }
+        // Update linked invoice totals if applicable (new inserts only)
+        if (invoice_id && transaction_type === 'receipt') {
+          const { data: invoice, error: invErr } = await supabase
+            .from('invoices')
+            .select('total_amount, paid_amount')
+            .eq('id', invoice_id)
+            .single();
+          if (!invErr && invoice) {
+            const newPaidAmount = Math.max(0, (invoice.paid_amount || 0) + amount);
+            const newBalanceDue = (invoice.total_amount || 0) - newPaidAmount;
+            const newStatus = newPaidAmount >= (invoice.total_amount || 0)
+              ? 'paid'
+              : newPaidAmount > 0
+                ? 'partial'
+                : 'unpaid';
+            await supabase
+              .from('invoices')
+              .update({
+                paid_amount: newPaidAmount,
+                balance_due: Math.max(0, newBalanceDue),
+                payment_status: newStatus,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', invoice_id);
+          }
+        }
       }
 
       successful++;

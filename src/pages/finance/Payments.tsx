@@ -125,7 +125,7 @@ const Payments = () => {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
-              استيراد CSV
+              استيراد CSV/XLSX
             </Button>
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -344,7 +344,7 @@ const Payments = () => {
           type="payment"
         />
 
-        {/* استيراد الدفعات من CSV */}
+        {/* استيراد الدفعات من CSV/XLSX */}
         <PaymentsCSVUpload
           open={isImportOpen}
           onOpenChange={setIsImportOpen}
