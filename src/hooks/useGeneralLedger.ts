@@ -79,36 +79,36 @@ export const useJournalEntryLines = (entryId: string) => {
       if (!entryId) return []
       
       try {
-        const { data, error } = await supabase
-          .from("journal_entry_lines")
-          .select(`
-            *,
-            account:chart_of_accounts!fk_journal_entry_lines_account(
-              id,
-              account_code,
-              account_name,
-              account_name_ar,
-              account_type
-            ),
-            cost_center:cost_centers!fk_journal_entry_lines_cost_center(
-              id,
-              center_code,
-              center_name,
-              center_name_ar
-            ),
-            asset:fixed_assets(
-              id,
-              asset_code,
-              asset_name,
-              asset_name_ar
-            ),
-            employee:employees(
-              id,
-              employee_number,
-              first_name,
-              last_name
-            )
-          `)
+          const { data, error } = await supabase
+            .from("journal_entry_lines")
+            .select(`
+              *,
+              chart_of_accounts!fk_journal_entry_lines_account(
+                id,
+                account_code,
+                account_name,
+                account_name_ar,
+                account_type
+              ),
+              cost_centers!fk_journal_entry_lines_cost_center(
+                id,
+                center_code,
+                center_name,
+                center_name_ar
+              ),
+              fixed_assets(
+                id,
+                asset_code,
+                asset_name,
+                asset_name_ar
+              ),
+              employees(
+                id,
+                employee_number,
+                first_name,
+                last_name
+              )
+            `)
           .eq("journal_entry_id", entryId)
           .order("line_number")
         
@@ -147,7 +147,7 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
       }
       
       try {
-        // Query with journal entry lines relation
+        // Query with journal entry lines relation using the correct foreign key
         let query = supabase
           .from("journal_entries")
           .select(`
@@ -170,7 +170,7 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
               debit_amount,
               credit_amount,
               line_number,
-              account:chart_of_accounts!account_id(
+              chart_of_accounts!fk_journal_entry_lines_account(
                 id,
                 account_code,
                 account_name,

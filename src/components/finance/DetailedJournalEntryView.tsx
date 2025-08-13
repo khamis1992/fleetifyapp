@@ -61,17 +61,17 @@ export function DetailedJournalEntryView({ entry, showAsCard = true }: DetailedJ
               <TableRow key={line.id} className="border-b border-border">
                 <TableCell className="text-center border-r border-border">
                   <div className="font-mono text-sm">
-                    {line.account?.account_code || '-'}
+                    {line.chart_of_accounts?.account_code || '-'}
                   </div>
                 </TableCell>
                 <TableCell className="border-r border-border text-right">
                   <div className="space-y-1">
                     <div className="text-sm font-medium">
-                      {line.account?.account_name_ar || line.account?.account_name || '-'}
+                      {line.chart_of_accounts?.account_name_ar || line.chart_of_accounts?.account_name || '-'}
                     </div>
-                    {line.account?.account_name_ar && line.account?.account_name && (
+                    {line.chart_of_accounts?.account_name_ar && line.chart_of_accounts?.account_name && (
                       <div className="text-xs text-muted-foreground opacity-70">
-                        {line.account.account_name}
+                        {line.chart_of_accounts.account_name}
                       </div>
                     )}
                   </div>

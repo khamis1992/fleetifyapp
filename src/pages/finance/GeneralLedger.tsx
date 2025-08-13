@@ -431,10 +431,10 @@ export default function Ledger() {
                                   {line.line_description || '-'}
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
-                                  {line.account?.account_name_ar || line.account?.account_name}
+                                  {line.chart_of_accounts?.account_name_ar || line.chart_of_accounts?.account_name}
                                 </TableCell>
                                 <TableCell className="text-center font-mono text-sm">
-                                  {line.account?.account_code || '-'}
+                                  {line.chart_of_accounts?.account_code || '-'}
                                 </TableCell>
                               </TableRow>
                             ))}
