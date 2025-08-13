@@ -9299,6 +9299,10 @@ export type Database = {
         Args: { account_id: string }
         Returns: number
       }
+      calculate_account_level_from_code: {
+        Args: { account_code_param: string }
+        Returns: number
+      }
       calculate_customer_outstanding_balance: {
         Args: { customer_id_param: string; company_id_param: string }
         Returns: {
