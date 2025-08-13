@@ -16,10 +16,63 @@ import {
  * Replaces scattered company_id logic across the application
  */
 export const useUnifiedCompanyAccess = () => {
-  const { user } = useAuth();
+  const { user, session, loading } = useAuth();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
   return useMemo(() => {
+    // First check authentication state
+    if (loading) {
+      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Auth still loading...');
+      return {
+        context: { companyId: null, isSystemLevel: false, isCompanyScoped: false },
+        user: null,
+        companyId: null,
+        isSystemLevel: false,
+        isCompanyScoped: false,
+        hasGlobalAccess: false,
+        hasCompanyAdminAccess: false,
+        hasFullCompanyControl: false,
+        isBrowsingAsCompanyAdmin: false,
+        canManageCompanyAsAdmin: false,
+        filter: { company_id: undefined },
+        canAccessCompany: () => false,
+        canAccessMultipleCompanies: () => false,
+        validateCompanyAccess: () => { throw new Error('Authentication required') },
+        getQueryKey: () => [],
+        isBrowsingMode: false,
+        browsedCompany: null,
+        actualUserCompanyId: null,
+        isAuthenticating: true,
+        authError: null
+      };
+    }
+
+    if (!user || !session) {
+      console.log('❌ [UNIFIED_COMPANY_ACCESS] No authenticated user or session');
+      return {
+        context: { companyId: null, isSystemLevel: false, isCompanyScoped: false },
+        user: null,
+        companyId: null,
+        isSystemLevel: false,
+        isCompanyScoped: false,
+        hasGlobalAccess: false,
+        hasCompanyAdminAccess: false,
+        hasFullCompanyControl: false,
+        isBrowsingAsCompanyAdmin: false,
+        canManageCompanyAsAdmin: false,
+        filter: { company_id: undefined },
+        canAccessCompany: () => false,
+        canAccessMultipleCompanies: () => false,
+        validateCompanyAccess: () => { throw new Error('Access denied: User not authenticated') },
+        getQueryKey: () => [],
+        isBrowsingMode: false,
+        browsedCompany: null,
+        actualUserCompanyId: null,
+        isAuthenticating: false,
+        authError: 'User not authenticated'
+      };
+    }
+
     const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
     const rolesNormalized = Array.from(
       new Set(
@@ -115,7 +168,11 @@ export const useUnifiedCompanyAccess = () => {
       // Browse mode information
       isBrowsingMode,
       browsedCompany,
-      actualUserCompanyId: user?.company?.id || null
+      actualUserCompanyId: user?.company?.id || null,
+      
+      // Authentication state
+      isAuthenticating: false,
+      authError: null
     };
   }, [user, isBrowsingMode, browsedCompany]);
 };

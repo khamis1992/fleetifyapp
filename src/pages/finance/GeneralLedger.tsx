@@ -26,6 +26,7 @@ import { useChartOfAccounts, useCostCenters } from "@/hooks/useFinance";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
 import { JournalVoucherDisplay } from "@/components/finance/JournalVoucherDisplay";
+import { ChartOfAccountsErrorBoundary } from "@/components/finance/ChartOfAccountsErrorBoundary";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -43,14 +44,14 @@ export default function Ledger() {
   } | null>(null);
 
   // Enhanced hooks
-  const { data: journalEntries, isLoading: entriesLoading, error: entriesError } = useEnhancedJournalEntries(filters);
+  const { data: journalEntries, isLoading: entriesLoading, error: entriesError, refetch: refetchEntries } = useEnhancedJournalEntries(filters);
   const { data: accountBalances, isLoading: balancesLoading } = useAccountBalances();
   const { data: trialBalance, isLoading: trialLoading } = useTrialBalance();
   const { data: financialSummary, isLoading: summaryLoading } = useFinancialSummary();
   const { data: costCenterAnalysis, isLoading: costCenterLoading } = useCostCenterAnalysis(filters);
   
   // Reference data
-  const { data: accounts } = useChartOfAccounts();
+  const { data: accounts, error: accountsError, refetch: refetchAccounts } = useChartOfAccounts();
   const { data: costCenters } = useCostCenters();
   
   // Actions
@@ -261,9 +262,14 @@ export default function Ledger() {
               </div>
             </CardHeader>
             <CardContent>
-              {entriesLoading ? (
-                <LoadingSpinner />
-              ) : (
+              <ChartOfAccountsErrorBoundary
+                error={entriesError}
+                isLoading={entriesLoading}
+                onRetry={() => refetchEntries()}
+              >
+                {entriesLoading ? (
+                  <LoadingSpinner />
+                ) : (
                 <div className="space-y-6">
                   {journalEntries?.map((entry) => (
                     <Card key={entry.id} className="border-l-4 border-l-primary">
@@ -447,7 +453,8 @@ export default function Ledger() {
                     </Card>
                   ))}
                 </div>
-              )}
+                )}
+              </ChartOfAccountsErrorBoundary>
             </CardContent>
           </Card>
         </TabsContent>

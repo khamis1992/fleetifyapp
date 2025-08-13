@@ -81,7 +81,7 @@ export const useUserPermissionsSummary = () => {
       isSuperAdmin: hasGlobalAccess,
       isCompanyAdmin: hasCompanyAdminAccess,
       isEmployee: !hasCompanyAdminAccess && !hasGlobalAccess,
-      userRoles: context.userRoles || []
+      userRoles: user?.roles || []
     };
 
     // Calculate accessible sections

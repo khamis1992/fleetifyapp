@@ -221,12 +221,17 @@ export interface BankTransaction {
 
 // Chart of Accounts Hooks
 export const useChartOfAccounts = () => {
-  const { companyId, filter } = useUnifiedCompanyAccess()
+  const { companyId, filter, isAuthenticating, authError } = useUnifiedCompanyAccess()
   
   return useQuery({
     queryKey: ["chartOfAccounts", companyId],
     queryFn: async () => {
       console.log('🔍 [CHART_OF_ACCOUNTS] Fetching with filter:', filter)
+      
+      if (authError) {
+        console.log('❌ [CHART_OF_ACCOUNTS] Authentication error:', authError)
+        throw new Error('يجب تسجيل الدخول للوصول إلى دليل الحسابات')
+      }
       
       if (!companyId) {
         console.log('❌ [CHART_OF_ACCOUNTS] No company ID available')
@@ -249,6 +254,12 @@ export const useChartOfAccounts = () => {
         
         if (error) {
           console.error('❌ [CHART_OF_ACCOUNTS] Database error:', error)
+          
+          // Check if it's an authentication related error
+          if (error.message?.includes('JWT') || error.message?.includes('auth') || error.code === 'PGRST301') {
+            throw new Error('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى')
+          }
+          
           throw new Error(`خطأ في تحميل دليل الحسابات: ${error.message}`)
         }
         
@@ -259,8 +270,14 @@ export const useChartOfAccounts = () => {
         throw error
       }
     },
-    enabled: !!companyId,
-    retry: 3,
+    enabled: !!companyId && !isAuthenticating && !authError,
+    retry: (failureCount, error) => {
+      // Don't retry authentication errors
+      if (error?.message?.includes('تسجيل الدخول') || error?.message?.includes('انتهت جلسة العمل')) {
+        return false
+      }
+      return failureCount < 3
+    },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 }

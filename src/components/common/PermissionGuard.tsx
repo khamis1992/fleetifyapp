@@ -66,7 +66,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   }
 
   // Check role-based access
-  if (role && (!user || !context.userRoles?.includes(role))) {
+  if (role && (!user || !user.roles?.includes(role))) {
     return hideIfNoAccess ? null : renderAccessDenied('insufficient_role');
   }
 
