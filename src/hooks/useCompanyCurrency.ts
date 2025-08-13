@@ -40,6 +40,17 @@ export const useCompanyCurrency = (): CompanyCurrency => {
   });
 
   const currency = (data?.currency || "KWD").toUpperCase();
+  // If currency is not set for the current company, default per country if available
+  const currencyLocaleMap: Record<string, string> = {
+    KWD: "ar-KW",
+    QAR: "ar-QA",
+    SAR: "ar-SA",
+    AED: "ar-AE",
+    OMR: "ar-OM",
+    BHD: "ar-BH",
+    USD: "en-US",
+    EUR: "de-DE",
+  };
   const locale = currencyLocaleMap[currency] || "ar";
 
   return { currency, locale };

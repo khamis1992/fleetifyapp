@@ -14,6 +14,7 @@ import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem'
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Eye, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ const Dashboard: React.FC = () => {
   const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
+  const { formatCurrency } = useCurrencyFormatter();
 
   // Convert financial overview data to the format expected by SmartMetricsPanel
   const smartMetricsData = financialOverview ? {
@@ -71,7 +73,7 @@ const Dashboard: React.FC = () => {
     },
     {
       title: 'الإيرادات الشهرية',
-      value: `${enhancedStats?.monthlyRevenue || 0} د.ك`,
+      value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
       change: String(enhancedStats?.revenueChange || '+0%'),
       icon: DollarSign,
       trend: 'up' as const,
