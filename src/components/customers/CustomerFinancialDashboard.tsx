@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { useCustomerLinkedAccounts } from "@/hooks/useCustomerAccounts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "@/hooks/useCompanyScope";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -48,7 +48,7 @@ interface CustomerFinancialSummary {
 }
 
 export const CustomerFinancialDashboard = ({ customerId, customerName }: CustomerFinancialDashboardProps) => {
-const { companyId } = useCompanyScope();
+const { companyId } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
   const [showDetails, setShowDetails] = useState(false);
   

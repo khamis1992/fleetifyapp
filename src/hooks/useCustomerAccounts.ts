@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 
 export interface AvailableCustomerAccount {
@@ -23,12 +23,17 @@ export interface CompanyAccountSettings {
 
 // Hook للحصول على الحسابات المتاحة للعملاء
 export const useAvailableCustomerAccounts = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["available-customer-accounts", companyId],
     queryFn: async () => {
-      if (!companyId) return [];
+      if (!companyId) {
+        console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] No companyId provided');
+        return [];
+      }
+
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetching for companyId:', companyId);
 
       const { data, error } = await supabase
         .rpc("get_available_customer_accounts", {
@@ -40,6 +45,8 @@ export const useAvailableCustomerAccounts = () => {
         throw error;
       }
 
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetched accounts:', data?.length || 0, 'accounts for company:', companyId);
+      
       return data as AvailableCustomerAccount[];
     },
     enabled: !!companyId,
@@ -48,7 +55,7 @@ export const useAvailableCustomerAccounts = () => {
 
 // Hook للحصول على إعدادات الحسابات للشركة
 export const useCompanyAccountSettings = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["company-account-settings", companyId],
@@ -75,7 +82,7 @@ export const useCompanyAccountSettings = () => {
 // Hook لتحديث إعدادات الحسابات للشركة
 export const useUpdateCompanyAccountSettings = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -113,7 +120,7 @@ export const useUpdateCompanyAccountSettings = () => {
 
 // Hook للحصول على الحسابات المرتبطة بالعميل
 export const useCustomerLinkedAccounts = (customerId: string) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["customer-linked-accounts", customerId, companyId],
@@ -169,7 +176,7 @@ export const useCustomerLinkedAccounts = (customerId: string) => {
 // Hook لربط حساب محاسبي بالعميل
 export const useLinkAccountToCustomer = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -214,7 +221,7 @@ export const useLinkAccountToCustomer = () => {
 // Hook لإلغاء ربط حساب محاسبي من العميل
 export const useUnlinkAccountFromCustomer = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
