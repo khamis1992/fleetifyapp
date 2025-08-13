@@ -16,11 +16,12 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
 
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,6 +30,7 @@ const Payments = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""
@@ -120,10 +122,16 @@ const Payments = () => {
               <p className="text-muted-foreground">إدارة المدفوعات والمقبوضات مع التكامل الكامل</p>
             </div>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            دفع جديد
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              استيراد CSV
+            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              دفع جديد
+            </Button>
+          </div>
         </div>
 
          <Tabs defaultValue="list" className="w-full">
@@ -334,6 +342,13 @@ const Payments = () => {
           open={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
           type="payment"
+        />
+
+        {/* استيراد الدفعات من CSV */}
+        <PaymentsCSVUpload
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          onUploadComplete={() => {}}
         />
 
         {/* مكون معاينة تفاصيل الدفعة */}

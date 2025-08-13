@@ -19,7 +19,7 @@ interface SmartCSVUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
-  entityType: 'customer' | 'vehicle' | 'contract';
+  entityType: 'customer' | 'vehicle' | 'contract' | 'payment';
   uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
@@ -58,7 +58,8 @@ export function SmartCSVUpload({
   const entityLabels = {
     customer: 'العملاء',
     vehicle: 'المركبات',
-    contract: 'العقود'
+    contract: 'العقود',
+    payment: 'المدفوعات'
   };
   const isSuperAdmin = !!user?.roles?.includes('super_admin');
   const targetCompanyName = (

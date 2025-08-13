@@ -83,6 +83,42 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'monthly price': 'monthly_amount',
     'type': 'contract_type',
     'category': 'contract_type',
+
+    // Payments-specific English headers
+    'payment type': 'payment_type',
+    'payment method': 'payment_type',
+    'transaction type': 'transaction_type',
+    'payment date': 'payment_date',
+    'payment amount': 'amount',
+    'paid amount': 'amount',
+    'receipt amount': 'amount',
+    'payment number': 'payment_number',
+    'reference number': 'reference_number',
+    'check number': 'check_number',
+    'bank account': 'bank_account',
+    'currency': 'currency',
+    'invoice number': 'invoice_number',
+    'vendor name': 'vendor_name',
+
+    // Payments-specific Arabic headers
+    'نوع العملية': 'transaction_type',
+    'نوع الحركة': 'transaction_type',
+    'نوع الدفعة': 'payment_type',
+    'طريقة الدفع': 'payment_type',
+    'تاريخ الدفع': 'payment_date',
+    'مبلغ السداد': 'amount',
+    'قيمة الدفع': 'amount',
+    'المبلغ المدفوع': 'amount',
+    'رقم الدفع': 'payment_number',
+    'المرجع': 'reference_number',
+    'رقم المرجع': 'reference_number',
+    'رقم الشيك': 'check_number',
+    'حساب بنكي': 'bank_account',
+    'رقم الحساب': 'bank_account',
+    'العملة': 'currency',
+    'رقم الفاتورة': 'invoice_number',
+    'المورد': 'vendor_name',
+    'اسم المورد': 'vendor_name',
   };
 
 
