@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { useCustomerInvoices, useCustomerInvoicesSummary } from "@/hooks/useCustomerInvoices";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { FileText, Plus } from "lucide-react";
@@ -19,6 +19,7 @@ interface CustomerInvoicesTabProps {
 export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInvoicesTabProps) => {
   const { data: invoices, isLoading: invoicesLoading } = useCustomerInvoices(customerId);
   const { data: summary, isLoading: summaryLoading } = useCustomerInvoicesSummary(customerId);
+  const { formatCurrency } = useCurrencyFormatter();
   
   // Payment dialog state
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);

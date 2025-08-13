@@ -13,7 +13,7 @@ import { useCreateVehicleInstallment } from "@/hooks/useVehicleInstallments";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
 
 const installmentSchema = z.object({
@@ -46,6 +46,8 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
     endDate: string;
     totalWithInterest: number;
   } | null>(null);
+  const { formatCurrency } = useCurrencyFormatter();
+
 
   const {
     register,

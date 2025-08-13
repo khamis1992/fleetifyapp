@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { useJournalEntryLines } from "@/hooks/useGeneralLedger"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
@@ -26,6 +26,7 @@ interface JournalVoucherDisplayProps {
 
 export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
   const { data: entryLines = [] } = useJournalEntryLines(entry.id)
+  const { formatCurrency } = useCurrencyFormatter()
 
   const getStatusLabel = (status: string) => {
     switch (status) {

@@ -9,7 +9,7 @@ import { Vehicle } from "@/hooks/useVehicles";
 import { VehiclePricingPanel } from "./VehiclePricingPanel";
 import { VehicleInsurancePanel } from "./VehicleInsurancePanel";
 import { VehicleDocumentsPanel } from "./VehicleDocumentsPanel";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 
 interface EnhancedVehicleDetailsDialogProps {
@@ -26,6 +26,7 @@ export function EnhancedVehicleDetailsDialog({
   onEdit 
 }: EnhancedVehicleDetailsDialogProps) {
   const [documents, setDocuments] = useState<any[]>([]);
+  const { formatCurrency } = useCurrencyFormatter();
 
   const handleDocumentAdd = (document: any) => {
     setDocuments(prev => [...prev, document]);

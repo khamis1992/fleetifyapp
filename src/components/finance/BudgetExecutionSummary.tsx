@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, DollarSign, Target, AlertCircle } from "lucide-react"
 import { useBudgetExecutionSummary } from "@/hooks/useBudgetIntegration"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface BudgetExecutionSummaryProps {
   budgetYear: number
@@ -11,6 +11,7 @@ interface BudgetExecutionSummaryProps {
 
 export function BudgetExecutionSummary({ budgetYear }: BudgetExecutionSummaryProps) {
   const { data: summary, isLoading } = useBudgetExecutionSummary(budgetYear)
+  const { formatCurrency } = useCurrencyFormatter()
 
   const getPerformanceStatus = (performance: number) => {
     if (performance >= 100) return { color: "text-success", bg: "bg-success/10", label: "ممتاز" }

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { useBudgetVarianceReport } from "@/hooks/useBudgetIntegration"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface BudgetVarianceReportProps {
   budgetId: string
@@ -12,6 +12,7 @@ interface BudgetVarianceReportProps {
 
 export function BudgetVarianceReport({ budgetId }: BudgetVarianceReportProps) {
   const { data: varianceData, isLoading } = useBudgetVarianceReport(budgetId)
+  const { formatCurrency } = useCurrencyFormatter()
 
   const getVarianceStatus = (variance: number) => {
     if (variance > 0) return { icon: TrendingUp, color: "text-success", label: "تحت الموازنة" }

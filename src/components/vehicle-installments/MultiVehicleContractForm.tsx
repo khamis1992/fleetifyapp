@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCreateVehicleInstallment } from "@/hooks/useVehicleInstallments";
 import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
 import { toast } from "sonner";
@@ -63,6 +63,7 @@ interface MultiVehicleContractFormProps {
 export default function MultiVehicleContractForm({ trigger }: MultiVehicleContractFormProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const { formatCurrency } = useCurrencyFormatter();
   const [vehicleAllocations, setVehicleAllocations] = useState<VehicleAllocation[]>([]);
   const [distributionMode, setDistributionMode] = useState<'equal' | 'custom'>('equal');
   

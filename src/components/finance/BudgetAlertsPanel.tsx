@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, Check, X } from "lucide-react"
 import { useBudgetAlerts, useAcknowledgeBudgetAlert } from "@/hooks/useBudgetIntegration"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 export function BudgetAlertsPanel() {
   const { data: alerts, isLoading } = useBudgetAlerts()
   const acknowledgeMutation = useAcknowledgeBudgetAlert()
+  const { formatCurrency } = useCurrencyFormatter()
 
   const handleAcknowledge = (alertId: string) => {
     acknowledgeMutation.mutate(alertId)

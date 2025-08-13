@@ -21,7 +21,7 @@ import {
   useUpdateVehicleCosts
 } from "@/hooks/useFleetFinancialAnalytics";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 const FleetFinancialAnalysis = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
@@ -32,6 +32,8 @@ const FleetFinancialAnalysis = () => {
   
   const processDepreciation = useProcessVehicleDepreciation();
   const updateVehicleCosts = useUpdateVehicleCosts();
+  const { formatCurrency } = useCurrencyFormatter();
+
 
   const handleProcessDepreciation = async () => {
     try {

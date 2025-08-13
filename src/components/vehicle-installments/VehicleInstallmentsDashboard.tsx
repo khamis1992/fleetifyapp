@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CalendarClock, AlertCircle, CheckCircle, DollarSign } from "lucide-react";
 import { useVehicleInstallments, useVehicleInstallmentSummary } from "@/hooks/useVehicleInstallments";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import VehicleInstallmentForm from "./VehicleInstallmentForm";
@@ -19,6 +19,8 @@ const VehicleInstallmentsDashboard = () => {
 
   const { data: installments, isLoading } = useVehicleInstallments();
   const { data: summary } = useVehicleInstallmentSummary();
+  const { formatCurrency } = useCurrencyFormatter();
+
 
   const filteredInstallments = installments?.filter(installment => 
     statusFilter === 'all' || installment.status === statusFilter

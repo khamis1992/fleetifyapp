@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { formatCurrency } from "@/lib/utils"
+
 
 // Types for HR Reports
 export interface AttendanceReportData {

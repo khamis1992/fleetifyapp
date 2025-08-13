@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useFleetAnalytics, useProcessVehicleDepreciation } from "@/hooks/useVehicles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -31,6 +31,8 @@ export function FleetAnalytics() {
 
   const { data: analytics, isLoading } = useFleetAnalytics(profile?.company_id);
   const processDepreciation = useProcessVehicleDepreciation();
+  const { formatCurrency } = useCurrencyFormatter();
+
 
   if (isLoading || !analytics) {
     return <div>Loading analytics...</div>;

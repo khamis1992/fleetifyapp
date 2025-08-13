@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CreditCard, Calendar, AlertCircle, CheckCircle } from "lucide-react";
 import { useVehicleInstallmentSchedules, useProcessInstallmentPayment } from "@/hooks/useVehicleInstallments";
 import { useContractVehicles } from "@/hooks/useContractVehicles";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { VehicleInstallmentWithDetails, VehicleInstallmentSchedule } from "@/types/vehicle-installments";
@@ -30,6 +30,8 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
   const { data: schedules, isLoading } = useVehicleInstallmentSchedules(installment.id);
   const { data: contractVehicles } = useContractVehicles(installment.id);
   const processPayment = useProcessInstallmentPayment();
+  const { formatCurrency } = useCurrencyFormatter();
+  
   
   const isMultiVehicle = installment.contract_type === 'multi_vehicle' || (contractVehicles && contractVehicles.length > 1);
 

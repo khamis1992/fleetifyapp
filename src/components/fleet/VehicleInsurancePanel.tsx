@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { Plus, Calendar, AlertTriangle } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { useVehicleInsurance, useCreateVehicleInsurance } from "@/hooks/useVehicleInsurance";
 
@@ -34,6 +34,8 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
   const [showForm, setShowForm] = useState(false);
   const { data: insurance, isLoading } = useVehicleInsurance(vehicleId);
   const createInsurance = useCreateVehicleInsurance();
+  const { formatCurrency } = useCurrencyFormatter();
+
 
   const form = useForm<InsuranceFormData>({
     defaultValues: {
