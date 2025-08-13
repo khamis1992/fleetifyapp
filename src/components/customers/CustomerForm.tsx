@@ -614,17 +614,17 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                                          </span>
                                        </div>
                                      </CommandItem>
-                                     {availableAccounts
-                                       .filter(account => {
-                                         if (!accountSearchValue) return true;
-                                         const searchLower = accountSearchValue.toLowerCase();
-                                         return (
-                                           account.account_name.toLowerCase().includes(searchLower) ||
-                                           (account.account_name_ar && account.account_name_ar.includes(accountSearchValue)) ||
-                                           account.account_code.toLowerCase().includes(searchLower) ||
-                                           account.parent_account_name.toLowerCase().includes(searchLower)
-                                         );
-                                       })
+                                      {availableAccounts
+                                        .filter(account => {
+                                          if (!accountSearchValue) return true;
+                                          const searchLower = accountSearchValue.toLowerCase();
+                                          return (
+                                            account.account_name?.toLowerCase().includes(searchLower) ||
+                                            (account.account_name_ar && account.account_name_ar.includes(accountSearchValue)) ||
+                                            account.account_code?.toLowerCase().includes(searchLower) ||
+                                            account.parent_account_name?.toLowerCase().includes(searchLower)
+                                          );
+                                        })
                                        .map((account) => (
                                          <CommandItem
                                            key={account.id}
