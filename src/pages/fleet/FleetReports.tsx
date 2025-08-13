@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useFleetAnalytics, useProcessVehicleDepreciation } from "@/hooks/useVehicles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 
 export default function FleetReports() {
   const { user } = useAuth();
+  const { formatCurrency: fmt } = useCurrencyFormatter();
   
   // Get user profile with company ID
   const { data: profile } = useQuery({
@@ -134,8 +135,8 @@ export default function FleetReports() {
               <td>${vehicle.model}</td>
               <td>${vehicle.year}</td>
               <td>${vehicle.status === 'available' ? 'متاحة' : vehicle.status === 'rented' ? 'مؤجرة' : 'في الصيانة'}</td>
-              <td>KWD ${(vehicle.daily_rate || 0).toFixed(3)}</td>
-              <td>KWD ${(vehicle.monthly_rate || 0).toFixed(3)}</td>
+              <td>${fmt(vehicle.daily_rate || 0)}</td>
+              <td>${fmt(vehicle.monthly_rate || 0)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -171,7 +172,7 @@ export default function FleetReports() {
           <div class="stat-label">الصيانة المعلقة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${totalCost.toFixed(3)}</div>
+          <div class="stat-value">${fmt(totalCost)}</div>
           <div class="stat-label">إجمالي التكلفة</div>
         </div>
       </div>
@@ -199,7 +200,7 @@ export default function FleetReports() {
               <td>${maintenance.status === 'completed' ? 'مكتملة' : 
                    maintenance.status === 'in_progress' ? 'قيد التنفيذ' : 
                    maintenance.status === 'pending' ? 'معلقة' : maintenance.status}</td>
-              <td>KWD ${(maintenance.estimated_cost || 0).toFixed(3)}</td>
+              <td>${fmt(maintenance.estimated_cost || 0)}</td>
               <td>${maintenance.description || 'لا يوجد وصف'}</td>
             </tr>
           `).join('')}
@@ -217,19 +218,19 @@ export default function FleetReports() {
     const content = `
       <div class="summary-stats">
         <div class="stat-card">
-          <div class="stat-value">KWD ${safeAnalytics.totalBookValue.toFixed(3)}</div>
+          <div class="stat-value">${fmt(safeAnalytics.totalBookValue)}</div>
           <div class="stat-label">قيمة الأسطول</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${monthlyRevenue.toFixed(3)}</div>
+          <div class="stat-value">${fmt(monthlyRevenue)}</div>
           <div class="stat-label">الإيرادات الشهرية المحتملة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${safeAnalytics.totalDepreciation.toFixed(3)}</div>
+          <div class="stat-value">${fmt(safeAnalytics.totalDepreciation)}</div>
           <div class="stat-label">إجمالي الإهلاك</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${safeAnalytics.monthlyMaintenanceCost.toFixed(3)}</div>
+          <div class="stat-value">${fmt(safeAnalytics.monthlyMaintenanceCost)}</div>
           <div class="stat-label">تكلفة الصيانة الشهرية</div>
         </div>
       </div>
@@ -237,8 +238,8 @@ export default function FleetReports() {
       <div class="analysis-section">
         <h3>تحليل الأداء المالي</h3>
         <p><strong>معدل الاستخدام:</strong> ${safeAnalytics.utilizationRate.toFixed(1)}%</p>
-        <p><strong>الإيرادات الفعلية:</strong> KWD ${(monthlyRevenue * safeAnalytics.utilizationRate / 100).toFixed(3)}</p>
-        <p><strong>صافي الإيرادات (بعد الصيانة):</strong> KWD ${((monthlyRevenue * safeAnalytics.utilizationRate / 100) - safeAnalytics.monthlyMaintenanceCost).toFixed(3)}</p>
+        <p><strong>الإيرادات الفعلية:</strong> ${fmt((monthlyRevenue * safeAnalytics.utilizationRate / 100))}</p>
+        <p><strong>صافي الإيرادات (بعد الصيانة):</strong> ${fmt(((monthlyRevenue * safeAnalytics.utilizationRate / 100) - safeAnalytics.monthlyMaintenanceCost))}</p>
       </div>
     `;
 
@@ -293,15 +294,15 @@ export default function FleetReports() {
     const content = `
       <div class="summary-stats">
         <div class="stat-card">
-          <div class="stat-value">KWD ${actualRevenue.toFixed(3)}</div>
+          <div class="stat-value">${fmt(actualRevenue)}</div>
           <div class="stat-label">الإيرادات الفعلية</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${safeAnalytics.monthlyMaintenanceCost.toFixed(3)}</div>
+          <div class="stat-value">${fmt(safeAnalytics.monthlyMaintenanceCost)}</div>
           <div class="stat-label">تكاليف الصيانة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">KWD ${netProfit.toFixed(3)}</div>
+          <div class="stat-value">${fmt(netProfit)}</div>
           <div class="stat-label">صافي الربح</div>
         </div>
         <div class="stat-card">
@@ -327,9 +328,9 @@ export default function FleetReports() {
             return `
               <tr>
                 <td>${vehicle.plate_number}</td>
-                <td>KWD ${(vehicle.monthly_rate || 0).toFixed(3)}</td>
+                <td>${fmt(vehicle.monthly_rate || 0)}</td>
                 <td>${safeAnalytics.utilizationRate.toFixed(1)}%</td>
-                <td>KWD ${vehicleRevenue.toFixed(3)}</td>
+                <td>${fmt(vehicleRevenue)}</td>
                 <td>${profitability}</td>
               </tr>
             `;
@@ -351,33 +352,33 @@ export default function FleetReports() {
     
     const content = `
       <div class="summary-stats">
-        <div class="stat-card">
-          <div class="stat-value">KWD ${projectedRevenue3Months.toFixed(3)}</div>
-          <div class="stat-label">توقعات 3 أشهر</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">KWD ${projectedRevenue6Months.toFixed(3)}</div>
-          <div class="stat-label">توقعات 6 أشهر</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">KWD ${projectedRevenue12Months.toFixed(3)}</div>
-          <div class="stat-label">توقعات سنوية</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${safeAnalytics.utilizationRate.toFixed(1)}%</div>
-          <div class="stat-label">معدل الاستخدام الحالي</div>
-        </div>
+          <div class="stat-card">
+            <div class="stat-value">${fmt(projectedRevenue3Months)}</div>
+            <div class="stat-label">توقعات 3 أشهر</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${fmt(projectedRevenue6Months)}</div>
+            <div class="stat-label">توقعات 6 أشهر</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${fmt(projectedRevenue12Months)}</div>
+            <div class="stat-label">توقعات سنوية</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${safeAnalytics.utilizationRate.toFixed(1)}%</div>
+            <div class="stat-label">معدل الاستخدام الحالي</div>
+          </div>
       </div>
 
       <div class="analysis-section">
         <h3>تحليل التوقعات</h3>
-        <p><strong>الإيرادات الشهرية الحالية:</strong> KWD ${actualRevenue.toFixed(3)}</p>
+        <p><strong>الإيرادات الشهرية الحالية:</strong> ${fmt(actualRevenue)}</p>
         <p><strong>معدل النمو المتوقع:</strong> 5% شهرياً (افتراضي)</p>
         <p><strong>توقعات محسنة بمعدل نمو 5%:</strong></p>
         <ul>
-          <li>3 أشهر: KWD ${(projectedRevenue3Months * 1.05).toFixed(3)}</li>
-          <li>6 أشهر: KWD ${(projectedRevenue6Months * 1.10).toFixed(3)}</li>
-          <li>12 شهر: KWD ${(projectedRevenue12Months * 1.20).toFixed(3)}</li>
+          <li>3 أشهر: ${fmt(projectedRevenue3Months * 1.05)}</li>
+          <li>6 أشهر: ${fmt(projectedRevenue6Months * 1.10)}</li>
+          <li>12 شهر: ${fmt(projectedRevenue12Months * 1.20)}</li>
         </ul>
         <p><strong>توصيات لتحسين التوقعات:</strong></p>
         <ul>
@@ -499,7 +500,7 @@ export default function FleetReports() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(safeAnalytics.totalBookValue)}</div>
+            <div className="text-2xl font-bold">{fmt(safeAnalytics.totalBookValue)}</div>
             <p className="text-xs text-muted-foreground">
               القيمة الدفترية الحالية
             </p>
@@ -525,7 +526,7 @@ export default function FleetReports() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(safeAnalytics.monthlyMaintenanceCost)}</div>
+            <div className="text-2xl font-bold">{fmt(safeAnalytics.monthlyMaintenanceCost)}</div>
             <p className="text-xs text-muted-foreground">
               هذا الشهر
             </p>
@@ -584,7 +585,7 @@ export default function FleetReports() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value) => [formatCurrency(Number(value)), '']} />
+                <Tooltip formatter={(value) => [fmt(Number(value)), '']} />
                 <Bar dataKey="amount" fill="hsl(var(--primary))" />
               </BarChart>
             </ResponsiveContainer>
@@ -607,7 +608,7 @@ export default function FleetReports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                إجمالي الإهلاك المتراكم: {formatCurrency(safeAnalytics.totalDepreciation)}
+                إجمالي الإهلاك المتراكم: {fmt(safeAnalytics.totalDepreciation)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 معالجة الإهلاك لتحديث القيم الدفترية للمركبات
@@ -774,7 +775,7 @@ export default function FleetReports() {
                      maintenance.status === 'pending' ? 'معلقة' : maintenance.status}
                   </Badge>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {formatCurrency(maintenance.estimated_cost || 0)}
+                    {fmt(maintenance.estimated_cost || 0)}
                   </p>
                 </div>
               </div>

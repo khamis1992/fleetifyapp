@@ -14,6 +14,7 @@ import { SubscriptionPlansManager } from '@/components/super-admin/payments/Subs
 import { PaymentTransactionsList } from '@/components/super-admin/payments/PaymentTransactionsList';
 import { RevenueAnalyticsChart } from '@/components/super-admin/payments/RevenueAnalyticsChart';
 import { useSubscriptionsAnalytics } from '@/hooks/useSubscriptionsAnalytics';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { toast } from 'sonner';
 import { 
   CreditCard, 
@@ -39,6 +40,7 @@ const SuperAdminPayments: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const { data: analytics, isLoading, error, refetch } = useSubscriptionsAnalytics();
+  const { formatCurrency: fmt } = useCurrencyFormatter();
 
   // Debug logging
   console.log('💰 [PAYMENTS_PAGE] Component state:', {
@@ -203,8 +205,8 @@ const SuperAdminPayments: React.FC = () => {
       {!isLoading && analytics && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg border">
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary">{analytics.monthlyRevenue.toLocaleString()}</div>
-            <div className="text-sm text-muted-foreground">إيرادات الشهر (د.ك)</div>
+            <div className="text-2xl font-bold text-primary">{fmt(analytics.monthlyRevenue)}</div>
+            <div className="text-sm text-muted-foreground">إيرادات الشهر</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{analytics.activeSubscriptions}</div>
@@ -215,8 +217,8 @@ const SuperAdminPayments: React.FC = () => {
             <div className="text-sm text-muted-foreground">معدل التجديد</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{analytics.averageSubscriptionValue.toFixed(0)}</div>
-            <div className="text-sm text-muted-foreground">متوسط القيمة (د.ك)</div>
+            <div className="text-2xl font-bold text-purple-600">{fmt(analytics.averageSubscriptionValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+            <div className="text-sm text-muted-foreground">متوسط القيمة</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">+{analytics.revenueGrowth.toFixed(1)}%</div>
@@ -262,7 +264,7 @@ const SuperAdminPayments: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>هدف الشهر الحالي</span>
-                      <span className="font-medium">10,000 د.ك</span>
+                      <span className="font-medium">{fmt(10000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div 
