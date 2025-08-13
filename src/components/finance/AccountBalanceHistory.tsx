@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { TrendingUp, TrendingDown, Activity, Clock } from 'lucide-react';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface BalanceHistoryEntry {
   id: string;
@@ -29,6 +30,7 @@ export const AccountBalanceHistory: React.FC<AccountBalanceHistoryProps> = ({
   balanceHistory = [],
   accountType,
 }) => {
+  const { formatCurrency } = useCurrencyFormatter();
   const getChangeTypeLabel = (type: string) => {
     switch (type) {
       case 'manual_adjustment':

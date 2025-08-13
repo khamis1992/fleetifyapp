@@ -43,10 +43,13 @@ export const useContractHelpers = () => {
     }
     
     if (customerData.customer_type === 'individual') {
-      const fullName = `${customerData.first_name_ar || ''} ${customerData.last_name_ar || ''}`.trim();
-      return fullName || 'عميل غير محدد';
+      const arName = `${customerData.first_name_ar || ''} ${customerData.last_name_ar || ''}`.trim();
+      const enName = `${customerData.first_name || ''} ${customerData.last_name || ''}`.trim();
+      const name = arName || enName;
+      return name && name.trim() !== '' ? name : 'عميل غير محدد';
     } else {
-      return customerData.company_name_ar || 'عميل غير محدد';
+      const companyName = customerData.company_name_ar || customerData.company_name;
+      return companyName && String(companyName).trim() !== '' ? companyName : 'عميل غير محدد';
     }
   };
 

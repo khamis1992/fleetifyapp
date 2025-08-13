@@ -26,7 +26,10 @@ export const useContractsData = (filters: any = {}) => {
             id,
             first_name_ar,
             last_name_ar,
+            first_name,
+            last_name,
             company_name_ar,
+            company_name,
             customer_type
           ),
           cost_center:cost_centers(
