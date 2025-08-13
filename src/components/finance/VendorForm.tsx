@@ -8,9 +8,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useCreateVendor, useUpdateVendor, type Vendor } from "@/hooks/useFinance"
-import { TestTube, AlertCircle } from "lucide-react"
+import { TestTube, AlertCircle, Building2 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { VendorAccountSelector } from "./VendorAccountSelector"
+import { useCreateVendorAccount, useCreateVendorFinancialAccount } from "@/hooks/useVendorAccounts"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
+import { toast } from "sonner"
 
 const vendorSchema = z.object({
   vendor_code: z.string().min(1, "كود المورد مطلوب"),
@@ -24,7 +32,11 @@ const vendorSchema = z.object({
   tax_number: z.string().optional(),
   payment_terms: z.number().min(0, "مدة الدفع يجب أن تكون رقم موجب").optional(),
   credit_limit: z.number().min(0, "حد الائتمان يجب أن يكون رقم موجب").optional(),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  // Accounting integration fields
+  create_accounting_link: z.boolean().optional(),
+  account_id: z.string().optional(),
+  account_type: z.enum(['payable', 'expense', 'advance']).optional(),
 })
 
 type VendorFormValues = z.infer<typeof vendorSchema>
@@ -37,8 +49,11 @@ interface VendorFormProps {
 export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { user } = useAuth()
+  const { companyId } = useUnifiedCompanyAccess()
   const createVendor = useCreateVendor()
   const updateVendor = useUpdateVendor()
+  const createVendorAccount = useCreateVendorAccount()
+  const createVendorFinancialAccount = useCreateVendorFinancialAccount()
 
   const form = useForm<VendorFormValues>({
     resolver: zodResolver(vendorSchema),
@@ -54,21 +69,55 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
       tax_number: vendor?.tax_number || "",
       payment_terms: vendor?.payment_terms || 30,
       credit_limit: vendor?.credit_limit || 0,
-      notes: vendor?.notes || ""
+      notes: vendor?.notes || "",
+      // Default accounting values for new vendors
+      create_accounting_link: !vendor,
+      account_type: 'payable',
     }
   })
 
   const onSubmit = async (data: VendorFormValues) => {
     try {
       setIsSubmitting(true)
+      let vendorResult;
       
       if (vendor) {
-        await updateVendor.mutateAsync({ 
+        // Update existing vendor
+        vendorResult = await updateVendor.mutateAsync({ 
           id: vendor.id,
           ...data
         })
       } else {
-        await createVendor.mutateAsync(data as Required<Pick<VendorFormValues, 'vendor_code' | 'vendor_name'>> & VendorFormValues)
+        // Create new vendor
+        vendorResult = await createVendor.mutateAsync(data as Required<Pick<VendorFormValues, 'vendor_code' | 'vendor_name'>> & VendorFormValues)
+        
+        // Handle accounting integration for new vendors
+        if (data.create_accounting_link && companyId && vendorResult) {
+          try {
+            if (data.account_id) {
+              // Link to existing account
+              await createVendorAccount.mutateAsync({
+                vendor_id: vendorResult.id,
+                account_id: data.account_id,
+                account_type: data.account_type || 'payable',
+                is_default: true,
+              });
+            } else {
+              // Create new financial account
+              await createVendorFinancialAccount.mutateAsync({
+                vendorId: vendorResult.id,
+                companyId,
+                vendorData: {
+                  vendor_name: data.vendor_name,
+                  vendor_name_ar: data.vendor_name_ar,
+                }
+              });
+            }
+          } catch (accountError) {
+            console.error('Error creating vendor account link:', accountError);
+            toast.error('تم إنشاء المورد بنجاح لكن حدث خطأ في الربط المحاسبي');
+          }
+        }
       }
       
       onSuccess?.()
@@ -128,7 +177,11 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
     const randomVendor = sampleVendors[Math.floor(Math.random() * sampleVendors.length)]
     
     // Reset the form with sample data
-    form.reset(randomVendor)
+    form.reset({
+      ...randomVendor,
+      create_accounting_link: true,
+      account_type: 'payable',
+    })
   }
 
   // Show authentication warning if user is not logged in or lacks proper role
@@ -340,6 +393,97 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
             </FormItem>
           )}
         />
+
+        {/* Accounting Integration Section */}
+        {!vendor && (
+          <>
+            <Separator className="my-6" />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  الربط المحاسبي
+                </CardTitle>
+                <CardDescription>
+                  اختر كيفية ربط هذا المورد بالنظام المحاسبي
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="create_accounting_link"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          إنشاء ربط محاسبي
+                        </FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          قم بربط المورد بحساب محاسبي لتتبع المدفوعات والمشتريات
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch('create_accounting_link') && (
+                  <div className="space-y-4 mt-4">
+                    <FormField
+                      control={form.control}
+                      name="account_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>نوع الحساب المحاسبي</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="اختر نوع الحساب" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="payable">حساب دائن (الموردين)</SelectItem>
+                              <SelectItem value="expense">حساب مصاريف</SelectItem>
+                              <SelectItem value="advance">دفعات مقدمة</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="account_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الحساب المحاسبي (اختياري)</FormLabel>
+                          <FormControl>
+                            <VendorAccountSelector
+                              value={field.value || ''}
+                              onValueChange={field.onChange}
+                              accountType={form.watch('account_type')}
+                              placeholder="اتركه فارغاً لإنشاء حساب جديد تلقائياً"
+                            />
+                          </FormControl>
+                          <div className="text-sm text-muted-foreground">
+                            إذا لم تختر حساباً، سيتم إنشاء حساب جديد تلقائياً باسم المورد
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         <div className="flex justify-end gap-2">
           <Button

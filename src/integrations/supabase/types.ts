@@ -9993,6 +9993,18 @@ export type Database = {
           current_mileage: number
         }[]
       }
+      get_available_vendor_accounts: {
+        Args: { company_id_param: string }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          parent_account_name: string
+          is_available: boolean
+          account_type: string
+        }[]
+      }
       get_contract_operations_history: {
         Args: { contract_id_param: string }
         Returns: {
