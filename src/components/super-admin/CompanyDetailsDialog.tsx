@@ -19,7 +19,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
-import { formatCurrency } from '@/lib/utils';
+
 
 interface Company {
   id: string;

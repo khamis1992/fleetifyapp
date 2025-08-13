@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Clock, Download, RefreshCw } from 'lucide-react';
 import { useCustomersAgingReport, useUpdateCustomerAging } from '@/hooks/useEnhancedCustomerFinancials';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface CustomerAgingData {
   id: string;
@@ -30,7 +30,8 @@ interface CustomerAgingData {
 
 export const CustomerAgingReport: React.FC = () => {
   const { data: agingData, isLoading, refetch } = useCustomersAgingReport();
-  const updateAgingMutation = useUpdateCustomerAging();
+const updateAgingMutation = useUpdateCustomerAging();
+const { formatCurrency } = useCurrencyFormatter();
 
   const getCustomerName = (customer: CustomerAgingData['customers']) => {
     if (customer.customer_type === 'individual') {

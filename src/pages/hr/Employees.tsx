@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Users, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import EmployeeDialog from '@/components/hr/EmployeeDialog';
@@ -51,7 +51,9 @@ export default function Employees() {
   const [selectedEmployeeForPayroll, setSelectedEmployeeForPayroll] = useState<Employee | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+const { user } = useAuth();
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   // Company scope filter
   const companyFilter = useCompanyFilter();

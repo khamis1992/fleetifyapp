@@ -24,7 +24,7 @@ import {
 import { useHRSettings, HRSettings } from '@/hooks/useHRSettings';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export default function UnifiedSettings() {
   const { 
@@ -35,6 +35,8 @@ export default function UnifiedSettings() {
     leaveTypes,
     leaveTypesLoading 
   } = useHRSettings();
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   const [formData, setFormData] = useState<Partial<HRSettings>>({
     daily_working_hours: 8,

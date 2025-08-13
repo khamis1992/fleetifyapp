@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Users, Download } from 'lucide-react';
 import { useEmployeeReport, exportHRReportToHTML } from '@/hooks/useHRReports';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface EmployeeReportModalProps {
@@ -12,7 +12,9 @@ interface EmployeeReportModalProps {
 }
 
 export function EmployeeReportModal({ open, onOpenChange }: EmployeeReportModalProps) {
-  const { data: employeeData, isLoading, error } = useEmployeeReport();
+const { data: employeeData, isLoading, error } = useEmployeeReport();
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   const handleExport = () => {
     if (!employeeData) return;

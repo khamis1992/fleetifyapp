@@ -24,7 +24,7 @@ import {
   useUpdateCustomerAging
 } from '@/hooks/useEnhancedCustomerFinancials';
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface EnhancedCustomerFinancialDashboardProps {
   customerId: string;
@@ -42,7 +42,8 @@ export const EnhancedCustomerFinancialDashboard: React.FC<EnhancedCustomerFinanc
   const { data: creditStatus } = useCustomerCreditStatus(customerId);
   const { data: statementData } = useCustomerStatementData(customerId);
   const { data: linkedAccounts } = useCustomerLinkedAccounts(customerId);
-  const updateAgingMutation = useUpdateCustomerAging();
+const updateAgingMutation = useUpdateCustomerAging();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const handleRefreshAging = () => {
     updateAgingMutation.mutate({ customerId });

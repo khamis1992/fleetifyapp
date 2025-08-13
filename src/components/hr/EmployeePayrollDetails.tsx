@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DollarSign, Plus, Eye, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { useEmployeePayrollHistory } from '@/hooks/usePayroll';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import PayrollDialog from './PayrollDialog';
 import { CreatePayrollData } from '@/hooks/usePayroll';
 
@@ -38,7 +38,9 @@ export default function EmployeePayrollDetails({
   isCreatingPayroll
 }: EmployeePayrollDetailsProps) {
   const [showCreatePayroll, setShowCreatePayroll] = useState(false);
-  const { data: payrollHistory, isLoading } = useEmployeePayrollHistory(employee.id);
+const { data: payrollHistory, isLoading } = useEmployeePayrollHistory(employee.id);
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   const getStatusBadge = (status: string) => {
     const statusMap = {

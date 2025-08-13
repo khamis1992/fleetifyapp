@@ -19,7 +19,7 @@ import {
 import { UnifiedReportViewer } from '@/components/reports/UnifiedReportViewer';
 import { ReportFilters } from '@/components/reports/ReportFilters';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
-import { formatCurrency } from '@/lib/utils';
+
 
 export default function Reports() {
   const [selectedModule, setSelectedModule] = useState<string>('dashboard');

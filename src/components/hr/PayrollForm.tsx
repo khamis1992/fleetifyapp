@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, DollarSign, Calculator, Settings } from 'lucide-react';
 import { CreatePayrollData } from '@/hooks/usePayroll';
 import { useHRSettings } from '@/hooks/useHRSettings';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface Employee {
   id: string;
@@ -38,7 +38,9 @@ export default function PayrollForm({
   selectedEmployeeId,
   initialData 
 }: PayrollFormProps) {
-  const { settings: hrSettings } = useHRSettings();
+const { settings: hrSettings } = useHRSettings();
+  
+   const { formatCurrency } = useCurrencyFormatter();
   
   const [formData, setFormData] = useState<CreatePayrollData>(
     initialData || {

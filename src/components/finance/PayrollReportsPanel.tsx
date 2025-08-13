@@ -18,7 +18,7 @@ import {
   Eye,
   ExternalLink
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { usePayrollFinancialAnalysis, usePayrollSummary } from '@/hooks/usePayrollFinancialAnalysis';
 import { exportToHTML } from '@/hooks/useFinancialReportsExport';
 import { Link } from 'react-router-dom';
@@ -27,7 +27,9 @@ export const PayrollReportsPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [periodStart, setPeriodStart] = useState('');
-  const [periodEnd, setPeriodEnd] = useState('');
+const [periodEnd, setPeriodEnd] = useState('');
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   const { data: payrollData, isLoading: payrollLoading } = usePayrollFinancialAnalysis({
     status: statusFilter || undefined,

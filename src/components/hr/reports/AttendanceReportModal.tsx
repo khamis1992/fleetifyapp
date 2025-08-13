@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Download } from 'lucide-react';
 import { useAttendanceReport, exportHRReportToHTML } from '@/hooks/useHRReports';
-import { formatCurrency } from '@/lib/utils';
+
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface AttendanceReportModalProps {

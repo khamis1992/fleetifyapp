@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { BarChart3, Users, Clock, DollarSign, FileText, Download } from 'lucide-react';
 import { useHRStatistics } from '@/hooks/useHRReports';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AttendanceReportModal } from '@/components/hr/reports/AttendanceReportModal';
 import { EmployeeReportModal } from '@/components/hr/reports/EmployeeReportModal';
@@ -15,7 +15,9 @@ export default function HRReports() {
   const [payrollModalOpen, setPayrollModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
 
-  const { data: statistics, isLoading: statsLoading } = useHRStatistics();
+const { data: statistics, isLoading: statsLoading } = useHRStatistics();
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   const reports = [
     {

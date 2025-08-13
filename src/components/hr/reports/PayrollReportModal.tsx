@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { DollarSign, Download, Settings, Mail, MessageSquare } from 'lucide-react';
 import { usePayrollReport, exportHRReportToHTML } from '@/hooks/useHRReports';
 import { useHRSettings } from '@/hooks/useHRSettings';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -16,7 +16,8 @@ interface PayrollReportModalProps {
 }
 
 export function PayrollReportModal({ open, onOpenChange }: PayrollReportModalProps) {
-  const { settings: hrSettings } = useHRSettings();
+const { settings: hrSettings } = useHRSettings();
+   const { formatCurrency } = useCurrencyFormatter();
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);

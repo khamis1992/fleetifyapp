@@ -20,7 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { PayrollRecord } from '@/hooks/usePayroll';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface PayrollDetailsModalProps {
   open: boolean;
@@ -33,6 +33,7 @@ export default function PayrollDetailsModal({
   onOpenChange, 
   payroll 
 }: PayrollDetailsModalProps) {
+  const { formatCurrency } = useCurrencyFormatter();
   if (!payroll) return null;
 
   const getStatusBadge = (status: string) => {

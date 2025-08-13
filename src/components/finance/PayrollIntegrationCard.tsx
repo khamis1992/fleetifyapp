@@ -12,7 +12,7 @@ import {
   ExternalLink,
   RefreshCw
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+
 import { usePayrollIntegrationStatus } from '@/hooks/usePayrollFinancialAnalysis';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Link } from 'react-router-dom';

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DollarSign, Search, Plus, FileText, Check, Clock, Users, Calculator, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { 
   usePayrollRecords, 
   usePayrollReviews, 
@@ -48,7 +48,9 @@ export default function Payroll() {
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollStatusMutation = useUpdatePayrollStatus();
   const updatePayrollMutation = useUpdatePayroll();
-  const deletePayrollMutation = useDeletePayroll();
+const deletePayrollMutation = useDeletePayroll();
+ 
+   const { formatCurrency } = useCurrencyFormatter();
 
   // Fetch employees for payroll creation
   const { data: employees } = useQuery({

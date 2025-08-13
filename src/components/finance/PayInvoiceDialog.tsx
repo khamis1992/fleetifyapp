@@ -31,7 +31,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCreatePayment } from '@/hooks/usePayments';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const paymentSchema = z.object({
   amount: z.number().min(0.001, 'المبلغ يجب أن يكون أكبر من صفر'),
@@ -68,7 +68,8 @@ export function PayInvoiceDialog({
   // Debug: طباعة بيانات الفاتورة لتتبع المشكلة
   console.log('Invoice data in PayInvoiceDialog:', invoice);
   
-  const createPayment = useCreatePayment();
+const createPayment = useCreatePayment();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
