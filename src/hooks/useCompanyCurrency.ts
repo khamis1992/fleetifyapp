@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCurrentCompanyId } from "./useUnifiedCompanyAccess";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 
 export interface CompanyCurrency {
   currency: string; // ISO 4217 e.g., KWD, QAR, SAR
@@ -19,7 +19,7 @@ const currencyLocaleMap: Record<string, string> = {
 };
 
 export const useCompanyCurrency = (): CompanyCurrency => {
-  const companyId = useCurrentCompanyId();
+  const { companyId } = useUnifiedCompanyAccess();
 
   const { data } = useQuery({
     queryKey: ["company-currency", companyId],
