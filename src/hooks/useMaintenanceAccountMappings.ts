@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { toast } from "sonner";
 
 export interface MaintenanceAccountMapping {
@@ -27,7 +27,7 @@ export interface MaintenanceAccountMapping {
 }
 
 export const useMaintenanceAccountMappings = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["maintenance-account-mappings", companyId],
@@ -62,7 +62,7 @@ export const useMaintenanceAccountMappings = () => {
 
 export const useCreateMaintenanceAccountMapping = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (mapping: Omit<MaintenanceAccountMapping, "id" | "company_id" | "created_at" | "updated_at">) => {

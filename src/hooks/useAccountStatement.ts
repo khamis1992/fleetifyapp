@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 
 export interface StatementTransaction {
   id: string;
@@ -47,7 +47,7 @@ export const useAccountStatement = ({
   statementType,
   enabled = true
 }: UseAccountStatementParams) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['account-statement', accountId, dateFrom, dateTo, statementType, companyId],

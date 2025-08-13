@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 
 export interface MaintenanceCostSummary {
   company_id: string;
@@ -18,7 +18,7 @@ export interface MaintenanceCostSummary {
 }
 
 export const useMaintenanceCostSummary = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["maintenance-cost-summary", companyId],
@@ -39,7 +39,7 @@ export const useMaintenanceCostSummary = () => {
 };
 
 export const useVehicleMaintenanceCosts = (vehicleId?: string) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["vehicle-maintenance-costs", companyId, vehicleId],

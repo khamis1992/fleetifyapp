@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import { CustomerFormData } from "@/types/customer";
 
@@ -24,7 +24,7 @@ interface CreateCustomerWithAccountResult {
 
 export const useCreateCustomerWithAccount = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({

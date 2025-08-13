@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 
 export interface DefaultAccountType {
@@ -48,7 +48,7 @@ export const useDefaultAccountTypes = () => {
 };
 
 export const useAccountMappings = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["account-mappings", companyId],
@@ -78,7 +78,7 @@ export const useAccountMappings = () => {
 
 export const useCreateAccountMapping = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -121,7 +121,7 @@ export const useCreateAccountMapping = () => {
 
 export const useUpdateAccountMapping = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -161,7 +161,7 @@ export const useUpdateAccountMapping = () => {
 
 export const useDeleteAccountMapping = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({

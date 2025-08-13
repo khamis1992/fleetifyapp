@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useReportingAccounts } from "./useReportingAccounts";
 import { useEntryAllowedAccounts } from "./useEntryAllowedAccounts";
 
@@ -42,7 +42,7 @@ export const useEnhancedFinancialReports = (
   startDate?: string,
   endDate?: string
 ) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { data: reportingAccounts } = useReportingAccounts();
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
 
@@ -256,7 +256,7 @@ const generateTrialBalance = (trialBalanceData: any[], entryAllowedAccounts: any
 };
 
 export const useAccountHierarchy = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { data: reportingAccounts } = useReportingAccounts();
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
 

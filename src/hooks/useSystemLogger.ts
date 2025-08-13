@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCompanyScope } from '@/hooks/useCompanyScope';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 export type LogCategory = 
@@ -30,7 +30,7 @@ export interface LogEntry {
 
 export const useSystemLogger = () => {
   const { user } = useAuth();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   const logMutation = useMutation({
     mutationFn: async (entry: LogEntry) => {

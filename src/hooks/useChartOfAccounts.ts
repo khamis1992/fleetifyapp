@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 
 export interface ChartOfAccount {
@@ -25,33 +25,45 @@ export interface ChartOfAccount {
 }
 
 export const useChartOfAccounts = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["chart-of-accounts", companyId],
     queryFn: async () => {
-      if (!companyId) return [];
-
-      const { data, error } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("company_id", companyId)
-        .order("account_code");
-
-      if (error) {
-        console.error("Error fetching chart of accounts:", error);
-        throw error;
+      if (!companyId) {
+        throw new Error("معرف الشركة غير متوفر");
       }
 
-      return data as ChartOfAccount[];
+      try {
+        validateCompanyAccess(companyId);
+        
+        const { data, error } = await supabase
+          .from("chart_of_accounts")
+          .select("*")
+          .eq("company_id", companyId)
+          .eq("is_active", true)
+          .order("account_code");
+
+        if (error) {
+          console.error("Error fetching chart of accounts:", error);
+          throw new Error(`فشل في تحميل دليل الحسابات: ${error.message}`);
+        }
+
+        return (data || []) as ChartOfAccount[];
+      } catch (error) {
+        console.error("Chart of accounts access error:", error);
+        throw error;
+      }
     },
     enabled: !!companyId,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
 export const useCreateAccount = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -66,7 +78,9 @@ export const useCreateAccount = () => {
       is_header?: boolean;
       description?: string;
     }) => {
-      if (!companyId) throw new Error("Company ID is required");
+      if (!companyId) throw new Error("معرف الشركة مطلوب");
+      
+      validateCompanyAccess(companyId);
 
       const { data, error } = await supabase
         .from("chart_of_accounts")
@@ -77,7 +91,7 @@ export const useCreateAccount = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(`فشل في إنشاء الحساب: ${error.message}`);
       return data;
     },
     onSuccess: () => {
@@ -99,7 +113,7 @@ export const useCreateAccount = () => {
 
 export const useUpdateAccount = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -133,7 +147,7 @@ export const useUpdateAccount = () => {
 
 export const useDeleteAccount = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -164,18 +178,20 @@ export const useDeleteAccount = () => {
 
 export const useCopyDefaultAccounts = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async () => {
-      if (!companyId) throw new Error("Company ID is required");
+      if (!companyId) throw new Error("معرف الشركة مطلوب");
+      
+      validateCompanyAccess(companyId);
 
       const { error } = await supabase.rpc("copy_default_accounts_to_company", {
         target_company_id: companyId,
       });
 
-      if (error) throw error;
+      if (error) throw new Error(`فشل في نسخ الحسابات الافتراضية: ${error.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });

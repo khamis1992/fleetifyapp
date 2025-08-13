@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useCompanyScope } from './useCompanyScope';
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { useImageUpload } from './useImageUpload';
 
 export interface BrandingSettings {
@@ -27,7 +27,7 @@ export interface BrandingSettings {
 
 export const useCompanyBranding = () => {
   const { user } = useAuth();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
   const { deleteImage } = useImageUpload();
   const [settings, setSettings] = useState<BrandingSettings>({

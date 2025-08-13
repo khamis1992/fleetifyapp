@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCompanyScope } from '@/hooks/useCompanyScope';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface SystemLog {
   id: string;
@@ -33,7 +33,7 @@ export const useSystemLogs = (filters?: {
   search?: string;
 }) => {
   const { user } = useAuth();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['system-logs', companyId, filters],
@@ -89,7 +89,7 @@ export const useSystemLogs = (filters?: {
 
 export const useSystemLogStats = () => {
   const { user } = useAuth();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['system-log-stats', companyId],

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 
 interface ContractFinancialEntry {
@@ -24,7 +24,7 @@ interface SuggestedCustomerAccount {
 
 // Hook to get suggested customer accounts for a contract
 export const useSuggestedCustomerAccounts = (customerId: string) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["suggested-customer-accounts", customerId, companyId],
@@ -109,7 +109,7 @@ export const useSuggestedCustomerAccounts = (customerId: string) => {
 // Hook to create financial entries for contracts
 export const useCreateContractFinancialEntry = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({
@@ -252,7 +252,7 @@ export const useCreateContractFinancialEntry = () => {
 // Hook to link contract to customer account
 export const useLinkContractToCustomerAccount = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
 
   return useMutation({

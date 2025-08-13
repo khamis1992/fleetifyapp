@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanyScope } from "./useCompanyScope";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 
 export interface FleetFinancialData {
   vehicle_id: string;
@@ -51,7 +51,7 @@ export interface FleetFinancialSummary {
 
 // Fleet Financial Overview
 export const useFleetFinancialOverview = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["fleet-financial-overview", companyId],
@@ -107,7 +107,7 @@ export const useFleetFinancialOverview = () => {
 
 // Maintenance Financial Integration
 export const useMaintenanceFinancialData = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["maintenance-financial-data", companyId],
@@ -160,7 +160,7 @@ export const useMaintenanceFinancialData = () => {
 // Process Vehicle Depreciation
 export const useProcessVehicleDepreciation = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (depreciationDate?: string): Promise<DepreciationResult[]> => {
@@ -203,7 +203,7 @@ export const useUpdateVehicleCosts = () => {
 
 // Fleet Financial Summary Statistics
 export const useFleetFinancialSummary = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ["fleet-financial-summary", companyId],

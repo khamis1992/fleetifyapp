@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCompanyScope } from '@/hooks/useCompanyScope';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from '@/hooks/use-toast';
 
 export type RequestSource = 
@@ -73,7 +73,7 @@ export interface WorkflowConfiguration {
 
 // Hook لجلب قوالب سير العمل
 export const useApprovalWorkflows = (sourceType?: RequestSource) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['approval-workflows', companyId, sourceType],
@@ -107,7 +107,7 @@ export const useApprovalRequests = (filters?: {
   source_type?: RequestSource;
   requested_by?: string;
 }) => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['approval-requests', companyId, filters],
@@ -152,7 +152,7 @@ export const useApprovalRequests = (filters?: {
 // Hook لإنشاء قالب سير عمل جديد
 export const useCreateWorkflow = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (workflow: Omit<ApprovalWorkflow, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {
@@ -223,7 +223,7 @@ export const useUpdateWorkflow = () => {
 // Hook لإنشاء طلب موافقة جديد
 export const useCreateApprovalRequest = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (request: {
@@ -302,7 +302,7 @@ export const useCreateApprovalRequest = () => {
 
 // Hook لجلب إعدادات سير العمل
 export const useWorkflowConfigurations = () => {
-  const { companyId } = useCompanyScope();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['workflow-configurations', companyId],
