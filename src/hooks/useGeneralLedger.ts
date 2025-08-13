@@ -547,7 +547,7 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
         const { data: allEntries, error: entriesError } = await supabase
           .from("journal_entries")
           .select("id, total_debit, total_credit")
-          .eq("company_id", user.profile.company_id)
+          .eq("company_id", companyId)
         
         const unbalancedEntriesCount = allEntries?.filter(entry => 
           Number(entry.total_debit) !== Number(entry.total_credit)
@@ -578,7 +578,7 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
         }
       }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
