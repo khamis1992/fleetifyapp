@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Building2, Mail, Phone, MapPin, CreditCard, Settings, Users } from 'lucide-react';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 
 const companySchema = z.object({
   name: z.string().min(2, 'اسم الشركة مطلوب (حد أدنى حرفين)'),
@@ -55,6 +56,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const { currency: companyCurrency } = useCompanyCurrency();
 
   const {
     register,
@@ -78,7 +80,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       license_number: '',
       subscription_plan: 'basic',
       subscription_status: 'active',
-      currency: 'KWD',
+      currency: companyCurrency,
       office_latitude: 29.3759,
       office_longitude: 47.9774,
       allowed_radius: 100,
@@ -104,7 +106,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         license_number: company.license_number || '',
         subscription_plan: company.subscription_plan || 'basic',
         subscription_status: company.subscription_status || 'active',
-        currency: company.currency || 'KWD',
+        currency: company.currency || companyCurrency,
         office_latitude: company.office_latitude || 29.3759,
         office_longitude: company.office_longitude || 47.9774,
         allowed_radius: company.allowed_radius || 100,
@@ -134,7 +136,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         license_number: data.license_number || null,
         subscription_plan: data.subscription_plan,
         subscription_status: data.subscription_status,
-        currency: data.currency || 'KWD',
+        currency: data.currency || companyCurrency,
         office_latitude: data.office_latitude || null,
         office_longitude: data.office_longitude || null,
         allowed_radius: data.allowed_radius || 100,
