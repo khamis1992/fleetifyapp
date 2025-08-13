@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Building, Briefcase, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Building, Lock, Eye, EyeOff } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const profileSchema = z.object({
@@ -19,25 +19,35 @@ const profileSchema = z.object({
   first_name_ar: z.string().optional(),
   last_name_ar: z.string().optional(),
   position: z.string().optional(),
-});
-
-const passwordSchema = z.object({
-  newPassword: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
-  confirmPassword: z.string().min(6, "تأكيد كلمة المرور مطلوب")
-}).refine((data) => data.newPassword === data.confirmPassword, {
+  newPassword: z.string().optional(),
+  confirmPassword: z.string().optional(),
+}).refine((data) => {
+  // إذا تم ادخال كلمة مرور جديدة، يجب أن تكون على الأقل 6 أحرف
+  if (data.newPassword && data.newPassword.length > 0) {
+    return data.newPassword.length >= 6;
+  }
+  return true;
+}, {
+  message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+  path: ["newPassword"]
+}).refine((data) => {
+  // إذا تم ادخال كلمة مرور جديدة، يجب تأكيدها
+  if (data.newPassword && data.newPassword.length > 0) {
+    return data.newPassword === data.confirmPassword;
+  }
+  return true;
+}, {
   message: "كلمات المرور غير متطابقة",
   path: ["confirmPassword"]
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
-type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const Profile: React.FC = () => {
   const { user, updateProfile, changePassword } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<ProfileFormValues>({
@@ -48,15 +58,9 @@ const Profile: React.FC = () => {
       first_name_ar: user?.profile?.first_name_ar || '',
       last_name_ar: user?.profile?.last_name_ar || '',
       position: user?.profile?.position || '',
+      newPassword: '',
+      confirmPassword: '',
     },
-  });
-
-  const passwordForm = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: {
-      newPassword: "",
-      confirmPassword: ""
-    }
   });
 
   const onSubmit = async (data: ProfileFormValues) => {
@@ -64,22 +68,55 @@ const Profile: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await updateProfile(data);
+      // تحديث الملف الشخصي
+      const profileData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        first_name_ar: data.first_name_ar,
+        last_name_ar: data.last_name_ar,
+        position: data.position,
+      };
+
+      const { error: profileError } = await updateProfile(profileData);
       
-      if (error) {
+      if (profileError) {
         toast({
           title: "خطأ في التحديث",
-          description: error.message,
+          description: profileError.message,
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "تم التحديث بنجاح",
-          description: "تم تحديث الملف الشخصي بنجاح",
-        });
-        // Refresh the page to show updated data
-        window.location.reload();
+        return;
       }
+
+      // إذا تم إدخال كلمة مرور جديدة، قم بتحديثها
+      if (data.newPassword && data.newPassword.length > 0) {
+        const { error: passwordError } = await changePassword(data.newPassword);
+        if (passwordError) {
+          toast({
+            title: "تم تحديث الملف الشخصي",
+            description: "تم تحديث الملف الشخصي، ولكن حدث خطأ في تغيير كلمة المرور: " + passwordError.message,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      toast({
+        title: "تم التحديث بنجاح",
+        description: data.newPassword && data.newPassword.length > 0 
+          ? "تم تحديث الملف الشخصي وكلمة المرور بنجاح" 
+          : "تم تحديث الملف الشخصي بنجاح",
+      });
+
+      // إعادة تعيين حقول كلمة المرور
+      form.setValue('newPassword', '');
+      form.setValue('confirmPassword', '');
+      
+      // تحديث الصفحة لإظهار البيانات المحدثة
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
     } catch (error) {
       toast({
         title: "خطأ في التحديث",
@@ -88,34 +125,6 @@ const Profile: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const onPasswordSubmit = async (data: PasswordFormValues) => {
-    setIsChangingPassword(true);
-    try {
-      const { error } = await changePassword(data.newPassword);
-      if (error) {
-        toast({
-          title: "خطأ",
-          description: error.message || "حدث خطأ أثناء تغيير كلمة المرور",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "تم التحديث",
-          description: "تم تغيير كلمة المرور بنجاح"
-        });
-        passwordForm.reset();
-      }
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ غير متوقع",
-        variant: "destructive"
-      });
-    } finally {
-      setIsChangingPassword(false);
     }
   };
 
@@ -145,7 +154,7 @@ const Profile: React.FC = () => {
               المعلومات الأساسية
             </CardTitle>
             <CardDescription>
-              تحديث المعلومات الشخصية والوظيفية
+              عرض المعلومات الأساسية للحساب
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -172,91 +181,179 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Edit Profile Form */}
+        {/* Unified Profile & Password Form */}
         <Card>
           <CardHeader>
             <CardTitle>تحديث الملف الشخصي</CardTitle>
             <CardDescription>
-              قم بتحديث معلوماتك الشخصية والوظيفية
+              قم بتحديث معلوماتك الشخصية والوظيفية. تحديث كلمة المرور اختياري
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="first_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الاسم الأول (بالإنجليزية)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="First Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <User className="h-4 w-4 text-primary" />
+                    <h3 className="text-lg font-medium">المعلومات الشخصية</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الاسم الأول (بالإنجليزية)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="First Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="last_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الاسم الأخير (بالإنجليزية)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Last Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الاسم الأخير (بالإنجليزية)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Last Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="first_name_ar"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الاسم الأول (بالعربية)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="الاسم الأول" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="first_name_ar"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الاسم الأول (بالعربية)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="الاسم الأول" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="last_name_ar"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الاسم الأخير (بالعربية)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="الاسم الأخير" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="last_name_ar"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>الاسم الأخير (بالعربية)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="الاسم الأخير" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="position"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>المنصب الوظيفي</FormLabel>
-                        <FormControl>
-                          <Input placeholder="المنصب الوظيفي" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
+                    <FormField
+                      control={form.control}
+                      name="position"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>المنصب الوظيفي</FormLabel>
+                          <FormControl>
+                            <Input placeholder="المنصب الوظيفي" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-end gap-3">
+                <Separator />
+
+                {/* Password Update (Optional) */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <h3 className="text-lg font-medium">تغيير كلمة المرور (اختياري)</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    اتركها فارغة إذا كنت لا تريد تغيير كلمة المرور
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="newPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>كلمة المرور الجديدة (اختياري)</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="أدخل كلمة المرور الجديدة"
+                                {...field}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>تأكيد كلمة المرور</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="أكد كلمة المرور الجديدة"
+                                {...field}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                {showConfirmPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
                   <Button
                     type="button"
                     variant="outline"
@@ -267,112 +364,6 @@ const Profile: React.FC = () => {
                   </Button>
                   <Button type="submit" disabled={isLoading}>
                     {isLoading ? "جاري الحفظ..." : "حفظ التغييرات"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-
-        <Separator />
-
-        {/* Password Change Section */}
-        <Card id="password-section">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-md">
-                <Lock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle>تغيير كلمة المرور</CardTitle>
-                <CardDescription>
-                  قم بتحديث كلمة المرور الخاصة بك لضمان أمان حسابك
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Form {...passwordForm}>
-              <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={passwordForm.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>كلمة المرور الجديدة</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              placeholder="أدخل كلمة المرور الجديدة"
-                              {...field}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>تأكيد كلمة المرور</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              type={showConfirmPassword ? "text" : "password"}
-                              placeholder="أكد كلمة المرور الجديدة"
-                              {...field}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                              {showConfirmPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => passwordForm.reset()}
-                    disabled={isChangingPassword}
-                  >
-                    إلغاء
-                  </Button>
-                  <Button type="submit" disabled={isChangingPassword}>
-                    {isChangingPassword ? "جاري التحديث..." : "تغيير كلمة المرور"}
                   </Button>
                 </div>
               </form>
