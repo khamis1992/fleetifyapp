@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Download, Calendar } from "lucide-react"
 import { useCashFlowReport, exportToHTML } from "@/hooks/useFinancialReportsExport"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface CashFlowReportProps {
   startDate?: string
@@ -14,6 +14,7 @@ interface CashFlowReportProps {
 
 export const CashFlowReport = ({ startDate, endDate, companyName }: CashFlowReportProps) => {
   const { data: cashFlowData, isLoading } = useCashFlowReport(startDate, endDate)
+  const { formatCurrency } = useCurrencyFormatter()
 
   const handleExportHTML = () => {
     if (!cashFlowData) return

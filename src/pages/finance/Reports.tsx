@@ -14,13 +14,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { exportToHTML } from "@/hooks/useFinancialReportsExport"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { EnhancedFinancialReportsViewer } from "@/components/finance/EnhancedFinancialReportsViewer"
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("balance-sheet")
   const { data: balanceSheetData, isLoading: balanceLoading } = useBalanceSheet()
   const { data: incomeStatementData, isLoading: incomeLoading } = useIncomeStatement()
+  const { formatCurrency } = useCurrencyFormatter()
 
   // Export functions for balance sheet and income statement
   const handleExportBalanceSheet = () => {

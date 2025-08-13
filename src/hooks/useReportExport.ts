@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 interface ExportOptions {
   reportId: string;
@@ -17,7 +17,8 @@ interface ExportOptions {
 export const useReportExport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const companyId = useCurrentCompanyId();
-  const { toast } = useToast();
+const { toast } = useToast();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const exportToHTML = async (options: ExportOptions) => {
     setIsExporting(true);
