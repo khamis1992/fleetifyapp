@@ -618,12 +618,28 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                                         .filter(account => {
                                           if (!accountSearchValue) return true;
                                           const searchLower = accountSearchValue.toLowerCase();
-                                          return (
+                                          const matches = (
                                             account.account_name?.toLowerCase().includes(searchLower) ||
                                             (account.account_name_ar && account.account_name_ar.includes(accountSearchValue)) ||
                                             account.account_code?.toLowerCase().includes(searchLower) ||
                                             account.parent_account_name?.toLowerCase().includes(searchLower)
                                           );
+                                          
+                                          // Debug logging for account 1130201
+                                          if (accountSearchValue === "1130201" || account.account_code === "1130201") {
+                                            console.log("Account search debug:", {
+                                              searchValue: accountSearchValue,
+                                              account: {
+                                                code: account.account_code,
+                                                name: account.account_name,
+                                                name_ar: account.account_name_ar,
+                                                parent_name: account.parent_account_name
+                                              },
+                                              matches
+                                            });
+                                          }
+                                          
+                                          return matches;
                                         })
                                        .map((account) => (
                                          <CommandItem
