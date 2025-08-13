@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { toast } from "sonner"
 
 // Types
@@ -220,24 +221,47 @@ export interface BankTransaction {
 
 // Chart of Accounts Hooks
 export const useChartOfAccounts = () => {
-  const { user } = useAuth()
+  const { companyId, filter } = useUnifiedCompanyAccess()
   
   return useQuery({
-    queryKey: ["chartOfAccounts", user?.profile?.company_id],
+    queryKey: ["chartOfAccounts", companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
+      console.log('🔍 [CHART_OF_ACCOUNTS] Fetching with filter:', filter)
       
-      const { data, error } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("company_id", user.profile.company_id)
-        .eq("is_active", true)
-        .order("account_level, sort_order, account_code")
+      if (!companyId) {
+        console.log('❌ [CHART_OF_ACCOUNTS] No company ID available')
+        throw new Error('معرف الشركة مطلوب')
+      }
       
-      if (error) throw error
-      return data as ChartOfAccount[]
+      try {
+        let query = supabase
+          .from("chart_of_accounts")
+          .select("*")
+          .eq("is_active", true)
+          .order("account_level, sort_order, account_code")
+        
+        // Apply company filter
+        if (filter.company_id) {
+          query = query.eq("company_id", filter.company_id)
+        }
+        
+        const { data, error } = await query
+        
+        if (error) {
+          console.error('❌ [CHART_OF_ACCOUNTS] Database error:', error)
+          throw new Error(`خطأ في تحميل دليل الحسابات: ${error.message}`)
+        }
+        
+        console.log('✅ [CHART_OF_ACCOUNTS] Successfully loaded', data?.length || 0, 'accounts')
+        return data as ChartOfAccount[]
+      } catch (error) {
+        console.error('❌ [CHART_OF_ACCOUNTS] Query failed:', error)
+        throw error
+      }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 }
 

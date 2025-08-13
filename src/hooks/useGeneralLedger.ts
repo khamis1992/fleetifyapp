@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { toast } from "sonner"
 
 export interface LedgerFilters {
@@ -128,33 +129,57 @@ export const useJournalEntryLines = (entryId: string) => {
 
 // Enhanced Journal Entries with relations
 export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
-  const { user } = useAuth()
+  const { companyId, filter } = useUnifiedCompanyAccess()
   
   return useQuery({
-    queryKey: ["enhancedJournalEntries", user?.profile?.company_id, filters],
+    queryKey: ["enhancedJournalEntries", companyId, filters],
     queryFn: async () => {
-      console.log("Fetching journal entries for company:", user?.profile?.company_id)
+      console.log("🔍 [ENHANCED_JOURNAL_ENTRIES] Fetching for company:", companyId)
       
-      if (!user?.profile?.company_id) {
-        console.log("No company ID available")
-        return []
+      if (!companyId) {
+        console.log("❌ [ENHANCED_JOURNAL_ENTRIES] No company ID available")
+        throw new Error('معرف الشركة مطلوب')
       }
       
       try {
-        // First, fetch journal entries with basic relations using the new foreign keys
+        // Query with journal entry lines relation
         let query = supabase
           .from("journal_entries")
           .select(`
-            *,
-            created_by_profile:profiles!fk_journal_entries_created_by(user_id, first_name, last_name, email),
-            posted_by_profile:profiles!fk_journal_entries_posted_by(user_id, first_name, last_name, email),
+            id,
+            company_id,
+            entry_number,
+            entry_date,
+            description,
+            total_debit,
+            total_credit,
+            status,
+            reference_type,
+            reference_id,
+            created_at,
+            updated_at,
             journal_entry_lines(
-              *,
-              account:chart_of_accounts!fk_journal_entry_lines_account(*),
-              cost_center:cost_centers!fk_journal_entry_lines_cost_center(*)
+              id,
+              account_id,
+              line_description,
+              debit_amount,
+              credit_amount,
+              line_number,
+              account:chart_of_accounts!account_id(
+                id,
+                account_code,
+                account_name,
+                account_name_ar
+              )
             )
           `)
-          .eq("company_id", user.profile.company_id)
+        
+        // Apply company filter
+        if (filter.company_id) {
+          query = query.eq("company_id", filter.company_id)
+        }
+        
+        query = query
           .order("entry_date", { ascending: false })
           .order("entry_number", { ascending: false })
       
@@ -175,29 +200,11 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
         const { data, error } = await query
         
         if (error) {
-          console.error("Query error:", error)
-          toast.error("خطأ في جلب القيود المحاسبية: " + error.message)
-          throw error
+          console.error("❌ [ENHANCED_JOURNAL_ENTRIES] Query error:", error)
+          throw new Error(`خطأ في تحميل القيود المحاسبية: ${error.message}`)
         }
         
-        console.log("Query result:", data?.length || 0, "entries found")
-        
-        // If no data found, try a simpler query without relations
-        if (!data || data.length === 0) {
-          console.log("Trying simplified query without relations...")
-          const { data: simpleData, error: simpleError } = await supabase
-            .from("journal_entries")
-            .select("*")
-            .eq("company_id", user.profile.company_id)
-            .order("entry_date", { ascending: false })
-            .limit(10)
-          
-          if (simpleError) {
-            console.error("Simple query error:", simpleError)
-          } else {
-            console.log("Simple query result:", simpleData?.length || 0, "entries found")
-          }
-        }
+        console.log("✅ [ENHANCED_JOURNAL_ENTRIES] Query result:", data?.length || 0, "entries found")
         
         // Filter by search term if provided
         let filteredData = data || []
@@ -212,23 +219,24 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
         return filteredData
         
       } catch (error) {
-        console.error("Error in useEnhancedJournalEntries:", error)
-        toast.error("خطأ في جلب القيود المحاسبية")
-        return []
+        console.error("❌ [ENHANCED_JOURNAL_ENTRIES] Error:", error)
+        throw error
       }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 }
 
 // Account Balances
 export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: string }) => {
-  const { user } = useAuth()
+  const { companyId, filter } = useUnifiedCompanyAccess()
   
   return useQuery({
-    queryKey: ["accountBalances", user?.profile?.company_id, filters],
+    queryKey: ["accountBalances", companyId, filters],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return []
+      if (!companyId) throw new Error('معرف الشركة مطلوب')
       
       try {
         let query = supabase
@@ -242,7 +250,13 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
             balance_type,
             current_balance
           `)
-          .eq("company_id", user.profile.company_id)
+        
+        // Apply company filter
+        if (filter.company_id) {
+          query = query.eq("company_id", filter.company_id)
+        }
+        
+        query = query
           .eq("is_active", true)
           .order("account_code")
         
@@ -280,7 +294,7 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
         return []
       }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
