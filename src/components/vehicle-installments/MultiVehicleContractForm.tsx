@@ -18,13 +18,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +33,7 @@ import { toast } from "sonner";
 import { VehicleSelector } from "./VehicleSelector";
 
 const multiVehicleSchema = z.object({
-  vendor_id: z.string().min(1, "يجب اختيار التاجر"),
+  vendor_company_name: z.string().min(1, "يجب إدخال اسم شركة التاجر"),
   agreement_number: z.string().min(1, "يجب إدخال رقم الاتفاقية"),
   total_amount: z.number().min(1, "يجب إدخال المبلغ الإجمالي"),
   down_payment: z.number().min(0, "يجب إدخال الدفعة المقدمة"),
@@ -72,7 +65,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
   const form = useForm<z.infer<typeof multiVehicleSchema>>({
     resolver: zodResolver(multiVehicleSchema),
     defaultValues: {
-      vendor_id: "",
+      vendor_company_name: "",
       agreement_number: "",
       total_amount: 0,
       down_payment: 0,
@@ -84,31 +77,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
     },
   });
 
-  // Fetch customers (vendors)
-  const { data: customers } = useQuery({
-    queryKey: ['customers', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) return [];
-
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, first_name, last_name, company_name, customer_type')
-        .eq('company_id', profile.company_id)
-        .order('company_name', { ascending: true });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+  // تم إدخال اسم شركة التاجر نصيًا، لا حاجة لجلب قائمة التجار
 
   // Fetch available vehicles
   const { data: vehicles } = useQuery({
@@ -215,8 +184,60 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
     const calculatedData = calculateInstallmentDetails();
 
+    // تحديد/إنشاء التاجر (شركة) تلقائياً بناءً على الاسم المُدخل
+    let vendorId: string | null = null;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (!profile?.company_id) {
+        toast.error("تعذر تحديد الشركة");
+        return;
+      }
+
+      const companyName = data.vendor_company_name.trim();
+
+      const { data: existing, error: searchError } = await supabase
+        .from('customers')
+        .select('id, customer_type, company_name')
+        .eq('company_id', profile.company_id)
+        .ilike('company_name', companyName)
+        .maybeSingle();
+
+      if (searchError) {
+        console.error('Error searching customer:', searchError);
+      }
+
+      if (existing?.id) {
+        vendorId = existing.id;
+      } else {
+        const { data: created, error: insertError } = await supabase
+          .from('customers')
+.insert({
+            company_id: profile.company_id,
+            customer_type: 'corporate',
+            company_name: companyName,
+            created_by: user!.id,
+          } as any)
+          .select('id')
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+        vendorId = created.id;
+      }
+    } catch (e: any) {
+      console.error('Vendor resolution failed:', e);
+      toast.error("حدث خطأ أثناء تحديد التاجر");
+      return;
+    }
+
     const formData: VehicleInstallmentCreateData = {
-      vendor_id: data.vendor_id,
+      vendor_id: vendorId!,
       vehicle_ids: vehicleAllocations.map(v => v.vehicle_id),
       vehicle_amounts: vehicleAllocations.reduce((acc, v) => {
         acc[v.vehicle_id] = v.allocated_amount;
@@ -267,26 +288,13 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="vendor_id"
+                    name="vendor_company_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>التاجر</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="اختر التاجر" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {customers?.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                {customer.customer_type === 'corporate' 
-                                  ? customer.company_name 
-                                  : `${customer.first_name} ${customer.last_name}`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>شركة التاجر</FormLabel>
+                        <FormControl>
+                          <Input placeholder="اسم شركة التاجر" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
