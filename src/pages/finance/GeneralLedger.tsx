@@ -27,6 +27,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
 import { JournalVoucherDisplay } from "@/components/finance/JournalVoucherDisplay";
 import { ChartOfAccountsErrorBoundary } from "@/components/finance/ChartOfAccountsErrorBoundary";
+import { AuthChecker } from "@/components/auth/AuthChecker";
+import { SessionValidator } from "@/components/auth/SessionValidator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -123,7 +125,9 @@ export default function Ledger() {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <SessionValidator>
+      <AuthChecker>
+        <div className="space-y-6" dir="rtl">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -744,6 +748,8 @@ export default function Ledger() {
         accountCode={selectedAccount?.code || ''}
         accountName={selectedAccount?.name || ''}
       />
-    </div>
+        </div>
+      </AuthChecker>
+    </SessionValidator>
   );
 }

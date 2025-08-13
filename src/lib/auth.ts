@@ -30,6 +30,8 @@ export interface AuthContextType {
   signOut: () => Promise<{ error: any }>;
   updateProfile: (updates: any) => Promise<{ error: any }>;
   changePassword: (newPassword: string) => Promise<{ error: any }>;
+  sessionError?: string | null;
+  validateSession?: () => Promise<boolean>;
 }
 
 export const authService = {
