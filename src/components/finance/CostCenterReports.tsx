@@ -11,6 +11,7 @@ import { useCostCenterFinancialData } from '@/hooks/useCostCenterReports'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, TrendingDown, Target, DollarSign, AlertTriangle, Download } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--muted))', 'hsl(var(--accent))']
 
@@ -24,6 +25,7 @@ export const CostCenterReports: React.FC<CostCenterReportsProps> = ({ className 
   
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const { data: financialData, isLoading: dataLoading } = useCostCenterFinancialData(selectedCostCenter, selectedPeriod)
+  const { formatCurrency, currency } = useCurrencyFormatter()
 
   if (costCentersLoading || dataLoading) {
     return <LoadingSpinner />
@@ -94,7 +96,7 @@ export const CostCenterReports: React.FC<CostCenterReportsProps> = ({ className 
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{financialData?.totalBudget?.toLocaleString() || '0'} د.ك</div>
+            <div className="text-2xl font-bold">{formatCurrency(financialData?.totalBudget || 0)}</div>
             <p className="text-xs text-muted-foreground">
               للفترة المحددة
             </p>
@@ -107,7 +109,7 @@ export const CostCenterReports: React.FC<CostCenterReportsProps> = ({ className 
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{financialData?.totalActual?.toLocaleString() || '0'} د.ك</div>
+            <div className="text-2xl font-bold">{formatCurrency(financialData?.totalActual || 0)}</div>
             <p className="text-xs text-muted-foreground">
               من إجمالي الميزانية
             </p>
@@ -214,9 +216,9 @@ export const CostCenterReports: React.FC<CostCenterReportsProps> = ({ className 
                 <TableHeader>
                   <TableRow>
                     <TableHead>مركز التكلفة</TableHead>
-                    <TableHead>الميزانية</TableHead>
-                    <TableHead>الفعلي</TableHead>
-                    <TableHead>المتبقي</TableHead>
+                    <TableHead>الميزانية ({currency})</TableHead>
+                    <TableHead>الفعلي ({currency})</TableHead>
+                    <TableHead>المتبقي ({currency})</TableHead>
                     <TableHead>الاستغلال</TableHead>
                     <TableHead>الحالة</TableHead>
                   </TableRow>
@@ -230,11 +232,11 @@ export const CostCenterReports: React.FC<CostCenterReportsProps> = ({ className 
                           <div className="text-sm text-muted-foreground">{item.code}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{item.budget.toLocaleString()} د.ك</TableCell>
-                      <TableCell>{item.actual.toLocaleString()} د.ك</TableCell>
+                      <TableCell>{formatCurrency(item.budget)}</TableCell>
+                      <TableCell>{formatCurrency(item.actual)}</TableCell>
                       <TableCell>
                         <span className={item.remaining >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {item.remaining.toLocaleString()} د.ك
+                          {formatCurrency(item.remaining)}
                         </span>
                       </TableCell>
                       <TableCell>

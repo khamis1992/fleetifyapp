@@ -14,7 +14,7 @@ interface CashFlowReportProps {
 
 export const CashFlowReport = ({ startDate, endDate, companyName }: CashFlowReportProps) => {
   const { data: cashFlowData, isLoading } = useCashFlowReport(startDate, endDate)
-  const { formatCurrency } = useCurrencyFormatter()
+  const { formatCurrency, currency } = useCurrencyFormatter()
 
   const handleExportHTML = () => {
     if (!cashFlowData) return
@@ -24,7 +24,7 @@ export const CashFlowReport = ({ startDate, endDate, companyName }: CashFlowRepo
         <thead>
           <tr>
             <th>النشاط</th>
-            <th>المبلغ (د.ك)</th>
+            <th>المبلغ (${currency})</th>
           </tr>
         </thead>
         <tbody>
@@ -113,7 +113,7 @@ export const CashFlowReport = ({ startDate, endDate, companyName }: CashFlowRepo
           <TableHeader>
             <TableRow>
               <TableHead>النشاط</TableHead>
-              <TableHead className="text-right">المبلغ (د.ك)</TableHead>
+              <TableHead className="text-right">المبلغ ({currency})</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -5,11 +5,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, DollarSign, Users, CreditCard } from 'lucide-react';
 import { useSubscriptionsAnalytics } from '@/hooks/useSubscriptionsAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export const RevenueAnalyticsChart: React.FC = () => {
   const { data: analytics, isLoading } = useSubscriptionsAnalytics();
   const [chartType, setChartType] = React.useState<'revenue' | 'subscriptions'>('revenue');
   const [period, setPeriod] = React.useState<'month' | 'quarter' | 'year'>('month');
+  const { formatCurrency } = useCurrencyFormatter();
 
   if (isLoading) {
     return (
@@ -36,8 +38,7 @@ export const RevenueAnalyticsChart: React.FC = () => {
           <p className="text-sm font-medium">{`الشهر: ${label}`}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.dataKey === 'revenue' ? 'الإيرادات' : 'الاشتراكات'}: {entry.value} 
-              {entry.dataKey === 'revenue' ? ' د.ك' : ''}
+              {entry.dataKey === 'revenue' ? 'الإيرادات' : 'الاشتراكات'}: {entry.dataKey === 'revenue' ? formatCurrency(entry.value) : entry.value}
             </p>
           ))}
         </div>
@@ -93,7 +94,7 @@ export const RevenueAnalyticsChart: React.FC = () => {
               <span className="text-sm font-medium">إجمالي الإيرادات</span>
             </div>
             <div className="text-2xl font-bold text-green-600">
-              {analytics?.monthlyRevenue.toLocaleString() || 0} د.ك
+              {formatCurrency(analytics?.monthlyRevenue || 0)}
             </div>
           </div>
           
@@ -113,7 +114,7 @@ export const RevenueAnalyticsChart: React.FC = () => {
               <span className="text-sm font-medium">متوسط القيمة</span>
             </div>
             <div className="text-2xl font-bold text-purple-600">
-              {analytics?.averageSubscriptionValue.toFixed(2) || 0} د.ك
+              {formatCurrency(analytics?.averageSubscriptionValue || 0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -176,7 +177,7 @@ export const RevenueAnalyticsChart: React.FC = () => {
                    plan.plan === 'premium' ? 'مميز' : 'مؤسسي'}
                 </div>
                 <div className="text-xl font-bold mt-1">
-                  {plan.revenue} د.ك
+                  {formatCurrency(plan.revenue)}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {plan.count} اشتراك

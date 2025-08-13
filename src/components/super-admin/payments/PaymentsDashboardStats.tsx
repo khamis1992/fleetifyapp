@@ -4,16 +4,18 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, TrendingUp, Users, CreditCard, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useSubscriptionsAnalytics } from '@/hooks/useSubscriptionsAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export const PaymentsDashboardStats: React.FC = () => {
   const { data: analytics, isLoading } = useSubscriptionsAnalytics();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const stats = [
     {
       title: 'إجمالي الإيرادات الشهرية',
       value: analytics?.monthlyRevenue || 0,
       icon: DollarSign,
-      format: (value: number) => `${value.toLocaleString()} د.ك`,
+      format: (value: number) => formatCurrency(value),
       trend: analytics?.revenueGrowth || 0,
       trendLabel: 'مقارنة بالشهر السابق'
     },
@@ -29,7 +31,7 @@ export const PaymentsDashboardStats: React.FC = () => {
       title: 'متوسط قيمة الاشتراك',
       value: analytics?.averageSubscriptionValue || 0,
       icon: CreditCard,
-      format: (value: number) => `${value.toFixed(2)} د.ك`,
+      format: (value: number) => formatCurrency(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       trend: analytics?.avgValueGrowth || 0,
       trendLabel: 'تغيير في المتوسط'
     },
