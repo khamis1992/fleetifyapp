@@ -34,7 +34,7 @@ interface VehicleSelectorProps {
 }
 
 export function VehicleSelector({
-  vehicles,
+  vehicles = [],
   selectedVehicleId,
   excludeVehicleIds = [],
   onSelect,
@@ -46,7 +46,7 @@ export function VehicleSelector({
   const debouncedSearch = useDebounce(searchValue, 300);
 
   // Filter vehicles based on exclusions and search
-  const filteredVehicles = vehicles
+  const filteredVehicles = (vehicles || [])
     .filter(vehicle => !excludeVehicleIds.includes(vehicle.id))
     .filter(vehicle => {
       if (!debouncedSearch) return true;
@@ -59,7 +59,7 @@ export function VehicleSelector({
       );
     });
 
-  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+  const selectedVehicle = (vehicles || []).find(v => v.id === selectedVehicleId);
 
   const getVehicleDisplayText = (vehicle: Vehicle) => 
     `${vehicle.plate_number} - ${vehicle.make} ${vehicle.model} (${vehicle.year})`;
