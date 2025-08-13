@@ -5,14 +5,16 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Badge } from "@/components/ui/badge"
 import { Download, FileText } from "lucide-react"
 import { usePayablesReport, exportToHTML } from "@/hooks/useFinancialReportsExport"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface PayablesReportProps {
   companyName?: string
 }
 
 export const PayablesReport = ({ companyName }: PayablesReportProps) => {
-  const { data: payablesData, isLoading } = usePayablesReport()
+const { data: payablesData, isLoading } = usePayablesReport()
+
+  const { formatCurrency } = useCurrencyFormatter()
 
   const handleExportHTML = () => {
     if (!payablesData) return

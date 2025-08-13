@@ -18,7 +18,7 @@ import {
   Eye,
   Loader2
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -48,7 +48,8 @@ interface CustomerFinancialSummary {
 }
 
 export const CustomerFinancialDashboard = ({ customerId, customerName }: CustomerFinancialDashboardProps) => {
-  const { companyId } = useCompanyScope();
+const { companyId } = useCompanyScope();
+  const { formatCurrency } = useCurrencyFormatter();
   const [showDetails, setShowDetails] = useState(false);
   
   const { data: linkedAccounts, isLoading: accountsLoading } = useCustomerLinkedAccounts(customerId);

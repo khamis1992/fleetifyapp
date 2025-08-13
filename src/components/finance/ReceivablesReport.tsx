@@ -5,14 +5,16 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Badge } from "@/components/ui/badge"
 import { Download, FileText } from "lucide-react"
 import { useReceivablesReport, exportToHTML } from "@/hooks/useFinancialReportsExport"
-import { formatCurrency } from "@/lib/utils"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 interface ReceivablesReportProps {
   companyName?: string
 }
 
 export const ReceivablesReport = ({ companyName }: ReceivablesReportProps) => {
-  const { data: receivablesData, isLoading } = useReceivablesReport()
+const { data: receivablesData, isLoading } = useReceivablesReport()
+
+  const { formatCurrency } = useCurrencyFormatter()
 
   const handleExportHTML = () => {
     if (!receivablesData) return
