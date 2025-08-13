@@ -401,59 +401,80 @@ export const useAccountMovements = (accountId: string, filters?: LedgerFilters) 
 
 // Trial Balance
 export const useTrialBalance = (asOfDate?: string) => {
-  const { user } = useAuth()
+  const { companyId, filter } = useUnifiedCompanyAccess()
   
   return useQuery({
-    queryKey: ["trialBalance", user?.profile?.company_id, asOfDate],
+    queryKey: ["trialBalance", companyId, asOfDate],
     queryFn: async () => {
-      const { data: accounts, error } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("is_active", true)
-        .order("account_level, account_code")
+      if (!companyId) throw new Error('معرف الشركة مطلوب')
       
-      if (error) throw error
+      console.log("🔍 [TRIAL_BALANCE] Fetching for company:", companyId)
       
-      // For simplified trial balance, use current balances
-      // In full implementation, calculate based on journal entries up to asOfDate
-      const trialBalance: TrialBalanceItem[] = accounts.map(account => ({
-        account_id: account.id,
-        account_code: account.account_code,
-        account_name: account.account_name,
-        account_name_ar: account.account_name_ar,
-        account_type: account.account_type,
-        account_level: account.account_level || 1,
-        debit_balance: account.balance_type === 'debit' && account.current_balance > 0 ? account.current_balance : 0,
-        credit_balance: account.balance_type === 'credit' && account.current_balance > 0 ? account.current_balance : 0
-      }))
-      
-      return trialBalance
+      try {
+        // Use the get_trial_balance database function for accurate calculations
+        const { data, error } = await supabase.rpc('get_trial_balance', {
+          company_id_param: companyId,
+          as_of_date: asOfDate || new Date().toISOString().split('T')[0]
+        })
+        
+        if (error) {
+          console.error("❌ [TRIAL_BALANCE] RPC error:", error)
+          throw error
+        }
+        
+        console.log("✅ [TRIAL_BALANCE] Found", data?.length || 0, "accounts for company", companyId)
+        
+        // Filter out system accounts for better display
+        const filteredData = (data || []).filter((item: any) => {
+          // Only show non-zero balances or active accounts
+          return (item.debit_balance > 0 || item.credit_balance > 0) || 
+                 item.account_level <= 4 // Show summary accounts regardless
+        })
+        
+        return filteredData as TrialBalanceItem[]
+        
+      } catch (error) {
+        console.error("❌ [TRIAL_BALANCE] Error:", error)
+        toast.error("خطأ في جلب ميزان المراجعة")
+        return []
+      }
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 
 // Financial Summary
 export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: string }) => {
-  const { user } = useAuth()
+  const { companyId, filter } = useUnifiedCompanyAccess()
   
   return useQuery({
-    queryKey: ["financialSummary", user?.profile?.company_id, filters],
+    queryKey: ["financialSummary", companyId, filters],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return null
+      if (!companyId) {
+        console.log("❌ [FINANCIAL_SUMMARY] No company ID available")
+        return null
+      }
+      
+      console.log("🔍 [FINANCIAL_SUMMARY] Fetching for company:", companyId)
       
       try {
-        // Get all accounts first
-        const { data: accounts, error: accountsError } = await supabase
+        // Get all accounts first with company filter
+        let accountsQuery = supabase
           .from("chart_of_accounts")
           .select("*")
-          .eq("company_id", user.profile.company_id)
           .eq("is_active", true)
+        
+        // Apply company filter
+        if (filter.company_id) {
+          accountsQuery = accountsQuery.eq("company_id", filter.company_id)
+        }
+        
+        const { data: accounts, error: accountsError } = await accountsQuery
         
         if (accountsError) throw accountsError
         
         // Get journal entry lines to calculate actual balances
-        const { data: journalLines, error: linesError } = await supabase
+        let journalQuery = supabase
           .from("journal_entry_lines")
           .select(`
             account_id,
@@ -465,8 +486,14 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
               entry_date
             )
           `)
-          .eq("journal_entry.company_id", user.profile.company_id)
           .eq("journal_entry.status", "posted")
+        
+        // Apply company filter via journal entries
+        if (filter.company_id) {
+          journalQuery = journalQuery.eq("journal_entry.company_id", filter.company_id)
+        }
+        
+        const { data: journalLines, error: linesError } = await journalQuery
         
         if (linesError) {
           console.error("Error fetching journal lines:", linesError)
