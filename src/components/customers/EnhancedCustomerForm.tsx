@@ -44,7 +44,7 @@ const formSchema = z.object({
   emergency_contact_phone: z.string().optional(),
   notes: z.string().optional(),
   // Financial integration fields
-  accountIntegrationType: z.enum(['create_new', 'select_existing', 'none']).default('create_new'),
+  accountIntegrationType: z.enum(['create_new', 'select_existing', 'none']).default('select_existing'),
   selectedAccountId: z.string().optional(),
   createFinancialAccount: z.boolean().default(false),
   initialBalance: z.number().optional(),
@@ -77,7 +77,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
     resolver: zodResolver(formSchema),
     defaultValues: {
       customer_type: 'individual',
-      accountIntegrationType: 'create_new',
+      accountIntegrationType: 'select_existing',
       createFinancialAccount: true,
       initialBalance: 0,
       country: 'Kuwait',
@@ -357,17 +357,23 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
                           <SelectValue placeholder="اختر طريقة الربط المحاسبي" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="create_new">إنشاء حساب جديد</SelectItem>
-                        <SelectItem value="select_existing">اختيار حساب موجود</SelectItem>
-                        <SelectItem value="none">بدون ربط محاسبي</SelectItem>
-                      </SelectContent>
+                       <SelectContent>
+                         <SelectItem value="select_existing">🔗 اختيار حساب موجود (الافتراضي)</SelectItem>
+                         <SelectItem value="create_new">➕ إنشاء حساب جديد</SelectItem>
+                         <SelectItem value="none">❌ بدون ربط محاسبي</SelectItem>
+                       </SelectContent>
                     </Select>
-                    <div className="text-sm text-muted-foreground">
-                      {accountIntegrationType === 'create_new' && "سيتم إنشاء حساب محاسبي جديد خاص بالعميل"}
-                      {accountIntegrationType === 'select_existing' && "اختر حساب محاسبي موجود من القائمة"}
-                      {accountIntegrationType === 'none' && "لن يتم ربط العميل بأي حساب محاسبي"}
-                    </div>
+                     <div className="text-sm text-muted-foreground space-y-1">
+                       {accountIntegrationType === 'select_existing' && (
+                         <div className="text-blue-600 font-medium">✅ اختر حساب محاسبي موجود من القائمة (سيظهر الحساب 1130201)</div>
+                       )}
+                       {accountIntegrationType === 'create_new' && (
+                         <div className="text-amber-600">سيتم إنشاء حساب محاسبي جديد خاص بالعميل</div>
+                       )}
+                       {accountIntegrationType === 'none' && (
+                         <div className="text-red-600">لن يتم ربط العميل بأي حساب محاسبي</div>
+                       )}
+                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
