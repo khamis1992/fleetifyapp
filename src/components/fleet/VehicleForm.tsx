@@ -1123,7 +1123,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                 <CommandList>
                                   <CommandEmpty>لا توجد مراكز تكلفة.</CommandEmpty>
                                   <CommandGroup>
-                                    {costCenters?.map((center) => (
+                                    {(costCenters || []).map((center) => (
                                       <CommandItem
                                         key={center.id}
                                         value={`${center.center_name_ar || center.center_name} ${center.center_code}`}

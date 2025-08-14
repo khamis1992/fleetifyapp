@@ -716,7 +716,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                                          </span>
                                        </div>
                                      </CommandItem>
-                                      {availableAccounts
+                                       {(availableAccounts || [])
                                         .filter(account => {
                                           if (!accountSearchValue) return true;
                                           const searchLower = accountSearchValue.toLowerCase();

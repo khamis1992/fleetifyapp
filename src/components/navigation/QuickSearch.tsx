@@ -269,7 +269,7 @@ export const QuickSearch: React.FC = () => {
           {/* Recent Pages */}
           {!query && recentPages.length > 0 && (
             <CommandGroup heading="الصفحات الأخيرة">
-              {recentPages.map((page) => {
+              {(recentPages || []).map((page) => {
                 const item = searchItems.find(item => item.path === page.path);
                 if (!item) return null;
                 
@@ -292,7 +292,7 @@ export const QuickSearch: React.FC = () => {
             <>
               <CommandSeparator />
               <CommandGroup heading="الصفحات الأكثر زيارة">
-                {frequentPages.map((page) => {
+                {(frequentPages || []).map((page) => {
                   const item = searchItems.find(item => item.path === page.path);
                   if (!item) return null;
                   
@@ -317,7 +317,7 @@ export const QuickSearch: React.FC = () => {
           {/* Search Results */}
           {query && Object.entries(groupedItems).map(([category, items]) => (
             <CommandGroup key={category} heading={category}>
-              {items.map((item) => (
+              {(items || []).map((item) => (
                 <CommandItem
                   key={item.id}
                   value={item.title}
