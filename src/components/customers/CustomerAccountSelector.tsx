@@ -101,7 +101,6 @@ export function CustomerAccountFormSelector({
           <AlertDescription>
             <div className="space-y-2">
               <label className="block text-sm font-medium">
-                🚨 بديل HTML Select:
               </label>
               <select className="w-full p-2 border rounded" value={value || ''} onChange={e => {
             if (e.target.value) {
