@@ -79,57 +79,122 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
   // تم إدخال اسم شركة التاجر نصيًا، لا حاجة لجلب قائمة التجار
 
-  // Fetch available vehicles
+  // Fetch available vehicles - ENHANCED with comprehensive error handling
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
     queryKey: ['available-vehicles', user?.id],
     queryFn: async () => {
-      if (!user?.id) {
-        console.warn('لا يوجد معرف مستخدم لجلب المركبات');
-        return [];
+      try {
+        console.log('🔄 بدء جلب المركبات المتاحة...');
+        
+        if (!user?.id) {
+          console.warn('⚠️ لا يوجد معرف مستخدم لجلب المركبات');
+          return [];
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('❌ خطأ في جلب بيانات ملف التعريف:', profileError);
+          throw new Error('تعذر الوصول لبيانات الشركة');
+        }
+
+        if (!profile?.company_id) {
+          console.warn('⚠️ لا يوجد معرف شركة في ملف التعريف');
+          return [];
+        }
+
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select('id, plate_number, make, model, year')
+          .eq('company_id', profile.company_id)
+          .eq('is_active', true)
+          .order('plate_number', { ascending: true });
+
+        if (error) {
+          console.error('❌ خطأ في جلب المركبات:', error);
+          throw new Error('تعذر تحميل قائمة المركبات');
+        }
+
+        // Enhanced data validation
+        const validVehicles = (data || []).filter(vehicle => {
+          const isValid = vehicle && 
+                         typeof vehicle.id === 'string' && 
+                         vehicle.id.length > 0 &&
+                         typeof vehicle.plate_number === 'string' &&
+                         vehicle.plate_number.length > 0;
+          
+          if (!isValid) {
+            console.warn('⚠️ مركبة غير صالحة تم تجاهلها:', vehicle);
+          }
+          return isValid;
+        });
+
+        console.log(`✅ تم جلب ${validVehicles.length} مركبة صالحة بنجاح`);
+        return validVehicles;
+      } catch (error) {
+        console.error('💥 خطأ شامل في جلب المركبات:', error);
+        throw error;
       }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError) {
-        console.error('خطأ في جلب بيانات ملف التعريف:', profileError);
-        throw new Error('تعذر الوصول لبيانات الشركة');
-      }
-
-      if (!profile?.company_id) {
-        console.warn('لا يوجد معرف شركة في ملف التعريف');
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('id, plate_number, make, model, year')
-        .eq('company_id', profile.company_id)
-        .eq('is_active', true) // Only get active vehicles
-        .order('plate_number', { ascending: true });
-
-      if (error) {
-        console.error('خطأ في جلب المركبات:', error);
-        throw new Error('تعذر تحميل قائمة المركبات');
-      }
-
-      console.log('تم جلب المركبات بنجاح:', data?.length || 0);
-      return data || [];
     },
     enabled: !!user?.id,
     retry: 2,
     retryDelay: 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const addVehicle = () => {
-    setVehicleAllocations(prev => [...prev, { vehicle_id: "", allocated_amount: 0 }]);
+    try {
+      console.log('➕ إضافة مركبة جديدة...');
+      setVehicleAllocations(prev => {
+        // Validate current state
+        if (!Array.isArray(prev)) {
+          console.error('❌ vehicleAllocations ليس مصفوفة:', prev);
+          return [{ vehicle_id: "", allocated_amount: 0 }];
+        }
+        
+        const newAllocations = [...prev, { vehicle_id: "", allocated_amount: 0 }];
+        console.log(`✅ تمت إضافة مركبة. العدد الحالي: ${newAllocations.length}`);
+        return newAllocations;
+      });
+    } catch (error) {
+      console.error('💥 خطأ في إضافة المركبة:', error);
+      toast.error('حدث خطأ في إضافة المركبة');
+    }
   };
 
   const removeVehicle = (index: number) => {
-    setVehicleAllocations(prev => prev.filter((_, i) => i !== index));
+    try {
+      console.log(`🗑️ إزالة المركبة في المؤشر: ${index}`);
+      
+      if (typeof index !== 'number' || index < 0) {
+        console.error('❌ مؤشر غير صالح للحذف:', index);
+        toast.error('خطأ في تحديد المركبة للحذف');
+        return;
+      }
+      
+      setVehicleAllocations(prev => {
+        if (!Array.isArray(prev)) {
+          console.error('❌ vehicleAllocations ليس مصفوفة:', prev);
+          return [];
+        }
+        
+        if (index >= prev.length) {
+          console.error('❌ المؤشر خارج النطاق:', index, 'الطول:', prev.length);
+          return prev;
+        }
+        
+        const newAllocations = prev.filter((_, i) => i !== index);
+        console.log(`✅ تمت إزالة المركبة. العدد المتبقي: ${newAllocations.length}`);
+        return newAllocations;
+      });
+    } catch (error) {
+      console.error('💥 خطأ في إزالة المركبة:', error);
+      toast.error('حدث خطأ في إزالة المركبة');
+    }
   };
 
   const updateVehicleAllocation = (index: number, field: keyof VehicleAllocation, value: string | number) => {
@@ -570,24 +635,74 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                   <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
                     <div className="flex-1">
                       <label className="text-sm font-medium">المركبة</label>
-                      <VehicleSelector
-                        vehicles={Array.isArray(vehicles) ? vehicles : []}
+                       <VehicleSelector
+                        vehicles={(() => {
+                          try {
+                            console.log('🔄 إعداد المركبات لـ VehicleSelector...');
+                            
+                            if (!vehicles || !Array.isArray(vehicles)) {
+                              console.warn('⚠️ المركبات غير متاحة أو ليست مصفوفة:', vehicles);
+                              return [];
+                            }
+                            
+                            const safeVehicles = vehicles.filter(v => {
+                              return v && 
+                                     typeof v.id === 'string' && 
+                                     v.id.length > 0 &&
+                                     typeof v.plate_number === 'string' &&
+                                     v.plate_number.length > 0;
+                            });
+                            
+                            console.log(`✅ تم إعداد ${safeVehicles.length} مركبة صالحة`);
+                            return safeVehicles;
+                          } catch (error) {
+                            console.error('💥 خطأ في إعداد المركبات:', error);
+                            return [];
+                          }
+                        })()}
                         selectedVehicleId={allocation?.vehicle_id || ''}
-                        excludeVehicleIds={Array.isArray(vehicleAllocations) ? 
-                          vehicleAllocations
-                            .map((a, i) => (i !== index && a?.vehicle_id) ? a.vehicle_id : '')
-                            .filter(id => id && typeof id === 'string') : []}
+                        excludeVehicleIds={(() => {
+                          try {
+                            console.log('🔄 إعداد قائمة الاستثناءات...');
+                            
+                            if (!Array.isArray(vehicleAllocations)) {
+                              console.warn('⚠️ vehicleAllocations ليس مصفوفة:', vehicleAllocations);
+                              return [];
+                            }
+                            
+                            const excludeIds = vehicleAllocations
+                              .map((a, i) => {
+                                // Don't exclude current allocation
+                                if (i === index) return null;
+                                // Only include valid vehicle IDs
+                                return (a && a.vehicle_id && typeof a.vehicle_id === 'string' && a.vehicle_id.length > 0) 
+                                  ? a.vehicle_id 
+                                  : null;
+                              })
+                              .filter(id => id !== null) as string[];
+                            
+                            console.log(`✅ تم إعداد ${excludeIds.length} معرف استثناء`);
+                            return excludeIds;
+                          } catch (error) {
+                            console.error('💥 خطأ في إعداد قائمة الاستثناءات:', error);
+                            return [];
+                          }
+                        })()}
                         onSelect={(vehicleId) => {
                           try {
-                            if (vehicleId && typeof vehicleId === 'string') {
-                              updateVehicleAllocation(index, 'vehicle_id', vehicleId);
-                            } else {
-                              console.error('Invalid vehicleId received:', vehicleId);
+                            console.log('🎯 تم اختيار المركبة:', vehicleId);
+                            
+                            if (!vehicleId || typeof vehicleId !== 'string' || vehicleId.length === 0) {
+                              console.error('❌ معرف المركبة غير صالح:', vehicleId);
                               toast.error('معرف المركبة غير صالح');
+                              return;
                             }
+                            
+                            updateVehicleAllocation(index, 'vehicle_id', vehicleId);
+                            console.log('✅ تم تحديث تخصيص المركبة بنجاح');
                           } catch (error) {
-                            console.error('Error in vehicle selection callback:', error);
-                            toast.error('خطأ في اختيار المركبة');
+                            console.error('💥 خطأ في معالجة اختيار المركبة:', error);
+                            toast.error('حدث خطأ في اختيار المركبة');
                           }
                         }}
                         placeholder="اختر المركبة..."

@@ -50,56 +50,113 @@ export function VehicleSelector({
   const debouncedSearch = useDebounce(searchValue, 300);
 
   try {
-    // Comprehensive data validation and sanitization
+    // Safe vehicle data processing - CRITICAL FIX for undefined iteration
     const safeVehicles = (() => {
-      if (!vehicles) {
-        console.warn('VehicleSelector: vehicles prop is null/undefined');
+      try {
+        console.log('🔍 VehicleSelector: معالجة بيانات المركبات...');
+        
+        if (!vehicles) {
+          console.warn('⚠️ VehicleSelector: vehicles prop is null/undefined');
+          return [];
+        }
+        if (!Array.isArray(vehicles)) {
+          console.warn('⚠️ VehicleSelector: vehicles prop is not an array:', typeof vehicles);
+          return [];
+        }
+        
+        const validVehicles = vehicles.filter(vehicle => {
+          if (!vehicle) {
+            console.warn('⚠️ VehicleSelector: null/undefined vehicle in array');
+            return false;
+          }
+          if (!vehicle.id || typeof vehicle.id !== 'string') {
+            console.warn('⚠️ VehicleSelector: invalid vehicle.id:', vehicle.id);
+            return false;
+          }
+          if (!vehicle.plate_number || typeof vehicle.plate_number !== 'string') {
+            console.warn('⚠️ VehicleSelector: invalid vehicle.plate_number:', vehicle.plate_number);
+            return false;
+          }
+          return true;
+        }) || [];
+        
+        console.log(`✅ VehicleSelector: تمت معالجة ${validVehicles.length} من ${vehicles.length} مركبة بنجاح`);
+        return validVehicles;
+      } catch (error) {
+        console.error('💥 VehicleSelector: Error processing vehicles:', error);
         return [];
       }
-      if (!Array.isArray(vehicles)) {
-        console.warn('VehicleSelector: vehicles prop is not an array:', typeof vehicles);
-        return [];
-      }
-      return vehicles.filter(vehicle => {
-        if (!vehicle || typeof vehicle !== 'object') {
-          console.warn('VehicleSelector: Invalid vehicle object:', vehicle);
-          return false;
-        }
-        if (!vehicle.id || typeof vehicle.id !== 'string') {
-          console.warn('VehicleSelector: Vehicle missing valid id:', vehicle);
-          return false;
-        }
-        if (!vehicle.plate_number || typeof vehicle.plate_number !== 'string') {
-          console.warn('VehicleSelector: Vehicle missing valid plate_number:', vehicle);
-          return false;
-        }
-        return true;
-      }) || [];
     })();
 
     // Safe exclusion list processing - CRITICAL FIX for undefined iteration
     const safeExcludeIds = (() => {
-      if (!excludeVehicleIds) return [];
-      if (!Array.isArray(excludeVehicleIds)) {
-        console.warn('VehicleSelector: excludeVehicleIds is not an array:', typeof excludeVehicleIds);
+      try {
+        console.log('🔍 VehicleSelector: معالجة قائمة الاستثناءات...');
+        
+        if (!excludeVehicleIds) {
+          console.log('✅ VehicleSelector: لا توجد مركبات مستثناة');
+          return [];
+        }
+        if (!Array.isArray(excludeVehicleIds)) {
+          console.warn('⚠️ VehicleSelector: excludeVehicleIds is not an array:', typeof excludeVehicleIds);
+          return [];
+        }
+        
+        const validExcludeIds = (excludeVehicleIds || []).filter(id => {
+          if (!id) return false;
+          if (typeof id !== 'string') {
+            console.warn('⚠️ VehicleSelector: invalid exclude ID type:', typeof id, id);
+            return false;
+          }
+          return true;
+        });
+        
+        console.log(`✅ VehicleSelector: تمت معالجة ${validExcludeIds.length} معرف استثناء`);
+        return validExcludeIds;
+      } catch (error) {
+        console.error('💥 VehicleSelector: Error processing exclude IDs:', error);
         return [];
       }
-      return (excludeVehicleIds || []).filter(id => id && typeof id === 'string');
     })();
     
     // Filter vehicles based on exclusions and search - CRITICAL FIX
-    const filteredVehicles = (safeVehicles || [])
-      .filter(vehicle => !(safeExcludeIds || []).includes(vehicle?.id))
-      .filter(vehicle => {
-        if (!debouncedSearch) return true;
-        const searchLower = debouncedSearch.toLowerCase();
-        return (
-          (vehicle?.plate_number || '').toLowerCase().includes(searchLower) ||
-          (vehicle?.make || '').toLowerCase().includes(searchLower) ||
-          (vehicle?.model || '').toLowerCase().includes(searchLower) ||
-          (vehicle?.year || '').toString().includes(searchLower)
-        );
-      }) || [];
+    const filteredVehicles = (() => {
+      try {
+        console.log('🔍 VehicleSelector: تطبيق الفلاتر على المركبات...');
+        
+        let result = (safeVehicles || []);
+        
+        // Apply exclusion filter
+        if ((safeExcludeIds || []).length > 0) {
+          result = result.filter(vehicle => {
+            if (!vehicle?.id) return false;
+            const isExcluded = (safeExcludeIds || []).includes(vehicle.id);
+            return !isExcluded;
+          });
+          console.log(`✅ VehicleSelector: تم استثناء ${safeExcludeIds.length} مركبة، المتبقي: ${result.length}`);
+        }
+        
+        // Apply search filter
+        if (debouncedSearch && debouncedSearch.trim().length > 0) {
+          const searchLower = debouncedSearch.toLowerCase().trim();
+          result = result.filter(vehicle => {
+            if (!vehicle) return false;
+            return (
+              (vehicle?.plate_number || '').toLowerCase().includes(searchLower) ||
+              (vehicle?.make || '').toLowerCase().includes(searchLower) ||
+              (vehicle?.model || '').toLowerCase().includes(searchLower) ||
+              (vehicle?.year || '').toString().includes(searchLower)
+            );
+          });
+          console.log(`✅ VehicleSelector: تطبيق البحث "${searchLower}"، النتائج: ${result.length}`);
+        }
+        
+        return result || [];
+      } catch (error) {
+        console.error('💥 VehicleSelector: Error filtering vehicles:', error);
+        return [];
+      }
+    })();
 
     const selectedVehicle = safeVehicles.find(v => v?.id === selectedVehicleId);
 
