@@ -24,6 +24,7 @@ interface TemplateFormData {
   auto_calculate_pricing: boolean
   requires_approval: boolean
   approval_threshold: number
+  account_id: string // الحساب المحاسبي الرئيسي
   revenue_account_id: string
   receivables_account_id: string
   cost_center_id: string
@@ -64,6 +65,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
       auto_calculate_pricing: data.auto_calculate_pricing,
       requires_approval: data.requires_approval,
       approval_threshold: data.approval_threshold,
+      account_id: data.account_id || undefined, // الحساب المحاسبي الرئيسي
       account_mappings: {
         revenue_account_id: data.revenue_account_id || undefined,
         receivables_account_id: data.receivables_account_id || undefined,
@@ -95,6 +97,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
     setValue('auto_calculate_pricing', template.auto_calculate_pricing)
     setValue('requires_approval', template.requires_approval)
     setValue('approval_threshold', template.approval_threshold)
+    setValue('account_id', template.account_id || '') // الحساب المحاسبي الرئيسي
     setValue('revenue_account_id', template.account_mappings.revenue_account_id || '')
     setValue('receivables_account_id', template.account_mappings.receivables_account_id || '')
     setValue('cost_center_id', template.account_mappings.cost_center_id || '')
@@ -212,12 +215,16 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">ربط الحسابات المحاسبية</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  {/* الحساب المحاسبي الرئيسي - سيتم اختياره تلقائياً في العقود */}
                   <div className="space-y-2">
-                    <Label htmlFor="receivables_account_id">حساب المدينين</Label>
-                    <Select onValueChange={(value) => setValue('receivables_account_id', value)}>
+                    <Label htmlFor="account_id">الحساب المحاسبي للعقد *</Label>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      سيتم اختيار هذا الحساب تلقائياً عند استخدام القالب في إنشاء العقود
+                    </div>
+                    <Select onValueChange={(value) => setValue('account_id', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر حساب المدينين" />
+                        <SelectValue placeholder="اختر الحساب المحاسبي" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">بدون ربط</SelectItem>
@@ -230,21 +237,40 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="revenue_account_id">حساب الإيرادات</Label>
-                    <Select onValueChange={(value) => setValue('revenue_account_id', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر حساب الإيرادات" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">بدون ربط</SelectItem>
-                        {accounts?.map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            {account.account_code} - {account.account_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="receivables_account_id">حساب المدينين</Label>
+                      <Select onValueChange={(value) => setValue('receivables_account_id', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر حساب المدينين" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون ربط</SelectItem>
+                          {accounts?.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.account_code} - {account.account_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="revenue_account_id">حساب الإيرادات</Label>
+                      <Select onValueChange={(value) => setValue('revenue_account_id', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر حساب الإيرادات" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون ربط</SelectItem>
+                          {accounts?.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.account_code} - {account.account_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>

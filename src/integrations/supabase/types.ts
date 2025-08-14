@@ -1917,6 +1917,7 @@ export type Database = {
       }
       contract_templates: {
         Row: {
+          account_id: string | null
           account_mappings: Json
           approval_threshold: number
           auto_calculate_pricing: boolean
@@ -1934,6 +1935,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           account_mappings?: Json
           approval_threshold?: number
           auto_calculate_pricing?: boolean
@@ -1951,6 +1953,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           account_mappings?: Json
           approval_threshold?: number
           auto_calculate_pricing?: boolean
@@ -1967,7 +1970,15 @@ export type Database = {
           template_name_ar?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_contract_templates_account"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contract_vehicle_returns: {
         Row: {
@@ -10023,6 +10034,23 @@ export type Database = {
           operation_type: string
           performed_at: string
           performed_by_name: string
+        }[]
+      }
+      get_contract_template_by_type: {
+        Args: { p_company_id: string; p_contract_type: string }
+        Returns: {
+          account_id: string
+          account_mappings: Json
+          approval_required: boolean
+          approval_workflow_id: string
+          contract_type: string
+          created_at: string
+          duration_days: number
+          id: string
+          is_active: boolean
+          template_name: string
+          template_name_ar: string
+          terms: string
         }[]
       }
       get_contracts_pending_approval: {

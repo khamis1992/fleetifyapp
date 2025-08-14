@@ -159,11 +159,20 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   useEffect(() => {
     if (template && data.contract_type) {
       const appliedData = applyTemplate(template, data)
-      // Only update terms if empty to avoid overriding user changes
+      // Only update terms and account_id if empty to avoid overriding user changes
+      const updates: any = {}
+      
       if (!data.terms || data.terms.trim() === '') {
-        updateData({ 
-          terms: appliedData.terms
-        })
+        updates.terms = appliedData.terms
+      }
+      
+      // تطبيق الحساب المحاسبي من القالب تلقائياً
+      if (appliedData.account_id && !data.account_id) {
+        updates.account_id = appliedData.account_id
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        updateData(updates)
       }
     }
   }, [data.contract_type, template])

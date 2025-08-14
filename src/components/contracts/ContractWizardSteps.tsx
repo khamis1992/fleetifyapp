@@ -743,73 +743,25 @@ export const FinancialStep: React.FC = () => {
             </div>
           )}
           
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="account_id">الحساب المحاسبي</Label>
-              {customerLinkedAccounts && customerLinkedAccounts.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  تم اختياره تلقائياً
-                </Badge>
-              )}
+          {/* عرض الحساب المحاسبي المحدد من القالب */}
+          {data.account_id && (
+            <div className="space-y-2">
+              <Label>الحساب المحاسبي</Label>
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      تم اختيار الحساب تلقائياً من القالب
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      معرف الحساب: {data.account_id}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Select 
-              value={data.account_id} 
-              onValueChange={(value) => updateData({ account_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر الحساب المحاسبي" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">بدون ربط محاسبي</SelectItem>
-                {/* Show customer's linked accounts first */}
-                {customerLinkedAccounts && customerLinkedAccounts.length > 0 && (
-                  <>
-                    <SelectItem disabled value="customer_accounts_header">
-                      <div className="text-xs font-medium text-muted-foreground">
-                        حسابات العميل
-                      </div>
-                    </SelectItem>
-                    {customerLinkedAccounts.map((customerAccount) => {
-                      const account = Array.isArray(customerAccount.chart_of_accounts) 
-                        ? customerAccount.chart_of_accounts[0] 
-                        : customerAccount.chart_of_accounts;
-                      if (!account || typeof account !== 'object' || !('id' in account)) return null;
-                      
-                      const accountData = account as any;
-                      return (
-                        <SelectItem key={accountData.id} value={accountData.id}>
-                          <div className="flex flex-col">
-                            <span>{accountData.account_code} - {accountData.account_name}</span>
-                            {accountData.account_name_ar && (
-                              <span className="text-xs text-muted-foreground">{accountData.account_name_ar}</span>
-                            )}
-                            <Badge variant="outline" className="text-xs w-fit mt-1">
-                              حساب العميل
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                    <SelectItem disabled value="other_accounts_header">
-                      <div className="text-xs font-medium text-muted-foreground">
-                        حسابات أخرى
-                      </div>
-                    </SelectItem>
-                  </>
-                )}
-                {entryAllowedAccounts?.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    <div className="flex flex-col">
-                      <span>{account.account_code} - {account.account_name}</span>
-                      {account.account_name_ar && (
-                        <span className="text-xs text-muted-foreground">{account.account_name_ar}</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          )}
           
           {/* Cost center field removed - now handled automatically */}
         </div>

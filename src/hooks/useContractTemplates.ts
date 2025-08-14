@@ -11,6 +11,7 @@ export interface ContractTemplate {
   auto_calculate_pricing: boolean
   requires_approval: boolean
   approval_threshold: number
+  account_id?: string // إضافة الحساب المحاسبي مباشرة
   account_mappings: {
     revenue_account_id?: string
     receivables_account_id?: string
@@ -176,7 +177,8 @@ export const useApplyTemplate = () => {
       contract_type: template.contract_type,
       terms: template.default_terms,
       rental_days: template.default_duration_days,
-      account_id: template.account_mappings.receivables_account_id || '',
+      // تطبيق الحساب المحاسبي من القالب مباشرة
+      account_id: template.account_id || template.account_mappings.receivables_account_id || '',
       cost_center_id: template.account_mappings.cost_center_id || '',
       // Calculate end date based on default duration
       end_date: template.default_duration_days > 0 
