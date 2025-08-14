@@ -413,20 +413,25 @@ export default function Customers() {
       </div>
 
       {/* نماذج الحوار */}
-      {showCustomerForm && (
-        <EnhancedCustomerForm
-          customer={editingCustomer}
-          onSuccess={(customer) => {
-            console.log('✅ Customer saved successfully:', customer)
-            setShowCustomerForm(false)
+      <EnhancedCustomerForm
+        open={showCustomerForm}
+        onOpenChange={(open) => {
+          setShowCustomerForm(open)
+          if (!open) {
             setEditingCustomer(null)
-          }}
-          onCancel={() => {
-            setShowCustomerForm(false)
-            setEditingCustomer(null)
-          }}
-        />
-      )}
+          }
+        }}
+        customer={editingCustomer}
+        onSuccess={(customer) => {
+          console.log('✅ Customer saved successfully:', customer)
+          setShowCustomerForm(false)
+          setEditingCustomer(null)
+        }}
+        onCancel={() => {
+          setShowCustomerForm(false)
+          setEditingCustomer(null)
+        }}
+      />
       
       {/* Customer Details Dialog */}
       {(() => {
