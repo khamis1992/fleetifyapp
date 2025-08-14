@@ -50,25 +50,16 @@ export function CustomerAccountFormSelector({
   companyId
 }: CustomerAccountFormSelectorProps) {
   const { data: availableAccounts, isLoading, error, refetch } = useAvailableCustomerAccounts(companyId);
-  const [forceRender, setForceRender] = React.useState(0);
   const [showDebug, setShowDebug] = React.useState(true); // Enable debug by default
 
-  console.log('🔧 CustomerAccountFormSelector RENDER:', {
+  console.log('🔧 CustomerAccountFormSelector (Chart Source):', {
     companyId,
     accountsCount: availableAccounts?.length || 0,
     isLoading,
     error: error?.message,
     value,
-    forceRender
+    found1130201: !!availableAccounts?.find(acc => acc.account_code === '1130201')
   });
-
-  // Force re-render when data changes
-  React.useEffect(() => {
-    if (availableAccounts) {
-      console.log('📦 Accounts data received:', availableAccounts);
-      setForceRender(prev => prev + 1);
-    }
-  }, [availableAccounts]);
 
   if (isLoading) {
     return (
@@ -102,7 +93,7 @@ export function CustomerAccountFormSelector({
   const account1130201 = filteredAccounts.find(acc => acc.account_code === '1130201');
 
   return (
-    <div className="space-y-2" key={forceRender}>
+    <div className="space-y-2">
       {/* Debug Controls */}
       <div className="flex items-center gap-2">
         <Button
@@ -117,10 +108,7 @@ export function CustomerAccountFormSelector({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => {
-            refetch();
-            setForceRender(prev => prev + 1);
-          }}
+          onClick={() => refetch()}
         >
           🔄 تحديث
         </Button>
@@ -276,7 +264,7 @@ export function CustomerAccountSelector({
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
     setLastUpdate(new Date());
-    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts-FROM-CHART'] });
     queryClient.invalidateQueries({ queryKey: ['customer-linked-accounts'] });
     toast.success('تم تحديث البيانات');
   };

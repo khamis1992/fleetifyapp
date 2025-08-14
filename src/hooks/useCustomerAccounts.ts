@@ -21,54 +21,110 @@ export interface CompanyAccountSettings {
   account_group_by: 'customer_type' | 'none';
 }
 
-// Hook للحصول على الحسابات المتاحة للعملاء
+// Hook للحصول على الحسابات المتاحة للعملاء - نفس دليل الحسابات
 export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
   const effectiveCompanyId = targetCompanyId || companyId;
 
-  console.log('🔥 HOOK CALLED:', {
+  console.log('🔥 USING CHART OF ACCOUNTS APPROACH:', {
     targetCompanyId,
     contextCompanyId: companyId,
     effectiveCompanyId
   });
 
   return useQuery({
-    queryKey: ["available-customer-accounts-FINAL-FIX", effectiveCompanyId],
+    queryKey: ["available-customer-accounts-FROM-CHART", effectiveCompanyId],
     queryFn: async () => {
       if (!effectiveCompanyId) {
         console.warn('⚠️ No effective company ID');
         return [];
       }
 
-      console.log('🚀 CALLING RPC with company:', effectiveCompanyId);
+      try {
+        validateCompanyAccess(effectiveCompanyId);
+        
+        console.log('🚀 FETCHING DIRECTLY FROM CHART_OF_ACCOUNTS');
 
-      const { data, error } = await supabase
-        .rpc("get_available_customer_accounts_v2", {
-          target_company_id: effectiveCompanyId
+        // استخدام نفس منطق useChartOfAccounts مع تصفية للحسابات المناسبة للعملاء
+        const { data, error } = await supabase
+          .from("chart_of_accounts")
+          .select(`
+            id,
+            account_code,
+            account_name,
+            account_name_ar,
+            account_type,
+            account_level,
+            is_header,
+            parent_account_id
+          `)
+          .eq("company_id", effectiveCompanyId)
+          .eq("is_active", true)
+          .in("account_type", ["assets", "liabilities"]) // الحسابات المناسبة للعملاء
+          .gte("account_level", 3) // الحسابات الفرعية فقط
+          .eq("is_header", false) // ليس حساب رئيسي
+          .order("account_code");
+
+        if (error) {
+          console.error("❌ Direct Chart Query Error:", error);
+          throw error;
+        }
+
+        // جلب أسماء الحسابات الأصلية
+        const accountsWithParent = await Promise.all(
+          (data || []).map(async (account) => {
+            let parent_account_name = '';
+            if (account.parent_account_id) {
+              const { data: parentData } = await supabase
+                .from("chart_of_accounts")
+                .select("account_name")
+                .eq("id", account.parent_account_id)
+                .single();
+              parent_account_name = parentData?.account_name || '';
+            }
+
+            // التحقق من الربط مع العملاء
+            const { data: linkedCustomers } = await supabase
+              .from("customer_accounts")
+              .select("customer_id")
+              .eq("account_id", account.id)
+              .eq("company_id", effectiveCompanyId);
+
+            return {
+              id: account.id,
+              account_code: account.account_code,
+              account_name: account.account_name,
+              account_name_ar: account.account_name_ar || account.account_name,
+              parent_account_name,
+              is_available: !linkedCustomers || linkedCustomers.length === 0 // متاح إذا لم يكن مرتبط
+            };
+          })
+        );
+
+        const account1130201 = accountsWithParent.find(acc => acc.account_code === '1130201');
+        
+        console.log('🎯 CHART OF ACCOUNTS RESULT:', {
+          found1130201: !!account1130201,
+          account1130201,
+          totalAccounts: accountsWithParent.length,
+          availableAccounts: accountsWithParent.filter(acc => acc.is_available).length,
+          allAccounts: accountsWithParent.map(acc => ({
+            code: acc.account_code,
+            name: acc.account_name,
+            available: acc.is_available
+          }))
         });
 
-      if (error) {
-        console.error("❌ RPC Error:", error);
+        return accountsWithParent as AvailableCustomerAccount[];
+      } catch (error) {
+        console.error("Customer accounts access error:", error);
         throw error;
       }
-
-      const accounts = (data as AvailableCustomerAccount[]) || [];
-      const account1130201 = accounts.find(acc => acc.account_code === '1130201');
-      
-      console.log('🎯 FINAL RESULT:', {
-        found1130201: !!account1130201,
-        account1130201,
-        totalAccounts: accounts.length,
-        availableAccounts: accounts.filter(acc => acc.is_available).length
-      });
-
-      return accounts;
     },
     enabled: !!effectiveCompanyId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // نفس إعدادات useChartOfAccounts
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -222,10 +278,7 @@ export const useLinkAccountToCustomer = () => {
         queryKey: ["customer-linked-accounts", variables.customerId, companyId] 
       });
       queryClient.invalidateQueries({ 
-        queryKey: ["available-customer-accounts", companyId] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["available-customer-accounts-v2", companyId] 
+        queryKey: ["available-customer-accounts-FROM-CHART", companyId] 
       });
       
       console.log('🔄 [LINK_SUCCESS] Cache invalidated after linking account');
@@ -267,10 +320,7 @@ export const useUnlinkAccountFromCustomer = () => {
         queryKey: ["customer-linked-accounts", variables.customerId, companyId] 
       });
       queryClient.invalidateQueries({ 
-        queryKey: ["available-customer-accounts", companyId] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["available-customer-accounts-v2", companyId] 
+        queryKey: ["available-customer-accounts-FROM-CHART", companyId] 
       });
       
       console.log('🔄 [UNLINK_SUCCESS] Cache invalidated after unlinking account');
