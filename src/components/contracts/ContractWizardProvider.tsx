@@ -131,16 +131,21 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   useEffect(() => {
     if (data.contract_type) {
       const suggestedDuration = getDefaultDurationByType(data.contract_type)
+      const currentTemplate = template
       
       // Always auto-update duration when contract type changes
       updateData({ rental_days: suggestedDuration })
       
       // Show notification about automatic calculation
       if (suggestedDuration > 1) {
-        toast.success(`تم تعيين مدة العقد تلقائياً إلى ${suggestedDuration} يوم حسب نوع العقد`)
+        if (currentTemplate?.fixed_duration) {
+          toast.success(`تم تعيين مدة العقد إلى ${suggestedDuration} يوم (ثابتة لهذا النوع من العقود)`)
+        } else {
+          toast.success(`تم تعيين مدة العقد تلقائياً إلى ${suggestedDuration} يوم حسب نوع العقد`)
+        }
       }
     }
-  }, [data.contract_type])
+  }, [data.contract_type, template])
 
   // Calculate end date when start date or duration changes
   useEffect(() => {
