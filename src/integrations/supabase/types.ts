@@ -9972,6 +9972,17 @@ export type Database = {
           is_available: boolean
         }[]
       }
+      get_available_customer_accounts_v2: {
+        Args: { target_company_id: string }
+        Returns: {
+          id: string
+          account_code: string
+          account_name: string
+          account_name_ar: string
+          parent_account_name: string
+          is_available: boolean
+        }[]
+      }
       get_available_vehicles_for_contracts: {
         Args: { company_id_param: string }
         Returns: {

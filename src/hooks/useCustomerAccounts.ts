@@ -29,36 +29,47 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
   const effectiveCompanyId = targetCompanyId || companyId;
 
   return useQuery({
-    queryKey: ["available-customer-accounts", effectiveCompanyId],
+    queryKey: ["available-customer-accounts-v2", effectiveCompanyId],
     queryFn: async () => {
       if (!effectiveCompanyId) {
-        console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] No companyId provided');
+        console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] No companyId provided');
         return [];
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetching for companyId:', effectiveCompanyId);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] Fetching for companyId:', effectiveCompanyId);
 
       const { data, error } = await supabase
-        .rpc("get_available_customer_accounts", {
-          company_id_param: effectiveCompanyId
+        .rpc("get_available_customer_accounts_v2", {
+          target_company_id: effectiveCompanyId
         });
 
       if (error) {
-        console.error("Error fetching available customer accounts:", error);
+        console.error("Error fetching available customer accounts v2:", error);
         throw error;
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetched accounts:', data?.length || 0, 'accounts for company:', effectiveCompanyId);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] Raw response:', data);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] Fetched accounts:', data?.length || 0, 'accounts for company:', effectiveCompanyId);
       
+      // Transform and validate data structure
+      const transformedData: AvailableCustomerAccount[] = (data || []).map((account: any) => ({
+        id: account.id,
+        account_code: account.account_code,
+        account_name: account.account_name,
+        account_name_ar: account.account_name_ar,
+        parent_account_name: account.parent_account_name,
+        is_available: account.is_available
+      }));
+
       // Enhanced logging for account 1130201
-      const account1130201 = data?.find(acc => acc.account_code === '1130201');
+      const account1130201 = transformedData.find(acc => acc.account_code === '1130201');
       if (account1130201) {
-        console.log('🎯 Found account 1130201:', account1130201);
+        console.log('🎯 Found account 1130201 after transformation:', account1130201);
       } else {
-        console.log('❌ Account 1130201 NOT found in fetched data');
+        console.log('❌ Account 1130201 NOT found in transformed data');
       }
       
-      return data as AvailableCustomerAccount[];
+      return transformedData;
     },
     enabled: !!effectiveCompanyId,
     // Debug settings to force fresh data
