@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -24,6 +25,148 @@ interface CustomerAccountFormSelectorProps {
   companyId?: string;
 }
 
+// Advanced Account Selector Component
+function AdvancedAccountSelector({
+  value,
+  onValueChange,
+  placeholder = "اختر حساب محاسبي أو اتركه فارغاً للإنشاء التلقائي...",
+  disabled = false,
+  availableAccounts = []
+}: {
+  value?: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  availableAccounts: any[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [autoCreate, setAutoCreate] = useState(false);
+
+  const filteredAccounts = availableAccounts.filter(account =>
+    account.account_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (account.account_name_ar && account.account_name_ar.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const selectedAccount = availableAccounts.find(acc => acc.id === value);
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-muted-foreground">
+          اختيار حساب محاسبي مخصص (اختياري)
+        </label>
+        
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between h-auto min-h-[40px] px-3 py-2"
+              disabled={disabled}
+            >
+              <div className="flex items-center gap-2 text-right flex-1">
+                {selectedAccount ? (
+                  <div className="text-right">
+                    <div className="font-medium">{selectedAccount.account_code} - {selectedAccount.account_name}</div>
+                    {selectedAccount.account_name_ar && (
+                      <div className="text-xs text-muted-foreground">{selectedAccount.account_name_ar}</div>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">{placeholder}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <Badge variant="secondary" className="text-xs">
+                  {filteredAccounts.length}
+                </Badge>
+                <div className="w-4 h-4 opacity-50" />
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0 z-50 bg-background border shadow-lg" align="start">
+            <div className="p-3 space-y-3">
+              {/* Search */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="ابحث في الحسابات..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                />
+              </div>
+
+              {/* Auto-create option */}
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+                <input
+                  type="checkbox"
+                  id="auto-create"
+                  checked={autoCreate}
+                  onChange={(e) => {
+                    setAutoCreate(e.target.checked);
+                    if (e.target.checked) {
+                      onValueChange("");
+                      setOpen(false);
+                    }
+                  }}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="auto-create" className="text-sm font-medium cursor-pointer">
+                  إنشاء حساب تلقائياً
+                </label>
+                <span className="text-xs text-green-600">✓</span>
+              </div>
+
+              {/* Accounts list */}
+              <div className="max-h-60 overflow-auto space-y-1">
+                {filteredAccounts.length > 0 ? (
+                  filteredAccounts.map((account) => (
+                    <div
+                      key={account.id}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+                        value === account.id 
+                          ? 'bg-primary/10 border-primary' 
+                          : 'hover:bg-muted/50 border-transparent'
+                      }`}
+                      onClick={() => {
+                        onValueChange(account.id);
+                        setAutoCreate(false);
+                        setOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="text-right">
+                          <div className="font-medium text-sm">
+                            {account.account_name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {account.account_code} | Current Assets
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    لا توجد حسابات تطابق البحث
+                  </div>
+                )}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  );
+}
+
 // Form component for selecting accounts in customer creation
 export function CustomerAccountFormSelector({
   value,
@@ -38,24 +181,19 @@ export function CustomerAccountFormSelector({
     error,
     refetch
   } = useAvailableCustomerAccounts(companyId);
-  const [showDebug, setShowDebug] = React.useState(true); // Enable debug by default
 
-  console.log('🔧 CustomerAccountFormSelector (Chart Source):', {
-    companyId,
-    accountsCount: availableAccounts?.length || 0,
-    isLoading,
-    error: error?.message,
-    value,
-    found1130201: !!availableAccounts?.find(acc => acc.account_code === '1130201')
-  });
   if (isLoading) {
-    return <div className="flex items-center justify-center py-4">
+    return (
+      <div className="flex items-center justify-center py-4">
         <LoadingSpinner />
         <span className="mr-2 text-sm text-muted-foreground">جاري تحميل الحسابات...</span>
-      </div>;
+      </div>
+    );
   }
+
   if (error) {
-    return <Alert variant="destructive">
+    return (
+      <Alert variant="destructive">
         <InfoIcon className="h-4 w-4" />
         <AlertDescription>
           حدث خطأ في تحميل الحسابات: {error.message}
@@ -63,66 +201,21 @@ export function CustomerAccountFormSelector({
             إعادة المحاولة
           </Button>
         </AlertDescription>
-      </Alert>;
+      </Alert>
+    );
   }
+
   const filteredAccounts = availableAccounts?.filter(account => account.is_available) || [];
-  const account1130201 = filteredAccounts.find(acc => acc.account_code === '1130201');
-  return <div className="space-y-2">
 
-
-      {/* Main HTML Select Component - Guaranteed to work */}
-      <div className="space-y-2">
-        <select value={value || ''} onChange={e => onValueChange(e.target.value)} disabled={disabled} className="w-full h-10 px-3 py-2 text-sm border border-input bg-background rounded-md ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-          <option value="">{placeholder}</option>
-          {filteredAccounts.map(account => <option key={account.id} value={account.id} style={{
-          fontWeight: account.account_code === '1130201' ? 'bold' : 'normal',
-          backgroundColor: account.account_code === '1130201' ? '#dcfce7' : 'white',
-          color: 'black'
-        }}>
-              {account.account_code} - {account.account_name}
-              {account.account_name_ar && account.account_name_ar !== account.account_name ? ` (${account.account_name_ar})` : ''}
-              {account.account_code === '1130201' ? ' 🎯 الهدف' : ''}
-            </option>)}
-        </select>
-        
-        {filteredAccounts.length === 0 && <div className="text-center p-4 border border-dashed rounded-lg">
-            <p className="text-muted-foreground text-sm">
-              لا توجد حسابات متاحة للاختيار
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              إجمالي: {availableAccounts?.length || 0} | متاحة: {filteredAccounts.length}
-            </p>
-          </div>}
-      </div>
-
-      {/* Emergency Fallback */}
-      {showDebug && filteredAccounts.length > 0 && <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-              </label>
-              <select className="w-full p-2 border rounded" value={value || ''} onChange={e => {
-            if (e.target.value) {
-              onValueChange(e.target.value);
-              console.log('✅ Selected via HTML:', e.target.value);
-            }
-          }}>
-                <option value="">اختر حساب...</option>
-                {filteredAccounts.map(account => <option key={account.id} value={account.id} style={{
-              fontWeight: account.account_code === '1130201' ? 'bold' : 'normal',
-              backgroundColor: account.account_code === '1130201' ? '#dcfce7' : 'white'
-            }}>
-                    {account.account_code} - {account.account_name}
-                    {account.account_code === '1130201' ? ' 🎯' : ''}
-                  </option>)}
-              </select>
-              {account1130201 && <p className="text-xs text-green-600">
-          </p>}
-            </div>
-          </AlertDescription>
-        </Alert>}
-    </div>;
+  return (
+    <AdvancedAccountSelector
+      value={value}
+      onValueChange={onValueChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      availableAccounts={filteredAccounts}
+    />
+  );
 }
 export function CustomerAccountSelector({
   customerId,
