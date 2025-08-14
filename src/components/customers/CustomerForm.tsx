@@ -129,6 +129,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           national_id: customer.national_id || '',
           passport_number: customer.passport_number || '',
           license_number: customer.license_number || '',
+          license_expiry: customer.license_expiry || '',
+          national_id_expiry: customer.national_id_expiry || '',
           address: customer.address || '',
           address_ar: customer.address_ar || '',
           city: customer.city || 'Kuwait City',
@@ -546,13 +548,24 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>رقم الهوية المدنية</Label>
+                      <Label>رقم البطاقة المدنية</Label>
                       <Input 
                         {...register('national_id')} 
                         placeholder="123456789012"
                         dir="ltr"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ انتهاء البطاقة المدنية</Label>
+                      <Input 
+                        type="date"
+                        {...register('national_id_expiry')} 
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>رقم جواز السفر</Label>
                       <Input 
@@ -561,6 +574,26 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                         dir="ltr"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>رقم رخصة القيادة</Label>
+                      <Input 
+                        {...register('license_number')} 
+                        placeholder="K12345678"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>تاريخ انتهاء رخصة القيادة</Label>
+                      <Input 
+                        type="date"
+                        {...register('license_expiry')} 
+                        dir="ltr"
+                      />
+                    </div>
+                    <div></div>
                   </div>
 
                   <div className="space-y-2">

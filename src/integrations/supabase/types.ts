@@ -2541,6 +2541,7 @@ export type Database = {
           license_expiry: string | null
           license_number: string | null
           national_id: string | null
+          national_id_expiry: string | null
           notes: string | null
           passport_number: string | null
           phone: string
@@ -2576,6 +2577,7 @@ export type Database = {
           license_expiry?: string | null
           license_number?: string | null
           national_id?: string | null
+          national_id_expiry?: string | null
           notes?: string | null
           passport_number?: string | null
           phone: string
@@ -2611,6 +2613,7 @@ export type Database = {
           license_expiry?: string | null
           license_number?: string | null
           national_id?: string | null
+          national_id_expiry?: string | null
           notes?: string | null
           passport_number?: string | null
           phone?: string

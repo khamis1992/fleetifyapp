@@ -162,6 +162,17 @@ export const useCreateCustomer = () => {
 
       validateCompanyAccess(targetCompanyId);
 
+      // إضافة التحقق من صلاحية الوثائق قبل الحفظ
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (data.national_id_expiry && data.national_id_expiry < today) {
+        throw new Error('البطاقة المدنية منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل');
+      }
+      
+      if (data.license_expiry && data.license_expiry < today) {
+        throw new Error('رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل');
+      }
+
       const { error } = await supabase
         .from('customers')
         .insert({
@@ -197,6 +208,17 @@ export const useUpdateCustomer = () => {
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([_, value]) => value !== undefined)
       );
+
+      // إضافة التحقق من صلاحية الوثائق قبل التحديث
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (cleanData.national_id_expiry && cleanData.national_id_expiry < today) {
+        throw new Error('البطاقة المدنية منتهية الصلاحية. يجب تجديدها قبل تحديث العميل');
+      }
+      
+      if (cleanData.license_expiry && cleanData.license_expiry < today) {
+        throw new Error('رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تحديث العميل');
+      }
 
       const { error } = await supabase
         .from('customers')

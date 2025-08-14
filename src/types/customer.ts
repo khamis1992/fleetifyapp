@@ -20,6 +20,7 @@ export interface Customer {
   country?: string;
   date_of_birth?: string;
   license_expiry?: string;
+  national_id_expiry?: string;
   credit_limit?: number;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
@@ -55,6 +56,7 @@ export interface CustomerFormData {
   passport_number?: string;
   license_number?: string;
   license_expiry?: string;
+  national_id_expiry?: string;
   address?: string;
   address_ar?: string;
   city?: string;

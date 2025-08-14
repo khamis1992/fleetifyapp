@@ -98,6 +98,98 @@ export const useSmartAlerts = () => {
         });
       }
 
+      // الحصول على العملاء ذوي الوثائق منتهية الصلاحية أو قريبة الانتهاء
+      const { data: expiringLicenses } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type, license_expiry, phone')
+        .eq('company_id', companyId)
+        .not('license_expiry', 'is', null)
+        .gte('license_expiry', today.toISOString().split('T')[0])
+        .lte('license_expiry', nextMonth.toISOString().split('T')[0]);
+
+      const { data: expiringNationalIds } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type, national_id_expiry, phone')
+        .eq('company_id', companyId)
+        .not('national_id_expiry', 'is', null)
+        .gte('national_id_expiry', today.toISOString().split('T')[0])
+        .lte('national_id_expiry', nextMonth.toISOString().split('T')[0]);
+
+      // الحصول على العملاء ذوي الوثائق المنتهية الصلاحية
+      const { data: expiredLicenses } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type, license_expiry, phone')
+        .eq('company_id', companyId)
+        .not('license_expiry', 'is', null)
+        .lt('license_expiry', today.toISOString().split('T')[0]);
+
+      const { data: expiredNationalIds } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, customer_type, national_id_expiry, phone')
+        .eq('company_id', companyId)
+        .not('national_id_expiry', 'is', null)
+        .lt('national_id_expiry', today.toISOString().split('T')[0]);
+
+      // رخص القيادة قريبة الانتهاء
+      if (expiringLicenses && expiringLicenses.length > 0) {
+        alerts.push({
+          id: 'expiring-licenses',
+          type: 'warning',
+          title: 'رخص قيادة قريبة الانتهاء',
+          message: `${expiringLicenses.length} رخصة قيادة ستنتهي خلال 30 يوم`,
+          action: 'عرض التفاصيل',
+          actionUrl: '/customers',
+          priority: 'medium',
+          count: expiringLicenses.length,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      // البطاقات المدنية قريبة الانتهاء
+      if (expiringNationalIds && expiringNationalIds.length > 0) {
+        alerts.push({
+          id: 'expiring-national-ids',
+          type: 'warning',
+          title: 'بطاقات مدنية قريبة الانتهاء',
+          message: `${expiringNationalIds.length} بطاقة مدنية ستنتهي خلال 30 يوم`,
+          action: 'عرض التفاصيل',
+          actionUrl: '/customers',
+          priority: 'medium',
+          count: expiringNationalIds.length,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      // رخص القيادة منتهية الصلاحية
+      if (expiredLicenses && expiredLicenses.length > 0) {
+        alerts.push({
+          id: 'expired-licenses',
+          type: 'error',
+          title: 'رخص قيادة منتهية الصلاحية',
+          message: `${expiredLicenses.length} رخصة قيادة منتهية الصلاحية - يجب التجديد فوراً`,
+          action: 'عرض التفاصيل',
+          actionUrl: '/customers',
+          priority: 'high',
+          count: expiredLicenses.length,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      // البطاقات المدنية منتهية الصلاحية
+      if (expiredNationalIds && expiredNationalIds.length > 0) {
+        alerts.push({
+          id: 'expired-national-ids',
+          type: 'error',
+          title: 'بطاقات مدنية منتهية الصلاحية',
+          message: `${expiredNationalIds.length} بطاقة مدنية منتهية الصلاحية - يجب التجديد فوراً`,
+          action: 'عرض التفاصيل',
+          actionUrl: '/customers',
+          priority: 'high',
+          count: expiredNationalIds.length,
+          created_at: new Date().toISOString()
+        });
+      }
+
       // Check for vehicles needing maintenance (based on mileage or time)
       const { data: vehiclesNeedingMaintenance } = await supabase
         .from('vehicles')
