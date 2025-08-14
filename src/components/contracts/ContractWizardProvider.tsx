@@ -22,6 +22,7 @@ interface ContractWizardData {
   start_date: string
   end_date: string
   rental_days: number
+  rental_months?: number
   
   // Financial
   contract_amount: number

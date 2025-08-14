@@ -377,8 +377,20 @@ export const DatesStep: React.FC = () => {
 
   const handleRentalDaysChange = (days: number) => {
     const endDate = calculateEndDate(data.start_date, days)
+    const months = Math.round(days / 30)
     updateData({ 
       rental_days: days,
+      rental_months: months,
+      end_date: endDate
+    })
+  }
+
+  const handleRentalMonthsChange = (months: number) => {
+    const days = months * 30
+    const endDate = calculateEndDate(data.start_date, days)
+    updateData({ 
+      rental_days: days,
+      rental_months: months,
       end_date: endDate
     })
   }
@@ -426,7 +438,7 @@ export const DatesStep: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="start_date">تاريخ البداية *</Label>
             <Input
@@ -434,6 +446,24 @@ export const DatesStep: React.FC = () => {
               type="date"
               value={data.start_date}
               onChange={(e) => handleStartDateChange(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="rental_months">
+              عدد الأشهر *
+              {isUsingSuggested && (
+                <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
+              )}
+            </Label>
+            <Input
+              id="rental_months"
+              type="number"
+              min="0"
+              step="0.1"
+              value={data.rental_months || Math.round(data.rental_days / 30)}
+              onChange={(e) => handleRentalMonthsChange(parseFloat(e.target.value) || 0)}
+              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
             />
           </div>
           
