@@ -16,7 +16,7 @@ import { useCreateCustomerWithAccount } from "@/hooks/useCreateCustomerWithAccou
 import { useUpdateCustomer } from "@/hooks/useEnhancedCustomers";
 import { Customer } from "@/types/customer";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Building, CreditCard, AlertCircle, Plus, Edit } from "lucide-react";
+import { Loader2, Users, Building, CreditCard, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomerAccountFormSelector } from "./CustomerAccountSelector";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
@@ -64,14 +64,14 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface EnhancedCustomerFormProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
   customer?: Customer | null;
   onSuccess?: (customer: any) => void;
   onCancel?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const EnhancedCustomerForm = ({ open = false, onOpenChange, customer, onSuccess, onCancel }: EnhancedCustomerFormProps) => {
+export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = true, onOpenChange }: EnhancedCustomerFormProps) => {
   const [showFinancialSection, setShowFinancialSection] = useState(false);
   const { companyId } = useUnifiedCompanyAccess();
   const createMutation = useCreateCustomerWithAccount();
@@ -136,7 +136,7 @@ export const EnhancedCustomerForm = ({ open = false, onOpenChange, customer, onS
         },
         {
           onSuccess: (updatedCustomer) => {
-            handleSuccess(updatedCustomer);
+            onSuccess?.(updatedCustomer);
           },
         }
       );
@@ -173,7 +173,7 @@ export const EnhancedCustomerForm = ({ open = false, onOpenChange, customer, onS
       
       createMutation.mutate(createData, {
         onSuccess: (result) => {
-          handleSuccess(result.customer);
+          onSuccess?.(result.customer);
         },
       });
     }
@@ -181,38 +181,24 @@ export const EnhancedCustomerForm = ({ open = false, onOpenChange, customer, onS
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const handleCancel = () => {
-    form.reset();
-    onCancel?.();
-    onOpenChange?.(false);
-  };
-
-  const handleSuccess = (result: any) => {
-    form.reset();
-    onSuccess?.(result);
-    onOpenChange?.(false);
-  };
-
-  // Update the onSuccess callbacks in mutations
-  useEffect(() => {
-    if (createMutation.isSuccess || updateMutation.isSuccess) {
-      form.reset();
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && onCancel) {
+      onCancel();
     }
-  }, [createMutation.isSuccess, updateMutation.isSuccess, form]);
+    onOpenChange?.(newOpen);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {customer ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-            {customer ? 'تعديل العميل' : 'إضافة عميل جديد'}
+          <DialogTitle className="text-xl">
+            {customer ? "تعديل بيانات العميل" : "إضافة عميل جديد"}
           </DialogTitle>
         </DialogHeader>
-        
-        <ScrollArea className="max-h-[75vh] pr-4">
+        <ScrollArea className="max-h-[70vh]">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         {/* Customer Type Selection */}
         <Card>
           <CardHeader>
@@ -539,7 +525,7 @@ export const EnhancedCustomerForm = ({ open = false, onOpenChange, customer, onS
 
         {/* Form Actions */}
         <div className="flex gap-4 justify-end">
-          <Button type="button" variant="outline" onClick={handleCancel}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             إلغاء
           </Button>
           <Button type="submit" disabled={isLoading}>

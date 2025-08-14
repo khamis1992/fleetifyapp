@@ -422,7 +422,8 @@ export default function Customers() {
           }
         }}
         customer={editingCustomer}
-        onSuccess={() => {
+        onSuccess={(customer) => {
+          console.log('✅ Customer saved successfully:', customer)
           setShowCustomerForm(false)
           setEditingCustomer(null)
         }}
