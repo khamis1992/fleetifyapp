@@ -807,17 +807,17 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
 
       try {
-        // Use the improved database function that handles pricing fallbacks
+        // Use the updated database function that includes all required fields
         const { data, error } = await supabase.rpc(
           'get_available_vehicles_for_contracts',
           { company_id_param: companyId }
         )
 
         if (error) {
-          console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database error:", error)
+          console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database function error:", error)
           
           // Fallback to direct vehicle query if function fails
-          console.log("🔄 [AVAILABLE_VEHICLES_CONTRACTS] Trying fallback query...")
+          console.log("🔄 [AVAILABLE_VEHICLES_CONTRACTS] Using fallback query...")
           const fallbackResult = await supabase
             .from('vehicles')
             .select(`
@@ -826,20 +826,24 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
               make,
               model,
               year,
+              color,
               status,
               daily_rate,
               weekly_rate,
               monthly_rate,
               minimum_rental_price,
-              enforce_minimum_price
+              enforce_minimum_price,
+              is_active,
+              company_id
             `)
             .eq('company_id', companyId)
             .eq('is_active', true)
             .in('status', ['available', 'reserved'])
+            .order('plate_number')
 
           if (fallbackResult.error) {
-            console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fallback also failed:", fallbackResult.error)
-            throw fallbackResult.error
+            console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fallback query failed:", fallbackResult.error)
+            throw new Error(`Failed to fetch vehicles: ${fallbackResult.error.message}`)
           }
 
           console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Fallback successful:", fallbackResult.data?.length || 0)
@@ -848,6 +852,18 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
 
         const availableVehicles = data || []
         console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", availableVehicles.length)
+
+        // Validate that all required fields are present
+        const validatedVehicles = availableVehicles.map(vehicle => ({
+          ...vehicle,
+          daily_rate: vehicle.daily_rate ?? 0,
+          weekly_rate: vehicle.weekly_rate ?? 0,
+          monthly_rate: vehicle.monthly_rate ?? 0,
+          minimum_rental_price: vehicle.minimum_rental_price ?? 0,
+          enforce_minimum_price: vehicle.enforce_minimum_price ?? false
+        }))
+
+        return validatedVehicles
 
         // Ensure pricing defaults for vehicles without pricing data
         const vehiclesWithDefaults = availableVehicles.map(vehicle => ({
