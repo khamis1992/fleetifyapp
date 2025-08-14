@@ -546,108 +546,166 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                   </TabsContent>
 
                   {/* بيانات إضافية */}
-                  <TabsContent value="additional" className="space-y-6 mt-0">
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-medium">بيانات إضافية</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="national_id"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>الرقم المدني</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="ادخل الرقم المدني" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="passport_number"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>رقم الجواز</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="ادخل رقم الجواز" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="license_number"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>رقم الرخصة</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="ادخل رقم الرخصة" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="license_expiry"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>تاريخ انتهاء الرخصة</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="date" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="date_of_birth"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>تاريخ الميلاد</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="date" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="credit_limit"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>الحد الائتماني</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  {...field} 
-                                  type="number" 
-                                  placeholder="0"
-                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                  <TabsContent value="additional" className="space-y-8 mt-0" dir="rtl">
+                    <div className="space-y-8">
+                      {/* الوثائق الرسمية */}
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-right">الوثائق الرسمية</h3>
+                        <div className="grid grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="passport_number"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">رقم الجواز</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="ادخل رقم الجواز" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="national_id"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">الرقم المدني</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="ادخل الرقم المدني" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      // تعبئة رقم الرخصة تلقائياً بنفس الرقم المدني
+                                      form.setValue('license_number', e.target.value);
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="license_expiry"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">تاريخ انتهاء الرخصة</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="date" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="license_number"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">رقم الرخصة</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="يتم تعبئته تلقائياً من الرقم المدني" 
+                                    className="text-right h-12 text-base bg-muted"
+                                    dir="rtl"
+                                    readOnly
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="date_of_birth"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">تاريخ الميلاد</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="date" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
 
-                      <FormField
-                        control={form.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>ملاحظات</FormLabel>
-                            <FormControl>
-                              <Textarea {...field} placeholder="ادخل أي ملاحظات إضافية" className="min-h-[100px]" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* المعلومات المالية */}
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-right">المعلومات المالية</h3>
+                        <div className="grid grid-cols-1 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="credit_limit"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">الحد الائتماني</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="number" 
+                                    placeholder="0.000"
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* ملاحظات إضافية */}
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-right">ملاحظات إضافية</h3>
+                        <div className="grid grid-cols-1 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="notes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">ملاحظات</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    {...field} 
+                                    placeholder="ادخل أي ملاحظات إضافية" 
+                                    className="min-h-[120px] text-right text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </TabsContent>
 
