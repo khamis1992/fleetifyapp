@@ -399,38 +399,64 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                             <Button
                               variant="outline"
                               role="combobox"
-                              className="w-full justify-between"
+                              aria-expanded={accountSearchOpen[line.id] || false}
+                              className="w-full justify-between h-auto min-h-[2.5rem] text-right"
                             >
-                              {line.account_id
-                                ? accounts?.find((account) => account.id === line.account_id)?.account_name || 'اختر الحساب'
-                                : 'اختر الحساب'}
+                              {line.account_id ? (
+                                <div className="flex flex-col items-start">
+                                  <span className="font-medium">
+                                    {accounts?.find((account) => account.id === line.account_id)?.account_name_ar || 
+                                     accounts?.find((account) => account.id === line.account_id)?.account_name || 'اختر الحساب'}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {accounts?.find((account) => account.id === line.account_id)?.account_code}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span>اختر الحساب...</span>
+                              )}
                               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[400px] p-0">
+                          <PopoverContent className="w-full p-0" align="start">
                             <Command>
-                              <CommandInput placeholder="البحث عن الحساب..." />
+                              <CommandInput placeholder="البحث في الحسابات..." />
                               <CommandList>
-                                <CommandEmpty>لم يتم العثور على حساب.</CommandEmpty>
+                                <CommandEmpty>لا توجد حسابات مطابقة للبحث.</CommandEmpty>
                                 <CommandGroup>
-                                  {accounts?.map((account) => (
-                                    <CommandItem
-                                      key={account.id}
-                                      keywords={[account.account_code, account.account_name, account.account_name_ar || '']}
-                                      onSelect={() => {
-                                        updateLine(line.id, 'account_id', account.id)
-                                        setAccountSearchOpen({...accountSearchOpen, [line.id]: false})
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          line.account_id === account.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      {account.account_code} - {account.account_name_ar || account.account_name}
-                                    </CommandItem>
-                                  ))}
+                                  {accounts
+                                    ?.filter(account => {
+                                      // عرض المستويات الخامس والسادس فقط
+                                      const accountCode = account.account_code || '';
+                                      const level = accountCode.length;
+                                      return level >= 5 && level <= 6;
+                                    })
+                                    ?.map((account) => (
+                                      <CommandItem
+                                        key={account.id}
+                                        value={account.id}
+                                        keywords={[account.account_code, account.account_name, account.account_name_ar || '']}
+                                        onSelect={() => {
+                                          updateLine(line.id, 'account_id', account.id)
+                                          setAccountSearchOpen({...accountSearchOpen, [line.id]: false})
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            line.account_id === account.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex flex-col flex-1">
+                                          <span className="font-medium">
+                                            {account.account_name_ar || account.account_name}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {account.account_code}
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
                                 </CommandGroup>
                               </CommandList>
                             </Command>
