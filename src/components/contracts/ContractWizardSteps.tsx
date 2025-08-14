@@ -567,6 +567,27 @@ export const FinancialStep: React.FC = () => {
   const { user } = useAuth()
   const { data, updateData } = useContractWizard()
   const { validation, isValidating, debouncedValidation } = useContractValidation()
+  
+  // التحقق من صلاحيات التعديل اليدوي
+  const { data: userRoles } = useQuery({
+    queryKey: ['userRoles', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return []
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      return data?.map(r => r.role) || []
+    },
+    enabled: !!user?.id
+  })
+  
+  // التحقق من صلاحية التعديل اليدوي
+  const canEditManually = userRoles?.includes('super_admin') || 
+                          userRoles?.includes('company_admin') || 
+                          userRoles?.includes('accountant')
   const { formatCurrency } = useCurrencyFormatter()
   const [isCustomAmount, setIsCustomAmount] = useState(false)
   
@@ -742,39 +763,40 @@ export const FinancialStep: React.FC = () => {
           </div>
         )}
 
-        {/* خيار التعديل اليدوي للمبلغ */}
-        <Card className="border-2 border-muted">
-          <CardContent className="p-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-muted">
-                    <Edit className="h-4 w-4 text-muted-foreground" />
+        {/* خيار التعديل اليدوي للمبلغ - متاح فقط للمدير والمحاسب */}
+        {canEditManually && (
+          <Card className="border-2 border-muted">
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-muted">
+                      <Edit className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="custom_amount_toggle" className="text-base font-semibold leading-none">
+                        التعديل اليدوي للمبلغ
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        تخصيص مبلغ العقد بدلاً من الحسابات التلقائية
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="custom_amount_toggle" className="text-base font-semibold leading-none">
-                      التعديل اليدوي للمبلغ
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      تخصيص مبلغ العقد بدلاً من الحسابات التلقائية
-                    </p>
-                  </div>
+                  <Switch
+                    id="custom_amount_toggle"
+                    checked={isCustomAmount}
+                    className="transition-all duration-300 hover:scale-105 data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted-foreground/20"
+                    onCheckedChange={(checked) => {
+                      setIsCustomAmount(checked)
+                      if (!checked && calculations) {
+                        updateData({
+                          contract_amount: calculations.totalAmount,
+                          monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
+                        })
+                      }
+                    }}
+                  />
                 </div>
-                <Switch
-                  id="custom_amount_toggle"
-                  checked={isCustomAmount}
-                  className="transition-all duration-300 hover:scale-105 data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted-foreground/20"
-                  onCheckedChange={(checked) => {
-                    setIsCustomAmount(checked)
-                    if (!checked && calculations) {
-                      updateData({
-                        contract_amount: calculations.totalAmount,
-                        monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
-                      })
-                    }
-                  }}
-                />
-              </div>
               
               {isCustomAmount && (
                 <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
@@ -818,6 +840,17 @@ export const FinancialStep: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {/* رسالة للمستخدمين غير المخولين */}
+        {!canEditManually && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertTriangle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              خيار التعديل اليدوي للمبلغ متاح فقط للمدير والمحاسب. سيتم حساب المبلغ تلقائياً بناءً على بيانات المركبة والفترة المحددة.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
