@@ -476,7 +476,7 @@ export const DatesStep: React.FC = () => {
               type="number"
               min="0"
               step="0.1"
-              value={data.rental_months || Math.round(data.rental_days / 30)}
+              value={data.rental_months > 0 ? data.rental_months : (data.rental_days > 0 ? Math.round(data.rental_days / 30) : 0)}
               onChange={(e) => handleRentalMonthsChange(parseFloat(e.target.value) || 0)}
               className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
             />
@@ -493,7 +493,7 @@ export const DatesStep: React.FC = () => {
               id="rental_days"
               type="number"
               min="1"
-              value={data.rental_days}
+              value={data.rental_months > 0 ? 0 : data.rental_days}
               onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
               className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
             />
