@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/useDebounce";
 
-interface Vehicle {
+export interface Vehicle {
   id: string;
   plate_number: string;
   make: string;
@@ -53,7 +53,7 @@ export function VehicleSelector({
   const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
   
   // Filter vehicles based on exclusions and search
-  const filteredVehicles = safeVehicles
+  const filteredVehicles = (safeVehicles || [])
     .filter(vehicle => {
       // Check if vehicle has required properties
       if (!vehicle || !vehicle.id || !vehicle.plate_number) {
