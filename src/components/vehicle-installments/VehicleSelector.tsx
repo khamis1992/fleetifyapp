@@ -74,32 +74,32 @@ export function VehicleSelector({
           return false;
         }
         return true;
-      });
+      }) || [];
     })();
 
-    // Safe exclusion list processing
+    // Safe exclusion list processing - CRITICAL FIX for undefined iteration
     const safeExcludeIds = (() => {
       if (!excludeVehicleIds) return [];
       if (!Array.isArray(excludeVehicleIds)) {
         console.warn('VehicleSelector: excludeVehicleIds is not an array:', typeof excludeVehicleIds);
         return [];
       }
-      return excludeVehicleIds.filter(id => id && typeof id === 'string');
+      return (excludeVehicleIds || []).filter(id => id && typeof id === 'string');
     })();
     
-    // Filter vehicles based on exclusions and search
-    const filteredVehicles = safeVehicles
-      .filter(vehicle => !safeExcludeIds.includes(vehicle.id))
+    // Filter vehicles based on exclusions and search - CRITICAL FIX
+    const filteredVehicles = (safeVehicles || [])
+      .filter(vehicle => !(safeExcludeIds || []).includes(vehicle?.id))
       .filter(vehicle => {
         if (!debouncedSearch) return true;
         const searchLower = debouncedSearch.toLowerCase();
         return (
-          (vehicle.plate_number || '').toLowerCase().includes(searchLower) ||
-          (vehicle.make || '').toLowerCase().includes(searchLower) ||
-          (vehicle.model || '').toLowerCase().includes(searchLower) ||
-          (vehicle.year || '').toString().includes(searchLower)
+          (vehicle?.plate_number || '').toLowerCase().includes(searchLower) ||
+          (vehicle?.make || '').toLowerCase().includes(searchLower) ||
+          (vehicle?.model || '').toLowerCase().includes(searchLower) ||
+          (vehicle?.year || '').toString().includes(searchLower)
         );
-      });
+      }) || [];
 
     const selectedVehicle = safeVehicles.find(v => v?.id === selectedVehicleId);
 
@@ -169,8 +169,8 @@ export function VehicleSelector({
               }
             </CommandEmpty>
             <CommandGroup className="max-h-[200px] overflow-auto">
-              {Array.isArray(filteredVehicles) && filteredVehicles.length > 0 ? 
-                filteredVehicles.map((vehicle) => {
+              {(filteredVehicles || []).length > 0 ? 
+                (filteredVehicles || []).map((vehicle) => {
                   // Final safety check for each vehicle item
                   if (!vehicle || !vehicle.id || typeof vehicle.id !== 'string') {
                     console.warn('مركبة غير صالحة في القائمة المفلترة:', vehicle);
