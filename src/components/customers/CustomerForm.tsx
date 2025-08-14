@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAvailableCustomerAccounts, useCompanyAccountSettings } from "@/hooks/useCustomerAccounts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 interface CustomerFormProps {
   open: boolean;
@@ -33,9 +34,14 @@ interface CustomerFormProps {
 export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
   const { user } = useAuth();
   const { data: companies } = useCompanies();
+  const { companyId: defaultCompanyId, hasGlobalAccess } = useUnifiedCompanyAccess();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
-  const { data: availableAccounts } = useAvailableCustomerAccounts(selectedCompanyId);
-  const { data: accountSettings } = useCompanyAccountSettings();
+  
+  // Determine the effective company ID for queries
+  const effectiveCompanyId = hasGlobalAccess ? selectedCompanyId : defaultCompanyId;
+  
+  const { data: availableAccounts } = useAvailableCustomerAccounts(effectiveCompanyId);
+  const { data: accountSettings } = useCompanyAccountSettings(effectiveCompanyId);
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
   const [accountSearchOpen, setAccountSearchOpen] = useState(false);
@@ -68,7 +74,13 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
     mode, 
     user: user?.email, 
     isSuperAdmin,
-    companies: companies?.length 
+    companies: companies?.length,
+    selectedCompanyId,
+    effectiveCompanyId,
+    hasGlobalAccess,
+    defaultCompanyId,
+    availableAccountsCount: availableAccounts?.length,
+    accountSettings: !!accountSettings
   });
 
   // إعادة تعيين البيانات عند فتح النموذج
@@ -102,6 +114,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           emergency_contact_phone: customer.emergency_contact_phone || '',
           notes: customer.notes || ''
         });
+        // Set company for editing mode
+        setSelectedCompanyId(customer.company_id);
       } else {
         console.log('➕ Creating new customer');
         reset({
@@ -115,12 +129,17 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
           country: 'Kuwait',
           credit_limit: 0,
         });
+        // Initialize company for create mode
+        if (!hasGlobalAccess && defaultCompanyId) {
+          setSelectedCompanyId(defaultCompanyId);
+        } else {
+          setSelectedCompanyId(undefined);
+        }
       }
       setFormErrors([]);
-      setSelectedCompanyId(undefined);
       setSelectedAccountId(undefined);
     }
-  }, [open, customer, mode, reset]);
+  }, [open, customer, mode, reset, hasGlobalAccess, defaultCompanyId]);
 
   // Fill dummy data function
   const fillDummyData = () => {
