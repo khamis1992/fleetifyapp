@@ -83,6 +83,30 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
     accountSettings: !!accountSettings
   });
 
+  // Additional detailed logging for debugging account 1130201
+  console.log('📊 Available Accounts Detail:', {
+    totalAccounts: availableAccounts?.length || 0,
+    accounts: availableAccounts?.map(acc => ({
+      id: acc.id,
+      code: acc.account_code,
+      name: acc.account_name,
+      nameAr: acc.account_name_ar,
+      parentName: acc.parent_account_name,
+      isAvailable: acc.is_available
+    })) || [],
+    targetAccount: availableAccounts?.find(acc => acc.account_code === '1130201'),
+    hasTargetAccount: !!availableAccounts?.find(acc => acc.account_code === '1130201')
+  });
+
+  // Log current company information
+  const currentCompany = companies?.find(c => c.id === effectiveCompanyId);
+  console.log('🏢 Current Company Info:', {
+    effectiveCompanyId,
+    companyName: currentCompany?.name,
+    isAlBashairCompany: currentCompany?.name?.includes('البشائر'),
+    allCompanies: companies?.map(c => ({ id: c.id, name: c.name })) || []
+  });
+
   // إعادة تعيين البيانات عند فتح النموذج
   useEffect(() => {
     if (open) {
