@@ -68,18 +68,6 @@ export function CustomerAccountFormSelector({
   const filteredAccounts = availableAccounts?.filter(account => account.is_available) || [];
   const account1130201 = filteredAccounts.find(acc => acc.account_code === '1130201');
   return <div className="space-y-2">
-      {/* Debug Controls */}
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)}>
-          🔍 تشخيص ({filteredAccounts.length})
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
-          🔄 تحديث
-        </Button>
-        {account1130201 && <Badge variant="default" className="bg-green-100 text-green-800">
-            ✅ 1130201 موجود
-          </Badge>}
-      </div>
 
 
       {/* Main HTML Select Component - Guaranteed to work */}
