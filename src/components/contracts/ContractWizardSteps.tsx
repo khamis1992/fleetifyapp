@@ -1102,7 +1102,12 @@ export const ReviewStep: React.FC = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">المدة:</span>
-                <p className="font-medium">{data.rental_days} يوم</p>
+                <p className="font-medium">
+                  {data.rental_months && data.rental_months > 0 
+                    ? `${data.rental_months} شهر${data.rental_months > 1 ? '' : ''}`
+                    : `${data.rental_days} يوم`
+                  }
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">المبلغ الإجمالي:</span>
