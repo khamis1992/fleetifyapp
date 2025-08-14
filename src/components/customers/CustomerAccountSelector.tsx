@@ -60,14 +60,25 @@ export function CustomerAccountSelector({
     }
   }, [availableAccounts]);
 
-  // Force refresh function
+  // Enhanced force refresh function with comprehensive cache clearing
   const handleForceRefresh = () => {
-    console.log('🔄 Force refreshing data...');
+    console.log('🔄 [REFRESH] Starting comprehensive refresh...');
+    
+    // Clear all related caches
     queryClient.invalidateQueries({ queryKey: ['available-customer-accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts-v2'] });
     queryClient.invalidateQueries({ queryKey: ['customer-linked-accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['company-account-settings'] });
+    
+    // Remove cached data completely
+    queryClient.removeQueries({ queryKey: ['available-customer-accounts'] });
+    queryClient.removeQueries({ queryKey: ['available-customer-accounts-v2'] });
+    
     setRefreshKey(prev => prev + 1);
     setLastUpdate(new Date());
-    toast.success('تم تحديث البيانات');
+    
+    console.log('🔄 [REFRESH] Cache cleared, forcing re-fetch...');
+    toast.success('تم تحديث البيانات بالكامل');
   };
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -159,14 +170,51 @@ export function CustomerAccountSelector({
     companyId: companyId
   });
 
-  const availableAccountsForSelection = availableAccounts?.filter(acc => acc.is_available) || [];
+  // Enhanced filtering with comprehensive logging
+  const availableAccountsForSelection = React.useMemo(() => {
+    if (!availableAccounts) return [];
+    
+    console.log('🔍 [FILTERING] Starting filtering process:', {
+      totalAccounts: availableAccounts.length,
+      timestamp: new Date().toLocaleTimeString()
+    });
+    
+    const filtered = availableAccounts.filter(acc => {
+      const isAvailable = Boolean(acc.is_available);
+      
+      // Special logging for account 1130201
+      if (acc.account_code === '1130201') {
+        console.log('🎯 [FILTERING] Account 1130201 filter check:', {
+          account: acc,
+          isAvailable: isAvailable,
+          willBeIncluded: isAvailable
+        });
+      }
+      
+      return isAvailable;
+    });
+    
+    console.log('🔍 [FILTERING] Filter results:', {
+      originalCount: availableAccounts.length,
+      filteredCount: filtered.length,
+      account1130201Found: !!filtered.find(acc => acc.account_code === '1130201'),
+      filteredCodes: filtered.map(acc => acc.account_code).slice(0, 10)
+    });
+    
+    return filtered;
+  }, [availableAccounts]);
   
-  // Debug: تشخيص بعد الفلترة
-  console.log('🔍 [CustomerAccountSelector] After filtering:', {
-    filteredAccountsCount: availableAccountsForSelection.length,
-    account1130201AfterFilter: availableAccountsForSelection.find(acc => acc.account_code === '1130201'),
-    allFilteredAccountCodes: availableAccountsForSelection.map(acc => acc.account_code)
-  });
+  // Additional validation logging
+  React.useEffect(() => {
+    if (availableAccountsForSelection.length > 0) {
+      const target = availableAccountsForSelection.find(acc => acc.account_code === '1130201');
+      console.log('📊 [VALIDATION] Account 1130201 in selection list:', {
+        found: !!target,
+        account: target,
+        listLength: availableAccountsForSelection.length
+      });
+    }
+  }, [availableAccountsForSelection]);
 
   return (
     <Card>

@@ -36,7 +36,7 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
         return [];
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] Fetching for companyId:', effectiveCompanyId);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] 🔄 Fetching fresh data for companyId:', effectiveCompanyId);
 
       const { data, error } = await supabase
         .rpc("get_available_customer_accounts_v2", {
@@ -44,38 +44,58 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
         });
 
       if (error) {
-        console.error("Error fetching available customer accounts v2:", error);
+        console.error("❌ Error fetching available customer accounts v2:", error);
         throw error;
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] Raw response:', data);
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] Fetched accounts:', data?.length || 0, 'accounts for company:', effectiveCompanyId);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V2] ✅ Raw response received:', {
+        dataLength: data?.length || 0,
+        timestamp: new Date().toLocaleTimeString(),
+        companyId: effectiveCompanyId
+      });
       
-      // Transform and validate data structure
-      const transformedData: AvailableCustomerAccount[] = (data || []).map((account: any) => ({
-        id: account.id,
-        account_code: account.account_code,
-        account_name: account.account_name,
-        account_name_ar: account.account_name_ar,
-        parent_account_name: account.parent_account_name,
-        is_available: account.is_available
-      }));
+      // Transform and validate data structure with enhanced error handling
+      const transformedData: AvailableCustomerAccount[] = (data || []).map((account: any) => {
+        const transformed = {
+          id: account.id,
+          account_code: account.account_code,
+          account_name: account.account_name,
+          account_name_ar: account.account_name_ar || account.account_name,
+          parent_account_name: account.parent_account_name || '',
+          is_available: Boolean(account.is_available)
+        };
+        
+        // Special logging for account 1130201
+        if (account.account_code === '1130201') {
+          console.log('🎯 [TRANSFORM] Account 1130201 details:', {
+            original: account,
+            transformed: transformed,
+            isAvailable: transformed.is_available
+          });
+        }
+        
+        return transformed;
+      });
 
-      // Enhanced logging for account 1130201
+      // Post-transformation validation for account 1130201
       const account1130201 = transformedData.find(acc => acc.account_code === '1130201');
-      if (account1130201) {
-        console.log('🎯 Found account 1130201 after transformation:', account1130201);
-      } else {
-        console.log('❌ Account 1130201 NOT found in transformed data');
-      }
+      console.log('[VALIDATION] Account 1130201 status:', {
+        found: !!account1130201,
+        details: account1130201,
+        totalAccounts: transformedData.length,
+        availableAccounts: transformedData.filter(acc => acc.is_available).length
+      });
       
       return transformedData;
     },
     enabled: !!effectiveCompanyId,
-    // Debug settings to force fresh data
+    // Force fresh data - no caching issues
     staleTime: 0,
+    gcTime: 0, // Replaced cacheTime with gcTime in newer versions
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: 1000,
   });
 };
 
@@ -224,12 +244,19 @@ export const useLinkAccountToCustomer = () => {
       return result;
     },
     onSuccess: (_, variables) => {
+      // Comprehensive cache invalidation
       queryClient.invalidateQueries({ 
         queryKey: ["customer-linked-accounts", variables.customerId, companyId] 
       });
       queryClient.invalidateQueries({ 
         queryKey: ["available-customer-accounts", companyId] 
       });
+      queryClient.invalidateQueries({ 
+        queryKey: ["available-customer-accounts-v2", companyId] 
+      });
+      
+      console.log('🔄 [LINK_SUCCESS] Cache invalidated after linking account');
+      
       toast({
         title: "تم ربط الحساب",
         description: "تم ربط الحساب المحاسبي بالعميل بنجاح",
@@ -262,12 +289,19 @@ export const useUnlinkAccountFromCustomer = () => {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
+      // Comprehensive cache invalidation
       queryClient.invalidateQueries({ 
         queryKey: ["customer-linked-accounts", variables.customerId, companyId] 
       });
       queryClient.invalidateQueries({ 
         queryKey: ["available-customer-accounts", companyId] 
       });
+      queryClient.invalidateQueries({ 
+        queryKey: ["available-customer-accounts-v2", companyId] 
+      });
+      
+      console.log('🔄 [UNLINK_SUCCESS] Cache invalidated after unlinking account');
+      
       toast({
         title: "تم إلغاء ربط الحساب",
         description: "تم إلغاء ربط الحساب المحاسبي من العميل",
