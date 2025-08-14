@@ -134,9 +134,59 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
   const updateVehicleAllocation = (index: number, field: keyof VehicleAllocation, value: string | number) => {
     try {
-      setVehicleAllocations(prev => prev.map((allocation, i) => 
-        i === index ? { ...allocation, [field]: value } : allocation
-      ));
+      // Validate inputs
+      if (typeof index !== 'number' || index < 0) {
+        console.error('Invalid index provided:', index);
+        toast.error('خطأ في تحديد المركبة');
+        return;
+      }
+
+      if (!field || (field !== 'vehicle_id' && field !== 'allocated_amount')) {
+        console.error('Invalid field provided:', field);
+        toast.error('خطأ في نوع البيانات');
+        return;
+      }
+
+      // Additional validation for vehicle_id
+      if (field === 'vehicle_id' && (!value || typeof value !== 'string')) {
+        console.error('Invalid vehicle_id provided:', value);
+        toast.error('معرف المركبة غير صالح');
+        return;
+      }
+
+      // Additional validation for allocated_amount
+      if (field === 'allocated_amount' && (typeof value !== 'number' || isNaN(value) || value < 0)) {
+        console.error('Invalid allocated_amount provided:', value);
+        toast.error('المبلغ المخصص غير صالح');
+        return;
+      }
+
+      setVehicleAllocations(prev => {
+        // Validate current state
+        if (!Array.isArray(prev)) {
+          console.error('vehicleAllocations is not an array:', prev);
+          return [];
+        }
+
+        // Check if index is within bounds
+        if (index >= prev.length) {
+          console.error('Index out of bounds:', index, 'length:', prev.length);
+          return prev;
+        }
+
+        return prev.map((allocation, i) => {
+          if (i === index) {
+            // Validate current allocation
+            if (!allocation || typeof allocation !== 'object') {
+              console.error('Invalid allocation object at index:', index, allocation);
+              return { vehicle_id: '', allocated_amount: 0 };
+            }
+            return { ...allocation, [field]: value };
+          }
+          return allocation;
+        });
+      });
+      
       console.log(`تم تحديث المركبة في المؤشر ${index}:`, { field, value });
     } catch (error) {
       console.error('خطأ في تحديث تخصيص المركبة:', error);
@@ -521,12 +571,25 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     <div className="flex-1">
                       <label className="text-sm font-medium">المركبة</label>
                       <VehicleSelector
-                        vehicles={vehicles || []}
-                        selectedVehicleId={allocation.vehicle_id}
-                        excludeVehicleIds={vehicleAllocations
-                          .map((a, i) => i !== index ? a.vehicle_id : '')
-                          .filter(Boolean)}
-                        onSelect={(vehicleId) => updateVehicleAllocation(index, 'vehicle_id', vehicleId)}
+                        vehicles={Array.isArray(vehicles) ? vehicles : []}
+                        selectedVehicleId={allocation?.vehicle_id || ''}
+                        excludeVehicleIds={Array.isArray(vehicleAllocations) ? 
+                          vehicleAllocations
+                            .map((a, i) => (i !== index && a?.vehicle_id) ? a.vehicle_id : '')
+                            .filter(id => id && typeof id === 'string') : []}
+                        onSelect={(vehicleId) => {
+                          try {
+                            if (vehicleId && typeof vehicleId === 'string') {
+                              updateVehicleAllocation(index, 'vehicle_id', vehicleId);
+                            } else {
+                              console.error('Invalid vehicleId received:', vehicleId);
+                              toast.error('معرف المركبة غير صالح');
+                            }
+                          } catch (error) {
+                            console.error('Error in vehicle selection callback:', error);
+                            toast.error('خطأ في اختيار المركبة');
+                          }
+                        }}
                         placeholder="اختر المركبة..."
                         isLoading={vehiclesLoading}
                         error={vehiclesError?.message || null}
