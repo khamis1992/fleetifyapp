@@ -64,6 +64,34 @@ export const searchVehicles = (vehicles: Vehicle[], searchTerm: string): Vehicle
 };
 
 /**
+ * فلترة المركبات حسب الماركة
+ */
+export const filterVehiclesByMake = (vehicles: Vehicle[], make: string): Vehicle[] => {
+  if (!make.trim()) {
+    return vehicles;
+  }
+
+  return vehicles.filter(vehicle => {
+    return vehicle.make && vehicle.make.trim() === make.trim();
+  });
+};
+
+/**
+ * استخراج قائمة الماركات المتاحة
+ */
+export const getAvailableMakes = (vehicles: Vehicle[]): string[] => {
+  const makes = new Set<string>();
+  
+  vehicles.forEach(vehicle => {
+    if (vehicle.make && vehicle.make.trim()) {
+      makes.add(vehicle.make.trim());
+    }
+  });
+  
+  return Array.from(makes).sort();
+};
+
+/**
  * فلترة المركبات المستبعدة
  */
 export const filterExcludedVehicles = (vehicles: Vehicle[], excludeIds: string[]): Vehicle[] => {

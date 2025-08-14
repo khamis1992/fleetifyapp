@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Check, ChevronsUpDown, Loader2, AlertCircle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Check, ChevronsUpDown, Loader2, AlertCircle, Car, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 
@@ -82,7 +83,19 @@ export function VehicleSelector({
 
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [selectedMakeFilter, setSelectedMakeFilter] = useState<string>("");
   const debouncedSearch = useDebounce(searchValue, 300);
+
+  // استخراج قائمة الماركات المتاحة
+  const availableMakes = useMemo(() => {
+    const makes = new Set<string>();
+    companyFilteredVehicles?.forEach(vehicle => {
+      if (vehicle.make && vehicle.make.trim()) {
+        makes.add(vehicle.make.trim());
+      }
+    });
+    return Array.from(makes).sort();
+  }, [companyFilteredVehicles]);
 
   try {
     // ULTRA-SAFE data processing - ABSOLUTE PROTECTION against undefined iteration
@@ -197,6 +210,15 @@ export function VehicleSelector({
             return !safeExcludeIds.includes(vehicle.id);
           });
           console.log(`✅ تم استثناء ${safeExcludeIds.length} مركبة، المتبقي: ${result.length}`);
+        }
+
+        // Apply make filter
+        if (selectedMakeFilter && selectedMakeFilter.trim().length > 0) {
+          result = result.filter(vehicle => {
+            if (!vehicle || !vehicle.make) return false;
+            return vehicle.make.trim() === selectedMakeFilter.trim();
+          });
+          console.log(`✅ تطبيق فلتر الماركة "${selectedMakeFilter}"، النتائج: ${result.length}`);
         }
 
         // Apply search filter
@@ -331,24 +353,66 @@ export function VehicleSelector({
               }
 
               return (
-                <Command 
-                  shouldFilter={false}
-                  value={selectedVehicleId || ''}
-                  onValueChange={() => {}} // Controlled externally
-                >
-                  <CommandInput 
-                    placeholder="البحث بواسطة رقم اللوحة، الماركة، أو الموديل..." 
-                    value={searchValue || ''}
-                    onValueChange={(value) => {
-                      try {
-                        console.log('🔍 تغيير نص البحث:', value);
-                        setSearchValue(typeof value === 'string' ? value : '');
-                      } catch (error) {
-                        console.error('💥 خطأ في تحديث البحث:', error);
-                      }
-                    }}
-                  />
-                  <CommandList>
+                <div className="w-full">
+                  {/* فلتر الماركة */}
+                  <div className="p-3 border-b">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">فلترة حسب الماركة</span>
+                      </div>
+                      {selectedMakeFilter && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setSelectedMakeFilter("")}
+                        >
+                          مسح الفلتر
+                        </Button>
+                      )}
+                    </div>
+                    <Select value={selectedMakeFilter} onValueChange={setSelectedMakeFilter}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="جميع الماركات" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">جميع الماركات</SelectItem>
+                        {availableMakes.map((make) => (
+                          <SelectItem key={make} value={make}>
+                            <div className="flex items-center gap-2">
+                              <Car className="h-4 w-4" />
+                              {make}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedMakeFilter && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        عرض مركبات {selectedMakeFilter} فقط
+                      </div>
+                    )}
+                  </div>
+
+                  <Command 
+                    shouldFilter={false}
+                    value={selectedVehicleId || ''}
+                    onValueChange={() => {}} // Controlled externally
+                  >
+                    <CommandInput 
+                      placeholder="البحث بواسطة رقم اللوحة، الماركة، أو الموديل..." 
+                      value={searchValue || ''}
+                      onValueChange={(value) => {
+                        try {
+                          console.log('🔍 تغيير نص البحث:', value);
+                          setSearchValue(typeof value === 'string' ? value : '');
+                        } catch (error) {
+                          console.error('💥 خطأ في تحديث البحث:', error);
+                        }
+                      }}
+                    />
+                    <CommandList>
                     <CommandEmpty>
                       {Array.isArray(safeVehicles) && safeVehicles.length === 0 
                         ? "لا توجد مركبات متاحة في النظام" 
@@ -460,8 +524,9 @@ export function VehicleSelector({
                         }
                       })()}
                     </CommandGroup>
-                  </CommandList>
-                </Command>
+                    </CommandList>
+                  </Command>
+                </div>
               );
             } catch (error) {
               console.error('💥 خطأ شامل في Command:', error);
