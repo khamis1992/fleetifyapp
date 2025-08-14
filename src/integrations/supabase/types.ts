@@ -9987,16 +9987,17 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: {
           color: string
-          current_mileage: number
+          company_id: string
           daily_rate: number
-          fuel_type: string
+          enforce_minimum_price: boolean
           id: string
+          is_active: boolean
           make: string
+          minimum_rental_price: number
           model: string
           monthly_rate: number
           plate_number: string
           status: string
-          vehicle_type: string
           weekly_rate: number
           year: number
         }[]
