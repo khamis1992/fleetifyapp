@@ -31,6 +31,7 @@ import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
+import { CustomerSelector } from './CustomerSelector'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -179,22 +180,6 @@ export const CustomerVehicleStep: React.FC = () => {
     }
   }, [data.customer_id, data.vehicle_id, data.start_date, data.end_date, data.contract_amount, debouncedValidation])
 
-  // Get customers for the company
-  const { data: customers, isLoading: customersLoading } = useQuery({
-    queryKey: ['customers', user?.profile?.company_id],
-    queryFn: async () => {
-      if (!user?.profile?.company_id) return []
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, first_name, last_name, company_name, customer_type, is_blacklisted, is_active')
-        .eq('company_id', user.profile.company_id)
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      return data || []
-    },
-    enabled: !!user?.profile?.company_id,
-  })
 
   // Use date-range filtered vehicles if dates are available, otherwise fallback to all available vehicles
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesByDateRange({
@@ -234,47 +219,13 @@ export const CustomerVehicleStep: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="customer_id">العميل *</Label>
-            {customersLoading ? (
-              <div className="flex items-center justify-center h-10">
-                <LoadingSpinner size="sm" />
-              </div>
-            ) : (
-              <Select 
-                value={data.customer_id} 
-                onValueChange={(value) => updateData({ customer_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر العميل" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers?.map((customer) => (
-                    <SelectItem 
-                      key={customer.id} 
-                      value={customer.id}
-                      disabled={customer.is_blacklisted || !customer.is_active}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span>
-                          {customer.customer_type === 'individual' 
-                            ? `${customer.first_name} ${customer.last_name}`
-                            : customer.company_name
-                          }
-                        </span>
-                        {customer.is_blacklisted && (
-                          <Badge variant="destructive" className="text-xs">محظور</Badge>
-                        )}
-                        {!customer.is_active && (
-                          <Badge variant="secondary" className="text-xs">غير نشط</Badge>
-                        )}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          {/* Customer Selection with Search and Create */}
+          <CustomerSelector
+            value={data.customer_id}
+            onValueChange={(customerId) => updateData({ customer_id: customerId })}
+            placeholder="ابحث عن عميل أو أنشئ جديد..."
+            disabled={false}
+          />
           
           <div className="space-y-2">
             <Label htmlFor="vehicle_id">المركبة</Label>

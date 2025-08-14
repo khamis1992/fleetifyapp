@@ -173,19 +173,23 @@ export const useCreateCustomer = () => {
         throw new Error('رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل');
       }
 
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('customers')
         .insert({
           ...data,
           company_id: targetCompanyId,
           is_active: true
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+      return insertData;
     },
-    onSuccess: () => {
+    onSuccess: (customerData) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('تم إنشاء العميل بنجاح');
+      return customerData;
     },
     onError: (error) => {
       console.error('Error creating customer:', error);

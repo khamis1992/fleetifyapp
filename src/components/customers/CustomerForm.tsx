@@ -30,9 +30,10 @@ interface CustomerFormProps {
   onOpenChange: (open: boolean) => void;
   customer?: any;
   mode: 'create' | 'edit';
+  onSuccess?: (customer?: any) => void;
 }
 
-export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
+export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: CustomerFormProps) {
   const { user } = useAuth();
   const { data: companies } = useCompanies();
   const { companyId: defaultCompanyId, hasGlobalAccess } = useUnifiedCompanyAccess();
@@ -285,14 +286,17 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
       console.log('📤 Submitting customer data:', customerData);
 
       if (mode === 'create') {
-        await createCustomerMutation.mutateAsync(customerData);
-        console.log('✅ Customer created successfully');
+        const result = await createCustomerMutation.mutateAsync(customerData);
+        console.log('✅ Customer created successfully:', result);
+        // Pass the created customer data to the callback
+        onSuccess?.(result);
       } else {
-        await updateCustomerMutation.mutateAsync({
+        const result = await updateCustomerMutation.mutateAsync({
           id: customer.id,
           data: customerData
         });
-        console.log('✅ Customer updated successfully');
+        console.log('✅ Customer updated successfully:', result);
+        onSuccess?.(result);
       }
 
       // إغلاق النموذج عند النجاح
