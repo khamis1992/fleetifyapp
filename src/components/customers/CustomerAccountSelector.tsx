@@ -49,34 +49,18 @@ export function CustomerAccountFormSelector({
   disabled = false,
   companyId
 }: CustomerAccountFormSelectorProps) {
-  const { data: availableAccounts, isLoading, error, dataUpdatedAt } = useAvailableCustomerAccounts(companyId);
+  const { data: availableAccounts, isLoading, error, refetch } = useAvailableCustomerAccounts(companyId);
+  const [forceRender, setForceRender] = React.useState(0);
+  const [showDebug, setShowDebug] = React.useState(false);
 
-  console.log('🔍 [FORM_SELECTOR] Component rendered with:', {
-    companyId,
-    value,
-    timestamp: new Date().toLocaleTimeString(),
-    dataUpdatedAt
-  });
-
-  console.log('🔍 [FORM_SELECTOR] Query state:', {
-    isLoading,
-    error: error?.message,
-    accountsLength: availableAccounts?.length,
-    accounts: availableAccounts
-  });
-
-  // Special logging for account 1130201
-  if (availableAccounts && availableAccounts.length > 0) {
-    const account1130201 = availableAccounts.find(acc => acc.account_code === '1130201');
-    console.log('🎯 [FORM_SELECTOR] Account 1130201 status:', {
-      found: !!account1130201,
-      details: account1130201,
-      isAvailable: account1130201?.is_available
-    });
-  }
+  // Force re-render when data changes
+  React.useEffect(() => {
+    if (availableAccounts) {
+      setForceRender(prev => prev + 1);
+    }
+  }, [availableAccounts]);
 
   if (isLoading) {
-    console.log('🔄 [FORM_SELECTOR] Showing loading state');
     return (
       <div className="flex items-center justify-center py-4">
         <LoadingSpinner />
@@ -86,7 +70,6 @@ export function CustomerAccountFormSelector({
   }
 
   if (error) {
-    console.error('❌ [FORM_SELECTOR] Error state:', error);
     return (
       <Alert variant="destructive">
         <InfoIcon className="h-4 w-4" />
@@ -95,104 +78,183 @@ export function CustomerAccountFormSelector({
           <Button 
             variant="link" 
             size="sm" 
-            onClick={() => window.location.reload()}
+            onClick={() => refetch()}
             className="p-0 ml-2 text-destructive underline"
           >
-            إعادة تحميل
+            إعادة المحاولة
           </Button>
         </AlertDescription>
       </Alert>
     );
   }
 
-  if (!availableAccounts || availableAccounts.length === 0) {
-    console.log('⚠️ [FORM_SELECTOR] No accounts available');
-    return (
-      <Alert>
-        <InfoIcon className="h-4 w-4" />
-        <AlertDescription>
-          <div className="space-y-2">
-            <p>لا توجد حسابات محاسبية متاحة.</p>
-            <p className="text-xs">
-              معرف الشركة: {companyId} | عدد الحسابات: {availableAccounts?.length || 0}
-            </p>
-            <Button 
-              variant="link" 
-              size="sm" 
-              onClick={() => {
-                console.log('🔄 [FORM_SELECTOR] Manual refresh triggered');
-                window.location.reload();
-              }}
-              className="p-0 text-blue-600 underline"
-            >
-              إعادة تحميل البيانات
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const filteredAccounts = availableAccounts.filter(account => account.is_available);
-  
-  console.log('🔍 [FORM_SELECTOR] Rendering select with:', {
-    totalAccounts: availableAccounts.length,
-    availableAccounts: filteredAccounts.length,
-    account1130201Available: filteredAccounts.some(acc => acc.account_code === '1130201'),
-    accountCodes: filteredAccounts.map(acc => acc.account_code)
-  });
+  const filteredAccounts = availableAccounts?.filter(account => account.is_available) || [];
+  const account1130201 = filteredAccounts.find(acc => acc.account_code === '1130201');
 
   return (
-    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {filteredAccounts.map((account) => {
-          console.log('🔍 [FORM_SELECTOR] Rendering account item:', account.account_code);
-          return (
-            <SelectItem 
-              key={account.id} 
-              value={account.id}
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">
-                      {account.account_code} - {account.account_name}
-                    </span>
-                    {account.account_name_ar && account.account_name_ar !== account.account_name && (
-                      <span className="text-sm text-muted-foreground">
-                        {account.account_name_ar}
+    <div className="space-y-2" key={forceRender}>
+      {/* Debug Controls */}
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowDebug(!showDebug)}
+        >
+          🔍 تشخيص ({filteredAccounts.length})
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            refetch();
+            setForceRender(prev => prev + 1);
+          }}
+        >
+          🔄 تحديث
+        </Button>
+        {account1130201 && (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            ✅ 1130201 موجود
+          </Badge>
+        )}
+      </div>
+
+      {/* Debug Panel */}
+      {showDebug && (
+        <Alert>
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2 text-xs">
+              <p><strong>الحسابات الإجمالية:</strong> {availableAccounts?.length || 0}</p>
+              <p><strong>الحسابات المتاحة:</strong> {filteredAccounts.length}</p>
+              <p><strong>الحساب 1130201:</strong> {account1130201 ? '✅ موجود ومتاح' : '❌ غير موجود'}</p>
+              {account1130201 && (
+                <div className="mt-2 p-2 bg-white rounded border">
+                  <pre className="text-xs">{JSON.stringify(account1130201, null, 2)}</pre>
+                </div>
+              )}
+              <div className="mt-2">
+                <strong>كل أكواد الحسابات المتاحة:</strong>
+                <div className="text-xs text-gray-600">
+                  {filteredAccounts.map(acc => acc.account_code).join(', ') || 'لا توجد'}
+                </div>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Main Select Component */}
+      <Select value={value} onValueChange={onValueChange} disabled={disabled} key={`select-${forceRender}`}>
+        <SelectTrigger>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {filteredAccounts.length > 0 ? (
+            filteredAccounts.map((account) => (
+              <SelectItem 
+                key={`${account.id}-${forceRender}`}
+                value={account.id}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">
+                        {account.account_code} - {account.account_name}
                       </span>
-                    )}
-                    {account.parent_account_name && (
-                      <span className="text-xs text-muted-foreground">
-                        تحت: {account.parent_account_name}
-                      </span>
+                      {account.account_name_ar && account.account_name_ar !== account.account_name && (
+                        <span className="text-sm text-muted-foreground">
+                          {account.account_name_ar}
+                        </span>
+                      )}
+                      {account.parent_account_name && (
+                        <span className="text-xs text-muted-foreground">
+                          تحت: {account.parent_account_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary" className="text-xs">متاح</Badge>
+                    {account.account_code === '1130201' && (
+                      <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                        🎯 الهدف
+                      </Badge>
                     )}
                   </div>
                 </div>
-                <Badge variant="default" className="bg-green-100 text-green-700">
-                  متاح
-                </Badge>
+              </SelectItem>
+            ))
+          ) : (
+            <div className="py-6 text-center text-muted-foreground">
+              <div className="space-y-2">
+                <p>لا توجد حسابات متاحة للاختيار</p>
+                <p className="text-xs">
+                  إجمالي: {availableAccounts?.length || 0} | متاحة: {filteredAccounts.length}
+                </p>
+                <Button 
+                  onClick={() => {
+                    refetch();
+                    setForceRender(prev => prev + 1);
+                  }} 
+                  variant="ghost" 
+                  size="sm"
+                >
+                  تحديث القائمة
+                </Button>
               </div>
-            </SelectItem>
-          );
-        })}
-        {filteredAccounts.length === 0 && (
-          <div className="py-6 text-center text-muted-foreground">
-            <div className="space-y-2">
-              <p>لا توجد حسابات متاحة للاختيار</p>
-              <p className="text-xs">
-                إجمالي الحسابات: {availableAccounts.length} | المتاحة: {filteredAccounts.length}
-              </p>
             </div>
-          </div>
-        )}
-      </SelectContent>
-    </Select>
+          )}
+        </SelectContent>
+      </Select>
+
+      {/* Emergency Fallback */}
+      {showDebug && filteredAccounts.length > 0 && (
+        <Alert>
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                🚨 بديل HTML Select:
+              </label>
+              <select 
+                className="w-full p-2 border rounded"
+                value={value || ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onValueChange(e.target.value);
+                    console.log('✅ Selected via HTML:', e.target.value);
+                  }
+                }}
+              >
+                <option value="">اختر حساب...</option>
+                {filteredAccounts.map(account => (
+                  <option 
+                    key={account.id} 
+                    value={account.id}
+                    style={{
+                      fontWeight: account.account_code === '1130201' ? 'bold' : 'normal',
+                      backgroundColor: account.account_code === '1130201' ? '#dcfce7' : 'white'
+                    }}
+                  >
+                    {account.account_code} - {account.account_name}
+                    {account.account_code === '1130201' ? ' 🎯' : ''}
+                  </option>
+                ))}
+              </select>
+              {account1130201 && (
+                <p className="text-xs text-green-600">
+                  ✅ الحساب 1130201 متاح في البديل أيضاً
+                </p>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
   );
 }
 

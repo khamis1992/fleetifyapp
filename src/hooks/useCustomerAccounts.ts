@@ -24,32 +24,12 @@ export interface CompanyAccountSettings {
 // Hook للحصول على الحسابات المتاحة للعملاء
 export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
   const { companyId } = useUnifiedCompanyAccess();
-  const queryClient = useQueryClient();
-  
-  // Use target company ID if provided, otherwise use current company ID
   const effectiveCompanyId = targetCompanyId || companyId;
 
-  console.log('🔧 [HOOK] useAvailableCustomerAccounts called with:', {
-    targetCompanyId,
-    companyId,
-    effectiveCompanyId,
-    timestamp: new Date().toLocaleTimeString()
-  });
-
   return useQuery({
-    queryKey: ["available-customer-accounts-v3", effectiveCompanyId],
+    queryKey: ["available-customer-accounts-final", effectiveCompanyId, Date.now()],
     queryFn: async () => {
-      if (!effectiveCompanyId) {
-        console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V3] ❌ No companyId provided');
-        return [];
-      }
-
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V3] 🔄 Starting fresh fetch for companyId:', effectiveCompanyId);
-
-      // Force cache invalidation before fetch
-      await queryClient.invalidateQueries({ 
-        queryKey: ["available-customer-accounts-v3", effectiveCompanyId] 
-      });
+      if (!effectiveCompanyId) return [];
 
       const { data, error } = await supabase
         .rpc("get_available_customer_accounts_v2", {
@@ -57,82 +37,27 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
         });
 
       if (error) {
-        console.error("❌ [AVAILABLE_CUSTOMER_ACCOUNTS_V3] RPC Error:", {
-          error,
-          companyId: effectiveCompanyId,
-          timestamp: new Date().toLocaleTimeString()
-        });
+        console.error("❌ RPC Error:", error);
         throw error;
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS_V3] ✅ Raw RPC response:', {
-        dataLength: data?.length || 0,
-        timestamp: new Date().toLocaleTimeString(),
-        companyId: effectiveCompanyId,
-        rawData: data
+      const accounts = (data as AvailableCustomerAccount[]) || [];
+      const account1130201 = accounts.find(acc => acc.account_code === '1130201');
+      
+      console.log('🎯 FINAL RESULT:', {
+        found1130201: !!account1130201,
+        account1130201,
+        totalAccounts: accounts.length,
+        availableAccounts: accounts.filter(acc => acc.is_available).length
       });
 
-      // Check for 1130201 in raw data
-      const raw1130201 = data?.find((acc: any) => acc.account_code === '1130201');
-      console.log('🎯 [RAW_DATA] Account 1130201 in raw response:', {
-        found: !!raw1130201,
-        data: raw1130201
-      });
-      
-      // Transform and validate data structure with enhanced error handling
-      const transformedData: AvailableCustomerAccount[] = (data || []).map((account: any) => {
-        const transformed = {
-          id: account.id,
-          account_code: account.account_code,
-          account_name: account.account_name,
-          account_name_ar: account.account_name_ar || account.account_name,
-          parent_account_name: account.parent_account_name || '',
-          is_available: Boolean(account.is_available)
-        };
-        
-        // Special logging for account 1130201
-        if (account.account_code === '1130201') {
-          console.log('🎯 [TRANSFORM] Account 1130201 transformation:', {
-            original: account,
-            transformed: transformed,
-            isAvailable: transformed.is_available,
-            allProperties: Object.keys(account)
-          });
-        }
-        
-        return transformed;
-      });
-
-      // Post-transformation comprehensive validation
-      const account1130201 = transformedData.find(acc => acc.account_code === '1130201');
-      const availableAccounts = transformedData.filter(acc => acc.is_available);
-      
-      console.log('[FINAL_VALIDATION] Complete account status:', {
-        account1130201Found: !!account1130201,
-        account1130201Details: account1130201,
-        account1130201IsAvailable: account1130201?.is_available,
-        totalAccounts: transformedData.length,
-        availableAccounts: availableAccounts.length,
-        allAccountCodes: transformedData.map(acc => acc.account_code),
-        availableAccountCodes: availableAccounts.map(acc => acc.account_code)
-      });
-
-      // Final check: ensure 1130201 is in the result
-      if (raw1130201 && !account1130201) {
-        console.error('🚨 [CRITICAL] Account 1130201 lost during transformation!');
-      }
-      
-      return transformedData;
+      return accounts;
     },
     enabled: !!effectiveCompanyId,
-    // Aggressive no-cache strategy
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
