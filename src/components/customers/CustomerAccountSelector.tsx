@@ -124,7 +124,23 @@ export function CustomerAccountSelector({
     );
   }
 
+  // Debug: تشخيص بيانات الحسابات
+  console.log('🔍 [CustomerAccountSelector] Debug Info:', {
+    totalAvailableAccounts: availableAccounts?.length || 0,
+    availableAccounts: availableAccounts,
+    searchingForAccount: '1130201',
+    account1130201: availableAccounts?.find(acc => acc.account_code === '1130201'),
+    companyId: companyId
+  });
+
   const availableAccountsForSelection = availableAccounts?.filter(acc => acc.is_available) || [];
+  
+  // Debug: تشخيص بعد الفلترة
+  console.log('🔍 [CustomerAccountSelector] After filtering:', {
+    filteredAccountsCount: availableAccountsForSelection.length,
+    account1130201AfterFilter: availableAccountsForSelection.find(acc => acc.account_code === '1130201'),
+    allFilteredAccountCodes: availableAccountsForSelection.map(acc => acc.account_code)
+  });
 
   return (
     <Card>
@@ -236,6 +252,31 @@ export function CustomerAccountSelector({
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Debug Panel */}
+        <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-blue-200">
+          <h4 className="font-bold text-sm mb-2 text-blue-700">🔍 معلومات التشخيص</h4>
+          <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
+            <p><strong>إجمالي الحسابات المتاحة:</strong> {availableAccounts?.length || 0}</p>
+            <p><strong>الحسابات بعد فلترة is_available:</strong> {availableAccountsForSelection.length}</p>
+            <p><strong>الحساب المطلوب (1130201):</strong> {
+              availableAccounts?.find(acc => acc.account_code === '1130201') ? 
+              `موجود - متاح: ${availableAccounts.find(acc => acc.account_code === '1130201')?.is_available}` : 
+              'غير موجود'
+            }</p>
+            <p><strong>الحساب بعد الفلترة:</strong> {
+              availableAccountsForSelection.find(acc => acc.account_code === '1130201') ? 
+              'موجود في القائمة المنسدلة' : 
+              'مفقود من القائمة المنسدلة'
+            }</p>
+            <details className="mt-2">
+              <summary className="cursor-pointer font-medium">عرض جميع أكواد الحسابات المفلترة</summary>
+              <div className="mt-1 p-2 bg-white dark:bg-slate-700 rounded text-xs">
+                {availableAccountsForSelection.map(acc => acc.account_code).join(', ') || 'لا توجد حسابات'}
+              </div>
+            </details>
+          </div>
+        </div>
 
         {/* رسالة عدم وجود حسابات مرتبطة */}
         {(!linkedAccounts || linkedAccounts.length === 0) && (
