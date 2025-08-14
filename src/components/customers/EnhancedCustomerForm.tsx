@@ -412,90 +412,26 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                   </TabsContent>
 
                   {/* معلومات الاتصال */}
-                  <TabsContent value="contact" className="space-y-6 mt-0">
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-medium">معلومات الاتصال</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>رقم الهاتف *</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="tel" placeholder="ادخل رقم الهاتف" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="alternative_phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>رقم هاتف بديل</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="tel" placeholder="ادخل رقم هاتف بديل" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>البريد الإلكتروني</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="email" placeholder="ادخل البريد الإلكتروني" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="emergency_contact_name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>اسم جهة اتصال الطوارئ</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="ادخل اسم جهة اتصال الطوارئ" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="emergency_contact_phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>رقم جهة اتصال الطوارئ</FormLabel>
-                              <FormControl>
-                                <Input {...field} type="tel" placeholder="ادخل رقم جهة اتصال الطوارئ" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">معلومات العنوان</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TabsContent value="contact" className="space-y-8 mt-0" dir="rtl">
+                    <div className="space-y-8">
+                      {/* معلومات الاتصال */}
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-right">معلومات الاتصال</h3>
+                        <div className="grid grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
-                            name="address"
+                            name="alternative_phone"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>العنوان</FormLabel>
+                                <FormLabel className="text-base font-medium text-right">رقم هاتف بديل</FormLabel>
                                 <FormControl>
-                                  <Textarea {...field} placeholder="ادخل العنوان" className="min-h-[80px]" />
+                                  <Input 
+                                    {...field} 
+                                    type="tel" 
+                                    placeholder="ادخل رقم هاتف بديل" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -503,12 +439,141 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                           />
                           <FormField
                             control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">رقم الهاتف *</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="tel" 
+                                    placeholder="ادخل رقم الهاتف" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="emergency_contact_name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">اسم جهة اتصال الطوارئ</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="ادخل اسم جهة اتصال الطوارئ" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">البريد الإلكتروني</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="email" 
+                                    placeholder="ادخل البريد الإلكتروني" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="emergency_contact_phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">رقم جهة اتصال الطوارئ</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="tel" 
+                                    placeholder="ادخل رقم جهة اتصال الطوارئ" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* معلومات العنوان */}
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-right">معلومات العنوان</h3>
+                        <div className="grid grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
                             name="address_ar"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>العنوان (عربي)</FormLabel>
+                                <FormLabel className="text-base font-medium text-right">العنوان (عربي)</FormLabel>
                                 <FormControl>
-                                  <Textarea {...field} placeholder="ادخل العنوان بالعربي" className="min-h-[80px]" />
+                                  <Textarea 
+                                    {...field} 
+                                    placeholder="ادخل العنوان بالعربي" 
+                                    className="min-h-[100px] text-right text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="address"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">العنوان</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    {...field} 
+                                    placeholder="ادخل العنوان" 
+                                    className="min-h-[100px] text-right text-base"
+                                    dir="rtl"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="country"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">البلد</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="ادخل البلد" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -519,22 +584,14 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                             name="city"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>المدينة</FormLabel>
+                                <FormLabel className="text-base font-medium text-right">المدينة</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="ادخل المدينة" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="country"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>البلد</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="ادخل البلد" />
+                                  <Input 
+                                    {...field} 
+                                    placeholder="ادخل المدينة" 
+                                    className="text-right h-12 text-base"
+                                    dir="rtl"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
