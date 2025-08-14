@@ -710,49 +710,54 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                   </TabsContent>
 
                   {/* الحسابات المحاسبية */}
-                  <TabsContent value="accounting" className="space-y-6 mt-0">
+                  <TabsContent value="accounting" className="space-y-8 mt-0" dir="rtl">
                     {!customer && (
-                      <div className="space-y-6">
-                        <h3 className="text-lg font-medium">الربط المحاسبي</h3>
-                        
-                        <FormField
-                          control={form.control}
-                          name="accountIntegrationType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-base">خيارات الربط المحاسبي</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="اختر طريقة الربط المحاسبي" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="select_existing">🔗 اختيار حساب موجود (الافتراضي)</SelectItem>
-                                  <SelectItem value="create_new">➕ إنشاء حساب جديد</SelectItem>
-                                  <SelectItem value="none">❌ بدون ربط محاسبي</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <div className="text-sm text-muted-foreground space-y-1">
-                                {accountIntegrationType === 'select_existing' && (
-                                  <div className="text-blue-600 font-medium">✅ اختر حساب محاسبي موجود من القائمة (سيظهر الحساب 1130201)</div>
-                                )}
-                                {accountIntegrationType === 'create_new' && (
-                                  <div className="text-amber-600">سيتم إنشاء حساب محاسبي جديد خاص بالعميل</div>
-                                )}
-                                {accountIntegrationType === 'none' && (
-                                  <div className="text-red-600">لن يتم ربط العميل بأي حساب محاسبي</div>
-                                )}
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <div className="space-y-8">
+                        {/* الربط المحاسبي */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold text-right">الربط المحاسبي</h3>
+                          
+                          <FormField
+                            control={form.control}
+                            name="accountIntegrationType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">خيارات الربط المحاسبي</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                  <FormControl>
+                                    <SelectTrigger className="text-right h-12">
+                                      <SelectValue placeholder="اختر طريقة الربط المحاسبي" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="select_existing">🔗 اختيار حساب موجود (الافتراضي)</SelectItem>
+                                    <SelectItem value="create_new">➕ إنشاء حساب جديد</SelectItem>
+                                    <SelectItem value="none">❌ بدون ربط محاسبي</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <div className="text-sm text-muted-foreground space-y-1 text-right">
+                                  {accountIntegrationType === 'select_existing' && (
+                                    <div className="text-blue-600 font-medium">✅ اختر حساب محاسبي موجود من القائمة (سيظهر الحساب 1130201)</div>
+                                  )}
+                                  {accountIntegrationType === 'create_new' && (
+                                    <div className="text-amber-600">سيتم إنشاء حساب محاسبي جديد خاص بالعميل</div>
+                                  )}
+                                  {accountIntegrationType === 'none' && (
+                                    <div className="text-red-600">لن يتم ربط العميل بأي حساب محاسبي</div>
+                                  )}
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
 
+                        {/* اختيار حساب موجود */}
                         {accountIntegrationType === 'select_existing' && (
-                          <>
-                            <Separator />
-                            <Alert>
+                          <div className="space-y-6">
+                            <h3 className="text-xl font-semibold text-right">اختيار الحساب المحاسبي</h3>
+                            
+                            <Alert className="text-right" dir="rtl">
                               <AlertCircle className="h-4 w-4" />
                               <AlertDescription>
                                 اختر حساب محاسبي موجود من قائمة الحسابات المتاحة. يمكنك البحث بكود الحساب أو اسم الحساب.
@@ -764,7 +769,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                               name="selectedAccountId"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>الحساب المحاسبي</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">الحساب المحاسبي</FormLabel>
                                   <FormControl>
                                     <CustomerAccountFormSelector
                                       value={field.value}
@@ -777,13 +782,15 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                 </FormItem>
                               )}
                             />
-                          </>
+                          </div>
                         )}
 
+                        {/* إنشاء حساب جديد */}
                         {accountIntegrationType === 'create_new' && (
-                          <>
-                            <Separator />
-                            <Alert>
+                          <div className="space-y-6">
+                            <h3 className="text-xl font-semibold text-right">إنشاء حساب محاسبي جديد</h3>
+                            
+                            <Alert className="text-right" dir="rtl">
                               <AlertCircle className="h-4 w-4" />
                               <AlertDescription>
                                 سيتم إنشاء حساب محاسبي تحت مجموعة "ذمم العملاء" مع إمكانية تسجيل رصيد افتتاحي
@@ -795,24 +802,26 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                               name="initialBalance"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>الرصيد الافتتاحي (اختياري)</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">الرصيد الافتتاحي (اختياري)</FormLabel>
                                   <FormControl>
                                     <Input
                                       {...field}
                                       type="number"
                                       step="0.001"
-                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                                       placeholder="0.000"
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                                     />
                                   </FormControl>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground text-right">
                                     الرصيد الموجب يعني مديونية للعميل، والرصيد السالب يعني دين على العميل
                                   </div>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
