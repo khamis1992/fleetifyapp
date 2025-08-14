@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { CreditCard, Plus, Unlink, InfoIcon, Building, DollarSign, RefreshCw, Eye } from "lucide-react";
+import { CreditCard, Plus, Unlink, InfoIcon, Building, DollarSign, RefreshCw, Eye, ChevronDown, Check } from "lucide-react";
 import { useAvailableCustomerAccounts, useCustomerLinkedAccounts, useLinkAccountToCustomer, useUnlinkAccountFromCustomer, useCompanyAccountSettings } from "@/hooks/useCustomerAccounts";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useQueryClient } from '@tanstack/react-query';
@@ -171,10 +172,12 @@ function AdvancedAccountSelector({
 export function CustomerAccountFormSelector({
   value,
   onValueChange,
-  placeholder = "اختر الحساب المحاسبي",
+  placeholder = "اختيار حساب محاسبي مخصص (اختياري)",
   disabled = false,
   companyId
 }: CustomerAccountFormSelectorProps) {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const {
     data: availableAccounts,
     isLoading,
@@ -182,12 +185,37 @@ export function CustomerAccountFormSelector({
     refetch
   } = useAvailableCustomerAccounts(companyId);
 
+  const filteredAccounts = availableAccounts?.filter(account => {
+    if (!account.is_available) return false;
+    if (!searchValue.trim()) return true;
+    
+    const searchTerm = searchValue.toLowerCase();
+    return (
+      account.account_name?.toLowerCase().includes(searchTerm) ||
+      account.account_name_ar?.toLowerCase().includes(searchTerm) ||
+      account.account_code?.toLowerCase().includes(searchTerm)
+    );
+  }) || [];
+
+  const selectedAccount = availableAccounts?.find(account => account.id === value);
+
+  const handleSelect = (accountId: string) => {
+    onValueChange(accountId);
+    setOpen(false);
+    setSearchValue("");
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-4">
+      <Button
+        variant="outline"
+        className="w-full h-12 text-right justify-between"
+        disabled
+        dir="rtl"
+      >
+        <span className="text-muted-foreground">جاري التحميل...</span>
         <LoadingSpinner />
-        <span className="mr-2 text-sm text-muted-foreground">جاري تحميل الحسابات...</span>
-      </div>
+      </Button>
     );
   }
 
@@ -205,16 +233,88 @@ export function CustomerAccountFormSelector({
     );
   }
 
-  const filteredAccounts = availableAccounts?.filter(account => account.is_available) || [];
-
   return (
-    <AdvancedAccountSelector
-      value={value}
-      onValueChange={onValueChange}
-      placeholder={placeholder}
-      disabled={disabled}
-      availableAccounts={filteredAccounts}
-    />
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full h-12 justify-between text-right bg-background border-input hover:bg-accent hover:text-accent-foreground"
+          disabled={disabled}
+          dir="rtl"
+        >
+          {selectedAccount ? (
+            <div className="flex items-center gap-2 flex-1">
+              <div className="flex flex-col items-end flex-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {selectedAccount.account_code}
+                  </Badge>
+                  <span className="font-medium">
+                    {selectedAccount.account_name_ar || selectedAccount.account_name}
+                  </span>
+                </div>
+              </div>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <span className="text-muted-foreground">{placeholder}</span>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0 bg-popover border shadow-md z-50" align="start">
+        <Command className="w-full">
+          <CommandInput 
+            placeholder="البحث في الحسابات..." 
+            value={searchValue}
+            onValueChange={setSearchValue}
+            className="text-right border-0 focus:ring-0"
+            dir="rtl"
+          />
+          <CommandList className="max-h-64 overflow-y-auto">
+            <CommandEmpty className="text-center py-6 text-muted-foreground">
+              لا توجد حسابات متطابقة
+            </CommandEmpty>
+            <CommandGroup>
+              {filteredAccounts.map((account) => (
+                <CommandItem
+                  key={account.id}
+                  value={account.id}
+                  onSelect={() => handleSelect(account.id)}
+                  className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent text-right"
+                  dir="rtl"
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="flex flex-col items-end flex-1 gap-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-mono px-2 py-0.5">
+                          {account.account_code}
+                        </Badge>
+                        <span className="font-medium text-sm">
+                          {account.account_name_ar || account.account_name}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-center gap-1">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      {value === account.id && (
+                        <Check className="h-3 w-3 text-primary" />
+                      )}
+                    </div>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 export function CustomerAccountSelector({
