@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
+import { VehicleSelector } from "./VehicleSelector";
 
 const installmentSchema = z.object({
   vendor_id: z.string().min(1, "يجب اختيار التاجر"),
@@ -96,7 +97,7 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
   });
 
   // Fetch vehicles
-  const { data: vehicles } = useQuery({
+  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
     queryKey: ['vehicles', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -113,12 +114,15 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
         .from('vehicles')
         .select('id, plate_number, make, model, year')
         .eq('company_id', profile.company_id)
+        .eq('is_active', true)
         .order('plate_number', { ascending: true });
 
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const calculateInstallment = () => {
@@ -239,18 +243,14 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
 
               <div>
                 <Label htmlFor="vehicle_id">المركبة</Label>
-                <Select onValueChange={(value) => setValue('vehicle_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المركبة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(vehicles || []).map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <VehicleSelector
+                  vehicles={vehicles || []}
+                  selectedVehicleId={watch('vehicle_id')}
+                  onSelect={(vehicleId) => setValue('vehicle_id', vehicleId)}
+                  placeholder="اختر المركبة..."
+                  isLoading={vehiclesLoading}
+                  error={vehiclesError?.message || null}
+                />
                 {errors.vehicle_id && (
                   <p className="text-sm text-destructive mt-1">{errors.vehicle_id.message}</p>
                 )}

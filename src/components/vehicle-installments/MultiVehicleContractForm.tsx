@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Calculator } from "lucide-react";
+import { Plus, Trash2, Calculator, Loader2, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -80,29 +80,48 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
   // تم إدخال اسم شركة التاجر نصيًا، لا حاجة لجلب قائمة التجار
 
   // Fetch available vehicles
-  const { data: vehicles } = useQuery({
+  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
     queryKey: ['available-vehicles', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) {
+        console.warn('لا يوجد معرف مستخدم لجلب المركبات');
+        return [];
+      }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('user_id', user.id)
         .single();
 
-      if (!profile?.company_id) return [];
+      if (profileError) {
+        console.error('خطأ في جلب بيانات ملف التعريف:', profileError);
+        throw new Error('تعذر الوصول لبيانات الشركة');
+      }
+
+      if (!profile?.company_id) {
+        console.warn('لا يوجد معرف شركة في ملف التعريف');
+        return [];
+      }
 
       const { data, error } = await supabase
         .from('vehicles')
         .select('id, plate_number, make, model, year')
         .eq('company_id', profile.company_id)
+        .eq('is_active', true) // Only get active vehicles
         .order('plate_number', { ascending: true });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('خطأ في جلب المركبات:', error);
+        throw new Error('تعذر تحميل قائمة المركبات');
+      }
+
+      console.log('تم جلب المركبات بنجاح:', data?.length || 0);
+      return data || [];
     },
     enabled: !!user?.id,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const addVehicle = () => {
@@ -114,9 +133,15 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
   };
 
   const updateVehicleAllocation = (index: number, field: keyof VehicleAllocation, value: string | number) => {
-    setVehicleAllocations(prev => prev.map((allocation, i) => 
-      i === index ? { ...allocation, [field]: value } : allocation
-    ));
+    try {
+      setVehicleAllocations(prev => prev.map((allocation, i) => 
+        i === index ? { ...allocation, [field]: value } : allocation
+      ));
+      console.log(`تم تحديث المركبة في المؤشر ${index}:`, { field, value });
+    } catch (error) {
+      console.error('خطأ في تحديث تخصيص المركبة:', error);
+      toast.error('حدث خطأ في تحديث المركبة');
+    }
   };
 
   const calculateEqualDistribution = () => {
@@ -452,7 +477,13 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                       <Calculator className="h-4 w-4 ml-1" />
                       توزيع متساوي
                     </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={addVehicle}>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addVehicle}
+                      disabled={vehiclesLoading || (!vehicles || vehicles.length === 0)}
+                    >
                       <Plus className="h-4 w-4 ml-1" />
                       إضافة مركبة
                     </Button>
@@ -462,7 +493,26 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
               <CardContent className="space-y-4">
                 {vehicleAllocations.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    لم يتم إضافة أي مركبات بعد
+                    {vehiclesLoading ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        جاري تحميل المركبات...
+                      </div>
+                    ) : vehiclesError ? (
+                      <div className="flex flex-col items-center">
+                        <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+                        <p className="text-red-600">خطأ في تحميل المركبات</p>
+                        <p className="text-sm">{vehiclesError.message}</p>
+                      </div>
+                    ) : (!vehicles || vehicles.length === 0) ? (
+                      <div className="flex flex-col items-center">
+                        <AlertCircle className="h-8 w-8 text-yellow-500 mb-2" />
+                        <p>لا توجد مركبات متاحة في النظام</p>
+                        <p className="text-sm">يرجى إضافة مركبات أولاً من قسم إدارة الأسطول</p>
+                      </div>
+                    ) : (
+                      "لم يتم إضافة أي مركبات بعد"
+                    )}
                   </div>
                 )}
 
@@ -478,6 +528,8 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                           .filter(Boolean)}
                         onSelect={(vehicleId) => updateVehicleAllocation(index, 'vehicle_id', vehicleId)}
                         placeholder="اختر المركبة..."
+                        isLoading={vehiclesLoading}
+                        error={vehiclesError?.message || null}
                       />
                     </div>
                     
