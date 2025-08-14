@@ -9,11 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
+import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, Edit } from 'lucide-react'
 import { useContractWizard } from './ContractWizardProvider'
-import { useContractValidation } from '@/hooks/useContractValidation'
-import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
@@ -21,7 +18,9 @@ import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useAvailableVehiclesByDateRange } from '@/hooks/useAvailableVehiclesByDateRange'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
+import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { VehicleConditionWizardStep } from './VehicleConditionWizardStep'
+import { useContractValidation } from '@/hooks/useContractValidation'
 import { ProactiveAlertSystem } from './ProactiveAlertSystem'
 import { ContractDataValidator } from './ContractDataValidator'
 import { ContractValidationSummary } from './ContractValidationSummary'
@@ -31,25 +30,6 @@ import { ContractSignatureSection } from './ContractSignatureSection'
 import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
-import { 
-  Calendar, 
-  CreditCard, 
-  FileText, 
-  User, 
-  Car,
-  Building,
-  Clock,
-  AlertCircle,
-  AlertTriangle,
-  Phone,
-  Mail,
-  MapPin,
-  FileCheck,
-  DollarSign,
-  CheckCircle,
-  Edit,
-  Users
-} from 'lucide-react'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -363,7 +343,6 @@ export const CustomerVehicleStep: React.FC = () => {
 export const DatesStep: React.FC = () => {
   const { data, updateData } = useContractWizard()
   const { validation, isValidating, debouncedValidation } = useContractValidation()
-  const template = useTemplateByType(data.contract_type || '')
   
   // Trigger validation when dates change
   React.useEffect(() => {
@@ -396,12 +375,6 @@ export const DatesStep: React.FC = () => {
   }
 
   const handleRentalDaysChange = (days: number) => {
-    // منع تغيير المدة للعقود ذات المدة الثابتة
-    if (template?.fixed_duration) {
-      toast.error(`لا يمكن تغيير مدة ${template.template_name_ar} - المدة ثابتة ${template.default_duration_days} يوم`)
-      return
-    }
-    
     const endDate = calculateEndDate(data.start_date, days)
     updateData({ 
       rental_days: days,
@@ -411,12 +384,9 @@ export const DatesStep: React.FC = () => {
 
   const suggestedDuration = getDefaultDurationByType(data.contract_type)
   const isUsingSuggested = data.rental_days === suggestedDuration
-  const isFixedDuration = template?.fixed_duration || false
 
   const applySuggestedDuration = () => {
-    if (!isFixedDuration) {
-      handleRentalDaysChange(suggestedDuration)
-    }
+    handleRentalDaysChange(suggestedDuration)
   }
 
   return (
@@ -431,25 +401,8 @@ export const DatesStep: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Fixed duration notice */}
-        {isFixedDuration && template && (
-          <div className="p-4 border border-orange-200 bg-orange-50 rounded-lg">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium text-orange-900">
-                  المدة ثابتة لعقد {template.template_name_ar}
-                </p>
-                <p className="text-xs text-orange-700 mt-1">
-                  مدة هذا العقد ثابتة ولا يمكن تغييرها: {template.default_duration_days} يوم
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Duration suggestion for flexible contracts */}
-        {!isFixedDuration && data.contract_type && suggestedDuration > 1 && !isUsingSuggested && (
+        {/* Duration suggestion */}
+        {data.contract_type && suggestedDuration > 1 && !isUsingSuggested && (
           <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -486,10 +439,7 @@ export const DatesStep: React.FC = () => {
           <div className="space-y-2">
             <Label htmlFor="rental_days">
               عدد الأيام * 
-              {isFixedDuration && (
-                <span className="text-xs text-orange-600 mr-2">(ثابت)</span>
-              )}
-              {!isFixedDuration && isUsingSuggested && (
+              {isUsingSuggested && (
                 <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
               )}
             </Label>
@@ -499,17 +449,8 @@ export const DatesStep: React.FC = () => {
               min="1"
               value={data.rental_days}
               onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
-              disabled={isFixedDuration}
-              className={cn(
-                isFixedDuration ? "bg-muted cursor-not-allowed border-orange-300" :
-                isUsingSuggested ? "border-green-300 bg-green-50" : ""
-              )}
+              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
             />
-            {isFixedDuration && (
-              <p className="text-xs text-muted-foreground">
-                المدة ثابتة لهذا النوع من العقود
-              </p>
-            )}
           </div>
           
           <div className="space-y-2">
