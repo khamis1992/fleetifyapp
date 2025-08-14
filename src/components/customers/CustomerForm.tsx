@@ -586,14 +586,6 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>تاريخ انتهاء البطاقة المدنية</Label>
-                      <Input 
-                        type="date"
-                        {...register('national_id_expiry')} 
-                        dir="ltr"
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label>تاريخ الميلاد</Label>
                       <Input 
                         type="date"

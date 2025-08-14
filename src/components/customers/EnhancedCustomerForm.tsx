@@ -37,6 +37,7 @@ const formSchema = z.object({
   passport_number: z.string().optional(),
   license_number: z.string().optional(),
   license_expiry: z.string().optional(),
+  national_id_expiry: z.string().optional(),
   address: z.string().optional(),
   address_ar: z.string().optional(),
   city: z.string().optional(),
@@ -124,6 +125,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
             passport_number: values.passport_number,
             license_number: values.license_number,
             license_expiry: values.license_expiry,
+            national_id_expiry: values.national_id_expiry,
             address: values.address,
             address_ar: values.address_ar,
             city: values.city,
@@ -158,6 +160,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
         passport_number: values.passport_number,
         license_number: values.license_number,
         license_expiry: values.license_expiry,
+        national_id_expiry: values.national_id_expiry,
         address: values.address,
         address_ar: values.address_ar,
         city: values.city,
@@ -633,26 +636,44 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                             )}
                           />
                         </div>
-                        <div className="grid grid-cols-1 gap-6">
-                          <FormField
-                            control={form.control}
-                            name="date_of_birth"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-base font-medium text-right">تاريخ الميلاد</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="date" 
-                                    className="text-right h-12 text-base"
-                                    dir="rtl"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                         <div className="grid grid-cols-2 gap-6">
+                           <FormField
+                             control={form.control}
+                             name="national_id_expiry"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel className="text-base font-medium text-right">تاريخ انتهاء البطاقة المدنية</FormLabel>
+                                 <FormControl>
+                                   <Input 
+                                     {...field} 
+                                     type="date" 
+                                     className="text-right h-12 text-base"
+                                     dir="rtl"
+                                   />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <FormField
+                             control={form.control}
+                             name="date_of_birth"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel className="text-base font-medium text-right">تاريخ الميلاد</FormLabel>
+                                 <FormControl>
+                                   <Input 
+                                     {...field} 
+                                     type="date" 
+                                     className="text-right h-12 text-base"
+                                     dir="rtl"
+                                   />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                         </div>
                       </div>
 
                       {/* المعلومات المالية */}
