@@ -21,7 +21,7 @@ export interface UnifiedAccountSelectorOptions {
 }
 
 export const useUnifiedAccountSelector = (options: UnifiedAccountSelectorOptions = {}) => {
-  const { filterLevel = 'level_4_5', includeUnavailable = false } = options;
+  const { filterLevel = 'level_5_6', includeUnavailable = false } = options;
   const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
@@ -90,7 +90,7 @@ export const useUnifiedAccountSelector = (options: UnifiedAccountSelectorOptions
             case 'all_allowed':
               return account.account_level >= 3;
             default:
-              return account.account_level >= 4 && account.account_level <= 5;
+              return account.account_level >= 5 && account.account_level <= 6;
           }
         })
         .map(account => ({
