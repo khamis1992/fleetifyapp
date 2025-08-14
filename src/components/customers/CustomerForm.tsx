@@ -33,10 +33,10 @@ interface CustomerFormProps {
 export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFormProps) {
   const { user } = useAuth();
   const { data: companies } = useCompanies();
-  const { data: availableAccounts } = useAvailableCustomerAccounts();
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
+  const { data: availableAccounts } = useAvailableCustomerAccounts(selectedCompanyId);
   const { data: accountSettings } = useCompanyAccountSettings();
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
   const [accountSearchOpen, setAccountSearchOpen] = useState(false);
   const [accountSearchValue, setAccountSearchValue] = useState("");

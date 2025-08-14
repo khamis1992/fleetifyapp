@@ -22,24 +22,27 @@ interface CreateCustomerWithAccountResult {
   };
 }
 
-export const useCreateCustomerWithAccount = () => {
+export const useCreateCustomerWithAccount = (targetCompanyId?: string) => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
+  
+  // Use target company ID if provided, otherwise use current company ID
+  const effectiveCompanyId = targetCompanyId || companyId;
 
   return useMutation({
     mutationFn: async (data: CreateCustomerWithAccountData): Promise<CreateCustomerWithAccountResult> => {
-      if (!companyId) throw new Error("Company ID is required");
+      if (!effectiveCompanyId) throw new Error("Company ID is required");
 
       console.log('[CREATE_CUSTOMER_WITH_ACCOUNT] Starting customer creation process', { 
         data, 
-        companyId 
+        companyId: effectiveCompanyId 
       });
 
       try {
         // Step 1: Create the customer
         const customerPayload = {
-          company_id: companyId,
+          company_id: effectiveCompanyId,
           customer_type: data.customer_type,
           first_name: data.first_name,
           last_name: data.last_name,
@@ -90,7 +93,7 @@ export const useCreateCustomerWithAccount = () => {
           const { data: accountId, error: accountError } = await supabase
             .rpc('create_customer_financial_account_fixed', {
               customer_id_param: customer.id,
-              company_id_param: companyId
+              company_id_param: effectiveCompanyId
             });
 
           if (accountError) {
@@ -124,7 +127,7 @@ export const useCreateCustomerWithAccount = () => {
                 const entryNumber = `JE-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
                 
                 const journalPayload = {
-                  company_id: companyId,
+                  company_id: effectiveCompanyId,
                   entry_date: new Date().toISOString().split('T')[0],
                   entry_number: entryNumber,
                   description: `Opening balance for customer: ${customer.customer_type === 'individual' 
@@ -197,12 +200,12 @@ export const useCreateCustomerWithAccount = () => {
     },
     onSuccess: (result) => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["customers", companyId] });
-      queryClient.invalidateQueries({ queryKey: ["customer-linked-accounts", result.customer.id, companyId] });
-      queryClient.invalidateQueries({ queryKey: ["available-customer-accounts", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["customers", effectiveCompanyId] });
+      queryClient.invalidateQueries({ queryKey: ["customer-linked-accounts", result.customer.id, effectiveCompanyId] });
+      queryClient.invalidateQueries({ queryKey: ["available-customer-accounts", effectiveCompanyId] });
       
       if (result.financialAccount) {
-        queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+        queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", effectiveCompanyId] });
       }
 
       const successMessage = result.financialAccount 

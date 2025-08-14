@@ -22,22 +22,25 @@ export interface CompanyAccountSettings {
 }
 
 // Hook للحصول على الحسابات المتاحة للعملاء
-export const useAvailableCustomerAccounts = () => {
+export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
   const { companyId } = useUnifiedCompanyAccess();
+  
+  // Use target company ID if provided, otherwise use current company ID
+  const effectiveCompanyId = targetCompanyId || companyId;
 
   return useQuery({
-    queryKey: ["available-customer-accounts", companyId],
+    queryKey: ["available-customer-accounts", effectiveCompanyId],
     queryFn: async () => {
-      if (!companyId) {
+      if (!effectiveCompanyId) {
         console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] No companyId provided');
         return [];
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetching for companyId:', companyId);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetching for companyId:', effectiveCompanyId);
 
       const { data, error } = await supabase
         .rpc("get_available_customer_accounts", {
-          company_id_param: companyId
+          company_id_param: effectiveCompanyId
         });
 
       if (error) {
@@ -45,11 +48,11 @@ export const useAvailableCustomerAccounts = () => {
         throw error;
       }
 
-      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetched accounts:', data?.length || 0, 'accounts for company:', companyId);
+      console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetched accounts:', data?.length || 0, 'accounts for company:', effectiveCompanyId);
       
       return data as AvailableCustomerAccount[];
     },
-    enabled: !!companyId,
+    enabled: !!effectiveCompanyId,
   });
 };
 
