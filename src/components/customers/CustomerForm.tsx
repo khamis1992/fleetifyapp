@@ -548,10 +548,48 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>رقم البطاقة المدنية</Label>
+                      <Label>الرقم المدني</Label>
                       <Input 
                         {...register('national_id')} 
-                        placeholder="123456789012"
+                        placeholder="ادخل الرقم المدني"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>رقم الجواز</Label>
+                      <Input 
+                        {...register('passport_number')} 
+                        placeholder="ادخل رقم الجواز"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>رقم الرخصة</Label>
+                      <Input 
+                        {...register('license_number')} 
+                        placeholder="يتم تعبئته تلقائياً من الرقم المدني"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ انتهاء الرخصة</Label>
+                      <Input 
+                        type="date"
+                        {...register('license_expiry')} 
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>تاريخ الميلاد</Label>
+                      <Input 
+                        type="date"
+                        {...register('date_of_birth')} 
                         dir="ltr"
                       />
                     </div>
@@ -560,44 +598,6 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                       <Input 
                         type="date"
                         {...register('national_id_expiry')} 
-                        dir="ltr"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>رقم جواز السفر</Label>
-                      <Input 
-                        {...register('passport_number')} 
-                        placeholder="A12345678"
-                        dir="ltr"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>رقم رخصة القيادة</Label>
-                      <Input 
-                        {...register('license_number')} 
-                        placeholder="K12345678"
-                        dir="ltr"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>تاريخ انتهاء رخصة القيادة</Label>
-                      <Input 
-                        type="date"
-                        {...register('license_expiry')} 
-                        dir="ltr"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>تاريخ الميلاد</Label>
-                      <Input 
-                        type="date"
-                        {...register('date_of_birth')} 
                         dir="ltr"
                       />
                     </div>
