@@ -175,6 +175,9 @@ export function CustomerAccountFormSelector({
   disabled = false,
   companyId
 }: CustomerAccountFormSelectorProps) {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  
   const {
     data: availableAccounts,
     isLoading,
@@ -205,16 +208,108 @@ export function CustomerAccountFormSelector({
     );
   }
 
-  const filteredAccounts = availableAccounts?.filter(account => account.is_available) || [];
+  const filteredAccounts = availableAccounts?.filter(account => 
+    account.is_available && 
+    (account.account_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     (account.account_name_ar && account.account_name_ar.toLowerCase().includes(searchTerm.toLowerCase())))
+  ) || [];
+
+  const selectedAccount = availableAccounts?.find(acc => acc.id === value);
 
   return (
-    <AdvancedAccountSelector
-      value={value}
-      onValueChange={onValueChange}
-      placeholder={placeholder}
-      disabled={disabled}
-      availableAccounts={filteredAccounts}
-    />
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between h-12 px-4 text-right border-input bg-background hover:bg-accent hover:text-accent-foreground"
+          disabled={disabled}
+        >
+          <div className="flex items-center gap-2 text-right flex-1">
+            {selectedAccount ? (
+              <div className="text-right">
+                <div className="font-medium text-foreground">
+                  {selectedAccount.account_code} - {selectedAccount.account_name}
+                </div>
+                {selectedAccount.account_name_ar && (
+                  <div className="text-xs text-muted-foreground">
+                    {selectedAccount.account_name_ar}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">
+              {filteredAccounts.length}
+            </Badge>
+            <Building className="h-4 w-4 opacity-50" />
+          </div>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0 z-50" align="start" side="bottom">
+        <div className="p-4 space-y-4 bg-background border rounded-md shadow-lg">
+          {/* Search */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="ابحث في الحسابات..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md text-right focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              dir="rtl"
+            />
+          </div>
+
+          {/* Accounts list */}
+          <div className="max-h-60 overflow-auto space-y-1">
+            {filteredAccounts.length > 0 ? (
+              filteredAccounts.map((account) => (
+                <div
+                  key={account.id}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+                    value === account.id 
+                      ? 'bg-accent border-accent-foreground/20' 
+                      : 'hover:bg-accent/50 border-transparent'
+                  }`}
+                  onClick={() => {
+                    onValueChange(account.id);
+                    setOpen(false);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-right flex-1">
+                      <div className="font-medium text-sm text-foreground">
+                        {account.account_code} - {account.account_name}
+                      </div>
+                      {account.account_name_ar && (
+                        <div className="text-xs text-muted-foreground">
+                          {account.account_name_ar}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground mt-1">
+                        حساب محاسبي متاح
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                {searchTerm ? 'لا توجد حسابات تطابق البحث' : 'لا توجد حسابات متاحة'}
+              </div>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 export function CustomerAccountSelector({
