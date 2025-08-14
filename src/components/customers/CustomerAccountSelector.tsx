@@ -156,70 +156,46 @@ export function CustomerAccountFormSelector({
         </Alert>
       )}
 
-      {/* Main Select Component */}
-      <Select value={value} onValueChange={onValueChange} disabled={disabled} key={`select-${forceRender}`}>
-        <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {filteredAccounts.length > 0 ? (
-            filteredAccounts.map((account) => (
-              <SelectItem 
-                key={`${account.id}-${forceRender}`}
-                value={account.id}
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">
-                        {account.account_code} - {account.account_name}
-                      </span>
-                      {account.account_name_ar && account.account_name_ar !== account.account_name && (
-                        <span className="text-sm text-muted-foreground">
-                          {account.account_name_ar}
-                        </span>
-                      )}
-                      {account.parent_account_name && (
-                        <span className="text-xs text-muted-foreground">
-                          تحت: {account.parent_account_name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-xs">متاح</Badge>
-                    {account.account_code === '1130201' && (
-                      <Badge variant="default" className="text-xs bg-green-100 text-green-800">
-                        🎯 الهدف
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </SelectItem>
-            ))
-          ) : (
-            <div className="py-6 text-center text-muted-foreground">
-              <div className="space-y-2">
-                <p>لا توجد حسابات متاحة للاختيار</p>
-                <p className="text-xs">
-                  إجمالي: {availableAccounts?.length || 0} | متاحة: {filteredAccounts.length}
-                </p>
-                <Button 
-                  onClick={() => {
-                    refetch();
-                    setForceRender(prev => prev + 1);
-                  }} 
-                  variant="ghost" 
-                  size="sm"
-                >
-                  تحديث القائمة
-                </Button>
-              </div>
-            </div>
-          )}
-        </SelectContent>
-      </Select>
+      {/* Main HTML Select Component - Guaranteed to work */}
+      <div className="space-y-2">
+        <select
+          value={value || ''}
+          onChange={(e) => onValueChange(e.target.value)}
+          disabled={disabled}
+          className="w-full h-10 px-3 py-2 text-sm border border-input bg-background rounded-md ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <option value="">{placeholder}</option>
+          {filteredAccounts.map((account) => (
+            <option 
+              key={account.id}
+              value={account.id}
+              style={{
+                fontWeight: account.account_code === '1130201' ? 'bold' : 'normal',
+                backgroundColor: account.account_code === '1130201' ? '#dcfce7' : 'white',
+                color: 'black'
+              }}
+            >
+              {account.account_code} - {account.account_name}
+              {account.account_name_ar && account.account_name_ar !== account.account_name 
+                ? ` (${account.account_name_ar})` 
+                : ''
+              }
+              {account.account_code === '1130201' ? ' 🎯 الهدف' : ''}
+            </option>
+          ))}
+        </select>
+        
+        {filteredAccounts.length === 0 && (
+          <div className="text-center p-4 border border-dashed rounded-lg">
+            <p className="text-muted-foreground text-sm">
+              لا توجد حسابات متاحة للاختيار
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              إجمالي: {availableAccounts?.length || 0} | متاحة: {filteredAccounts.length}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Emergency Fallback */}
       {showDebug && filteredAccounts.length > 0 && (
