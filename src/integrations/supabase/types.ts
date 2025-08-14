@@ -8725,7 +8725,6 @@ export type Database = {
           loan_amount: number | null
           location: string | null
           make: string
-          manufacturer: string | null
           minimum_rental_price: number | null
           model: string
           monthly_payment: number | null
@@ -8752,7 +8751,6 @@ export type Database = {
           total_insurance_cost: number | null
           total_maintenance_cost: number | null
           total_operating_cost: number | null
-          transmission: string | null
           transmission_type: string | null
           updated_at: string
           useful_life_years: number | null
@@ -8818,7 +8816,6 @@ export type Database = {
           loan_amount?: number | null
           location?: string | null
           make: string
-          manufacturer?: string | null
           minimum_rental_price?: number | null
           model: string
           monthly_payment?: number | null
@@ -8845,7 +8842,6 @@ export type Database = {
           total_insurance_cost?: number | null
           total_maintenance_cost?: number | null
           total_operating_cost?: number | null
-          transmission?: string | null
           transmission_type?: string | null
           updated_at?: string
           useful_life_years?: number | null
@@ -8911,7 +8907,6 @@ export type Database = {
           loan_amount?: number | null
           location?: string | null
           make?: string
-          manufacturer?: string | null
           minimum_rental_price?: number | null
           model?: string
           monthly_payment?: number | null
@@ -8938,7 +8933,6 @@ export type Database = {
           total_insurance_cost?: number | null
           total_maintenance_cost?: number | null
           total_operating_cost?: number | null
-          transmission?: string | null
           transmission_type?: string | null
           updated_at?: string
           useful_life_years?: number | null

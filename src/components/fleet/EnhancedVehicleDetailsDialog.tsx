@@ -246,12 +246,6 @@ export function EnhancedVehicleDetailsDialog({
                   <CardTitle className="text-base">المواصفات التقنية</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {vehicle.chassis_number && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">رقم الشاسيه:</span>
-                      <span className="font-medium">{vehicle.chassis_number}</span>
-                    </div>
-                  )}
                   {vehicle.fuel_capacity && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">سعة الخزان:</span>

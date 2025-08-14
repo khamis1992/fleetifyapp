@@ -37,7 +37,6 @@ export interface Vehicle {
   // Enhanced vehicle fields
   vin?: string
   engine_number?: string
-  chassis_number?: string
   fuel_capacity?: number
   seating_capacity?: number
   transmission_type?: string

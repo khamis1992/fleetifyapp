@@ -57,7 +57,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Technical Information
       engine_number: "",
-      chassis_number: "",
       fuel_capacity: "",
       transmission_type: "automatic",
       drive_type: "front_wheel",
@@ -102,7 +101,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       status: "available",
       
       // Enhanced Fields
-      manufacturer: "",
       purchase_source: "",
       asset_code: "",
       fixed_asset_id: "",
@@ -132,9 +130,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         color: vehicle.color || "",
         vin: vehicle.vin || "",
         engine_number: vehicle.engine_number || "",
-        chassis_number: vehicle.chassis_number || "",
         fuel_capacity: vehicle.fuel_capacity?.toString() || "",
-        transmission_type: vehicle.transmission_type || vehicle.transmission || "automatic",
+        transmission_type: vehicle.transmission_type || "automatic",
         drive_type: vehicle.drive_type || "front_wheel",
         vehicle_category: vehicle.vehicle_category || "sedan",
         fuel_type: vehicle.fuel_type || "gasoline",
@@ -260,7 +257,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Technical Information
       engine_number: `ENG${String(randomId).padStart(8, '0')}`,
-      chassis_number: `CH${String(randomId).padStart(10, '0')}`,
       fuel_capacity: "65",
       transmission_type: "automatic",
       drive_type: "front_wheel",
@@ -305,7 +301,6 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       status: "available",
       
       // Enhanced Fields
-      manufacturer: "شركة تويوتا العالمية",
       purchase_source: "معرض السيارات الرئيسي",
       asset_code: `VEH-${String(randomId).padStart(4, '0')}`,
       asset_classification: "vehicle",
@@ -412,7 +407,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         color: finalData.color?.trim() || null,
         vin: finalData.vin?.trim() || null,
         engine_number: finalData.engine_number?.trim() || null,
-        transmission: finalData.transmission || "automatic",
+        transmission_type: finalData.transmission_type || "automatic",
         body_type: finalData.body_type?.trim() || null,
         fuel_type: finalData.fuel_type || "gasoline",
         seating_capacity: finalData.seating_capacity ? parseInt(finalData.seating_capacity) : 5,
@@ -593,46 +588,46 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField
                           control={form.control}
-                          name="manufacturer"
-                         render={({ field }) => (
+                          name="make"
+                          render={({ field }) => (
+                             <FormItem className="text-right">
+                               <FormLabel className="text-right">الماركة/الشركة المصنعة *</FormLabel>
+                               <FormControl>
+                                 <Input {...field} placeholder="مثال: تويوتا" className="text-right" dir="rtl" />
+                               </FormControl>
+                               <FormMessage className="text-right" />
+                             </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="model"
+                          render={({ field }) => (
+                             <FormItem className="text-right">
+                               <FormLabel className="text-right">الطراز *</FormLabel>
+                               <FormControl>
+                                 <Input {...field} placeholder="مثال: كامري" className="text-right" dir="rtl" />
+                               </FormControl>
+                               <FormMessage className="text-right" />
+                             </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="year"
+                          render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">الشركة المصنعة</FormLabel>
+                              <FormLabel className="text-right">السنة *</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="مثال: Toyota Motors" className="text-right" dir="rtl" />
+                                <Input {...field} type="number" min="1990" max={new Date().getFullYear() + 1} className="text-right" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
-                         )}
-                       />
-                       
-                       <FormField
-                         control={form.control}
-                         name="make"
-                         render={({ field }) => (
-                            <FormItem className="text-right">
-                              <FormLabel className="text-right">الماركة *</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="مثال: تويوتا" className="text-right" dir="rtl" />
-                              </FormControl>
-                              <FormMessage className="text-right" />
-                            </FormItem>
-                         )}
-                       />
-                       
-                       <FormField
-                         control={form.control}
-                         name="model"
-                         render={({ field }) => (
-                            <FormItem className="text-right">
-                              <FormLabel className="text-right">الطراز *</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="مثال: كامري" className="text-right" dir="rtl" />
-                              </FormControl>
-                              <FormMessage className="text-right" />
-                            </FormItem>
-                         )}
-                       />
-                     </div>
+                          )}
+                        />
+                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField
@@ -683,104 +678,114 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         )}
                       />
 
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="plate_number"
+                          render={({ field }) => (
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">رقم اللوحة *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="أدخل رقم اللوحة" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="color"
+                          render={({ field }) => (
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">اللون</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="مثال: أبيض" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <FormField
-                         control={form.control}
-                         name="plate_number"
-                         render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>رقم اللوحة *</FormLabel>
-                             <FormControl>
-                               <Input {...field} placeholder="أدخل رقم اللوحة" />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
-                         )}
-                       />
-                     </div>
+                        <FormField
+                          control={form.control}
+                          name="vin"
+                          render={({ field }) => (
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">رقم الهيكل (VIN)</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="رقم تعريف المركبة" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
+                          )}
+                        />
 
+                        <FormField
+                          control={form.control}
+                          name="engine_number"
+                          render={({ field }) => (
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">رقم المحرك</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="رقم المحرك" className="text-right" dir="rtl" />
+                              </FormControl>
+                              <FormMessage className="text-right" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                    <FormField
-                      control={form.control}
-                      name="year"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>السنة *</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="number" min="1990" max={new Date().getFullYear() + 1} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="transmission_type"
+                          render={({ field }) => (
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">ناقل الحركة</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="text-right" dir="rtl">
+                                    <SelectValue placeholder="اختر ناقل الحركة" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="automatic">أوتوماتيك</SelectItem>
+                                  <SelectItem value="manual">يدوي</SelectItem>
+                                  <SelectItem value="cvt">CVT</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage className="text-right" />
+                            </FormItem>
+                          )}
+                        />
 
-                    <FormField
-                      control={form.control}
-                      name="color"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>اللون</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              placeholder="مثال: أبيض"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="vin"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>رقم الهيكل</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="رقم تعريف المركبة" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="engine_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>رقم المحرك</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="رقم المحرك" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="transmission_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ناقل الحركة</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="اختر ناقل الحركة" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="automatic">أوتوماتيك</SelectItem>
-                              <SelectItem value="manual">يدوي</SelectItem>
-                              <SelectItem value="cvt">CVT</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        <FormField
+                          control={form.control}
+                          name="fuel_type"
+                          render={({ field }) => (
+                            <FormItem className="text-right">
+                              <FormLabel className="text-right">نوع الوقود</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="text-right" dir="rtl">
+                                    <SelectValue placeholder="اختر نوع الوقود" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="gasoline">بنزين</SelectItem>
+                                  <SelectItem value="diesel">ديزل</SelectItem>
+                                  <SelectItem value="hybrid">هجين</SelectItem>
+                                  <SelectItem value="electric">كهربائي</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage className="text-right" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
                     <FormField
                       control={form.control}
@@ -858,21 +863,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                     <CardDescription className="text-right">تفاصيل تقنية وتسجيل المركبة</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-                    <FormField
-                      control={form.control}
-                      name="chassis_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>رقم الشاسيه</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="رقم الشاسيه" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
+                     <FormField
                       control={form.control}
                       name="fuel_capacity"
                       render={({ field }) => (
