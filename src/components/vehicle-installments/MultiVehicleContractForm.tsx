@@ -107,6 +107,8 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
           return [];
         }
 
+        console.log('🏢 معرف الشركة الحالي:', profile.company_id);
+
         const { data, error } = await supabase
           .from('vehicles')
           .select('id, plate_number, make, model, year')

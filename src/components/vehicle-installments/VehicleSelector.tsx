@@ -51,7 +51,14 @@ export function VehicleSelector({
     selectedVehicleId,
     excludeCount: excludeVehicleIds?.length || 0,
     isLoading,
-    error
+    error,
+    // إضافة تفاصيل المركبات للتحقق من الشركة
+    sampleVehicles: vehicles?.slice(0, 3)?.map(v => ({ 
+      id: v.id, 
+      plate_number: v.plate_number,
+      // إضافة company_id إذا كان متوفراً  
+      company_id: (v as any)?.company_id 
+    })) || []
   });
 
   const [open, setOpen] = useState(false);
