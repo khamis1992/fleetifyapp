@@ -103,7 +103,7 @@ export const BasicInfoStep: React.FC = () => {
               <Alert className="mt-2">
                 <FileText className="h-4 w-4" />
                 <AlertDescription>
-                  تم تطبيق قالب: <strong>{template.name_ar}</strong>
+                  تم تطبيق قالب: <strong>{template.template_name_ar}</strong>
                 </AlertDescription>
               </Alert>
             )}
@@ -154,7 +154,7 @@ export const BasicInfoStep: React.FC = () => {
               </div>
               {template && (
                 <Badge variant="secondary" className="absolute top-2 right-2">
-                  من القالب: {template.name_ar}
+                  من القالب: {template.template_name_ar}
                 </Badge>
               )}
             </div>
@@ -398,7 +398,7 @@ export const DatesStep: React.FC = () => {
   const handleRentalDaysChange = (days: number) => {
     // منع تغيير المدة للعقود ذات المدة الثابتة
     if (template?.fixed_duration) {
-      toast.error(`لا يمكن تغيير مدة ${template.name_ar} - المدة ثابتة ${template.default_duration} يوم`)
+      toast.error(`لا يمكن تغيير مدة ${template.template_name_ar} - المدة ثابتة ${template.default_duration_days} يوم`)
       return
     }
     
@@ -438,10 +438,10 @@ export const DatesStep: React.FC = () => {
               <AlertTriangle className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="text-sm font-medium text-orange-900">
-                  المدة ثابتة لعقد {template.name_ar}
+                  المدة ثابتة لعقد {template.template_name_ar}
                 </p>
                 <p className="text-xs text-orange-700 mt-1">
-                  مدة هذا العقد ثابتة ولا يمكن تغييرها: {template.default_duration} يوم
+                  مدة هذا العقد ثابتة ولا يمكن تغييرها: {template.default_duration_days} يوم
                 </p>
               </div>
             </div>

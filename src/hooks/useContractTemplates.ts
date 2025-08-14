@@ -8,6 +8,7 @@ export interface ContractTemplate {
   contract_type: string
   default_terms: string
   default_duration_days: number
+  fixed_duration: boolean // إضافة خاصية المدة الثابتة
   auto_calculate_pricing: boolean
   requires_approval: boolean
   approval_threshold: number
@@ -36,6 +37,7 @@ const defaultTemplates: ContractTemplate[] = [
 7. المخالفات: المستأجر مسؤول عن جميع المخالفات المرورية
 8. التأمين: المركبة مؤمنة ضد الحوادث الكبرى فقط`,
     default_duration_days: 1,
+    fixed_duration: false,
     auto_calculate_pricing: true,
     requires_approval: false,
     approval_threshold: 5000,
@@ -48,7 +50,7 @@ const defaultTemplates: ContractTemplate[] = [
     contract_type: 'weekly_rental',
     default_terms: `شروط وأحكام عقد الإيجار الأسبوعي
 
-1. مدة الإيجار: سبعة أيام من تاريخ بداية العقد
+1. مدة الإيجار: سبعة أيام من تاريخ بداية العقد (ثابتة)
 2. الدفع: يمكن الدفع مقدماً أو بالتقسيط الأسبوعي
 3. المسؤولية: المستأجر مسؤول عن أي أضرار تلحق بالمركبة
 4. الاستخدام: للاستخدام التجاري والشخصي
@@ -57,6 +59,7 @@ const defaultTemplates: ContractTemplate[] = [
 7. المخالفات: المستأجر مسؤول عن جميع المخالفات المرورية
 8. التأمين: تأمين شامل متاح بتكلفة إضافية`,
     default_duration_days: 7,
+    fixed_duration: true, // مدة ثابتة للعقد الأسبوعي
     auto_calculate_pricing: true,
     requires_approval: false,
     approval_threshold: 8000,
@@ -69,7 +72,7 @@ const defaultTemplates: ContractTemplate[] = [
     contract_type: 'monthly_rental',
     default_terms: `شروط وأحكام عقد الإيجار الشهري
 
-1. مدة الإيجار: شهر واحد قابل للتجديد
+1. مدة الإيجار: شهر واحد قابل للتجديد (ثابتة - 30 يوم)
 2. الدفع: دفعة مقدمة + الإيجار الشهري
 3. المسؤولية: المستأجر مسؤول عن أي أضرار تلحق بالمركبة
 4. الاستخدام: للاستخدام التجاري والشخصي المكثف
@@ -79,6 +82,7 @@ const defaultTemplates: ContractTemplate[] = [
 8. الإرجاع: إشعار مسبق 48 ساعة لإنهاء العقد
 9. الكيلومترات: حد أقصى 3000 كم شهرياً`,
     default_duration_days: 30,
+    fixed_duration: true, // مدة ثابتة للعقد الشهري
     auto_calculate_pricing: true,
     requires_approval: true,
     approval_threshold: 10000,
@@ -101,6 +105,7 @@ const defaultTemplates: ContractTemplate[] = [
 8. التقارير: تقارير شهرية للاستخدام والتكاليف
 9. الدعم: دعم فني على مدار الساعة`,
     default_duration_days: 90,
+    fixed_duration: false,
     auto_calculate_pricing: false,
     requires_approval: true,
     approval_threshold: 25000,
