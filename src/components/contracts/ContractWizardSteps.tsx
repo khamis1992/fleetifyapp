@@ -378,7 +378,11 @@ export const DatesStep: React.FC = () => {
   }
 
   const handleStartDateChange = (newStartDate: string) => {
-    const endDate = calculateEndDate(newStartDate, data.rental_days)
+    // عند تغيير تاريخ البداية، نحسب التاريخ النهائي بناءً على الأشهر إذا كانت محددة، وإلا بناءً على الأيام
+    const calculationDays = data.rental_months && data.rental_months > 0 
+      ? data.rental_months * 30 
+      : data.rental_days
+    const endDate = calculateEndDate(newStartDate, calculationDays)
     updateData({ 
       start_date: newStartDate,
       end_date: endDate
@@ -387,19 +391,20 @@ export const DatesStep: React.FC = () => {
 
   const handleRentalDaysChange = (days: number) => {
     const endDate = calculateEndDate(data.start_date, days)
-    const months = Math.round(days / 30)
+    // عندما يتم تغيير الأيام، نقوم بإعادة تعيين الأشهر إلى 0
     updateData({ 
       rental_days: days,
-      rental_months: months,
+      rental_months: 0,
       end_date: endDate
     })
   }
 
   const handleRentalMonthsChange = (months: number) => {
-    const days = months * 30
-    const endDate = calculateEndDate(data.start_date, days)
+    // عندما يتم تحديد الأشهر، نحسب الأيام للتاريخ النهائي فقط ولكن نعرض 0 في خانة الأيام
+    const daysForCalculation = months * 30
+    const endDate = calculateEndDate(data.start_date, daysForCalculation)
     updateData({ 
-      rental_days: days,
+      rental_days: 0, // عرض 0 في خانة الأيام عندما يتم تحديد الأشهر
       rental_months: months,
       end_date: endDate
     })
