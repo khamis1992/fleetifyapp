@@ -57,18 +57,19 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
 };
 
 // Hook للحصول على إعدادات الحسابات للشركة
-export const useCompanyAccountSettings = () => {
+export const useCompanyAccountSettings = (targetCompanyId?: string) => {
   const { companyId } = useUnifiedCompanyAccess();
+  const effectiveCompanyId = targetCompanyId || companyId;
 
   return useQuery({
-    queryKey: ["company-account-settings", companyId],
+    queryKey: ["company-account-settings", effectiveCompanyId],
     queryFn: async () => {
-      if (!companyId) return null;
+      if (!effectiveCompanyId) return null;
 
       const { data, error } = await supabase
         .from("companies")
         .select("customer_account_settings")
-        .eq("id", companyId)
+        .eq("id", effectiveCompanyId)
         .single();
 
       if (error) {
@@ -78,7 +79,7 @@ export const useCompanyAccountSettings = () => {
 
       return data?.customer_account_settings as unknown as CompanyAccountSettings;
     },
-    enabled: !!companyId,
+    enabled: !!effectiveCompanyId,
   });
 };
 

@@ -559,6 +559,7 @@ export function CustomerDetailsDialog({
               customerId={customerId}
               customerName={customerName}
               mode="view"
+              companyId={customer.company_id}
             />
           </TabsContent>
         </Tabs>

@@ -26,19 +26,21 @@ interface CustomerAccountSelectorProps {
   customerId: string;
   customerName: string;
   mode?: 'view' | 'edit';
+  companyId?: string;
 }
 
 export function CustomerAccountSelector({ 
   customerId, 
   customerName, 
-  mode = 'view' 
+  mode = 'view',
+  companyId
 }: CustomerAccountSelectorProps) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [isLinking, setIsLinking] = useState(false);
 
-  const { data: availableAccounts, isLoading: loadingAvailable } = useAvailableCustomerAccounts();
+  const { data: availableAccounts, isLoading: loadingAvailable } = useAvailableCustomerAccounts(companyId);
   const { data: linkedAccounts, isLoading: loadingLinked } = useCustomerLinkedAccounts(customerId);
-  const { data: companySettings } = useCompanyAccountSettings();
+  const { data: companySettings } = useCompanyAccountSettings(companyId);
   const linkAccountMutation = useLinkAccountToCustomer();
   const unlinkAccountMutation = useUnlinkAccountFromCustomer();
   const { formatCurrency } = useCurrencyFormatter();
