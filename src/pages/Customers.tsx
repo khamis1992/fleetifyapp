@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useCustomers, useToggleCustomerBlacklist } from "@/hooks/useEnhancedCustomers"
 import { useDebounce } from "@/hooks/useDebounce"
-import { EnhancedCustomerForm } from "@/components/customers/EnhancedCustomerForm"
+import { CustomerForm } from "@/components/customers/CustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
@@ -413,7 +413,7 @@ export default function Customers() {
       </div>
 
       {/* نماذج الحوار */}
-      <EnhancedCustomerForm
+      <CustomerForm
         open={showCustomerForm}
         onOpenChange={(open) => {
           setShowCustomerForm(open)
@@ -422,15 +422,7 @@ export default function Customers() {
           }
         }}
         customer={editingCustomer}
-        onSuccess={(customer) => {
-          console.log('✅ Customer saved successfully:', customer)
-          setShowCustomerForm(false)
-          setEditingCustomer(null)
-        }}
-        onCancel={() => {
-          setShowCustomerForm(false)
-          setEditingCustomer(null)
-        }}
+        mode={editingCustomer ? 'edit' : 'create'}
       />
       
       {/* Customer Details Dialog */}

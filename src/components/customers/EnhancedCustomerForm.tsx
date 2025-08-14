@@ -10,8 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCreateCustomerWithAccount } from "@/hooks/useCreateCustomerWithAccount";
 import { useUpdateCustomer } from "@/hooks/useEnhancedCustomers";
 import { Customer } from "@/types/customer";
@@ -67,11 +65,9 @@ interface EnhancedCustomerFormProps {
   customer?: Customer | null;
   onSuccess?: (customer: any) => void;
   onCancel?: () => void;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = true, onOpenChange }: EnhancedCustomerFormProps) => {
+export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: EnhancedCustomerFormProps) => {
   const [showFinancialSection, setShowFinancialSection] = useState(false);
   const { companyId } = useUnifiedCompanyAccess();
   const createMutation = useCreateCustomerWithAccount();
@@ -181,24 +177,9 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && onCancel) {
-      onCancel();
-    }
-    onOpenChange?.(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            {customer ? "تعديل بيانات العميل" : "إضافة عميل جديد"}
-          </DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="max-h-[70vh]">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Customer Type Selection */}
         <Card>
           <CardHeader>
@@ -557,10 +538,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
             </CardContent>
           </Card>
         )}
-              </form>
-            </Form>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+      </form>
+    </Form>
+  );
+};
