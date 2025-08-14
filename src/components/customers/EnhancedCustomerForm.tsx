@@ -12,11 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateCustomerWithAccount } from "@/hooks/useCreateCustomerWithAccount";
 import { useUpdateCustomer } from "@/hooks/useEnhancedCustomers";
 import { Customer } from "@/types/customer";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Building, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Users, Building, CreditCard, AlertCircle, Phone, MapPin, FileText, X, Shuffle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomerAccountFormSelector } from "./CustomerAccountSelector";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
@@ -188,379 +189,579 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
     onOpenChange?.(newOpen);
   };
 
+  const fillTestData = () => {
+    form.setValue('customer_type', 'individual');
+    form.setValue('first_name', 'أحمد');
+    form.setValue('last_name', 'محمد');
+    form.setValue('first_name_ar', 'أحمد');
+    form.setValue('last_name_ar', 'محمد');
+    form.setValue('phone', '+965 12345678');
+    form.setValue('email', 'ahmed@example.com');
+    form.setValue('national_id', '123456789012');
+    form.setValue('city', 'الكويت');
+    form.setValue('country', 'الكويت');
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            {customer ? "تعديل بيانات العميل" : "إضافة عميل جديد"}
-          </DialogTitle>
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-semibold">
+              {customer ? "تعديل بيانات العميل" : "إضافة عميل جديد"}
+            </DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => handleOpenChange(false)}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh]">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        {/* Customer Type Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {customerType === 'individual' ? <Users className="h-5 w-5" /> : <Building className="h-5 w-5" />}
-              نوع العميل
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FormField
-              control={form.control}
-              name="customer_type"
-              render={({ field }) => (
-                <FormItem>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر نوع العميل" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="individual">شخص طبيعي</SelectItem>
-                      <SelectItem value="corporate">شخص اعتباري</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>المعلومات الأساسية</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {customerType === 'individual' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الاسم الأول *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="last_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>اسم العائلة *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="first_name_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الاسم الأول بالعربي</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="last_name_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>اسم العائلة بالعربي</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <Tabs defaultValue="basic" className="flex-1">
+              <div className="px-6 border-b">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="basic" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    البيانات الأساسية
+                  </TabsTrigger>
+                  <TabsTrigger value="contact" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    معلومات الاتصال
+                  </TabsTrigger>
+                  <TabsTrigger value="additional" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    بيانات إضافية
+                  </TabsTrigger>
+                  <TabsTrigger value="accounting" className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    الحسابات المحاسبية
+                  </TabsTrigger>
+                </TabsList>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="company_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>اسم الشركة *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="company_name_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>اسم الشركة بالعربي</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم الهاتف *</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="tel" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Financial Integration Section */}
-        {!customer && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                الربط المحاسبي
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="accountIntegrationType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base">خيارات الربط المحاسبي</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر طريقة الربط المحاسبي" />
-                        </SelectTrigger>
-                      </FormControl>
-                       <SelectContent>
-                         <SelectItem value="select_existing">🔗 اختيار حساب موجود (الافتراضي)</SelectItem>
-                         <SelectItem value="create_new">➕ إنشاء حساب جديد</SelectItem>
-                         <SelectItem value="none">❌ بدون ربط محاسبي</SelectItem>
-                       </SelectContent>
-                    </Select>
-                     <div className="text-sm text-muted-foreground space-y-1">
-                       {accountIntegrationType === 'select_existing' && (
-                         <div className="text-blue-600 font-medium">✅ اختر حساب محاسبي موجود من القائمة (سيظهر الحساب 1130201)</div>
-                       )}
-                       {accountIntegrationType === 'create_new' && (
-                         <div className="text-amber-600">سيتم إنشاء حساب محاسبي جديد خاص بالعميل</div>
-                       )}
-                       {accountIntegrationType === 'none' && (
-                         <div className="text-red-600">لن يتم ربط العميل بأي حساب محاسبي</div>
-                       )}
-                     </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {accountIntegrationType === 'select_existing' && (
-                <>
-                  <Separator />
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      اختر حساب محاسبي موجود من قائمة الحسابات المتاحة. يمكنك البحث بكود الحساب أو اسم الحساب.
-                    </AlertDescription>
-                  </Alert>
-
-                  <FormField
-                    control={form.control}
-                    name="selectedAccountId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الحساب المحاسبي</FormLabel>
-                        <FormControl>
-                          <CustomerAccountFormSelector
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="اختر الحساب المحاسبي"
-                            companyId={companyId}
+              <ScrollArea className="flex-1 max-h-[60vh]">
+                <div className="p-6">
+                  {/* البيانات الأساسية */}
+                  <TabsContent value="basic" className="space-y-6 mt-0">
+                    <div className="space-y-6">
+                      {/* نوع العميل */}
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-medium mb-4">نوع العميل</h3>
+                          <FormField
+                            control={form.control}
+                            name="customer_type"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>نوع العميل *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="max-w-xs">
+                                      <SelectValue placeholder="اختر نوع العميل" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="individual">
+                                      <div className="flex items-center gap-2">
+                                        <Users className="h-4 w-4" />
+                                        فرد
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="corporate">
+                                      <div className="flex items-center gap-2">
+                                        <Building className="h-4 w-4" />
+                                        شركة
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-
-              {accountIntegrationType === 'create_new' && (
-                <>
-                  <Separator />
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      سيتم إنشاء حساب محاسبي تحت مجموعة "ذمم العملاء" مع إمكانية تسجيل رصيد افتتاحي
-                    </AlertDescription>
-                  </Alert>
-
-                  <FormField
-                    control={form.control}
-                    name="initialBalance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الرصيد الافتتاحي (اختياري)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            step="0.001"
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            placeholder="0.000"
-                          />
-                        </FormControl>
-                        <div className="text-xs text-muted-foreground">
-                          الرصيد الموجب يعني مديونية للعميل، والرصيد السالب يعني دين على العميل
                         </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                      </div>
 
-        {/* Additional Information Cards */}
-        <Card>
-          <CardHeader>
-            <CardTitle>معلومات إضافية</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="credit_limit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>الحد الائتماني</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        step="0.001"
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      <Separator />
+
+                      {/* بيانات الاسم */}
+                      {customerType === 'individual' ? (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">بيانات الاسم</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="first_name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>الاسم الأول *</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="ادخل الاسم الأول" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="last_name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>الاسم الأخير *</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="ادخل الاسم الأخير" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="first_name_ar"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>الاسم الأول (عربي)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="ادخل الاسم الأول بالعربي" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="last_name_ar"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>الاسم الأخير (عربي)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="ادخل الاسم الأخير بالعربي" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">بيانات الشركة</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="company_name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>اسم الشركة *</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="ادخل اسم الشركة" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="company_name_ar"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>اسم الشركة (عربي)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="ادخل اسم الشركة بالعربي" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  {/* معلومات الاتصال */}
+                  <TabsContent value="contact" className="space-y-6 mt-0">
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium">معلومات الاتصال</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>رقم الهاتف *</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="tel" placeholder="ادخل رقم الهاتف" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="alternative_phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>رقم هاتف بديل</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="tel" placeholder="ادخل رقم هاتف بديل" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>البريد الإلكتروني</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="email" placeholder="ادخل البريد الإلكتروني" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="emergency_contact_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>اسم جهة اتصال الطوارئ</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="ادخل اسم جهة اتصال الطوارئ" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="emergency_contact_phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>رقم جهة اتصال الطوارئ</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="tel" placeholder="ادخل رقم جهة اتصال الطوارئ" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium">معلومات العنوان</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="address"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>العنوان</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder="ادخل العنوان" className="min-h-[80px]" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="address_ar"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>العنوان (عربي)</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder="ادخل العنوان بالعربي" className="min-h-[80px]" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>المدينة</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="ادخل المدينة" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="country"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>البلد</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="ادخل البلد" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* بيانات إضافية */}
+                  <TabsContent value="additional" className="space-y-6 mt-0">
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium">بيانات إضافية</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="national_id"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>الرقم المدني</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="ادخل الرقم المدني" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="passport_number"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>رقم الجواز</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="ادخل رقم الجواز" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="license_number"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>رقم الرخصة</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="ادخل رقم الرخصة" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="license_expiry"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>تاريخ انتهاء الرخصة</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="date" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="date_of_birth"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>تاريخ الميلاد</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="date" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="credit_limit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>الحد الائتماني</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  placeholder="0"
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ملاحظات</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="ادخل أي ملاحظات إضافية" className="min-h-[100px]" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="alternative_phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم هاتف بديل</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="tel" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    </div>
+                  </TabsContent>
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ملاحظات</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={3} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+                  {/* الحسابات المحاسبية */}
+                  <TabsContent value="accounting" className="space-y-6 mt-0">
+                    {!customer && (
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-medium">الربط المحاسبي</h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="accountIntegrationType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base">خيارات الربط المحاسبي</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="اختر طريقة الربط المحاسبي" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="select_existing">🔗 اختيار حساب موجود (الافتراضي)</SelectItem>
+                                  <SelectItem value="create_new">➕ إنشاء حساب جديد</SelectItem>
+                                  <SelectItem value="none">❌ بدون ربط محاسبي</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                {accountIntegrationType === 'select_existing' && (
+                                  <div className="text-blue-600 font-medium">✅ اختر حساب محاسبي موجود من القائمة (سيظهر الحساب 1130201)</div>
+                                )}
+                                {accountIntegrationType === 'create_new' && (
+                                  <div className="text-amber-600">سيتم إنشاء حساب محاسبي جديد خاص بالعميل</div>
+                                )}
+                                {accountIntegrationType === 'none' && (
+                                  <div className="text-red-600">لن يتم ربط العميل بأي حساب محاسبي</div>
+                                )}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-        {/* Form Actions */}
-        <div className="flex gap-4 justify-end">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            إلغاء
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {customer ? "تحديث العميل" : "إنشاء العميل"}
-          </Button>
-        </div>
+                        {accountIntegrationType === 'select_existing' && (
+                          <>
+                            <Separator />
+                            <Alert>
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                اختر حساب محاسبي موجود من قائمة الحسابات المتاحة. يمكنك البحث بكود الحساب أو اسم الحساب.
+                              </AlertDescription>
+                            </Alert>
 
-        {/* Success Status Display */}
-        {createMutation.isSuccess && createMutation.data && (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="pt-6">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">تم إنشاء العميل</Badge>
-                  {createMutation.data.financialAccount && (
-                    <Badge variant="outline">تم إنشاء الحساب المحاسبي</Badge>
-                  )}
-                  {createMutation.data.journalEntry && (
-                    <Badge variant="outline">تم تسجيل الرصيد الافتتاحي</Badge>
-                  )}
+                            <FormField
+                              control={form.control}
+                              name="selectedAccountId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>الحساب المحاسبي</FormLabel>
+                                  <FormControl>
+                                    <CustomerAccountFormSelector
+                                      value={field.value}
+                                      onValueChange={field.onChange}
+                                      placeholder="اختر الحساب المحاسبي"
+                                      companyId={companyId}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
+
+                        {accountIntegrationType === 'create_new' && (
+                          <>
+                            <Separator />
+                            <Alert>
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                سيتم إنشاء حساب محاسبي تحت مجموعة "ذمم العملاء" مع إمكانية تسجيل رصيد افتتاحي
+                              </AlertDescription>
+                            </Alert>
+
+                            <FormField
+                              control={form.control}
+                              name="initialBalance"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>الرصيد الافتتاحي (اختياري)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      step="0.001"
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      placeholder="0.000"
+                                    />
+                                  </FormControl>
+                                  <div className="text-xs text-muted-foreground">
+                                    الرصيد الموجب يعني مديونية للعميل، والرصيد السالب يعني دين على العميل
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
                 </div>
-                {createMutation.data.financialAccount && (
-                  <div className="text-sm text-muted-foreground">
-                    الحساب المحاسبي: {createMutation.data.financialAccount.account_code} - {createMutation.data.financialAccount.account_name}
-                  </div>
-                )}
+              </ScrollArea>
+
+              {/* Form Actions */}
+              <div className="flex gap-4 justify-between items-center px-6 py-4 border-t bg-background">
+                <Button 
+                  type="button" 
+                  variant="ghost"
+                  onClick={fillTestData}
+                  className="flex items-center gap-2"
+                >
+                  <Shuffle className="h-4 w-4" />
+                  تعبئة بيانات تجريبية
+                </Button>
+                
+                <div className="flex gap-3">
+                  <Button type="button" variant="outline" onClick={onCancel}>
+                    إلغاء
+                  </Button>
+                  <Button type="submit" disabled={isLoading} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {customer ? "تحديث العميل" : "إضافة العميل"}
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-              </form>
-            </Form>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+            </Tabs>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
