@@ -22,7 +22,7 @@ const VehicleInstallmentsDashboard = () => {
   const { formatCurrency } = useCurrencyFormatter();
 
 
-  const filteredInstallments = installments?.filter(installment => 
+  const filteredInstallments = (installments || []).filter(installment => 
     statusFilter === 'all' || installment.status === statusFilter
   );
 
@@ -173,13 +173,13 @@ const VehicleInstallmentsDashboard = () => {
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">جاري التحميل...</div>
-          ) : filteredInstallments?.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد اتفاقيات أقساط
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredInstallments?.map((installment) => (
+           ) : filteredInstallments.length === 0 ? (
+             <div className="text-center py-8 text-muted-foreground">
+               لا توجد اتفاقيات أقساط
+             </div>
+           ) : (
+             <div className="space-y-4">
+               {filteredInstallments.map((installment) => (
                 <div
                   key={installment.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
