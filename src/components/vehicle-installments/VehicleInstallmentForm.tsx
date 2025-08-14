@@ -223,7 +223,7 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
                     <SelectValue placeholder="اختر التاجر" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vendors?.map((vendor) => (
+                    {(vendors || []).map((vendor) => (
                       <SelectItem key={vendor.id} value={vendor.id}>
                         {vendor.customer_type === 'individual' 
                           ? `${vendor.first_name} ${vendor.last_name}`
@@ -244,7 +244,7 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
                     <SelectValue placeholder="اختر المركبة" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vehicles?.map((vehicle) => (
+                    {(vehicles || []).map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         {vehicle.plate_number} - {vehicle.make} {vehicle.model} ({vehicle.year})
                       </SelectItem>
