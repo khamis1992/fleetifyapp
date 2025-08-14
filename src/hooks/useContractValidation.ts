@@ -67,6 +67,11 @@ export const useContractValidation = () => {
       return false;
     }
     
+    // Skip validation if contract amount is zero or negative (still setting up)
+    if (formData.contract_amount !== undefined && formData.contract_amount <= 0) {
+      return false;
+    }
+    
     // Validate UUID format if provided
     if (customerId && customerId !== '' && !isValidUUID(customerId)) {
       return false;

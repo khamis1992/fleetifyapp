@@ -162,7 +162,12 @@ export const CustomerVehicleStep: React.FC = () => {
   
   // Trigger validation when customer or vehicle changes
   React.useEffect(() => {
-    if (data.customer_id || data.vehicle_id) {
+    // Only validate if we have meaningful data to validate and contract amount is set
+    if ((data.customer_id || data.vehicle_id) && 
+        data.contract_amount && 
+        data.contract_amount > 0 && 
+        data.start_date && 
+        data.end_date) {
       debouncedValidation({
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id,
@@ -347,7 +352,12 @@ export const DatesStep: React.FC = () => {
   
   // Trigger validation when dates change
   React.useEffect(() => {
-    if (data.start_date && data.end_date) {
+    // Only validate if we have all required data including valid contract amount
+    if (data.start_date && 
+        data.end_date && 
+        data.customer_id && 
+        data.contract_amount && 
+        data.contract_amount > 0) {
       debouncedValidation({
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id,
@@ -557,7 +567,12 @@ export const FinancialStep: React.FC = () => {
   
   // Trigger validation when amounts change
   React.useEffect(() => {
-    if (data.contract_amount > 0) {
+    // Only validate if we have complete data for meaningful validation
+    if (data.contract_amount && 
+        data.contract_amount > 0 && 
+        data.customer_id && 
+        data.start_date && 
+        data.end_date) {
       debouncedValidation({
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id,
