@@ -8,7 +8,7 @@ export interface ContractCalculation {
   dailyRate: number
   weeklyRate: number
   monthlyRate: number
-  bestRateType: 'daily' | 'weekly' | 'monthly'
+  bestRateType: 'daily' | 'weekly' | 'monthly' | 'mixed'
   isCustomAmount: boolean
   customAmount?: number
   breakdown: {
@@ -19,6 +19,12 @@ export interface ContractCalculation {
     minimumPriceEnforced?: boolean
     originalAmount?: number
     isCustom?: boolean
+    mixedDetails?: {
+      months: number
+      remainingDays: number
+      monthlyPortion: number
+      dailyPortion: number
+    }
   }
 }
 
@@ -109,12 +115,16 @@ export const useContractCalculations = (
     const dailyTotal = dailyRate * rentalDays
     const weeklyTotal = weeklyRate * Math.ceil(rentalDays / 7)
     const monthlyTotal = monthlyRate * Math.ceil(rentalDays / 30)
+    
+    // Calculate mixed pricing: months at monthly rate + remaining days at daily rate
+    const mixedTotal = calculateMixedPricing(rentalDays, monthlyRate, dailyRate)
 
     // Find the most cost-effective rate
     const rates = [
       { type: 'daily' as const, total: dailyTotal, available: dailyRate > 0 },
       { type: 'weekly' as const, total: weeklyTotal, available: weeklyRate > 0 },
-      { type: 'monthly' as const, total: monthlyTotal, available: monthlyRate > 0 }
+      { type: 'monthly' as const, total: monthlyTotal, available: monthlyRate > 0 },
+      { type: 'mixed' as const, total: mixedTotal.total, available: monthlyRate > 0 && dailyRate > 0 }
     ].filter(rate => rate.available && rate.total > 0)
 
     if (rates.length === 0) {
@@ -141,6 +151,9 @@ export const useContractCalculations = (
     let bestRate = rates.reduce((best, current) => 
       current.total < best.total ? current : best
     )
+    
+    // Get mixed pricing details for breakdown
+    const mixedDetails = bestRate.type === 'mixed' ? mixedTotal : null
 
     // Apply minimum rental price enforcement if enabled
     const minimumPrice = Number(vehicle.minimum_rental_price) || 0
@@ -192,7 +205,13 @@ export const useContractCalculations = (
         period: getRatePeriod(bestRate.type, rentalDays),
         savings,
         minimumPriceEnforced,
-        originalAmount: minimumPriceEnforced ? originalTotal : undefined
+        originalAmount: minimumPriceEnforced ? originalTotal : undefined,
+        mixedDetails: mixedDetails ? {
+          months: mixedDetails.months,
+          remainingDays: mixedDetails.remainingDays,
+          monthlyPortion: mixedDetails.monthlyPortion,
+          dailyPortion: mixedDetails.dailyPortion
+        } : undefined
       }
     }
 
@@ -203,20 +222,22 @@ export const useContractCalculations = (
   return calculations
 }
 
-function getRateTypeLabel(rateType: 'daily' | 'weekly' | 'monthly'): string {
+function getRateTypeLabel(rateType: 'daily' | 'weekly' | 'monthly' | 'mixed'): string {
   switch (rateType) {
     case 'daily': return 'يومي'
     case 'weekly': return 'أسبوعي'
     case 'monthly': return 'شهري'
+    case 'mixed': return 'مختلط (شهري + يومي)'
     default: return 'غير محدد'
   }
 }
 
-function getRatePeriod(rateType: 'daily' | 'weekly' | 'monthly', rentalDays: number): number {
+function getRatePeriod(rateType: 'daily' | 'weekly' | 'monthly' | 'mixed', rentalDays: number): number {
   switch (rateType) {
     case 'daily': return rentalDays
     case 'weekly': return Math.ceil(rentalDays / 7)
     case 'monthly': return Math.ceil(rentalDays / 30)
+    case 'mixed': return rentalDays
     default: return rentalDays
   }
 }
@@ -227,12 +248,33 @@ function getPeriodType(rentalDays: number): 'daily' | 'weekly' | 'monthly' {
   return 'daily'
 }
 
-function getPeriodAmount(rateType: 'daily' | 'weekly' | 'monthly', totalAmount: number, rentalDays: number): number {
+function getPeriodAmount(rateType: 'daily' | 'weekly' | 'monthly' | 'mixed', totalAmount: number, rentalDays: number): number {
   switch (rateType) {
     case 'daily': return totalAmount / rentalDays
     case 'weekly': return totalAmount / Math.ceil(rentalDays / 7)
     case 'monthly': return totalAmount / Math.ceil(rentalDays / 30)
+    case 'mixed': return totalAmount / rentalDays
     default: return totalAmount
+  }
+}
+
+function calculateMixedPricing(rentalDays: number, monthlyRate: number, dailyRate: number) {
+  if (rentalDays < 30 || monthlyRate <= 0 || dailyRate <= 0) {
+    return { total: 0, months: 0, remainingDays: 0, monthlyPortion: 0, dailyPortion: 0 }
+  }
+  
+  const months = Math.floor(rentalDays / 30)
+  const remainingDays = rentalDays % 30
+  
+  const monthlyPortion = months * monthlyRate
+  const dailyPortion = remainingDays * dailyRate
+  
+  return {
+    total: monthlyPortion + dailyPortion,
+    months,
+    remainingDays,
+    monthlyPortion,
+    dailyPortion
   }
 }
 
