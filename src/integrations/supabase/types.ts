@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -9286,8 +9286,8 @@ export type Database = {
       add_vehicles_to_installment: {
         Args: {
           p_installment_id: string
-          p_vehicle_ids: string[]
           p_vehicle_amounts?: number[]
+          p_vehicle_ids: string[]
         }
         Returns: undefined
       }
@@ -9304,57 +9304,57 @@ export type Database = {
         Returns: number
       }
       calculate_customer_outstanding_balance: {
-        Args: { customer_id_param: string; company_id_param: string }
+        Args: { company_id_param: string; customer_id_param: string }
         Returns: {
-          current_balance: number
-          overdue_amount: number
-          days_overdue: number
           credit_available: number
+          current_balance: number
+          days_overdue: number
+          overdue_amount: number
         }[]
       }
       calculate_employee_salary: {
         Args: {
           employee_id_param: string
-          period_start_param: string
           period_end_param: string
+          period_start_param: string
         }
         Returns: {
-          basic_salary: number
-          allowances: number
-          overtime_amount: number
-          total_earnings: number
-          late_penalty: number
-          total_deductions: number
-          net_salary: number
-          working_days: number
-          present_days: number
-          late_days: number
           absent_days: number
+          allowances: number
+          basic_salary: number
+          late_days: number
+          late_penalty: number
+          net_salary: number
+          overtime_amount: number
           overtime_hours: number
+          present_days: number
+          total_deductions: number
+          total_earnings: number
+          working_days: number
         }[]
       }
       calculate_financial_health_score: {
         Args: { company_id_param: string }
         Returns: {
-          profitability_score: number
-          liquidity_score: number
           efficiency_score: number
-          solvency_score: number
+          liquidity_score: number
           overall_score: number
+          profitability_score: number
+          solvency_score: number
         }[]
       }
       calculate_fuel_efficiency: {
         Args: {
-          vehicle_id_param: string
-          start_date?: string
           end_date?: string
+          start_date?: string
+          vehicle_id_param: string
         }
         Returns: {
-          total_fuel_liters: number
-          total_distance_km: number
-          fuel_efficiency_km_per_liter: number
           average_cost_per_liter: number
+          fuel_efficiency_km_per_liter: number
+          total_distance_km: number
           total_fuel_cost: number
+          total_fuel_liters: number
         }[]
       }
       calculate_vehicle_total_costs: {
@@ -9362,7 +9362,7 @@ export type Database = {
         Returns: undefined
       }
       can_access_contract_documents: {
-        Args: { _user_id: string; _company_id?: string; _action?: string }
+        Args: { _action?: string; _company_id?: string; _user_id: string }
         Returns: boolean
       }
       check_and_fix_user_data_integrity: {
@@ -9388,20 +9388,20 @@ export type Database = {
       check_contract_payment_status: {
         Args: { contract_id_param: string }
         Returns: {
-          is_overdue: boolean
-          overdue_amount: number
           days_overdue: number
+          is_overdue: boolean
           last_payment_date: string
+          overdue_amount: number
         }[]
       }
       check_customer_credit_status: {
-        Args: { customer_id_param: string; company_id_param: string }
+        Args: { company_id_param: string; customer_id_param: string }
         Returns: {
-          credit_score: number
-          risk_level: string
-          credit_available: number
-          payment_history_score: number
           can_extend_credit: boolean
+          credit_available: number
+          credit_score: number
+          payment_history_score: number
+          risk_level: string
         }[]
       }
       check_customer_eligibility_realtime: {
@@ -9410,8 +9410,8 @@ export type Database = {
       }
       check_rate_limit: {
         Args: {
-          operation_type: string
           max_attempts?: number
+          operation_type: string
           window_minutes?: number
         }
         Returns: boolean
@@ -9422,19 +9422,19 @@ export type Database = {
       }
       check_vehicle_availability_fixed: {
         Args: {
-          vehicle_id_param: string
-          start_date_param: string
           end_date_param: string
           exclude_contract_id_param?: string
+          start_date_param: string
+          vehicle_id_param: string
         }
         Returns: Json
       }
       check_vehicle_availability_realtime: {
         Args: {
-          vehicle_id_param: string
-          start_date_param: string
           end_date_param: string
           exclude_contract_id_param?: string
+          start_date_param: string
+          vehicle_id_param: string
         }
         Returns: Json
       }
@@ -9443,7 +9443,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_inactive_accounts: {
-        Args: { target_company_id: string; days_old?: number }
+        Args: { days_old?: number; target_company_id: string }
         Returns: number
       }
       cleanup_old_logs: {
@@ -9481,29 +9481,29 @@ export type Database = {
         Returns: string
       }
       create_condition_report_for_permit: {
-        Args: { permit_id_param: string; inspection_type_param?: string }
+        Args: { inspection_type_param?: string; permit_id_param: string }
         Returns: string
       }
       create_contract_cancellation_journal_entry: {
         Args: {
-          contract_id_param: string
           cancellation_date_param: string
           cancellation_reason?: string
+          contract_id_param: string
         }
         Returns: string
       }
       create_contract_document_with_rollback: {
         Args: {
+          p_company_id?: string
+          p_condition_report_id?: string
           p_contract_id: string
-          p_document_type: string
           p_document_name: string
+          p_document_type: string
           p_file_path?: string
           p_file_size?: number
+          p_is_required?: boolean
           p_mime_type?: string
           p_notes?: string
-          p_is_required?: boolean
-          p_condition_report_id?: string
-          p_company_id?: string
         }
         Returns: string
       }
@@ -9517,10 +9517,10 @@ export type Database = {
       }
       create_contract_journal_entry_enhanced: {
         Args: {
-          contract_id_param: string
-          user_id_param?: string
-          entry_type_param?: string
           amount_param?: number
+          contract_id_param: string
+          entry_type_param?: string
+          user_id_param?: string
         }
         Returns: Json
       }
@@ -9530,10 +9530,10 @@ export type Database = {
       }
       create_contract_journal_entry_with_data: {
         Args: {
-          contract_data: Json
-          user_id_param?: string
-          entry_type_param?: string
           amount_param?: number
+          contract_data: Json
+          entry_type_param?: string
+          user_id_param?: string
         }
         Returns: Json
       }
@@ -9549,24 +9549,24 @@ export type Database = {
         Args:
           | {
               company_id_param: string
-              customer_id_param: string
               contract_data: Json
+              customer_id_param: string
+            }
+          | {
+              contract_amount_param?: number
+              contract_date_param?: string
+              contract_type_param?: string
+              cost_center_id_param?: string
+              customer_id_param: string
+              description_param?: string
+              end_date_param?: string
+              monthly_amount_param?: number
+              start_date_param?: string
+              status_param?: string
+              terms_param?: string
+              vehicle_id_param?: string
             }
           | { contract_data: Json; user_id_param?: string }
-          | {
-              customer_id_param: string
-              vehicle_id_param?: string
-              contract_type_param?: string
-              contract_date_param?: string
-              start_date_param?: string
-              end_date_param?: string
-              contract_amount_param?: number
-              monthly_amount_param?: number
-              description_param?: string
-              terms_param?: string
-              status_param?: string
-              cost_center_id_param?: string
-            }
         Returns: Json
       }
       create_contract_with_journal_entry: {
@@ -9574,32 +9574,32 @@ export type Database = {
           | { contract_data: Json }
           | {
               p_company_id: string
-              p_customer_id: string
-              p_vehicle_id?: string
-              p_contract_type?: string
-              p_start_date?: string
-              p_end_date?: string
               p_contract_amount?: number
-              p_monthly_amount?: number
-              p_description?: string
-              p_terms?: string
+              p_contract_type?: string
               p_cost_center_id?: string
               p_created_by?: string
+              p_customer_id: string
+              p_description?: string
+              p_end_date?: string
+              p_monthly_amount?: number
+              p_start_date?: string
+              p_terms?: string
+              p_vehicle_id?: string
             }
           | {
-              p_customer_id: string
-              p_vehicle_id?: string
+              p_contract_amount?: number
+              p_contract_date?: string
               p_contract_number?: string
               p_contract_type?: string
-              p_contract_date?: string
-              p_start_date?: string
-              p_end_date?: string
-              p_contract_amount?: number
-              p_monthly_amount?: number
-              p_description?: string
-              p_terms?: string
               p_cost_center_id?: string
               p_created_by?: string
+              p_customer_id: string
+              p_description?: string
+              p_end_date?: string
+              p_monthly_amount?: number
+              p_start_date?: string
+              p_terms?: string
+              p_vehicle_id?: string
             }
         Returns: Json
       }
@@ -9608,7 +9608,7 @@ export type Database = {
         Returns: Json
       }
       create_customer_financial_account_fixed: {
-        Args: { customer_id_param: string; company_id_param: string }
+        Args: { company_id_param: string; customer_id_param: string }
         Returns: string
       }
       create_default_customer_accounts_fixed: {
@@ -9622,9 +9622,9 @@ export type Database = {
       create_deferred_revenue_journal_entry: {
         Args: {
           contract_id_param: string
-          period_start_date: string
-          period_end_date: string
           monthly_amount_param: number
+          period_end_date: string
+          period_start_date: string
         }
         Returns: string
       }
@@ -9642,9 +9642,9 @@ export type Database = {
       }
       create_invoice_discount_journal_entry: {
         Args: {
-          invoice_id_param: string
           discount_amount_param: number
           discount_reason?: string
+          invoice_id_param: string
         }
         Returns: string
       }
@@ -9653,7 +9653,7 @@ export type Database = {
         Returns: string
       }
       create_maintenance_expense_entry: {
-        Args: { maintenance_id_param: string; company_id_param: string }
+        Args: { company_id_param: string; maintenance_id_param: string }
         Returns: string
       }
       create_maintenance_journal_entry: {
@@ -9672,6 +9672,7 @@ export type Database = {
         Args:
           | {
               p_contract_id: string
+              p_first_payment_date?: string
               p_installment_plan?: string
               p_number_of_installments?: number
             }
@@ -9679,14 +9680,13 @@ export type Database = {
               p_contract_id: string
               p_installment_plan?: string
               p_number_of_installments?: number
-              p_first_payment_date?: string
             }
         Returns: {
-          schedule_id: string
-          invoice_id: string
-          installment_number: number
-          due_date: string
           amount: number
+          due_date: string
+          installment_number: number
+          invoice_id: string
+          schedule_id: string
         }[]
       }
       create_payroll_journal_entry: {
@@ -9703,13 +9703,13 @@ export type Database = {
       }
       create_system_alert: {
         Args: {
-          company_id_param: string
           alert_type_param: string
-          severity_param: string
-          title_param: string
-          message_param: string
+          company_id_param: string
           details_param?: Json
           expires_hours?: number
+          message_param: string
+          severity_param: string
+          title_param: string
         }
         Returns: string
       }
@@ -9723,14 +9723,14 @@ export type Database = {
       }
       create_vehicle_installment_schedule: {
         Args: {
-          p_installment_id: string
           p_company_id: string
-          p_total_amount: number
           p_down_payment: number
           p_installment_amount: number
-          p_number_of_installments: number
+          p_installment_id: string
           p_interest_rate?: number
+          p_number_of_installments: number
           p_start_date?: string
+          p_total_amount: number
         }
         Returns: number
       }
@@ -9740,9 +9740,9 @@ export type Database = {
       }
       create_vendor_financial_account: {
         Args: {
-          vendor_id_param: string
           company_id_param: string
           vendor_data?: Json
+          vendor_id_param: string
         }
         Returns: string
       }
@@ -9776,9 +9776,9 @@ export type Database = {
       }
       find_account_by_name_fixed: {
         Args: {
+          account_type_param?: string
           company_id_param: string
           search_name: string
-          account_type_param?: string
         }
         Returns: string
       }
@@ -9805,16 +9805,16 @@ export type Database = {
       generate_cash_flow_analysis: {
         Args: {
           company_id_param: string
-          start_date_param?: string
           end_date_param?: string
+          start_date_param?: string
         }
         Returns: {
-          total_inflow: number
-          total_outflow: number
+          financing_cash_flow: number
+          investing_cash_flow: number
           net_cash_flow: number
           operating_cash_flow: number
-          investing_cash_flow: number
-          financing_cash_flow: number
+          total_inflow: number
+          total_outflow: number
         }[]
       }
       generate_contract_number: {
@@ -9824,41 +9824,41 @@ export type Database = {
       generate_contracts_report: {
         Args: {
           company_id_param: string
-          start_date_param?: string
           end_date_param?: string
+          start_date_param?: string
           status_filter?: string
         }
         Returns: {
+          contract_amount: number
           contract_id: string
           contract_number: string
-          customer_name: string
           contract_type: string
-          contract_amount: number
-          monthly_amount: number
-          start_date: string
-          end_date: string
-          status: string
+          customer_name: string
           days_remaining: number
+          end_date: string
+          monthly_amount: number
+          outstanding_amount: number
+          start_date: string
+          status: string
           total_invoiced: number
           total_paid: number
-          outstanding_amount: number
         }[]
       }
       generate_customer_statement_data: {
         Args: {
-          customer_id_param: string
           company_id_param: string
-          start_date_param?: string
+          customer_id_param: string
           end_date_param?: string
+          start_date_param?: string
         }
         Returns: {
-          statement_period: string
+          closing_balance: number
           opening_balance: number
+          overdue_amount: number
+          statement_period: string
           total_charges: number
           total_payments: number
-          closing_balance: number
           transaction_count: number
-          overdue_amount: number
         }[]
       }
       generate_dispatch_permit_number: {
@@ -9893,10 +9893,10 @@ export type Database = {
         Args: { company_id_param: string; months_back?: number }
         Returns: {
           month_year: string
-          total_revenue: number
-          total_expenses: number
           net_profit: number
           profit_margin: number
+          total_expenses: number
+          total_revenue: number
         }[]
       }
       generate_payment_number: {
@@ -9929,123 +9929,123 @@ export type Database = {
       }
       get_account_balances: {
         Args: {
-          company_id_param: string
-          as_of_date?: string
           account_type_filter?: string
+          as_of_date?: string
+          company_id_param: string
         }
         Returns: {
-          account_id: string
           account_code: string
+          account_id: string
           account_name: string
           account_name_ar: string
           account_type: string
           balance_type: string
-          opening_balance: number
-          total_debits: number
-          total_credits: number
           closing_balance: number
+          opening_balance: number
+          total_credits: number
+          total_debits: number
         }[]
       }
       get_account_by_type: {
-        Args: { company_id_param: string; account_type_code: string }
+        Args: { account_type_code: string; company_id_param: string }
         Returns: string
       }
       get_accounts_by_type_fixed: {
-        Args: { company_id_param: string; account_type_param: string }
+        Args: { account_type_param: string; company_id_param: string }
         Returns: {
-          id: string
           account_code: string
           account_name: string
           account_name_ar: string
           current_balance: number
+          id: string
           is_header: boolean
         }[]
       }
       get_available_customer_accounts: {
         Args: { company_id_param: string }
         Returns: {
-          id: string
           account_code: string
           account_name: string
           account_name_ar: string
-          parent_account_name: string
+          id: string
           is_available: boolean
+          parent_account_name: string
         }[]
       }
       get_available_customer_accounts_v2: {
         Args: { target_company_id: string }
         Returns: {
-          id: string
           account_code: string
           account_name: string
           account_name_ar: string
-          parent_account_name: string
+          id: string
           is_available: boolean
+          parent_account_name: string
         }[]
       }
       get_available_vehicles_for_contracts: {
         Args: { company_id_param: string }
         Returns: {
+          color: string
+          current_mileage: number
+          daily_rate: number
+          fuel_type: string
           id: string
-          plate_number: string
           make: string
           model: string
-          year: number
-          status: string
-          daily_rate: number
-          weekly_rate: number
           monthly_rate: number
-          color: string
+          plate_number: string
+          status: string
           vehicle_type: string
-          fuel_type: string
-          current_mileage: number
+          weekly_rate: number
+          year: number
         }[]
       }
       get_available_vendor_accounts: {
         Args: { company_id_param: string }
         Returns: {
-          id: string
           account_code: string
           account_name: string
           account_name_ar: string
-          parent_account_name: string
-          is_available: boolean
           account_type: string
+          id: string
+          is_available: boolean
+          parent_account_name: string
         }[]
       }
       get_contract_operations_history: {
         Args: { contract_id_param: string }
         Returns: {
+          notes: string
+          operation_details: Json
           operation_id: string
           operation_type: string
-          operation_details: Json
-          performed_by_name: string
           performed_at: string
-          notes: string
+          performed_by_name: string
         }[]
       }
       get_contracts_pending_approval: {
         Args: { company_id_param: string }
         Returns: {
+          contract_amount: number
           contract_id: string
           contract_number: string
-          contract_amount: number
-          customer_name: string
           created_at: string
+          customer_name: string
           pending_steps: number
         }[]
       }
       get_cost_center_analysis: {
         Args: { company_id_param: string; date_from?: string; date_to?: string }
         Returns: {
-          cost_center_id: string
           center_code: string
           center_name: string
           center_name_ar: string
-          total_debits: number
-          total_credits: number
-          net_amount: number
+          cost_center_id: string
           entry_count: number
+          net_amount: number
+          total_credits: number
+          total_debits: number
         }[]
       }
       get_customer_default_cost_center: {
@@ -10059,59 +10059,59 @@ export type Database = {
       get_eligible_contracts_for_renewal: {
         Args: { company_id_param: string }
         Returns: {
+          contract_amount: number
           contract_id: string
           contract_number: string
           customer_name: string
-          vehicle_info: string
-          end_date: string
-          contract_amount: number
-          total_paid: number
-          outstanding_amount: number
           days_since_expiry: number
+          end_date: string
+          outstanding_amount: number
+          total_paid: number
+          vehicle_info: string
         }[]
       }
       get_entry_allowed_accounts: {
         Args: { company_id_param: string }
         Returns: {
-          id: string
           account_code: string
+          account_level: number
           account_name: string
           account_name_ar: string
           account_type: string
-          account_level: number
           balance_type: string
+          id: string
           parent_account_name: string
         }[]
       }
       get_financial_summary: {
         Args: { company_id_param: string; date_from?: string; date_to?: string }
         Returns: {
-          total_assets: number
-          total_liabilities: number
-          total_equity: number
-          total_revenue: number
-          total_expenses: number
           net_income: number
+          total_assets: number
+          total_equity: number
+          total_expenses: number
+          total_liabilities: number
+          total_revenue: number
           unbalanced_entries_count: number
         }[]
       }
       get_inconsistent_accounts: {
         Args: Record<PropertyKey, never>
         Returns: {
-          employee_id: string
-          employee_email: string
-          user_id: string
-          has_system_access: boolean
           employee_company_id: string
+          employee_email: string
+          employee_id: string
+          has_system_access: boolean
           profile_company_id: string
           role_count: number
+          user_id: string
         }[]
       }
       get_legal_account_mapping: {
         Args: {
-          company_id_param: string
-          case_type_param: string
           account_type_param: string
+          case_type_param: string
+          company_id_param: string
         }
         Returns: string
       }
@@ -10120,54 +10120,54 @@ export type Database = {
         Returns: string
       }
       get_mapped_account_enhanced: {
-        Args: { company_id_param: string; account_type_code_param: string }
+        Args: { account_type_code_param: string; company_id_param: string }
         Returns: string
       }
       get_mapped_account_id: {
         Args:
-          | { company_id_param: string; account_type_code: string }
-          | { company_id_param: string; account_type_code_param: string }
+          | { account_type_code: string; company_id_param: string }
+          | { account_type_code_param: string; company_id_param: string }
         Returns: string
       }
       get_payment_analytics: {
         Args: {
           company_id_param: string
-          start_date_param?: string
           end_date_param?: string
+          start_date_param?: string
         }
         Returns: {
-          total_receipts: number
-          total_payments: number
-          net_cash_flow: number
+          by_bank: Json
           by_cost_center: Json
           by_payment_type: Json
-          by_bank: Json
+          net_cash_flow: number
+          total_payments: number
+          total_receipts: number
         }[]
       }
       get_reporting_accounts: {
         Args: { company_id_param: string }
         Returns: {
-          id: string
           account_code: string
+          account_level: number
           account_name: string
           account_name_ar: string
           account_type: string
-          account_level: number
           balance_type: string
+          id: string
           parent_account_name: string
         }[]
       }
       get_trial_balance: {
-        Args: { company_id_param: string; as_of_date?: string }
+        Args: { as_of_date?: string; company_id_param: string }
         Returns: {
-          account_id: string
           account_code: string
+          account_id: string
+          account_level: number
           account_name: string
           account_name_ar: string
           account_type: string
-          account_level: number
-          debit_balance: number
           credit_balance: number
+          debit_balance: number
         }[]
       }
       get_user_company: {
@@ -10188,10 +10188,10 @@ export type Database = {
       }
       handle_incomplete_user_account: {
         Args: {
-          p_user_id: string
-          p_employee_id: string
           p_company_id: string
+          p_employee_id: string
           p_roles: string[]
+          p_user_id: string
         }
         Returns: Json
       }
@@ -10201,22 +10201,22 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       has_role_cached: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       has_role_secure: {
         Args: {
-          user_id_param: string
           role_name: Database["public"]["Enums"]["user_role"]
+          user_id_param: string
         }
         Returns: boolean
       }
@@ -10234,57 +10234,57 @@ export type Database = {
       }
       log_contract_creation_step: {
         Args: {
+          attempt_num?: number
           company_id_param: string
           contract_id_param?: string
-          step_name?: string
-          status_param?: string
-          attempt_num?: number
           error_msg?: string
           exec_time?: number
           meta?: Json
+          status_param?: string
+          step_name?: string
         }
         Returns: undefined
       }
       log_security_event: {
         Args: {
-          event_type: string
-          resource_type: string
-          resource_id?: string
           details?: Json
+          event_type: string
+          resource_id?: string
+          resource_type: string
         }
         Returns: undefined
       }
       log_suspicious_access: {
         Args: {
-          _user_id: string
-          _table_name: string
-          _company_id: string
           _access_type: string
+          _company_id: string
+          _table_name: string
+          _user_id: string
         }
         Returns: undefined
       }
       log_system_event: {
         Args: {
-          company_id_param: string
-          user_id_param: string
-          level_param: string
-          category_param: string
           action_param: string
+          category_param: string
+          company_id_param: string
+          level_param: string
           message_param: string
           metadata_param?: Json
-          resource_type_param?: string
           resource_id_param?: string
+          resource_type_param?: string
+          user_id_param: string
         }
         Returns: string
       }
       log_user_account_action: {
         Args: {
-          employee_id_param: string
           action_type_param: string
-          performed_by_param: string
           details_param?: Json
-          old_values_param?: Json
+          employee_id_param: string
           new_values_param?: Json
+          old_values_param?: Json
+          performed_by_param: string
         }
         Returns: undefined
       }
@@ -10292,23 +10292,23 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: {
           contract_id: string
-          issue_type: string
           issue_description: string
-          severity: string
+          issue_type: string
           recommended_action: string
+          severity: string
         }[]
       }
       monitor_user_data_quality: {
         Args: Record<PropertyKey, never>
         Returns: {
           check_name: string
-          status: string
           count_found: number
           description: string
+          status: string
         }[]
       }
       prepare_company_backup: {
-        Args: { company_id_param: string; backup_type_param?: string }
+        Args: { backup_type_param?: string; company_id_param: string }
         Returns: string
       }
       process_failed_journal_entries: {
@@ -10330,11 +10330,11 @@ export type Database = {
       process_vehicle_depreciation_monthly: {
         Args: { company_id_param: string; depreciation_date_param?: string }
         Returns: {
-          vehicle_id: string
-          vehicle_number: string
-          monthly_depreciation: number
           accumulated_depreciation: number
           journal_entry_id: string
+          monthly_depreciation: number
+          vehicle_id: string
+          vehicle_number: string
         }[]
       }
       recalculate_bank_balance: {
@@ -10345,8 +10345,8 @@ export type Database = {
         Args: {
           company_id_param: string
           metric_name_param: string
-          metric_value_param: number
           metric_unit_param?: string
+          metric_value_param: number
           tags_param?: Json
         }
         Returns: string
@@ -10373,39 +10373,39 @@ export type Database = {
       }
       search_accounts_fixed: {
         Args: {
+          account_type_filter?: string
           company_id_param: string
           search_term?: string
-          account_type_filter?: string
         }
         Returns: {
-          id: string
           account_code: string
           account_name: string
           account_type: string
           current_balance: number
+          id: string
           is_active: boolean
         }[]
       }
       search_contracts_fixed: {
         Args: {
+          customer_filter?: string
+          limit_param?: number
+          offset_param?: number
           search_company_id: string
           search_term?: string
           status_filter?: string
-          customer_filter?: string
           vehicle_filter?: string
-          limit_param?: number
-          offset_param?: number
         }
         Returns: {
-          id: string
-          contract_number: string
-          customer_name: string
-          vehicle_plate: string
           contract_amount: number
-          status: string
-          start_date: string
-          end_date: string
+          contract_number: string
           created_at: string
+          customer_name: string
+          end_date: string
+          id: string
+          start_date: string
+          status: string
+          vehicle_plate: string
         }[]
       }
       soft_delete_account: {
@@ -10457,16 +10457,16 @@ export type Database = {
         Returns: undefined
       }
       update_customer_aging_analysis: {
-        Args: { customer_id_param: string; company_id_param: string }
+        Args: { company_id_param: string; customer_id_param: string }
         Returns: undefined
       }
       update_dispatch_permit_status: {
         Args: {
-          permit_id_param: string
-          new_status: string
           change_reason?: string
           location?: string
+          new_status: string
           odometer_reading?: number
+          permit_id_param: string
         }
         Returns: undefined
       }
@@ -10479,7 +10479,7 @@ export type Database = {
         Returns: number
       }
       user_belongs_to_company: {
-        Args: { _user_id: string; _company_id: string }
+        Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
       user_has_access_to_company_fixed: {
@@ -10489,11 +10489,11 @@ export type Database = {
       validate_account_for_transactions: {
         Args: { account_id_param: string }
         Returns: {
-          is_valid: boolean
+          account_level: number
           error_message: string
           error_message_ar: string
-          account_level: number
           is_header: boolean
+          is_valid: boolean
         }[]
       }
       validate_account_level_for_entries: {
@@ -10504,13 +10504,13 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: {
           check_name: string
-          status: string
-          message: string
           count_value: number
+          message: string
+          status: string
         }[]
       }
       validate_company_access_secure: {
-        Args: { _user_id: string; _company_id: string }
+        Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
       validate_contract_data: {
@@ -10539,9 +10539,9 @@ export type Database = {
       }
       validate_user_transfer: {
         Args: {
-          p_user_id: string
           p_from_company_id: string
           p_to_company_id: string
+          p_user_id: string
         }
         Returns: Json
       }
