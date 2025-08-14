@@ -225,7 +225,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <Tabs defaultValue="basic" className="flex-1">
               <div className="px-6 border-b">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-4" dir="rtl">
                   <TabsTrigger value="basic" className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     البيانات الأساسية
