@@ -204,7 +204,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+      <DialogContent className="max-w-5xl max-h-[95vh] p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-semibold">
@@ -245,8 +245,8 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                 </TabsList>
               </div>
 
-              <ScrollArea className="flex-1 max-h-[60vh]">
-                <div className="p-6">
+              <ScrollArea className="flex-1 max-h-[65vh] overflow-y-auto">
+                <div className="p-6 pb-8">
                   {/* البيانات الأساسية */}
                   <TabsContent value="basic" className="space-y-8 mt-0" dir="rtl">
                     <div className="space-y-8">
