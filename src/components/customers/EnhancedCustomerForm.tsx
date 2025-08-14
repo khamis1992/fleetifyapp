@@ -248,20 +248,20 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
               <ScrollArea className="flex-1 max-h-[60vh]">
                 <div className="p-6">
                   {/* البيانات الأساسية */}
-                  <TabsContent value="basic" className="space-y-6 mt-0">
-                    <div className="space-y-6">
+                  <TabsContent value="basic" className="space-y-8 mt-0" dir="rtl">
+                    <div className="space-y-8">
                       {/* نوع العميل */}
-                      <div className="space-y-3">
-                        <h3 className="text-right text-lg font-medium">نوع العميل</h3>
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-semibold text-right">نوع العميل</h3>
                         <FormField
                           control={form.control}
                           name="customer_type"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right">نوع العميل *</FormLabel>
+                              <FormLabel className="text-base font-medium text-right">نوع العميل *</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                                 <FormControl>
-                                  <SelectTrigger className="text-right">
+                                  <SelectTrigger className="text-right h-12">
                                     <SelectValue placeholder="اختر نوع العميل" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -288,16 +288,21 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
 
                       {/* بيانات الاسم حسب نوع العميل */}
                       {customerType === 'individual' ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                          <div className="grid grid-cols-2 gap-6">
                             <FormField
                               control={form.control}
-                              name="last_name"
+                              name="first_name"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-right">الاسم الأخير *</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">الاسم الأول *</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="ادخل الاسم الأخير" className="text-right" />
+                                    <Input 
+                                      {...field} 
+                                      placeholder="ادخل الاسم الأول" 
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -305,27 +310,37 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                             />
                             <FormField
                               control={form.control}
-                              name="first_name"
+                              name="last_name"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-right">الاسم الأول *</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">الاسم الأخير *</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="ادخل الاسم الأول" className="text-right" />
+                                    <Input 
+                                      {...field} 
+                                      placeholder="ادخل الاسم الأخير" 
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-6">
                             <FormField
                               control={form.control}
-                              name="last_name_ar"
+                              name="first_name_ar"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-right">الاسم الأخير (عربي)</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">الاسم الأول (عربي)</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="ادخل الاسم الأخير بالعربي" className="text-right" />
+                                    <Input 
+                                      {...field} 
+                                      placeholder="ادخل الاسم الأول بالعربي" 
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -333,12 +348,17 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                             />
                             <FormField
                               control={form.control}
-                              name="first_name_ar"
+                              name="last_name_ar"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-right">الاسم الأول (عربي)</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">الاسم الأخير (عربي)</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="ادخل الاسم الأول بالعربي" className="text-right" />
+                                    <Input 
+                                      {...field} 
+                                      placeholder="ادخل الاسم الأخير بالعربي" 
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -347,16 +367,21 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                          <div className="grid grid-cols-2 gap-6">
                             <FormField
                               control={form.control}
-                              name="company_name_ar"
+                              name="company_name"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-right">اسم الشركة (عربي)</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">اسم الشركة *</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="ادخل اسم الشركة بالعربي" className="text-right" />
+                                    <Input 
+                                      {...field} 
+                                      placeholder="ادخل اسم الشركة" 
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -364,12 +389,17 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                             />
                             <FormField
                               control={form.control}
-                              name="company_name"
+                              name="company_name_ar"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-right">اسم الشركة *</FormLabel>
+                                  <FormLabel className="text-base font-medium text-right">اسم الشركة (عربي)</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="ادخل اسم الشركة" className="text-right" />
+                                    <Input 
+                                      {...field} 
+                                      placeholder="ادخل اسم الشركة بالعربي" 
+                                      className="text-right h-12 text-base"
+                                      dir="rtl"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
