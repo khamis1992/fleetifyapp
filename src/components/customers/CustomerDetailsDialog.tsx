@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   Users, Building, Phone, Mail, MapPin, FileText, CreditCard, 
   TrendingUp, Clock, Plus, AlertTriangle, DollarSign, Calendar,
-  User, Shield, MessageSquare
+  User, Shield, MessageSquare, Edit, Save, X
 } from "lucide-react";
 import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useEnhancedCustomers";
 import { CustomerInvoicesTab } from "./CustomerInvoicesTab";
@@ -46,6 +46,7 @@ export function CustomerDetailsDialog({
   onCreateInvoice 
 }: CustomerDetailsDialogProps) {
   const [showNoteForm, setShowNoteForm] = useState(false);
+  const [isEditingAccounts, setIsEditingAccounts] = useState(false);
   const { data: customer, isLoading, error, isError } = useCustomer(customerId);
   const { data: notes } = useCustomerNotes(customerId);
   const { data: financialSummary } = useCustomerFinancialSummary(customerId);
@@ -555,12 +556,50 @@ export function CustomerDetailsDialog({
           </TabsContent>
 
           <TabsContent value="accounting" className="space-y-4">
-            <CustomerAccountSelector 
-              customerId={customerId}
-              customerName={customerName}
-              mode="view"
-              companyId={customer.company_id}
-            />
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>الحسابات المحاسبية</CardTitle>
+                  {!isEditingAccounts ? (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsEditingAccounts(true)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      إدارة الحسابات
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsEditingAccounts(false);
+                          toast.success("تم حفظ التغييرات");
+                        }}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        حفظ
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsEditingAccounts(false)}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        إلغاء
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CustomerAccountSelector 
+                  customerId={customerId}
+                  customerName={customerName}
+                  mode={isEditingAccounts ? "edit" : "view"}
+                  companyId={customer.company_id}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </DialogContent>
