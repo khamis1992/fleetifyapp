@@ -6,6 +6,7 @@ import { CustomerFormData } from "@/types/customer";
 
 interface CreateCustomerWithAccountData extends CustomerFormData {
   createFinancialAccount?: boolean;
+  selectedAccountId?: string;
   initialBalance?: number;
 }
 
@@ -86,8 +87,40 @@ export const useCreateCustomerWithAccount = (targetCompanyId?: string) => {
 
         const result: CreateCustomerWithAccountResult = { customer };
 
-        // Step 2: Create financial account if requested
-        if (data.createFinancialAccount) {
+        // Step 2: Handle financial account linking
+        if (data.selectedAccountId) {
+          console.log('[CREATE_CUSTOMER_WITH_ACCOUNT] Linking customer to existing account:', data.selectedAccountId);
+          
+          // Link the customer to the selected existing account
+          const { error: linkError } = await supabase
+            .from("customer_accounts")
+            .insert({
+              company_id: effectiveCompanyId,
+              customer_id: customer.id,
+              account_id: data.selectedAccountId
+            });
+
+          if (linkError) {
+            console.error('[CREATE_CUSTOMER_WITH_ACCOUNT] Account linking failed:', linkError);
+            toast({
+              variant: "destructive",
+              title: "تحذير",
+              description: "تم إنشاء العميل بنجاح لكن فشل في ربط الحساب المحاسبي",
+            });
+          } else {
+            // Get account details
+            const { data: accountDetails } = await supabase
+              .from("chart_of_accounts")
+              .select("id, account_code, account_name")
+              .eq("id", data.selectedAccountId)
+              .single();
+
+            if (accountDetails) {
+              result.financialAccount = accountDetails;
+            }
+            console.log('[CREATE_CUSTOMER_WITH_ACCOUNT] Customer linked to existing account successfully');
+          }
+        } else if (data.createFinancialAccount) {
           console.log('[CREATE_CUSTOMER_WITH_ACCOUNT] Creating financial account for customer');
 
           const { data: accountId, error: accountError } = await supabase

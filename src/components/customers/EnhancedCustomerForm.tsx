@@ -16,6 +16,7 @@ import { Customer } from "@/types/customer";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Building, CreditCard, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CustomerAccountFormSelector } from "./CustomerAccountSelector";
 
 const formSchema = z.object({
   customer_type: z.enum(['individual', 'corporate']),
@@ -42,6 +43,8 @@ const formSchema = z.object({
   emergency_contact_phone: z.string().optional(),
   notes: z.string().optional(),
   // Financial integration fields
+  accountIntegrationType: z.enum(['create_new', 'select_existing', 'none']).default('create_new'),
+  selectedAccountId: z.string().optional(),
   createFinancialAccount: z.boolean().default(false),
   initialBalance: z.number().optional(),
 }).refine((data) => {
@@ -72,6 +75,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
     resolver: zodResolver(formSchema),
     defaultValues: {
       customer_type: 'individual',
+      accountIntegrationType: 'create_new',
       createFinancialAccount: true,
       initialBalance: 0,
       country: 'Kuwait',
@@ -81,13 +85,16 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
   });
 
   const customerType = form.watch('customer_type');
+  const accountIntegrationType = form.watch('accountIntegrationType');
   const createFinancialAccount = form.watch('createFinancialAccount');
 
   useEffect(() => {
-    if (!customer && createFinancialAccount) {
+    if (!customer && accountIntegrationType !== 'none') {
       setShowFinancialSection(true);
+    } else {
+      setShowFinancialSection(false);
     }
-  }, [customer, createFinancialAccount]);
+  }, [customer, accountIntegrationType]);
 
   const onSubmit = (values: FormValues) => {
     if (customer) {
@@ -153,7 +160,8 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
         emergency_contact_name: values.emergency_contact_name,
         emergency_contact_phone: values.emergency_contact_phone,
         notes: values.notes,
-        createFinancialAccount: values.createFinancialAccount,
+        createFinancialAccount: values.accountIntegrationType === 'create_new',
+        selectedAccountId: values.selectedAccountId,
         initialBalance: values.initialBalance,
       };
       
@@ -337,31 +345,63 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="createFinancialAccount"
+                name="accountIntegrationType"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">
-                        إنشاء حساب محاسبي تلقائياً
-                      </FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        سيتم إنشاء حساب محاسبي خاص بالعميل في دليل الحسابات
-                      </div>
+                  <FormItem>
+                    <FormLabel className="text-base">خيارات الربط المحاسبي</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر طريقة الربط المحاسبي" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="create_new">إنشاء حساب جديد</SelectItem>
+                        <SelectItem value="select_existing">اختيار حساب موجود</SelectItem>
+                        <SelectItem value="none">بدون ربط محاسبي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="text-sm text-muted-foreground">
+                      {accountIntegrationType === 'create_new' && "سيتم إنشاء حساب محاسبي جديد خاص بالعميل"}
+                      {accountIntegrationType === 'select_existing' && "اختر حساب محاسبي موجود من القائمة"}
+                      {accountIntegrationType === 'none' && "لن يتم ربط العميل بأي حساب محاسبي"}
                     </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={(value) => {
-                          field.onChange(value);
-                          setShowFinancialSection(value);
-                        }}
-                      />
-                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {createFinancialAccount && (
+              {accountIntegrationType === 'select_existing' && (
+                <>
+                  <Separator />
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      اختر حساب محاسبي موجود من قائمة الحسابات المتاحة. يمكنك البحث بكود الحساب أو اسم الحساب.
+                    </AlertDescription>
+                  </Alert>
+
+                  <FormField
+                    control={form.control}
+                    name="selectedAccountId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الحساب المحاسبي</FormLabel>
+                        <FormControl>
+                          <CustomerAccountFormSelector
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="اختر الحساب المحاسبي"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {accountIntegrationType === 'create_new' && (
                 <>
                   <Separator />
                   <Alert>

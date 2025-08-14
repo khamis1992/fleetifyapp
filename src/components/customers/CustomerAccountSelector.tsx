@@ -33,6 +33,90 @@ interface CustomerAccountSelectorProps {
   companyId?: string;
 }
 
+interface CustomerAccountFormSelectorProps {
+  value?: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  companyId?: string;
+}
+
+// Form component for selecting accounts in customer creation
+export function CustomerAccountFormSelector({ 
+  value, 
+  onValueChange, 
+  placeholder = "اختر الحساب المحاسبي",
+  disabled = false,
+  companyId
+}: CustomerAccountFormSelectorProps) {
+  const { data: availableAccounts, isLoading } = useAvailableCustomerAccounts(companyId);
+
+  console.log('CustomerAccountFormSelector - Available accounts:', availableAccounts);
+  console.log('CustomerAccountFormSelector - Current value:', value);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!availableAccounts || availableAccounts.length === 0) {
+    return (
+      <Alert>
+        <InfoIcon className="h-4 w-4" />
+        <AlertDescription>
+          لا توجد حسابات محاسبية متاحة. يرجى التواصل مع المدير لإعداد الحسابات.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {availableAccounts.map((account) => (
+          <SelectItem 
+            key={account.id} 
+            value={account.id}
+            disabled={!account.is_available}
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">
+                    {account.account_code} - {account.account_name}
+                  </span>
+                  {account.account_name_ar && (
+                    <span className="text-sm text-muted-foreground">
+                      {account.account_name_ar}
+                    </span>
+                  )}
+                  {account.parent_account_name && (
+                    <span className="text-xs text-muted-foreground">
+                      تحت: {account.parent_account_name}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={account.is_available ? "default" : "secondary"}>
+                  {account.is_available ? "متاح" : "مستخدم"}
+                </Badge>
+              </div>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function CustomerAccountSelector({ 
   customerId, 
   customerName, 
@@ -48,75 +132,79 @@ export function CustomerAccountSelector({
 
   const { data: availableAccounts, isLoading: loadingAvailable } = useAvailableCustomerAccounts(companyId);
   const { data: linkedAccounts, isLoading: loadingLinked } = useCustomerLinkedAccounts(customerId);
-  const { data: companySettings } = useCompanyAccountSettings(companyId);
-  const linkAccountMutation = useLinkAccountToCustomer();
-  const unlinkAccountMutation = useUnlinkAccountFromCustomer();
+  const { data: settings } = useCompanyAccountSettings(companyId);
+  const linkMutation = useLinkAccountToCustomer();
+  const unlinkMutation = useUnlinkAccountFromCustomer();
+  const formatCurrency = useCurrencyFormatter();
 
-  // Force re-render when data changes
-  useEffect(() => {
-    if (availableAccounts) {
-      setLastUpdate(new Date());
-      console.log('🔄 [CustomerAccountSelector] Data updated at:', new Date().toLocaleTimeString());
-    }
-  }, [availableAccounts]);
+  console.log('🔍 CustomerAccountSelector Debug:', {
+    customerId,
+    customerName,
+    availableAccounts: availableAccounts?.length || 0,
+    linkedAccounts: linkedAccounts?.length || 0,
+    settings
+  });
 
-  // Enhanced force refresh function with comprehensive cache clearing
-  const handleForceRefresh = () => {
-    console.log('🔄 [REFRESH] Starting comprehensive refresh...');
-    
-    // Clear all related caches
-    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts'] });
-    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts-v2'] });
-    queryClient.invalidateQueries({ queryKey: ['customer-linked-accounts'] });
-    queryClient.invalidateQueries({ queryKey: ['company-account-settings'] });
-    
-    // Remove cached data completely
-    queryClient.removeQueries({ queryKey: ['available-customer-accounts'] });
-    queryClient.removeQueries({ queryKey: ['available-customer-accounts-v2'] });
-    
+  // Force refresh data
+  const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
     setLastUpdate(new Date());
-    
-    console.log('🔄 [REFRESH] Cache cleared, forcing re-fetch...');
-    toast.success('تم تحديث البيانات بالكامل');
+    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['customer-linked-accounts'] });
+    toast.success('تم تحديث البيانات');
   };
-  const { formatCurrency } = useCurrencyFormatter();
 
+  // Handle account linking
   const handleLinkAccount = async () => {
-    if (!selectedAccountId) return;
-    
-    setIsLinking(true);
+    if (!selectedAccountId) {
+      toast.error('يرجى اختيار حساب أولاً');
+      return;
+    }
+
     try {
-      await linkAccountMutation.mutateAsync({
+      setIsLinking(true);
+      await linkMutation.mutateAsync({
         customerId,
         accountId: selectedAccountId
       });
+      
       setSelectedAccountId("");
+      toast.success('تم ربط الحساب بنجاح');
+    } catch (error) {
+      console.error('Link account error:', error);
+      toast.error('حدث خطأ في ربط الحساب');
     } finally {
       setIsLinking(false);
     }
   };
 
-  const handleUnlinkAccount = async (customerAccountId: string) => {
-    await unlinkAccountMutation.mutateAsync({
-      customerId,
-      customerAccountId
-    });
+  // Handle account unlinking
+  const handleUnlinkAccount = async (accountId: string) => {
+    try {
+      await unlinkMutation.mutateAsync({
+        customerId,
+        customerAccountId: accountId
+      });
+      toast.success('تم إلغاء ربط الحساب بنجاح');
+    } catch (error) {
+      console.error('Unlink account error:', error);
+      toast.error('حدث خطأ في إلغاء ربط الحساب');
+    }
   };
 
-  if (loadingLinked || loadingAvailable) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-6">
-          <LoadingSpinner className="h-6 w-6" />
-          <span className="mr-2">جاري تحميل الحسابات...</span>
-        </CardContent>
-      </Card>
+  // Get available accounts that are not already linked
+  const getAvailableAccounts = () => {
+    if (!availableAccounts) return [];
+    
+    const linkedAccountIds = linkedAccounts?.map(acc => acc.id) || [];
+    return availableAccounts.filter(acc => 
+      !linkedAccountIds.includes(acc.id) && acc.is_available
     );
-  }
+  };
 
-  // إذا كانت الشركة لا تدعم اختيار الحسابات
-  if (!companySettings?.enable_account_selection) {
+  const availableAccountsList = getAvailableAccounts();
+
+  if (loadingAvailable || loadingLinked) {
     return (
       <Card>
         <CardHeader>
@@ -126,339 +214,211 @@ export function CustomerAccountSelector({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert>
-            <InfoIcon className="h-4 w-4" />
-            <AlertDescription>
-              يتم إنشاء الحسابات المحاسبية تلقائياً للعملاء في هذه الشركة.
-            </AlertDescription>
-          </Alert>
-          
-          {linkedAccounts && linkedAccounts.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {linkedAccounts.map((link: any) => (
-                <div key={link.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{link.chart_of_accounts?.account_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {link.chart_of_accounts?.account_code}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      {formatCurrency(link.chart_of_accounts?.current_balance ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <LoadingSpinner />
         </CardContent>
       </Card>
     );
   }
 
-  // Debug: تشخيص بيانات الحسابات
-  console.log('🔍 [CustomerAccountSelector] Debug Info:', {
-    totalAvailableAccounts: availableAccounts?.length || 0,
-    availableAccounts: availableAccounts,
-    searchingForAccount: '1130201',
-    account1130201: availableAccounts?.find(acc => acc.account_code === '1130201'),
-    companyId: companyId
-  });
-
-  // تشخيص المشكلة الحقيقية: إزالة فلترة is_available مؤقتاً لاختبار العرض
-  const availableAccountsForSelection = React.useMemo(() => {
-    if (!availableAccounts) return [];
-    
-    console.log('🔍 [FILTERING] Starting filtering process:', {
-      totalAccounts: availableAccounts.length,
-      timestamp: new Date().toLocaleTimeString()
-    });
-    
-    // إظهار جميع الحسابات بدون فلترة is_available للتشخيص
-    const filtered = availableAccounts.filter(acc => {
-      // التأكد من أن الحساب لديه معرف صحيح
-      const hasValidId = Boolean(acc.id);
-      const hasValidCode = Boolean(acc.account_code);
-      
-      // Special logging for account 1130201
-      if (acc.account_code === '1130201') {
-        console.log('🎯 [FILTERING] Account 1130201 complete analysis:', {
-          account: acc,
-          hasValidId: hasValidId,
-          hasValidCode: hasValidCode,
-          isAvailable: acc.is_available,
-          willBeIncluded: hasValidId && hasValidCode
-        });
-      }
-      
-      // إرجاع جميع الحسابات التي لديها معرف وكود صحيح (بدون فلترة is_available)
-      return hasValidId && hasValidCode;
-    });
-    
-    console.log('🔍 [FILTERING] Filter results (no is_available filter):', {
-      originalCount: availableAccounts.length,
-      filteredCount: filtered.length,
-      account1130201Found: !!filtered.find(acc => acc.account_code === '1130201'),
-      allCodes: filtered.map(acc => ({ code: acc.account_code, available: acc.is_available }))
-    });
-    
-    return filtered;
-  }, [availableAccounts]);
-  
-  // Additional validation logging
-  React.useEffect(() => {
-    if (availableAccountsForSelection.length > 0) {
-      const target = availableAccountsForSelection.find(acc => acc.account_code === '1130201');
-      console.log('📊 [VALIDATION] Account 1130201 in selection list:', {
-        found: !!target,
-        account: target,
-        listLength: availableAccountsForSelection.length
-      });
-    }
-  }, [availableAccountsForSelection]);
-
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          إدارة الحسابات المحاسبية
+          الحسابات المحاسبية للعميل: {customerName}
         </CardTitle>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4" />
+            تحديث
+          </Button>
+          <Badge variant="outline" className="text-xs">
+            آخر تحديث: {lastUpdate.toLocaleTimeString('ar-KW')}
+          </Badge>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* الحسابات المرتبطة حالياً */}
-        {linkedAccounts && linkedAccounts.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm">الحسابات المرتبطة:</h4>
-            {linkedAccounts.map((link: any) => (
-              <div key={link.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <Building className="h-4 w-4 text-primary" />
-                  <div>
-                    <p className="font-medium">{link.chart_of_accounts?.account_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {link.chart_of_accounts?.account_code}
-                    </p>
+      <CardContent className="space-y-6">
+        {/* Current Settings Info */}
+        {settings && (
+          <Alert>
+            <InfoIcon className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-1">
+                <div><strong>إعدادات الحسابات:</strong></div>
+                <div>• إنشاء تلقائي: {settings.auto_create_account ? 'مفعل' : 'معطل'}</div>
+                <div>• تمكين الاختيار: {settings.enable_account_selection ? 'مفعل' : 'معطل'}</div>
+                <div>• نمط التسمية: {settings.account_naming_pattern}</div>
+                <div>• التجميع: {settings.account_group_by}</div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Linked Accounts Section */}
+        <div className="space-y-3">
+          <h4 className="font-medium flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            الحسابات المربوطة ({linkedAccounts?.length || 0})
+          </h4>
+          
+          {linkedAccounts && linkedAccounts.length > 0 ? (
+            <div className="grid gap-3">
+              {linkedAccounts.map((account) => (
+                <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="h-4 w-4 text-blue-500" />
+                    <div>
+                      <div className="font-medium">
+                        {account.chart_of_accounts.account_code} - {account.chart_of_accounts.account_name}
+                      </div>
+                      {account.chart_of_accounts.account_name_ar && (
+                        <div className="text-sm text-muted-foreground">
+                          {account.chart_of_accounts.account_name_ar}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline">محاسبي</Badge>
+                        <Badge variant="secondary">
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          {formatCurrency.formatCurrency(account.chart_of_accounts.current_balance || 0)}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    {formatCurrency(link.chart_of_accounts?.current_balance ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                  </Badge>
                   {mode === 'edit' && (
                     <Button
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      onClick={() => handleUnlinkAccount(link.id)}
-                      disabled={unlinkAccountMutation.isPending}
+                      onClick={() => handleUnlinkAccount(account.id)}
+                      disabled={unlinkMutation.isPending}
                     >
-                      <Unlink className="h-3 w-3" />
+                      <Unlink className="h-4 w-4" />
+                      إلغاء الربط
                     </Button>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* أزرار التشخيص والتحكم */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Button 
-            onClick={handleForceRefresh} 
-            size="sm" 
-            variant="outline"
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className="h-3 w-3" />
-            تحديث البيانات
-          </Button>
-          <Button 
-            onClick={() => setUseNativeSelect(!useNativeSelect)} 
-            size="sm" 
-            variant="outline"
-            className="flex items-center gap-1"
-          >
-            <Eye className="h-3 w-3" />
-            {useNativeSelect ? 'عرض Radix' : 'عرض HTML'}
-          </Button>
+              ))}
+            </div>
+          ) : (
+            <Alert>
+              <InfoIcon className="h-4 w-4" />
+              <AlertDescription>
+                لا توجد حسابات مربوطة حالياً بهذا العميل
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
-        {/* إضافة حساب جديد */}
-        {mode === 'edit' && availableAccountsForSelection.length > 0 && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-medium text-sm">ربط حساب جديد:</h4>
-            <div className="flex gap-2">
-              {useNativeSelect ? (
-                /* Native HTML Select for testing */
-                <div className="flex-1 space-y-2">
-                  <label className="text-sm font-medium">اختر حساب محاسبي جديد (HTML Select)</label>
-                  <select 
-                    value={selectedAccountId} 
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                    disabled={isLinking}
-                    className="w-full p-2 border rounded-md bg-background"
-                  >
-                    <option value="">اختر حساب محاسبي جديد</option>
-                    {availableAccountsForSelection.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.account_code} - {account.account_name}
-                        {account.account_name_ar && ` (${account.account_name_ar})`}
-                      </option>
-                    ))}
-                  </select>
+        {/* Add New Account Section */}
+        {mode === 'edit' && (
+          <div className="space-y-3">
+            <h4 className="font-medium flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              ربط حساب جديد
+            </h4>
+
+            {availableAccountsList.length > 0 ? (
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  {useNativeSelect ? (
+                    <select
+                      value={selectedAccountId}
+                      onChange={(e) => setSelectedAccountId(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="">اختر حساب محاسبي...</option>
+                      {availableAccountsList.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.account_code} - {account.account_name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر حساب محاسبي..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableAccountsList.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              <div>
+                                <div className="font-medium">
+                                  {account.account_code} - {account.account_name}
+                                </div>
+                                {account.account_name_ar && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {account.account_name_ar}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
-              ) : (
-                /* Original Radix Select */
-                <Select 
-                  key={`select-${refreshKey}`}
-                  value={selectedAccountId} 
-                  onValueChange={setSelectedAccountId}
+                <Button
+                  onClick={handleLinkAccount}
+                  disabled={!selectedAccountId || isLinking}
+                  className="shrink-0"
                 >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="اختر حساب محاسبي..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableAccountsForSelection.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{account.account_name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {account.account_code} | {account.parent_account_name}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+                  {isLinking ? (
+                    <>
+                      <LoadingSpinner />
+                      ربط...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      ربط
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Alert>
+                <InfoIcon className="h-4 w-4" />
+                <AlertDescription>
+                  لا توجد حسابات متاحة للربط. جميع الحسابات المتاحة مربوطة بالفعل أو غير متاحة.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Button
-                onClick={handleLinkAccount}
-                disabled={!selectedAccountId || isLinking || linkAccountMutation.isPending}
+                variant="link"
                 size="sm"
+                onClick={() => setUseNativeSelect(!useNativeSelect)}
+                className="p-0 h-auto"
               >
-                {isLinking || linkAccountMutation.isPending ? (
-                  <LoadingSpinner className="h-3 w-3" />
-                ) : (
-                  <Plus className="h-3 w-3" />
-                )}
-                ربط
+                <Eye className="h-3 w-3 mr-1" />
+                {useNativeSelect ? 'استخدام القائمة المتقدمة' : 'استخدام القائمة البسيطة'}
               </Button>
+              <span>•</span>
+              <span>الحسابات المتاحة: {availableAccountsList.length}</span>
             </div>
           </div>
         )}
 
-        {/* رسالة عدم وجود حسابات متاحة - محدثة */}
-        {mode === 'edit' && availableAccountsForSelection.length === 0 && availableAccounts && availableAccounts.length > 0 && (
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <InfoIcon className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
-              <strong>تشخيص المشكلة:</strong> يوجد {availableAccounts.length} حساب في البيانات الأصلية لكن لا يظهر أي منها في القائمة.
-              <br />
-              <span className="text-sm mt-1 block">
-                هذا يشير إلى مشكلة في العرض أو الفلترة، وليس في البيانات نفسها.
-              </span>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* رسالة عدم وجود حسابات في دليل الحسابات */}
-        {mode === 'edit' && (!availableAccounts || availableAccounts.length === 0) && (
-          <Alert className="border-orange-200 bg-orange-50">
-            <InfoIcon className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
-              لا توجد حسابات مناسبة للعملاء في دليل الحسابات. 
-              <br />
-              <span className="text-sm mt-1 block">
-                يحتاج النظام إلى حسابات من نوع "الأصول" أو حسابات تحتوي على كلمات مثل "مدين"، "ذمم"، "عميل" أو "receivable"
-              </span>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Enhanced Debug Panel */}
-        <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-blue-200">
-          <h4 className="font-bold text-sm mb-2 text-blue-700">🔍 معلومات التشخيص المتقدمة</h4>
-          <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
-            <p><strong>آخر تحديث:</strong> {lastUpdate.toLocaleTimeString()}</p>
-            <p><strong>مفتاح التحديث:</strong> {refreshKey}</p>
-            <p><strong>نوع القائمة المنسدلة:</strong> {useNativeSelect ? 'HTML Select' : 'Radix Select'}</p>
-            <p><strong>إجمالي الحسابات المتاحة:</strong> {availableAccounts?.length || 0}</p>
-            <p><strong>الحسابات بعد الفلترة الأساسية:</strong> {availableAccountsForSelection.length}</p>
-            <p className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded"><strong>الحساب المطلوب (1130201):</strong> {
-              availableAccounts?.find(acc => acc.account_code === '1130201') ? 
-              `✅ موجود في البيانات - is_available: ${availableAccounts.find(acc => acc.account_code === '1130201')?.is_available}` : 
-              '❌ غير موجود في البيانات'
-            }</p>
-            <p className="bg-green-100 dark:bg-green-900 px-2 py-1 rounded"><strong>الحساب في القائمة النهائية:</strong> {
-              availableAccountsForSelection.find(acc => acc.account_code === '1130201') ? 
-              '✅ موجود في القائمة المنسدلة' : 
-              '❌ مفقود من القائمة المنسدلة - هذه هي المشكلة!'
-            }</p>
-            <details className="mt-2">
-              <summary className="cursor-pointer font-medium">عرض جميع أكواد الحسابات المفلترة</summary>
-              <div className="mt-1 p-2 bg-white dark:bg-slate-700 rounded text-xs">
-                {availableAccountsForSelection.map(acc => acc.account_code).join(', ') || 'لا توجد حسابات'}
-              </div>
-            </details>
-            <details className="mt-2">
-              <summary className="cursor-pointer font-medium">عرض البيانات الخام</summary>
-              <div className="mt-1 p-2 bg-white dark:bg-slate-700 rounded text-xs">
-                <pre className="whitespace-pre-wrap text-xs">
-                  {JSON.stringify({
-                    availableAccounts: availableAccounts?.slice(0, 3), // First 3 for brevity
-                    targetAccount: availableAccounts?.find(acc => acc.account_code === '1130201'),
-                    filteredCount: availableAccountsForSelection.length
-                  }, null, 2)}
-                </pre>
-              </div>
-            </details>
+        {/* Debug Information */}
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer">معلومات المطور</summary>
+          <div className="mt-2 space-y-1">
+            <div>Customer ID: {customerId}</div>
+            <div>Available Accounts: {availableAccounts?.length || 0}</div>
+            <div>Linked Accounts: {linkedAccounts?.length || 0}</div>
+            <div>Available for Linking: {availableAccountsList.length}</div>
+            <div>Refresh Key: {refreshKey}</div>
           </div>
-        </div>
-
-        {/* Test Component - Direct Account Display */}
-        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200">
-          <h4 className="font-bold text-sm mb-2 text-yellow-700 dark:text-yellow-300">🧪 اختبار العرض المباشر</h4>
-          <div className="space-y-2">
-            {availableAccountsForSelection.slice(0, 5).map((account) => (
-              <div 
-                key={account.id}
-                className={`p-2 rounded border text-xs ${
-                  account.account_code === '1130201' 
-                    ? 'bg-green-100 border-green-300 dark:bg-green-900/20' 
-                    : 'bg-white border-gray-200 dark:bg-slate-700'
-                }`}
-              >
-                <strong>{account.account_code}</strong> - {account.account_name}
-                {account.account_code === '1130201' && (
-                  <Badge className="ml-2 bg-green-500">المطلوب!</Badge>
-                )}
-              </div>
-            ))}
-            {availableAccountsForSelection.length > 5 && (
-              <p className="text-xs text-muted-foreground">
-                ... و {availableAccountsForSelection.length - 5} حساب آخر
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* رسالة عدم وجود حسابات مرتبطة */}
-        {(!linkedAccounts || linkedAccounts.length === 0) && (
-          <Alert>
-            <InfoIcon className="h-4 w-4" />
-            <AlertDescription>
-              {companySettings?.auto_create_account 
-                ? "سيتم إنشاء حساب محاسبي تلقائياً لهذا العميل." 
-                : "لم يتم ربط أي حساب محاسبي بهذا العميل بعد."}
-            </AlertDescription>
-          </Alert>
-        )}
+        </details>
       </CardContent>
     </Card>
   );
