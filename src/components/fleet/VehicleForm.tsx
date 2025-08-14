@@ -21,6 +21,7 @@ import { useCostCenters } from "@/hooks/useCostCenters"
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
+import { useFixedAssetByCode } from "@/hooks/useFixedAssetByCode"
 
 interface VehicleFormProps {
   vehicle?: Vehicle
@@ -36,6 +37,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const updateVehicle = useUpdateVehicle()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [assetCodeInput, setAssetCodeInput] = useState("")
+  
+  // Fixed asset lookup
+  const { data: fixedAsset, isLoading: assetLoading, error: assetError } = useFixedAssetByCode(assetCodeInput)
   
   // Form submission state
   // Removed backup state as it was causing value handling issues
@@ -100,6 +105,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       manufacturer: "",
       purchase_source: "",
       asset_code: "",
+      fixed_asset_id: "",
       asset_classification: "vehicle",
       financing_type: "cash",
       loan_amount: "",
@@ -161,6 +167,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         status: vehicle.status || "available",
         notes: vehicle.notes || "",
         cost_center_id: vehicle.cost_center_id || "",
+        fixed_asset_id: vehicle.fixed_asset_id || "",
       })
     }
   }, [vehicle, form])
@@ -176,9 +183,66 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       )
       if (hasBeenUsed) {
         form.reset()
+        setAssetCodeInput("")
       }
     }
   }, [open, vehicle, form])
+
+  // Auto-fill vehicle data when fixed asset is found
+  useEffect(() => {
+    if (fixedAsset && fixedAsset.category === 'vehicles') {
+      // Auto-fill form with asset data
+      form.setValue('make', fixedAsset.asset_name || form.getValues('make'))
+      if (fixedAsset.purchase_date) {
+        form.setValue('purchase_date', fixedAsset.purchase_date)
+      }
+      if (fixedAsset.purchase_cost) {
+        form.setValue('purchase_cost', fixedAsset.purchase_cost.toString())
+      }
+      if (fixedAsset.salvage_value) {
+        form.setValue('residual_value', fixedAsset.salvage_value.toString())
+      }
+      if (fixedAsset.useful_life_years) {
+        form.setValue('useful_life_years', fixedAsset.useful_life_years)
+      }
+      if (fixedAsset.depreciation_method) {
+        form.setValue('depreciation_method', fixedAsset.depreciation_method)
+      }
+      if (fixedAsset.location) {
+        form.setValue('current_location', fixedAsset.location)
+      }
+      form.setValue('asset_code', fixedAsset.asset_code)
+      form.setValue('fixed_asset_id', fixedAsset.id)
+      
+      toast({
+        title: "تم العثور على الأصل",
+        description: `تم ربط المركبة بالأصل الثابت: ${fixedAsset.asset_name}`,
+      })
+    } else if (fixedAsset && fixedAsset.category !== 'vehicles') {
+      toast({
+        title: "خطأ في نوع الأصل",
+        description: "هذا الأصل ليس من فئة المركبات",
+        variant: "destructive",
+      })
+      setAssetCodeInput("")
+    } else if (assetCodeInput && assetError) {
+      toast({
+        title: "لم يتم العثور على الأصل",
+        description: "رقم الأصل غير موجود أو غير نشط",
+        variant: "destructive",
+      })
+    }
+  }, [fixedAsset, assetError, form, toast, assetCodeInput])
+
+  // Handle asset code input change
+  const handleAssetCodeChange = (value: string) => {
+    setAssetCodeInput(value.trim())
+    if (!value.trim()) {
+      // Clear asset-related fields when asset code is cleared
+      form.setValue('fixed_asset_id', '')
+      form.setValue('asset_code', '')
+    }
+  }
 
   // Fill dummy data function
   const fillDummyData = () => {
@@ -257,6 +321,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       // Additional Information
       notes: "مركبة جديدة في حالة ممتازة، تم شراؤها من معرض معتمد مع ضمان شامل.",
       cost_center_id: "",
+      fixed_asset_id: "",
     }
     
     // Fill form with dummy data
@@ -372,6 +437,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         cost_center_id: finalData.cost_center_id || null,
         depreciation_method: finalData.depreciation_method || "straight_line",
         salvage_value: finalData.salvage_value ? parseFloat(finalData.salvage_value) : null,
+        fixed_asset_id: finalData.fixed_asset_id || null,
       }
 
       console.log("📤 [VEHICLE_FORM] Prepared vehicle data:", vehicleData);
@@ -401,6 +467,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       
       // Reset form and close dialog
       form.reset()
+      setAssetCodeInput("")
       onOpenChange(false)
       
       // Force refetch vehicles data
@@ -470,10 +537,63 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                     <CardDescription className="text-right">التفاصيل الأساسية حول المركبة</CardDescription>
                   </CardHeader>
                    <CardContent className="space-y-4" dir="rtl">
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                       <FormField
-                         control={form.control}
-                         name="manufacturer"
+                      {/* Fixed Asset Linking Section */}
+                      <div className="bg-muted/30 p-4 rounded-lg border-2 border-dashed border-primary/20">
+                        <h4 className="text-sm font-medium text-right mb-3 text-primary">ربط بالأصول الثابتة</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="text-right">
+                            <label className="text-sm font-medium">رقم الأصل الثابت</label>
+                            <div className="relative mt-1">
+                              <Input
+                                value={assetCodeInput}
+                                onChange={(e) => handleAssetCodeChange(e.target.value)}
+                                placeholder="أدخل رقم الأصل لجلب البيانات تلقائياً"
+                                className="text-right"
+                                dir="rtl"
+                              />
+                              {assetLoading && (
+                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                  <LoadingSpinner size="sm" />
+                                </div>
+                              )}
+                            </div>
+                            {fixedAsset && (
+                              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-right">
+                                <p className="text-sm text-green-800">
+                                  ✓ تم العثور على: {fixedAsset.asset_name}
+                                </p>
+                                {fixedAsset.location && (
+                                  <p className="text-xs text-green-600">الموقع: {fixedAsset.location}</p>
+                                )}
+                              </div>
+                            )}
+                            {assetCodeInput && !fixedAsset && !assetLoading && (
+                              <p className="text-sm text-red-600 mt-1 text-right">
+                                لم يتم العثور على أصل ثابت بهذا الرقم
+                              </p>
+                            )}
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name="asset_code"
+                            render={({ field }) => (
+                              <FormItem className="text-right">
+                                <FormLabel className="text-right">رمز الأصل (تلقائي)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="سيتم ملؤه تلقائياً" className="text-right bg-muted" readOnly dir="rtl" />
+                                </FormControl>
+                                <FormMessage className="text-right" />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="manufacturer"
                          render={({ field }) => (
                             <FormItem className="text-right">
                               <FormLabel className="text-right">الشركة المصنعة</FormLabel>
@@ -514,22 +634,8 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                        />
                      </div>
 
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                       <FormField
-                         control={form.control}
-                         name="asset_code"
-                         render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>رمز الأصل</FormLabel>
-                             <FormControl>
-                               <Input {...field} placeholder="مثال: VEH-001" />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
-                         )}
-                       />
-                       
-                       <FormField
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField
                          control={form.control}
                          name="purchase_source"
                          render={({ field }) => (
@@ -565,10 +671,19 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                              <FormMessage />
                            </FormItem>
                          )}
-                       />
-                     </div>
+                        />
+                      </div>
+                      
+                      {/* Hidden field for fixed asset ID */}
+                      <FormField
+                        control={form.control}
+                        name="fixed_asset_id"
+                        render={({ field }) => (
+                          <input type="hidden" {...field} />
+                        )}
+                      />
 
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <FormField
                          control={form.control}
                          name="plate_number"
