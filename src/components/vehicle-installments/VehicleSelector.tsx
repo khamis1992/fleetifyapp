@@ -45,8 +45,11 @@ export function VehicleSelector({
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 300);
 
+  // Ensure vehicles is always an array to prevent iteration errors
+  const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
+  
   // Filter vehicles based on exclusions and search
-  const filteredVehicles = (vehicles || [])
+  const filteredVehicles = safeVehicles
     .filter(vehicle => !excludeVehicleIds.includes(vehicle.id))
     .filter(vehicle => {
       if (!debouncedSearch) return true;
@@ -59,7 +62,7 @@ export function VehicleSelector({
       );
     });
 
-  const selectedVehicle = (vehicles || []).find(v => v.id === selectedVehicleId);
+  const selectedVehicle = safeVehicles.find(v => v.id === selectedVehicleId);
 
   const getVehicleDisplayText = (vehicle: Vehicle) => 
     `${vehicle.plate_number} - ${vehicle.make} ${vehicle.model} (${vehicle.year})`;
@@ -87,7 +90,7 @@ export function VehicleSelector({
           />
           <CommandEmpty>لم يتم العثور على مركبات مطابقة</CommandEmpty>
           <CommandGroup className="max-h-[200px] overflow-auto">
-            {filteredVehicles.map((vehicle) => (
+            {filteredVehicles && filteredVehicles.length > 0 ? filteredVehicles.map((vehicle) => (
               <CommandItem
                 key={vehicle.id}
                 value={vehicle.id}
@@ -111,7 +114,7 @@ export function VehicleSelector({
                   )}
                 />
               </CommandItem>
-            ))}
+            )) : null}
           </CommandGroup>
         </Command>
       </PopoverContent>
