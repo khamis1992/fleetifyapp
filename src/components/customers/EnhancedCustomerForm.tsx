@@ -752,8 +752,6 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                         {/* اختيار حساب موجود */}
                         {accountIntegrationType === 'select_existing' && (
                           <div className="space-y-6">
-                            <h3 className="text-xl font-semibold text-right">اختيار الحساب المحاسبي</h3>
-                            
 
                             <FormField
                               control={form.control}
