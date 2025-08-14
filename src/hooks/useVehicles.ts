@@ -89,6 +89,9 @@ export interface Vehicle {
   salvage_value?: number
   // Minimum pricing fields
   minimum_rental_price?: number
+  minimum_daily_rate?: number
+  minimum_weekly_rate?: number
+  minimum_monthly_rate?: number
   enforce_minimum_price?: boolean
 }
 

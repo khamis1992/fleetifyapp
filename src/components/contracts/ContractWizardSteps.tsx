@@ -30,6 +30,7 @@ import { ContractSignatureSection } from './ContractSignatureSection'
 import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
+import { getRateTypeLabel } from '@/hooks/useContractCalculations'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -568,7 +569,7 @@ export const FinancialStep: React.FC = () => {
 
   // Get vehicle for calculations
   const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)
-  const selectedVehicle = availableVehicles?.find(v => v.id === data.vehicle_id) || null
+  const selectedVehicle = availableVehicles?.find((v): v is any => v.id === data.vehicle_id) || null
   const calculations = useContractCalculations(selectedVehicle, data.contract_type, data.rental_days, isCustomAmount ? data.contract_amount : undefined)
 
   // Auto-update financial calculations with proper tracking
@@ -683,12 +684,28 @@ export const FinancialStep: React.FC = () => {
                       <p className="text-amber-700">
                         لن يتم تحديث المبلغ تلقائياً عند تغيير المركبة أو فترة الإيجار
                       </p>
-                      {selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 
-                       'minimum_rental_price' in selectedVehicle && selectedVehicle.minimum_rental_price && (
+                      {selectedVehicle && selectedVehicle.enforce_minimum_price && (
                         <div className="pt-2 border-t border-amber-200">
-                          <p className="text-amber-800 font-medium">
-                            الحد الأدنى المطلوب: <span className="font-bold">{formatCurrency(selectedVehicle.minimum_rental_price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
-                          </p>
+                          {calculations && calculations.bestRateType && (
+                            <p className="text-amber-800 font-medium">
+                              الحد الأدنى المطلوب ({getRateTypeLabel(calculations.bestRateType)}): 
+                              <span className="font-bold mr-1">
+                                {(() => {
+                                  switch (calculations.bestRateType) {
+                                    case 'daily':
+                                      return formatCurrency(selectedVehicle.minimum_daily_rate || selectedVehicle.minimum_rental_price || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+                                    case 'weekly':
+                                      return formatCurrency(selectedVehicle.minimum_weekly_rate || selectedVehicle.minimum_rental_price || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+                                    case 'monthly':
+                                    case 'mixed':
+                                      return formatCurrency(selectedVehicle.minimum_monthly_rate || selectedVehicle.minimum_rental_price || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+                                    default:
+                                      return formatCurrency(selectedVehicle.minimum_rental_price || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+                                  }
+                                })()}
+                              </span>
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -706,11 +723,23 @@ export const FinancialStep: React.FC = () => {
               id="contract_amount"
               type="number"
               step="0.001"
-              min={selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle ? selectedVehicle.minimum_rental_price : 0}
+              min={selectedVehicle && selectedVehicle.enforce_minimum_price ? (
+                calculations && calculations.bestRateType ? (
+                  calculations.bestRateType === 'daily' ? selectedVehicle.minimum_daily_rate || selectedVehicle.minimum_rental_price || 0 :
+                  calculations.bestRateType === 'weekly' ? selectedVehicle.minimum_weekly_rate || selectedVehicle.minimum_rental_price || 0 :
+                  selectedVehicle.minimum_monthly_rate || selectedVehicle.minimum_rental_price || 0
+                ) : selectedVehicle.minimum_rental_price || 0
+              ) : 0}
               value={data.contract_amount}
               onChange={(e) => {
                 const value = parseFloat(e.target.value) || 0
-                const minPrice = selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle ? selectedVehicle.minimum_rental_price : 0
+                const minPrice = selectedVehicle && selectedVehicle.enforce_minimum_price ? (
+                  calculations && calculations.bestRateType ? (
+                    calculations.bestRateType === 'daily' ? selectedVehicle.minimum_daily_rate || selectedVehicle.minimum_rental_price || 0 :
+                    calculations.bestRateType === 'weekly' ? selectedVehicle.minimum_weekly_rate || selectedVehicle.minimum_rental_price || 0 :
+                    selectedVehicle.minimum_monthly_rate || selectedVehicle.minimum_rental_price || 0
+                  ) : selectedVehicle.minimum_rental_price || 0
+                ) : 0
                 
                 if (minPrice && value > 0 && value < minPrice) {
                   // Show warning but allow the value temporarily
@@ -719,13 +748,32 @@ export const FinancialStep: React.FC = () => {
                   updateData({ contract_amount: value })
                 }
               }}
-              className={selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle && data.contract_amount < selectedVehicle.minimum_rental_price ? 'border-red-500' : ''}
+              className={(() => {
+                const minPrice = selectedVehicle && selectedVehicle.enforce_minimum_price ? (
+                  calculations && calculations.bestRateType ? (
+                    calculations.bestRateType === 'daily' ? selectedVehicle.minimum_daily_rate || selectedVehicle.minimum_rental_price || 0 :
+                    calculations.bestRateType === 'weekly' ? selectedVehicle.minimum_weekly_rate || selectedVehicle.minimum_rental_price || 0 :
+                    selectedVehicle.minimum_monthly_rate || selectedVehicle.minimum_rental_price || 0
+                  ) : selectedVehicle.minimum_rental_price || 0
+                ) : 0
+                return minPrice && data.contract_amount < minPrice ? 'border-red-500' : ''
+              })()}
             />
-            {selectedVehicle && 'enforce_minimum_price' in selectedVehicle && selectedVehicle.enforce_minimum_price && 'minimum_rental_price' in selectedVehicle && data.contract_amount > 0 && data.contract_amount < selectedVehicle.minimum_rental_price && (
-              <p className="text-sm text-red-600 font-medium">
-                ⚠️ المبلغ أقل من الحد الأدنى المطلوب ({formatCurrency(selectedVehicle.minimum_rental_price, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})
-              </p>
-            )}
+            {(() => {
+              if (!selectedVehicle || !selectedVehicle.enforce_minimum_price || data.contract_amount <= 0) return null
+              
+              const minPrice = calculations && calculations.bestRateType ? (
+                calculations.bestRateType === 'daily' ? selectedVehicle.minimum_daily_rate || selectedVehicle.minimum_rental_price || 0 :
+                calculations.bestRateType === 'weekly' ? selectedVehicle.minimum_weekly_rate || selectedVehicle.minimum_rental_price || 0 :
+                selectedVehicle.minimum_monthly_rate || selectedVehicle.minimum_rental_price || 0
+              ) : selectedVehicle.minimum_rental_price || 0
+              
+              return minPrice && data.contract_amount < minPrice ? (
+                <p className="text-sm text-red-600 font-medium">
+                  ⚠️ المبلغ أقل من الحد الأدنى المطلوب ({formatCurrency(minPrice, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})
+                </p>
+              ) : null
+            })()}
           </div>
           
           {/* Only show monthly amount for contracts 30+ days */}

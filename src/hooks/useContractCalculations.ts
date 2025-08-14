@@ -35,6 +35,9 @@ export interface Vehicle {
   monthly_rate?: number
   deposit_amount?: number
   minimum_rental_price?: number
+  minimum_daily_rate?: number
+  minimum_weekly_rate?: number
+  minimum_monthly_rate?: number
   enforce_minimum_price?: boolean
 }
 
@@ -156,13 +159,28 @@ export const useContractCalculations = (
     const mixedDetails = bestRate.type === 'mixed' ? mixedTotal : null
 
     // Apply minimum rental price enforcement if enabled
-    const minimumPrice = Number(vehicle.minimum_rental_price) || 0
+    const getMinimumForRateType = (rateType: string) => {
+      switch (rateType) {
+        case 'daily':
+          return Number(vehicle.minimum_daily_rate) || Number(vehicle.minimum_rental_price) || 0
+        case 'weekly':
+          return Number(vehicle.minimum_weekly_rate) || Number(vehicle.minimum_rental_price) || 0
+        case 'monthly':
+        case 'mixed':
+          return Number(vehicle.minimum_monthly_rate) || Number(vehicle.minimum_rental_price) || 0
+        default:
+          return Number(vehicle.minimum_rental_price) || 0
+      }
+    }
+    
+    const minimumPrice = getMinimumForRateType(bestRate.type)
     const enforceMinimum = vehicle.enforce_minimum_price || false
     const originalTotal = bestRate.total
     let minimumPriceEnforced = false
     
     if (enforceMinimum && minimumPrice > 0 && bestRate.total < minimumPrice) {
       console.log("⚠️ [CONTRACT_CALCULATIONS] Enforcing minimum price:", {
+        rateType: bestRate.type,
         originalTotal: bestRate.total,
         minimumPrice,
         difference: minimumPrice - bestRate.total
@@ -222,7 +240,7 @@ export const useContractCalculations = (
   return calculations
 }
 
-function getRateTypeLabel(rateType: 'daily' | 'weekly' | 'monthly' | 'mixed'): string {
+export function getRateTypeLabel(rateType: 'daily' | 'weekly' | 'monthly' | 'mixed'): string {
   switch (rateType) {
     case 'daily': return 'يومي'
     case 'weekly': return 'أسبوعي'

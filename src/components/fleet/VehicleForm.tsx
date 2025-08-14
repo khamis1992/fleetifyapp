@@ -97,6 +97,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       monthly_rate: "",
       deposit_amount: "",
       minimum_rental_price: "",
+      minimum_daily_rate: "",
+      minimum_weekly_rate: "",
+      minimum_monthly_rate: "",
       enforce_minimum_price: false,
       status: "available",
       
@@ -160,6 +163,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         monthly_rate: vehicle.monthly_rate?.toString() || "",
         deposit_amount: vehicle.deposit_amount?.toString() || "",
         minimum_rental_price: vehicle.minimum_rental_price?.toString() || "",
+        minimum_daily_rate: vehicle.minimum_daily_rate?.toString() || "",
+        minimum_weekly_rate: vehicle.minimum_weekly_rate?.toString() || "",
+        minimum_monthly_rate: vehicle.minimum_monthly_rate?.toString() || "",
         enforce_minimum_price: vehicle.enforce_minimum_price || false,
         status: vehicle.status || "available",
         notes: vehicle.notes || "",
@@ -1486,46 +1492,95 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
                 <Card>
                   <CardHeader className="text-right">
-                    <CardTitle className="text-right">إعدادات الحد الأدنى للسعر</CardTitle>
-                    <CardDescription className="text-right">تحديد الحد الأدنى لسعر الإيجار وإنفاذه</CardDescription>
+                    <CardTitle className="text-right">إعدادات الحد الأدنى للأسعار</CardTitle>
+                    <CardDescription className="text-right">تحديد الحد الأدنى للأسعار لكل فترة إيجار وإنفاذها</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-                    <FormField
-                      control={form.control}
-                      name="minimum_rental_price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>الحد الأدنى لسعر الإيجار (د.ك)</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <CardContent className="space-y-4" dir="rtl">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="minimum_daily_rate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الحد الأدنى للسعر اليومي (د.ك)</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="enforce_minimum_price"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">
-                              فرض الحد الأدنى للسعر
-                            </FormLabel>
-                            <div className="text-sm text-muted-foreground">
-                              منع إنشاء عقود بسعر أقل من الحد الأدنى المحدد
+                      <FormField
+                        control={form.control}
+                        name="minimum_weekly_rate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الحد الأدنى للسعر الأسبوعي (د.ك)</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="minimum_monthly_rate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الحد الأدنى للسعر الشهري (د.ك)</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="minimum_rental_price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الحد الأدنى العام (د.ك)</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            </FormControl>
+                            <div className="text-xs text-muted-foreground">
+                              يُستخدم في حالة عدم تحديد حد أدنى للفترة المحددة
                             </div>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="enforce_minimum_price"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                فرض الحد الأدنى للأسعار
+                              </FormLabel>
+                              <div className="text-sm text-muted-foreground">
+                                منع إنشاء عقود بسعر أقل من الحد الأدنى المحدد
+                              </div>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

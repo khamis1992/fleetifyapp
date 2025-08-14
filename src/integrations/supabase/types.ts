@@ -8725,7 +8725,10 @@ export type Database = {
           loan_amount: number | null
           location: string | null
           make: string
+          minimum_daily_rate: number | null
+          minimum_monthly_rate: number | null
           minimum_rental_price: number | null
+          minimum_weekly_rate: number | null
           model: string
           monthly_payment: number | null
           monthly_rate: number | null
@@ -8816,7 +8819,10 @@ export type Database = {
           loan_amount?: number | null
           location?: string | null
           make: string
+          minimum_daily_rate?: number | null
+          minimum_monthly_rate?: number | null
           minimum_rental_price?: number | null
+          minimum_weekly_rate?: number | null
           model: string
           monthly_payment?: number | null
           monthly_rate?: number | null
@@ -8907,7 +8913,10 @@ export type Database = {
           loan_amount?: number | null
           location?: string | null
           make?: string
+          minimum_daily_rate?: number | null
+          minimum_monthly_rate?: number | null
           minimum_rental_price?: number | null
+          minimum_weekly_rate?: number | null
           model?: string
           monthly_payment?: number | null
           monthly_rate?: number | null
