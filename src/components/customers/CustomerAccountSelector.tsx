@@ -170,7 +170,7 @@ export function CustomerAccountSelector({
     companyId: companyId
   });
 
-  // Enhanced filtering with comprehensive logging
+  // تشخيص المشكلة الحقيقية: إزالة فلترة is_available مؤقتاً لاختبار العرض
   const availableAccountsForSelection = React.useMemo(() => {
     if (!availableAccounts) return [];
     
@@ -179,26 +179,32 @@ export function CustomerAccountSelector({
       timestamp: new Date().toLocaleTimeString()
     });
     
+    // إظهار جميع الحسابات بدون فلترة is_available للتشخيص
     const filtered = availableAccounts.filter(acc => {
-      const isAvailable = Boolean(acc.is_available);
+      // التأكد من أن الحساب لديه معرف صحيح
+      const hasValidId = Boolean(acc.id);
+      const hasValidCode = Boolean(acc.account_code);
       
       // Special logging for account 1130201
       if (acc.account_code === '1130201') {
-        console.log('🎯 [FILTERING] Account 1130201 filter check:', {
+        console.log('🎯 [FILTERING] Account 1130201 complete analysis:', {
           account: acc,
-          isAvailable: isAvailable,
-          willBeIncluded: isAvailable
+          hasValidId: hasValidId,
+          hasValidCode: hasValidCode,
+          isAvailable: acc.is_available,
+          willBeIncluded: hasValidId && hasValidCode
         });
       }
       
-      return isAvailable;
+      // إرجاع جميع الحسابات التي لديها معرف وكود صحيح (بدون فلترة is_available)
+      return hasValidId && hasValidCode;
     });
     
-    console.log('🔍 [FILTERING] Filter results:', {
+    console.log('🔍 [FILTERING] Filter results (no is_available filter):', {
       originalCount: availableAccounts.length,
       filteredCount: filtered.length,
       account1130201Found: !!filtered.find(acc => acc.account_code === '1130201'),
-      filteredCodes: filtered.map(acc => acc.account_code).slice(0, 10)
+      allCodes: filtered.map(acc => ({ code: acc.account_code, available: acc.is_available }))
     });
     
     return filtered;
@@ -347,15 +353,15 @@ export function CustomerAccountSelector({
           </div>
         )}
 
-        {/* رسالة عدم وجود حسابات متاحة */}
+        {/* رسالة عدم وجود حسابات متاحة - محدثة */}
         {mode === 'edit' && availableAccountsForSelection.length === 0 && availableAccounts && availableAccounts.length > 0 && (
-          <Alert>
-            <InfoIcon className="h-4 w-4" />
-            <AlertDescription>
-              لا توجد حسابات محاسبية متاحة للربط. جميع الحسابات المناسبة للعملاء مستخدمة حالياً.
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <InfoIcon className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <strong>تشخيص المشكلة:</strong> يوجد {availableAccounts.length} حساب في البيانات الأصلية لكن لا يظهر أي منها في القائمة.
               <br />
-              <span className="text-sm text-muted-foreground mt-1 block">
-                إجمالي الحسابات الموجودة: {availableAccounts.length} - جميعها مرتبطة بعملاء آخرين
+              <span className="text-sm mt-1 block">
+                هذا يشير إلى مشكلة في العرض أو الفلترة، وليس في البيانات نفسها.
               </span>
             </AlertDescription>
           </Alert>
@@ -383,16 +389,16 @@ export function CustomerAccountSelector({
             <p><strong>مفتاح التحديث:</strong> {refreshKey}</p>
             <p><strong>نوع القائمة المنسدلة:</strong> {useNativeSelect ? 'HTML Select' : 'Radix Select'}</p>
             <p><strong>إجمالي الحسابات المتاحة:</strong> {availableAccounts?.length || 0}</p>
-            <p><strong>الحسابات بعد فلترة is_available:</strong> {availableAccountsForSelection.length}</p>
-            <p><strong>الحساب المطلوب (1130201):</strong> {
+            <p><strong>الحسابات بعد الفلترة الأساسية:</strong> {availableAccountsForSelection.length}</p>
+            <p className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded"><strong>الحساب المطلوب (1130201):</strong> {
               availableAccounts?.find(acc => acc.account_code === '1130201') ? 
-              `موجود - متاح: ${availableAccounts.find(acc => acc.account_code === '1130201')?.is_available}` : 
-              'غير موجود'
+              `✅ موجود في البيانات - is_available: ${availableAccounts.find(acc => acc.account_code === '1130201')?.is_available}` : 
+              '❌ غير موجود في البيانات'
             }</p>
-            <p><strong>الحساب بعد الفلترة:</strong> {
+            <p className="bg-green-100 dark:bg-green-900 px-2 py-1 rounded"><strong>الحساب في القائمة النهائية:</strong> {
               availableAccountsForSelection.find(acc => acc.account_code === '1130201') ? 
-              'موجود في القائمة المنسدلة' : 
-              'مفقود من القائمة المنسدلة'
+              '✅ موجود في القائمة المنسدلة' : 
+              '❌ مفقود من القائمة المنسدلة - هذه هي المشكلة!'
             }</p>
             <details className="mt-2">
               <summary className="cursor-pointer font-medium">عرض جميع أكواد الحسابات المفلترة</summary>
