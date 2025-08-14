@@ -119,30 +119,6 @@ export function CustomerAccountFormSelector({
         )}
       </div>
 
-      {/* Debug Panel */}
-      {showDebug && (
-        <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2 text-xs">
-              <p><strong>الحسابات الإجمالية:</strong> {availableAccounts?.length || 0}</p>
-              <p><strong>الحسابات المتاحة:</strong> {filteredAccounts.length}</p>
-              <p><strong>الحساب 1130201:</strong> {account1130201 ? '✅ موجود ومتاح' : '❌ غير موجود'}</p>
-              {account1130201 && (
-                <div className="mt-2 p-2 bg-white rounded border">
-                  <pre className="text-xs">{JSON.stringify(account1130201, null, 2)}</pre>
-                </div>
-              )}
-              <div className="mt-2">
-                <strong>كل أكواد الحسابات المتاحة:</strong>
-                <div className="text-xs text-gray-600">
-                  {filteredAccounts.map(acc => acc.account_code).join(', ') || 'لا توجد'}
-                </div>
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Main HTML Select Component - Guaranteed to work */}
       <div className="space-y-2">
