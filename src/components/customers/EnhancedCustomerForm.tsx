@@ -754,12 +754,6 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                           <div className="space-y-6">
                             <h3 className="text-xl font-semibold text-right">اختيار الحساب المحاسبي</h3>
                             
-                            <Alert className="text-right" dir="rtl">
-                              <AlertCircle className="h-4 w-4" />
-                              <AlertDescription>
-                                اختر حساب محاسبي موجود من قائمة الحسابات المتاحة. يمكنك البحث بكود الحساب أو اسم الحساب.
-                              </AlertDescription>
-                            </Alert>
 
                             <FormField
                               control={form.control}
