@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCreateCustomerWithAccount } from "@/hooks/useCreateCustomerWithAccount";
 import { useUpdateCustomer } from "@/hooks/useEnhancedCustomers";
 import { Customer } from "@/types/customer";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Building, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Users, Building, CreditCard, AlertCircle, Plus, Edit } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomerAccountFormSelector } from "./CustomerAccountSelector";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
@@ -62,12 +64,14 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface EnhancedCustomerFormProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   customer?: Customer | null;
   onSuccess?: (customer: any) => void;
   onCancel?: () => void;
 }
 
-export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: EnhancedCustomerFormProps) => {
+export const EnhancedCustomerForm = ({ open = false, onOpenChange, customer, onSuccess, onCancel }: EnhancedCustomerFormProps) => {
   const [showFinancialSection, setShowFinancialSection] = useState(false);
   const { companyId } = useUnifiedCompanyAccess();
   const createMutation = useCreateCustomerWithAccount();
@@ -132,7 +136,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
         },
         {
           onSuccess: (updatedCustomer) => {
-            onSuccess?.(updatedCustomer);
+            handleSuccess(updatedCustomer);
           },
         }
       );
@@ -169,7 +173,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
       
       createMutation.mutate(createData, {
         onSuccess: (result) => {
-          onSuccess?.(result.customer);
+          handleSuccess(result.customer);
         },
       });
     }
@@ -177,9 +181,38 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
+  const handleCancel = () => {
+    form.reset();
+    onCancel?.();
+    onOpenChange?.(false);
+  };
+
+  const handleSuccess = (result: any) => {
+    form.reset();
+    onSuccess?.(result);
+    onOpenChange?.(false);
+  };
+
+  // Update the onSuccess callbacks in mutations
+  useEffect(() => {
+    if (createMutation.isSuccess || updateMutation.isSuccess) {
+      form.reset();
+    }
+  }, [createMutation.isSuccess, updateMutation.isSuccess, form]);
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {customer ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+            {customer ? 'تعديل العميل' : 'إضافة عميل جديد'}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <ScrollArea className="max-h-[75vh] pr-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Customer Type Selection */}
         <Card>
           <CardHeader>
@@ -506,7 +539,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
 
         {/* Form Actions */}
         <div className="flex gap-4 justify-end">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             إلغاء
           </Button>
           <Button type="submit" disabled={isLoading}>
@@ -538,7 +571,10 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
             </CardContent>
           </Card>
         )}
-      </form>
-    </Form>
-  );
-};
+              </form>
+            </Form>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    );
+  };
