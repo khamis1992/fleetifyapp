@@ -1293,20 +1293,26 @@ export const useDeleteCostCenter = () => {
 // Fixed Assets Hooks
 export const useFixedAssets = () => {
   const { user } = useAuth()
+  const companyId = user?.profile?.company_id
   
   return useQuery({
-    queryKey: ["fixedAssets", user?.profile?.company_id],
+    queryKey: ["fixedAssets", companyId],
     queryFn: async () => {
+      if (!companyId) {
+        throw new Error("Company ID is required")
+      }
+
       const { data, error } = await supabase
         .from("fixed_assets")
         .select("*")
+        .eq("company_id", companyId)
         .eq("is_active", true)
         .order("asset_code")
       
       if (error) throw error
       return data as FixedAsset[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
 }
 

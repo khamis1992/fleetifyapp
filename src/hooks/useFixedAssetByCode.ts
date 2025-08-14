@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { useCurrentCompanyId } from "./useUnifiedCompanyAccess"
+import { useAuth } from "@/contexts/AuthContext"
 
 export interface FixedAssetForVehicle {
   id: string
@@ -18,7 +18,8 @@ export interface FixedAssetForVehicle {
 }
 
 export const useFixedAssetByCode = (assetCode?: string) => {
-  const companyId = useCurrentCompanyId()
+  const { user } = useAuth()
+  const companyId = user?.profile?.company_id
 
   return useQuery({
     queryKey: ['fixed-asset-by-code', assetCode, companyId],
