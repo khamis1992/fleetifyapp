@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +11,9 @@ import {
   Unlink, 
   InfoIcon,
   Building,
-  DollarSign
+  DollarSign,
+  RefreshCw,
+  Eye
 } from "lucide-react";
 import { 
   useAvailableCustomerAccounts,
@@ -21,6 +23,8 @@ import {
   useCompanyAccountSettings
 } from "@/hooks/useCustomerAccounts";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface CustomerAccountSelectorProps {
   customerId: string;
@@ -37,12 +41,34 @@ export function CustomerAccountSelector({
 }: CustomerAccountSelectorProps) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [isLinking, setIsLinking] = useState(false);
+  const [useNativeSelect, setUseNativeSelect] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const queryClient = useQueryClient();
 
   const { data: availableAccounts, isLoading: loadingAvailable } = useAvailableCustomerAccounts(companyId);
   const { data: linkedAccounts, isLoading: loadingLinked } = useCustomerLinkedAccounts(customerId);
   const { data: companySettings } = useCompanyAccountSettings(companyId);
   const linkAccountMutation = useLinkAccountToCustomer();
   const unlinkAccountMutation = useUnlinkAccountFromCustomer();
+
+  // Force re-render when data changes
+  useEffect(() => {
+    if (availableAccounts) {
+      setLastUpdate(new Date());
+      console.log('🔄 [CustomerAccountSelector] Data updated at:', new Date().toLocaleTimeString());
+    }
+  }, [availableAccounts]);
+
+  // Force refresh function
+  const handleForceRefresh = () => {
+    console.log('🔄 Force refreshing data...');
+    queryClient.invalidateQueries({ queryKey: ['available-customer-accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['customer-linked-accounts'] });
+    setRefreshKey(prev => prev + 1);
+    setLastUpdate(new Date());
+    toast.success('تم تحديث البيانات');
+  };
   const { formatCurrency } = useCurrencyFormatter();
 
   const handleLinkAccount = async () => {
@@ -187,28 +213,76 @@ export function CustomerAccountSelector({
           </div>
         )}
 
+        {/* أزرار التشخيص والتحكم */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Button 
+            onClick={handleForceRefresh} 
+            size="sm" 
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-3 w-3" />
+            تحديث البيانات
+          </Button>
+          <Button 
+            onClick={() => setUseNativeSelect(!useNativeSelect)} 
+            size="sm" 
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <Eye className="h-3 w-3" />
+            {useNativeSelect ? 'عرض Radix' : 'عرض HTML'}
+          </Button>
+        </div>
+
         {/* إضافة حساب جديد */}
         {mode === 'edit' && availableAccountsForSelection.length > 0 && (
           <div className="space-y-3 pt-4 border-t">
             <h4 className="font-medium text-sm">ربط حساب جديد:</h4>
             <div className="flex gap-2">
-              <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="اختر حساب محاسبي..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableAccountsForSelection.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{account.account_name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {account.account_code} | {account.parent_account_name}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {useNativeSelect ? (
+                /* Native HTML Select for testing */
+                <div className="flex-1 space-y-2">
+                  <label className="text-sm font-medium">اختر حساب محاسبي جديد (HTML Select)</label>
+                  <select 
+                    value={selectedAccountId} 
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    disabled={isLinking}
+                    className="w-full p-2 border rounded-md bg-background"
+                  >
+                    <option value="">اختر حساب محاسبي جديد</option>
+                    {availableAccountsForSelection.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.account_code} - {account.account_name}
+                        {account.account_name_ar && ` (${account.account_name_ar})`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                /* Original Radix Select */
+                <Select 
+                  key={`select-${refreshKey}`}
+                  value={selectedAccountId} 
+                  onValueChange={setSelectedAccountId}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="اختر حساب محاسبي..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableAccountsForSelection.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{account.account_name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {account.account_code} | {account.parent_account_name}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 onClick={handleLinkAccount}
                 disabled={!selectedAccountId || isLinking || linkAccountMutation.isPending}
@@ -253,10 +327,13 @@ export function CustomerAccountSelector({
           </Alert>
         )}
 
-        {/* Debug Panel */}
+        {/* Enhanced Debug Panel */}
         <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-blue-200">
-          <h4 className="font-bold text-sm mb-2 text-blue-700">🔍 معلومات التشخيص</h4>
+          <h4 className="font-bold text-sm mb-2 text-blue-700">🔍 معلومات التشخيص المتقدمة</h4>
           <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
+            <p><strong>آخر تحديث:</strong> {lastUpdate.toLocaleTimeString()}</p>
+            <p><strong>مفتاح التحديث:</strong> {refreshKey}</p>
+            <p><strong>نوع القائمة المنسدلة:</strong> {useNativeSelect ? 'HTML Select' : 'Radix Select'}</p>
             <p><strong>إجمالي الحسابات المتاحة:</strong> {availableAccounts?.length || 0}</p>
             <p><strong>الحسابات بعد فلترة is_available:</strong> {availableAccountsForSelection.length}</p>
             <p><strong>الحساب المطلوب (1130201):</strong> {
@@ -275,6 +352,45 @@ export function CustomerAccountSelector({
                 {availableAccountsForSelection.map(acc => acc.account_code).join(', ') || 'لا توجد حسابات'}
               </div>
             </details>
+            <details className="mt-2">
+              <summary className="cursor-pointer font-medium">عرض البيانات الخام</summary>
+              <div className="mt-1 p-2 bg-white dark:bg-slate-700 rounded text-xs">
+                <pre className="whitespace-pre-wrap text-xs">
+                  {JSON.stringify({
+                    availableAccounts: availableAccounts?.slice(0, 3), // First 3 for brevity
+                    targetAccount: availableAccounts?.find(acc => acc.account_code === '1130201'),
+                    filteredCount: availableAccountsForSelection.length
+                  }, null, 2)}
+                </pre>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        {/* Test Component - Direct Account Display */}
+        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200">
+          <h4 className="font-bold text-sm mb-2 text-yellow-700 dark:text-yellow-300">🧪 اختبار العرض المباشر</h4>
+          <div className="space-y-2">
+            {availableAccountsForSelection.slice(0, 5).map((account) => (
+              <div 
+                key={account.id}
+                className={`p-2 rounded border text-xs ${
+                  account.account_code === '1130201' 
+                    ? 'bg-green-100 border-green-300 dark:bg-green-900/20' 
+                    : 'bg-white border-gray-200 dark:bg-slate-700'
+                }`}
+              >
+                <strong>{account.account_code}</strong> - {account.account_name}
+                {account.account_code === '1130201' && (
+                  <Badge className="ml-2 bg-green-500">المطلوب!</Badge>
+                )}
+              </div>
+            ))}
+            {availableAccountsForSelection.length > 5 && (
+              <p className="text-xs text-muted-foreground">
+                ... و {availableAccountsForSelection.length - 5} حساب آخر
+              </p>
+            )}
           </div>
         </div>
 
