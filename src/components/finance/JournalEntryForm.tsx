@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, Trash2, Calculator } from 'lucide-react'
-import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
+import { UnifiedAccountSelector } from '@/components/ui/unified-account-selector'
 import { useCreateJournalEntry } from '@/hooks/useFinance'
 import { useCostCenters } from '@/hooks/useFinance'
 import { useQuery } from '@tanstack/react-query'
@@ -98,7 +98,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     }
   ])
 
-  const { data: accounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
+  
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createJournalEntry = useCreateJournalEntry()
 
@@ -161,8 +161,8 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         
         // If account_id changes, update account_name
         if (field === 'account_id') {
-          const selectedAccount = accounts?.find(acc => acc.id === value)
-          updatedLine.account_name = selectedAccount?.account_name || ''
+          // Account name will be handled by the unified selector
+          updatedLine.account_name = ''
         }
         
          // If cost_center_id changes, update cost_center_name
@@ -294,7 +294,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     }
   }
 
-  if (accountsLoading || costCentersLoading || assetsLoading || employeesLoading) {
+  if (costCentersLoading || assetsLoading || employeesLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl">
@@ -391,77 +391,15 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                   {lines.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell>
-                        <Popover 
-                          open={accountSearchOpen[line.id] || false}
-                          onOpenChange={(open) => setAccountSearchOpen({...accountSearchOpen, [line.id]: open})}
-                        >
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={accountSearchOpen[line.id] || false}
-                              className="w-full justify-between h-auto min-h-[2.5rem] text-right"
-                            >
-                              {line.account_id ? (
-                                <div className="flex flex-col items-start">
-                                  <span className="font-medium">
-                                    {accounts?.find((account) => account.id === line.account_id)?.account_name_ar || 
-                                     accounts?.find((account) => account.id === line.account_id)?.account_name || 'اختر الحساب'}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {accounts?.find((account) => account.id === line.account_id)?.account_code}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span>اختر الحساب...</span>
-                              )}
-                              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="البحث في الحسابات..." />
-                              <CommandList>
-                                <CommandEmpty>لا توجد حسابات مطابقة للبحث.</CommandEmpty>
-                                <CommandGroup>
-                                  {((accounts || [])
-                                    .filter(account => {
-                                      // عرض المستويات الخامس والسادس فقط
-                                      const accountCode = account.account_code || '';
-                                      const level = accountCode.length;
-                                      return level >= 5 && level <= 6;
-                                    }) || [])
-                                    .map((account) => (
-                                      <CommandItem
-                                        key={account.id}
-                                        value={account.id}
-                                        keywords={[account.account_code, account.account_name, account.account_name_ar || '']}
-                                        onSelect={() => {
-                                          updateLine(line.id, 'account_id', account.id)
-                                          setAccountSearchOpen({...accountSearchOpen, [line.id]: false})
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            line.account_id === account.id ? "opacity-100" : "opacity-0"
-                                          )}
-                                        />
-                                        <div className="flex flex-col flex-1">
-                                          <span className="font-medium">
-                                            {account.account_name_ar || account.account_name}
-                                          </span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {account.account_code}
-                                          </span>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <UnifiedAccountSelector
+                          value={line.account_id}
+                          onValueChange={(value) => updateLine(line.id, 'account_id', value)}
+                          placeholder="اختر الحساب..."
+                          filterLevel="level_5_6"
+                          showAccountType={true}
+                          showParentAccount={true}
+                          allowSearch={true}
+                        />
                       </TableCell>
                       <TableCell>
                         <Popover 
