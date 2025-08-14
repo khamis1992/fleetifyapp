@@ -19,6 +19,7 @@ import { CustomerFormData } from "@/types/customer";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { useAvailableCustomerAccounts, useCompanyAccountSettings } from "@/hooks/useCustomerAccounts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
@@ -596,10 +597,68 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {accountSettings?.enable_account_selection ? (
-                    <div className="space-y-4">
-                       {/* خيار اختيار الحساب المحاسبي */}
-                       {mode === 'create' && availableAccounts && availableAccounts.length > 0 && (
+                   {/* Debug Panel - Show only in development */}
+                   {process.env.NODE_ENV === 'development' && (
+                     <Card className="border-orange-200 bg-orange-50">
+                       <CardHeader>
+                         <CardTitle className="text-orange-800 text-sm">🔍 Debug Info - Account 1130201</CardTitle>
+                       </CardHeader>
+                       <CardContent className="space-y-2">
+                         <div className="text-xs space-y-1">
+                           <div>شركة حالية: {currentCompany?.name || 'غير محدد'}</div>
+                           <div>معرف الشركة: {effectiveCompanyId || 'غير محدد'}</div>
+                           <div>عدد الحسابات المتاحة: {availableAccounts?.length || 0}</div>
+                           <div>تفعيل اختيار الحساب: {accountSettings?.enable_account_selection ? 'نعم' : 'لا'}</div>
+                           <div>هل الحساب 1130201 موجود: {availableAccounts?.find(acc => acc.account_code === '1130201') ? '✅ نعم' : '❌ لا'}</div>
+                           {availableAccounts?.find(acc => acc.account_code === '1130201') && (
+                             <div className="bg-green-100 p-2 rounded text-green-800">
+                               <div>الحساب موجود:</div>
+                               <div>الكود: {availableAccounts.find(acc => acc.account_code === '1130201')?.account_code}</div>
+                               <div>الاسم: {availableAccounts.find(acc => acc.account_code === '1130201')?.account_name}</div>
+                               <div>متاح: {availableAccounts.find(acc => acc.account_code === '1130201')?.is_available ? 'نعم' : 'لا'}</div>
+                             </div>
+                           )}
+                         </div>
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           onClick={async () => {
+                             try {
+                               console.log('🧪 Testing RPC function directly...');
+                               const { data, error } = await supabase.rpc('get_available_customer_accounts', {
+                                 company_id_param: effectiveCompanyId
+                               });
+                               console.log('🧪 Direct RPC result:', data);
+                               if (error) console.error('🧪 Direct RPC error:', error);
+                               
+                               const account1130201 = data?.find(acc => acc.account_code === '1130201');
+                               toast({
+                                 title: "نتيجة الاختبار المباشر",
+                                 description: account1130201 
+                                   ? `تم العثور على الحساب: ${account1130201.account_name}`
+                                   : "لم يتم العثور على الحساب 1130201",
+                                 variant: account1130201 ? "default" : "destructive"
+                               });
+                             } catch (error) {
+                               console.error('🧪 Test failed:', error);
+                               toast({
+                                 title: "فشل الاختبار",
+                                 description: "حدث خطأ أثناء اختبار RPC function",
+                                 variant: "destructive"
+                               });
+                             }
+                           }}
+                         >
+                           اختبار RPC مباشرة
+                         </Button>
+                       </CardContent>
+                     </Card>
+                   )}
+
+                   {accountSettings?.enable_account_selection ? (
+                     <div className="space-y-4">
+                        {/* خيار اختيار الحساب المحاسبي */}
+                        {mode === 'create' && availableAccounts && availableAccounts.length > 0 && (
                          <div className="space-y-2">
                            <Label>اختيار حساب محاسبي مخصص (اختياري)</Label>
                            <Popover open={accountSearchOpen} onOpenChange={setAccountSearchOpen}>

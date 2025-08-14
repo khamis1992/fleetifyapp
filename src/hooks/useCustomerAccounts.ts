@@ -50,9 +50,21 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
 
       console.log('[AVAILABLE_CUSTOMER_ACCOUNTS] Fetched accounts:', data?.length || 0, 'accounts for company:', effectiveCompanyId);
       
+      // Enhanced logging for account 1130201
+      const account1130201 = data?.find(acc => acc.account_code === '1130201');
+      if (account1130201) {
+        console.log('🎯 Found account 1130201:', account1130201);
+      } else {
+        console.log('❌ Account 1130201 NOT found in fetched data');
+      }
+      
       return data as AvailableCustomerAccount[];
     },
     enabled: !!effectiveCompanyId,
+    // Debug settings to force fresh data
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
 };
 
