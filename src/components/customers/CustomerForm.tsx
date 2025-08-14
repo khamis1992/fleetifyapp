@@ -599,6 +599,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode }: CustomerFor
                         type="date"
                         {...register('national_id_expiry')} 
                         dir="ltr"
+                        placeholder="mm/dd/yyyy"
                       />
                     </div>
                   </div>
