@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 
 export interface Vehicle {
   id: string;
@@ -46,17 +47,35 @@ export function VehicleSelector({
   isLoading = false,
   error = null,
 }: VehicleSelectorProps) {
+  const currentCompanyId = useCurrentCompanyId();
+  // إضافة تصفية إضافية للمركبات حسب الشركة الحالية للأمان
+  const companyFilteredVehicles = vehicles?.filter(vehicle => {
+    // التحقق من أن المركبة تنتمي للشركة الحالية
+    const vehicleCompanyId = (vehicle as any)?.company_id;
+    if (vehicleCompanyId && currentCompanyId && vehicleCompanyId !== currentCompanyId) {
+      console.warn('⚠️ [VEHICLE_SELECTOR] مركبة من شركة مختلفة تم تصفيتها:', {
+        vehicleId: vehicle.id,
+        plateNumber: vehicle.plate_number,
+        vehicleCompanyId,
+        currentCompanyId
+      });
+      return false;
+    }
+    return true;
+  }) || [];
+
   console.log('🔄 VehicleSelector تم تهيئته مع:', {
-    vehiclesCount: vehicles?.length || 0,
+    originalVehiclesCount: vehicles?.length || 0,
+    companyFilteredCount: companyFilteredVehicles.length,
+    currentCompanyId,
     selectedVehicleId,
     excludeCount: excludeVehicleIds?.length || 0,
     isLoading,
     error,
     // إضافة تفاصيل المركبات للتحقق من الشركة
-    sampleVehicles: vehicles?.slice(0, 3)?.map(v => ({ 
+    sampleVehicles: companyFilteredVehicles?.slice(0, 3)?.map(v => ({ 
       id: v.id, 
       plate_number: v.plate_number,
-      // إضافة company_id إذا كان متوفراً  
       company_id: (v as any)?.company_id 
     })) || []
   });
@@ -71,20 +90,20 @@ export function VehicleSelector({
       try {
         console.log('🔍 معالجة بيانات المركبات...');
         
-        // Handle null/undefined vehicles
-        if (!vehicles) {
-          console.warn('⚠️ vehicles prop is null/undefined');
+        // Handle null/undefined vehicles (استخدام المركبات المصفاة حسب الشركة)
+        if (!companyFilteredVehicles) {
+          console.warn('⚠️ companyFilteredVehicles is null/undefined');
           return [];
         }
 
         // Handle non-array vehicles  
-        if (!Array.isArray(vehicles)) {
-          console.warn('⚠️ vehicles prop is not an array:', typeof vehicles);
+        if (!Array.isArray(companyFilteredVehicles)) {
+          console.warn('⚠️ companyFilteredVehicles is not an array:', typeof companyFilteredVehicles);
           return [];
         }
 
         // Filter and validate each vehicle
-        const validVehicles = vehicles.filter(vehicle => {
+        const validVehicles = companyFilteredVehicles.filter(vehicle => {
           // Null check
           if (!vehicle) {
             console.warn('⚠️ Found null/undefined vehicle');

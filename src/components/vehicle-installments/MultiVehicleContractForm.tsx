@@ -28,6 +28,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCreateVehicleInstallment } from "@/hooks/useVehicleInstallments";
+import { useVehicles } from "@/hooks/useVehicles";
+import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
+import { useCompanyContext } from "@/contexts/CompanyContext";
 import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
 import { toast } from "sonner";
 import { VehicleSelector } from "./VehicleSelector";
@@ -60,6 +63,8 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
   const [vehicleAllocations, setVehicleAllocations] = useState<VehicleAllocation[]>([]);
   const [distributionMode, setDistributionMode] = useState<'equal' | 'custom'>('equal');
   
+  const companyId = useCurrentCompanyId();
+  const { browsedCompany, isBrowsingMode } = useCompanyContext();
   const createInstallment = useCreateVehicleInstallment();
 
   const form = useForm<z.infer<typeof multiVehicleSchema>>({
@@ -77,75 +82,15 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
     },
   });
 
-  // تم إدخال اسم شركة التاجر نصيًا، لا حاجة لجلب قائمة التجار
+  // استخدام hook المركبات المحدث مع دعم تصفح الشركات
+  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useVehicles();
 
-  // Fetch available vehicles - ENHANCED with comprehensive error handling
-  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
-    queryKey: ['available-vehicles', user?.id],
-    queryFn: async () => {
-      try {
-        console.log('🔄 بدء جلب المركبات المتاحة...');
-        
-        if (!user?.id) {
-          console.warn('⚠️ لا يوجد معرف مستخدم لجلب المركبات');
-          return [];
-        }
-
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('❌ خطأ في جلب بيانات ملف التعريف:', profileError);
-          throw new Error('تعذر الوصول لبيانات الشركة');
-        }
-
-        if (!profile?.company_id) {
-          console.warn('⚠️ لا يوجد معرف شركة في ملف التعريف');
-          return [];
-        }
-
-        console.log('🏢 معرف الشركة الحالي:', profile.company_id);
-
-        const { data, error } = await supabase
-          .from('vehicles')
-          .select('id, plate_number, make, model, year')
-          .eq('company_id', profile.company_id)
-          .eq('is_active', true)
-          .order('plate_number', { ascending: true });
-
-        if (error) {
-          console.error('❌ خطأ في جلب المركبات:', error);
-          throw new Error('تعذر تحميل قائمة المركبات');
-        }
-
-        // Enhanced data validation
-        const validVehicles = (data || []).filter(vehicle => {
-          const isValid = vehicle && 
-                         typeof vehicle.id === 'string' && 
-                         vehicle.id.length > 0 &&
-                         typeof vehicle.plate_number === 'string' &&
-                         vehicle.plate_number.length > 0;
-          
-          if (!isValid) {
-            console.warn('⚠️ مركبة غير صالحة تم تجاهلها:', vehicle);
-          }
-          return isValid;
-        });
-
-        console.log(`✅ تم جلب ${validVehicles.length} مركبة صالحة بنجاح`);
-        return validVehicles;
-      } catch (error) {
-        console.error('💥 خطأ شامل في جلب المركبات:', error);
-        throw error;
-      }
-    },
-    enabled: !!user?.id,
-    retry: 2,
-    retryDelay: 1000,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  // تسجيل معلومات الشركة الحالية للتشخيص
+  console.log('🏢 [MULTI_VEHICLE_FORM] معلومات الشركة:', {
+    companyId,
+    isBrowsingMode,
+    browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+    vehiclesCount: vehicles?.length || 0
   });
 
   const addVehicle = () => {
@@ -329,13 +274,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
     // تحديد/إنشاء التاجر (شركة) تلقائياً بناءً على الاسم المُدخل
     let vendorId: string | null = null;
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user!.id)
-        .single();
-
-      if (!profile?.company_id) {
+      if (!companyId) {
         toast.error("تعذر تحديد الشركة");
         return;
       }
@@ -345,7 +284,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
       const { data: existing, error: searchError } = await supabase
         .from('customers')
         .select('id, customer_type, company_name')
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
         .ilike('company_name', companyName)
         .maybeSingle();
 
@@ -358,8 +297,8 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
       } else {
         const { data: created, error: insertError } = await supabase
           .from('customers')
-.insert({
-            company_id: profile.company_id,
+          .insert({
+            company_id: companyId,
             customer_type: 'corporate',
             company_name: companyName,
             created_by: user!.id,
@@ -421,6 +360,18 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Company Information */}
+            {isBrowsingMode && browsedCompany && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-primary flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    تصفح شركة: {browsedCompany.name}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            )}
+
             {/* Basic Information */}
             <Card>
               <CardHeader>
