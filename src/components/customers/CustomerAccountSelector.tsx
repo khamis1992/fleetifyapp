@@ -51,11 +51,21 @@ export function CustomerAccountFormSelector({
 }: CustomerAccountFormSelectorProps) {
   const { data: availableAccounts, isLoading, error, refetch } = useAvailableCustomerAccounts(companyId);
   const [forceRender, setForceRender] = React.useState(0);
-  const [showDebug, setShowDebug] = React.useState(false);
+  const [showDebug, setShowDebug] = React.useState(true); // Enable debug by default
+
+  console.log('🔧 CustomerAccountFormSelector RENDER:', {
+    companyId,
+    accountsCount: availableAccounts?.length || 0,
+    isLoading,
+    error: error?.message,
+    value,
+    forceRender
+  });
 
   // Force re-render when data changes
   React.useEffect(() => {
     if (availableAccounts) {
+      console.log('📦 Accounts data received:', availableAccounts);
       setForceRender(prev => prev + 1);
     }
   }, [availableAccounts]);

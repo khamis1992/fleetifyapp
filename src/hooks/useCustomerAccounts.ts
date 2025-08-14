@@ -26,10 +26,21 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
   const { companyId } = useUnifiedCompanyAccess();
   const effectiveCompanyId = targetCompanyId || companyId;
 
+  console.log('🔥 HOOK CALLED:', {
+    targetCompanyId,
+    contextCompanyId: companyId,
+    effectiveCompanyId
+  });
+
   return useQuery({
-    queryKey: ["available-customer-accounts-final", effectiveCompanyId, Date.now()],
+    queryKey: ["available-customer-accounts-FINAL-FIX", effectiveCompanyId],
     queryFn: async () => {
-      if (!effectiveCompanyId) return [];
+      if (!effectiveCompanyId) {
+        console.warn('⚠️ No effective company ID');
+        return [];
+      }
+
+      console.log('🚀 CALLING RPC with company:', effectiveCompanyId);
 
       const { data, error } = await supabase
         .rpc("get_available_customer_accounts_v2", {

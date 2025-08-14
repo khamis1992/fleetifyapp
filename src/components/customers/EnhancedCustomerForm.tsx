@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Building, CreditCard, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomerAccountFormSelector } from "./CustomerAccountSelector";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 const formSchema = z.object({
   customer_type: z.enum(['individual', 'corporate']),
@@ -68,6 +69,7 @@ interface EnhancedCustomerFormProps {
 
 export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: EnhancedCustomerFormProps) => {
   const [showFinancialSection, setShowFinancialSection] = useState(false);
+  const { companyId } = useUnifiedCompanyAccess();
   const createMutation = useCreateCustomerWithAccount();
   const updateMutation = useUpdateCustomer();
 
@@ -392,6 +394,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel }: Enhanced
                             value={field.value}
                             onValueChange={field.onChange}
                             placeholder="اختر الحساب المحاسبي"
+                            companyId={companyId}
                           />
                         </FormControl>
                         <FormMessage />
