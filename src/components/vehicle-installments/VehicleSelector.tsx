@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronsUpDown, AlertCircle, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +8,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -19,16 +20,16 @@ import { useDebounce } from "@/hooks/useDebounce";
 export interface Vehicle {
   id: string;
   plate_number: string;
-  make: string;
-  model: string;
-  year: number;
+  make?: string;
+  model?: string;
+  year?: number;
 }
 
 interface VehicleSelectorProps {
-  vehicles: Vehicle[];
+  vehicles?: Vehicle[] | null;
   selectedVehicleId?: string;
-  excludeVehicleIds?: string[];
-  onSelect: (vehicleId: string) => void;
+  excludeVehicleIds?: string[] | null;
+  onSelect?: (vehicleId: string) => void;
   placeholder?: string;
   disabled?: boolean;
   isLoading?: boolean;
@@ -37,7 +38,7 @@ interface VehicleSelectorProps {
 
 export function VehicleSelector({
   vehicles = [],
-  selectedVehicleId,
+  selectedVehicleId = "",
   excludeVehicleIds = [],
   onSelect,
   placeholder = "اختر المركبة...",
@@ -45,125 +46,189 @@ export function VehicleSelector({
   isLoading = false,
   error = null,
 }: VehicleSelectorProps) {
+  console.log('🔄 VehicleSelector تم تهيئته مع:', {
+    vehiclesCount: vehicles?.length || 0,
+    selectedVehicleId,
+    excludeCount: excludeVehicleIds?.length || 0,
+    isLoading,
+    error
+  });
+
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 300);
 
   try {
-    // Safe vehicle data processing - CRITICAL FIX for undefined iteration
+    // ULTRA-SAFE data processing - ABSOLUTE PROTECTION against undefined iteration
     const safeVehicles = (() => {
       try {
-        console.log('🔍 VehicleSelector: معالجة بيانات المركبات...');
+        console.log('🔍 معالجة بيانات المركبات...');
         
+        // Handle null/undefined vehicles
         if (!vehicles) {
-          console.warn('⚠️ VehicleSelector: vehicles prop is null/undefined');
+          console.warn('⚠️ vehicles prop is null/undefined');
           return [];
         }
+
+        // Handle non-array vehicles  
         if (!Array.isArray(vehicles)) {
-          console.warn('⚠️ VehicleSelector: vehicles prop is not an array:', typeof vehicles);
+          console.warn('⚠️ vehicles prop is not an array:', typeof vehicles);
           return [];
         }
-        
+
+        // Filter and validate each vehicle
         const validVehicles = vehicles.filter(vehicle => {
+          // Null check
           if (!vehicle) {
-            console.warn('⚠️ VehicleSelector: null/undefined vehicle in array');
+            console.warn('⚠️ Found null/undefined vehicle');
             return false;
           }
-          if (!vehicle.id || typeof vehicle.id !== 'string') {
-            console.warn('⚠️ VehicleSelector: invalid vehicle.id:', vehicle.id);
+          
+          // Type check
+          if (typeof vehicle !== 'object') {
+            console.warn('⚠️ Vehicle is not an object:', typeof vehicle);
             return false;
           }
-          if (!vehicle.plate_number || typeof vehicle.plate_number !== 'string') {
-            console.warn('⚠️ VehicleSelector: invalid vehicle.plate_number:', vehicle.plate_number);
+          
+          // Required fields check
+          if (!vehicle.id || typeof vehicle.id !== 'string' || vehicle.id.length === 0) {
+            console.warn('⚠️ Vehicle missing valid id:', vehicle.id);
             return false;
           }
+          
+          if (!vehicle.plate_number || typeof vehicle.plate_number !== 'string' || vehicle.plate_number.length === 0) {
+            console.warn('⚠️ Vehicle missing valid plate_number:', vehicle.plate_number);
+            return false;
+          }
+          
           return true;
-        }) || [];
-        
-        console.log(`✅ VehicleSelector: تمت معالجة ${validVehicles.length} من ${vehicles.length} مركبة بنجاح`);
+        });
+
+        console.log(`✅ تمت معالجة ${validVehicles.length} من ${vehicles.length} مركبة بنجاح`);
         return validVehicles;
       } catch (error) {
-        console.error('💥 VehicleSelector: Error processing vehicles:', error);
+        console.error('💥 خطأ في معالجة المركبات:', error);
         return [];
       }
     })();
 
-    // Safe exclusion list processing - CRITICAL FIX for undefined iteration
+    // ULTRA-SAFE exclusion processing
     const safeExcludeIds = (() => {
       try {
-        console.log('🔍 VehicleSelector: معالجة قائمة الاستثناءات...');
+        console.log('🔍 معالجة قائمة الاستثناءات...');
         
+        // Handle null/undefined excludeVehicleIds
         if (!excludeVehicleIds) {
-          console.log('✅ VehicleSelector: لا توجد مركبات مستثناة');
+          console.log('✅ لا توجد استثناءات');
           return [];
         }
+
+        // Handle non-array excludeVehicleIds
         if (!Array.isArray(excludeVehicleIds)) {
-          console.warn('⚠️ VehicleSelector: excludeVehicleIds is not an array:', typeof excludeVehicleIds);
+          console.warn('⚠️ excludeVehicleIds is not an array:', typeof excludeVehicleIds);
           return [];
         }
-        
-        const validExcludeIds = (excludeVehicleIds || []).filter(id => {
+
+        // Filter and validate each exclude ID
+        const validExcludeIds = excludeVehicleIds.filter(id => {
           if (!id) return false;
           if (typeof id !== 'string') {
-            console.warn('⚠️ VehicleSelector: invalid exclude ID type:', typeof id, id);
+            console.warn('⚠️ Invalid exclude ID type:', typeof id);
+            return false;
+          }
+          if (id.length === 0) {
+            console.warn('⚠️ Empty exclude ID');
             return false;
           }
           return true;
         });
-        
-        console.log(`✅ VehicleSelector: تمت معالجة ${validExcludeIds.length} معرف استثناء`);
+
+        console.log(`✅ تمت معالجة ${validExcludeIds.length} معرف استثناء`);
         return validExcludeIds;
       } catch (error) {
-        console.error('💥 VehicleSelector: Error processing exclude IDs:', error);
+        console.error('💥 خطأ في معالجة الاستثناءات:', error);
         return [];
       }
     })();
-    
-    // Filter vehicles based on exclusions and search - CRITICAL FIX
+
+    // ULTRA-SAFE filtering with comprehensive protection
     const filteredVehicles = (() => {
       try {
-        console.log('🔍 VehicleSelector: تطبيق الفلاتر على المركبات...');
+        console.log('🔍 تطبيق الفلاتر...');
         
-        let result = (safeVehicles || []);
-        
-        // Apply exclusion filter
-        if ((safeExcludeIds || []).length > 0) {
-          result = result.filter(vehicle => {
-            if (!vehicle?.id) return false;
-            const isExcluded = (safeExcludeIds || []).includes(vehicle.id);
-            return !isExcluded;
-          });
-          console.log(`✅ VehicleSelector: تم استثناء ${safeExcludeIds.length} مركبة، المتبقي: ${result.length}`);
+        // Ensure we have a valid array to work with
+        if (!Array.isArray(safeVehicles)) {
+          console.error('❌ safeVehicles is not an array:', safeVehicles);
+          return [];
         }
-        
+
+        let result = [...safeVehicles]; // Create a safe copy
+
+        // Apply exclusion filter
+        if (Array.isArray(safeExcludeIds) && safeExcludeIds.length > 0) {
+          result = result.filter(vehicle => {
+            if (!vehicle || !vehicle.id) return false;
+            return !safeExcludeIds.includes(vehicle.id);
+          });
+          console.log(`✅ تم استثناء ${safeExcludeIds.length} مركبة، المتبقي: ${result.length}`);
+        }
+
         // Apply search filter
-        if (debouncedSearch && debouncedSearch.trim().length > 0) {
+        if (debouncedSearch && typeof debouncedSearch === 'string' && debouncedSearch.trim().length > 0) {
           const searchLower = debouncedSearch.toLowerCase().trim();
           result = result.filter(vehicle => {
             if (!vehicle) return false;
+            
+            const plateNumber = (vehicle.plate_number || '').toString().toLowerCase();
+            const make = (vehicle.make || '').toString().toLowerCase();
+            const model = (vehicle.model || '').toString().toLowerCase();
+            const year = (vehicle.year || '').toString().toLowerCase();
+            
             return (
-              (vehicle?.plate_number || '').toLowerCase().includes(searchLower) ||
-              (vehicle?.make || '').toLowerCase().includes(searchLower) ||
-              (vehicle?.model || '').toLowerCase().includes(searchLower) ||
-              (vehicle?.year || '').toString().includes(searchLower)
+              plateNumber.includes(searchLower) ||
+              make.includes(searchLower) ||
+              model.includes(searchLower) ||
+              year.includes(searchLower)
             );
           });
-          console.log(`✅ VehicleSelector: تطبيق البحث "${searchLower}"، النتائج: ${result.length}`);
+          console.log(`✅ تطبيق البحث "${searchLower}"، النتائج: ${result.length}`);
         }
-        
-        return result || [];
+
+        // Final safety check - ensure result is always an array
+        return Array.isArray(result) ? result : [];
       } catch (error) {
-        console.error('💥 VehicleSelector: Error filtering vehicles:', error);
+        console.error('💥 خطأ في الفلترة:', error);
         return [];
       }
     })();
 
-    const selectedVehicle = safeVehicles.find(v => v?.id === selectedVehicleId);
+    // Safe selected vehicle finding
+    const selectedVehicle = (() => {
+      try {
+        if (!selectedVehicleId || typeof selectedVehicleId !== 'string') return null;
+        return safeVehicles.find(v => v && v.id === selectedVehicleId) || null;
+      } catch (error) {
+        console.error('💥 خطأ في العثور على المركبة المحددة:', error);
+        return null;
+      }
+    })();
 
-    const getVehicleDisplayText = (vehicle: Vehicle) => 
-      `${vehicle.plate_number || 'غير محدد'} - ${vehicle.make || ''} ${vehicle.model || ''} (${vehicle.year || ''})`;
+    // Safe display text function
+    const getVehicleDisplayText = (vehicle: Vehicle) => {
+      try {
+        if (!vehicle) return 'غير محدد';
+        const plateNumber = vehicle.plate_number || 'غير محدد';
+        const make = vehicle.make || '';
+        const model = vehicle.model || '';
+        const year = vehicle.year || '';
+        return `${plateNumber} - ${make} ${model} (${year})`.trim();
+      } catch (error) {
+        console.error('💥 خطأ في تكوين نص العرض:', error);
+        return 'خطأ في البيانات';
+      }
+    };
 
-    // Show loading state
+    // Loading state
     if (isLoading) {
       return (
         <Button
@@ -180,8 +245,8 @@ export function VehicleSelector({
       );
     }
 
-    // Show error state
-    if (error) {
+    // Error state  
+    if (error && typeof error === 'string' && error.length > 0) {
       return (
         <Button
           variant="outline"
@@ -197,6 +262,7 @@ export function VehicleSelector({
       );
     }
 
+    // Main component render with ABSOLUTE SAFETY
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -205,78 +271,187 @@ export function VehicleSelector({
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
-            disabled={disabled || safeVehicles.length === 0}
+            disabled={disabled || (Array.isArray(safeVehicles) && safeVehicles.length === 0)}
           >
-            {selectedVehicle ? getVehicleDisplayText(selectedVehicle) : 
-             safeVehicles.length === 0 ? "لا توجد مركبات متاحة" : placeholder}
+            {selectedVehicle ? 
+              getVehicleDisplayText(selectedVehicle) : 
+              (Array.isArray(safeVehicles) && safeVehicles.length === 0) ? 
+                "لا توجد مركبات متاحة" : 
+                placeholder
+            }
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder="البحث بواسطة رقم اللوحة، الماركة، أو الموديل..." 
-              value={searchValue}
-              onValueChange={setSearchValue}
-            />
-            <CommandEmpty>
-              {safeVehicles.length === 0 
-                ? "لا توجد مركبات متاحة في النظام" 
-                : "لم يتم العثور على مركبات مطابقة لما تبحث عنه"
+          {/* CRITICAL: Only render Command when absolutely safe */}
+          {(() => {
+            try {
+              // Triple-check all data before Command render
+              const isDataSafe = (
+                Array.isArray(filteredVehicles) &&
+                typeof searchValue === 'string' &&
+                Array.isArray(safeVehicles) &&
+                Array.isArray(safeExcludeIds)
+              );
+
+              if (!isDataSafe) {
+                console.error('❌ البيانات غير آمنة للعرض');
+                return (
+                  <div className="p-4 text-center text-red-600">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                    <p>خطأ في تحضير البيانات</p>
+                  </div>
+                );
               }
-            </CommandEmpty>
-            <CommandGroup className="max-h-[200px] overflow-auto">
-              {(filteredVehicles || []).length > 0 ? 
-                (filteredVehicles || []).map((vehicle) => {
-                  // Final safety check for each vehicle item
-                  if (!vehicle || !vehicle.id || typeof vehicle.id !== 'string') {
-                    console.warn('مركبة غير صالحة في القائمة المفلترة:', vehicle);
-                    return null;
-                  }
-                  
-                  return (
-                    <CommandItem
-                      key={vehicle.id}
-                      value={vehicle.id}
-                      onSelect={() => {
+
+              return (
+                <Command 
+                  shouldFilter={false}
+                  value={selectedVehicleId || ''}
+                  onValueChange={() => {}} // Controlled externally
+                >
+                  <CommandInput 
+                    placeholder="البحث بواسطة رقم اللوحة، الماركة، أو الموديل..." 
+                    value={searchValue || ''}
+                    onValueChange={(value) => {
+                      try {
+                        console.log('🔍 تغيير نص البحث:', value);
+                        setSearchValue(typeof value === 'string' ? value : '');
+                      } catch (error) {
+                        console.error('💥 خطأ في تحديث البحث:', error);
+                      }
+                    }}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {Array.isArray(safeVehicles) && safeVehicles.length === 0 
+                        ? "لا توجد مركبات متاحة في النظام" 
+                        : "لم يتم العثور على مركبات مطابقة"
+                      }
+                    </CommandEmpty>
+                    <CommandGroup className="max-h-[200px] overflow-auto">
+                      {(() => {
                         try {
-                          if (typeof onSelect === 'function') {
-                            onSelect(vehicle.id);
-                            setOpen(false);
-                            setSearchValue("");
-                          } else {
-                            console.error('onSelect is not a function');
+                          console.log('🔄 عرض قائمة المركبات:', filteredVehicles.length);
+                          
+                          // Final safety check
+                          if (!Array.isArray(filteredVehicles)) {
+                            console.error('❌ filteredVehicles ليس مصفوفة');
+                            return (
+                              <div className="p-4 text-center text-red-600">
+                                خطأ في بيانات المركبات
+                              </div>
+                            );
                           }
+
+                          if (filteredVehicles.length === 0) {
+                            return (
+                              <div className="p-4 text-center text-muted-foreground">
+                                لا توجد مركبات متاحة للاختيار
+                              </div>
+                            );
+                          }
+
+                          // Map vehicles with ultimate safety
+                          const vehicleItems = filteredVehicles
+                            .map((vehicle, index) => {
+                              // Vehicle safety check
+                              if (!vehicle || typeof vehicle !== 'object') {
+                                console.warn('⚠️ مركبة غير صالحة:', vehicle);
+                                return null;
+                              }
+                              
+                              if (!vehicle.id || typeof vehicle.id !== 'string' || vehicle.id.length === 0) {
+                                console.warn('⚠️ مركبة بدون معرف صالح:', vehicle);
+                                return null;
+                              }
+
+                              try {
+                                return (
+                                  <CommandItem
+                                    key={`vehicle-${vehicle.id}-${index}`}
+                                    value={vehicle.id}
+                                    onSelect={(currentValue) => {
+                                      try {
+                                        console.log('🎯 تم اختيار المركبة:', currentValue);
+                                        
+                                        if (!currentValue || typeof currentValue !== 'string') {
+                                          console.error('❌ قيمة غير صالحة:', currentValue);
+                                          return;
+                                        }
+
+                                        if (typeof onSelect === 'function') {
+                                          onSelect(currentValue);
+                                          setOpen(false);
+                                          setSearchValue("");
+                                          console.log('✅ تم تحديد المركبة بنجاح');
+                                        } else {
+                                          console.error('❌ onSelect ليس دالة');
+                                        }
+                                      } catch (error) {
+                                        console.error('💥 خطأ في معالجة الاختيار:', error);
+                                      }
+                                    }}
+                                    className="flex items-center justify-between cursor-pointer"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">
+                                        {vehicle.plate_number || 'غير محدد'}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {[vehicle.make, vehicle.model, vehicle.year]
+                                          .filter(Boolean)
+                                          .join(' ') || 'معلومات غير متاحة'}
+                                      </span>
+                                    </div>
+                                    <Check
+                                      className={cn(
+                                        "ml-2 h-4 w-4",
+                                        selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                );
+                              } catch (error) {
+                                console.error('💥 خطأ في إنشاء عنصر المركبة:', error);
+                                return null;
+                              }
+                            })
+                            .filter(Boolean); // Remove null items
+
+                          return vehicleItems.length > 0 ? vehicleItems : (
+                            <div className="p-4 text-center text-muted-foreground">
+                              حدث خطأ في عرض المركبات
+                            </div>
+                          );
                         } catch (error) {
-                          console.error('خطأ في اختيار المركبة:', error);
+                          console.error('💥 خطأ شامل في عرض المركبات:', error);
+                          return (
+                            <div className="p-4 text-center text-red-600">
+                              حدث خطأ في عرض قائمة المركبات
+                            </div>
+                          );
                         }
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">{vehicle.plate_number || 'غير محدد'}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {vehicle.make || ''} {vehicle.model || ''} ({vehicle.year || ''})
-                        </span>
-                      </div>
-                      <Check
-                        className={cn(
-                          "ml-2 h-4 w-4",
-                          selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  );
-                }).filter(Boolean) 
-              : null}
-            </CommandGroup>
-          </Command>
+                      })()}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              );
+            } catch (error) {
+              console.error('💥 خطأ شامل في Command:', error);
+              return (
+                <div className="p-4 text-center text-red-600">
+                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                  <p>حدث خطأ في واجهة الاختيار</p>
+                </div>
+              );
+            }
+          })()}
         </PopoverContent>
       </Popover>
     );
-  
   } catch (error) {
-    console.error('خطأ في عرض VehicleSelector:', error);
+    console.error('💥 خطأ شامل في VehicleSelector:', error);
     return (
       <Button
         variant="outline"
@@ -285,7 +460,7 @@ export function VehicleSelector({
       >
         <span className="flex items-center">
           <AlertCircle className="ml-2 h-4 w-4" />
-          خطأ في تحميل منتقي المركبات
+          خطأ في منتقي المركبات
         </span>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
