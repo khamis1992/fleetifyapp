@@ -736,9 +736,6 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                   </SelectContent>
                                 </Select>
                                 <div className="text-sm text-muted-foreground space-y-1 text-right">
-                                  {accountIntegrationType === 'select_existing' && (
-                                    <div className="text-blue-600 font-medium">✅ اختر حساب محاسبي موجود من القائمة (سيظهر الحساب 1130201)</div>
-                                  )}
                                   {accountIntegrationType === 'create_new' && (
                                     <div className="text-amber-600">سيتم إنشاء حساب محاسبي جديد خاص بالعميل</div>
                                   )}
