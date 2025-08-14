@@ -424,14 +424,14 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                               <CommandList>
                                 <CommandEmpty>لا توجد حسابات مطابقة للبحث.</CommandEmpty>
                                 <CommandGroup>
-                                  {accounts
-                                    ?.filter(account => {
+                                  {((accounts || [])
+                                    .filter(account => {
                                       // عرض المستويات الخامس والسادس فقط
                                       const accountCode = account.account_code || '';
                                       const level = accountCode.length;
                                       return level >= 5 && level <= 6;
-                                    })
-                                    ?.map((account) => (
+                                    }) || [])
+                                    .map((account) => (
                                       <CommandItem
                                         key={account.id}
                                         value={account.id}
@@ -502,7 +502,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                                     />
                                     لا يوجد
                                   </CommandItem>
-                                  {costCenters?.map((costCenter) => (
+                                  {(costCenters || []).map((costCenter) => (
                                     <CommandItem
                                       key={costCenter.id}
                                       keywords={[costCenter.center_code, costCenter.center_name_ar || '', costCenter.center_name || '']}
@@ -555,7 +555,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                                   >
                                     لا يوجد
                                   </CommandItem>
-                                  {assets?.map((asset) => (
+                                  {(assets || []).map((asset) => (
                                     <CommandItem
                                       key={asset.id}
                                       keywords={[asset.asset_code, asset.asset_name, asset.asset_name_ar || '']}
@@ -588,7 +588,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">لا يوجد</SelectItem>
-                            {employees?.map((employee) => (
+                            {(employees || []).map((employee) => (
                               <SelectItem key={employee.id} value={employee.id}>
                                 {employee.employee_number} - {employee.first_name} {employee.last_name}
                               </SelectItem>
