@@ -398,79 +398,33 @@ export function CustomerAccountSelector({
               ربط حساب جديد
             </h4>
 
-            {availableAccountsList.length > 0 ? (
-              <div className="flex gap-2">
+            {availableAccountsList.length > 0 ? <div className="flex gap-2">
                 <div className="flex-1">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between h-auto min-h-[40px] px-3 py-2"
-                      >
-                        <div className="flex items-center gap-2 text-right flex-1">
-                          {selectedAccountId ? (
-                            (() => {
-                              const selectedAccount = availableAccountsList.find(acc => acc.id === selectedAccountId);
-                              return selectedAccount ? (
-                                <div className="text-right">
-                                  <div className="font-medium">{selectedAccount.account_code} - {selectedAccount.account_name}</div>
-                                  {selectedAccount.account_name_ar && (
-                                    <div className="text-xs text-muted-foreground">{selectedAccount.account_name_ar}</div>
-                                  )}
+                  {useNativeSelect ? <select value={selectedAccountId} onChange={e => setSelectedAccountId(e.target.value)} className="w-full p-2 border rounded-md">
+                      <option value="">اختر حساب محاسبي...</option>
+                      {availableAccountsList.map(account => <option key={account.id} value={account.id}>
+                          {account.account_code} - {account.account_name}
+                        </option>)}
+                    </select> : <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر حساب محاسبي..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableAccountsList.map(account => <SelectItem key={account.id} value={account.id}>
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              <div>
+                                <div className="font-medium">
+                                  {account.account_code} - {account.account_name}
                                 </div>
-                              ) : <span className="text-muted-foreground">اختر حساب محاسبي...</span>;
-                            })()
-                          ) : (
-                            <span className="text-muted-foreground">اختر حساب محاسبي...</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {availableAccountsList.length}
-                          </Badge>
-                          <div className="w-4 h-4 opacity-50" />
-                        </div>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 z-50 bg-background border shadow-lg" align="start">
-                      <div className="p-3 space-y-3">
-                        {/* Accounts list */}
-                        <div className="max-h-60 overflow-auto space-y-1">
-                          {availableAccountsList.map((account) => (
-                            <div
-                              key={account.id}
-                              className={`p-3 rounded-lg cursor-pointer transition-colors border ${
-                                selectedAccountId === account.id 
-                                  ? 'bg-primary/10 border-primary' 
-                                  : 'hover:bg-muted/50 border-transparent'
-                              }`}
-                              onClick={() => setSelectedAccountId(account.id)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="text-right">
-                                  <div className="font-medium text-sm">
-                                    {account.account_name}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {account.account_code} | Current Assets
-                                  </div>
-                                  {account.account_name_ar && (
-                                    <div className="text-xs text-muted-foreground">
-                                      {account.account_name_ar}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                </div>
+                                {account.account_name_ar && <div className="text-xs text-muted-foreground">
+                                    {account.account_name_ar}
+                                  </div>}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>}
                 </div>
                 <Button onClick={handleLinkAccount} disabled={!selectedAccountId || isLinking} className="shrink-0">
                   {isLinking ? <>
@@ -481,15 +435,12 @@ export function CustomerAccountSelector({
                       ربط
                     </>}
                 </Button>
-              </div>
-            ) : (
-              <Alert>
+              </div> : <Alert>
                 <InfoIcon className="h-4 w-4" />
                 <AlertDescription>
                   لا توجد حسابات متاحة للربط. جميع الحسابات المتاحة مربوطة بالفعل أو غير متاحة.
                 </AlertDescription>
-              </Alert>
-            )}
+              </Alert>}
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Button variant="link" size="sm" onClick={() => setUseNativeSelect(!useNativeSelect)} className="p-0 h-auto">
