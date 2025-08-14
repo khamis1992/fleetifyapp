@@ -33,6 +33,7 @@ interface ContractWizardData {
   // Signatures
   customer_signature?: string
   company_signature?: string
+  signature_enabled?: boolean
   
   // Validation & Approval (using underscore prefix to avoid DB conflicts)
   _validation_status?: 'pending' | 'validating' | 'valid' | 'invalid'
@@ -384,6 +385,18 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
             const fieldValue = data[field as keyof ContractWizardData]
             if (!fieldValue || (typeof fieldValue === 'number' && fieldValue <= 0)) {
               toast.error(`${name} مطلوب`)
+              return false
+            }
+          }
+          
+          // التحقق من التوقيعات إذا كانت مفعلة
+          if (data.signature_enabled !== false) { // Default to enabled if not specified
+            if (!data.customer_signature) {
+              toast.error('توقيع العميل مطلوب')
+              return false
+            }
+            if (!data.company_signature) {
+              toast.error('توقيع الشركة مطلوب')
               return false
             }
           }
