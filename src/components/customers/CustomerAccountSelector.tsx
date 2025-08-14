@@ -49,29 +49,98 @@ export function CustomerAccountFormSelector({
   disabled = false,
   companyId
 }: CustomerAccountFormSelectorProps) {
-  const { data: availableAccounts, isLoading } = useAvailableCustomerAccounts(companyId);
+  const { data: availableAccounts, isLoading, error, dataUpdatedAt } = useAvailableCustomerAccounts(companyId);
 
-  console.log('CustomerAccountFormSelector - Available accounts:', availableAccounts);
-  console.log('CustomerAccountFormSelector - Current value:', value);
+  console.log('🔍 [FORM_SELECTOR] Component rendered with:', {
+    companyId,
+    value,
+    timestamp: new Date().toLocaleTimeString(),
+    dataUpdatedAt
+  });
+
+  console.log('🔍 [FORM_SELECTOR] Query state:', {
+    isLoading,
+    error: error?.message,
+    accountsLength: availableAccounts?.length,
+    accounts: availableAccounts
+  });
+
+  // Special logging for account 1130201
+  if (availableAccounts && availableAccounts.length > 0) {
+    const account1130201 = availableAccounts.find(acc => acc.account_code === '1130201');
+    console.log('🎯 [FORM_SELECTOR] Account 1130201 status:', {
+      found: !!account1130201,
+      details: account1130201,
+      isAvailable: account1130201?.is_available
+    });
+  }
 
   if (isLoading) {
+    console.log('🔄 [FORM_SELECTOR] Showing loading state');
     return (
       <div className="flex items-center justify-center py-4">
         <LoadingSpinner />
+        <span className="mr-2 text-sm text-muted-foreground">جاري تحميل الحسابات...</span>
       </div>
     );
   }
 
-  if (!availableAccounts || availableAccounts.length === 0) {
+  if (error) {
+    console.error('❌ [FORM_SELECTOR] Error state:', error);
     return (
-      <Alert>
+      <Alert variant="destructive">
         <InfoIcon className="h-4 w-4" />
         <AlertDescription>
-          لا توجد حسابات محاسبية متاحة. يرجى التواصل مع المدير لإعداد الحسابات.
+          حدث خطأ في تحميل الحسابات: {error.message}
+          <Button 
+            variant="link" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+            className="p-0 ml-2 text-destructive underline"
+          >
+            إعادة تحميل
+          </Button>
         </AlertDescription>
       </Alert>
     );
   }
+
+  if (!availableAccounts || availableAccounts.length === 0) {
+    console.log('⚠️ [FORM_SELECTOR] No accounts available');
+    return (
+      <Alert>
+        <InfoIcon className="h-4 w-4" />
+        <AlertDescription>
+          <div className="space-y-2">
+            <p>لا توجد حسابات محاسبية متاحة.</p>
+            <p className="text-xs">
+              معرف الشركة: {companyId} | عدد الحسابات: {availableAccounts?.length || 0}
+            </p>
+            <Button 
+              variant="link" 
+              size="sm" 
+              onClick={() => {
+                console.log('🔄 [FORM_SELECTOR] Manual refresh triggered');
+                window.location.reload();
+              }}
+              className="p-0 text-blue-600 underline"
+            >
+              إعادة تحميل البيانات
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const filteredAccounts = availableAccounts.filter(account => account.is_available);
+  
+  console.log('🔍 [FORM_SELECTOR] Rendering select with:', {
+    totalAccounts: availableAccounts.length,
+    availableAccounts: filteredAccounts.length,
+    account1130201Available: filteredAccounts.some(acc => acc.account_code === '1130201'),
+    accountCodes: filteredAccounts.map(acc => acc.account_code)
+  });
 
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
@@ -79,39 +148,49 @@ export function CustomerAccountFormSelector({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {availableAccounts.map((account) => (
-          <SelectItem 
-            key={account.id} 
-            value={account.id}
-            disabled={!account.is_available}
-          >
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">
-                    {account.account_code} - {account.account_name}
-                  </span>
-                  {account.account_name_ar && (
-                    <span className="text-sm text-muted-foreground">
-                      {account.account_name_ar}
+        {filteredAccounts.map((account) => {
+          console.log('🔍 [FORM_SELECTOR] Rendering account item:', account.account_code);
+          return (
+            <SelectItem 
+              key={account.id} 
+              value={account.id}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">
+                      {account.account_code} - {account.account_name}
                     </span>
-                  )}
-                  {account.parent_account_name && (
-                    <span className="text-xs text-muted-foreground">
-                      تحت: {account.parent_account_name}
-                    </span>
-                  )}
+                    {account.account_name_ar && account.account_name_ar !== account.account_name && (
+                      <span className="text-sm text-muted-foreground">
+                        {account.account_name_ar}
+                      </span>
+                    )}
+                    {account.parent_account_name && (
+                      <span className="text-xs text-muted-foreground">
+                        تحت: {account.parent_account_name}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={account.is_available ? "default" : "secondary"}>
-                  {account.is_available ? "متاح" : "مستخدم"}
+                <Badge variant="default" className="bg-green-100 text-green-700">
+                  متاح
                 </Badge>
               </div>
+            </SelectItem>
+          );
+        })}
+        {filteredAccounts.length === 0 && (
+          <div className="py-6 text-center text-muted-foreground">
+            <div className="space-y-2">
+              <p>لا توجد حسابات متاحة للاختيار</p>
+              <p className="text-xs">
+                إجمالي الحسابات: {availableAccounts.length} | المتاحة: {filteredAccounts.length}
+              </p>
             </div>
-          </SelectItem>
-        ))}
+          </div>
+        )}
       </SelectContent>
     </Select>
   );
