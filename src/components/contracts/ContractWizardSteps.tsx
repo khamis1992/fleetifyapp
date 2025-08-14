@@ -608,9 +608,9 @@ export const FinancialStep: React.FC = () => {
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
-              حسابات تلقائية
+              حسابات تلقائية ذكية
             </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
               <div>
                 <span className="text-green-700">نوع التسعير:</span>
                 <p className="font-medium">{calculations.breakdown.rateType}</p>
@@ -636,6 +636,59 @@ export const FinancialStep: React.FC = () => {
                 </div>
               )}
             </div>
+            
+            {/* عرض تفاصيل التسعير المختلط المحسّن */}
+            {calculations.bestRateType === 'mixed' && calculations.breakdown.mixedDetails && (
+              <div className="border-t border-green-200 pt-3">
+                <h5 className="font-medium text-green-800 mb-2">تفاصيل التركيبة المحسّنة:</h5>
+                <div className="bg-white/50 rounded-lg p-3">
+                  <div className="text-sm space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-green-700">التركيبة:</span>
+                      <span className="font-semibold">{calculations.breakdown.mixedDetails.combination}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
+                      {calculations.breakdown.mixedDetails.months > 0 && (
+                        <div className="bg-blue-50 rounded p-2">
+                          <div className="text-xs text-blue-600">شهري</div>
+                          <div className="font-semibold text-blue-800">
+                            {calculations.breakdown.mixedDetails.months} شهر
+                          </div>
+                          <div className="text-xs text-blue-700">
+                            {formatCurrency(calculations.breakdown.mixedDetails.monthlyPortion, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {calculations.breakdown.mixedDetails.weeks > 0 && (
+                        <div className="bg-orange-50 rounded p-2">
+                          <div className="text-xs text-orange-600">أسبوعي</div>
+                          <div className="font-semibold text-orange-800">
+                            {calculations.breakdown.mixedDetails.weeks} أسبوع
+                          </div>
+                          <div className="text-xs text-orange-700">
+                            {formatCurrency(calculations.breakdown.mixedDetails.weeklyPortion, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {calculations.breakdown.mixedDetails.remainingDays > 0 && (
+                        <div className="bg-purple-50 rounded p-2">
+                          <div className="text-xs text-purple-600">يومي</div>
+                          <div className="font-semibold text-purple-800">
+                            {calculations.breakdown.mixedDetails.remainingDays} يوم
+                          </div>
+                          <div className="text-xs text-purple-700">
+                            {formatCurrency(calculations.breakdown.mixedDetails.dailyPortion, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

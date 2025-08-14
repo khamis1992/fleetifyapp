@@ -21,9 +21,12 @@ export interface ContractCalculation {
     isCustom?: boolean
     mixedDetails?: {
       months: number
+      weeks: number
       remainingDays: number
       monthlyPortion: number
+      weeklyPortion: number
       dailyPortion: number
+      combination: string
     }
   }
 }
@@ -119,15 +122,15 @@ export const useContractCalculations = (
     const weeklyTotal = weeklyRate * Math.ceil(rentalDays / 7)
     const monthlyTotal = monthlyRate * Math.ceil(rentalDays / 30)
     
-    // Calculate mixed pricing: months at monthly rate + remaining days at daily rate
-    const mixedTotal = calculateMixedPricing(rentalDays, monthlyRate, dailyRate)
+    // Calculate optimized mixed pricing with months, weeks, and days
+    const optimizedMixedTotal = calculateOptimizedMixedPricing(rentalDays, monthlyRate, weeklyRate, dailyRate)
 
     // Find the most cost-effective rate
     const rates = [
       { type: 'daily' as const, total: dailyTotal, available: dailyRate > 0 },
       { type: 'weekly' as const, total: weeklyTotal, available: weeklyRate > 0 },
       { type: 'monthly' as const, total: monthlyTotal, available: monthlyRate > 0 },
-      { type: 'mixed' as const, total: mixedTotal.total, available: monthlyRate > 0 && dailyRate > 0 }
+      { type: 'mixed' as const, total: optimizedMixedTotal.total, available: (monthlyRate > 0 || weeklyRate > 0) && dailyRate > 0 }
     ].filter(rate => rate.available && rate.total > 0)
 
     if (rates.length === 0) {
@@ -155,8 +158,8 @@ export const useContractCalculations = (
       current.total < best.total ? current : best
     )
     
-    // Get mixed pricing details for breakdown
-    const mixedDetails = bestRate.type === 'mixed' ? mixedTotal : null
+    // Get optimized mixed pricing details for breakdown
+    const mixedDetails = bestRate.type === 'mixed' ? optimizedMixedTotal : null
 
     // Apply minimum rental price enforcement if enabled
     const getMinimumForRateType = (rateType: string) => {
@@ -226,9 +229,12 @@ export const useContractCalculations = (
         originalAmount: minimumPriceEnforced ? originalTotal : undefined,
         mixedDetails: mixedDetails ? {
           months: mixedDetails.months,
+          weeks: mixedDetails.weeks,
           remainingDays: mixedDetails.remainingDays,
           monthlyPortion: mixedDetails.monthlyPortion,
-          dailyPortion: mixedDetails.dailyPortion
+          weeklyPortion: mixedDetails.weeklyPortion,
+          dailyPortion: mixedDetails.dailyPortion,
+          combination: mixedDetails.combination
         } : undefined
       }
     }
@@ -245,7 +251,7 @@ export function getRateTypeLabel(rateType: 'daily' | 'weekly' | 'monthly' | 'mix
     case 'daily': return 'يومي'
     case 'weekly': return 'أسبوعي'
     case 'monthly': return 'شهري'
-    case 'mixed': return 'مختلط (شهري + يومي)'
+    case 'mixed': return 'مختلط محسّن'
     default: return 'غير محدد'
   }
 }
@@ -276,24 +282,92 @@ function getPeriodAmount(rateType: 'daily' | 'weekly' | 'monthly' | 'mixed', tot
   }
 }
 
-function calculateMixedPricing(rentalDays: number, monthlyRate: number, dailyRate: number) {
-  if (rentalDays < 30 || monthlyRate <= 0 || dailyRate <= 0) {
-    return { total: 0, months: 0, remainingDays: 0, monthlyPortion: 0, dailyPortion: 0 }
+function calculateOptimizedMixedPricing(
+  rentalDays: number, 
+  monthlyRate: number, 
+  weeklyRate: number, 
+  dailyRate: number
+) {
+  if (rentalDays <= 0 || dailyRate <= 0) {
+    return { 
+      total: 0, 
+      months: 0, 
+      weeks: 0, 
+      remainingDays: 0, 
+      monthlyPortion: 0, 
+      weeklyPortion: 0, 
+      dailyPortion: 0,
+      combination: 'لا يوجد'
+    }
   }
   
-  const months = Math.floor(rentalDays / 30)
-  const remainingDays = rentalDays % 30
+  // Start with full monthly rates if available and beneficial
+  const months = monthlyRate > 0 ? Math.floor(rentalDays / 30) : 0
+  let remainingAfterMonths = rentalDays - (months * 30)
   
-  const monthlyPortion = months * monthlyRate
-  const dailyPortion = remainingDays * dailyRate
-  
-  return {
-    total: monthlyPortion + dailyPortion,
+  let bestCombination = {
+    total: monthlyRate > 0 ? months * monthlyRate + remainingAfterMonths * dailyRate : rentalDays * dailyRate,
     months,
-    remainingDays,
-    monthlyPortion,
-    dailyPortion
+    weeks: 0,
+    remainingDays: remainingAfterMonths,
+    monthlyPortion: monthlyRate > 0 ? months * monthlyRate : 0,
+    weeklyPortion: 0,
+    dailyPortion: remainingAfterMonths * dailyRate,
+    combination: months > 0 ? `${months} شهر + ${remainingAfterMonths} يوم` : `${rentalDays} يوم`
   }
+  
+  // If we have weekly rates and remaining days after months, check if weeks are better
+  if (weeklyRate > 0 && remainingAfterMonths >= 7) {
+    const weeks = Math.floor(remainingAfterMonths / 7)
+    const finalRemainingDays = remainingAfterMonths % 7
+    
+    // Compare: weeks + days vs all days for the remaining period
+    const weeklyDailyOption = weeks * weeklyRate + finalRemainingDays * dailyRate
+    const allDailyOption = remainingAfterMonths * dailyRate
+    
+    if (weeklyDailyOption < allDailyOption) {
+      bestCombination = {
+        total: bestCombination.monthlyPortion + weeklyDailyOption,
+        months,
+        weeks,
+        remainingDays: finalRemainingDays,
+        monthlyPortion: bestCombination.monthlyPortion,
+        weeklyPortion: weeks * weeklyRate,
+        dailyPortion: finalRemainingDays * dailyRate,
+        combination: getCombinationLabel(months, weeks, finalRemainingDays)
+      }
+    }
+  }
+  
+  // For cases with no monthly rate, check if weekly is better than daily for the full period
+  if (monthlyRate <= 0 && weeklyRate > 0 && rentalDays >= 7) {
+    const fullWeeks = Math.floor(rentalDays / 7)
+    const finalDays = rentalDays % 7
+    const weeklyOnlyTotal = fullWeeks * weeklyRate + finalDays * dailyRate
+    
+    if (weeklyOnlyTotal < bestCombination.total) {
+      bestCombination = {
+        total: weeklyOnlyTotal,
+        months: 0,
+        weeks: fullWeeks,
+        remainingDays: finalDays,
+        monthlyPortion: 0,
+        weeklyPortion: fullWeeks * weeklyRate,
+        dailyPortion: finalDays * dailyRate,
+        combination: getCombinationLabel(0, fullWeeks, finalDays)
+      }
+    }
+  }
+  
+  return bestCombination
+}
+
+function getCombinationLabel(months: number, weeks: number, days: number): string {
+  const parts = []
+  if (months > 0) parts.push(`${months} شهر`)
+  if (weeks > 0) parts.push(`${weeks} أسبوع`)
+  if (days > 0) parts.push(`${days} يوم`)
+  return parts.join(' + ') || 'لا يوجد'
 }
 
 function getPeriodLabel(periodType: 'daily' | 'weekly' | 'monthly'): string {
