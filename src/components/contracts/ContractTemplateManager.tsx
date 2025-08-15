@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { AdminOnly } from '@/components/common/PermissionGuard'
 import { Plus, Edit, Trash2, Copy, Settings } from 'lucide-react'
 import { useContractTemplates, ContractTemplate } from '@/hooks/useContractTemplates'
 import { useForm } from 'react-hook-form'
@@ -134,18 +135,19 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
           </p>
         </div>
         
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={() => {
-                setEditingTemplate(null)
-                reset()
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              قالب جديد
-            </Button>
-          </DialogTrigger>
+        <AdminOnly hideIfNoAccess>
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogTrigger asChild>
+              <Button 
+                onClick={() => {
+                  setEditingTemplate(null)
+                  reset()
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                قالب جديد
+              </Button>
+            </DialogTrigger>
           
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -328,6 +330,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
             </form>
           </DialogContent>
         </Dialog>
+        </AdminOnly>
       </div>
 
       {/* Templates Grid */}
@@ -377,24 +380,24 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                   >
                     استخدام القالب
                   </Button>
-                ) : (
-                  <>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEdit(template)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => deleteTemplate.mutate(template.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
+                 ) : (
+                   <AdminOnly hideIfNoAccess>
+                     <Button 
+                       size="sm" 
+                       variant="outline"
+                       onClick={() => handleEdit(template)}
+                     >
+                       <Edit className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       size="sm" 
+                       variant="outline"
+                       onClick={() => deleteTemplate.mutate(template.id)}
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   </AdminOnly>
+                 )}
               </div>
             </CardContent>
           </Card>
