@@ -685,6 +685,9 @@ export const FinancialStep: React.FC = () => {
   // Get customer's linked accounts
   const { data: customerLinkedAccounts } = useCustomerLinkedAccounts(data.customer_id || '')
   
+  // Get template at component level
+  const template = useTemplateByType(data.contract_type || '')
+  
   // Apply customer account only if no template account exists
   React.useEffect(() => {
     console.log('[FINANCIAL_STEP] Effect triggered:', {
@@ -696,7 +699,6 @@ export const FinancialStep: React.FC = () => {
     });
 
     // التحقق من وجود قالب أولاً
-    const template = useTemplateByType(data.contract_type || '')
     const hasTemplateAccount = template && template.account_id
     
     console.log('[FINANCIAL_STEP] Template check:', {
