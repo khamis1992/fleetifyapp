@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
-import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, Edit } from 'lucide-react'
+import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, Edit, AlertCircle, Asterisk } from 'lucide-react'
+import { useContractFormValidation } from '@/hooks/useContractFormValidation'
+import { FormErrorSummary } from './FormErrorSummary'
 import { useContractWizard } from './ContractWizardProvider'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -39,6 +41,12 @@ export const BasicInfoStep: React.FC = () => {
   const { data, updateData } = useContractWizard()
   const template = useTemplateByType(data.contract_type || '')
   const [isEditingTerms, setIsEditingTerms] = useState(false)
+  
+  // Import validation hook
+  const { getFieldStatus, markFieldTouched } = useContractFormValidation({
+    data,
+    validateOnChange: true
+  })
 
   return (
     <Card>
@@ -64,12 +72,23 @@ export const BasicInfoStep: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="contract_type">نوع العقد *</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="contract_type" className={getFieldStatus('contract_type').hasError ? 'text-destructive' : ''}>
+                نوع العقد
+              </Label>
+              <span className="text-destructive">*</span>
+              {getFieldStatus('contract_type').isRequired && (
+                <Badge variant="secondary" className="text-xs">مطلوب</Badge>
+              )}
+            </div>
             <Select 
               value={data.contract_type} 
-              onValueChange={(value) => updateData({ contract_type: value })}
+              onValueChange={(value) => {
+                updateData({ contract_type: value })
+                markFieldTouched('contract_type')
+              }}
             >
-              <SelectTrigger>
+              <SelectTrigger className={getFieldStatus('contract_type').hasError ? 'border-destructive' : ''}>
                 <SelectValue placeholder="اختر نوع العقد" />
               </SelectTrigger>
               <SelectContent>
@@ -82,6 +101,13 @@ export const BasicInfoStep: React.FC = () => {
               </SelectContent>
             </Select>
             
+            {getFieldStatus('contract_type').hasError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{getFieldStatus('contract_type').errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            
             {template && (
               <Alert className="mt-2">
                 <FileText className="h-4 w-4" />
@@ -93,11 +119,31 @@ export const BasicInfoStep: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="contract_date">تاريخ العقد *</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="contract_date" className={getFieldStatus('contract_date').hasError ? 'text-destructive' : ''}>
+                تاريخ العقد
+              </Label>
+              <span className="text-destructive">*</span>
+              {getFieldStatus('contract_date').isRequired && (
+                <Badge variant="secondary" className="text-xs">مطلوب</Badge>
+              )}
+            </div>
             <Input
               id="contract_date"
               type="date"
               value={data.contract_date}
+              onChange={(e) => {
+                updateData({ contract_date: e.target.value })
+                markFieldTouched('contract_date')
+              }}
+              className={getFieldStatus('contract_date').hasError ? 'border-destructive' : ''}
+            />
+            {getFieldStatus('contract_date').hasError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{getFieldStatus('contract_date').errorMessage}</AlertDescription>
+              </Alert>
+            )}
               onChange={(e) => updateData({ contract_date: e.target.value })}
             />
           </div>

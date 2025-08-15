@@ -8,7 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { FileText, AlertTriangle, CheckCircle, Clock, Save, Search } from 'lucide-react'
+import { FileText, AlertTriangle, CheckCircle, Clock, Save, Search, AlertCircle, Asterisk } from 'lucide-react'
+import { useContractFormValidation } from '@/hooks/useContractFormValidation'
+import { FormErrorSummary } from './FormErrorSummary'
+import { FormFieldWithValidation, CustomerField, ContractTypeField, DateField, AmountField } from '@/components/ui/form-field-with-validation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
 import { useContractValidation } from '@/hooks/useContractValidation'
@@ -62,7 +65,6 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
     status: 'draft'
   })
 
-  const [clientErrors, setClientErrors] = useState<string[]>([])
   const [showProgress, setShowProgress] = useState(false)
   const [customerSearchTerm, setCustomerSearchTerm] = useState('')
 
@@ -76,42 +78,59 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts(companyId)
   const { validation, isValidating, validateContract, debouncedValidation } = useContractValidation()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
+  
+  // Enhanced validation hook
+  const { 
+    validationResult, 
+    validateForm, 
+    getFieldStatus, 
+    markFieldTouched,
+    isValid,
+    hasErrors 
+  } = useContractFormValidation({
+    data: formData,
+    validateOnChange: true
+  })
 
-  // Client-side validation
-  const validateForm = useCallback(() => {
-    const errors: string[] = []
+  // Focus field handler for error summary
+  const handleFieldFocus = useCallback((field: string) => {
+    const element = document.getElementById(field)
+    if (element) {
+      element.focus()
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [])
 
-    if (!formData.customer_id) {
-      errors.push('يرجى اختيار العميل')
+  // Validation and submit handlers
+  const handleValidateAndCreate = useCallback(async () => {
+    const formValid = validateForm()
+    if (!formValid.isValid) {
+      return
     }
 
-    if (!formData.contract_type) {
-      errors.push('يرجى اختيار نوع العقد')
+    const validationResult = await validateContract(formData)
+    
+    if (!validationResult.valid) {
+      toast.error('يرجى إصلاح الأخطاء قبل المتابعة')
+      return
     }
 
-    if (!formData.start_date) {
-      errors.push('يرجى تحديد تاريخ البداية')
-    }
+    setShowProgress(true)
+    resetCreationState()
 
-    if (!formData.end_date) {
-      errors.push('يرجى تحديد تاريخ النهاية')
+    try {
+      await createContract(formData)
+      setTimeout(() => {
+        setShowProgress(false)
+        onOpenChange(false)
+        if (onSubmit) {
+          onSubmit(formData)
+        }
+      }, 2000)
+    } catch (error) {
+      console.error('Contract creation failed:', error)
     }
-
-    if (formData.start_date && formData.end_date && formData.start_date >= formData.end_date) {
-      errors.push('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
-    }
-
-    if (!formData.contract_amount || formData.contract_amount <= 0) {
-      errors.push('يرجى إدخال مبلغ العقد')
-    }
-
-    if (!formData.monthly_amount || formData.monthly_amount <= 0) {
-      errors.push('يرجى إدخال المبلغ الشهري')
-    }
-
-    setClientErrors(errors)
-    return errors.length === 0
-  }, [formData])
+  }, [formData, validateForm, validateContract, createContract, resetCreationState, onOpenChange, onSubmit])
 
   // Update validation when form data changes
   useEffect(() => {
@@ -242,9 +261,8 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
   }
 
 
-  const hasValidationErrors = validation.errors.length > 0
-  const hasValidationWarnings = validation.warnings.length > 0
-  const hasClientErrors = clientErrors.length > 0
+  const hasValidationErrors = validation?.errors?.length > 0
+  const hasValidationWarnings = validation?.warnings?.length > 0
 
   if (showProgress) {
     return (
