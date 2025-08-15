@@ -1170,43 +1170,6 @@ export const ReviewStep: React.FC = () => {
           </Alert>
         )}
 
-        {/* Contract Summary */}
-        <div className="grid gap-4">
-          <div className="p-4 bg-muted rounded-lg space-y-3">
-            <h4 className="font-medium">ملخص العقد:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">رقم العقد:</span>
-                <p className="font-medium">{data.contract_number || 'سيتم توليده تلقائياً'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">نوع العقد:</span>
-                <p className="font-medium">{data.contract_type}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">تاريخ البداية:</span>
-                <p className="font-medium">{data.start_date}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">تاريخ النهاية:</span>
-                <p className="font-medium">{data.end_date}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">المدة:</span>
-                <p className="font-medium">
-                  {data.rental_months && data.rental_months > 0 
-                    ? `${data.rental_months} شهر${data.rental_months > 1 ? '' : ''}`
-                    : `${data.rental_days} يوم`
-                  }
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">المبلغ الإجمالي:</span>
-                <p className="font-medium text-primary">{formatCurrency(data.contract_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Contract Signatures */}
         <ContractSignatureSection />
