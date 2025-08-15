@@ -88,8 +88,6 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
   });
 
   const companyId = useCurrentCompanyId()
-  console.log("🚗 [EnhancedContractForm] Company ID:", companyId)
-  
   const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(companyId)
   const { formatCurrency } = useCurrencyFormatter()

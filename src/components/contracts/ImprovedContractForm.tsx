@@ -75,8 +75,6 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
     limit: 50
   })
   const companyId = useCurrentCompanyId()
-  console.log("🚗 [ImprovedContractForm] Company ID:", companyId)
-  
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts(companyId)
   const { validation, isValidating, validateContract, debouncedValidation } = useContractValidation()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
