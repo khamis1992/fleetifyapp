@@ -1084,17 +1084,6 @@ export const ReviewStep: React.FC = () => {
           isValidating={isValidating}
         />
 
-        {/* Smart Suggestions */}
-        {suggestions.length > 0 && (
-          <SmartSuggestions 
-            suggestions={suggestions}
-            onApplySuggestion={(suggestion) => {
-              // Handle suggestion application
-              console.log('Applying suggestion:', suggestion)
-              // You can implement specific logic for each suggestion type here
-            }}
-          />
-        )}
 
         {/* Legacy Validation Status - keeping for backwards compatibility */}
         {data._validation_status === 'invalid' && data._validation_errors?.length > 0 && (
