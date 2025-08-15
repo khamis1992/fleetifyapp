@@ -1102,14 +1102,6 @@ export const ReviewStep: React.FC = () => {
           </Alert>
         )}
 
-        {data._validation_status === 'valid' && (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              تم التحقق من البيانات بنجاح. العقد جاهز للإرسال.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Approval Information */}
         {data._requires_approval && (
