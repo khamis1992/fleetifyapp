@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@/hooks/useContractTemplates'
+import { calculateDurationDetails } from '@/utils/dateCalculations'
 
 interface ContractWizardData {
   // Basic Info

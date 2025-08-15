@@ -34,6 +34,14 @@ import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
+import { 
+  calculateEndDate, 
+  calculateDurationDetails, 
+  getSuggestedDurationMode, 
+  formatDuration, 
+  validateDates,
+  type DurationMode 
+} from '@/utils/dateCalculations'
 import { CustomerSelector } from './CustomerSelector'
 
 // Step 1: Basic Information
@@ -373,20 +381,28 @@ export const DatesStep: React.FC = () => {
     }
   }, [data.start_date, data.end_date, data.customer_id, data.vehicle_id, data.contract_amount, debouncedValidation])
 
-  const calculateEndDate = (startDate: string, days: number) => {
-    if (!startDate || days <= 0) return ''
-    const start = new Date(startDate)
-    const end = new Date(start)
-    end.setDate(start.getDate() + days - 1)
-    return end.toISOString().slice(0, 10)
-  }
+  const [durationMode, setDurationMode] = React.useState<'days' | 'calendar_months' | 'commercial_months'>('days')
+  
+  // Get suggested duration mode based on contract type
+  const suggestedMode = getSuggestedDurationMode(data.contract_type)
+  
+  React.useEffect(() => {
+    setDurationMode(suggestedMode)
+  }, [suggestedMode])
 
   const handleStartDateChange = (newStartDate: string) => {
-    // عند تغيير تاريخ البداية، نحسب التاريخ النهائي بناءً على الأشهر إذا كانت محددة، وإلا بناءً على الأيام
-    const calculationDays = data.rental_months && data.rental_months > 0 
-      ? data.rental_months * 30 
-      : data.rental_days
-    const endDate = calculateEndDate(newStartDate, calculationDays)
+    if (!newStartDate) return
+    
+    // Calculate end date based on current duration and mode
+    let endDate = ''
+    if (durationMode === 'calendar_months' && data.rental_months > 0) {
+      endDate = calculateEndDate(newStartDate, data.rental_months, 'calendar_months')
+    } else if (durationMode === 'commercial_months' && data.rental_months > 0) {
+      endDate = calculateEndDate(newStartDate, data.rental_months, 'commercial_months')
+    } else if (data.rental_days > 0) {
+      endDate = calculateEndDate(newStartDate, data.rental_days, 'days')
+    }
+    
     updateData({ 
       start_date: newStartDate,
       end_date: endDate
@@ -394,24 +410,43 @@ export const DatesStep: React.FC = () => {
   }
 
   const handleRentalDaysChange = (days: number) => {
-    const endDate = calculateEndDate(data.start_date, days)
-    // عندما يتم تغيير الأيام، نقوم بإعادة تعيين الأشهر إلى 0
+    if (days <= 0) return
+    
+    const endDate = calculateEndDate(data.start_date, days, 'days')
     updateData({ 
       rental_days: days,
-      rental_months: 0,
+      rental_months: Math.round(days / 30), // Update months for display
       end_date: endDate
     })
+    setDurationMode('days')
   }
 
   const handleRentalMonthsChange = (months: number) => {
-    // عندما يتم تحديد الأشهر، نحسب الأيام للتاريخ النهائي فقط ولكن نعرض 0 في خانة الأيام
-    const daysForCalculation = months * 30
-    const endDate = calculateEndDate(data.start_date, daysForCalculation)
+    if (months <= 0) return
+    
+    const mode = durationMode === 'commercial_months' ? 'commercial_months' : 'calendar_months'
+    const endDate = calculateEndDate(data.start_date, months, mode)
+    
     updateData({ 
-      rental_days: 0, // عرض 0 في خانة الأيام عندما يتم تحديد الأشهر
       rental_months: months,
+      rental_days: mode === 'commercial_months' ? months * 30 : 0, // For commercial months, show equivalent days
       end_date: endDate
     })
+    setDurationMode(mode)
+  }
+
+  const handleDurationModeChange = (mode: 'days' | 'calendar_months' | 'commercial_months') => {
+    setDurationMode(mode)
+    
+    // Recalculate end date with new mode
+    let endDate = ''
+    if (mode === 'days' && data.rental_days > 0) {
+      endDate = calculateEndDate(data.start_date, data.rental_days, 'days')
+    } else if ((mode === 'calendar_months' || mode === 'commercial_months') && data.rental_months > 0) {
+      endDate = calculateEndDate(data.start_date, data.rental_months, mode)
+    }
+    
+    updateData({ end_date: endDate })
   }
 
   const suggestedDuration = getDefaultDurationByType(data.contract_type)
@@ -457,6 +492,42 @@ export const DatesStep: React.FC = () => {
           </div>
         )}
 
+        {/* Duration Mode Selection */}
+        <div className="space-y-2">
+          <Label>طريقة حساب المدة</Label>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant={durationMode === 'days' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleDurationModeChange('days')}
+            >
+              بالأيام
+            </Button>
+            <Button
+              type="button"
+              variant={durationMode === 'calendar_months' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleDurationModeChange('calendar_months')}
+            >
+              أشهر تقويمية
+            </Button>
+            <Button
+              type="button"
+              variant={durationMode === 'commercial_months' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleDurationModeChange('commercial_months')}
+            >
+              أشهر تجارية (30 يوم)
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {durationMode === 'calendar_months' && 'الأشهر التقويمية تحسب حسب التقويم الفعلي (28-31 يوم)'}
+            {durationMode === 'commercial_months' && 'الأشهر التجارية تحسب بـ 30 يوم ثابت لكل شهر'}
+            {durationMode === 'days' && 'الحساب بالأيام بدقة'}
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="start_date">تاريخ البداية *</Label>
@@ -468,43 +539,49 @@ export const DatesStep: React.FC = () => {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="rental_months">
-              عدد الأشهر *
-              {isUsingSuggested && (
-                <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
-              )}
-            </Label>
-            <Input
-              id="rental_months"
-              type="number"
-              min="0"
-              step="0.1"
-              value={data.rental_months > 0 ? data.rental_months : (data.rental_days > 0 ? Math.round(data.rental_days / 30) : 0)}
-              onChange={(e) => handleRentalMonthsChange(parseFloat(e.target.value) || 0)}
-              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
-            />
-          </div>
+          {(durationMode === 'calendar_months' || durationMode === 'commercial_months') && (
+            <div className="space-y-2">
+              <Label htmlFor="rental_months">
+                عدد الأشهر *
+                {isUsingSuggested && (
+                  <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
+                )}
+              </Label>
+              <Input
+                id="rental_months"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={data.rental_months || ''}
+                onChange={(e) => handleRentalMonthsChange(parseFloat(e.target.value) || 0)}
+                className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
+                placeholder="1"
+              />
+            </div>
+          )}
+          
+          {durationMode === 'days' && (
+            <div className="space-y-2">
+              <Label htmlFor="rental_days">
+                عدد الأيام * 
+                {isUsingSuggested && (
+                  <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
+                )}
+              </Label>
+              <Input
+                id="rental_days"
+                type="number"
+                min="1"
+                value={data.rental_days || ''}
+                onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
+                className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
+                placeholder="1"
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
-            <Label htmlFor="rental_days">
-              عدد الأيام * 
-              {isUsingSuggested && (
-                <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
-              )}
-            </Label>
-            <Input
-              id="rental_days"
-              type="number"
-              min="1"
-              value={data.rental_months > 0 ? 0 : data.rental_days}
-              onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
-              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="end_date">تاريخ النهاية (محسوب تلقائياً)</Label>
+            <Label htmlFor="end_date">تاريخ النهاية</Label>
             <Input
               id="end_date"
               type="date"
@@ -512,6 +589,9 @@ export const DatesStep: React.FC = () => {
               onChange={(e) => updateData({ end_date: e.target.value })}
               className="bg-muted"
             />
+            <p className="text-xs text-muted-foreground">
+              محسوب تلقائياً، أو يمكن تعديله يدوياً
+            </p>
           </div>
         </div>
 
@@ -522,45 +602,61 @@ export const DatesStep: React.FC = () => {
           showConflictDetails={true}
         />
 
-        {/* Duration summary */}
-        {data.start_date && data.end_date && (
-          <div className="mt-4 p-4 bg-muted rounded-lg">
-            <h4 className="font-medium mb-2">ملخص المدة:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">إجمالي الأيام:</span>
-                <p className="font-medium">{data.rental_days} يوم</p>
+        {/* Duration summary with improved calculations */}
+        {data.start_date && data.end_date && (() => {
+          const durationDetails = calculateDurationDetails(data.start_date, data.end_date, durationMode)
+          const validation = validateDates(data.start_date, data.end_date)
+          
+          return (
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <h4 className="font-medium mb-2">ملخص المدة:</h4>
+              
+              {!validation.valid && (
+                <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
+                  {validation.message}
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">الأيام الفعلية:</span>
+                  <p className="font-medium">{durationDetails.actualDays} يوم</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">الأسابيع:</span>
+                  <p className="font-medium">
+                    {durationDetails.breakdown.weeks > 0 
+                      ? `${durationDetails.breakdown.weeks} أسبوع` 
+                      : 'أقل من أسبوع'
+                    }
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">الأشهر المكافئة:</span>
+                  <p className="font-medium">
+                    {durationDetails.breakdown.months > 0 
+                      ? `${durationDetails.breakdown.months} شهر` 
+                      : 'أقل من شهر'
+                    }
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">طريقة الحساب:</span>
+                  <p className="font-medium">
+                    {durationMode === 'calendar_months' ? 'أشهر تقويمية' : 
+                     durationMode === 'commercial_months' ? 'أشهر تجارية' : 'أيام'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <span className="text-muted-foreground">الأسابيع:</span>
-                <p className="font-medium">
-                  {Math.floor(data.rental_days / 7) > 0 
-                    ? `${Math.floor(data.rental_days / 7)} أسبوع` 
-                    : 'أقل من أسبوع'
-                  }
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">الأشهر:</span>
-                <p className="font-medium">
-                  {Math.floor(data.rental_days / 30) > 0 
-                    ? `${Math.floor(data.rental_days / 30)} شهر` 
-                    : 'أقل من شهر'
-                  }
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">السنوات:</span>
-                <p className="font-medium">
-                  {data.rental_days >= 365 
-                    ? `${(data.rental_days / 365).toFixed(1)} سنة`
-                    : 'أقل من سنة'
-                  }
-                </p>
-              </div>
+              
+              {durationMode !== 'days' && durationDetails.breakdown.remainingDays > 0 && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  المدة تتضمن {durationDetails.breakdown.months} شهر و {durationDetails.breakdown.remainingDays} يوم إضافي
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )
+        })()}
       </CardContent>
     </Card>
   )
