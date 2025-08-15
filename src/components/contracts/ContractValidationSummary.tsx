@@ -158,7 +158,20 @@ export const ContractValidationSummary: React.FC<ContractValidationSummaryProps>
               <span className="text-muted-foreground">المدة:</span>
               <span className="font-medium">
                 {contractData.start_date} إلى {contractData.end_date}
-                {contractData.rental_days && ` (${contractData.rental_days} يوم)`}
+                {(() => {
+                  // Calculate total duration
+                  const totalDays = (contractData.rental_months || 0) * 30 + (contractData.rental_days || 0);
+                  if (totalDays > 0) {
+                    if (contractData.rental_months && contractData.rental_months > 0) {
+                      const additionalDays = contractData.rental_days || 0;
+                      return additionalDays > 0 
+                        ? ` (${contractData.rental_months} شهر + ${additionalDays} يوم)`
+                        : ` (${contractData.rental_months} شهر)`;
+                    }
+                    return ` (${totalDays} يوم)`;
+                  }
+                  return '';
+                })()}
               </span>
             </div>
             
