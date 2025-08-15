@@ -15,6 +15,7 @@ import { useContractValidation } from '@/hooks/useContractValidation'
 import { useCustomers } from '@/hooks/useEnhancedCustomers'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useContractCreation } from '@/hooks/useContractCreation'
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { ContractCreationProgress } from './ContractCreationProgress'
 import { CustomerDisplayName } from '@/components/customers/CustomerDisplayName'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
@@ -71,7 +72,8 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
     includeInactive: false,
     limit: 50
   })
-  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts()
+  const companyId = useCurrentCompanyId()
+  const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts(companyId)
   const { validation, isValidating, validateContract, debouncedValidation } = useContractValidation()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
 

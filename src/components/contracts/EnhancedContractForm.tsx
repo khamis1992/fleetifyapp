@@ -12,6 +12,7 @@ import { FileText, Plus, Calculator, AlertTriangle, CheckCircle, Clock } from 'l
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useContractCalculations } from '@/hooks/useContractCalculations'
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { AccountLevelBadge } from '@/components/finance/AccountLevelBadge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { toast } from 'sonner'
@@ -86,8 +87,9 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
     enabled: !!profile?.company_id,
   });
 
+  const companyId = useCurrentCompanyId()
   const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
-  const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(profile?.company_id)
+  const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(companyId)
   const { formatCurrency } = useCurrencyFormatter()
 
 

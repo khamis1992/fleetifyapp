@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
 import { useAvailableVehiclesByDateRange } from '@/hooks/useAvailableVehiclesByDateRange'
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { VehicleConditionWizardStep } from './VehicleConditionWizardStep'
@@ -181,16 +182,18 @@ export const CustomerVehicleStep: React.FC = () => {
   }, [data.customer_id, data.vehicle_id, data.start_date, data.end_date, data.contract_amount, debouncedValidation])
 
 
+  const companyId = useCurrentCompanyId()
+  
   // Use date-range filtered vehicles if dates are available, otherwise fallback to all available vehicles
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesByDateRange({
-    companyId: user?.profile?.company_id,
+    companyId,
     startDate: data.start_date,
     endDate: data.end_date,
-    enabled: !!user?.profile?.company_id
+    enabled: !!companyId
   })
   
   // Fallback for when no dates are selected yet
-  const { data: allAvailableVehicles, isLoading: allVehiclesLoading } = useAvailableVehiclesForContracts(user?.profile?.company_id)
+  const { data: allAvailableVehicles, isLoading: allVehiclesLoading } = useAvailableVehiclesForContracts(companyId)
   
   // Use filtered vehicles if dates are available, otherwise use all available vehicles
   const vehiclesToShow = (data.start_date && data.end_date) ? availableVehicles : allAvailableVehicles
@@ -590,7 +593,8 @@ export const FinancialStep: React.FC = () => {
   const { data: costCenters } = useCostCenters();
 
   // Get vehicle for calculations
-  const { data: availableVehicles } = useAvailableVehiclesForContracts(user?.profile?.company_id)
+  const companyId = useCurrentCompanyId()
+  const { data: availableVehicles } = useAvailableVehiclesForContracts(companyId)
   const selectedVehicle = availableVehicles?.find((v): v is any => v.id === data.vehicle_id) || null
   const calculations = useContractCalculations(selectedVehicle, data.contract_type, data.rental_days, isCustomAmount ? data.contract_amount : undefined)
 
