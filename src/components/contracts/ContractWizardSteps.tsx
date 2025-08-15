@@ -668,12 +668,13 @@ export const FinancialStep: React.FC = () => {
   const companyId = useCurrentCompanyId()
   const { data: availableVehicles } = useAvailableVehiclesForContracts(companyId)
   const selectedVehicle = availableVehicles?.find((v): v is any => v.id === data.vehicle_id) || null
-  const calculations = useContractCalculations(selectedVehicle, data.contract_type, data.rental_days, isCustomAmount ? data.contract_amount : undefined)
+  const totalRentalDays = (data.rental_months * 30) + (data.rental_days || 0)
+  const calculations = useContractCalculations(selectedVehicle, data.contract_type, totalRentalDays, isCustomAmount ? data.contract_amount : undefined)
 
   // Auto-update financial calculations with proper tracking
   React.useEffect(() => {
     // Only auto-update if custom amount is not enabled
-    if (!isCustomAmount && calculations && selectedVehicle && data.rental_days) {
+    if (!isCustomAmount && calculations && selectedVehicle && totalRentalDays > 0) {
       const newData = {
         contract_amount: calculations.totalAmount,
         // Show the actual monthly rate, not the average
@@ -687,7 +688,7 @@ export const FinancialStep: React.FC = () => {
         updateData(newData)
       }
     }
-  }, [calculations, selectedVehicle, data.rental_days, data.contract_amount, data.monthly_amount, updateData, isCustomAmount])
+  }, [calculations, selectedVehicle, totalRentalDays, data.contract_amount, data.monthly_amount, updateData, isCustomAmount])
 
   return (
     <Card>
