@@ -354,43 +354,12 @@ export const DatesStep: React.FC = () => {
   const { data, updateData } = useContractWizard()
   const { validation, isValidating, debouncedValidation } = useContractValidation()
   
-  // Trigger validation when dates change
-  React.useEffect(() => {
-    // Only validate if we have all required data including valid contract amount
-    if (data.start_date && 
-        data.end_date && 
-        data.customer_id && 
-        data.contract_amount && 
-        data.contract_amount > 0) {
-      debouncedValidation({
-        customer_id: data.customer_id,
-        vehicle_id: data.vehicle_id,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        contract_amount: data.contract_amount,
-        contract_type: data.contract_type
-      })
-    }
-  }, [data.start_date, data.end_date, data.customer_id, data.vehicle_id, data.contract_amount, debouncedValidation])
-
   const calculateEndDate = (startDate: string, days: number) => {
     if (!startDate || days <= 0) return ''
     const start = new Date(startDate)
     const end = new Date(start)
     end.setDate(start.getDate() + days - 1)
     return end.toISOString().slice(0, 10)
-  }
-
-  const handleStartDateChange = (newStartDate: string) => {
-    // عند تغيير تاريخ البداية، نحسب التاريخ النهائي بناءً على الأشهر إذا كانت محددة، وإلا بناءً على الأيام
-    const calculationDays = data.rental_months && data.rental_months > 0 
-      ? data.rental_months * 30 
-      : data.rental_days
-    const endDate = calculateEndDate(newStartDate, calculationDays)
-    updateData({ 
-      start_date: newStartDate,
-      end_date: endDate
-    })
   }
 
   const handleRentalDaysChange = (days: number) => {
@@ -413,6 +382,58 @@ export const DatesStep: React.FC = () => {
       end_date: endDate
     })
   }
+  
+  // تطبيق نوع المدة المناسب بناءً على نوع العقد
+  React.useEffect(() => {
+    if (data.contract_type) {
+      const isMonthlyContract = data.contract_type === 'monthly_rental' || 
+                               data.contract_type === 'yearly_rental' ||
+                               data.contract_type === 'corporate'
+      
+      // إذا كان العقد شهري ولم يتم تحديد أشهر، قم بتعيين شهر واحد
+      if (isMonthlyContract && data.rental_months === 0 && data.rental_days > 0) {
+        const months = Math.max(1, Math.round(data.rental_days / 30))
+        handleRentalMonthsChange(months)
+      }
+      // إذا كان العقد يومي ولم يتم تحديد أيام، قم بتعيين يوم واحد
+      else if (!isMonthlyContract && data.rental_days === 0 && data.rental_months > 0) {
+        const days = Math.max(1, data.rental_months * 30)
+        handleRentalDaysChange(days)
+      }
+    }
+  }, [data.contract_type])
+  
+  // Trigger validation when dates change
+  React.useEffect(() => {
+    // Only validate if we have all required data including valid contract amount
+    if (data.start_date && 
+        data.end_date && 
+        data.customer_id && 
+        data.contract_amount && 
+        data.contract_amount > 0) {
+      debouncedValidation({
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        contract_amount: data.contract_amount,
+        contract_type: data.contract_type
+      })
+    }
+  }, [data.start_date, data.end_date, data.customer_id, data.vehicle_id, data.contract_amount, debouncedValidation])
+
+  const handleStartDateChange = (newStartDate: string) => {
+    // عند تغيير تاريخ البداية، نحسب التاريخ النهائي بناءً على الأشهر إذا كانت محددة، وإلا بناءً على الأيام
+    const calculationDays = data.rental_months && data.rental_months > 0 
+      ? data.rental_months * 30 
+      : data.rental_days
+    const endDate = calculateEndDate(newStartDate, calculationDays)
+    updateData({ 
+      start_date: newStartDate,
+      end_date: endDate
+    })
+  }
+
 
   const suggestedDuration = getDefaultDurationByType(data.contract_type)
   const isUsingSuggested = data.rental_days === suggestedDuration
