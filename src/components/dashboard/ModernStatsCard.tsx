@@ -62,11 +62,7 @@ const ModernStatsCard: React.FC<ModernStatsCardProps> = ({
           
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground font-medium">{title}</p>
-            {typeof value === 'number' ? (
-              <StatCardNumber value={value} className="text-foreground" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground">{value}</p>
-            )}
+            <StatCardNumber value={value} className="text-2xl font-bold text-foreground" />
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
