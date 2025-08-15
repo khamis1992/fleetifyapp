@@ -61,7 +61,7 @@ export const useAvailableCustomerAccounts = (targetCompanyId?: string) => {
           .eq("company_id", effectiveCompanyId)
           .eq("is_active", true)
           .in("account_type", ["assets", "liabilities"]) // الحسابات المناسبة للعملاء
-          .gte("account_level", 3) // الحسابات الفرعية فقط
+          .in("account_level", [5, 6]) // المستوى الخامس والسادس فقط
           .eq("is_header", false) // ليس حساب رئيسي
           .order("account_code");
 
