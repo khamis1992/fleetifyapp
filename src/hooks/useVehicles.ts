@@ -809,6 +809,9 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
 
       try {
+        // Log the exact parameters being sent
+        console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Calling RPC with company_id_param:", companyId)
+        
         // Use the updated database function that includes all required fields
         const { data, error } = await supabase.rpc(
           'get_available_vehicles_for_contracts',
@@ -817,6 +820,12 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
 
         if (error) {
           console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database function error:", error)
+          console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Error details:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          })
           
           // Fallback to direct vehicle query if function fails
           console.log("🔄 [AVAILABLE_VEHICLES_CONTRACTS] Using fallback query...")
@@ -842,18 +851,33 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
             .eq('is_active', true)
             .in('status', ['available', 'reserved'])
             .order('plate_number')
+          
+          console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Fallback query for company:", companyId)
 
           if (fallbackResult.error) {
             console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fallback query failed:", fallbackResult.error)
             throw new Error(`Failed to fetch vehicles: ${fallbackResult.error.message}`)
           }
 
-          console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Fallback successful:", fallbackResult.data?.length || 0)
+          console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Fallback successful, vehicles found:", fallbackResult.data?.length || 0)
+          console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Sample vehicles:", fallbackResult.data?.slice(0, 2))
           return fallbackResult.data || []
         }
 
         const availableVehicles = data || []
-        console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles:", availableVehicles.length)
+        console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles from RPC:", availableVehicles.length)
+        console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Sample vehicles from RPC:", availableVehicles.slice(0, 2))
+        
+        // Log all company IDs for debugging
+        const uniqueCompanyIds = [...new Set(availableVehicles.map((v: any) => v.company_id))]
+        console.log("🏢 [AVAILABLE_VEHICLES_CONTRACTS] Unique company IDs in results:", uniqueCompanyIds)
+        console.log("🏢 [AVAILABLE_VEHICLES_CONTRACTS] Expected company ID:", companyId)
+        
+        // Validate that all vehicles belong to the expected company
+        const wrongCompanyVehicles = availableVehicles.filter((v: any) => v.company_id !== companyId)
+        if (wrongCompanyVehicles.length > 0) {
+          console.error("⚠️ [AVAILABLE_VEHICLES_CONTRACTS] Found vehicles from wrong companies:", wrongCompanyVehicles)
+        }
 
         // Validate that all required fields are present
         const validatedVehicles = availableVehicles.map(vehicle => ({
