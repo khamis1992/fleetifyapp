@@ -454,29 +454,6 @@ export const DatesStep: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Duration suggestion */}
-        {data.contract_type && suggestedDuration > 1 && !isUsingSuggested && (
-          <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-900">
-                  المدة المقترحة لنوع العقد "{data.contract_type}": {suggestedDuration} يوم
-                </p>
-                <p className="text-xs text-blue-700 mt-1">
-                  يمكنك استخدام المدة المقترحة أو تخصيص مدة أخرى
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={applySuggestedDuration}
-                className="text-blue-700 border-blue-300 hover:bg-blue-100"
-              >
-                استخدام المقترح
-              </Button>
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
