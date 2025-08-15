@@ -522,60 +522,63 @@ export const DatesStep: React.FC = () => {
           showConflictDetails={true}
         />
 
-        {/* Duration summary */}
+        {/* Duration summary - عرض واضح حسب نوع المدة المختارة */}
         {data.start_date && data.end_date && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <h4 className="font-medium mb-2">ملخص المدة:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              {/* عرض إجمالي الأيام فقط إذا لم يتم تحديد أشهر */}
-              {data.rental_months === 0 && (
-                <div>
-                  <span className="text-muted-foreground">إجمالي الأيام:</span>
-                  <p className="font-medium">{data.rental_days} يوم</p>
+            
+            {/* إذا تم اختيار الأشهر - عرض الأشهر فقط مع توضيح */}
+            {data.rental_months > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-blue-800">تم اختيار المدة بالأشهر</p>
+                    <p className="text-2xl font-bold text-blue-900">{data.rental_months} شهر</p>
+                  </div>
                 </div>
-              )}
-              
-              {/* عرض الأسابيع فقط إذا كانت 7 أيام أو أكثر وليست أشهر */}
-              {data.rental_months === 0 && data.rental_days >= 7 && (
-                <div>
-                  <span className="text-muted-foreground">الأسابيع:</span>
-                  <p className="font-medium">
-                    {Math.floor(data.rental_days / 7)} أسبوع
-                  </p>
-                </div>
-              )}
-              
-              {/* عرض الأشهر بناءً على ما تم تحديده أو الحساب */}
-              <div>
-                <span className="text-muted-foreground">الأشهر:</span>
-                <p className="font-medium">
-                  {data.rental_months > 0 
-                    ? `${data.rental_months} شهر`
-                    : data.rental_days >= 30 
-                      ? `${Math.floor(data.rental_days / 30)} شهر`
-                      : 'أقل من شهر'
-                  }
+                <p className="text-xs text-muted-foreground">
+                  💡 عند اختيار المدة بالأشهر، يتم حساب التاريخ النهائي تلقائياً
                 </p>
               </div>
-              
-              {/* عرض السنوات فقط إذا كانت سنة أو أكثر */}
-              {(data.rental_days >= 365 || data.rental_months >= 12) && (
-                <div>
-                  <span className="text-muted-foreground">السنوات:</span>
-                  <p className="font-medium">
-                    {data.rental_months >= 12 
-                      ? `${(data.rental_months / 12).toFixed(1)} سنة`
-                      : `${(data.rental_days / 365).toFixed(1)} سنة`
-                    }
-                  </p>
+            ) : (
+              /* إذا تم اختيار الأيام - عرض التفاصيل الكاملة */
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-green-800">تم اختيار المدة بالأيام</p>
+                    <p className="text-2xl font-bold text-green-900">{data.rental_days} يوم</p>
+                  </div>
                 </div>
-              )}
-            </div>
-            
-            {/* رسالة توضيحية عندما يتم تحديد الأشهر */}
-            {data.rental_months > 0 && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
-                ✓ جميع البيانات صحيحة ومتاحة
+                
+                {/* عرض التفاصيل الإضافية للأيام فقط */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  {data.rental_days >= 7 && (
+                    <div className="text-center p-2 bg-background rounded border">
+                      <span className="text-muted-foreground block text-xs">الأسابيع</span>
+                      <p className="font-medium">{Math.floor(data.rental_days / 7)} أسبوع</p>
+                    </div>
+                  )}
+                  
+                  {data.rental_days >= 30 && (
+                    <div className="text-center p-2 bg-background rounded border">
+                      <span className="text-muted-foreground block text-xs">الأشهر التقريبية</span>
+                      <p className="font-medium">{Math.floor(data.rental_days / 30)} شهر</p>
+                    </div>
+                  )}
+                  
+                  {data.rental_days >= 365 && (
+                    <div className="text-center p-2 bg-background rounded border">
+                      <span className="text-muted-foreground block text-xs">السنوات التقريبية</span>
+                      <p className="font-medium">{(data.rental_days / 365).toFixed(1)} سنة</p>
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  💡 عند اختيار المدة بالأيام، يتم عرض التحويلات التقريبية للأسابيع والأشهر
+                </p>
               </div>
             )}
           </div>
