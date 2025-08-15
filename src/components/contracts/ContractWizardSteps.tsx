@@ -363,21 +363,20 @@ export const DatesStep: React.FC = () => {
   }
 
   const handleRentalDaysChange = (days: number) => {
-    const endDate = calculateEndDate(data.start_date, days)
-    // عندما يتم تغيير الأيام، نقوم بإعادة تعيين الأشهر إلى 0
+    // لا نقوم بتصفير الأشهر، بل نسمح بالدمج
+    const totalDays = (data.rental_months * 30) + days
+    const endDate = calculateEndDate(data.start_date, totalDays)
     updateData({ 
       rental_days: days,
-      rental_months: 0, // تصفير الأشهر عند تحديد الأيام
       end_date: endDate
     })
   }
 
   const handleRentalMonthsChange = (months: number) => {
-    // عندما يتم تحديد الأشهر، نحسب الأيام للتاريخ النهائي فقط
-    const daysForCalculation = months * 30
-    const endDate = calculateEndDate(data.start_date, daysForCalculation)
+    // نحسب إجمالي الأيام من الأشهر + الأيام الإضافية
+    const totalDays = (months * 30) + (data.rental_days || 0)
+    const endDate = calculateEndDate(data.start_date, totalDays)
     updateData({ 
-      rental_days: daysForCalculation, // نحتفظ بالأيام للحسابات ولكن نعتمد على rental_months للعرض
       rental_months: months,
       end_date: endDate
     })
@@ -423,11 +422,9 @@ export const DatesStep: React.FC = () => {
   }, [data.start_date, data.end_date, data.customer_id, data.vehicle_id, data.contract_amount, debouncedValidation])
 
   const handleStartDateChange = (newStartDate: string) => {
-    // عند تغيير تاريخ البداية، نحسب التاريخ النهائي بناءً على الأشهر إذا كانت محددة، وإلا بناءً على الأيام
-    const calculationDays = data.rental_months && data.rental_months > 0 
-      ? data.rental_months * 30 
-      : data.rental_days
-    const endDate = calculateEndDate(newStartDate, calculationDays)
+    // حساب إجمالي الأيام من الأشهر والأيام الإضافية
+    const totalDays = (data.rental_months * 30) + (data.rental_days || 0)
+    const endDate = calculateEndDate(newStartDate, totalDays)
     updateData({ 
       start_date: newStartDate,
       end_date: endDate
@@ -468,36 +465,33 @@ export const DatesStep: React.FC = () => {
           
           <div className="space-y-2">
             <Label htmlFor="rental_months">
-              عدد الأشهر *
-              {isUsingSuggested && (
-                <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
-              )}
+              عدد الأشهر
+              <span className="text-xs text-muted-foreground mr-2">(يمكن دمجها مع الأيام)</span>
             </Label>
             <Input
               id="rental_months"
               type="number"
               min="0"
               step="0.1"
-              value={data.rental_months > 0 ? data.rental_months : (data.rental_days > 0 ? Math.round(data.rental_days / 30) : 0)}
+              value={data.rental_months || 0}
               onChange={(e) => handleRentalMonthsChange(parseFloat(e.target.value) || 0)}
-              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
+              placeholder="0"
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="rental_days">
-              عدد الأيام * 
-              {isUsingSuggested && (
-                <span className="text-xs text-green-600 mr-2">(مقترح تلقائياً)</span>
-              )}
+              أيام إضافية
+              <span className="text-xs text-muted-foreground mr-2">(تُضاف للأشهر)</span>
             </Label>
             <Input
               id="rental_days"
               type="number"
-              min="1"
-              value={data.rental_months > 0 ? 0 : data.rental_days}
-              onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 1)}
-              className={isUsingSuggested ? "border-green-300 bg-green-50" : ""}
+              min="0"
+              max="29"
+              value={data.rental_days || 0}
+              onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 0)}
+              placeholder="0"
             />
           </div>
           
@@ -520,65 +514,63 @@ export const DatesStep: React.FC = () => {
           showConflictDetails={true}
         />
 
-        {/* Duration summary - عرض واضح حسب نوع المدة المختارة */}
+        {/* Duration summary - عرض المدة المختلطة */}
         {data.start_date && data.end_date && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <h4 className="font-medium mb-2">ملخص المدة:</h4>
             
-            {/* إذا تم اختيار الأشهر - عرض الأشهر فقط مع توضيح */}
-            {data.rental_months > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium text-blue-800">تم اختيار المدة بالأشهر</p>
-                    <p className="text-2xl font-bold text-blue-900">{data.rental_months} شهر</p>
+            {/* حساب إجمالي الأيام */}
+            {(() => {
+              const totalDays = (data.rental_months * 30) + (data.rental_days || 0)
+              const months = data.rental_months || 0
+              const additionalDays = data.rental_days || 0
+              
+              return (
+                <div className="space-y-3">
+                  {/* عرض المدة المختارة */}
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-800">المدة المحددة:</p>
+                      <div className="text-2xl font-bold text-blue-900 flex items-center gap-2">
+                        {months > 0 && <span>{months} شهر</span>}
+                        {months > 0 && additionalDays > 0 && <span>+</span>}
+                        {additionalDays > 0 && <span>{additionalDays} يوم</span>}
+                        {months === 0 && additionalDays === 0 && <span className="text-red-600">لم يتم تحديد مدة</span>}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  💡 عند اختيار المدة بالأشهر، يتم حساب التاريخ النهائي تلقائياً
-                </p>
-              </div>
-            ) : (
-              /* إذا تم اختيار الأيام - عرض التفاصيل الكاملة */
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium text-green-800">تم اختيار المدة بالأيام</p>
-                    <p className="text-2xl font-bold text-green-900">{data.rental_days} يوم</p>
-                  </div>
-                </div>
-                
-                {/* عرض التفاصيل الإضافية للأيام فقط */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  {data.rental_days >= 7 && (
-                    <div className="text-center p-2 bg-background rounded border">
-                      <span className="text-muted-foreground block text-xs">الأسابيع</span>
-                      <p className="font-medium">{Math.floor(data.rental_days / 7)} أسبوع</p>
+                  
+                  {/* عرض التفاصيل الحسابية */}
+                  {totalDays > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-center p-2 bg-background rounded border">
+                        <span className="text-muted-foreground block text-xs">إجمالي الأيام</span>
+                        <p className="font-medium">{totalDays} يوم</p>
+                      </div>
+                      
+                      {totalDays >= 7 && (
+                        <div className="text-center p-2 bg-background rounded border">
+                          <span className="text-muted-foreground block text-xs">الأسابيع</span>
+                          <p className="font-medium">{Math.floor(totalDays / 7)} أسبوع</p>
+                        </div>
+                      )}
+                      
+                      {totalDays >= 365 && (
+                        <div className="text-center p-2 bg-background rounded border">
+                          <span className="text-muted-foreground block text-xs">السنوات التقريبية</span>
+                          <p className="font-medium">{(totalDays / 365).toFixed(1)} سنة</p>
+                        </div>
+                      )}
                     </div>
                   )}
                   
-                  {data.rental_days >= 30 && (
-                    <div className="text-center p-2 bg-background rounded border">
-                      <span className="text-muted-foreground block text-xs">الأشهر التقريبية</span>
-                      <p className="font-medium">{Math.floor(data.rental_days / 30)} شهر</p>
-                    </div>
-                  )}
-                  
-                  {data.rental_days >= 365 && (
-                    <div className="text-center p-2 bg-background rounded border">
-                      <span className="text-muted-foreground block text-xs">السنوات التقريبية</span>
-                      <p className="font-medium">{(data.rental_days / 365).toFixed(1)} سنة</p>
-                    </div>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    💡 يمكنك الآن دمج الأشهر والأيام معاً (مثال: 1 شهر + 10 أيام = 40 يوم إجمالي)
+                  </p>
                 </div>
-                
-                <p className="text-xs text-muted-foreground">
-                  💡 عند اختيار المدة بالأيام، يتم عرض التحويلات التقريبية للأسابيع والأشهر
-                </p>
-              </div>
-            )}
+              )
+            })()}
           </div>
         )}
       </CardContent>
