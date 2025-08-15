@@ -50,18 +50,6 @@ export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({
   suggestions,
   onApplySuggestion
 }) => {
-  if (suggestions.length === 0) {
-    return null;
-  }
-
-  return (
-    <Card className="border-blue-200 bg-blue-50/30">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2 text-blue-700">
-          <Lightbulb className="h-4 w-4" />
-          اقتراحات ذكية ({suggestions.length})
-        </CardTitle>
-      </CardHeader>
-    </Card>
-  );
+  // Component disabled - always return null
+  return null;
 };
