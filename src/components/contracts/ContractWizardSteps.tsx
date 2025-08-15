@@ -452,7 +452,7 @@ export const DatesStep: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="start_date">تاريخ البداية *</Label>
             <Input
@@ -460,29 +460,31 @@ export const DatesStep: React.FC = () => {
               type="date"
               value={data.start_date}
               onChange={(e) => handleStartDateChange(e.target.value)}
+              className="w-full"
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="rental_months">
               عدد الأشهر
-              <span className="text-xs text-muted-foreground mr-2">(يمكن دمجها مع الأيام)</span>
+              <span className="text-xs text-muted-foreground block">يمكن دمجها مع الأيام</span>
             </Label>
             <Input
               id="rental_months"
               type="number"
               min="0"
-              step="0.1"
+              step="1"
               value={data.rental_months || 0}
-              onChange={(e) => handleRentalMonthsChange(parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleRentalMonthsChange(parseInt(e.target.value) || 0)}
               placeholder="0"
+              className="w-full"
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="rental_days">
               أيام إضافية
-              <span className="text-xs text-muted-foreground mr-2">(تُضاف للأشهر)</span>
+              <span className="text-xs text-muted-foreground block">تُضاف للأشهر</span>
             </Label>
             <Input
               id="rental_days"
@@ -492,17 +494,22 @@ export const DatesStep: React.FC = () => {
               value={data.rental_days || 0}
               onChange={(e) => handleRentalDaysChange(parseInt(e.target.value) || 0)}
               placeholder="0"
+              className="w-full"
             />
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="end_date">تاريخ النهاية (محسوب تلقائياً)</Label>
+            <Label htmlFor="end_date">
+              تاريخ النهاية
+              <span className="text-xs text-muted-foreground block">محسوب تلقائياً</span>
+            </Label>
             <Input
               id="end_date"
               type="date"
               value={data.end_date}
               onChange={(e) => updateData({ end_date: e.target.value })}
-              className="bg-muted"
+              className="w-full bg-muted"
+              readOnly
             />
           </div>
         </div>
