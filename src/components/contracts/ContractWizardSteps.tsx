@@ -42,10 +42,10 @@ import { useCustomer } from '@/hooks/useCustomers'
 const AccountDisplay: React.FC<{ data: any }> = ({ data }) => {
   const { data: accounts } = useUnifiedAccountSelector({ filterLevel: 'level_5_6' })
   const selectedAccount = accounts?.find(account => account.id === data.account_id)
+  const template = useTemplateByType(data.contract_type || '')
   
   // دالة لتحديد مصدر الحساب المحاسبي
   const getAccountSource = (): string => {
-    const template = useTemplateByType(data.contract_type || '')
     if (template && template.account_id === data.account_id) {
       return 'من القالب'
     }
