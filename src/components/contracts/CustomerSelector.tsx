@@ -91,18 +91,18 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     );
   }
 
-  // Get customers for the company
+  // Get customers for the company with server-side search (matching customer page behavior)
   const { data: customers, isLoading: customersLoading, refetch: refetchCustomers, error: customersError } = useQuery({
-    queryKey: getQueryKey(['customers-for-contracts'], []),
+    queryKey: getQueryKey(['customers-for-contracts'], [searchValue]),
     queryFn: async () => {
       if (!companyId) {
         console.log('❌ [CustomerSelector] No company ID available');
         return [];
       }
       
-      console.log('🔍 [CustomerSelector] Fetching customers for company:', companyId);
+      console.log('🔍 [CustomerSelector] Fetching customers for company:', companyId, 'with search:', searchValue);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select(`
           id, 
@@ -115,44 +115,43 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           phone,
           email
         `)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .eq('company_id', companyId);
+
+      // Apply server-side search filtering (same as customer page)
+      if (searchValue && searchValue.trim()) {
+        const searchText = searchValue.trim();
+        query = query.or(
+          `first_name.ilike.%${searchText}%,` +
+          `last_name.ilike.%${searchText}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%`
+        );
+      }
+
+      query = query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error('❌ [CustomerSelector] Error fetching customers:', error);
         throw error;
       }
       
-      console.log('✅ [CustomerSelector] Fetched customers:', data?.length || 0);
+      console.log('✅ [CustomerSelector] Fetched customers:', data?.length || 0, 'for search term:', searchValue);
       return data as Customer[];
     },
     enabled: !!companyId,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30 * 1000, // 30 seconds - shorter for search
+    gcTime: 5 * 60 * 1000 // 5 minutes
   });
 
-  // Filter customers based on search
-  const filteredCustomers = customers?.filter(customer => {
-    if (!searchValue) return true;
-    
-    const searchLower = searchValue.toLowerCase();
-    const customerName = customer.customer_type === 'individual' 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
-      : customer.company_name || '';
-    
-    const matches = (
-      customerName.toLowerCase().includes(searchLower) ||
-      customer.phone?.includes(searchValue) ||
-      customer.email?.toLowerCase().includes(searchLower)
-    );
-    
-    return matches;
-  }) || [];
+  // No need for client-side filtering anymore since we do server-side search
+  const filteredCustomers = customers || [];
 
-  console.log('🔍 [CustomerSelector] Search filtering:', {
+  console.log('🔍 [CustomerSelector] Search results:', {
     searchValue,
-    totalCustomers: customers?.length || 0,
-    filteredCount: filteredCustomers.length,
+    customersCount: filteredCustomers.length,
     isLoading: customersLoading,
     hasError: !!customersError
   });
@@ -311,7 +310,8 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                 </CommandList>
                 {!customersLoading && !customersError && (
                   <div className="border-t p-2 text-xs text-muted-foreground text-center">
-                    {filteredCustomers.length} عميل متاح من أصل {customers?.length || 0}
+                    {filteredCustomers.length} عميل
+                    {searchValue && ` للبحث "${searchValue}"`}
                     {companyId && (
                       <span className="block text-[10px] opacity-70">
                         معرف الشركة: {companyId}
