@@ -676,8 +676,8 @@ export const FinancialStep: React.FC = () => {
     if (!isCustomAmount && calculations && selectedVehicle && data.rental_days) {
       const newData = {
         contract_amount: calculations.totalAmount,
-        // Always calculate monthly_amount, even for short contracts (for consistency)
-        monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
+        // Show the actual monthly rate, not the average
+        monthly_amount: calculations.monthlyAmount || calculations.totalAmount
       }
       
       // Only update if values have actually changed
@@ -817,8 +817,8 @@ export const FinancialStep: React.FC = () => {
                       setIsCustomAmount(checked)
                       if (!checked && calculations) {
                         updateData({
-                          contract_amount: calculations.totalAmount,
-                          monthly_amount: data.rental_days >= 30 ? calculations.monthlyAmount : calculations.totalAmount
+          contract_amount: calculations.totalAmount,
+          monthly_amount: calculations.monthlyAmount || calculations.totalAmount
                         })
                       }
                     }}

@@ -196,10 +196,11 @@ export const useContractCalculations = (
       minimumPriceEnforced = true
     }
 
-    // Calculate monthly amount for long-term contracts (only if 30+ days)
+    // Calculate monthly amount for display consistency
+    // For contracts 30+ days, show the equivalent monthly rate, not the average
     const monthlyAmount = rentalDays >= 30 
-      ? bestRate.total / Math.ceil(rentalDays / 30)
-      : 0
+      ? monthlyRate > 0 ? monthlyRate : bestRate.total
+      : bestRate.total
 
     // Calculate period-specific amount based on contract duration
     const periodAmount = getPeriodAmount(bestRate.type, bestRate.total, rentalDays)
