@@ -11,6 +11,7 @@ import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
 import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem';
+import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Eye, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -207,6 +208,7 @@ const Dashboard: React.FC = () => {
               financialData={smartMetricsData} 
               loading={financialLoading} 
             />
+            <DocumentExpiryAlerts />
             <UnifiedAlertsSystem compact />
           </motion.div>
         </div>

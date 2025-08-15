@@ -2908,6 +2908,60 @@ export type Database = {
           },
         ]
       }
+      document_expiry_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          company_id: string
+          contract_id: string
+          contract_number: string
+          created_at: string
+          customer_id: string
+          customer_name: string
+          days_until_expiry: number
+          document_type: string
+          expiry_date: string
+          id: string
+          is_acknowledged: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          company_id: string
+          contract_id: string
+          contract_number: string
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          days_until_expiry: number
+          document_type: string
+          expiry_date: string
+          id?: string
+          is_acknowledged?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          company_id?: string
+          contract_id?: string
+          contract_number?: string
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          days_until_expiry?: number
+          document_type?: string
+          expiry_date?: string
+          id?: string
+          is_acknowledged?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           account_status: string | null
@@ -9425,6 +9479,20 @@ export type Database = {
         Args: { customer_id_param: string }
         Returns: Json
       }
+      check_document_expiry_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          alert_type: string
+          company_id: string
+          contract_id: string
+          contract_number: string
+          customer_id: string
+          customer_name: string
+          days_until_expiry: number
+          document_type: string
+          expiry_date: string
+        }[]
+      }
       check_rate_limit: {
         Args: {
           max_attempts?: number
@@ -10446,6 +10514,10 @@ export type Database = {
       soft_delete_account: {
         Args: { account_id_param: string }
         Returns: boolean
+      }
+      sync_document_expiry_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       system_health_check: {
         Args: Record<PropertyKey, never>

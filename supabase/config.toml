@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.transfer-user-company]
 verify_jwt = true
+
+[functions.sync-document-alerts]
+verify_jwt = false
