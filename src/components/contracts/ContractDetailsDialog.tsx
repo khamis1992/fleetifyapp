@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { NumberDisplay } from '@/components/ui/NumberDisplay';
 import { 
   FileText, 
   Calendar, 
@@ -207,7 +208,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              تفاصيل العقد رقم {contract.contract_number}
+              تفاصيل العقد رقم <NumberDisplay value={contract.contract_number} className="inline" />
             </DialogTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handlePrint}>

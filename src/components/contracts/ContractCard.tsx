@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useContractHelpers } from '@/hooks/useContractHelpers';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { NumberDisplay } from '@/components/ui/NumberDisplay';
 
 interface ContractCardProps {
   contract: any;
@@ -88,7 +89,10 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                    contract.status === 'renewed' ? 'مجدد' : contract.status}
                 </span>
               </Badge>
-              <h3 className="font-semibold text-lg">{contract.contract_number} عقد رقم</h3>
+              <h3 className="font-semibold text-lg">
+                <NumberDisplay value={contract.contract_number} className="inline" />
+                {' '}عقد رقم
+              </h3>
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -126,7 +130,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               <div className="flex items-center justify-end mt-1 gap-2 text-sm text-muted-foreground">
                 <span>مركز التكلفة:</span>
                 <Badge variant="outline">
-                  {contract.cost_center?.center_code || '—'}
+                  <NumberDisplay value={contract.cost_center?.center_code || '—'} className="inline" />
                   {contract.cost_center?.center_name ? ` • ${contract.cost_center.center_name}` : ''}
                 </Badge>
               </div>

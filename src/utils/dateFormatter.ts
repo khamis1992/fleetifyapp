@@ -19,10 +19,15 @@ export const formatDateInGregorian = (date: Date | string): string => {
     day: 'numeric'
   });
 
-  // تطبيق تفضيلات الأرقام الموحدة
+  // فرض استخدام الأرقام الإنجليزية دائماً
   const preferences = getNumberPreferences();
-  if (preferences.useArabicDigits) {
-    formatted = convertToArabicDigits(formatted);
+  if (!preferences.useArabicDigits) {
+    // تحويل أي أرقام عربية إلى إنجليزية
+    formatted = formatted.replace(/[٠-٩]/g, (match) => {
+      const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+      const englishDigits = '0123456789';
+      return englishDigits[arabicDigits.indexOf(match)];
+    });
   }
 
   return formatted;
@@ -38,19 +43,14 @@ export const formatDateForDocument = (date: Date | string): string => {
     return 'Invalid Date';
   }
 
-  // تنسيق التاريخ بالأرقام الإنجليزية (أو العربية حسب التفضيلات)
+  // تنسيق التاريخ بالأرقام الإنجليزية دائماً
   let formatted = dateObj.toLocaleDateString('en-GB', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
   });
 
-  // تطبيق تفضيلات الأرقام الموحدة
-  const preferences = getNumberPreferences();
-  if (preferences.useArabicDigits) {
-    formatted = convertToArabicDigits(formatted);
-  }
-
+  // فرض استخدام الأرقام الإنجليزية دائماً (لا تطبيق التفضيلات هنا)
   return formatted;
 };
 
@@ -73,10 +73,15 @@ export const formatDateForContract = (date: Date | string): string => {
     day: 'numeric'
   });
 
-  // تطبيق تفضيلات الأرقام الموحدة
+  // فرض استخدام الأرقام الإنجليزية دائماً
   const preferences = getNumberPreferences();
-  if (preferences.useArabicDigits) {
-    formatted = convertToArabicDigits(formatted);
+  if (!preferences.useArabicDigits) {
+    // تحويل أي أرقام عربية إلى إنجليزية
+    formatted = formatted.replace(/[٠-٩]/g, (match) => {
+      const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+      const englishDigits = '0123456789';
+      return englishDigits[arabicDigits.indexOf(match)];
+    });
   }
 
   return formatted;

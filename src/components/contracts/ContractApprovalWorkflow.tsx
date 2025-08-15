@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
+import { NumberDisplay } from '@/components/ui/NumberDisplay';
 import { 
   CheckCircle, 
   XCircle, 
@@ -224,7 +225,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
-            سير عمل الموافقة - العقد رقم {contract.contract_number}
+            سير عمل الموافقة - العقد رقم <NumberDisplay value={contract.contract_number} className="inline" />
           </DialogTitle>
         </DialogHeader>
 
