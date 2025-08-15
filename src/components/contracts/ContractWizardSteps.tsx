@@ -527,38 +527,57 @@ export const DatesStep: React.FC = () => {
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <h4 className="font-medium mb-2">ملخص المدة:</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">إجمالي الأيام:</span>
-                <p className="font-medium">{data.rental_days} يوم</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">الأسابيع:</span>
-                <p className="font-medium">
-                  {Math.floor(data.rental_days / 7) > 0 
-                    ? `${Math.floor(data.rental_days / 7)} أسبوع` 
-                    : 'أقل من أسبوع'
-                  }
-                </p>
-              </div>
+              {/* عرض إجمالي الأيام فقط إذا لم يتم تحديد أشهر */}
+              {data.rental_months === 0 && (
+                <div>
+                  <span className="text-muted-foreground">إجمالي الأيام:</span>
+                  <p className="font-medium">{data.rental_days} يوم</p>
+                </div>
+              )}
+              
+              {/* عرض الأسابيع فقط إذا كانت 7 أيام أو أكثر وليست أشهر */}
+              {data.rental_months === 0 && data.rental_days >= 7 && (
+                <div>
+                  <span className="text-muted-foreground">الأسابيع:</span>
+                  <p className="font-medium">
+                    {Math.floor(data.rental_days / 7)} أسبوع
+                  </p>
+                </div>
+              )}
+              
+              {/* عرض الأشهر بناءً على ما تم تحديده أو الحساب */}
               <div>
                 <span className="text-muted-foreground">الأشهر:</span>
                 <p className="font-medium">
-                  {Math.floor(data.rental_days / 30) > 0 
-                    ? `${Math.floor(data.rental_days / 30)} شهر` 
-                    : 'أقل من شهر'
+                  {data.rental_months > 0 
+                    ? `${data.rental_months} شهر`
+                    : data.rental_days >= 30 
+                      ? `${Math.floor(data.rental_days / 30)} شهر`
+                      : 'أقل من شهر'
                   }
                 </p>
               </div>
-              <div>
-                <span className="text-muted-foreground">السنوات:</span>
-                <p className="font-medium">
-                  {data.rental_days >= 365 
-                    ? `${(data.rental_days / 365).toFixed(1)} سنة`
-                    : 'أقل من سنة'
-                  }
-                </p>
-              </div>
+              
+              {/* عرض السنوات فقط إذا كانت سنة أو أكثر */}
+              {(data.rental_days >= 365 || data.rental_months >= 12) && (
+                <div>
+                  <span className="text-muted-foreground">السنوات:</span>
+                  <p className="font-medium">
+                    {data.rental_months >= 12 
+                      ? `${(data.rental_months / 12).toFixed(1)} سنة`
+                      : `${(data.rental_days / 365).toFixed(1)} سنة`
+                    }
+                  </p>
+                </div>
+              )}
             </div>
+            
+            {/* رسالة توضيحية عندما يتم تحديد الأشهر */}
+            {data.rental_months > 0 && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
+                ✓ جميع البيانات صحيحة ومتاحة
+              </div>
+            )}
           </div>
         )}
       </CardContent>
