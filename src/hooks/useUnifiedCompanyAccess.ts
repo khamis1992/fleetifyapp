@@ -19,7 +19,7 @@ export const useUnifiedCompanyAccess = () => {
   const { user, session, loading } = useAuth();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
-  return useMemo(() => {
+    return useMemo(() => {
     // First check authentication state
     if (loading) {
       console.log('🔧 [UNIFIED_COMPANY_ACCESS] Auth still loading...');
@@ -73,6 +73,15 @@ export const useUnifiedCompanyAccess = () => {
       };
     }
 
+    // Extract company_id safely - try multiple sources
+    const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
+    console.log('🔧 [UNIFIED_COMPANY_ACCESS] User company extraction:', {
+      userId: user?.id,
+      userCompanyFromCompany: user?.company?.id,
+      userCompanyFromDirect: (user as any)?.company_id,
+      finalCompanyId: userCompanyId
+    });
+
     const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
     const rolesNormalized = Array.from(
       new Set(
@@ -81,7 +90,7 @@ export const useUnifiedCompanyAccess = () => {
     ) as string[];
     console.log('🔧 [UNIFIED_COMPANY_ACCESS] Computing access context:', {
       userId: user?.id,
-      userCompanyId: user?.company?.id,
+      userCompanyId: userCompanyId,
       userRoles: rolesNormalized,
       isBrowsingMode,
       browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null

@@ -39,7 +39,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   placeholder = "ابحث عن عميل أو أنشئ جديد...",
   disabled = false
 }) => {
-  const { companyId, getQueryKey, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, browsedCompany, isBrowsingMode, isAuthenticating, authError } = useUnifiedCompanyAccess();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [customerFormOpen, setCustomerFormOpen] = useState(false);
@@ -47,11 +47,49 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   // Debug logging for company context
   console.log('🏢 [CustomerSelector] Company context:', {
     companyId,
+    isAuthenticating,
+    authError,
     isBrowsingMode,
     browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
     searchValue,
     selectedValue: value
   });
+
+  // Show loading while authenticating
+  if (isAuthenticating) {
+    return (
+      <div className="space-y-2">
+        <Label>العميل *</Label>
+        <div className="flex items-center justify-center p-4 border rounded-md">
+          <LoadingSpinner />
+          <span className="mr-2 text-sm text-muted-foreground">جاري تحميل بيانات المستخدم...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no company ID available
+  if (!companyId) {
+    return (
+      <div className="space-y-2">
+        <Label>العميل *</Label>
+        <div className="flex flex-col items-center justify-center p-4 border border-destructive/20 rounded-md bg-destructive/5">
+          <div className="text-sm text-destructive font-medium">لا يمكن تحديد الشركة الحالية</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {authError || 'المستخدم غير مرتبط بأي شركة'}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()} 
+            className="mt-2"
+          >
+            إعادة تحميل الصفحة
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Get customers for the company
   const { data: customers, isLoading: customersLoading, refetch: refetchCustomers, error: customersError } = useQuery({
