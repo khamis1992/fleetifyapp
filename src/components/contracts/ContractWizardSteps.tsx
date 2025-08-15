@@ -705,10 +705,6 @@ export const FinancialStep: React.FC = () => {
         {/* Calculations Display */}
         {calculations && selectedVehicle && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              حسابات تلقائية ذكية
-            </h4>
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
                 <span className="text-green-700">نوع التسعير:</span>
