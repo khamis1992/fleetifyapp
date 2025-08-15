@@ -173,11 +173,12 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                   </div>
                   <div>
                     <Label htmlFor="contact_phone">رقم الهاتف</Label>
-                    <Input
-                      id="contact_phone"
-                      {...form.register("contact_phone")}
-                      dir="ltr"
-                    />
+                      <Input
+                       id="contact_phone"
+                       {...form.register("contact_phone")}
+                       dir="ltr"
+                       className="text-right"
+                     />
                   </div>
                 </div>
                 <div>

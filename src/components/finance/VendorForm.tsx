@@ -291,7 +291,7 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
               <FormItem>
                 <FormLabel>رقم الهاتف</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="+965 XXXX XXXX" dir="ltr" />
+                  <Input {...field} placeholder="+965 XXXX XXXX" dir="ltr" className="text-right" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
