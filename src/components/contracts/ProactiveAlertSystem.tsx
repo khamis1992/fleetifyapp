@@ -162,16 +162,7 @@ export const ProactiveAlertSystem: React.FC<ProactiveAlertSystemProps> = ({
   }
 
   if (!hasAlerts) {
-    return (
-      <Card className="border-green-200 bg-green-50/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 text-green-700">
-            <CheckCircle className="h-4 w-4" />
-            جميع البيانات صحيحة ومتاحة
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    );
+    return null;
   }
 
   return (
