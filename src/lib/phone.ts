@@ -1,12 +1,8 @@
 // Phone utilities for normalizing and formatting numbers for WhatsApp
-
-const ARABIC_DIGITS: Record<string, string> = {
-  '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-  '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
-};
+import { normalizeArabicDigits } from "@/utils/numberFormatter";
 
 export const normalizeDigits = (input: string = ''): string => {
-  return input.replace(/[٠-٩]/g, (d) => ARABIC_DIGITS[d] || d);
+  return normalizeArabicDigits(input);
 };
 
 export const cleanPhone = (input: string = ''): string => {

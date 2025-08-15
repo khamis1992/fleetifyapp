@@ -1,3 +1,5 @@
+import { getNumberPreferences, convertToArabicDigits } from "./numberFormatter";
+
 /**
  * تنسيق التاريخ بالتقويم الميلادي باللغة العربية
  */
@@ -10,12 +12,20 @@ export const formatDateInGregorian = (date: Date | string): string => {
   }
 
   // تنسيق التاريخ بالميلادي باللغة العربية
-  return dateObj.toLocaleDateString('ar-SA', {
+  let formatted = dateObj.toLocaleDateString('ar-SA', {
     calendar: 'gregory', // التقويم الميلادي
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
+
+  // تطبيق تفضيلات الأرقام الموحدة
+  const preferences = getNumberPreferences();
+  if (preferences.useArabicDigits) {
+    formatted = convertToArabicDigits(formatted);
+  }
+
+  return formatted;
 };
 
 /**
@@ -28,12 +38,20 @@ export const formatDateForDocument = (date: Date | string): string => {
     return 'Invalid Date';
   }
 
-  // تنسيق التاريخ بالأرقام الإنجليزية
-  return dateObj.toLocaleDateString('en-GB', {
+  // تنسيق التاريخ بالأرقام الإنجليزية (أو العربية حسب التفضيلات)
+  let formatted = dateObj.toLocaleDateString('en-GB', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
   });
+
+  // تطبيق تفضيلات الأرقام الموحدة
+  const preferences = getNumberPreferences();
+  if (preferences.useArabicDigits) {
+    formatted = convertToArabicDigits(formatted);
+  }
+
+  return formatted;
 };
 
 /**
@@ -47,11 +65,19 @@ export const formatDateForContract = (date: Date | string): string => {
   }
 
   // تنسيق مفصل بالعربية مع التقويم الميلادي
-  return dateObj.toLocaleDateString('ar-SA', {
+  let formatted = dateObj.toLocaleDateString('ar-SA', {
     calendar: 'gregory',
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
+
+  // تطبيق تفضيلات الأرقام الموحدة
+  const preferences = getNumberPreferences();
+  if (preferences.useArabicDigits) {
+    formatted = convertToArabicDigits(formatted);
+  }
+
+  return formatted;
 };

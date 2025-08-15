@@ -1,4 +1,5 @@
 import { format, parse, isValid } from 'date-fns';
+import { normalizeArabicDigits, parseNumber, cleanNumericString } from './numberFormatter';
 
 export interface FixResult {
   success: boolean;
@@ -133,7 +134,7 @@ export class CSVAutoFix {
   }
 
   /**
-   * إصلاح الأرقام التلقائي
+   * إصلاح الأرقام التلقائي مع دعم النظام الموحد
    */
   static fixNumber(value: any): FixResult {
     if (value === null || value === undefined || value === '') {
@@ -148,8 +149,8 @@ export class CSVAutoFix {
 
     const stringValue = String(value).trim();
     
-    // إزالة الفواصل والرموز غير الرقمية
-    const cleanedValue = stringValue.replace(/[^\d.-]/g, '');
+    // استخدام النظام الموحد لتنظيف الأرقام
+    const cleanedValue = cleanNumericString(stringValue);
     
     if (cleanedValue === '') {
       return {
@@ -161,15 +162,16 @@ export class CSVAutoFix {
       };
     }
 
-    const numericValue = parseFloat(cleanedValue);
+    // استخدام parseNumber من النظام الموحد
+    const numericValue = parseNumber(cleanedValue);
     
-    if (!isNaN(numericValue)) {
+    if (!isNaN(numericValue) && numericValue !== 0) {
       return {
         success: true,
         originalValue: value,
         fixedValue: numericValue,
         confidence: stringValue === cleanedValue ? 'high' : 'medium',
-        reason: stringValue === cleanedValue ? 'رقم صحيح' : 'تم إزالة الرموز غير الرقمية'
+        reason: stringValue === cleanedValue ? 'رقم صحيح' : 'تم تحويل الأرقام العربية وإزالة الرموز غير الرقمية'
       };
     }
 
@@ -178,12 +180,12 @@ export class CSVAutoFix {
       originalValue: value,
       fixedValue: value,
       confidence: 'low',
-      reason: 'لا يمكن تحويل إلى رقم'
+      reason: 'لا يمكن تحويل إلى رقم صحيح'
     };
   }
 
   /**
-   * إصلاح رقم الهاتف القطري
+   * إصلاح رقم الهاتف القطري مع دعم النظام الموحد
    */
   static fixQatarPhone(value: any): FixResult {
     if (!value || value === '' || value === '0') {
@@ -197,6 +199,9 @@ export class CSVAutoFix {
     }
 
     let phoneValue = String(value).trim();
+    
+    // استخدام النظام الموحد لتحويل الأرقام العربية
+    phoneValue = normalizeArabicDigits(phoneValue);
     
     // إزالة المسافات والشرطات الإضافية
     phoneValue = phoneValue.replace(/\s+/g, '').replace(/-+/g, '');
@@ -218,7 +223,7 @@ export class CSVAutoFix {
           originalValue: value,
           fixedValue: phoneValue,
           confidence: 'high',
-          reason: 'تم تنسيق رقم الهاتف القطري'
+          reason: 'تم تنسيق رقم الهاتف القطري وتحويل الأرقام العربية'
         };
       }
     }
@@ -233,7 +238,7 @@ export class CSVAutoFix {
   }
 
   /**
-   * إصلاح رقم الهاتف الكويتي
+   * إصلاح رقم الهاتف الكويتي مع دعم النظام الموحد
    */
   static fixKuwaitPhone(value: any): FixResult {
     if (!value || value === '' || value === '0') {
@@ -247,6 +252,9 @@ export class CSVAutoFix {
     }
 
     let phoneValue = String(value).trim();
+    
+    // استخدام النظام الموحد لتحويل الأرقام العربية
+    phoneValue = normalizeArabicDigits(phoneValue);
     
     // إزالة المسافات والشرطات الإضافية
     phoneValue = phoneValue.replace(/\s+/g, '').replace(/-+/g, '');
@@ -268,7 +276,7 @@ export class CSVAutoFix {
           originalValue: value,
           fixedValue: phoneValue,
           confidence: 'high',
-          reason: 'تم تنسيق رقم الهاتف الكويتي'
+          reason: 'تم تنسيق رقم الهاتف الكويتي وتحويل الأرقام العربية'
         };
       }
     }
@@ -399,7 +407,7 @@ export class CSVAutoFix {
   }
 
   /**
-   * إصلاح النصوص (تنظيف)
+   * إصلاح النصوص (تنظيف) مع استخدام النظام الموحد
    */
   static fixText(value: any): FixResult {
     if (value === null || value === undefined) {
@@ -418,15 +426,8 @@ export class CSVAutoFix {
     // إزالة المسافات الإضافية
     textValue = textValue.trim().replace(/\s+/g, ' ');
     
-    // تصحيح الأحرف الإنجليزية المكتوبة بالعربية
-    const arabicToEnglish = {
-      '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-      '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
-    };
-    
-    for (const [arabic, english] of Object.entries(arabicToEnglish)) {
-      textValue = textValue.replace(new RegExp(arabic, 'g'), english);
-    }
+    // استخدام النظام الموحد لتحويل الأرقام العربية
+    textValue = normalizeArabicDigits(textValue);
 
     if (textValue !== originalText) {
       return {
@@ -434,7 +435,7 @@ export class CSVAutoFix {
         originalValue: value,
         fixedValue: textValue,
         confidence: 'medium',
-        reason: 'تم تنظيف النص وتصحيح الأرقام'
+        reason: 'تم تنظيف النص وتحويل الأرقام العربية باستخدام النظام الموحد'
       };
     }
 
