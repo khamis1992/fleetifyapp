@@ -1,5 +1,21 @@
 import { useState, useCallback, useEffect } from 'react'
-import { ContractFormData } from '@/types/contracts'
+
+interface ContractFormData {
+  customer_id: string
+  vehicle_id?: string | null
+  contract_type: string
+  contract_date: string
+  start_date: string
+  end_date: string
+  contract_amount: number
+  monthly_amount?: number
+  description?: string | null
+  terms?: string | null
+  contract_number?: string
+  status?: string
+  created_by?: string
+  cost_center_id?: string | null
+}
 
 export interface FormValidationError {
   field: keyof ContractFormData
@@ -88,7 +104,7 @@ export const useContractFormValidation = ({
             message: 'يرجى تحديد تاريخ بداية العقد',
             severity: 'error'
           })
-        } else if (new Date(value) < new Date().setHours(0, 0, 0, 0)) {
+        } else if (new Date(value) < new Date(new Date().setHours(0, 0, 0, 0))) {
           errors.push({
             field,
             message: 'تاريخ البداية لا يمكن أن يكون في الماضي',
@@ -198,7 +214,7 @@ export const useContractFormValidation = ({
 
     // Validate each field in the data
     Object.entries(data).forEach(([field, value]) => {
-      const fieldErrors = validateField(field as keyof ContractFormData, value)
+      const fieldErrors = validateField(String(field) as keyof ContractFormData, value)
       fieldErrors.forEach(error => {
         if (error.severity === 'error') {
           allErrors.push(error)

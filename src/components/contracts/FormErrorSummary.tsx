@@ -79,14 +79,14 @@ export const FormErrorSummary: React.FC<FormErrorSummaryProps> = ({
                     {errors.map((error, index) => (
                       <li key={index} className="flex items-center justify-between text-sm">
                         <span>
-                          <strong>{getFieldDisplayName(error.field)}:</strong> {error.message}
+                          <strong>{getFieldDisplayName(String(error.field))}:</strong> {error.message}
                         </span>
                         {onFieldFocus && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 px-2 text-xs"
-                            onClick={() => onFieldFocus(error.field)}
+                            onClick={() => onFieldFocus(String(error.field))}
                           >
                             انتقال
                           </Button>
@@ -129,14 +129,14 @@ export const FormErrorSummary: React.FC<FormErrorSummaryProps> = ({
                     {warnings.map((warning, index) => (
                       <li key={index} className="flex items-center justify-between text-sm">
                         <span>
-                          <strong>{getFieldDisplayName(warning.field)}:</strong> {warning.message}
+                          <strong>{getFieldDisplayName(String(warning.field))}:</strong> {warning.message}
                         </span>
                         {onFieldFocus && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 px-2 text-xs text-yellow-700 hover:text-yellow-800"
-                            onClick={() => onFieldFocus(warning.field)}
+                            onClick={() => onFieldFocus(String(warning.field))}
                           >
                             مراجعة
                           </Button>

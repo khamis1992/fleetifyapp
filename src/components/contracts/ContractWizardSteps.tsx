@@ -144,8 +144,6 @@ export const BasicInfoStep: React.FC = () => {
                 <AlertDescription>{getFieldStatus('contract_date').errorMessage}</AlertDescription>
               </Alert>
             )}
-              onChange={(e) => updateData({ contract_date: e.target.value })}
-            />
           </div>
         </div>
         

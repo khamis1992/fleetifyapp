@@ -292,19 +292,7 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Client-side errors */}
-          {hasClientErrors && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <ul className="list-disc list-inside space-y-1">
-                  {clientErrors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Remove old client errors section - replaced by FormErrorSummary */}
 
           {/* Server validation errors */}
           {hasValidationErrors && (
@@ -715,7 +703,7 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
                 isValidating || 
                 customersLoading || 
                 vehiclesLoading || 
-                hasClientErrors || 
+                hasErrors || 
                 hasValidationErrors
               }
             >
