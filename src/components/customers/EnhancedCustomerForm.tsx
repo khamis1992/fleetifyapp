@@ -466,13 +466,13 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                               <FormItem>
                                 <FormLabel className="text-base font-medium text-right">رقم الهاتف *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="tel" 
-                                    placeholder="+965 XXXXXXXX" 
-                      className="text-left h-12 text-base"
-                                    dir="rtl"
-                                  />
+                                   <Input 
+                                     {...field} 
+                                     type="tel" 
+                                     placeholder="+965 XXXXXXXX" 
+                                     className="text-left h-12 text-base"
+                                     dir="ltr"
+                                   />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
