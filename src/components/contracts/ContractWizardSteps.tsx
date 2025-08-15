@@ -709,7 +709,7 @@ export const FinancialStep: React.FC = () => {
               <CheckCircle className="h-4 w-4" />
               حسابات تلقائية ذكية
             </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
                 <span className="text-green-700">نوع التسعير:</span>
                 <p className="font-medium">{calculations.breakdown.rateType}</p>
@@ -718,22 +718,6 @@ export const FinancialStep: React.FC = () => {
                 <span className="text-green-700">المبلغ الإجمالي:</span>
                 <p className="font-medium">{formatCurrency(calculations.totalAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
               </div>
-              <div>
-                <span className="text-green-700">
-                  {calculations.periodType === 'daily' && 'المبلغ اليومي:'}
-                  {calculations.periodType === 'weekly' && 'المبلغ الأسبوعي:'}
-                  {calculations.periodType === 'monthly' && 'المبلغ الشهري:'}
-                </span>
-                <p className="font-medium">{formatCurrency(calculations.periodAmount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
-              </div>
-              {calculations.breakdown.savings && (
-                <div>
-                  <span className="text-green-700">التوفير:</span>
-                  <p className="font-medium text-green-600">
-                    {formatCurrency(calculations.breakdown.savings, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                  </p>
-                </div>
-              )}
             </div>
             
             {/* عرض تفاصيل التسعير المختلط المحسّن */}
