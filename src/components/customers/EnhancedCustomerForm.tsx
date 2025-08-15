@@ -442,25 +442,6 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                         <div className="grid grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
-                            name="alternative_phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-base font-medium text-right">رقم هاتف بديل</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="tel" 
-                                    placeholder="+965 XXXXXXXX" 
-                                    className="text-right h-12 text-base"
-                                    dir="rtl"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
                             name="phone"
                             render={({ field }) => (
                               <FormItem>
@@ -473,6 +454,25 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                      className="text-right h-12 text-base"
                                      dir="ltr"
                                    />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="alternative_phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-base font-medium text-right">رقم هاتف بديل</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="tel" 
+                                    placeholder="+965 XXXXXXXX" 
+                                    className="text-right h-12 text-base"
+                                    dir="ltr"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

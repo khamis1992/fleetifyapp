@@ -490,6 +490,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         {...register('phone', { required: 'رقم الهاتف مطلوب' })} 
                         placeholder="+965 XXXXXXXX"
                         dir="ltr"
+                        className="text-right"
                       />
                       {errors.phone && (
                         <p className="text-sm text-red-600">{errors.phone.message}</p>
@@ -501,6 +502,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         {...register('alternative_phone')} 
                         placeholder="+965 XXXXXXXX"
                         dir="ltr"
+                        className="text-right"
                       />
                     </div>
                   </div>
