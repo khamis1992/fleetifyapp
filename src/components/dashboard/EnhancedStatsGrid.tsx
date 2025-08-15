@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { EnhancedDashboardStats } from '@/hooks/useEnhancedDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface EnhancedStatsGridProps {
   stats: EnhancedDashboardStats;
@@ -154,9 +155,9 @@ export const EnhancedStatsGrid: React.FC<EnhancedStatsGridProps> = ({ stats, loa
                     <p className="text-sm font-medium text-muted-foreground mb-2 tracking-wide">
                       {stat.title}
                     </p>
-                    <p className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text group-hover:from-primary group-hover:to-accent transition-all duration-300">
-                      {stat.value}
-                    </p>
+                    <div className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text group-hover:from-primary group-hover:to-accent transition-all duration-300">
+                      <StatCardNumber value={stat.value} className="inline" />
+                    </div>
                     <p className="text-xs text-foreground/70 mb-3 leading-relaxed">
                       {stat.description}
                     </p>

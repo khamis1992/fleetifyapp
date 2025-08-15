@@ -17,6 +17,7 @@ import {
   Database
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { StatCardNumber } from '@/components/ui/NumberDisplay'
 
 interface DocumentOperationMonitorProps {
   contractId?: string
@@ -140,7 +141,7 @@ export function DocumentOperationMonitor({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{logs.length}</div>
+            <StatCardNumber value={logs.length} />
             <p className="text-xs text-muted-foreground">
               آخر 50 عملية
             </p>
@@ -155,7 +156,7 @@ export function DocumentOperationMonitor({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{failedOperations.length}</div>
+            <StatCardNumber value={failedOperations.length} className="text-red-600" />
             <p className="text-xs text-muted-foreground">
               تحتاج إلى إعادة معالجة
             </p>
@@ -172,7 +173,10 @@ export function DocumentOperationMonitor({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {cleanupStats.filesDeleted + cleanupStats.recordsDeleted}
+                <StatCardNumber 
+                  value={cleanupStats.filesDeleted + cleanupStats.recordsDeleted} 
+                  className="inline" 
+                />
               </div>
               <p className="text-xs text-muted-foreground">
                 عنصر محذوف

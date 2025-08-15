@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Download, FileText } from "lucide-react"
 import { usePayablesReport, exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
+import { StatCardNumber } from "@/components/ui/NumberDisplay"
 
 interface PayablesReportProps {
   companyName?: string
@@ -100,19 +101,19 @@ const { data: payablesData, isLoading } = usePayablesReport()
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+              <StatCardNumber value={formatCurrency(totalAmount)} className="inline" />
               <p className="text-xs text-muted-foreground">إجمالي المبالغ المستحقة</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{formatCurrency(overdueAmount)}</div>
+              <StatCardNumber value={formatCurrency(overdueAmount)} className="inline text-red-600" />
               <p className="text-xs text-muted-foreground">المبالغ المتأخرة</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{payablesData.length}</div>
+              <StatCardNumber value={payablesData.length} />
               <p className="text-xs text-muted-foreground">عدد الفواتير المستحقة</p>
             </CardContent>
           </Card>

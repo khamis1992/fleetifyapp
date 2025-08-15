@@ -10,6 +10,7 @@ import { FileText, Plus } from "lucide-react";
 import { InvoiceCard } from "@/components/finance/InvoiceCard";
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
 import { useState } from "react";
+import { StatCardNumber } from "@/components/ui/NumberDisplay";
 
 interface CustomerInvoicesTabProps {
   customerId: string;
@@ -103,7 +104,7 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
               <CardTitle className="text-sm font-medium">إجمالي الفواتير</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{summary.totalInvoices}</div>
+              <StatCardNumber value={summary.totalInvoices} />
             </CardContent>
           </Card>
           
@@ -112,7 +113,7 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
               <CardTitle className="text-sm font-medium">إجمالي المبلغ</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(summary.totalAmount)}</div>
+              <StatCardNumber value={formatCurrency(summary.totalAmount)} className="inline" />
             </CardContent>
           </Card>
           
@@ -121,7 +122,7 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
               <CardTitle className="text-sm font-medium">المبلغ المدفوع</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(summary.totalPaid)}</div>
+              <StatCardNumber value={formatCurrency(summary.totalPaid)} className="inline text-green-600" />
             </CardContent>
           </Card>
           
@@ -130,7 +131,7 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
               <CardTitle className="text-sm font-medium">المبلغ المستحق</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalOutstanding)}</div>
+              <StatCardNumber value={formatCurrency(summary.totalOutstanding)} className="inline text-red-600" />
             </CardContent>
           </Card>
         </div>

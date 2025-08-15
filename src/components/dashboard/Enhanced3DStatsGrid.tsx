@@ -16,6 +16,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface Enhanced3DStatsGridProps {
   stats?: EnhancedDashboardStats;

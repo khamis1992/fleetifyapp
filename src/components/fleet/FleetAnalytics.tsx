@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Calculator, TrendingUp, TrendingDown, Car, Wrench, DollarSign } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { StatCardNumber, StatCardPercentage } from "@/components/ui/NumberDisplay";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -64,7 +65,7 @@ export function FleetAnalytics() {
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalVehicles}</div>
+            <StatCardNumber value={analytics.totalVehicles} />
             <p className="text-xs text-muted-foreground">
               {analytics.availableVehicles} متاحة
             </p>
@@ -77,7 +78,7 @@ export function FleetAnalytics() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics.totalBookValue)}</div>
+            <StatCardNumber value={formatCurrency(analytics.totalBookValue)} className="inline" />
             <p className="text-xs text-muted-foreground">
               القيمة الدفترية الحالية
             </p>
@@ -90,7 +91,7 @@ export function FleetAnalytics() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.utilizationRate.toFixed(1)}%</div>
+            <StatCardPercentage value={analytics.utilizationRate} />
             <p className="text-xs text-muted-foreground">
               المركبات المؤجرة حالياً
             </p>
@@ -103,7 +104,7 @@ export function FleetAnalytics() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics.monthlyMaintenanceCost)}</div>
+            <StatCardNumber value={formatCurrency(analytics.monthlyMaintenanceCost)} className="inline" />
             <p className="text-xs text-muted-foreground">
               هذا الشهر
             </p>

@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 import { 
   Send, 
   Mic, 
@@ -583,7 +584,7 @@ export const SmartLegalAssistant = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">إجمالي العقود</p>
-                <p className="text-2xl font-bold">{quickStats.totalContracts}</p>
+                <StatCardNumber value={quickStats.totalContracts} />
               </div>
               <FileText className="h-8 w-8 text-primary" />
             </div>
@@ -594,7 +595,7 @@ export const SmartLegalAssistant = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">العملاء النشطون</p>
-                <p className="text-2xl font-bold">{quickStats.activeCustomers}</p>
+                <StatCardNumber value={quickStats.activeCustomers} />
               </div>
               <Activity className="h-8 w-8 text-primary" />
             </div>
@@ -605,7 +606,7 @@ export const SmartLegalAssistant = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">الإيرادات الشهرية</p>
-                <p className="text-2xl font-bold">{quickStats.monthlyRevenue.toFixed(1)}K</p>
+                <StatCardNumber value={`${quickStats.monthlyRevenue.toFixed(1)}K`} />
               </div>
               <TrendingUp className="h-8 w-8 text-primary" />
             </div>

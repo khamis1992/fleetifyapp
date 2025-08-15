@@ -5,6 +5,7 @@ import { DollarSign, TrendingUp, Users, CreditCard, ArrowUpRight, ArrowDownRight
 import { useSubscriptionsAnalytics } from '@/hooks/useSubscriptionsAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 export const PaymentsDashboardStats: React.FC = () => {
   const { data: analytics, isLoading } = useSubscriptionsAnalytics();
@@ -90,7 +91,7 @@ export const PaymentsDashboardStats: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground mb-2">
-                {stat.format(stat.value)}
+                <StatCardNumber value={stat.format(stat.value)} className="inline" />
               </div>
               <div className="flex items-center text-xs">
                 {getTrendIcon(stat.trend)}

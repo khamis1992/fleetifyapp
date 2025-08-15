@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface FinancialOverview {
   totalRevenue: number;
@@ -125,7 +126,7 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
                   </div>
                 )}
               </div>
-              <p className="text-xl font-bold text-foreground">{metric.value}</p>
+              <StatCardNumber value={metric.value} className="text-xl text-foreground" />
             </motion.div>
           ))}
 

@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { CalendarDays, TrendingUp, Users, DollarSign, AlertTriangle, CheckCircle } from "lucide-react";
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 export function ContractReports() {
   const { user } = useAuth();
@@ -184,7 +185,7 @@ export function ContractReports() {
             <CalendarDays className="h-8 w-8 text-blue-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-muted-foreground">إجمالي العقود</p>
-              <p className="text-2xl font-bold">{contractStats?.totalContracts || 0}</p>
+              <StatCardNumber value={contractStats?.totalContracts || 0} />
             </div>
           </CardContent>
         </Card>
@@ -194,7 +195,7 @@ export function ContractReports() {
             <CheckCircle className="h-8 w-8 text-green-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-muted-foreground">العقود النشطة</p>
-              <p className="text-2xl font-bold">{contractStats?.activeContracts || 0}</p>
+              <StatCardNumber value={contractStats?.activeContracts || 0} />
             </div>
           </CardContent>
         </Card>
@@ -204,7 +205,7 @@ export function ContractReports() {
             <DollarSign className="h-8 w-8 text-yellow-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-muted-foreground">إجمالي الإيرادات</p>
-              <p className="text-2xl font-bold">{(contractStats?.totalRevenue || 0).toFixed(3)} د.ك</p>
+              <StatCardNumber value={`${(contractStats?.totalRevenue || 0).toFixed(3)} د.ك`} />
             </div>
           </CardContent>
         </Card>
@@ -214,7 +215,7 @@ export function ContractReports() {
             <TrendingUp className="h-8 w-8 text-purple-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-muted-foreground">الإيرادات الشهرية</p>
-              <p className="text-2xl font-bold">{(contractStats?.monthlyRevenue || 0).toFixed(3)} د.ك</p>
+              <StatCardNumber value={`${(contractStats?.monthlyRevenue || 0).toFixed(3)} د.ك`} />
             </div>
           </CardContent>
         </Card>

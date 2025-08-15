@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
@@ -125,19 +126,19 @@ export const SystemActivityCard: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+              <StatCardNumber value={stats.total} className="text-blue-600" />
               <div className="text-sm text-blue-600">إجمالي السجلات</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats.today}</div>
+              <StatCardNumber value={stats.today} className="text-green-600" />
               <div className="text-sm text-green-600">عمليات اليوم</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
+              <StatCardNumber value={stats.errors} className="text-red-600" />
               <div className="text-sm text-red-600">أخطاء</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{stats.warnings}</div>
+              <StatCardNumber value={stats.warnings} className="text-yellow-600" />
               <div className="text-sm text-yellow-600">تحذيرات</div>
             </div>
           </div>

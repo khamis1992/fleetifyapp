@@ -2,6 +2,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface InteractiveDashboardCardProps {
   children?: React.ReactNode;
@@ -125,7 +126,9 @@ export function InteractiveDashboardCard({
                     scale: isHovered ? 1.05 : 1,
                   }}
                 >
-                  <div className="text-2xl font-bold text-primary">{stats.value}</div>
+                  <div className="text-2xl font-bold text-primary">
+                    <StatCardNumber value={stats.value} className="inline" />
+                  </div>
                   {stats.change !== undefined && (
                     <div className={`text-sm flex items-center gap-1 ${
                       stats.change >= 0 ? 'text-success' : 'text-destructive'

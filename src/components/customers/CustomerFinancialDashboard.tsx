@@ -21,6 +21,7 @@ import {
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { StatCardNumber } from "@/components/ui/NumberDisplay";
 
 interface CustomerFinancialDashboardProps {
   customerId: string;
@@ -184,7 +185,7 @@ const { companyId } = useUnifiedCompanyAccess();
               <span className="text-sm font-medium">إجمالي الرصيد</span>
             </div>
             <div className={`text-2xl font-bold ${getBalanceColor(financialSummary.totalBalance)}`}>
-              {formatCurrency(financialSummary.totalBalance)}
+              <StatCardNumber value={formatCurrency(financialSummary.totalBalance)} className="inline" />
             </div>
             <p className="text-xs text-muted-foreground">
               {financialSummary.totalBalance > 0 ? "مديونية" : "دائنية"}
@@ -199,7 +200,7 @@ const { companyId } = useUnifiedCompanyAccess();
               <span className="text-sm font-medium">العقود</span>
             </div>
             <div className="text-2xl font-bold">
-              {financialSummary.activeContracts}/{financialSummary.totalContracts}
+              <StatCardNumber value={`${financialSummary.activeContracts}/${financialSummary.totalContracts}`} />
             </div>
             <p className="text-xs text-muted-foreground">نشطة/إجمالي</p>
           </CardContent>
@@ -212,7 +213,7 @@ const { companyId } = useUnifiedCompanyAccess();
               <span className="text-sm font-medium">إجمالي المدفوع</span>
             </div>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(financialSummary.totalPaid)}
+              <StatCardNumber value={formatCurrency(financialSummary.totalPaid)} className="inline" />
             </div>
             <p className="text-xs text-muted-foreground">المدفوعات المكتملة</p>
           </CardContent>
@@ -225,7 +226,7 @@ const { companyId } = useUnifiedCompanyAccess();
               <span className="text-sm font-medium">المبلغ المستحق</span>
             </div>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(financialSummary.outstanding)}
+              <StatCardNumber value={formatCurrency(financialSummary.outstanding)} className="inline" />
             </div>
             <p className="text-xs text-muted-foreground">غير مدفوع</p>
           </CardContent>
