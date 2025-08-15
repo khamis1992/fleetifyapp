@@ -16,6 +16,7 @@ import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface ContractCSVUploadProps {
   open: boolean
@@ -319,15 +320,15 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{results.successful}</div>
+                  <StatCardNumber value={results.successful} className="text-green-600" />
                   <div className="text-sm text-green-700">تم بنجاح</div>
                 </div>
                 <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">{results.failed}</div>
+                  <StatCardNumber value={results.failed} className="text-red-600" />
                   <div className="text-sm text-red-700">فشل</div>
                 </div>
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{results.total}</div>
+                  <StatCardNumber value={results.total} className="text-blue-600" />
                   <div className="text-sm text-blue-700">المجموع</div>
                 </div>
               </div>

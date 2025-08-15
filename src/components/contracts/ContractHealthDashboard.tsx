@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useContractHealthMonitor } from '@/hooks/useContractHealthMonitor'
 import { cn } from '@/lib/utils'
+import { StatCardNumber } from '@/components/ui/NumberDisplay'
 
 export const ContractHealthDashboard: React.FC = () => {
   const {
@@ -128,9 +129,7 @@ export const ContractHealthDashboard: React.FC = () => {
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {healthStats.criticalIssues}
-            </div>
+            <StatCardNumber value={healthStats.criticalIssues} className="text-destructive" />
             <p className="text-xs text-muted-foreground">
               تتطلب حلاً فورياً
             </p>
@@ -143,9 +142,7 @@ export const ContractHealthDashboard: React.FC = () => {
             <AlertTriangle className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {healthStats.warningIssues}
-            </div>
+            <StatCardNumber value={healthStats.warningIssues} className="text-warning" />
             <p className="text-xs text-muted-foreground">
               تحتاج للمراجعة
             </p>
@@ -158,9 +155,7 @@ export const ContractHealthDashboard: React.FC = () => {
             <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {healthStats.infoIssues}
-            </div>
+            <StatCardNumber value={healthStats.infoIssues} className="text-primary" />
             <p className="text-xs text-muted-foreground">
               إشعارات عامة
             </p>

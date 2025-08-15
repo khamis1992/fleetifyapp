@@ -15,6 +15,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
@@ -90,7 +91,7 @@ export const SmartAnalyticsPanel: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              +{analytics.metrics.growth_rate}%
+              +<StatCardPercentage value={analytics.metrics.growth_rate} className="inline" />
             </div>
             <Progress value={analytics.metrics.growth_rate} className="mt-2" />
           </CardContent>
@@ -103,7 +104,7 @@ export const SmartAnalyticsPanel: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {analytics.metrics.customer_satisfaction}%
+              <StatCardPercentage value={analytics.metrics.customer_satisfaction} />
             </div>
             <Progress value={analytics.metrics.customer_satisfaction} className="mt-2" />
           </CardContent>
@@ -116,7 +117,7 @@ export const SmartAnalyticsPanel: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {analytics.metrics.revenue_target}%
+              <StatCardPercentage value={analytics.metrics.revenue_target} />
             </div>
             <Progress value={analytics.metrics.revenue_target} className="mt-2" />
           </CardContent>
@@ -129,7 +130,7 @@ export const SmartAnalyticsPanel: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {analytics.metrics.operational_efficiency}%
+              <StatCardPercentage value={analytics.metrics.operational_efficiency} />
             </div>
             <Progress value={analytics.metrics.operational_efficiency} className="mt-2" />
           </CardContent>

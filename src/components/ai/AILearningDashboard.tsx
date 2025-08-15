@@ -19,6 +19,7 @@ import {
 import { useSelfLearningAI, PerformanceMetrics } from '@/hooks/useSelfLearningAI';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 interface LearningPattern {
   id: string;
@@ -153,9 +154,7 @@ export const AILearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {successRate.toFixed(1)}%
-                </p>
+                <StatCardPercentage value={successRate} className="text-green-600" />
               </div>
               <Target className="h-8 w-8 text-green-600" />
             </div>
@@ -168,7 +167,7 @@ export const AILearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Queries</p>
-                <p className="text-2xl font-bold">{latestMetrics.total_queries}</p>
+                <StatCardNumber value={latestMetrics.total_queries} />
               </div>
               <MessageSquare className="h-8 w-8 text-blue-600" />
             </div>
@@ -180,10 +179,10 @@ export const AILearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Satisfaction</p>
-                <p className="text-2xl font-bold flex items-center gap-1">
-                  {latestMetrics.user_satisfaction_avg.toFixed(1)}
+                <div className="text-2xl font-bold flex items-center gap-1">
+                  <StatCardNumber value={latestMetrics.user_satisfaction_avg.toFixed(1)} className="inline" />
                   <Star className="h-4 w-4 text-yellow-500" />
-                </p>
+                </div>
               </div>
               <Star className="h-8 w-8 text-yellow-500" />
             </div>
@@ -195,7 +194,7 @@ export const AILearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Learning Patterns</p>
-                <p className="text-2xl font-bold text-purple-600">{patterns.length}</p>
+                <StatCardNumber value={patterns.length} className="text-purple-600" />
               </div>
               <Lightbulb className="h-8 w-8 text-purple-600" />
             </div>

@@ -55,6 +55,7 @@ import {
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 interface SystemOverview {
   ai_health_score: number;
@@ -397,7 +398,9 @@ export const ComprehensiveAIDashboard: React.FC = () => {
                     <Award className="h-4 w-4 text-blue-500" />
                     <span className="text-sm font-medium">AI Health Score</span>
                   </div>
-                  <div className="text-2xl font-bold">{systemOverview.ai_health_score}%</div>
+                  <div className="text-2xl font-bold">
+                    <StatCardPercentage value={systemOverview.ai_health_score} />
+                  </div>
                   <Progress value={systemOverview.ai_health_score} className="h-2 mt-2" />
                 </Card>
 
@@ -406,7 +409,9 @@ export const ComprehensiveAIDashboard: React.FC = () => {
                     <Target className="h-4 w-4 text-green-500" />
                     <span className="text-sm font-medium">Prediction Accuracy</span>
                   </div>
-                  <div className="text-2xl font-bold">{systemOverview.prediction_accuracy}%</div>
+                  <div className="text-2xl font-bold">
+                    <StatCardPercentage value={systemOverview.prediction_accuracy} />
+                  </div>
                   <Progress value={systemOverview.prediction_accuracy} className="h-2 mt-2" />
                 </Card>
 
@@ -415,7 +420,9 @@ export const ComprehensiveAIDashboard: React.FC = () => {
                     <Shield className="h-4 w-4 text-purple-500" />
                     <span className="text-sm font-medium">Data Quality</span>
                   </div>
-                  <div className="text-2xl font-bold">{systemOverview.data_quality_score}%</div>
+                  <div className="text-2xl font-bold">
+                    <StatCardPercentage value={systemOverview.data_quality_score} />
+                  </div>
                   <Progress value={systemOverview.data_quality_score} className="h-2 mt-2" />
                 </Card>
 
@@ -424,7 +431,9 @@ export const ComprehensiveAIDashboard: React.FC = () => {
                     <Zap className="h-4 w-4 text-yellow-500" />
                     <span className="text-sm font-medium">Performance</span>
                   </div>
-                  <div className="text-2xl font-bold">{systemOverview.system_performance}%</div>
+                  <div className="text-2xl font-bold">
+                    <StatCardPercentage value={systemOverview.system_performance} />
+                  </div>
                   <Progress value={systemOverview.system_performance} className="h-2 mt-2" />
                 </Card>
 
@@ -433,7 +442,9 @@ export const ComprehensiveAIDashboard: React.FC = () => {
                     <Users className="h-4 w-4 text-orange-500" />
                     <span className="text-sm font-medium">User Satisfaction</span>
                   </div>
-                  <div className="text-2xl font-bold">{systemOverview.user_satisfaction}%</div>
+                  <div className="text-2xl font-bold">
+                    <StatCardPercentage value={systemOverview.user_satisfaction} />
+                  </div>
                   <Progress value={systemOverview.user_satisfaction} className="h-2 mt-2" />
                 </Card>
 
@@ -442,7 +453,9 @@ export const ComprehensiveAIDashboard: React.FC = () => {
                     <Activity className="h-4 w-4 text-red-500" />
                     <span className="text-sm font-medium">Automation Efficiency</span>
                   </div>
-                  <div className="text-2xl font-bold">{systemOverview.automation_efficiency}%</div>
+                  <div className="text-2xl font-bold">
+                    <StatCardPercentage value={systemOverview.automation_efficiency} />
+                  </div>
                   <Progress value={systemOverview.automation_efficiency} className="h-2 mt-2" />
                 </Card>
               </div>

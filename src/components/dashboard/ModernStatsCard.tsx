@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface ModernStatsCardProps {
   title: string;
@@ -61,7 +62,11 @@ const ModernStatsCard: React.FC<ModernStatsCardProps> = ({
           
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground font-medium">{title}</p>
-            <p className="text-2xl font-bold text-foreground">{value}</p>
+            {typeof value === 'number' ? (
+              <StatCardNumber value={value} className="text-foreground" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground">{value}</p>
+            )}
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 interface PerformanceData {
   overallScore: number;
@@ -271,7 +272,7 @@ export const AdvancedLearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">النتيجة الإجمالية</p>
-                <p className="text-3xl font-bold text-primary">{performanceData.overallScore}%</p>
+                <StatCardPercentage value={performanceData.overallScore} className="text-3xl text-primary" />
               </div>
               <Award className="h-8 w-8 text-yellow-600" />
             </div>
@@ -286,9 +287,10 @@ export const AdvancedLearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">الاتجاه الأسبوعي</p>
-                <p className={`text-2xl font-bold ${performanceData.trends.improvement > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {performanceData.trends.improvement > 0 ? '+' : ''}{performanceData.trends.week}%
-                </p>
+                <div className={`text-2xl font-bold ${performanceData.trends.improvement > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {performanceData.trends.improvement > 0 ? '+' : ''}
+                  <StatCardPercentage value={performanceData.trends.week} className="inline" />
+                </div>
               </div>
               <TrendingUp className={`h-8 w-8 ${performanceData.trends.improvement > 0 ? 'text-green-600' : 'text-red-600'}`} />
             </div>
@@ -303,7 +305,7 @@ export const AdvancedLearningDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">الأنماط النشطة</p>
-                <p className="text-2xl font-bold">{performanceData.adaptiveStrategies.activePatterns}</p>
+                <StatCardNumber value={performanceData.adaptiveStrategies.activePatterns} />
               </div>
               <Target className="h-8 w-8 text-blue-600" />
             </div>

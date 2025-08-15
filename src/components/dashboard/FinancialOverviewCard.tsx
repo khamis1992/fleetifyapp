@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react';
 import { FinancialOverview } from '@/hooks/useFinancialOverview';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 interface FinancialOverviewCardProps {
   data: FinancialOverview;
@@ -57,11 +58,11 @@ export const FinancialOverviewCard: React.FC<FinancialOverviewCardProps> = ({ da
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2 p-3 bg-success/5 rounded-lg border border-success/10">
             <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
-            <p className="text-lg font-bold text-success animate-scale-in">{formatCurrency(data.totalRevenue)}</p>
+            <StatCardNumber value={formatCurrency(data.totalRevenue)} className="text-lg text-success animate-scale-in" />
           </div>
           <div className="space-y-2 p-3 bg-destructive/5 rounded-lg border border-destructive/10">
             <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
-            <p className="text-lg font-bold text-destructive animate-scale-in">{formatCurrency(data.totalExpenses)}</p>
+            <StatCardNumber value={formatCurrency(data.totalExpenses)} className="text-lg text-destructive animate-scale-in" />
           </div>
         </div>
 
@@ -74,7 +75,7 @@ export const FinancialOverviewCard: React.FC<FinancialOverviewCardProps> = ({ da
                 className: `h-4 w-4 ${profitTrendColor}` 
               })}
               <span className={`text-sm font-semibold ${profitTrendColor}`}>
-                {formatCurrency(data.netIncome)}
+                <StatCardNumber value={formatCurrency(data.netIncome)} className="inline" />
               </span>
             </div>
           </div>

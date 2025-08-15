@@ -26,6 +26,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 interface LearningPattern {
   id: string;
@@ -301,7 +302,9 @@ export const SelfLearningAIPanel: React.FC = () => {
                   <BarChart3 className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-medium">Total Queries</span>
                 </div>
-                <div className="text-2xl font-bold">245</div>
+                <div className="text-2xl font-bold">
+                  <StatCardNumber value={245} />
+                </div>
                 <div className="text-xs text-muted-foreground">Today</div>
               </Card>
               
@@ -310,7 +313,9 @@ export const SelfLearningAIPanel: React.FC = () => {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <span className="text-sm font-medium">Success Rate</span>
                 </div>
-                <div className="text-2xl font-bold">91%</div>
+                <div className="text-2xl font-bold">
+                  <StatCardPercentage value={91} />
+                </div>
                 <div className="text-xs text-muted-foreground">+2% from yesterday</div>
               </Card>
               
@@ -319,7 +324,9 @@ export const SelfLearningAIPanel: React.FC = () => {
                   <Star className="h-4 w-4 text-yellow-500" />
                   <span className="text-sm font-medium">Satisfaction</span>
                 </div>
-                <div className="text-2xl font-bold">4.7</div>
+                <div className="text-2xl font-bold">
+                  <StatCardNumber value={4.7} />
+                </div>
                 <div className="text-xs text-muted-foreground">Out of 5.0</div>
               </Card>
             </div>

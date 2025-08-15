@@ -33,6 +33,7 @@ import {
   Info,
   XCircle
 } from 'lucide-react';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -129,7 +130,7 @@ export const AuditLogViewer: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">إجمالي السجلات</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <StatCardNumber value={stats.total} />
                 </div>
                 <FileText className="h-8 w-8 text-blue-600" />
               </div>
@@ -141,7 +142,7 @@ export const AuditLogViewer: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">سجلات اليوم</p>
-                  <p className="text-2xl font-bold">{stats.today}</p>
+                  <StatCardNumber value={stats.today} />
                 </div>
                 <Activity className="h-8 w-8 text-green-600" />
               </div>
@@ -153,7 +154,7 @@ export const AuditLogViewer: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">أخطاء</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.errors}</p>
+                  <StatCardNumber value={stats.errors} className="text-red-600" />
                 </div>
                 <XCircle className="h-8 w-8 text-red-600" />
               </div>
@@ -165,7 +166,7 @@ export const AuditLogViewer: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">تحذيرات</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.warnings}</p>
+                  <StatCardNumber value={stats.warnings} className="text-yellow-600" />
                 </div>
                 <AlertTriangle className="h-8 w-8 text-yellow-600" />
               </div>

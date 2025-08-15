@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useSmartAnalytics, SmartAnalysisResult, BehaviorAnalysis, RiskIndicator, PredictiveInsight } from '@/hooks/useSmartAnalytics';
 import { toast } from 'sonner';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
@@ -59,7 +60,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       <div className={color}>{icon}</div>
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-2xl font-bold">
+        <StatCardNumber value={value} />
+      </div>
       {trend && trendValue && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
           {trend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}

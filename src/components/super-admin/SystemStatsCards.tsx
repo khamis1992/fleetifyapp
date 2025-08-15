@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, Users, DollarSign, AlertTriangle, Activity, TrendingUp } from 'lucide-react';
 import { SystemStats } from '@/hooks/useSuperAdminData';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 
 interface SystemStatsCardsProps {
   stats: SystemStats;
@@ -92,9 +93,10 @@ export const SystemStatsCards: React.FC<SystemStatsCardsProps> = ({ stats, loadi
                   </div>
                   
                   <div className="space-y-2">
-                    <p className="text-3xl font-bold text-foreground">
-                      {stat.value}
-                    </p>
+                    <StatCardNumber 
+                      value={stat.value} 
+                      className="text-foreground"
+                    />
                     <p className="text-sm text-muted-foreground">
                       {stat.description}
                     </p>
