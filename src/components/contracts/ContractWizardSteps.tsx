@@ -708,7 +708,7 @@ export const FinancialStep: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
                 <span className="text-green-700">نوع التسعير:</span>
-                <p className="font-medium">{calculations.breakdown.rateType}</p>
+                <p className="font-medium">مختلط</p>
               </div>
               <div>
                 <span className="text-green-700">المبلغ الإجمالي:</span>
