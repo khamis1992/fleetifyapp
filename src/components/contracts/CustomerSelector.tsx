@@ -225,7 +225,10 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                   <CommandInput
                     placeholder="البحث بالاسم، الهاتف، أو البريد الإلكتروني..."
                     value={searchValue}
-                    onValueChange={setSearchValue}
+                    onValueChange={(value) => {
+                      console.log('🔍 [CustomerSelector] Search value changed:', value);
+                      setSearchValue(value);
+                    }}
                     className="flex h-11"
                   />
                 </div>
@@ -244,7 +247,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                       <CommandEmpty>
                         <div className="py-6 text-center">
                           <p className="text-sm text-muted-foreground mb-2">
-                            لا توجد نتائج للبحث "{searchValue}"
+                            {searchValue ? `لا توجد نتائج للبحث "${searchValue}"` : 'لا توجد عملاء'}
                           </p>
                           <Button
                             size="sm"
