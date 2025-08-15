@@ -10,7 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Search, Plus, User, Building2, Check, ChevronsUpDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { cn } from '@/lib/utils';
 
@@ -39,16 +39,30 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   placeholder = "ابحث عن عميل أو أنشئ جديد...",
   disabled = false
 }) => {
-  const { user } = useAuth();
+  const { companyId, getQueryKey, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [customerFormOpen, setCustomerFormOpen] = useState(false);
 
+  // Debug logging for company context
+  console.log('🏢 [CustomerSelector] Company context:', {
+    companyId,
+    isBrowsingMode,
+    browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+    searchValue,
+    selectedValue: value
+  });
+
   // Get customers for the company
-  const { data: customers, isLoading: customersLoading, refetch: refetchCustomers } = useQuery({
-    queryKey: ['customers-for-contracts', user?.profile?.company_id],
+  const { data: customers, isLoading: customersLoading, refetch: refetchCustomers, error: customersError } = useQuery({
+    queryKey: getQueryKey(['customers-for-contracts'], []),
     queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) {
+        console.log('❌ [CustomerSelector] No company ID available');
+        return [];
+      }
+      
+      console.log('🔍 [CustomerSelector] Fetching customers for company:', companyId);
       
       const { data, error } = await supabase
         .from('customers')
@@ -63,13 +77,20 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           phone,
           email
         `)
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [CustomerSelector] Error fetching customers:', error);
+        throw error;
+      }
+      
+      console.log('✅ [CustomerSelector] Fetched customers:', data?.length || 0);
       return data as Customer[];
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    gcTime: 10 * 60 * 1000 // 10 minutes
   });
 
   // Filter customers based on search
@@ -81,16 +102,27 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
       : customer.company_name || '';
     
-    return (
+    const matches = (
       customerName.toLowerCase().includes(searchLower) ||
       customer.phone?.includes(searchValue) ||
       customer.email?.toLowerCase().includes(searchLower)
     );
+    
+    return matches;
   }) || [];
+
+  console.log('🔍 [CustomerSelector] Search filtering:', {
+    searchValue,
+    totalCustomers: customers?.length || 0,
+    filteredCount: filteredCustomers.length,
+    isLoading: customersLoading,
+    hasError: !!customersError
+  });
 
   const selectedCustomer = customers?.find(customer => customer.id === value);
 
   const handleCustomerCreated = (newCustomer: any) => {
+    console.log('✅ [CustomerSelector] Customer created:', newCustomer);
     setCustomerFormOpen(false);
     if (newCustomer?.id) {
       onValueChange(newCustomer.id);
@@ -164,6 +196,11 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                   {customersLoading ? (
                     <div className="flex items-center justify-center py-6">
                       <LoadingSpinner />
+                      <span className="mr-2 text-sm text-muted-foreground">جاري تحميل العملاء...</span>
+                    </div>
+                  ) : customersError ? (
+                    <div className="flex items-center justify-center py-6 text-red-500">
+                      <span className="text-sm">خطأ في تحميل العملاء: {customersError.message}</span>
                     </div>
                   ) : (
                     <>
@@ -234,9 +271,14 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                     </>
                   )}
                 </CommandList>
-                {filteredCustomers.length > 0 && (
+                {!customersLoading && !customersError && (
                   <div className="border-t p-2 text-xs text-muted-foreground text-center">
-                    {filteredCustomers.length} عميل متاح
+                    {filteredCustomers.length} عميل متاح من أصل {customers?.length || 0}
+                    {companyId && (
+                      <span className="block text-[10px] opacity-70">
+                        معرف الشركة: {companyId}
+                      </span>
+                    )}
                   </div>
                 )}
               </Command>
