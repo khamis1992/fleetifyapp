@@ -398,17 +398,17 @@ export const DatesStep: React.FC = () => {
     // عندما يتم تغيير الأيام، نقوم بإعادة تعيين الأشهر إلى 0
     updateData({ 
       rental_days: days,
-      rental_months: 0,
+      rental_months: 0, // تصفير الأشهر عند تحديد الأيام
       end_date: endDate
     })
   }
 
   const handleRentalMonthsChange = (months: number) => {
-    // عندما يتم تحديد الأشهر، نحسب الأيام للتاريخ النهائي فقط ولكن نعرض 0 في خانة الأيام
+    // عندما يتم تحديد الأشهر، نحسب الأيام للتاريخ النهائي فقط
     const daysForCalculation = months * 30
     const endDate = calculateEndDate(data.start_date, daysForCalculation)
     updateData({ 
-      rental_days: 0, // عرض 0 في خانة الأيام عندما يتم تحديد الأشهر
+      rental_days: daysForCalculation, // نحتفظ بالأيام للحسابات ولكن نعتمد على rental_months للعرض
       rental_months: months,
       end_date: endDate
     })
