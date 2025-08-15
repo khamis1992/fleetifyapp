@@ -75,6 +75,7 @@ interface EnhancedCustomerFormProps {
 
 export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = true, onOpenChange }: EnhancedCustomerFormProps) => {
   const [showFinancialSection, setShowFinancialSection] = useState(false);
+  const [licenseExpiryWarning, setLicenseExpiryWarning] = useState<string | null>(null);
   const { companyId } = useUnifiedCompanyAccess();
   const createMutation = useCreateCustomerWithAccount();
   const updateMutation = useUpdateCustomer();
@@ -95,6 +96,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
   const customerType = form.watch('customer_type');
   const accountIntegrationType = form.watch('accountIntegrationType');
   const createFinancialAccount = form.watch('createFinancialAccount');
+  const licenseExpiry = form.watch('license_expiry');
 
   useEffect(() => {
     if (!customer && accountIntegrationType !== 'none') {
@@ -103,6 +105,23 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
       setShowFinancialSection(false);
     }
   }, [customer, accountIntegrationType]);
+
+  // التحقق من تاريخ انتهاء الرخصة فوريًا
+  useEffect(() => {
+    if (licenseExpiry) {
+      const expiryDate = new Date(licenseExpiry);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // إزالة الوقت للمقارنة بالتاريخ فقط
+      
+      if (expiryDate < today) {
+        setLicenseExpiryWarning("رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل");
+      } else {
+        setLicenseExpiryWarning(null);
+      }
+    } else {
+      setLicenseExpiryWarning(null);
+    }
+  }, [licenseExpiry]);
 
   const onSubmit = (values: FormValues) => {
     if (customer) {
@@ -611,9 +630,15 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                     className="text-right h-12 text-base"
                                     dir="rtl"
                                   />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
+                                 </FormControl>
+                                 <FormMessage />
+                                 {licenseExpiryWarning && (
+                                   <Alert variant="destructive" className="mt-2">
+                                     <AlertCircle className="h-4 w-4" />
+                                     <AlertDescription>{licenseExpiryWarning}</AlertDescription>
+                                   </Alert>
+                                 )}
+                               </FormItem>
                             )}
                           />
                           <FormField
