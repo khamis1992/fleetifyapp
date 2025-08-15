@@ -453,8 +453,11 @@ export const DatesStep: React.FC = () => {
       <CardContent className="space-y-4">
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="start_date">تاريخ البداية *</Label>
+          <div className="flex flex-col space-y-2">
+            <div className="h-12 flex flex-col justify-start">
+              <Label htmlFor="start_date">تاريخ البداية *</Label>
+              <span className="text-xs text-muted-foreground">&nbsp;</span>
+            </div>
             <Input
               id="start_date"
               type="date"
@@ -464,11 +467,11 @@ export const DatesStep: React.FC = () => {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="rental_months">
-              عدد الأشهر
-              <span className="text-xs text-muted-foreground block">يمكن دمجها مع الأيام</span>
-            </Label>
+          <div className="flex flex-col space-y-2">
+            <div className="h-12 flex flex-col justify-start">
+              <Label htmlFor="rental_months">عدد الأشهر</Label>
+              <span className="text-xs text-muted-foreground">يمكن دمجها مع الأيام</span>
+            </div>
             <Input
               id="rental_months"
               type="number"
@@ -481,11 +484,11 @@ export const DatesStep: React.FC = () => {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="rental_days">
-              أيام إضافية
-              <span className="text-xs text-muted-foreground block">تُضاف للأشهر</span>
-            </Label>
+          <div className="flex flex-col space-y-2">
+            <div className="h-12 flex flex-col justify-start">
+              <Label htmlFor="rental_days">أيام إضافية</Label>
+              <span className="text-xs text-muted-foreground">تُضاف للأشهر</span>
+            </div>
             <Input
               id="rental_days"
               type="number"
@@ -498,11 +501,11 @@ export const DatesStep: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="end_date">
-              تاريخ النهاية
-              <span className="text-xs text-muted-foreground block">محسوب تلقائياً</span>
-            </Label>
+          <div className="flex flex-col space-y-2">
+            <div className="h-12 flex flex-col justify-start">
+              <Label htmlFor="end_date">تاريخ النهاية</Label>
+              <span className="text-xs text-muted-foreground">محسوب تلقائياً</span>
+            </div>
             <Input
               id="end_date"
               type="date"
