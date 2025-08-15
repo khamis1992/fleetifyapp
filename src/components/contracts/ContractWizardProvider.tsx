@@ -79,6 +79,7 @@ const defaultData: ContractWizardData = {
   start_date: new Date().toISOString().slice(0, 10),
   end_date: '',
   rental_days: 1,
+  rental_months: 0,
   contract_amount: 0,
   monthly_amount: 0,
   account_id: '',
