@@ -76,6 +76,7 @@ interface EnhancedCustomerFormProps {
 export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = true, onOpenChange }: EnhancedCustomerFormProps) => {
   const [showFinancialSection, setShowFinancialSection] = useState(false);
   const [licenseExpiryWarning, setLicenseExpiryWarning] = useState<string | null>(null);
+  const [nationalIdExpiryWarning, setNationalIdExpiryWarning] = useState<string | null>(null);
   const { companyId } = useUnifiedCompanyAccess();
   const createMutation = useCreateCustomerWithAccount();
   const updateMutation = useUpdateCustomer();
@@ -97,6 +98,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
   const accountIntegrationType = form.watch('accountIntegrationType');
   const createFinancialAccount = form.watch('createFinancialAccount');
   const licenseExpiry = form.watch('license_expiry');
+  const nationalIdExpiry = form.watch('national_id_expiry');
 
   useEffect(() => {
     if (!customer && accountIntegrationType !== 'none') {
@@ -122,6 +124,23 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
       setLicenseExpiryWarning(null);
     }
   }, [licenseExpiry]);
+
+  // التحقق من تاريخ انتهاء البطاقة المدنية فوريًا
+  useEffect(() => {
+    if (nationalIdExpiry) {
+      const expiryDate = new Date(nationalIdExpiry);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // إزالة الوقت للمقارنة بالتاريخ فقط
+      
+      if (expiryDate < today) {
+        setNationalIdExpiryWarning("البطاقة المدنية منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل");
+      } else {
+        setNationalIdExpiryWarning(null);
+      }
+    } else {
+      setNationalIdExpiryWarning(null);
+    }
+  }, [nationalIdExpiry]);
 
   const onSubmit = (values: FormValues) => {
     if (customer) {
@@ -676,7 +695,13 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                      dir="rtl"
                                    />
                                  </FormControl>
-                                 <FormMessage />
+                                  <FormMessage />
+                                  {nationalIdExpiryWarning && (
+                                    <Alert variant="destructive" className="mt-2">
+                                      <AlertCircle className="h-4 w-4" />
+                                      <AlertDescription>{nationalIdExpiryWarning}</AlertDescription>
+                                    </Alert>
+                                  )}
                                </FormItem>
                              )}
                            />

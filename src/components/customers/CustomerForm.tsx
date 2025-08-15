@@ -50,6 +50,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
   const [accountSearchValue, setAccountSearchValue] = useState("");
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [licenseExpiryWarning, setLicenseExpiryWarning] = useState<string | null>(null);
+  const [nationalIdExpiryWarning, setNationalIdExpiryWarning] = useState<string | null>(null);
   
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<CustomerFormData>({
     defaultValues: {
@@ -66,6 +68,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
   });
 
   const customerType = watch('customer_type');
+  const licenseExpiry = watch('license_expiry');
+  const nationalIdExpiry = watch('national_id_expiry');
   const createCustomerMutation = useCreateCustomer();
   const updateCustomerMutation = useUpdateCustomer();
   const isSuperAdmin = user?.roles?.includes('super_admin');
@@ -99,6 +103,40 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
     targetAccount: availableAccounts?.find(acc => acc.account_code === '1130201'),
     hasTargetAccount: !!availableAccounts?.find(acc => acc.account_code === '1130201')
   });
+
+  // التحقق من تاريخ انتهاء الرخصة فوريًا
+  useEffect(() => {
+    if (licenseExpiry) {
+      const expiryDate = new Date(licenseExpiry);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (expiryDate < today) {
+        setLicenseExpiryWarning("رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل");
+      } else {
+        setLicenseExpiryWarning(null);
+      }
+    } else {
+      setLicenseExpiryWarning(null);
+    }
+  }, [licenseExpiry]);
+
+  // التحقق من تاريخ انتهاء البطاقة المدنية فوريًا
+  useEffect(() => {
+    if (nationalIdExpiry) {
+      const expiryDate = new Date(nationalIdExpiry);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (expiryDate < today) {
+        setNationalIdExpiryWarning("البطاقة المدنية منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل");
+      } else {
+        setNationalIdExpiryWarning(null);
+      }
+    } else {
+      setNationalIdExpiryWarning(null);
+    }
+  }, [nationalIdExpiry]);
 
   // Log current company information
   const currentCompany = companies?.find(c => c.id === effectiveCompanyId);
@@ -587,6 +625,12 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         {...register('license_expiry')} 
                         dir="ltr"
                       />
+                      {licenseExpiryWarning && (
+                        <Alert variant="destructive" className="mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>{licenseExpiryWarning}</AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   </div>
 
@@ -598,6 +642,12 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         {...register('national_id_expiry')} 
                         dir="ltr"
                       />
+                      {nationalIdExpiryWarning && (
+                        <Alert variant="destructive" className="mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>{nationalIdExpiryWarning}</AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>تاريخ الميلاد</Label>
