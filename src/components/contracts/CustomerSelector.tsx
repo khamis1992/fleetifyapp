@@ -207,11 +207,15 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                         </div>
                       </CommandEmpty>
                       <CommandGroup>
-                        {filteredCustomers.map((customer) => (
-                          <CommandItem
-                            key={customer.id}
-                            value={customer.id}
-                            onSelect={() => {
+                         {filteredCustomers.map((customer) => {
+                           const displayName = getCustomerDisplayName(customer);
+                           const searchableValue = `${displayName} ${customer.phone || ''} ${customer.email || ''}`.toLowerCase();
+                           
+                           return (
+                           <CommandItem
+                             key={customer.id}
+                             value={searchableValue}
+                             onSelect={() => {
                               onValueChange(customer.id);
                               setSearchOpen(false);
                               setSearchValue("");
@@ -249,8 +253,9 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                                 )}
                               />
                             </div>
-                          </CommandItem>
-                        ))}
+                           </CommandItem>
+                           );
+                         })}
                       </CommandGroup>
                     </>
                   )}
