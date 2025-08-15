@@ -21,7 +21,7 @@ export const EnhancedAccountSelector: React.FC<EnhancedAccountSelectorProps> = (
   placeholder = "اختر الحساب المحاسبي",
   disabled = false,
   className,
-  filterLevel = 'level_4_5',
+  filterLevel = 'level_5_6',
   accountTypeFilter,
   showAccountType = true,
   showParentAccount = true,

@@ -706,11 +706,11 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                          {mode === 'create' && (
                           <div className="space-y-2">
                             <Label>اختيار حساب محاسبي مخصص (اختياري)</Label>
-                            <UnifiedAccountSelector
-                              value={selectedAccountId}
-                              onValueChange={setSelectedAccountId}
-                              placeholder="اختر حساب محاسبي أو اترك فارغاً للإنشاء التلقائي..."
-                              filterLevel="level_4_5"
+                             <UnifiedAccountSelector
+                               value={selectedAccountId}
+                               onValueChange={setSelectedAccountId}
+                               placeholder="اختر حساب محاسبي أو اترك فارغاً للإنشاء التلقائي..."
+                               filterLevel="level_5_6"
                               showAccountType={true}
                               showParentAccount={true}
                               allowSearch={true}
