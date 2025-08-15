@@ -22,6 +22,7 @@ import { useAvailableVehiclesByDateRange } from '@/hooks/useAvailableVehiclesByD
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useTemplateByType, getDefaultDurationByType } from '@/hooks/useContractTemplates'
+import { useUnifiedAccountSelector } from '@/hooks/useUnifiedAccountSelector'
 import { VehicleConditionWizardStep } from './VehicleConditionWizardStep'
 import { useContractValidation } from '@/hooks/useContractValidation'
 import { ProactiveAlertSystem } from './ProactiveAlertSystem'
@@ -36,6 +37,48 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
 import { CustomerSelector } from './CustomerSelector'
 import { useCustomer } from '@/hooks/useCustomers'
+
+// Account Display Component
+const AccountDisplay: React.FC<{ data: any }> = ({ data }) => {
+  const { data: accounts } = useUnifiedAccountSelector({ filterLevel: 'level_5_6' })
+  const selectedAccount = accounts?.find(account => account.id === data.account_id)
+  
+  // دالة لتحديد مصدر الحساب المحاسبي
+  const getAccountSource = (): string => {
+    const template = useTemplateByType(data.contract_type || '')
+    if (template && template.account_id === data.account_id) {
+      return 'من القالب'
+    }
+    return 'من العميل'
+  }
+  
+  return data.account_id && selectedAccount ? (
+    <div className="space-y-2">
+      <Label>الحساب المحاسبي</Label>
+      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-green-800">
+              تم اختيار الحساب تلقائياً ({getAccountSource()})
+            </p>
+            <p className="text-xs text-green-600">
+              <strong>رمز الحساب:</strong> {selectedAccount.account_code}
+            </p>
+            <p className="text-xs text-green-600">
+              <strong>اسم الحساب:</strong> {selectedAccount.account_name}
+            </p>
+            {selectedAccount.account_name_ar && (
+              <p className="text-xs text-green-600">
+                <strong>الاسم بالعربية:</strong> {selectedAccount.account_name_ar}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null
+}
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -642,25 +685,41 @@ export const FinancialStep: React.FC = () => {
   // Get customer's linked accounts
   const { data: customerLinkedAccounts } = useCustomerLinkedAccounts(data.customer_id || '')
   
-  // Auto-set customer's financial account when customer is selected
+  // Apply customer account only if no template account exists
   React.useEffect(() => {
     console.log('[FINANCIAL_STEP] Effect triggered:', {
       customerLinkedAccounts,
       hasAccounts: customerLinkedAccounts?.length > 0,
       currentAccountId: data.account_id,
-      customerId: data.customer_id
+      customerId: data.customer_id,
+      contractType: data.contract_type
     });
 
-    if (customerLinkedAccounts && customerLinkedAccounts.length > 0 && !data.account_id) {
+    // التحقق من وجود قالب أولاً
+    const template = useTemplateByType(data.contract_type || '')
+    const hasTemplateAccount = template && template.account_id
+    
+    console.log('[FINANCIAL_STEP] Template check:', {
+      hasTemplate: !!template,
+      hasTemplateAccount,
+      templateAccountId: template?.account_id
+    });
+
+    // تطبيق حساب العميل فقط إذا لم يكن هناك حساب من القالب
+    if (customerLinkedAccounts && 
+        customerLinkedAccounts.length > 0 && 
+        !data.account_id && 
+        !hasTemplateAccount) {
+      
       const primaryAccountLink = customerLinkedAccounts[0]
       
       if (primaryAccountLink?.chart_of_accounts) {
         const account = primaryAccountLink.chart_of_accounts
-        console.log('[FINANCIAL_STEP] Auto-setting customer account:', account.account_code);
+        console.log('[FINANCIAL_STEP] Auto-setting customer account (no template account):', account.account_code);
         updateData({ account_id: account.id });
       }
     }
-  }, [customerLinkedAccounts, data.account_id, data.customer_id, updateData])
+  }, [customerLinkedAccounts, data.account_id, data.customer_id, data.contract_type, updateData])
 
   // Cost center support
   const { data: costCenters } = useCostCenters();
@@ -936,25 +995,8 @@ export const FinancialStep: React.FC = () => {
             </div>
           )}
           
-          {/* عرض الحساب المحاسبي المحدد من القالب */}
-          {data.account_id && (
-            <div className="space-y-2">
-              <Label>الحساب المحاسبي</Label>
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <div>
-                    <p className="text-sm font-medium text-green-800">
-                      تم اختيار الحساب تلقائياً من القالب
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">
-                      معرف الحساب: {data.account_id}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* عرض الحساب المحاسبي المحدد */}
+          <AccountDisplay data={data} />
           
           {/* Cost center field removed - now handled automatically */}
         </div>

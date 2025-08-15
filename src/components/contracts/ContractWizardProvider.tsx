@@ -159,19 +159,19 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     }
   }, [data.start_date, data.rental_days, data.rental_months])
 
-  // Apply template when contract type changes
+  // Apply template when contract type changes - Template has priority
   useEffect(() => {
     if (template && data.contract_type) {
       const appliedData = applyTemplate(template, data)
-      // Only update terms and account_id if empty to avoid overriding user changes
       const updates: any = {}
       
+      // تطبيق الشروط من القالب إذا كانت فارغة
       if (!data.terms || data.terms.trim() === '') {
         updates.terms = appliedData.terms
       }
       
-      // تطبيق الحساب المحاسبي من القالب تلقائياً
-      if (appliedData.account_id && !data.account_id) {
+      // تطبيق الحساب المحاسبي من القالب (له الأولوية الأولى)
+      if (appliedData.account_id) {
         updates.account_id = appliedData.account_id
       }
       
