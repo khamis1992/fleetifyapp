@@ -470,7 +470,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                     {...field} 
                                     type="tel" 
                                     placeholder="+965 XXXXXXXX" 
-                                    className="text-right h-12 text-base"
+                      className="text-left h-12 text-base"
                                     dir="rtl"
                                   />
                                 </FormControl>
