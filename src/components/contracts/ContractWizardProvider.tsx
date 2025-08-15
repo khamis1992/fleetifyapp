@@ -419,7 +419,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 0: // Basic Info
         return !!(data.contract_type && data.contract_date)
       case 1: // Dates
-        return !!(data.start_date && data.end_date && data.rental_days > 0)
+        return !!(data.start_date && data.end_date && (data.rental_days > 0 || data.rental_months > 0))
       case 2: // Customer/Vehicle
         const hasCustomer = !!data.customer_id
         // If a vehicle is selected and it's not "none", require vehicle condition report
