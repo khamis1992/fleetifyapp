@@ -72,7 +72,7 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
   const [retryCount, setRetryCount] = useState(0);
   const [lastValidationData, setLastValidationData] = useState<ContractFormData | null>(null);
   const [validationProgress, setValidationProgress] = useState(0);
-  const [smartSuggestions, setSmartSuggestions] = useState<any[]>([]);
+  
 
   const isCurrentlyValidating = isValidating || externalValidating;
 
@@ -101,70 +101,6 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
     }
   }, [isCurrentlyValidating]);
 
-  // Generate smart suggestions based on validation results
-  useEffect(() => {
-    const suggestions: any[] = [];
-    
-    validation.errors.forEach(error => {
-      switch (error.type) {
-        case 'customer_not_found':
-          suggestions.push({
-            type: 'create_customer',
-            message: 'إنشاء عميل جديد',
-            action: () => {/* Navigate to customer creation */}
-          });
-          break;
-        case 'vehicle_not_found':
-          suggestions.push({
-            type: 'select_vehicle',
-            message: 'اختيار مركبة أخرى',
-            action: () => {/* Open vehicle selector */}
-          });
-          break;
-        case 'invalid_contract_amount':
-          suggestions.push({
-            type: 'fix_amount',
-            message: 'تصحيح المبلغ تلقائياً',
-            action: () => {
-              if (onDataCorrection) {
-                onDataCorrection({ contract_amount: Math.abs(Number(data.contract_amount) || 1000) });
-              }
-            }
-          });
-          break;
-      }
-    });
-
-    validation.warnings.forEach(warning => {
-      switch (warning.type) {
-        case 'monthly_exceeds_total':
-          suggestions.push({
-            type: 'adjust_monthly',
-            message: 'تعديل المبلغ الشهري',
-            action: () => {
-              if (onDataCorrection && data.contract_amount) {
-                const monthlyAmount = Number(data.contract_amount) / 12;
-                onDataCorrection({ monthly_amount: monthlyAmount });
-              }
-            }
-          });
-          break;
-        case 'past_start_date':
-          suggestions.push({
-            type: 'update_date',
-            message: 'تحديث تاريخ البداية',
-            action: () => {
-              if (onDataCorrection) {
-                onDataCorrection({ start_date: new Date().toISOString().split('T')[0] });
-              }
-            }
-          });
-          break;
-      }
-    });
-
-    setSmartSuggestions(suggestions);
-  }, [validation, data, onDataCorrection]);
 
   const retryValidation = async () => {
     setRetryCount(prev => prev + 1);
@@ -241,12 +177,6 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
             </Badge>
           </CardTitle>
           <div className="flex gap-2">
-            {smartSuggestions.length > 0 && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                {smartSuggestions.length} اقتراح ذكي
-              </Badge>
-            )}
             <Button 
               variant="outline" 
               size="sm" 
@@ -341,28 +271,6 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
           </div>
         )}
 
-        {/* Smart Suggestions */}
-        {smartSuggestions.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-blue-600 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              اقتراحات ذكية للإصلاح
-            </h4>
-            <div className="grid gap-2">
-              {smartSuggestions.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={suggestion.action}
-                  className="justify-start text-right"
-                >
-                  {suggestion.message}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Manual Actions */}
         {(onDataCorrection || onValidate) && (
