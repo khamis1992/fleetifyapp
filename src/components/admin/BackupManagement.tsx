@@ -18,6 +18,7 @@ import {
   HardDrive,
   Calendar
 } from 'lucide-react';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -221,7 +222,7 @@ export const BackupManagement: React.FC = () => {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{backups?.length || 0}</div>
+            <StatCardNumber value={backups?.length || 0} />
           </CardContent>
         </Card>
 
@@ -231,9 +232,10 @@ export const BackupManagement: React.FC = () => {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {backups?.filter(b => b.status === 'completed').length || 0}
-            </div>
+            <StatCardNumber 
+              value={backups?.filter(b => b.status === 'completed').length || 0}
+              className="text-green-600"
+            />
           </CardContent>
         </Card>
 
@@ -243,9 +245,10 @@ export const BackupManagement: React.FC = () => {
             <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {backups?.filter(b => b.status === 'failed').length || 0}
-            </div>
+            <StatCardNumber 
+              value={backups?.filter(b => b.status === 'failed').length || 0}
+              className="text-red-600"
+            />
           </CardContent>
         </Card>
 
@@ -255,9 +258,9 @@ export const BackupManagement: React.FC = () => {
             <HardDrive className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatFileSize(backups?.reduce((total, backup) => total + (backup.file_size_bytes || 0), 0) || 0)}
-            </div>
+            <StatCardNumber 
+              value={formatFileSize(backups?.reduce((total, backup) => total + (backup.file_size_bytes || 0), 0) || 0)}
+            />
           </CardContent>
         </Card>
       </div>

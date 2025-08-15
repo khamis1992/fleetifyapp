@@ -31,6 +31,7 @@ import SmartAnalyticsPanel from './SmartAnalyticsPanel';
 import { SelfLearningAIPanel } from './SelfLearningAIPanel';
 import { IntelligentInsightsPanel } from './IntelligentInsightsPanel';
 import { toast } from 'sonner';
+import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
@@ -277,7 +278,7 @@ export const EnhancedAIPanel: React.FC = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quickStats.contracts.total}</div>
+            <StatCardNumber value={quickStats.contracts.total} />
             <p className="text-xs text-muted-foreground">
               {quickStats.contracts.active} نشط | {formatCurrency(quickStats.contracts.total_value, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
             </p>
@@ -290,7 +291,7 @@ export const EnhancedAIPanel: React.FC = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quickStats.customers.total}</div>
+            <StatCardNumber value={quickStats.customers.total} />
             <p className="text-xs text-muted-foreground">
               {quickStats.customers.active} نشط | {quickStats.customers.new_this_month} جديد
             </p>
@@ -303,7 +304,7 @@ export const EnhancedAIPanel: React.FC = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quickStats.financial.collection_rate.toFixed(1)}%</div>
+            <StatCardPercentage value={quickStats.financial.collection_rate} />
             <p className="text-xs text-muted-foreground">
               معدل التحصيل | {formatCurrency(quickStats.financial.outstanding, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} متأخر
             </p>
@@ -316,7 +317,7 @@ export const EnhancedAIPanel: React.FC = () => {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quickStats.vehicles.total}</div>
+            <StatCardNumber value={quickStats.vehicles.total} />
             <p className="text-xs text-muted-foreground">
               {quickStats.vehicles.available} متاحة | {quickStats.vehicles.in_use} مؤجرة
             </p>
@@ -329,7 +330,7 @@ export const EnhancedAIPanel: React.FC = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quickStats.employees.total}</div>
+            <StatCardNumber value={quickStats.employees.total} />
             <p className="text-xs text-muted-foreground">
               {quickStats.employees.active} نشط | {quickStats.employees.present_today} حاضر اليوم
             </p>
@@ -342,9 +343,7 @@ export const EnhancedAIPanel: React.FC = () => {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {quickStats.customers.blacklisted}
-            </div>
+            <StatCardNumber value={quickStats.customers.blacklisted} className="text-orange-600" />
             <p className="text-xs text-muted-foreground">عميل محظور</p>
           </CardContent>
         </Card>
