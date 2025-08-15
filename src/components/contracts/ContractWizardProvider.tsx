@@ -292,8 +292,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
             toast.error('يرجى تحديد تاريخ النهاية')
             return false
           }
-          if (data.rental_days <= 0) {
-            toast.error('مدة الإيجار يجب أن تكون أكبر من صفر')
+          // السماح بقيمة 0 في مدة الإيجار
+          if (data.rental_days < 0) {
+            toast.error('مدة الإيجار لا يمكن أن تكون سالبة')
             return false
           }
           
@@ -419,7 +420,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 0: // Basic Info
         return !!(data.contract_type && data.contract_date)
       case 1: // Dates
-        return !!(data.start_date && data.end_date && data.rental_days > 0)
+        return !!(data.start_date && data.end_date && data.rental_days >= 0)
       case 2: // Customer/Vehicle
         const hasCustomer = !!data.customer_id
         // If a vehicle is selected and it's not "none", require vehicle condition report
