@@ -161,7 +161,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0 min-w-[400px]" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <div className="flex items-center border-b px-3">
                   <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                   <CommandInput
