@@ -35,6 +35,7 @@ import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
 import { CustomerSelector } from './CustomerSelector'
+import { useCustomer } from '@/hooks/useCustomers'
 
 // Step 1: Basic Information
 export const BasicInfoStep: React.FC = () => {
@@ -978,6 +979,9 @@ export const ReviewStep: React.FC = () => {
   const [suggestions, setSuggestions] = React.useState<any[]>([])
   const { formatCurrency } = useCurrencyFormatter()
   
+  // Get customer data
+  const { data: customer } = useCustomer(data.customer_id || '')
+  
   // Final validation and suggestions on component mount
   React.useEffect(() => {
     const runValidationAndSuggestions = async () => {
@@ -1071,7 +1075,12 @@ export const ReviewStep: React.FC = () => {
         {/* Comprehensive Validation Summary */}
         <ContractValidationSummary 
           validation={validation}
-          contractData={data}
+          contractData={{
+            ...data,
+            customer_name: customer?.customer_type === 'individual' 
+              ? `${customer.first_name} ${customer.last_name}`
+              : customer?.company_name
+          }}
           isValidating={isValidating}
         />
 
