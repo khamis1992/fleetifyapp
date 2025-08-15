@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -73,16 +74,22 @@ export const MaintenanceAccountMappingDialog: React.FC<MaintenanceAccountMapping
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Handle the "none" value by converting it to undefined
+      const assetAccountId = data.asset_account_id === "none" ? undefined : data.asset_account_id;
+      
       if (mapping) {
         await updateMapping.mutateAsync({
           id: mapping.id,
-          updates: data
+          updates: {
+            ...data,
+            asset_account_id: assetAccountId
+          }
         });
       } else {
         await createMapping.mutateAsync({
           maintenance_type: data.maintenance_type,
           expense_account_id: data.expense_account_id,
-          asset_account_id: data.asset_account_id,
+          asset_account_id: assetAccountId,
           description: data.description,
           is_active: true,
         });
@@ -101,7 +108,7 @@ export const MaintenanceAccountMappingDialog: React.FC<MaintenanceAccountMapping
       form.reset({
         maintenance_type: mapping.maintenance_type,
         expense_account_id: mapping.expense_account_id,
-        asset_account_id: mapping.asset_account_id || "",
+        asset_account_id: mapping.asset_account_id || "none",
         description: mapping.description || "",
       });
     }
@@ -179,14 +186,14 @@ export const MaintenanceAccountMappingDialog: React.FC<MaintenanceAccountMapping
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>حساب الأصل (اختياري)</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value || "none"} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر حساب الأصل" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">بدون</SelectItem>
+                        <SelectItem value="none">بدون</SelectItem>
                         {assetAccounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
                             {account.account_code} - {account.account_name}
