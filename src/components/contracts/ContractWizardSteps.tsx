@@ -358,7 +358,7 @@ export const DatesStep: React.FC = () => {
     if (!startDate || days <= 0) return ''
     const start = new Date(startDate)
     const end = new Date(start)
-    end.setDate(start.getDate() + days - 1)
+    end.setDate(start.getDate() + days)
     return end.toISOString().slice(0, 10)
   }
 

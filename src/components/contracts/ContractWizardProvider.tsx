@@ -147,16 +147,17 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   // Calculate end date when start date or duration changes
   useEffect(() => {
-    if (data.start_date && data.rental_days > 0) {
+    if (data.start_date && (data.rental_days > 0 || data.rental_months > 0)) {
       const startDate = new Date(data.start_date)
-      const endDate = new Date(startDate.getTime() + data.rental_days * 24 * 60 * 60 * 1000)
+      const totalDays = (data.rental_months * 30) + data.rental_days
+      const endDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000)
       const endDateString = endDate.toISOString().slice(0, 10)
       
       if (data.end_date !== endDateString) {
         updateData({ end_date: endDateString })
       }
     }
-  }, [data.start_date, data.rental_days])
+  }, [data.start_date, data.rental_days, data.rental_months])
 
   // Apply template when contract type changes
   useEffect(() => {
