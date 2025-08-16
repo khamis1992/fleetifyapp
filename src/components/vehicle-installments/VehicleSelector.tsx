@@ -25,6 +25,14 @@ export interface Vehicle {
   make?: string;
   model?: string;
   year?: number;
+  color?: string;
+  status?: string;
+  daily_rate?: number;
+  weekly_rate?: number;
+  monthly_rate?: number;
+  minimum_rental_price?: number;
+  enforce_minimum_price?: boolean;
+  company_id?: string;
 }
 
 interface VehicleSelectorProps {
@@ -484,16 +492,22 @@ export function VehicleSelector({
                                     }}
                                     className="flex items-center justify-between cursor-pointer"
                                   >
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">
-                                        {vehicle.plate_number || 'غير محدد'}
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {[vehicle.make, vehicle.model, vehicle.year]
-                                          .filter(Boolean)
-                                          .join(' ') || 'معلومات غير متاحة'}
-                                      </span>
-                                    </div>
+                                     <div className="flex flex-col">
+                                       <span className="font-medium">
+                                         {vehicle.plate_number || 'غير محدد'}
+                                       </span>
+                                       <span className="text-sm text-muted-foreground">
+                                         {[vehicle.make, vehicle.model, vehicle.year]
+                                           .filter(Boolean)
+                                           .join(' ') || 'معلومات غير متاحة'}
+                                       </span>
+                                       {/* عرض الأسعار */}
+                                       <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                                         {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate.toLocaleString()} د.ك</span>}
+                                         {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate.toLocaleString()} د.ك</span>}
+                                         {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate.toLocaleString()} د.ك</span>}
+                                       </div>
+                                     </div>
                                     <Check
                                       className={cn(
                                         "ml-2 h-4 w-4",

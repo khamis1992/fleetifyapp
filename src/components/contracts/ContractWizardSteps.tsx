@@ -37,6 +37,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
 import { CustomerSelector } from './CustomerSelector'
 import { useCustomer } from '@/hooks/useCustomers'
+import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelector'
 
 // Account Display Component
 const AccountDisplay: React.FC<{ data: any }> = ({ data }) => {
@@ -326,40 +327,36 @@ export const CustomerVehicleStep: React.FC = () => {
           
           <div className="space-y-2">
             <Label htmlFor="vehicle_id">المركبة</Label>
-            {isLoadingVehicles ? (
-              <div className="flex items-center justify-center h-10">
-                <LoadingSpinner size="sm" />
-              </div>
-            ) : (
-              <Select 
-                value={data.vehicle_id} 
-                onValueChange={(value) => {
-                  // Clear vehicle condition report when vehicle changes
-                  updateData({ 
-                    vehicle_id: value,
-                    vehicle_condition_report_id: undefined 
-                  });
-                }}
+            <VehicleSelector
+              vehicles={vehiclesToShow}
+              selectedVehicleId={data.vehicle_id === 'none' ? '' : data.vehicle_id}
+              onSelect={(vehicleId) => {
+                // Handle both vehicle selection and "no vehicle" option
+                const actualVehicleId = vehicleId || 'none';
+                updateData({ 
+                  vehicle_id: actualVehicleId,
+                  vehicle_condition_report_id: undefined 
+                });
+              }}
+              placeholder="ابحث عن المركبة أو اختر (اختياري)"
+              disabled={false}
+              isLoading={isLoadingVehicles}
+              error={null}
+            />
+            {/* إضافة خيار "بدون مركبة" */}
+            {data.vehicle_id && data.vehicle_id !== 'none' && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateData({ 
+                  vehicle_id: 'none',
+                  vehicle_condition_report_id: undefined 
+                })}
+                className="text-muted-foreground"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر المركبة (اختياري)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون مركبة محددة</SelectItem>
-                  {vehiclesToShow?.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    <span className="flex flex-col">
-                      <span>{vehicle.make} {vehicle.model} - {vehicle.plate_number}</span>
-                      <span className="text-xs text-muted-foreground flex gap-2">
-                        {vehicle.daily_rate && <span>يومي: {formatCurrency(vehicle.daily_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>}
-                        {vehicle.weekly_rate && <span>أسبوعي: {formatCurrency(vehicle.weekly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>}
-                        {vehicle.monthly_rate && <span>شهري: {formatCurrency(vehicle.monthly_rate, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>}
-                      </span>
-                    </span>
-                  </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                إلغاء اختيار المركبة
+              </Button>
             )}
           </div>
         </div>
