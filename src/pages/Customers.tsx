@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX } from "lucide-react"
+import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,7 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useCustomers, useToggleCustomerBlacklist } from "@/hooks/useEnhancedCustomers"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { useCustomers, useToggleCustomerBlacklist, useDeleteCustomer } from "@/hooks/useEnhancedCustomers"
 import { useDebounce } from "@/hooks/useDebounce"
 import { EnhancedCustomerForm } from "@/components/customers/EnhancedCustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
@@ -28,6 +29,7 @@ export default function Customers() {
   const [showInvoiceForm, setShowInvoiceForm] = useState(false)
   const [invoiceCustomerId, setInvoiceCustomerId] = useState<string | null>(null)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<any>(null)
   const [filters, setFilters] = useState({
     customer_type: undefined as 'individual' | 'corporate' | undefined,
     is_blacklisted: undefined as boolean | undefined,
@@ -39,6 +41,7 @@ export default function Customers() {
   
   const { data: customers, isLoading, isFetching, error } = useCustomers(debouncedFilters)
   const toggleBlacklistMutation = useToggleCustomerBlacklist()
+  const deleteCustomerMutation = useDeleteCustomer()
 
   // إحصائيات العملاء
   const allCustomers = customers || []
@@ -79,6 +82,23 @@ export default function Customers() {
     })
   }
 
+  const handleDeleteCustomer = (customer: any) => {
+    setCustomerToDelete(customer)
+  }
+
+  const confirmDeleteCustomer = () => {
+    if (customerToDelete) {
+      deleteCustomerMutation.mutate(customerToDelete.id, {
+        onSuccess: () => {
+          setCustomerToDelete(null)
+        },
+        onError: () => {
+          setCustomerToDelete(null)
+        }
+      })
+    }
+  }
+
   const resetFilters = () => {
     setFilters({
       customer_type: undefined,
@@ -117,6 +137,10 @@ export default function Customers() {
     user?.roles?.includes('company_admin') || 
     user?.roles?.includes('manager') || 
     user?.roles?.includes('sales_agent')
+  
+  const canDeleteCustomers = user?.roles?.includes('super_admin') || 
+    user?.roles?.includes('company_admin') || 
+    user?.roles?.includes('manager')
   
   const isSuperAdmin = user?.roles?.includes('super_admin')
 
@@ -357,6 +381,17 @@ export default function Customers() {
                         <ShieldX className="h-4 w-4 mr-1" />
                         {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
                       </Button>
+                      {canDeleteCustomers && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteCustomer(customer)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          حذف
+                        </Button>
+                      )}
                     </div>
                   </div>
                   
@@ -482,6 +517,46 @@ export default function Customers() {
           // Refresh customer list - the query will automatically refetch
         }}
       />
+
+      {/* Delete Customer Confirmation Dialog */}
+      <AlertDialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف العميل "{customerToDelete?.customer_type === 'individual' 
+                ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}` 
+                : customerToDelete?.company_name}"؟
+              <br />
+              <strong className="text-red-600">هذا الإجراء لا يمكن التراجع عنه.</strong>
+              <br />
+              <span className="text-sm text-muted-foreground">
+                سيتم حذف جميع الملاحظات المرتبطة بالعميل أيضاً.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteCustomer}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteCustomerMutation.isPending}
+            >
+              {deleteCustomerMutation.isPending ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  حذف نهائياً
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

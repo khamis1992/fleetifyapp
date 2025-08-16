@@ -148,6 +148,77 @@ export const useToggleCustomerBlacklist = () => {
   });
 };
 
+export const useDeleteCustomer = () => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async (customerId: string) => {
+      if (!companyId) {
+        throw new Error("No company access available");
+      }
+
+      // التحقق من وجود عقود مرتبطة بالعميل
+      const { data: contractsData, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .limit(1);
+
+      if (contractsError) throw contractsError;
+
+      if (contractsData && contractsData.length > 0) {
+        throw new Error('لا يمكن حذف العميل لأنه مرتبط بعقود موجودة');
+      }
+
+      // التحقق من وجود فواتير مرتبطة بالعميل
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .limit(1);
+
+      if (invoicesError) throw invoicesError;
+
+      if (invoicesData && invoicesData.length > 0) {
+        throw new Error('لا يمكن حذف العميل لأنه مرتبط بفواتير موجودة');
+      }
+
+      // حذف الملاحظات المرتبطة بالعميل أولاً
+      const { error: notesError } = await supabase
+        .from('customer_notes')
+        .delete()
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId);
+
+      if (notesError) throw notesError;
+
+      // حذف العميل
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('تم حذف العميل بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error deleting customer:', error);
+      if (error.message.includes('لا يمكن حذف العميل')) {
+        toast.error(error.message);
+      } else {
+        toast.error('حدث خطأ أثناء حذف العميل');
+      }
+    }
+  });
+};
+
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
