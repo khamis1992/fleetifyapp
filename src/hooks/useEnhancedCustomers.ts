@@ -173,6 +173,31 @@ export const useCreateCustomer = () => {
         throw new Error('رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تسجيل العميل');
       }
 
+      // التحقق من تكرار العملاء قبل الإنشاء
+      const { data: duplicateCheck, error: duplicateError } = await supabase.rpc('check_duplicate_customer', {
+        p_company_id: targetCompanyId,
+        p_customer_type: data.customer_type,
+        p_national_id: data.national_id || null,
+        p_passport_number: data.passport_number || null,
+        p_phone: data.phone || null,
+        p_email: data.email || null,
+        p_company_name: data.company_name || null,
+        p_commercial_register: data.commercial_register || null
+      });
+
+      if (duplicateError) {
+        console.error('Error checking duplicates:', duplicateError);
+        throw duplicateError;
+      }
+
+      const typedDuplicateCheck = duplicateCheck as unknown as { has_duplicates: boolean; duplicates: any[] };
+      if (typedDuplicateCheck?.has_duplicates && !data.force_create) {
+        const duplicateInfo = typedDuplicateCheck.duplicates.map((dup: any) => 
+          `${dup.name} (${dup.duplicate_field}: ${dup.duplicate_value})`
+        ).join(', ');
+        throw new Error(`يوجد عميل مشابه في النظام: ${duplicateInfo}`);
+      }
+
       const { data: insertData, error } = await supabase
         .from('customers')
         .insert({
@@ -183,7 +208,25 @@ export const useCreateCustomer = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // التحقق من خطأ القيود الفريدة
+        if (error.code === '23505') {
+          if (error.message.includes('national_id')) {
+            throw new Error('يوجد عميل آخر بنفس رقم البطاقة المدنية');
+          } else if (error.message.includes('passport')) {
+            throw new Error('يوجد عميل آخر بنفس رقم الجواز');
+          } else if (error.message.includes('phone')) {
+            throw new Error('يوجد عميل آخر بنفس رقم الهاتف');
+          } else if (error.message.includes('email')) {
+            throw new Error('يوجد عميل آخر بنفس البريد الإلكتروني');
+          } else if (error.message.includes('business')) {
+            throw new Error('يوجد شركة أخرى بنفس الاسم والسجل التجاري');
+          } else {
+            throw new Error('البيانات المدخلة موجودة مسبقاً في النظام');
+          }
+        }
+        throw error;
+      }
       return insertData;
     },
     onSuccess: (customerData) => {

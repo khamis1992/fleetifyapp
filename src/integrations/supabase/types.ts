@@ -9493,6 +9493,20 @@ export type Database = {
           expiry_date: string
         }[]
       }
+      check_duplicate_customer: {
+        Args: {
+          p_commercial_register?: string
+          p_company_id: string
+          p_company_name?: string
+          p_customer_type: string
+          p_email?: string
+          p_exclude_customer_id?: string
+          p_national_id?: string
+          p_passport_number?: string
+          p_phone?: string
+        }
+        Returns: Json
+      }
       check_existing_accounts_summary: {
         Args: { company_id_param: string }
         Returns: Json
