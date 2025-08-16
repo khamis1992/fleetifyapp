@@ -91,7 +91,7 @@ export function VehicleSelector({
 
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [selectedMakeFilter, setSelectedMakeFilter] = useState<string>("");
+  const [selectedMakeFilter, setSelectedMakeFilter] = useState<string>("all");
   const debouncedSearch = useDebounce(searchValue, 300);
 
   // استخراج قائمة الماركات المتاحة
@@ -221,7 +221,7 @@ export function VehicleSelector({
         }
 
         // Apply make filter
-        if (selectedMakeFilter && selectedMakeFilter.trim().length > 0) {
+        if (selectedMakeFilter && selectedMakeFilter.trim().length > 0 && selectedMakeFilter !== 'all') {
           result = result.filter(vehicle => {
             if (!vehicle || !vehicle.make) return false;
             return vehicle.make.trim() === selectedMakeFilter.trim();
@@ -369,12 +369,12 @@ export function VehicleSelector({
                         <Filter className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">فلترة حسب الماركة</span>
                       </div>
-                      {selectedMakeFilter && (
+                      {selectedMakeFilter && selectedMakeFilter !== 'all' && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-6 px-2 text-xs"
-                          onClick={() => setSelectedMakeFilter("")}
+                          onClick={() => setSelectedMakeFilter("all")}
                         >
                           مسح الفلتر
                         </Button>
@@ -385,7 +385,7 @@ export function VehicleSelector({
                         <SelectValue placeholder="جميع الماركات" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">جميع الماركات</SelectItem>
+                        <SelectItem value="all">جميع الماركات</SelectItem>
                         {availableMakes.map((make) => (
                           <SelectItem key={make} value={make}>
                             <div className="flex items-center gap-2">
