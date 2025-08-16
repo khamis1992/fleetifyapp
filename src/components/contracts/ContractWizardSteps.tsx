@@ -430,6 +430,9 @@ export const DatesStep: React.FC = () => {
                                    data.contract_type === 'yearly_rental' ||
                                    data.contract_type === 'corporate'
       
+      const isDailyWeeklyContract = data.contract_type === 'daily_rental' ||
+                                   data.contract_type === 'weekly_rental'
+      
       // للعقود الشهرية/السنوية/المؤسسية: اجعل الأيام الإضافية 0 بشكل افتراضي
       if (isMonthlyBasedContract) {
         // إذا لم يتم تحديد أشهر بعد، قم بتعيين شهر واحد كحد أدنى
@@ -443,12 +446,18 @@ export const DatesStep: React.FC = () => {
           updateData({ rental_days: 0 })
         }
       }
-      // للعقود اليومية: إذا لم يتم تحديد أيام، قم بتعيين يوم واحد
-      else if (!isMonthlyBasedContract && data.rental_days === 0 && data.rental_months === 0) {
-        updateData({ 
-          rental_days: 1,
-          rental_months: 0
-        })
+      // للعقود اليومية والأسبوعية: اجعل عدد الأشهر 0 بشكل افتراضي
+      else if (isDailyWeeklyContract) {
+        // إذا لم يتم تحديد أيام بعد، قم بتعيين يوم واحد كحد أدنى
+        if (data.rental_days === 0) {
+          updateData({ 
+            rental_days: data.contract_type === 'weekly_rental' ? 7 : 1,
+            rental_months: 0 // اجعل عدد الأشهر 0
+          })
+        } else if (data.rental_months > 0) {
+          // إذا كان هناك أشهر، اجعلها 0 (يمكن للمستخدم تعديلها لاحقاً)
+          updateData({ rental_months: 0 })
+        }
       }
     }
   }, [data.contract_type])
@@ -521,7 +530,12 @@ export const DatesStep: React.FC = () => {
           <div className="flex flex-col space-y-2">
             <div className="h-12 flex flex-col justify-start">
               <Label htmlFor="rental_months">عدد الأشهر</Label>
-              <span className="text-xs text-muted-foreground">يمكن دمجها مع الأيام</span>
+              <span className="text-xs text-muted-foreground">
+                {data.contract_type === 'daily_rental' || 
+                 data.contract_type === 'weekly_rental' 
+                  ? 'افتراضياً 0 للعقود اليومية/الأسبوعية' 
+                  : 'يمكن دمجها مع الأيام'}
+              </span>
             </div>
             <Input
               id="rental_months"
@@ -537,13 +551,21 @@ export const DatesStep: React.FC = () => {
           
           <div className="flex flex-col space-y-2">
             <div className="h-12 flex flex-col justify-start">
-              <Label htmlFor="rental_days">أيام إضافية</Label>
+              <Label htmlFor="rental_days">
+                {data.contract_type === 'daily_rental' ? 'عدد الأيام' : 
+                 data.contract_type === 'weekly_rental' ? 'عدد الأيام (أو أسابيع × 7)' : 
+                 'أيام إضافية'}
+              </Label>
               <span className="text-xs text-muted-foreground">
                 {data.contract_type === 'monthly_rental' || 
                  data.contract_type === 'yearly_rental' || 
                  data.contract_type === 'corporate' 
                   ? 'افتراضياً 0 للعقود الشهرية/السنوية/المؤسسية' 
-                  : 'تُضاف للأشهر'}
+                  : data.contract_type === 'daily_rental' 
+                    ? 'المدة الأساسية للعقد اليومي'
+                    : data.contract_type === 'weekly_rental'
+                      ? 'افتراضياً 7 أيام للعقد الأسبوعي'
+                      : 'تُضاف للأشهر'}
               </span>
             </div>
             <Input
