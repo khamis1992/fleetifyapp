@@ -149,6 +149,11 @@ const financeSubItems = [
     href: '/finance/analysis',
     icon: PieChart
   },
+  {
+    name: 'التقارير المالية',
+    href: '/finance/reports',
+    icon: FileText
+  },
 ]
 
 // Finance Settings for Admin and Super Admin
@@ -157,31 +162,6 @@ const financeSettingsItems = [
     name: 'معالج النظام المحاسبي',
     href: '/finance/accounting-wizard',
     icon: Zap
-  },
-  {
-    name: 'إدارة القيود',
-    href: '/finance/settings/journal-entries',
-    icon: FileText
-  },
-  {
-    name: 'إدارة الحسابات',
-    href: '/finance/settings/accounts',
-    icon: BookOpen
-  },
-  {
-    name: 'إدارة مراكز التكلفة',
-    href: '/finance/settings/cost-centers',
-    icon: MapPin
-  },
-  {
-    name: 'الحسابات التلقائية',
-    href: '/finance/settings/automatic-accounts',
-    icon: Zap
-  },
-  {
-    name: 'التقارير المالية',
-    href: '/finance/reports',
-    icon: FileText
   }
 ];
 
