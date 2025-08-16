@@ -20,7 +20,9 @@ import { AccountsCustomization } from './wizard/AccountsCustomization';
 import { AccountsMapping } from './wizard/AccountsMapping';
 import { BankSetup } from './wizard/BankSetup';
 import { WizardCompletion } from './wizard/WizardCompletion';
+import { ConflictResolutionDialog, ConflictResolutionStrategy } from './ConflictResolutionDialog';
 import { useAccountingWizard } from '@/hooks/useAccountingWizard';
+import { useAccountConflictCheck } from '@/hooks/useAccountConflictCheck';
 import { toast } from 'sonner';
 
 export interface WizardData {
@@ -51,8 +53,11 @@ export const AccountingSystemWizard: React.FC = () => {
     accountMappings: {},
     bankAccounts: []
   });
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [isResolvingConflict, setIsResolvingConflict] = useState(false);
 
   const { setupAccountingSystem, isLoading, progress } = useAccountingWizard();
+  const { conflictInfo, hasConflicts, refetch: refetchConflicts } = useAccountConflictCheck();
 
   const updateWizardData = (stepData: Partial<WizardData>) => {
     setWizardData(prev => ({ ...prev, ...stepData }));
@@ -72,11 +77,41 @@ export const AccountingSystemWizard: React.FC = () => {
 
   const handleFinish = async () => {
     try {
-      await setupAccountingSystem(wizardData);
+      // فحص التضاربات أولاً
+      await refetchConflicts();
+      
+      if (hasConflicts && conflictInfo) {
+        setShowConflictDialog(true);
+      } else {
+        // لا توجد تضاربات، التنفيذ مباشرة
+        await setupAccountingSystem({ 
+          wizardData,
+          conflictStrategy: 'skip' 
+        });
+        toast.success('تم إعداد النظام المحاسبي بنجاح!');
+      }
+    } catch (error) {
+      console.error('Error in handleFinish:', error);
+      toast.error('حدث خطأ في إعداد النظام المحاسبي');
+    }
+  };
+
+  const handleConflictResolution = async (strategy: ConflictResolutionStrategy) => {
+    try {
+      setIsResolvingConflict(true);
+      
+      await setupAccountingSystem({ 
+        wizardData,
+        conflictStrategy: strategy
+      });
+      
+      setShowConflictDialog(false);
       toast.success('تم إعداد النظام المحاسبي بنجاح!');
     } catch (error) {
-      console.error('Error setting up accounting system:', error);
+      console.error('Error resolving conflict:', error);
       toast.error('حدث خطأ في إعداد النظام المحاسبي');
+    } finally {
+      setIsResolvingConflict(false);
     }
   };
 
@@ -220,6 +255,17 @@ export const AccountingSystemWizard: React.FC = () => {
           {getCurrentStepComponent()}
         </CardContent>
       </Card>
+
+      {/* حوار حل التضاربات */}
+      {conflictInfo && (
+        <ConflictResolutionDialog
+          open={showConflictDialog}
+          onOpenChange={setShowConflictDialog}
+          conflictInfo={conflictInfo}
+          onResolve={handleConflictResolution}
+          isResolving={isResolvingConflict}
+        />
+      )}
 
       {/* Tips */}
       <Card className="mt-6 bg-blue-50/50 border-blue-200">

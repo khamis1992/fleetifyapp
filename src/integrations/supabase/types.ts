@@ -9493,6 +9493,10 @@ export type Database = {
           expiry_date: string
         }[]
       }
+      check_existing_accounts_summary: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           max_attempts?: number

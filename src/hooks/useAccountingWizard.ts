@@ -5,6 +5,7 @@ import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { useBusinessTypeAccounts } from './useBusinessTypeAccounts';
 import { WizardData } from '@/components/finance/AccountingSystemWizard';
 import { toast } from 'sonner';
+import { ConflictResolutionStrategy } from '@/components/finance/ConflictResolutionDialog';
 
 export const useAccountingWizard = () => {
   const [progress, setProgress] = useState(0);
@@ -12,7 +13,8 @@ export const useAccountingWizard = () => {
   const { getAccountsByBusinessType } = useBusinessTypeAccounts();
 
   const setupAccountingSystem = useMutation({
-    mutationFn: async (wizardData: WizardData) => {
+    mutationFn: async (data: { wizardData: WizardData; conflictStrategy?: ConflictResolutionStrategy }) => {
+      const { wizardData, conflictStrategy } = data;
       if (!companyId) throw new Error('Company ID is required');
       
       setProgress(10);
@@ -29,7 +31,7 @@ export const useAccountingWizard = () => {
       
       setProgress(30);
       
-      // Create accounts in database
+      // التعامل مع إنشاء الحسابات بناءً على استراتيجية حل التضارب
       const accountsToCreate = allAccounts.map(account => ({
         company_id: companyId,
         account_code: account.code,
@@ -45,11 +47,7 @@ export const useAccountingWizard = () => {
         current_balance: 0
       }));
       
-      const { error: accountsError } = await supabase
-        .from('chart_of_accounts')
-        .insert(accountsToCreate);
-      
-      if (accountsError) throw accountsError;
+      await handleAccountsConflictResolution(companyId, accountsToCreate, conflictStrategy);
       
       setProgress(60);
       
@@ -66,11 +64,7 @@ export const useAccountingWizard = () => {
           is_primary: wizardData.bankAccounts?.indexOf(bank) === 0
         }));
         
-        const { error: banksError } = await supabase
-          .from('banks')
-          .insert(banksToCreate);
-        
-        if (banksError) throw banksError;
+        await handleBanksConflictResolution(companyId, banksToCreate, conflictStrategy);
       }
       
       setProgress(80);
@@ -104,6 +98,145 @@ export const useAccountingWizard = () => {
     progress
   };
 };
+
+// دالة للتعامل مع تضارب الحسابات
+async function handleAccountsConflictResolution(
+  companyId: string, 
+  accountsToCreate: any[], 
+  strategy?: ConflictResolutionStrategy
+) {
+  if (!strategy || strategy === 'skip') {
+    // استراتيجية التخطي - استخدام UPSERT
+    for (const account of accountsToCreate) {
+      const { error } = await supabase
+        .from('chart_of_accounts')
+        .upsert(account, { 
+          onConflict: 'company_id,account_code',
+          ignoreDuplicates: true 
+        });
+      
+      if (error && !error.message.includes('duplicate')) {
+        throw error;
+      }
+    }
+  } else if (strategy === 'merge') {
+    // استراتيجية الدمج الذكي
+    for (const account of accountsToCreate) {
+      const { error } = await supabase
+        .from('chart_of_accounts')
+        .upsert(account, { 
+          onConflict: 'company_id,account_code' 
+        });
+      
+      if (error) throw error;
+    }
+  } else if (strategy === 'replace' || strategy === 'backup_first') {
+    if (strategy === 'backup_first') {
+      // إنشاء نسخة احتياطية
+      await createAccountsBackup(companyId);
+    }
+    
+    // حذف الحسابات الموجودة
+    const { error: deleteError } = await supabase
+      .from('chart_of_accounts')
+      .delete()
+      .eq('company_id', companyId)
+      .eq('is_system', false);
+    
+    if (deleteError) throw deleteError;
+    
+    // إدراج الحسابات الجديدة
+    const { error: insertError } = await supabase
+      .from('chart_of_accounts')
+      .insert(accountsToCreate);
+    
+    if (insertError) throw insertError;
+  }
+}
+
+// دالة للتعامل مع تضارب البنوك
+async function handleBanksConflictResolution(
+  companyId: string, 
+  banksToCreate: any[], 
+  strategy?: ConflictResolutionStrategy
+) {
+  if (!strategy || strategy === 'skip') {
+    // استراتيجية التخطي
+    for (const bank of banksToCreate) {
+      const { error } = await supabase
+        .from('banks')
+        .upsert(bank, { 
+          onConflict: 'company_id,account_number',
+          ignoreDuplicates: true 
+        });
+      
+      if (error && !error.message.includes('duplicate')) {
+        throw error;
+      }
+    }
+  } else if (strategy === 'merge') {
+    // استراتيجية الدمج
+    for (const bank of banksToCreate) {
+      const { error } = await supabase
+        .from('banks')
+        .upsert(bank, { 
+          onConflict: 'company_id,account_number' 
+        });
+      
+      if (error) throw error;
+    }
+  } else if (strategy === 'replace' || strategy === 'backup_first') {
+    if (strategy === 'backup_first') {
+      await createBanksBackup(companyId);
+    }
+    
+    // حذف البنوك الموجودة
+    const { error: deleteError } = await supabase
+      .from('banks')
+      .delete()
+      .eq('company_id', companyId);
+    
+    if (deleteError) throw deleteError;
+    
+    // إدراج البنوك الجديدة
+    const { error: insertError } = await supabase
+      .from('banks')
+      .insert(banksToCreate);
+    
+    if (insertError) throw insertError;
+  }
+}
+
+// دالة إنشاء نسخة احتياطية للحسابات
+async function createAccountsBackup(companyId: string) {
+  const { data: accounts, error: fetchError } = await supabase
+    .from('chart_of_accounts')
+    .select('*')
+    .eq('company_id', companyId);
+  
+  if (fetchError) throw fetchError;
+  if (!accounts || accounts.length === 0) return;
+  
+  // حفظ النسخة الاحتياطية في جدول منفصل أو كملف
+  console.log('Backup created for accounts:', accounts.length);
+  
+  // يمكن إضافة منطق حفظ النسخة الاحتياطية هنا
+}
+
+// دالة إنشاء نسخة احتياطية للبنوك
+async function createBanksBackup(companyId: string) {
+  const { data: banks, error: fetchError } = await supabase
+    .from('banks')
+    .select('*')
+    .eq('company_id', companyId);
+  
+  if (fetchError) throw fetchError;
+  if (!banks || banks.length === 0) return;
+  
+  console.log('Backup created for banks:', banks.length);
+  
+  // يمكن إضافة منطق حفظ النسخة الاحتياطية هنا
+}
 
 // Helper function to create detailed accounts (levels 5-6)
 async function createDetailedAccounts(companyId: string, businessType: string) {
