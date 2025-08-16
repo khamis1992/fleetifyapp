@@ -426,19 +426,29 @@ export const DatesStep: React.FC = () => {
   // تطبيق نوع المدة المناسب بناءً على نوع العقد
   React.useEffect(() => {
     if (data.contract_type) {
-      const isMonthlyContract = data.contract_type === 'monthly_rental' || 
-                               data.contract_type === 'yearly_rental' ||
-                               data.contract_type === 'corporate'
+      const isMonthlyBasedContract = data.contract_type === 'monthly_rental' || 
+                                   data.contract_type === 'yearly_rental' ||
+                                   data.contract_type === 'corporate'
       
-      // إذا كان العقد شهري ولم يتم تحديد أشهر، قم بتعيين شهر واحد
-      if (isMonthlyContract && data.rental_months === 0 && data.rental_days > 0) {
-        const months = Math.max(1, Math.round(data.rental_days / 30))
-        handleRentalMonthsChange(months)
+      // للعقود الشهرية/السنوية/المؤسسية: اجعل الأيام الإضافية 0 بشكل افتراضي
+      if (isMonthlyBasedContract) {
+        // إذا لم يتم تحديد أشهر بعد، قم بتعيين شهر واحد كحد أدنى
+        if (data.rental_months === 0) {
+          updateData({ 
+            rental_months: 1,
+            rental_days: 0 // اجعل الأيام الإضافية 0
+          })
+        } else if (data.rental_days > 0) {
+          // إذا كانت هناك أيام إضافية، اجعلها 0 (يمكن للمستخدم تعديلها لاحقاً)
+          updateData({ rental_days: 0 })
+        }
       }
-      // إذا كان العقد يومي ولم يتم تحديد أيام، قم بتعيين يوم واحد
-      else if (!isMonthlyContract && data.rental_days === 0 && data.rental_months > 0) {
-        const days = Math.max(1, data.rental_months * 30)
-        handleRentalDaysChange(days)
+      // للعقود اليومية: إذا لم يتم تحديد أيام، قم بتعيين يوم واحد
+      else if (!isMonthlyBasedContract && data.rental_days === 0 && data.rental_months === 0) {
+        updateData({ 
+          rental_days: 1,
+          rental_months: 0
+        })
       }
     }
   }, [data.contract_type])
@@ -528,7 +538,13 @@ export const DatesStep: React.FC = () => {
           <div className="flex flex-col space-y-2">
             <div className="h-12 flex flex-col justify-start">
               <Label htmlFor="rental_days">أيام إضافية</Label>
-              <span className="text-xs text-muted-foreground">تُضاف للأشهر</span>
+              <span className="text-xs text-muted-foreground">
+                {data.contract_type === 'monthly_rental' || 
+                 data.contract_type === 'yearly_rental' || 
+                 data.contract_type === 'corporate' 
+                  ? 'افتراضياً 0 للعقود الشهرية/السنوية/المؤسسية' 
+                  : 'تُضاف للأشهر'}
+              </span>
             </div>
             <Input
               id="rental_days"
