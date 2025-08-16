@@ -19,7 +19,7 @@ import { Customer } from "@/types/customer";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Building, CreditCard, AlertCircle, Phone, MapPin, FileText, X, Shuffle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CustomerAccountFormSelector } from "./CustomerAccountSelector";
+import { CustomerAccountSelector } from "@/components/finance/CustomerAccountSelector";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 const formSchema = z.object({
@@ -831,11 +831,11 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                 <FormItem>
                                   <FormLabel className="text-base font-medium text-right">الحساب المحاسبي</FormLabel>
                                   <FormControl>
-                                    <CustomerAccountFormSelector
+                                    <CustomerAccountSelector
                                       value={field.value}
                                       onValueChange={field.onChange}
                                       placeholder="اختر الحساب المحاسبي"
-                                      companyId={companyId}
+                                      accountType="receivable"
                                     />
                                   </FormControl>
                                   <FormMessage />
