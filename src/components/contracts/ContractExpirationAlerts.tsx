@@ -6,6 +6,8 @@ import { AlertTriangle, Calendar, RefreshCw, Users, DollarSign } from 'lucide-re
 import { useExpiringContracts } from '@/hooks/useContractRenewal';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { NumberDisplay } from '@/components/ui/NumberDisplay';
+import { formatDateForDocument } from '@/utils/dateFormatter';
 
 interface ContractExpirationAlertsProps {
   onRenewContract?: (contract: any) => void;
@@ -99,7 +101,10 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold">عقد رقم {contract.contract_number}</h4>
+                    <h4 className="font-semibold">
+                      <NumberDisplay value={contract.contract_number} className="inline" />
+                      {' '}عقد رقم
+                    </h4>
                     <Badge className={getUrgencyColor(daysUntilExpiry)}>
                       {getUrgencyText(daysUntilExpiry)}
                     </Badge>
@@ -113,7 +118,7 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
                     
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      <span>ينتهي في {new Date(contract.end_date).toLocaleDateString('en-GB')}</span>
+                      <span>ينتهي في {formatDateForDocument(contract.end_date)}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -133,7 +138,7 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
                     <span className="font-medium">
                       {daysUntilExpiry <= 0 ? 'منتهي الصلاحية' : 
                        daysUntilExpiry === 1 ? 'ينتهي خلال يوم واحد' :
-                       `ينتهي خلال ${daysUntilExpiry} أيام`}
+                       <>ينتهي خلال <NumberDisplay value={daysUntilExpiry} className="inline" /> أيام</>}
                     </span>
                   </div>
                 </div>
