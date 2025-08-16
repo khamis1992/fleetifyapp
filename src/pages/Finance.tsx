@@ -450,7 +450,7 @@ const Finance = () => {
       <Route 
         path="accounting-wizard" 
         element={
-          <ProtectedFinanceRoute permission="finance.accounts.manage">
+          <ProtectedFinanceRoute permission="finance.accounts.write">
             <AccountingWizard />
           </ProtectedFinanceRoute>
         } 
