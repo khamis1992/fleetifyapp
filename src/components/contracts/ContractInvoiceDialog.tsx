@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { PaymentScheduleSection } from '@/components/finance/PaymentScheduleSection';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { formatMonthlyPaymentDescription } from '@/utils/invoiceDescriptionFormatter';
 
 interface ContractInvoiceDialogProps {
   open: boolean;
@@ -34,6 +35,12 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   
   const { formatCurrency, currency } = useCurrencyFormatter();
   
+  const getInitialDescription = () => {
+    const dueDate = new Date();
+    dueDate.setMonth(dueDate.getMonth() + 1); // Default due date is next month
+    return formatMonthlyPaymentDescription(dueDate, contract?.contract_number || '');
+  };
+
   const [invoiceData, setInvoiceData] = useState({
     invoice_type: 'sales',
     invoice_date: new Date().toISOString().slice(0, 10),
@@ -46,7 +53,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     terms: contract?.terms || '',
     items: [
       {
-        item_description: `دفعة شهرية - عقد رقم ${contract?.contract_number}`,
+        item_description: getInitialDescription(),
         quantity: 1,
         unit_price: contract?.monthly_amount || 0,
         line_total: contract?.monthly_amount || 0,
@@ -251,7 +258,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
         terms: contract?.terms || '',
         items: [
           {
-            item_description: `دفعة شهرية - عقد رقم ${contract?.contract_number}`,
+            item_description: getInitialDescription(),
             quantity: 1,
             unit_price: contract?.monthly_amount || 0,
             line_total: contract?.monthly_amount || 0,

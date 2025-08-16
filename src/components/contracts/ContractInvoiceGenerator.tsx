@@ -220,6 +220,25 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
 
       if (error) throw error;
 
+      // Create invoice item with proper description using the formatter
+      const { formatMonthlyPaymentDescription } = await import('@/utils/invoiceDescriptionFormatter');
+      const itemDescription = formatMonthlyPaymentDescription(schedule.due_date, contract.contract_number);
+      
+      const { error: itemError } = await supabase
+        .from('invoice_items')
+        .insert({
+          invoice_id: invoice.id,
+          line_number: 1,
+          item_description: itemDescription,
+          quantity: 1,
+          unit_price: schedule.amount,
+          line_total: schedule.amount,
+          tax_rate: 0,
+          tax_amount: 0
+        });
+
+      if (itemError) throw itemError;
+
       // Update payment schedule with invoice ID
       await supabase
         .from('contract_payment_schedules')
