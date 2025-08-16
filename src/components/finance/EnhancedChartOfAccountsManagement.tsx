@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -33,7 +33,6 @@ interface AccountFormData {
 export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [filterLevel, setFilterLevel] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -153,20 +152,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </Badge>
         </TableCell>
         <TableCell className="text-center">
-          <div className="flex items-center justify-center gap-2">
-            <Layers className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="secondary" className="font-mono">
-              {account.account_level || 1}
-            </Badge>
-          </div>
-        </TableCell>
-        <TableCell className="text-center">
-          <AccountLevelBadge 
-            accountLevel={account.account_level || 1} 
-            isHeader={account.is_header || false} 
-          />
-        </TableCell>
-        <TableCell className="text-center">
           <Badge variant={account.balance_type === 'debit' ? 'default' : 'secondary'}>
             {account.balance_type === 'debit' ? 'مدين' : 'دائن'}
           </Badge>
@@ -262,9 +247,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         (account.account_name_ar && account.account_name_ar.includes(searchTerm));
       
       const matchesType = filterType === 'all' || account.account_type === filterType;
-      const matchesLevel = filterLevel === 'all' || account.account_level?.toString() === filterLevel;
       
-      return matchesSearch && matchesType && matchesLevel;
+      return matchesSearch && matchesType;
     });
   };
 
@@ -443,19 +427,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 <SelectItem value="expenses">المصروفات</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterLevel} onValueChange={setFilterLevel}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="تصفية حسب المستوى" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                <SelectItem value="all">جميع المستويات</SelectItem>
-                <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
-                <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
-                <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
-                <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
-                <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -475,8 +446,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 <TableHead className="text-right">كود الحساب</TableHead>
                 <TableHead className="text-right">اسم الحساب</TableHead>
                 <TableHead className="text-center">نوع الحساب</TableHead>
-                <TableHead className="text-center">المستوى</TableHead>
-                <TableHead className="text-center">حالة المستوى</TableHead>
                 <TableHead className="text-center">طبيعة الرصيد</TableHead>
                 <TableHead className="text-center">الحالة</TableHead>
                 <TableHead className="text-center">إجراءات</TableHead>
