@@ -151,8 +151,13 @@ const financeSubItems = [
   },
 ]
 
-// Finance Settings for Super Admin only
+// Finance Settings for Admin and Super Admin
 const financeSettingsItems = [
+  {
+    name: 'معالج النظام المحاسبي',
+    href: '/finance/accounting-wizard',
+    icon: Zap
+  },
   {
     name: 'إدارة القيود',
     href: '/finance/settings/journal-entries',
@@ -397,8 +402,8 @@ export function AppSidebar() {
                              </SidebarMenuSubItem>
                            ))}
                            
-                           {/* Finance Settings - Super Admin Only */}
-                           <SuperAdminOnly hideIfNoAccess>
+                            {/* Finance Settings - Admin and Super Admin */}
+                            <AdminOnly hideIfNoAccess>
                              <SidebarMenuSubItem>
                                <Collapsible>
                                  <CollapsibleTrigger asChild>
@@ -428,7 +433,7 @@ export function AppSidebar() {
                                  </CollapsibleContent>
                                </Collapsible>
                              </SidebarMenuSubItem>
-                           </SuperAdminOnly>
+                            </AdminOnly>
                          </SidebarMenuSub>
                        </CollapsibleContent>
                     </Collapsible>
