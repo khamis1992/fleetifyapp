@@ -40,6 +40,7 @@ import JournalEntriesSettings from "./finance/settings/JournalEntriesSettings"
 import AccountsSettings from "./finance/settings/AccountsSettings"
 import CostCentersSettings from "./finance/settings/CostCentersSettings"
 import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSettings"
+import AccountingWizard from "./finance/AccountingWizard"
 import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 
 const FinanceModules = () => {
@@ -149,6 +150,14 @@ const FinanceModules = () => {
       icon: Settings,
       path: "/finance/account-mappings",
       color: "bg-gradient-to-br from-slate-500 to-slate-600"
+    },
+    {
+      title: "معالج النظام المحاسبي",
+      titleEn: "Accounting System Wizard",
+      description: "إعداد نظام محاسبي متكامل للشركات الجديدة",
+      icon: Settings,
+      path: "/finance/accounting-wizard",
+      color: "bg-gradient-to-br from-emerald-500 to-emerald-600"
     }
   ]
 
@@ -435,6 +444,14 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.accounts.view">
             <AccountMappings />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="accounting-wizard" 
+        element={
+          <ProtectedFinanceRoute permission="finance.accounts.manage">
+            <AccountingWizard />
           </ProtectedFinanceRoute>
         } 
       />
