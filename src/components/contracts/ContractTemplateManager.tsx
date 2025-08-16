@@ -10,11 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AdminOnly } from '@/components/common/PermissionGuard'
-import { Plus, Edit, Trash2, Copy, Settings } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Plus, Edit, Trash2, Copy, Settings, HelpCircle, Info } from 'lucide-react'
 import { useContractTemplates, ContractTemplate } from '@/hooks/useContractTemplates'
 import { useForm } from 'react-hook-form'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
+import { CustomerAccountSelector } from '@/components/finance/CustomerAccountSelector'
 
 interface TemplateFormData {
   template_name: string
@@ -125,157 +128,184 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">قوالب العقود</h2>
-          <p className="text-muted-foreground">
-            إنشاء وإدارة قوالب العقود لتسريع عملية إنشاء العقود الجديدة
-          </p>
-        </div>
-        
-        <AdminOnly hideIfNoAccess>
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button 
-                onClick={() => {
-                  setEditingTemplate(null)
-                  reset()
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                قالب جديد
-              </Button>
-            </DialogTrigger>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">قوالب العقود</h2>
+            <p className="text-muted-foreground">
+              إنشاء وإدارة قوالب العقود لتسريع عملية إنشاء العقود الجديدة
+            </p>
+          </div>
           
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingTemplate ? 'تحرير القالب' : 'إنشاء قالب جديد'}
-              </DialogTitle>
-            </DialogHeader>
+          <AdminOnly hideIfNoAccess>
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button 
+                  onClick={() => {
+                    setEditingTemplate(null)
+                    reset()
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  قالب جديد
+                </Button>
+              </DialogTrigger>
             
-            <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="template_name">اسم القالب (إنجليزي) *</Label>
-                  <Input
-                    id="template_name"
-                    {...register('template_name', { required: true })}
-                    placeholder="Daily Rental Template"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="template_name_ar">اسم القالب (عربي)</Label>
-                  <Input
-                    id="template_name_ar"
-                    {...register('template_name_ar')}
-                    placeholder="قالب الإيجار اليومي"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="contract_type">نوع العقد *</Label>
-                  <Select onValueChange={(value) => setValue('contract_type', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر نوع العقد" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="rent_to_own">إيجار حتى التملك</SelectItem>
-                      <SelectItem value="daily_rental">إيجار يومي</SelectItem>
-                      <SelectItem value="weekly_rental">إيجار أسبوعي</SelectItem>
-                      <SelectItem value="monthly_rental">إيجار شهري</SelectItem>
-                      <SelectItem value="yearly_rental">إيجار سنوي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="default_duration_days">المدة الافتراضية (أيام)</Label>
-                  <Input
-                    id="default_duration_days"
-                    type="number"
-                    min="1"
-                    {...register('default_duration_days', { valueAsNumber: true })}
-                  />
-                </div>
-              </div>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingTemplate ? 'تحرير القالب' : 'إنشاء قالب جديد'}
+                </DialogTitle>
+              </DialogHeader>
               
-              <div className="space-y-2">
-                <Label htmlFor="default_terms">الشروط والأحكام الافتراضية</Label>
-                <Textarea
-                  id="default_terms"
-                  {...register('default_terms')}
-                  rows={4}
-                  placeholder="الشروط والأحكام العامة للعقد..."
-                />
-              </div>
-              
-              {/* Account Mappings */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">ربط الحسابات المحاسبية</h3>
-                
-                <div className="space-y-4">
-                  {/* الحساب المحاسبي الرئيسي - سيتم اختياره تلقائياً في العقود */}
+              <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="account_id">الحساب المحاسبي للعقد *</Label>
-                    <div className="text-xs text-muted-foreground mb-2">
-                      سيتم اختيار هذا الحساب تلقائياً عند استخدام القالب في إنشاء العقود
-                    </div>
-                    <Select onValueChange={(value) => setValue('account_id', value)}>
+                    <Label htmlFor="template_name">اسم القالب (إنجليزي) *</Label>
+                    <Input
+                      id="template_name"
+                      {...register('template_name', { required: true })}
+                      placeholder="Daily Rental Template"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="template_name_ar">اسم القالب (عربي)</Label>
+                    <Input
+                      id="template_name_ar"
+                      {...register('template_name_ar')}
+                      placeholder="قالب الإيجار اليومي"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="contract_type">نوع العقد *</Label>
+                    <Select onValueChange={(value) => setValue('contract_type', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر الحساب المحاسبي" />
+                        <SelectValue placeholder="اختر نوع العقد" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">بدون ربط</SelectItem>
-                        {accounts?.map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            {account.account_code} - {account.account_name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="rent_to_own">إيجار حتى التملك</SelectItem>
+                        <SelectItem value="daily_rental">إيجار يومي</SelectItem>
+                        <SelectItem value="weekly_rental">إيجار أسبوعي</SelectItem>
+                        <SelectItem value="monthly_rental">إيجار شهري</SelectItem>
+                        <SelectItem value="yearly_rental">إيجار سنوي</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="default_duration_days">المدة الافتراضية (أيام)</Label>
+                    <Input
+                      id="default_duration_days"
+                      type="number"
+                      min="1"
+                      {...register('default_duration_days', { valueAsNumber: true })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="default_terms">الشروط والأحكام الافتراضية</Label>
+                  <Textarea
+                    id="default_terms"
+                    {...register('default_terms')}
+                    rows={4}
+                    placeholder="الشروط والأحكام العامة للعقد..."
+                  />
+                </div>
+                
+                {/* Account Mappings */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-medium">ربط الحسابات المحاسبية</h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>تحديد الحسابات المحاسبية التي ستستخدم تلقائياً عند إنشاء عقود من هذا القالب</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      يمكنك تحديد الحسابات المحاسبية التي ستربط تلقائياً مع العقود المنشأة من هذا القالب. هذا يوفر الوقت ويضمن الاتساق في التسجيل المحاسبي.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="space-y-4">
+                    {/* الحساب المحاسبي الرئيسي */}
                     <div className="space-y-2">
-                      <Label htmlFor="receivables_account_id">حساب المدينين</Label>
-                      <Select onValueChange={(value) => setValue('receivables_account_id', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر حساب المدينين" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون ربط</SelectItem>
-                          {accounts?.map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.account_code} - {account.account_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="account_id">الحساب المحاسبي للعقد *</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>الحساب الذي سيتم ربط العقد به في النظام المحاسبي</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <CustomerAccountSelector
+                        value={watch('account_id')}
+                        onValueChange={(value) => setValue('account_id', value)}
+                        placeholder="اختر الحساب المحاسبي للعقد"
+                      />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="revenue_account_id">حساب الإيرادات</Label>
-                      <Select onValueChange={(value) => setValue('revenue_account_id', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر حساب الإيرادات" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون ربط</SelectItem>
-                          {accounts?.map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.account_code} - {account.account_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* حساب المدينين - اختياري */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="receivables_account_id">حساب المدينين (اختياري)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>الحساب الذي يسجل عليه المبالغ المستحقة من العملاء</p>
+                              <p>يمكن تركه فارغاً لاستخدام الحساب الافتراضي</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <CustomerAccountSelector
+                          value={watch('receivables_account_id')}
+                          onValueChange={(value) => setValue('receivables_account_id', value)}
+                          accountType="receivable"
+                          placeholder="الحساب الافتراضي (اختياري)"
+                        />
+                      </div>
+                      
+                      {/* حساب الإيرادات */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="revenue_account_id">حساب الإيرادات (اختياري)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>الحساب الذي تسجل عليه إيرادات هذا النوع من العقود</p>
+                              <p>يمكن تركه فارغاً لاستخدام الحساب الافتراضي</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <CustomerAccountSelector
+                          value={watch('revenue_account_id')}
+                          onValueChange={(value) => setValue('revenue_account_id', value)}
+                          accountType="revenue"
+                          placeholder="الحساب الافتراضي (اختياري)"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
               
               {/* Approval Settings */}
               <div className="space-y-4">
@@ -420,7 +450,8 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
             </Card>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
