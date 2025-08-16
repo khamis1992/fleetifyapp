@@ -235,7 +235,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                       <FormItem>
                         <FormLabel>التكلفة المقدرة (د.ك)</FormLabel>
                         <FormControl>
-                          <Input {...field} type="number" step="0.001" placeholder="0.000" />
+                          <NumberInput {...field} step="0.001" placeholder="0.000" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

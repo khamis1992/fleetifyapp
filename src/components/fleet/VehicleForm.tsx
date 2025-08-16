@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/NumberInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
@@ -627,7 +628,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem className="text-right">
                               <FormLabel className="text-right">السنة *</FormLabel>
                               <FormControl>
-                                <Input {...field} type="number" min="1990" max={new Date().getFullYear() + 1} className="text-right" dir="rtl" />
+                                <NumberInput {...field} min="1990" max={new Date().getFullYear() + 1} />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
