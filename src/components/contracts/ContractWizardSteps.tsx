@@ -426,15 +426,23 @@ export const DatesStep: React.FC = () => {
   // تطبيق نوع المدة المناسب بناءً على نوع العقد
   React.useEffect(() => {
     if (data.contract_type) {
-      const isMonthlyBasedContract = data.contract_type === 'monthly_rental' || 
-                                   data.contract_type === 'yearly_rental' ||
-                                   data.contract_type === 'corporate'
-      
+      const isMonthlyContract = data.contract_type === 'monthly_rental'
+      const isYearlyContract = data.contract_type === 'yearly_rental'
+      const isCorporateContract = data.contract_type === 'corporate'
       const isDailyWeeklyContract = data.contract_type === 'daily_rental' ||
                                    data.contract_type === 'weekly_rental'
       
-      // للعقود الشهرية/السنوية/المؤسسية: اجعل الأيام الإضافية 0 بشكل افتراضي
-      if (isMonthlyBasedContract) {
+      // للعقد السنوي: اجعل عدد الأشهر 12 والأيام 0
+      if (isYearlyContract) {
+        if (data.rental_months !== 12 || data.rental_days !== 0) {
+          updateData({ 
+            rental_months: 12,
+            rental_days: 0
+          })
+        }
+      }
+      // للعقود الشهرية والمؤسسية: اجعل الأيام الإضافية 0 بشكل افتراضي
+      else if (isMonthlyContract || isCorporateContract) {
         // إذا لم يتم تحديد أشهر بعد، قم بتعيين شهر واحد كحد أدنى
         if (data.rental_months === 0) {
           updateData({ 
@@ -534,7 +542,9 @@ export const DatesStep: React.FC = () => {
                 {data.contract_type === 'daily_rental' || 
                  data.contract_type === 'weekly_rental' 
                   ? 'افتراضياً 0 للعقود اليومية/الأسبوعية' 
-                  : 'يمكن دمجها مع الأيام'}
+                  : data.contract_type === 'yearly_rental'
+                    ? 'افتراضياً 12 شهر للعقد السنوي'
+                    : 'يمكن دمجها مع الأيام'}
               </span>
             </div>
             <Input
@@ -560,7 +570,9 @@ export const DatesStep: React.FC = () => {
                 {data.contract_type === 'monthly_rental' || 
                  data.contract_type === 'yearly_rental' || 
                  data.contract_type === 'corporate' 
-                  ? 'افتراضياً 0 للعقود الشهرية/السنوية/المؤسسية' 
+                  ? data.contract_type === 'yearly_rental' 
+                    ? 'افتراضياً 0 للعقد السنوي (12 شهر كامل)'
+                    : 'افتراضياً 0 للعقود الشهرية/المؤسسية'
                   : data.contract_type === 'daily_rental' 
                     ? 'المدة الأساسية للعقد اليومي'
                     : data.contract_type === 'weekly_rental'
