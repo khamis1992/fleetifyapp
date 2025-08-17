@@ -15,6 +15,7 @@ import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
 import { AccountStatementDialog } from './AccountStatementDialog';
+import { ParentAccountSelector } from './ParentAccountSelector';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -368,21 +369,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </div>
                 <div>
                   <Label htmlFor="parent_account">الحساب الأب</Label>
-                  <Select
+                  <ParentAccountSelector
                     value={formData.parent_account_id}
                     onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر الحساب الأب (اختياري)" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      {allAccounts?.filter(acc => acc.is_header).map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.account_code} - {account.account_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="اختر الحساب الأب (اختياري)"
+                  />
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -657,21 +648,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               </div>
               <div>
                 <Label htmlFor="edit_parent_account">الحساب الأب</Label>
-                <Select
+                <ParentAccountSelector
                   value={formData.parent_account_id}
                   onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر الحساب الأب (اختياري)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allAccounts?.filter(acc => acc.is_header && acc.id !== editingAccount?.id).map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.account_code} - {account.account_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="اختر الحساب الأب (اختياري)"
+                />
               </div>
             </div>
             <div className="flex items-center space-x-2">
