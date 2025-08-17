@@ -9,13 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
 import { AccountStatementDialog } from './AccountStatementDialog';
 import { ParentAccountSelector } from './ParentAccountSelector';
+import { ChartValidationPanel } from './charts/ChartValidationPanel';
+import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
+import { AccountTemplateManager } from './charts/AccountTemplateManager';
+import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -44,6 +48,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('accounts');
+  const [showSmartWizard, setShowSmartWizard] = useState(false);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -291,200 +297,150 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">إدارة دليل الحسابات</h2>
+      <div className="flex justify-between items-center" dir="rtl">
+        <div className="text-right">
+          <h2 className="text-2xl font-bold">إدارة دليل الحسابات المحسن</h2>
+          <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
         </div>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              إضافة حساب جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>إضافة حساب جديد</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateAccount} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="account_code">رمز الحساب</Label>
-                  <Input
-                    id="account_code"
-                    value={formData.account_code}
-                    onChange={(e) => setFormData({...formData, account_code: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_name">اسم الحساب</Label>
-                  <Input
-                    id="account_name"
-                    value={formData.account_name}
-                    onChange={(e) => setFormData({...formData, account_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_name_ar">اسم الحساب بالعربية</Label>
-                  <Input
-                    id="account_name_ar"
-                    value={formData.account_name_ar}
-                    onChange={(e) => setFormData({...formData, account_name_ar: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_type">نوع الحساب</Label>
-                  <Select
-                    value={formData.account_type}
-                    onValueChange={(value) => setFormData({...formData, account_type: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="assets">الأصول</SelectItem>
-                      <SelectItem value="liabilities">الخصوم</SelectItem>
-                      <SelectItem value="equity">حقوق الملكية</SelectItem>
-                      <SelectItem value="revenue">الإيرادات</SelectItem>
-                      <SelectItem value="expenses">المصروفات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="balance_type">نوع الرصيد</Label>
-                  <Select
-                    value={formData.balance_type}
-                    onValueChange={(value) => setFormData({...formData, balance_type: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="debit">مدين</SelectItem>
-                      <SelectItem value="credit">دائن</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="parent_account">الحساب الأب</Label>
-                  <ParentAccountSelector
-                    value={formData.parent_account_id}
-                    onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
-                    placeholder="اختر الحساب الأب (اختياري)"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_header"
-                  checked={formData.is_header}
-                  onCheckedChange={(checked) => setFormData({...formData, is_header: checked})}
-                />
-                <Label htmlFor="is_header">حساب إجمالي (للتقارير فقط)</Label>
-              </div>
-              <div>
-                <Label htmlFor="description">الوصف</Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="وصف اختياري للحساب"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  إلغاء
-                </Button>
-                <Button type="submit" disabled={createAccount.isPending}>
-                  {createAccount.isPending ? 'جاري الحفظ...' : 'حفظ'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="البحث في الحسابات..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="تصفية حسب النوع" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="assets">الأصول</SelectItem>
-                <SelectItem value="liabilities">الخصوم</SelectItem>
-                <SelectItem value="equity">حقوق الملكية</SelectItem>
-                <SelectItem value="revenue">الإيرادات</SelectItem>
-                <SelectItem value="expenses">المصروفات</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterLevel} onValueChange={setFilterLevel}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="تصفية حسب المستوى" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                <SelectItem value="all">جميع المستويات</SelectItem>
-                <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
-                <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
-                <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
-                <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
-                <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Enhanced Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="accounts" className="flex items-center gap-2">
+            <span>قائمة الحسابات</span>
+            <Layers className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="validation" className="flex items-center gap-2">
+            <span>التحقق والإصلاح</span>
+            <CheckCircle className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <span>القوالب</span>
+            <Folder className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="visualization" className="flex items-center gap-2">
+            <span>العرض التفاعلي</span>
+            <Eye className="h-4 w-4" />
+          </TabsTrigger>
+        </TabsList>
 
-      {/* All Accounts */}
-      <Card>
-        <CardHeader>
-          <CardTitle>جميع الحسابات</CardTitle>
-          <CardDescription>
-            عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">كود الحساب</TableHead>
-                <TableHead className="text-right">اسم الحساب</TableHead>
-                <TableHead className="text-center">نوع الحساب</TableHead>
-                <TableHead className="text-center">المستوى</TableHead>
-                <TableHead className="text-center">حالة المستوى</TableHead>
-                <TableHead className="text-center">طبيعة الرصيد</TableHead>
-                <TableHead className="text-center">الحالة</TableHead>
-                <TableHead className="text-center">إجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {buildAccountTree(allAccounts || []).map((account) => (
-                renderAccountRow(account)
-              )).flat()}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        {/* Accounts Tab */}
+        <TabsContent value="accounts" className="space-y-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
+              <span>إضافة حساب جديد</span>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Filters */}
+          <Card>
+            <CardContent className="pt-6" dir="rtl">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="البحث في الحسابات..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pr-10 text-right"
+                      dir="rtl"
+                    />
+                  </div>
+                </div>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="تصفية حسب النوع" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                    <SelectItem value="all">جميع الأنواع</SelectItem>
+                    <SelectItem value="assets">الأصول</SelectItem>
+                    <SelectItem value="liabilities">الخصوم</SelectItem>
+                    <SelectItem value="equity">حقوق الملكية</SelectItem>
+                    <SelectItem value="revenue">الإيرادات</SelectItem>
+                    <SelectItem value="expenses">المصروفات</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterLevel} onValueChange={setFilterLevel}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="تصفية حسب المستوى" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                    <SelectItem value="all">جميع المستويات</SelectItem>
+                    <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
+                    <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
+                    <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
+                    <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
+                    <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* All Accounts */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-right">جميع الحسابات</CardTitle>
+              <CardDescription className="text-right">
+                عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
+              </CardDescription>
+            </CardHeader>
+            <CardContent dir="rtl">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">كود الحساب</TableHead>
+                    <TableHead className="text-right">اسم الحساب</TableHead>
+                    <TableHead className="text-center">نوع الحساب</TableHead>
+                    <TableHead className="text-center">المستوى</TableHead>
+                    <TableHead className="text-center">حالة المستوى</TableHead>
+                    <TableHead className="text-center">طبيعة الرصيد</TableHead>
+                    <TableHead className="text-center">الحالة</TableHead>
+                    <TableHead className="text-center">إجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {buildAccountTree(allAccounts || []).map((account) => (
+                    renderAccountRow(account)
+                  )).flat()}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Validation Tab */}
+        <TabsContent value="validation">
+          <ChartValidationPanel />
+        </TabsContent>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates">
+          <AccountTemplateManager />
+        </TabsContent>
+
+        {/* Visualization Tab */}
+        <TabsContent value="visualization">
+          <EnhancedAccountsVisualization />
+        </TabsContent>
+      </Tabs>
+
+      {/* Smart Wizard Dialog */}
+      <Dialog open={showSmartWizard} onOpenChange={setShowSmartWizard}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">معالج إنشاء الحسابات الذكي</DialogTitle>
+          </DialogHeader>
+          <SmartAccountWizardTab />
+        </DialogContent>
+      </Dialog>
 
       {/* View Account Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">معاينة الحساب</DialogTitle>
           </DialogHeader>
@@ -572,9 +528,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Edit Account Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تعديل الحساب</DialogTitle>
+            <DialogTitle className="text-right">تعديل الحساب</DialogTitle>
           </DialogHeader>
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -588,33 +544,39 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           }} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit_account_code">رمز الحساب</Label>
+                <Label htmlFor="edit_account_code" className="text-right">رمز الحساب</Label>
                 <Input
                   id="edit_account_code"
                   value={formData.account_code}
                   onChange={(e) => setFormData({...formData, account_code: e.target.value})}
                   required
+                  className="text-right"
+                  dir="rtl"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_account_name">اسم الحساب</Label>
+                <Label htmlFor="edit_account_name" className="text-right">اسم الحساب</Label>
                 <Input
                   id="edit_account_name"
                   value={formData.account_name}
                   onChange={(e) => setFormData({...formData, account_name: e.target.value})}
                   required
+                  className="text-right"
+                  dir="rtl"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_account_name_ar">اسم الحساب بالعربية</Label>
+                <Label htmlFor="edit_account_name_ar" className="text-right">اسم الحساب بالعربية</Label>
                 <Input
                   id="edit_account_name_ar"
                   value={formData.account_name_ar}
                   onChange={(e) => setFormData({...formData, account_name_ar: e.target.value})}
+                  className="text-right"
+                  dir="rtl"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_account_type">نوع الحساب</Label>
+                <Label htmlFor="edit_account_type" className="text-right">نوع الحساب</Label>
                 <Select
                   value={formData.account_type}
                   onValueChange={(value) => setFormData({...formData, account_type: value})}
@@ -632,7 +594,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit_balance_type">نوع الرصيد</Label>
+                <Label htmlFor="edit_balance_type" className="text-right">نوع الرصيد</Label>
                 <Select
                   value={formData.balance_type}
                   onValueChange={(value) => setFormData({...formData, balance_type: value})}
@@ -647,7 +609,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit_parent_account">الحساب الأب</Label>
+                <Label htmlFor="edit_parent_account" className="text-right">الحساب الأب</Label>
                 <ParentAccountSelector
                   value={formData.parent_account_id}
                   onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
@@ -655,29 +617,31 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 justify-end">
+              <Label htmlFor="edit_is_header" className="text-right">حساب إجمالي (للتقارير فقط)</Label>
               <Switch
                 id="edit_is_header"
                 checked={formData.is_header}
                 onCheckedChange={(checked) => setFormData({...formData, is_header: checked})}
               />
-              <Label htmlFor="edit_is_header">حساب إجمالي (للتقارير فقط)</Label>
             </div>
             <div>
-              <Label htmlFor="edit_description">الوصف</Label>
+              <Label htmlFor="edit_description" className="text-right">الوصف</Label>
               <Input
                 id="edit_description"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 placeholder="وصف اختياري للحساب"
+                className="text-right"
+                dir="rtl"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
-                إلغاء
-              </Button>
               <Button type="submit" disabled={updateAccount.isPending}>
                 {updateAccount.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                إلغاء
               </Button>
             </div>
           </form>
@@ -686,25 +650,22 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Delete Account Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
+        <DialogContent dir="rtl">
           <DialogHeader>
-            <DialogTitle>تأكيد حذف الحساب</DialogTitle>
+            <DialogTitle className="text-right">تأكيد حذف الحساب</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>هل أنت متأكد من رغبتك في حذف هذا الحساب؟</p>
+            <p className="text-right">هل أنت متأكد من رغبتك في حذف هذا الحساب؟</p>
             {editingAccount && (
-              <div className="p-4 bg-muted rounded">
+              <div className="p-4 bg-muted rounded text-right">
                 <p><strong>رمز الحساب:</strong> {editingAccount.account_code}</p>
                 <p><strong>اسم الحساب:</strong> {editingAccount.account_name}</p>
               </div>
             )}
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-right">
               ملاحظة: لا يمكن حذف الحسابات النظام أو الحسابات التي تحتوي على معاملات
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                إلغاء
-              </Button>
               <Button 
                 variant="destructive" 
                 onClick={() => {
@@ -713,6 +674,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 }}
               >
                 حذف الحساب
+              </Button>
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                إلغاء
               </Button>
             </div>
           </div>
