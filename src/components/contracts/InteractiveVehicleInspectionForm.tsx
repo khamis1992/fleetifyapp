@@ -359,7 +359,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
             <CardContent>
               <div className="border rounded-lg p-4 bg-background relative">
                 <div 
-                  className="relative w-full h-[300px] bg-cover bg-center bg-no-repeat rounded mx-auto max-w-md"
+                  className="relative w-full h-[450px] bg-cover bg-center bg-no-repeat rounded mx-auto max-w-xs"
                   style={{ backgroundImage: 'url(/مخطط.png)' }}
                 >
                   <canvas
