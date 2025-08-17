@@ -9,6 +9,16 @@ export const useDeleteContract = () => {
     mutationFn: async (contractId: string) => {
       // First, delete related records that might reference this contract
       
+      // Delete vehicle condition reports
+      const { error: conditionReportsError } = await supabase
+        .from('vehicle_condition_reports')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (conditionReportsError) {
+        console.warn('Warning deleting vehicle condition reports:', conditionReportsError);
+      }
+
       // Delete contract payment schedules
       const { error: scheduleError } = await supabase
         .from('contract_payment_schedules')
