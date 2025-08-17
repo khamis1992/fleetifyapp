@@ -17,6 +17,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useCreateSmartAccount, useSuggestAccountCode } from '@/hooks/useChartValidation';
+import { useCreateAccount } from '@/hooks/useChartOfAccounts';
 import { ParentAccountSelector } from '../ParentAccountSelector';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
@@ -26,6 +27,7 @@ interface WizardData {
   accountType: string;
   parentAccountId?: string;
   suggestedCode?: string;
+  accountCode?: string;
   balanceType?: string;
   accountLevel?: number;
 }
@@ -47,6 +49,7 @@ export const SmartAccountWizardTab: React.FC = () => {
   });
 
   const createSmartAccount = useCreateSmartAccount();
+  const createAccount = useCreateAccount();
   const suggestCode = useSuggestAccountCode();
 
   const steps = [
@@ -63,7 +66,12 @@ export const SmartAccountWizardTab: React.FC = () => {
         parentAccountId: wizardData.parentAccountId,
       }, {
         onSuccess: (code) => {
-          setWizardData(prev => ({ ...prev, suggestedCode: code }));
+          setWizardData(prev => ({ 
+            ...prev, 
+            suggestedCode: code,
+            // Only update accountCode if it's empty or matches the previous suggestion
+            accountCode: !prev.accountCode || prev.accountCode === prev.suggestedCode ? code : prev.accountCode
+          }));
         },
       });
     }
@@ -93,17 +101,39 @@ export const SmartAccountWizardTab: React.FC = () => {
   };
 
   const handleCreate = () => {
-    createSmartAccount.mutate({
-      accountName: wizardData.accountName,
-      accountNameAr: wizardData.accountNameAr,
-      accountType: wizardData.accountType,
-      parentAccountId: wizardData.parentAccountId,
-      autoGenerateCode: true,
-    }, {
-      onSuccess: () => {
-        resetWizard();
-      },
-    });
+    // If user has customized the account code, use manual creation
+    const useCustomCode = wizardData.accountCode && wizardData.accountCode !== wizardData.suggestedCode;
+    
+    if (useCustomCode) {
+      // Use regular account creation with custom code
+      createAccount.mutate({
+        account_code: wizardData.accountCode!,
+        account_name: wizardData.accountName,
+        account_name_ar: wizardData.accountNameAr || '',
+        account_type: wizardData.accountType,
+        balance_type: wizardData.balanceType || 'debit',
+        parent_account_id: wizardData.parentAccountId || '',
+        is_header: false,
+        description: ''
+      }, {
+        onSuccess: () => {
+          resetWizard();
+        },
+      });
+    } else {
+      // Use smart account creation with auto-generated code
+      createSmartAccount.mutate({
+        accountName: wizardData.accountName,
+        accountNameAr: wizardData.accountNameAr,
+        accountType: wizardData.accountType,
+        parentAccountId: wizardData.parentAccountId,
+        autoGenerateCode: true,
+      }, {
+        onSuccess: () => {
+          resetWizard();
+        },
+      });
+    }
   };
 
   const resetWizard = () => {
@@ -200,12 +230,25 @@ export const SmartAccountWizardTab: React.FC = () => {
 
       {wizardData.suggestedCode && (
         <Card>
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 space-y-3">
             <div className="flex items-center gap-2">
               <Code className="h-4 w-4 text-primary" />
-              <span className="text-sm">
-                كود الحساب المقترح: <strong className="font-mono">{wizardData.suggestedCode}</strong>
-              </span>
+              <span className="text-sm font-medium">كود الحساب</span>
+            </div>
+            <div>
+              <Label htmlFor="accountCode">كود الحساب (قابل للتعديل)</Label>
+              <Input
+                id="accountCode"
+                value={wizardData.accountCode || wizardData.suggestedCode}
+                onChange={(e) => setWizardData(prev => ({ ...prev, accountCode: e.target.value }))}
+                placeholder="أدخل كود الحساب"
+                className="font-mono"
+              />
+              {wizardData.suggestedCode && wizardData.accountCode !== wizardData.suggestedCode && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  الكود المقترح: {wizardData.suggestedCode}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -279,16 +322,42 @@ export const SmartAccountWizardTab: React.FC = () => {
           <Separator />
 
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">كود الحساب المقترح</Label>
-            <div className="font-mono text-lg font-bold text-primary">
-              {wizardData.suggestedCode || 'سيتم توليده تلقائياً'}
+            <Label className="text-xs text-muted-foreground">كود الحساب</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={wizardData.accountCode || wizardData.suggestedCode || ''}
+                onChange={(e) => setWizardData(prev => ({ ...prev, accountCode: e.target.value }))}
+                className="font-mono text-lg font-bold flex-1"
+                placeholder="سيتم توليده تلقائياً"
+              />
+              {wizardData.suggestedCode && wizardData.accountCode !== wizardData.suggestedCode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWizardData(prev => ({ ...prev, accountCode: prev.suggestedCode }))}
+                  className="whitespace-nowrap"
+                >
+                  استعادة المقترح
+                </Button>
+              )}
             </div>
+            {wizardData.suggestedCode && wizardData.accountCode !== wizardData.suggestedCode && (
+              <div className="text-xs text-muted-foreground">
+                الكود المقترح: {wizardData.suggestedCode}
+              </div>
+            )}
           </div>
 
           {createSmartAccount.isError && (
             <div className="flex items-center gap-2 text-destructive text-sm">
               <AlertCircle className="h-4 w-4" />
               {createSmartAccount.error?.message}
+            </div>
+          )}
+          {createAccount.isError && (
+            <div className="flex items-center gap-2 text-destructive text-sm">
+              <AlertCircle className="h-4 w-4" />
+              {createAccount.error?.message}
             </div>
           )}
         </CardContent>
@@ -375,10 +444,10 @@ export const SmartAccountWizardTab: React.FC = () => {
             ) : (
               <Button
                 onClick={handleCreate}
-                disabled={createSmartAccount.isPending}
+                disabled={createSmartAccount.isPending || createAccount.isPending}
                 className="flex items-center gap-2"
               >
-                {createSmartAccount.isPending ? (
+                {(createSmartAccount.isPending || createAccount.isPending) ? (
                   <>
                     <LoadingSpinner className="h-4 w-4" />
                     جاري الإنشاء...
