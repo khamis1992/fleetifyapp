@@ -47,6 +47,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [customerSignature, setCustomerSignature] = useState('');
   const [companySignature, setCompanySignature] = useState('');
+  const [conditionReportSignature, setConditionReportSignature] = useState('');
 
   const { data: vehicle } = useContractVehicle(vehicleId);
   const createConditionReportMutation = useCreateConditionReport();
@@ -231,7 +232,8 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
         }), {}),
         damage_points: drawingHistory,
         inspector_signature: companySignature,
-        customer_signature: customerSignature
+        customer_signature: customerSignature,
+        condition_report_signature: conditionReportSignature
       };
 
       const result = await createConditionReportMutation.mutateAsync({
@@ -495,7 +497,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
           </Card>
 
           {/* Signatures */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">توقيع المستأجر</CardTitle>
@@ -522,6 +524,22 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
                     placeholder="توقيع المؤجر"
                     value={companySignature}
                     onChange={(e) => setCompanySignature(e.target.value)}
+                    className="text-center"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">توقيع على تقرير الحالة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <Input
+                    placeholder="توقيع المسؤول عن التقرير"
+                    value={conditionReportSignature}
+                    onChange={(e) => setConditionReportSignature(e.target.value)}
                     className="text-center"
                   />
                 </div>
