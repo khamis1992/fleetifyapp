@@ -4,20 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Network, 
   TreePine, 
   Search, 
-  Filter, 
   Maximize2, 
   Minimize2,
   ChevronRight,
   ChevronDown,
   Layers,
   FileText,
-  Building,
   TrendingUp,
   TrendingDown,
   Eye,
@@ -48,7 +45,6 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showInactiveAccounts, setShowInactiveAccounts] = useState(false);
-  const [viewMode, setViewMode] = useState<'tree' | 'flat' | 'hierarchy'>('tree');
 
   // Build hierarchical tree
   const accountTree = useMemo(() => {
@@ -225,78 +221,6 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     );
   };
 
-  const renderFlatView = () => {
-    if (!accounts) return null;
-    
-    const filteredAccounts = accounts.filter(account => {
-      const matchesSearch = !searchTerm || 
-        account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        account.account_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (account.account_name_ar && account.account_name_ar.includes(searchTerm));
-      
-      const matchesType = filterType === 'all' || account.account_type === filterType;
-      const matchesActive = showInactiveAccounts || account.is_active;
-      
-      return matchesSearch && matchesType && matchesActive;
-    }).sort((a, b) => a.account_code.localeCompare(b.account_code));
-
-    return (
-      <div className="space-y-1">
-        {filteredAccounts.map(account => (
-          <div 
-            key={account.id}
-            className={`
-              flex items-center p-3 rounded-lg cursor-pointer transition-colors
-              hover:bg-muted/50 border
-              ${selectedAccountId === account.id ? 'bg-primary/10 border-primary/20' : 'border-transparent'}
-            `}
-            onClick={() => onSelectAccount?.(account)}
-          >
-            <div className="mr-3">
-              {account.is_header ? (
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <div className="w-4 h-4 rounded-full bg-primary/20" />
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-medium">
-                  {account.account_code}
-                </span>
-                <span className="font-medium">
-                  {account.account_name_ar || account.account_name}
-                </span>
-              </div>
-              
-              {account.account_name_ar && (
-                <div className="text-xs text-muted-foreground">
-                  {account.account_name}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={`text-xs ${getAccountTypeColor(account.account_type)}`}>
-                {getAccountTypeLabel(account.account_type)}
-              </Badge>
-              
-              <Badge variant="secondary" className="text-xs">
-                مستوى {account.account_level}
-              </Badge>
-
-              {!account.is_active && (
-                <Badge variant="destructive" className="text-xs">
-                  غير نشط
-                </Badge>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   if (isLoading) {
     return (
@@ -361,48 +285,31 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
           </Button>
         </div>
 
-        {/* View Mode Tabs */}
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as any)}>
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="tree" className="flex items-center gap-2">
-                <TreePine className="h-4 w-4" />
-                شجري
-              </TabsTrigger>
-              <TabsTrigger value="flat" className="flex items-center gap-2">
-                <Building className="h-4 w-4" />
-                مسطح
-              </TabsTrigger>
-            </TabsList>
-
-            {viewMode === 'tree' && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={expandAll}>
-                  <Maximize2 className="h-4 w-4 mr-1" />
-                  توسيع الكل
-                </Button>
-                <Button variant="outline" size="sm" onClick={collapseAll}>
-                  <Minimize2 className="h-4 w-4 mr-1" />
-                  طي الكل
-                </Button>
-              </div>
-            )}
+        {/* Tree View Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TreePine className="h-4 w-4" />
+            <span className="font-medium">العرض الشجري</span>
           </div>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={expandAll}>
+              <Maximize2 className="h-4 w-4 mr-1" />
+              توسيع الكل
+            </Button>
+            <Button variant="outline" size="sm" onClick={collapseAll}>
+              <Minimize2 className="h-4 w-4 mr-1" />
+              طي الكل
+            </Button>
+          </div>
+        </div>
 
-          <TabsContent value="tree">
-            <ScrollArea className="h-[600px] w-full border rounded-lg p-2">
-              <div className="space-y-1">
-                {accountTree.map(node => renderTreeNode(node))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="flat">
-            <ScrollArea className="h-[600px] w-full border rounded-lg p-2">
-              {renderFlatView()}
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+        {/* Tree View */}
+        <ScrollArea className="h-[600px] w-full border rounded-lg p-2">
+          <div className="space-y-1">
+            {accountTree.map(node => renderTreeNode(node))}
+          </div>
+        </ScrollArea>
 
         {/* Selected Account Info */}
         {selectedAccountId && accounts && (
