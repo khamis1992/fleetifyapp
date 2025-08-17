@@ -178,7 +178,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       isDragging,
     } = useDraggable({
       id: account.id,
-      disabled: account.is_system || !account.is_active,
+      disabled: false, // Allow dragging for all accounts
     });
 
     const style = transform ? {
@@ -193,15 +193,13 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
         {...attributes}
       >
         <div className="flex items-center">
-          {!account.is_system && account.is_active && (
-            <div
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted/50 rounded transition-colors ml-2"
-              title="اسحب لنقل الحساب"
-            >
-              <Move className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
+          <div
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted/50 rounded transition-colors ml-2"
+            title="اسحب لنقل الحساب"
+          >
+            <Move className="h-4 w-4 text-muted-foreground" />
+          </div>
           <div className="flex-1">
             {children}
           </div>
@@ -544,7 +542,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
                   <li>اضغط على أيقونة السحب {<Move className="inline h-3 w-3" />} بجانب اسم الحساب</li>
                   <li>اسحب الحساب إلى أي حساب آخر لجعله حساباً فرعياً منه</li>
                   <li>يمكن السحب والإفلات على جميع المستويات والحسابات</li>
-                  <li>لا يمكن سحب الحسابات النظامية أو غير النشطة</li>
+                  <li>يمكن سحب جميع الحسابات بما في ذلك النظامية وغير النشطة</li>
                   <li>لا يمكن نقل الحساب إلى حساب فرعي منه لتجنب التداخل الدائري</li>
                 </ul>
               </div>
