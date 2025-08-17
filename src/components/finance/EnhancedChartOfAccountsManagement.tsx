@@ -432,7 +432,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       <Dialog open={showSmartWizard} onOpenChange={setShowSmartWizard}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">معالج إنشاء الحسابات الذكي</DialogTitle>
+            <DialogTitle className="text-right">انشاء حساب جديد</DialogTitle>
           </DialogHeader>
           <SmartAccountWizardTab />
         </DialogContent>
