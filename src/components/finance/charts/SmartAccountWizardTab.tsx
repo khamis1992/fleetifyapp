@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   Wand2, 
   Code, 
@@ -14,7 +15,10 @@ import {
   AlertCircle,
   ChevronRight,
   ChevronLeft,
-  RefreshCw
+  RefreshCw,
+  Lightbulb,
+  Copy,
+  Search
 } from 'lucide-react';
 import { useCreateSmartAccount, useSuggestAccountCode } from '@/hooks/useChartValidation';
 import { useCreateAccount } from '@/hooks/useChartOfAccounts';
@@ -30,6 +34,7 @@ interface WizardData {
   accountCode?: string;
   balanceType?: string;
   accountLevel?: number;
+  alternativeCodes?: string[];
 }
 
 const ACCOUNT_TYPES = [
@@ -42,10 +47,12 @@ const ACCOUNT_TYPES = [
 
 export const SmartAccountWizardTab: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showCodeSuggestions, setShowCodeSuggestions] = useState(false);
   const [wizardData, setWizardData] = useState<WizardData>({
     accountName: '',
     accountNameAr: '',
     accountType: 'assets',
+    alternativeCodes: [],
   });
 
   const createSmartAccount = useCreateSmartAccount();
@@ -58,6 +65,23 @@ export const SmartAccountWizardTab: React.FC = () => {
     { id: 3, title: 'المراجعة والإنشاء', description: 'راجع البيانات وأنشئ الحساب' },
   ];
 
+  // Generate alternative codes based on different patterns
+  const generateAlternativeCodes = (baseCode: string) => {
+    if (!baseCode) return [];
+    
+    const alternatives = [];
+    const codeNumber = parseInt(baseCode.replace(/\D/g, ''));
+    const codePrefix = baseCode.replace(/\d+$/, '');
+    
+    // Generate next few available codes
+    for (let i = 1; i <= 5; i++) {
+      const newCode = codePrefix + String(codeNumber + i).padStart(baseCode.replace(/\D/g, '').length, '0');
+      alternatives.push(newCode);
+    }
+    
+    return alternatives;
+  };
+
   // Auto-suggest code when type or parent changes
   useEffect(() => {
     if (wizardData.accountType || wizardData.parentAccountId) {
@@ -66,9 +90,11 @@ export const SmartAccountWizardTab: React.FC = () => {
         parentAccountId: wizardData.parentAccountId,
       }, {
         onSuccess: (code) => {
+          const alternatives = generateAlternativeCodes(code);
           setWizardData(prev => ({ 
             ...prev, 
             suggestedCode: code,
+            alternativeCodes: alternatives,
             // Only update accountCode if it's empty or matches the previous suggestion
             accountCode: !prev.accountCode || prev.accountCode === prev.suggestedCode ? code : prev.accountCode
           }));
@@ -87,6 +113,20 @@ export const SmartAccountWizardTab: React.FC = () => {
       }));
     }
   }, [wizardData.accountType]);
+
+  const refreshCodeSuggestion = () => {
+    if (wizardData.accountType || wizardData.parentAccountId) {
+      suggestCode.mutate({
+        accountType: wizardData.accountType,
+        parentAccountId: wizardData.parentAccountId,
+      });
+    }
+  };
+
+  const handleCodeSelect = (code: string) => {
+    setWizardData(prev => ({ ...prev, accountCode: code }));
+    setShowCodeSuggestions(false);
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -231,21 +271,107 @@ export const SmartAccountWizardTab: React.FC = () => {
       {wizardData.suggestedCode && (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Code className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">كود الحساب</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">كود الحساب</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshCodeSuggestion}
+                  disabled={suggestCode.isPending}
+                  className="h-8"
+                >
+                  <RefreshCw className={`h-3 w-3 ${suggestCode.isPending ? 'animate-spin' : ''}`} />
+                </Button>
+                <Popover open={showCodeSuggestions} onOpenChange={setShowCodeSuggestions}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8">
+                      <Lightbulb className="h-3 w-3 mr-1" />
+                      اقتراحات
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">أكواد مقترحة</h4>
+                        <div className="space-y-2">
+                          {/* Current suggestion */}
+                          <div 
+                            className="flex items-center justify-between p-2 bg-primary/5 rounded-md cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={() => handleCodeSelect(wizardData.suggestedCode!)}
+                          >
+                            <div>
+                              <div className="font-mono text-sm font-medium">{wizardData.suggestedCode}</div>
+                              <div className="text-xs text-muted-foreground">الكود المقترح الأساسي</div>
+                            </div>
+                            <Badge variant="default" className="text-xs">مُوصى</Badge>
+                          </div>
+                          
+                          {/* Alternative suggestions */}
+                          {wizardData.alternativeCodes?.slice(0, 4).map((code, index) => (
+                            <div 
+                              key={code}
+                              className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => handleCodeSelect(code)}
+                            >
+                              <div>
+                                <div className="font-mono text-sm">{code}</div>
+                                <div className="text-xs text-muted-foreground">بديل {index + 1}</div>
+                              </div>
+                              <Button variant="ghost" size="sm" className="h-auto p-1">
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">إرشادات الترقيم</h4>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• الأصول: تبدأ بـ 1xxx</div>
+                          <div>• الخصوم: تبدأ بـ 2xxx</div>
+                          <div>• حقوق الملكية: تبدأ بـ 3xxx</div>
+                          <div>• الإيرادات: تبدأ بـ 4xxx</div>
+                          <div>• المصروفات: تبدأ بـ 5xxx</div>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
+            
             <div>
               <Label htmlFor="accountCode">كود الحساب (قابل للتعديل)</Label>
-              <Input
-                id="accountCode"
-                value={wizardData.accountCode || wizardData.suggestedCode}
-                onChange={(e) => setWizardData(prev => ({ ...prev, accountCode: e.target.value }))}
-                placeholder="أدخل كود الحساب"
-                className="font-mono"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="accountCode"
+                  value={wizardData.accountCode || wizardData.suggestedCode}
+                  onChange={(e) => setWizardData(prev => ({ ...prev, accountCode: e.target.value }))}
+                  placeholder="أدخل كود الحساب"
+                  className="font-mono flex-1"
+                />
+                {wizardData.suggestedCode && wizardData.accountCode !== wizardData.suggestedCode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWizardData(prev => ({ ...prev, accountCode: prev.suggestedCode }))}
+                    className="whitespace-nowrap"
+                  >
+                    استعادة المقترح
+                  </Button>
+                )}
+              </div>
+              
               {wizardData.suggestedCode && wizardData.accountCode !== wizardData.suggestedCode && (
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Lightbulb className="h-3 w-3" />
                   الكود المقترح: {wizardData.suggestedCode}
                 </div>
               )}
