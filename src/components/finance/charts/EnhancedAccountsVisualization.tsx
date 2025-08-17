@@ -122,7 +122,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedAccountId === node.id;
-    const paddingLeft = node.level * 20;
+    const paddingRight = node.level * 20;
 
     return (
       <div key={node.id} className="select-none">
@@ -130,49 +130,20 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
           className={`
             flex items-center p-2 rounded-lg cursor-pointer transition-colors
             hover:bg-muted/50 group
-            ${isSelected ? 'bg-primary/10 border border-primary/20' : ''}
+            ${isSelected ? "bg-primary/10 border border-primary/20" : ""}
           `}
-          style={{ paddingLeft: `${paddingLeft + 12}px` }}
+          style={{ paddingRight: `${paddingRight + 12}px` }}
           onClick={() => onSelectAccount?.(node)}
+          dir="rtl"
         >
-          {/* Expand/Collapse Button */}
-          {hasChildren ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 mr-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleNode(node.id);
-              }}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
-              )}
-            </Button>
-          ) : (
-            <div className="w-8 mr-2" />
-          )}
-
-          {/* Account Icon */}
-          <div className="mr-2">
-            {node.is_header ? (
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <div className="w-4 h-4 rounded-full bg-primary/20" />
-            )}
-          </div>
-
           {/* Account Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-medium">
-                {node.account_code}
-              </span>
+            <div className="flex items-center gap-2 justify-start">
               <span className="font-medium truncate">
                 {node.account_name_ar || node.account_name}
+              </span>
+              <span className="font-mono text-sm font-medium">
+                {node.account_code}
               </span>
               {!node.is_active && (
                 <Badge variant="secondary" className="text-xs">
@@ -182,21 +153,21 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
             </div>
             
             {node.account_name_ar && (
-              <div className="text-xs text-muted-foreground truncate">
+              <div className="text-xs text-muted-foreground truncate text-right">
                 {node.account_name}
               </div>
             )}
           </div>
 
           {/* Account Metadata */}
-          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
             <Badge variant="outline" className={`text-xs ${getAccountTypeColor(node.account_type)}`}>
               {getAccountTypeLabel(node.account_type)}
             </Badge>
             
-            <Badge variant="secondary" className="text-xs">
-              <Layers className="h-3 w-3 mr-1" />
-              {node.account_level}
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <span>{node.account_level}</span>
+              <Layers className="h-3 w-3" />
             </Badge>
 
             {!node.is_header && node.current_balance !== 0 && (
@@ -209,6 +180,36 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
               </div>
             )}
           </div>
+
+          {/* Account Icon */}
+          <div className="ml-2">
+            {node.is_header ? (
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <div className="w-4 h-4 rounded-full bg-primary/20" />
+            )}
+          </div>
+
+          {/* Expand/Collapse Button */}
+          {hasChildren ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 ml-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleNode(node.id);
+              }}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+            </Button>
+          ) : (
+            <div className="w-8 ml-2" />
+          )}
         </div>
 
         {/* Children */}
@@ -237,25 +238,26 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-right">
           <Network className="h-5 w-5" />
           عرض تفاعلي لدليل الحسابات
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-right">
           استكشف دليل الحسابات بطرق مختلفة مع إمكانيات البحث والتصفية المتقدمة
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4" dir="rtl">
         {/* Controls */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" dir="rtl">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="البحث في الحسابات..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pr-10 text-right"
+                dir="rtl"
               />
             </div>
           </div>
@@ -279,33 +281,34 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
             size="sm"
             onClick={() => setShowInactiveAccounts(!showInactiveAccounts)}
             className="flex items-center gap-2"
+            dir="rtl"
           >
             {showInactiveAccounts ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            {showInactiveAccounts ? 'إخفاء' : 'إظهار'} غير النشط
+            <span>{showInactiveAccounts ? "إخفاء" : "إظهار"} غير النشط</span>
           </Button>
         </div>
 
         {/* Tree View Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" dir="rtl">
           <div className="flex items-center gap-2">
             <TreePine className="h-4 w-4" />
             <span className="font-medium">العرض الشجري</span>
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={expandAll}>
-              <Maximize2 className="h-4 w-4 mr-1" />
-              توسيع الكل
+            <Button variant="outline" size="sm" onClick={expandAll} className="flex items-center gap-2">
+              <Maximize2 className="h-4 w-4" />
+              <span>توسيع الكل</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={collapseAll}>
-              <Minimize2 className="h-4 w-4 mr-1" />
-              طي الكل
+            <Button variant="outline" size="sm" onClick={collapseAll} className="flex items-center gap-2">
+              <Minimize2 className="h-4 w-4" />
+              <span>طي الكل</span>
             </Button>
           </div>
         </div>
 
         {/* Tree View */}
-        <ScrollArea className="h-[600px] w-full border rounded-lg p-2">
+        <ScrollArea className="h-[600px] w-full border rounded-lg p-2" dir="rtl">
           <div className="space-y-1">
             {accountTree.map(node => renderTreeNode(node))}
           </div>
@@ -314,24 +317,24 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
         {/* Selected Account Info */}
         {selectedAccountId && accounts && (
           <Card className="bg-muted/50">
-            <CardContent className="pt-4">
+            <CardContent className="pt-4" dir="rtl">
               {(() => {
                 const account = accounts.find(a => a.id === selectedAccountId);
                 if (!account) return null;
                 
                 return (
                   <div className="space-y-2">
-                    <div className="font-medium">الحساب المحدد:</div>
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="font-medium text-right">الحساب المحدد:</div>
+                    <div className="flex items-center gap-4 text-sm flex-wrap">
                       <span className="font-mono">{account.account_code}</span>
-                      <span>{account.account_name_ar || account.account_name}</span>
+                      <span className="font-medium">{account.account_name_ar || account.account_name}</span>
                       <Badge variant="outline" className={getAccountTypeColor(account.account_type)}>
                         {getAccountTypeLabel(account.account_type)}
                       </Badge>
                       <Badge variant="secondary">مستوى {account.account_level}</Badge>
                     </div>
                     {!account.is_header && account.current_balance !== 0 && (
-                      <div className="text-sm">
+                      <div className="text-sm text-right">
                         الرصيد الحالي: {formatCurrency(account.current_balance)}
                       </div>
                     )}
