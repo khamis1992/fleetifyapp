@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, BarChart3, CheckCircle, Folder } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -17,7 +17,6 @@ import { AccountChangeHistory } from './AccountChangeHistory';
 import { AccountStatementDialog } from './AccountStatementDialog';
 import { ParentAccountSelector } from './ParentAccountSelector';
 import { ChartValidationPanel } from './charts/ChartValidationPanel';
-import { ChartStatisticsPanel } from './charts/ChartStatisticsPanel';
 import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
@@ -305,7 +304,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs defaultValue="accounts" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
             قائمة الحسابات
@@ -317,10 +316,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <TabsTrigger value="validation" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             التحقق والإصلاح
-          </TabsTrigger>
-          <TabsTrigger value="statistics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            الإحصائيات
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <Folder className="h-4 w-4" />
@@ -531,11 +526,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         {/* Validation Tab */}
         <TabsContent value="validation">
           <ChartValidationPanel />
-        </TabsContent>
-
-        {/* Statistics Tab */}
-        <TabsContent value="statistics">
-          <ChartStatisticsPanel />
         </TabsContent>
 
         {/* Templates Tab */}
