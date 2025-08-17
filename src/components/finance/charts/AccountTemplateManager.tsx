@@ -156,7 +156,6 @@ export const AccountTemplateManager: React.FC = () => {
       <Tabs defaultValue="industry" className="space-y-4">
         <TabsList>
           <TabsTrigger value="industry">قوالب متخصصة</TabsTrigger>
-          <TabsTrigger value="custom">قوالب مخصصة</TabsTrigger>
         </TabsList>
 
         <TabsContent value="industry" className="space-y-4">
@@ -164,26 +163,6 @@ export const AccountTemplateManager: React.FC = () => {
             {PREDEFINED_TEMPLATES
               .filter(t => t.category === 'industry')
               .map(renderTemplateCard)}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="custom" className="space-y-4">
-          <div className="text-center py-12">
-            <FileCode className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">القوالب المخصصة</h3>
-            <p className="text-muted-foreground mb-4">
-              قم بإنشاء وحفظ قوالب مخصصة من دليل الحسابات الحالي
-            </p>
-            <div className="flex gap-2 justify-center">
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                رفع قالب
-              </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                تصدير دليل حالي
-              </Button>
-            </div>
           </div>
         </TabsContent>
       </Tabs>
