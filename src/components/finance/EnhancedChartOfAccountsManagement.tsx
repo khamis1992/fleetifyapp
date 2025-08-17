@@ -297,55 +297,56 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-between items-center" dir="rtl">
+        <div className="text-right">
           <h2 className="text-2xl font-bold">إدارة دليل الحسابات المحسن</h2>
           <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
         </div>
       </div>
 
       {/* Enhanced Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
+            <span>قائمة الحسابات</span>
             <Layers className="h-4 w-4" />
-            قائمة الحسابات
           </TabsTrigger>
           <TabsTrigger value="validation" className="flex items-center gap-2">
+            <span>التحقق والإصلاح</span>
             <CheckCircle className="h-4 w-4" />
-            التحقق والإصلاح
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
+            <span>القوالب</span>
             <Folder className="h-4 w-4" />
-            القوالب
           </TabsTrigger>
           <TabsTrigger value="visualization" className="flex items-center gap-2">
+            <span>العرض التفاعلي</span>
             <Eye className="h-4 w-4" />
-            العرض التفاعلي
           </TabsTrigger>
         </TabsList>
 
         {/* Accounts Tab */}
         <TabsContent value="accounts" className="space-y-6">
           <div className="flex justify-end">
-            <Button onClick={() => setShowSmartWizard(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              إضافة حساب جديد
+            <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
+              <span>إضافة حساب جديد</span>
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Filters */}
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6" dir="rtl">
               <div className="flex gap-4 items-center">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="البحث في الحسابات..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pr-10 text-right"
+                      dir="rtl"
                     />
                   </div>
                 </div>
@@ -382,12 +383,12 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           {/* All Accounts */}
           <Card>
             <CardHeader>
-              <CardTitle>جميع الحسابات</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-right">جميع الحسابات</CardTitle>
+              <CardDescription className="text-right">
                 عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent dir="rtl">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -429,9 +430,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Smart Wizard Dialog */}
       <Dialog open={showSmartWizard} onOpenChange={setShowSmartWizard}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>معالج إنشاء الحسابات الذكي</DialogTitle>
+            <DialogTitle className="text-right">معالج إنشاء الحسابات الذكي</DialogTitle>
           </DialogHeader>
           <SmartAccountWizardTab />
         </DialogContent>
@@ -439,7 +440,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* View Account Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">معاينة الحساب</DialogTitle>
           </DialogHeader>
@@ -527,9 +528,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Edit Account Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تعديل الحساب</DialogTitle>
+            <DialogTitle className="text-right">تعديل الحساب</DialogTitle>
           </DialogHeader>
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -543,33 +544,39 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           }} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit_account_code">رمز الحساب</Label>
+                <Label htmlFor="edit_account_code" className="text-right">رمز الحساب</Label>
                 <Input
                   id="edit_account_code"
                   value={formData.account_code}
                   onChange={(e) => setFormData({...formData, account_code: e.target.value})}
                   required
+                  className="text-right"
+                  dir="rtl"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_account_name">اسم الحساب</Label>
+                <Label htmlFor="edit_account_name" className="text-right">اسم الحساب</Label>
                 <Input
                   id="edit_account_name"
                   value={formData.account_name}
                   onChange={(e) => setFormData({...formData, account_name: e.target.value})}
                   required
+                  className="text-right"
+                  dir="rtl"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_account_name_ar">اسم الحساب بالعربية</Label>
+                <Label htmlFor="edit_account_name_ar" className="text-right">اسم الحساب بالعربية</Label>
                 <Input
                   id="edit_account_name_ar"
                   value={formData.account_name_ar}
                   onChange={(e) => setFormData({...formData, account_name_ar: e.target.value})}
+                  className="text-right"
+                  dir="rtl"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_account_type">نوع الحساب</Label>
+                <Label htmlFor="edit_account_type" className="text-right">نوع الحساب</Label>
                 <Select
                   value={formData.account_type}
                   onValueChange={(value) => setFormData({...formData, account_type: value})}
@@ -587,7 +594,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit_balance_type">نوع الرصيد</Label>
+                <Label htmlFor="edit_balance_type" className="text-right">نوع الرصيد</Label>
                 <Select
                   value={formData.balance_type}
                   onValueChange={(value) => setFormData({...formData, balance_type: value})}
@@ -602,7 +609,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit_parent_account">الحساب الأب</Label>
+                <Label htmlFor="edit_parent_account" className="text-right">الحساب الأب</Label>
                 <ParentAccountSelector
                   value={formData.parent_account_id}
                   onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
@@ -610,29 +617,31 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 justify-end">
+              <Label htmlFor="edit_is_header" className="text-right">حساب إجمالي (للتقارير فقط)</Label>
               <Switch
                 id="edit_is_header"
                 checked={formData.is_header}
                 onCheckedChange={(checked) => setFormData({...formData, is_header: checked})}
               />
-              <Label htmlFor="edit_is_header">حساب إجمالي (للتقارير فقط)</Label>
             </div>
             <div>
-              <Label htmlFor="edit_description">الوصف</Label>
+              <Label htmlFor="edit_description" className="text-right">الوصف</Label>
               <Input
                 id="edit_description"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 placeholder="وصف اختياري للحساب"
+                className="text-right"
+                dir="rtl"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
-                إلغاء
-              </Button>
               <Button type="submit" disabled={updateAccount.isPending}>
                 {updateAccount.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                إلغاء
               </Button>
             </div>
           </form>
@@ -641,25 +650,22 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Delete Account Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
+        <DialogContent dir="rtl">
           <DialogHeader>
-            <DialogTitle>تأكيد حذف الحساب</DialogTitle>
+            <DialogTitle className="text-right">تأكيد حذف الحساب</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>هل أنت متأكد من رغبتك في حذف هذا الحساب؟</p>
+            <p className="text-right">هل أنت متأكد من رغبتك في حذف هذا الحساب؟</p>
             {editingAccount && (
-              <div className="p-4 bg-muted rounded">
+              <div className="p-4 bg-muted rounded text-right">
                 <p><strong>رمز الحساب:</strong> {editingAccount.account_code}</p>
                 <p><strong>اسم الحساب:</strong> {editingAccount.account_name}</p>
               </div>
             )}
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-right">
               ملاحظة: لا يمكن حذف الحسابات النظام أو الحسابات التي تحتوي على معاملات
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                إلغاء
-              </Button>
               <Button 
                 variant="destructive" 
                 onClick={() => {
@@ -668,6 +674,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 }}
               >
                 حذف الحساب
+              </Button>
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                إلغاء
               </Button>
             </div>
           </div>
