@@ -11,8 +11,8 @@ export const AccountLevelBadge: React.FC<AccountLevelBadgeProps> = ({
   accountLevel, 
   isHeader 
 }) => {
-  const isEntryAllowed = accountLevel >= 3 && !isHeader;
-  const isAggregate = isHeader || accountLevel < 3;
+  const isEntryAllowed = (accountLevel === 5 || accountLevel === 6) && !isHeader;
+  const isAggregate = isHeader || accountLevel < 5;
 
   if (isAggregate) {
     return (
