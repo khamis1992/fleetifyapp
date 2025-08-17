@@ -357,15 +357,15 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
               </div>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg p-4 bg-muted/20 relative">
+              <div className="border rounded-lg p-4 bg-yellow-50/80 relative">
                 <div 
-                  className="relative w-full h-[400px] bg-cover bg-center bg-no-repeat rounded"
+                  className="relative w-full h-[400px] bg-cover bg-center bg-no-repeat rounded bg-yellow-100/30"
                   style={{ backgroundImage: 'url(/مخطط.png)' }}
                 >
                   <canvas
                     ref={canvasRef}
                     className="absolute inset-0 w-full h-full cursor-crosshair rounded"
-                    style={{ backgroundColor: 'transparent' }}
+                    style={{ backgroundColor: 'rgba(255, 255, 0, 0.1)' }}
                     onMouseDown={handleCanvasMouseDown}
                     onMouseMove={handleCanvasMouseMove}
                     onMouseUp={handleCanvasMouseUp}
