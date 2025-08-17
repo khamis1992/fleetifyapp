@@ -155,18 +155,9 @@ export const AccountTemplateManager: React.FC = () => {
 
       <Tabs defaultValue="industry" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="business">قوالب الأعمال العامة</TabsTrigger>
           <TabsTrigger value="industry">قوالب متخصصة</TabsTrigger>
           <TabsTrigger value="custom">قوالب مخصصة</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="business" className="space-y-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {PREDEFINED_TEMPLATES
-              .filter(t => t.category === 'business')
-              .map(renderTemplateCard)}
-          </div>
-        </TabsContent>
 
         <TabsContent value="industry" className="space-y-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
