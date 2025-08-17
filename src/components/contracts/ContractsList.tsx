@@ -8,6 +8,7 @@ interface ContractsListProps {
   onManageStatus: (contract: any) => void;
   onViewDetails: (contract: any) => void;
   onCancelContract: (contract: any) => void;
+  onDeleteContract: (contract: any) => void;
   onCreateContract: () => void;
   onClearFilters: () => void;
   hasFilters: boolean;
@@ -20,6 +21,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
   onManageStatus,
   onViewDetails,
   onCancelContract,
+  onDeleteContract,
   onCreateContract,
   onClearFilters,
   hasFilters,
@@ -36,8 +38,10 @@ export const ContractsList: React.FC<ContractsListProps> = ({
             onManageStatus={onManageStatus}
             onViewDetails={onViewDetails}
             onCancelContract={onCancelContract}
+            onDeleteContract={onDeleteContract}
             showRenewButton={contract.status === 'active'}
             showCancelButton={contract.status === 'active'}
+            showDeleteButton={true}
           />
         ))}
       </div>

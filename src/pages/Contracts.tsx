@@ -21,6 +21,7 @@ import { ContractInvoiceDialog } from "@/components/contracts/ContractInvoiceDia
 import { ContractExportDialog } from "@/components/contracts/ContractExportDialog"
 import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress"
 import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog"
+import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog"
 import { ContractCSVUpload } from "@/components/contracts/ContractCSVUpload"
 
 // Hook imports
@@ -44,6 +45,7 @@ export default function Contracts() {
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showCreationProgress, setShowCreationProgress] = useState(false)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [filters, setFilters] = useState<any>({})
 
@@ -119,6 +121,11 @@ export default function Contracts() {
   const handleCancelContract = (contract: any) => {
     setSelectedContract(contract)
     setShowCancellationDialog(true)
+  }
+
+  const handleDeleteContract = (contract: any) => {
+    setSelectedContract(contract)
+    setShowDeleteDialog(true)
   }
 
   const handleManagePayments = (contract: any) => {
@@ -207,6 +214,7 @@ export default function Contracts() {
             onManageStatus={handleManageStatus}
             onViewDetails={handleViewDetails}
             onCancelContract={handleCancelContract}
+            onDeleteContract={handleDeleteContract}
             onCreateContract={handleCreateContract}
             onClearFilters={handleClearFilters}
             hasFilters={Object.keys(filters).length > 0}
@@ -222,6 +230,7 @@ export default function Contracts() {
           onManageStatus={handleManageStatus}
           onViewContract={handleViewDetails}
           onCancelContract={handleCancelContract}
+          onDeleteContract={handleDeleteContract}
         />
       </Tabs>
 
@@ -285,6 +294,13 @@ export default function Contracts() {
         open={showCancellationDialog}
         onOpenChange={setShowCancellationDialog}
         contract={selectedContract}
+      />
+
+      <ContractDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        contract={selectedContract}
+        onSuccess={() => refetch()}
       />
 
       {/* Contract CSV Upload Dialog */}

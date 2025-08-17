@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle } from 'lucide-react';
+import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +14,11 @@ interface ContractCardProps {
   onManageStatus?: (contract: any) => void;
   onViewDetails?: (contract: any) => void;
   onCancelContract?: (contract: any) => void;
+  onDeleteContract?: (contract: any) => void;
   showRenewButton?: boolean;
   showManageButton?: boolean;
   showCancelButton?: boolean;
+  showDeleteButton?: boolean;
 }
 
 export const ContractCard: React.FC<ContractCardProps> = ({
@@ -25,9 +27,11 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   onManageStatus,
   onViewDetails,
   onCancelContract,
+  onDeleteContract,
   showRenewButton = false,
   showManageButton = false,
-  showCancelButton = false
+  showCancelButton = false,
+  showDeleteButton = false
 }) => {
   const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
   const { formatCurrency } = useCurrencyFormatter();
@@ -37,6 +41,16 @@ export const ContractCard: React.FC<ContractCardProps> = ({
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div className="flex gap-2">
+            {showDeleteButton && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDeleteContract?.(contract)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                حذف
+              </Button>
+            )}
             {showCancelButton && contract.status === 'active' && (
               <Button 
                 variant="destructive" 
