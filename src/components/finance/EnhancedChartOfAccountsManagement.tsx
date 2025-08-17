@@ -335,192 +335,83 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               <Plus className="h-4 w-4 mr-2" />
               إضافة حساب جديد
             </Button>
-            <Dialog open={showForm} onOpenChange={setShowForm}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="ml-2">
-                  <Plus className="h-4 w-4 mr-2" />
-                  النموذج التقليدي
-                </Button>
-              </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>إضافة حساب جديد</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateAccount} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="account_code">رمز الحساب</Label>
-                  <Input
-                    id="account_code"
-                    value={formData.account_code}
-                    onChange={(e) => setFormData({...formData, account_code: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_name">اسم الحساب</Label>
-                  <Input
-                    id="account_name"
-                    value={formData.account_name}
-                    onChange={(e) => setFormData({...formData, account_name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_name_ar">اسم الحساب بالعربية</Label>
-                  <Input
-                    id="account_name_ar"
-                    value={formData.account_name_ar}
-                    onChange={(e) => setFormData({...formData, account_name_ar: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_type">نوع الحساب</Label>
-                  <Select
-                    value={formData.account_type}
-                    onValueChange={(value) => setFormData({...formData, account_type: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="assets">الأصول</SelectItem>
-                      <SelectItem value="liabilities">الخصوم</SelectItem>
-                      <SelectItem value="equity">حقوق الملكية</SelectItem>
-                      <SelectItem value="revenue">الإيرادات</SelectItem>
-                      <SelectItem value="expenses">المصروفات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="balance_type">نوع الرصيد</Label>
-                  <Select
-                    value={formData.balance_type}
-                    onValueChange={(value) => setFormData({...formData, balance_type: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="debit">مدين</SelectItem>
-                      <SelectItem value="credit">دائن</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="parent_account">الحساب الأب</Label>
-                  <ParentAccountSelector
-                    value={formData.parent_account_id}
-                    onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
-                    placeholder="اختر الحساب الأب (اختياري)"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_header"
-                  checked={formData.is_header}
-                  onCheckedChange={(checked) => setFormData({...formData, is_header: checked})}
-                />
-                <Label htmlFor="is_header">حساب إجمالي (للتقارير فقط)</Label>
-              </div>
-              <div>
-                <Label htmlFor="description">الوصف</Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="وصف اختياري للحساب"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  إلغاء
-                </Button>
-                <Button type="submit" disabled={createAccount.isPending}>
-                  {createAccount.isPending ? 'جاري الحفظ...' : 'حفظ'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-            </Dialog>
           </div>
 
           {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="البحث في الحسابات..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="البحث في الحسابات..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="تصفية حسب النوع" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                    <SelectItem value="all">جميع الأنواع</SelectItem>
+                    <SelectItem value="assets">الأصول</SelectItem>
+                    <SelectItem value="liabilities">الخصوم</SelectItem>
+                    <SelectItem value="equity">حقوق الملكية</SelectItem>
+                    <SelectItem value="revenue">الإيرادات</SelectItem>
+                    <SelectItem value="expenses">المصروفات</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterLevel} onValueChange={setFilterLevel}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="تصفية حسب المستوى" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                    <SelectItem value="all">جميع المستويات</SelectItem>
+                    <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
+                    <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
+                    <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
+                    <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
+                    <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="تصفية حسب النوع" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="assets">الأصول</SelectItem>
-                <SelectItem value="liabilities">الخصوم</SelectItem>
-                <SelectItem value="equity">حقوق الملكية</SelectItem>
-                <SelectItem value="revenue">الإيرادات</SelectItem>
-                <SelectItem value="expenses">المصروفات</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterLevel} onValueChange={setFilterLevel}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="تصفية حسب المستوى" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                <SelectItem value="all">جميع المستويات</SelectItem>
-                <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
-                <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
-                <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
-                <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
-                <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* All Accounts */}
-      <Card>
-        <CardHeader>
-          <CardTitle>جميع الحسابات</CardTitle>
-          <CardDescription>
-            عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">كود الحساب</TableHead>
-                <TableHead className="text-right">اسم الحساب</TableHead>
-                <TableHead className="text-center">نوع الحساب</TableHead>
-                <TableHead className="text-center">المستوى</TableHead>
-                <TableHead className="text-center">حالة المستوى</TableHead>
-                <TableHead className="text-center">طبيعة الرصيد</TableHead>
-                <TableHead className="text-center">الحالة</TableHead>
-                <TableHead className="text-center">إجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {buildAccountTree(allAccounts || []).map((account) => (
-                renderAccountRow(account)
-              )).flat()}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          {/* All Accounts */}
+          <Card>
+            <CardHeader>
+              <CardTitle>جميع الحسابات</CardTitle>
+              <CardDescription>
+                عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">كود الحساب</TableHead>
+                    <TableHead className="text-right">اسم الحساب</TableHead>
+                    <TableHead className="text-center">نوع الحساب</TableHead>
+                    <TableHead className="text-center">المستوى</TableHead>
+                    <TableHead className="text-center">حالة المستوى</TableHead>
+                    <TableHead className="text-center">طبيعة الرصيد</TableHead>
+                    <TableHead className="text-center">الحالة</TableHead>
+                    <TableHead className="text-center">إجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {buildAccountTree(allAccounts || []).map((account) => (
+                    renderAccountRow(account)
+                  )).flat()}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Smart Wizard Tab */}
