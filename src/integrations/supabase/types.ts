@@ -9804,6 +9804,17 @@ export type Database = {
         Args: { contract_id_param: string }
         Returns: string
       }
+      create_smart_account: {
+        Args: {
+          account_name_ar_param?: string
+          account_name_param: string
+          account_type_param?: string
+          auto_generate_code?: boolean
+          company_id_param: string
+          parent_account_id_param?: string
+        }
+        Returns: string
+      }
       create_system_alert: {
         Args: {
           alert_type_param: string
@@ -9896,6 +9907,10 @@ export type Database = {
       find_revenue_account_fixed: {
         Args: { company_id_param: string }
         Returns: string
+      }
+      fix_chart_hierarchy: {
+        Args: { company_id_param: string }
+        Returns: Json
       }
       generate_approval_request_number: {
         Args: { company_id_param: string }
@@ -10116,6 +10131,10 @@ export type Database = {
           is_available: boolean
           parent_account_name: string
         }[]
+      }
+      get_chart_statistics: {
+        Args: { company_id_param: string }
+        Returns: Json
       }
       get_contract_operations_history: {
         Args: { contract_id_param: string }
@@ -10533,6 +10552,14 @@ export type Database = {
         Args: { account_id_param: string }
         Returns: boolean
       }
+      suggest_next_account_code: {
+        Args: {
+          account_type_param?: string
+          company_id_param: string
+          parent_account_id_param?: string
+        }
+        Returns: string
+      }
       sync_document_expiry_alerts: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -10643,6 +10670,10 @@ export type Database = {
           message: string
           status: string
         }[]
+      }
+      validate_chart_hierarchy: {
+        Args: { company_id_param: string }
+        Returns: Json
       }
       validate_company_access_secure: {
         Args: { _company_id: string; _user_id: string }
