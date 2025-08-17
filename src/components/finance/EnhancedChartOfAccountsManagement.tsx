@@ -48,6 +48,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('accounts');
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -303,7 +304,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       </div>
 
       {/* Enhanced Tabs */}
-      <Tabs defaultValue="accounts" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
@@ -330,11 +331,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         {/* Accounts Tab */}
         <TabsContent value="accounts" className="space-y-6">
           <div className="flex justify-end">
+            <Button onClick={() => setActiveTab('wizard')}>
+              <Plus className="h-4 w-4 mr-2" />
+              إضافة حساب جديد
+            </Button>
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button>
+                <Button variant="outline" className="ml-2">
                   <Plus className="h-4 w-4 mr-2" />
-                  إضافة حساب جديد
+                  النموذج التقليدي
                 </Button>
               </DialogTrigger>
           <DialogContent className="max-w-2xl">
