@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -153,19 +152,11 @@ export const AccountTemplateManager: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="industry" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="industry">قوالب متخصصة</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="industry" className="space-y-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {PREDEFINED_TEMPLATES
-              .filter(t => t.category === 'industry')
-              .map(renderTemplateCard)}
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {PREDEFINED_TEMPLATES
+          .filter(t => t.category === 'industry')
+          .map(renderTemplateCard)}
+      </div>
 
       {/* Template Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
