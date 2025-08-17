@@ -421,6 +421,64 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
             </Card>
           </div>
 
+          {/* Terms and Conditions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">شروط وأحكام التسليم</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="space-y-3 text-sm">
+                  <div className="border-b pb-2">
+                    <p className="font-medium text-foreground mb-1">
+                      أُقرّ باستلام المركبة بالمواصفات المذكورة وأتعهد بالمحافظة عليها وإرجاعها بحالتها السليمة عند انتهاء المدة المتفق عليها في العقد.
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      I acknowledge receiving the vehicle as described. I will keep it in good condition and return it in the same condition upon the agreed contract end.
+                    </p>
+                  </div>
+                  
+                  <div className="border-b pb-2">
+                    <p className="font-medium text-foreground mb-1">
+                      في حال وقوع حادث خلال فترة العقد أو تجديداته، أتعهد بإحضار تقرير حادث، ولن يُغلق العقد دون تقديم التقرير. ألتزم أيضًا بسداد رسوم فتح الملف وأي مبلغ نسبة تحمّل وفق وثيقة التأمين الشامل.
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      If any accident occurs during the rental term or its renewals, I undertake to obtain and provide an official accident report. The contract will not be closed without it. I also agree to pay the file-opening fee and any deductible stated in the comprehensive insurance policy.
+                    </p>
+                  </div>
+                  
+                  <div className="border-b pb-2">
+                    <p className="font-medium text-foreground mb-1">
+                      تُستلم المركبة من المستأجر في مقر الجهة المؤجرة فقط.
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Vehicle returns are accepted only at the lessor's premises.
+                    </p>
+                  </div>
+                  
+                  <div className="border-b pb-2">
+                    <p className="font-medium text-foreground mb-1">
+                      يجب إعادة المركبة ومستوى الوقود مماثلًا لما كان عند التسليم، وإلا تُستوفى تكلفة التعبئة.
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Vehicle must be returned with the same fuel level as at handover; otherwise refueling charges apply.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground">
+                      غرامة/تعويض اتفاقي عن أي حادث (إن وُجد):
+                    </p>
+                    <Input
+                      placeholder="المبلغ بالدينار الكويتي"
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Additional Notes */}
           <Card>
             <CardHeader>
