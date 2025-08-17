@@ -13,6 +13,13 @@ interface ValidationResult {
     missing_parents: number;
   };
   total_issues: number;
+  details?: {
+    orphaned_accounts?: any[];
+    circular_references?: any[];
+    incorrect_levels?: any[];
+    duplicate_codes?: any[];
+    missing_parents?: any[];
+  };
 }
 
 interface FixResult {

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -14,7 +15,9 @@ import {
   Users,
   Network,
   Hash,
-  GitBranch
+  GitBranch,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useChartValidation, useFixChartHierarchy } from '@/hooks/useChartValidation';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -22,6 +25,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 export const ChartValidationPanel: React.FC = () => {
   const { data: validation, isLoading, refetch } = useChartValidation();
   const fixHierarchy = useFixChartHierarchy();
+  const [expandedIssues, setExpandedIssues] = React.useState<Record<string, boolean>>({});
+
+  const toggleIssueExpansion = (issueType: string) => {
+    setExpandedIssues(prev => ({
+      ...prev,
+      [issueType]: !prev[issueType]
+    }));
+  };
 
   const getIssueIcon = (issueType: string) => {
     const iconProps = { className: "h-4 w-4" };
@@ -72,6 +83,70 @@ export const ChartValidationPanel: React.FC = () => {
         return 'حسابات تحتاج حساب أب';
       default:
         return 'مشكلة غير محددة';
+    }
+  };
+
+  const renderIssueDetails = (issueType: string, details: any[]) => {
+    if (!details || details.length === 0) return null;
+
+    switch (issueType) {
+      case 'orphaned_accounts':
+        return (
+          <div className="space-y-2 mt-3">
+            {details.map((account: any, index: number) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+                <div className="flex items-center gap-2">
+                  <code className="px-1 py-0.5 bg-background rounded text-xs">
+                    {account.account_code}
+                  </code>
+                  <span>{account.account_name_ar || account.account_name}</span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  يتيم
+                </Badge>
+              </div>
+            ))}
+          </div>
+        );
+      case 'duplicate_codes':
+        return (
+          <div className="space-y-2 mt-3">
+            {details.map((duplicate: any, index: number) => (
+              <div key={index} className="p-2 bg-muted/50 rounded text-sm">
+                <div className="font-medium mb-1">
+                  كود مكرر: <code className="px-1 py-0.5 bg-background rounded text-xs">{duplicate.account_code}</code>
+                </div>
+                <div className="space-y-1">
+                  {duplicate.accounts.map((account: any, idx: number) => (
+                    <div key={idx} className="text-xs text-muted-foreground">
+                      • {account.account_name_ar || account.account_name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      case 'incorrect_levels':
+        return (
+          <div className="space-y-2 mt-3">
+            {details.map((account: any, index: number) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+                <div className="flex items-center gap-2">
+                  <code className="px-1 py-0.5 bg-background rounded text-xs">
+                    {account.account_code}
+                  </code>
+                  <span>{account.account_name_ar || account.account_name}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  المستوى: {account.current_level} → {account.expected_level}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -133,20 +208,44 @@ export const ChartValidationPanel: React.FC = () => {
                   const numCount = Number(count);
                   if (numCount === 0) return null;
                   
+                  const details = validation?.details?.[issueType as keyof typeof validation.details] || [];
+                  const isExpanded = expandedIssues[issueType];
+                  
                   return (
-                    <div key={issueType} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        {getIssueIcon(issueType)}
-                        <div>
-                          <div className="font-medium">{getIssueTitle(issueType)}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {getIssueDescription(issueType)}
+                    <div key={issueType} className="border rounded-lg">
+                      <Collapsible
+                        open={isExpanded}
+                        onOpenChange={() => toggleIssueExpansion(issueType)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50">
+                            <div className="flex items-center gap-3">
+                              {getIssueIcon(issueType)}
+                              <div>
+                                <div className="font-medium flex items-center gap-2">
+                                  {getIssueTitle(issueType)}
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {getIssueDescription(issueType)}
+                                </div>
+                              </div>
+                            </div>
+                            <Badge variant="destructive">
+                              {numCount}
+                            </Badge>
                           </div>
-                        </div>
-                      </div>
-                      <Badge variant="destructive">
-                        {numCount}
-                      </Badge>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="px-3 pb-3">
+                            {renderIssueDetails(issueType, details)}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
                   );
                 }) : (
