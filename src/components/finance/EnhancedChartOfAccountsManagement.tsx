@@ -18,7 +18,7 @@ import { AccountStatementDialog } from './AccountStatementDialog';
 import { ParentAccountSelector } from './ParentAccountSelector';
 import { ChartValidationPanel } from './charts/ChartValidationPanel';
 import { ChartStatisticsPanel } from './charts/ChartStatisticsPanel';
-import { SmartAccountWizard } from './charts/SmartAccountWizard';
+import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -49,7 +49,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
-  const [showWizard, setShowWizard] = useState(false);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -526,10 +525,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
         {/* Smart Wizard Tab */}
         <TabsContent value="wizard">
-          <SmartAccountWizard 
-            open={showWizard} 
-            onOpenChange={setShowWizard}
-          />
+          <SmartAccountWizardTab />
         </TabsContent>
 
         {/* Validation Tab */}
