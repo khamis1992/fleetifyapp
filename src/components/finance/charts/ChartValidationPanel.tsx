@@ -95,20 +95,20 @@ export const ChartValidationPanel: React.FC = () => {
           <div className="space-y-2 mt-3">
             {details.map((account: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <code className="px-1 py-0.5 bg-background rounded text-xs">
-                      {account.account_code}
-                    </code>
-                    <span className="font-medium">{account.account_name_ar || account.account_name}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    يشير إلى حساب أب غير موجود: {account.parent_account_id}
-                  </div>
-                </div>
                 <Badge variant="outline" className="text-xs">
                   يتيم
                 </Badge>
+                <div className="flex flex-col gap-1 text-right">
+                  <div className="flex items-center gap-2 justify-end">
+                    <span className="font-medium">{account.account_name_ar || account.account_name}</span>
+                    <code className="px-1 py-0.5 bg-background rounded text-xs">
+                      {account.account_code}
+                    </code>
+                  </div>
+                  <div className="text-xs text-muted-foreground text-right">
+                    يشير إلى حساب أب غير موجود: {account.parent_account_id}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -118,12 +118,12 @@ export const ChartValidationPanel: React.FC = () => {
           <div className="space-y-2 mt-3">
             {details.map((duplicate: any, index: number) => (
               <div key={index} className="p-2 bg-muted/50 rounded text-sm">
-                <div className="font-medium mb-1">
+                <div className="font-medium mb-1 text-right">
                   كود مكرر: <code className="px-1 py-0.5 bg-background rounded text-xs">{duplicate.account_code}</code>
                 </div>
                 <div className="space-y-1">
                   {duplicate.accounts.map((account: any, idx: number) => (
-                    <div key={idx} className="text-xs text-muted-foreground">
+                    <div key={idx} className="text-xs text-muted-foreground text-right">
                       • {account.account_name_ar || account.account_name}
                     </div>
                   ))}
@@ -137,16 +137,16 @@ export const ChartValidationPanel: React.FC = () => {
           <div className="space-y-2 mt-3">
             {details.map((account: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
+                <div className="text-xs text-muted-foreground">
+                  المستوى: {account.current_level} ← {account.expected_level}
+                </div>
+                <div className="flex flex-col gap-1 text-right">
+                  <div className="flex items-center gap-2 justify-end">
+                    <span className="font-medium">{account.account_name_ar || account.account_name}</span>
                     <code className="px-1 py-0.5 bg-background rounded text-xs">
                       {account.account_code}
                     </code>
-                    <span className="font-medium">{account.account_name_ar || account.account_name}</span>
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  المستوى: {account.current_level} → {account.expected_level}
                 </div>
               </div>
             ))}
@@ -161,12 +161,12 @@ export const ChartValidationPanel: React.FC = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-right">
             <FileSearch className="h-5 w-5" />
             التحقق من صحة دليل الحسابات
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent dir="rtl">
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner />
           </div>
@@ -178,7 +178,7 @@ export const ChartValidationPanel: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-right">
           <FileSearch className="h-5 w-5" />
           التحقق من صحة دليل الحسابات
           {validation?.is_valid ? (
@@ -187,15 +187,15 @@ export const ChartValidationPanel: React.FC = () => {
             <XCircle className="h-5 w-5 text-destructive" />
           )}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-right">
           فحص الهيكل الهرمي لدليل الحسابات والتأكد من صحته
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4" dir="rtl">
         {validation?.is_valid ? (
           <Alert>
             <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-right">
               دليل الحسابات سليم ولا يحتوي على أخطاء
             </AlertDescription>
           </Alert>
@@ -203,13 +203,13 @@ export const ChartValidationPanel: React.FC = () => {
           <>
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
+              <AlertDescription className="text-right">
                 تم العثور على {validation?.total_issues} مشكلة في دليل الحسابات
               </AlertDescription>
             </Alert>
 
             <div className="space-y-3">
-              <h4 className="font-medium">المشاكل المكتشفة:</h4>
+              <h4 className="font-medium text-right">المشاكل المكتشفة:</h4>
               <div className="grid gap-3">
                 {validation?.issues ? Object.entries(validation.issues).map(([issueType, count]) => {
                   const numCount = Number(count);
@@ -226,11 +226,12 @@ export const ChartValidationPanel: React.FC = () => {
                       >
                         <CollapsibleTrigger asChild>
                           <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50">
+                            <Badge variant="destructive">
+                              {numCount}
+                            </Badge>
                             <div className="flex items-center gap-3">
-                              {getIssueIcon(issueType)}
-                              <div>
-                                <div className="font-medium flex items-center gap-2">
-                                  {getIssueTitle(issueType)}
+                              <div className="text-right">
+                                <div className="font-medium flex items-center gap-2 justify-end">
                                   {details.length > 0 && (
                                     isExpanded ? (
                                       <ChevronDown className="h-4 w-4" />
@@ -238,15 +239,14 @@ export const ChartValidationPanel: React.FC = () => {
                                       <ChevronRight className="h-4 w-4" />
                                     )
                                   )}
+                                  {getIssueTitle(issueType)}
                                 </div>
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-sm text-muted-foreground text-right">
                                   {getIssueDescription(issueType)}
                                 </div>
                               </div>
+                              {getIssueIcon(issueType)}
                             </div>
-                            <Badge variant="destructive">
-                              {numCount}
-                            </Badge>
                           </div>
                         </CollapsibleTrigger>
                         {details.length > 0 && (
@@ -271,32 +271,32 @@ export const ChartValidationPanel: React.FC = () => {
 
             <div className="flex gap-2">
               <Button
-                onClick={() => fixHierarchy.mutate()}
-                disabled={fixHierarchy.isPending}
-                className="flex items-center gap-2"
-              >
-                {fixHierarchy.isPending ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Wrench className="h-4 w-4" />
-                )}
-                إصلاح المشاكل تلقائياً
-              </Button>
-              
-              <Button
                 variant="outline"
                 onClick={() => refetch()}
                 disabled={isLoading}
                 className="flex items-center gap-2"
               >
+                <span>إعادة فحص</span>
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                إعادة فحص
+              </Button>
+              
+              <Button
+                onClick={() => fixHierarchy.mutate()}
+                disabled={fixHierarchy.isPending}
+                className="flex items-center gap-2"
+              >
+                <span>إصلاح المشاكل تلقائياً</span>
+                {fixHierarchy.isPending ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wrench className="h-4 w-4" />
+                )}
               </Button>
             </div>
 
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
+              <AlertDescription className="text-right">
                 سيقوم الإصلاح التلقائي بنقل الحسابات اليتيمة إلى المستوى الأول وإعادة حساب جميع المستويات
               </AlertDescription>
             </Alert>

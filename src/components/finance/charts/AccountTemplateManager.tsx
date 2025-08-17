@@ -56,38 +56,38 @@ export const AccountTemplateManager: React.FC = () => {
   };
 
   const renderTemplateCard = (template: AccountTemplate) => (
-    <Card key={template.id} className="group hover:shadow-md transition-shadow">
+    <Card key={template.id} className="group hover:shadow-md transition-shadow" dir="rtl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
+        <CardTitle className="flex items-center gap-3 text-right">
           {template.icon}
-          <div>
+          <div className="text-right">
             <div className="text-base">{template.nameAr}</div>
             <div className="text-sm text-muted-foreground font-normal">
               {template.name}
             </div>
           </div>
         </CardTitle>
-        <CardDescription>{template.description}</CardDescription>
+        <CardDescription className="text-right">{template.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">
-              {template.accountsCount} حساب
-            </Badge>
             <Badge variant={template.category === 'business' ? 'default' : 'secondary'}>
               {template.category === 'business' ? 'عام' : 'متخصص'}
             </Badge>
+            <Badge variant="outline" className="text-xs">
+              {template.accountsCount} حساب
+            </Badge>
           </div>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground text-right">
             <div className="font-medium mb-1">أمثلة من الحسابات:</div>
             <div className="text-xs space-y-1">
               {template.preview.slice(0, 3).map((account, index) => (
-                <div key={index}>• {account}</div>
+                <div key={index} className="text-right">• {account}</div>
               ))}
               {template.preview.length > 3 && (
-                <div className="text-muted-foreground">
+                <div className="text-muted-foreground text-right">
                   + {template.preview.length - 3} حساب آخر...
                 </div>
               )}
@@ -95,6 +95,24 @@ export const AccountTemplateManager: React.FC = () => {
           </div>
 
           <div className="flex gap-2 pt-2">
+            <Button 
+              size="sm"
+              onClick={() => handleApplyTemplate(template.id)}
+              disabled={copyDefaultAccounts.isPending}
+              className="flex-1 flex items-center gap-2"
+            >
+              {copyDefaultAccounts.isPending ? (
+                <>
+                  <span>تطبيق...</span>
+                  <Clock className="h-3 w-3" />
+                </>
+              ) : (
+                <>
+                  <span>تطبيق</span>
+                  <CheckCircle className="h-3 w-3" />
+                </>
+              )}
+            </Button>
             <Button 
               size="sm" 
               variant="outline"
@@ -106,24 +124,6 @@ export const AccountTemplateManager: React.FC = () => {
             >
               معاينة
             </Button>
-            <Button 
-              size="sm"
-              onClick={() => handleApplyTemplate(template.id)}
-              disabled={copyDefaultAccounts.isPending}
-              className="flex-1"
-            >
-              {copyDefaultAccounts.isPending ? (
-                <>
-                  <Clock className="h-3 w-3 mr-1" />
-                  تطبيق...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  تطبيق
-                </>
-              )}
-            </Button>
           </div>
         </div>
       </CardContent>
@@ -131,21 +131,21 @@ export const AccountTemplateManager: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileCode className="h-5 w-5" />
-          قوالب دليل الحسابات
-        </CardTitle>
-          <CardDescription>
+          <CardTitle className="flex items-center gap-2 text-right">
+            <FileCode className="h-5 w-5" />
+            قوالب دليل الحسابات
+          </CardTitle>
+          <CardDescription className="text-right">
             اختر قالب جاهز يناسب نوع نشاطك التجاري لتوفير الوقت والجهد
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-right">
               تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة
             </AlertDescription>
           </Alert>
@@ -160,9 +160,9 @@ export const AccountTemplateManager: React.FC = () => {
 
       {/* Template Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-right">
               {selectedTemplate?.icon}
               معاينة قالب: {selectedTemplate?.nameAr}
             </DialogTitle>
@@ -171,33 +171,26 @@ export const AccountTemplateManager: React.FC = () => {
           {selectedTemplate && (
             <div className="space-y-4">
               <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2">نظرة عامة</h4>
+                <h4 className="font-medium mb-2 text-right">نظرة عامة</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>عدد الحسابات: {selectedTemplate.accountsCount}</div>
-                  <div>النوع: {selectedTemplate.category === 'business' ? 'عام' : 'متخصص'}</div>
+                  <div className="text-right">عدد الحسابات: {selectedTemplate.accountsCount}</div>
+                  <div className="text-right">النوع: {selectedTemplate.category === 'business' ? 'عام' : 'متخصص'}</div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium mb-3">أمثلة من الحسابات المتضمنة:</h4>
+                <h4 className="font-medium mb-3 text-right">أمثلة من الحسابات المتضمنة:</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {selectedTemplate.preview.map((account, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="flex items-center gap-2 text-right">
+                      <span>{account}</span>
                       <div className="w-2 h-2 bg-primary rounded-full" />
-                      {account}
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowPreview(false)}
-                  className="flex-1"
-                >
-                  إغلاق
-                </Button>
                 <Button 
                   onClick={() => {
                     handleApplyTemplate(selectedTemplate.id);
@@ -207,6 +200,13 @@ export const AccountTemplateManager: React.FC = () => {
                   className="flex-1"
                 >
                   تطبيق القالب
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPreview(false)}
+                  className="flex-1"
+                >
+                  إغلاق
                 </Button>
               </div>
             </div>
