@@ -76,58 +76,9 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
     canvas.width = 600;
     canvas.height = 400;
 
-    // Draw vehicle outline
-    drawVehicleOutline(ctx);
+    // Make canvas transparent
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
-
-  const drawVehicleOutline = (ctx: CanvasRenderingContext2D) => {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 2;
-
-    // Draw car outline (top view)
-    ctx.beginPath();
-    // Car body
-    ctx.roundRect(150, 100, 300, 200, 20);
-    ctx.stroke();
-
-    // Windshield
-    ctx.beginPath();
-    ctx.roundRect(170, 120, 260, 30, 5);
-    ctx.stroke();
-
-    // Rear window
-    ctx.beginPath();
-    ctx.roundRect(170, 250, 260, 30, 5);
-    ctx.stroke();
-
-    // Doors
-    ctx.beginPath();
-    ctx.moveTo(150, 160);
-    ctx.lineTo(450, 160);
-    ctx.moveTo(150, 240);
-    ctx.lineTo(450, 240);
-    ctx.stroke();
-
-    // Door handles
-    ctx.beginPath();
-    ctx.arc(140, 180, 5, 0, 2 * Math.PI);
-    ctx.arc(460, 180, 5, 0, 2 * Math.PI);
-    ctx.arc(140, 220, 5, 0, 2 * Math.PI);
-    ctx.arc(460, 220, 5, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    // Labels
-    ctx.fillStyle = '#6B7280';
-    ctx.font = '14px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('FRONT', 300, 90);
-    ctx.fillText('REAR', 300, 330);
-    ctx.textAlign = 'left';
-    ctx.fillText('LEFT', 120, 205);
-    ctx.textAlign = 'right';
-    ctx.fillText('RIGHT', 480, 205);
-  };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -215,7 +166,8 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
     const ctx = canvas?.getContext('2d');
     if (!ctx) return;
 
-    drawVehicleOutline(ctx);
+    // Clear canvas but keep it transparent
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Redraw all marks
     ctx.strokeStyle = '#DC2626';
@@ -405,16 +357,21 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
               </div>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg p-4 bg-muted/20">
-                <canvas
-                  ref={canvasRef}
-                  className="border rounded cursor-crosshair max-w-full"
-                  style={{ width: '100%', height: 'auto' }}
-                  onMouseDown={handleCanvasMouseDown}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  onMouseLeave={handleCanvasMouseUp}
-                />
+              <div className="border rounded-lg p-4 bg-muted/20 relative">
+                <div 
+                  className="relative w-full h-[400px] bg-cover bg-center bg-no-repeat rounded"
+                  style={{ backgroundImage: 'url(/مخطط.png)' }}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 w-full h-full cursor-crosshair rounded"
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseDown={handleCanvasMouseDown}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseUp={handleCanvasMouseUp}
+                    onMouseLeave={handleCanvasMouseUp}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
