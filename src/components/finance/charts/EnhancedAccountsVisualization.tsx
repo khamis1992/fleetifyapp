@@ -220,7 +220,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       setNodeRef,
     } = useDroppable({
       id: account.id,
-      disabled: !account.is_header && !account.children.length, // Only allow dropping on header accounts or accounts with children
+      disabled: false, // Allow dropping on all accounts
     });
 
     return (
@@ -542,9 +542,10 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
                 <div className="font-medium">تعليمات السحب والإفلات:</div>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>اضغط على أيقونة السحب {<Move className="inline h-3 w-3" />} بجانب اسم الحساب</li>
-                  <li>اسحب الحساب إلى الحساب الذي تريد أن يكون أباً له</li>
+                  <li>اسحب الحساب إلى أي حساب آخر لجعله حساباً فرعياً منه</li>
+                  <li>يمكن السحب والإفلات على جميع المستويات والحسابات</li>
                   <li>لا يمكن سحب الحسابات النظامية أو غير النشطة</li>
-                  <li>لا يمكن نقل الحساب إلى حساب فرعي منه</li>
+                  <li>لا يمكن نقل الحساب إلى حساب فرعي منه لتجنب التداخل الدائري</li>
                 </ul>
               </div>
             </div>
