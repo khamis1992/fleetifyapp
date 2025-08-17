@@ -1,10 +1,13 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { 
   Network, 
   TreePine, 
@@ -20,7 +23,25 @@ import {
   Eye,
   EyeOff,
   Move,
-  AlertCircle
+  AlertCircle,
+  Download,
+  BarChart3,
+  Settings,
+  Keyboard,
+  Zap,
+  Clock,
+  User,
+  Calendar,
+  ArrowUp,
+  ArrowDown,
+  Target,
+  Info,
+  Sparkles,
+  CheckCircle,
+  XCircle,
+  Filter,
+  SortAsc,
+  SortDesc
 } from 'lucide-react';
 import { useChartOfAccounts, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
@@ -41,6 +62,10 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
+import { AccountSummaryPanel } from './AccountSummaryPanel';
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+import { AccountTooltip } from './AccountTooltip';
+import { ExportAccountsUtility } from './ExportAccountsUtility';
 
 interface EnhancedAccountsVisualizationProps {
   onSelectAccount?: (account: ChartOfAccount) => void;
@@ -61,16 +86,115 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
   const updateAccount = useUpdateAccount();
   const { toast } = useToast();
   
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  // Enhanced state management with localStorage persistence
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('chart-expanded-nodes');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [showInactiveAccounts, setShowInactiveAccounts] = useState(false);
+  const [filterType, setFilterType] = useState(() => 
+    localStorage.getItem('chart-filter-type') || 'all'
+  );
+  const [showInactiveAccounts, setShowInactiveAccounts] = useState(() => 
+    localStorage.getItem('chart-show-inactive') === 'true'
+  );
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>(() => 
+    localStorage.getItem('chart-view-mode') as 'compact' | 'detailed' || 'detailed'
+  );
+  const [sortBy, setSortBy] = useState<'code' | 'name' | 'balance'>(() => 
+    localStorage.getItem('chart-sort-by') as 'code' | 'name' | 'balance' || 'code'
+  );
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => 
+    localStorage.getItem('chart-sort-order') as 'asc' | 'desc' || 'asc'
+  );
+  
+  // UX Enhancement states
+  const [dragPreview, setDragPreview] = useState<{accountId: string, targetId: string} | null>(null);
+  const [validDropZones, setValidDropZones] = useState<Set<string>>(new Set());
+  const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
+  const [showSummaryPanel, setShowSummaryPanel] = useState(() => 
+    localStorage.getItem('chart-show-summary') === 'true'
+  );
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [recentChanges, setRecentChanges] = useState<{id: string, action: string, timestamp: Date}[]>([]);
   
   // Drag and Drop states
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragMode, setIsDragMode] = useState(false);
   
-  // DnD sensors
+  // Refs for keyboard navigation
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const treeContainerRef = useRef<HTMLDivElement>(null);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  
+  // Persist preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('chart-expanded-nodes', JSON.stringify([...expandedNodes]));
+  }, [expandedNodes]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-filter-type', filterType);
+  }, [filterType]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-show-inactive', showInactiveAccounts.toString());
+  }, [showInactiveAccounts]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-view-mode', viewMode);
+  }, [viewMode]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-sort-by', sortBy);
+  }, [sortBy]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-sort-order', sortOrder);
+  }, [sortOrder]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-show-summary', showSummaryPanel.toString());
+  }, [showSummaryPanel]);
+
+  // Enhanced keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'f':
+            e.preventDefault();
+            searchInputRef.current?.focus();
+            break;
+          case 'e':
+            e.preventDefault();
+            expandAll();
+            break;
+          case 'w':
+            e.preventDefault();
+            collapseAll();
+            break;
+          case 's':
+            e.preventDefault();
+            setShowSummaryPanel(prev => !prev);
+            break;
+          case '?':
+            e.preventDefault();
+            setShowKeyboardHelp(prev => !prev);
+            break;
+        }
+      }
+      
+      if (e.key === 'Escape') {
+        setFocusedNodeId(null);
+        setShowKeyboardHelp(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  // DnD sensors with enhanced touch support
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -79,17 +203,48 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     })
   );
 
-  // Drag and Drop handlers
+  // Enhanced drag and drop handlers with visual feedback
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const accountId = event.active.id as string;
+    setActiveId(accountId);
     setIsDragMode(true);
+    
+    // Calculate valid drop zones (avoid circular references)
+    if (accounts) {
+      const validZones = new Set<string>();
+      const draggedAccount = accounts.find(acc => acc.id === accountId);
+      
+      if (draggedAccount) {
+        const isCircularReference = (checkId: string, parentId: string): boolean => {
+          const account = accounts.find(acc => acc.id === checkId);
+          if (!account || !account.parent_account_id) return false;
+          if (account.parent_account_id === parentId) return true;
+          return isCircularReference(account.parent_account_id, parentId);
+        };
+        
+        accounts.forEach(account => {
+          if (account.id !== accountId && !isCircularReference(account.id, accountId)) {
+            validZones.add(account.id);
+          }
+        });
+      }
+      
+      setValidDropZones(validZones);
+    }
   };
 
+// ... keep existing code (all imports and initial state)
+
+// Now let me continue with the enhanced implementation by replacing the rest of the file
+
+  // Enhanced drag and drop end handler with better feedback
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     
     setActiveId(null);
     setIsDragMode(false);
+    setValidDropZones(new Set());
+    setDragPreview(null);
     
     if (!over || !accounts) return;
     
@@ -100,10 +255,10 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     
     if (!draggedAccount || !targetParent) return;
     
-    // Validation checks
+    // Validation checks with enhanced feedback
     if (draggedAccountId === targetParentId) {
       toast({
-        title: "خطأ في العملية",
+        title: "عملية غير مسموحة",
         description: "لا يمكن نقل الحساب إلى نفسه",
         variant: "destructive",
       });
@@ -120,7 +275,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     
     if (isCircularReference(targetParentId, draggedAccountId)) {
       toast({
-        title: "خطأ في العملية",
+        title: "عملية غير مسموحة",
         description: "لا يمكن نقل الحساب إلى حساب فرعي منه",
         variant: "destructive",
       });
@@ -139,9 +294,25 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
         }
       });
       
+      // Add to recent changes
+      setRecentChanges(prev => [
+        { id: draggedAccountId, action: 'moved', timestamp: new Date() },
+        ...prev.slice(0, 9) // Keep last 10 changes
+      ]);
+      
       toast({
         title: "تم التحديث بنجاح",
         description: `تم نقل الحساب "${draggedAccount.account_name_ar || draggedAccount.account_name}" إلى "${targetParent.account_name_ar || targetParent.account_name}"`,
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setExpandedNodes(prev => new Set([...prev, targetParentId]))}
+          >
+            <Eye className="h-3 w-3 ml-1" />
+            عرض
+          </Button>
+        ),
       });
       
       // Expand target parent to show the moved account
@@ -181,16 +352,19 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       <div
         ref={setNodeRef}
         style={style}
-        className={`${isDragging ? 'opacity-50 z-50' : ''} transition-opacity`}
+        className={`${isDragging ? 'opacity-50 z-50' : ''} transition-all duration-200`}
         {...attributes}
       >
-        <div className="flex items-center">
+        <div className="flex items-center group">
           <div
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted/50 rounded transition-colors ml-2"
+            className={`cursor-grab active:cursor-grabbing p-1 rounded transition-all duration-200 ml-2 
+              ${isDragMode ? 'hover:bg-primary/20 hover:scale-110' : 'hover:bg-muted/50'}
+              ${isDragging ? 'bg-primary/10' : ''}
+            `}
             title="اسحب لنقل الحساب"
           >
-            <Move className="h-4 w-4 text-muted-foreground" />
+            <Move className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
           </div>
           <div className="flex-1">
             {children}
@@ -213,19 +387,47 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       disabled: false, // Allow dropping on all accounts
     });
 
+    const isValidDropZone = validDropZones.has(account.id);
+    const isInvalidDrop = isDragMode && !isValidDropZone && account.id !== activeId;
+
     return (
       <div
         ref={setNodeRef}
-        className={`${
-          isOver ? 'bg-primary/10 border-2 border-primary/30 border-dashed rounded-lg' : ''
-        } transition-all duration-200`}
+        className={`transition-all duration-200 rounded-lg ${
+          isOver && isValidDropZone 
+            ? 'bg-green-50 border-2 border-green-300 border-dashed shadow-md transform scale-[1.02]' 
+            : isOver && !isValidDropZone
+            ? 'bg-red-50 border-2 border-red-300 border-dashed'
+            : isDragMode && isValidDropZone
+            ? 'bg-blue-50/50 border border-blue-200 border-dashed'
+            : isDragMode && isInvalidDrop
+            ? 'opacity-50 grayscale'
+            : ''
+        }`}
       >
         {children}
+        {/* Drop zone indicator */}
+        {isOver && isValidDropZone && (
+          <div className="absolute inset-0 bg-green-100/50 rounded-lg flex items-center justify-center pointer-events-none">
+            <div className="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              إفلات هنا
+            </div>
+          </div>
+        )}
+        {isOver && !isValidDropZone && (
+          <div className="absolute inset-0 bg-red-100/50 rounded-lg flex items-center justify-center pointer-events-none">
+            <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+              <XCircle className="h-3 w-3" />
+              غير مسموح
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // Build hierarchical tree
+  // Enhanced tree building with sorting
   const accountTree = useMemo(() => {
     if (!accounts) return [];
     
@@ -242,18 +444,39 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     });
 
     const buildTree = (parentId: string | null = null, level: number = 0): TreeNode[] => {
-      return filteredAccounts
+      let nodes = filteredAccounts
         .filter(account => account.parent_account_id === parentId)
         .map(account => ({
           ...account,
           level,
           children: buildTree(account.id, level + 1),
-        }))
-        .sort((a, b) => a.account_code.localeCompare(b.account_code));
+        }));
+      
+      // Enhanced sorting
+      nodes.sort((a, b) => {
+        switch (sortBy) {
+          case 'name':
+            const nameA = a.account_name_ar || a.account_name;
+            const nameB = b.account_name_ar || b.account_name;
+            return sortOrder === 'asc' 
+              ? nameA.localeCompare(nameB) 
+              : nameB.localeCompare(nameA);
+          case 'balance':
+            return sortOrder === 'asc' 
+              ? a.current_balance - b.current_balance
+              : b.current_balance - a.current_balance;
+          default: // 'code'
+            return sortOrder === 'asc'
+              ? a.account_code.localeCompare(b.account_code)
+              : b.account_code.localeCompare(a.account_code);
+        }
+      });
+      
+      return nodes;
     };
 
     return buildTree();
-  }, [accounts, searchTerm, filterType, showInactiveAccounts]);
+  }, [accounts, searchTerm, filterType, showInactiveAccounts, sortBy, sortOrder]);
 
   const toggleNode = (nodeId: string) => {
     const newExpanded = new Set(expandedNodes);
