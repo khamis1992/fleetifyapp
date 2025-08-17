@@ -49,6 +49,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('accounts');
+  const [showSmartWizard, setShowSmartWizard] = useState(false);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -305,14 +306,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
             قائمة الحسابات
-          </TabsTrigger>
-          <TabsTrigger value="wizard" className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4" />
-            معالج ذكي
           </TabsTrigger>
           <TabsTrigger value="validation" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
@@ -331,7 +328,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         {/* Accounts Tab */}
         <TabsContent value="accounts" className="space-y-6">
           <div className="flex justify-end">
-            <Button onClick={() => setActiveTab('wizard')}>
+            <Button onClick={() => setShowSmartWizard(true)}>
               <Plus className="h-4 w-4 mr-2" />
               إضافة حساب جديد
             </Button>
@@ -414,11 +411,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* Smart Wizard Tab */}
-        <TabsContent value="wizard">
-          <SmartAccountWizardTab />
-        </TabsContent>
-
         {/* Validation Tab */}
         <TabsContent value="validation">
           <ChartValidationPanel />
@@ -434,6 +426,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <EnhancedAccountsVisualization />
         </TabsContent>
       </Tabs>
+
+      {/* Smart Wizard Dialog */}
+      <Dialog open={showSmartWizard} onOpenChange={setShowSmartWizard}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>معالج إنشاء الحسابات الذكي</DialogTitle>
+          </DialogHeader>
+          <SmartAccountWizardTab />
+        </DialogContent>
+      </Dialog>
 
       {/* View Account Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
