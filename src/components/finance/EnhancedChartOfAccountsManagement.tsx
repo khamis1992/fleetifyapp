@@ -9,13 +9,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, BarChart3, CheckCircle, Folder } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
 import { AccountStatementDialog } from './AccountStatementDialog';
 import { ParentAccountSelector } from './ParentAccountSelector';
+import { ChartValidationPanel } from './charts/ChartValidationPanel';
+import { ChartStatisticsPanel } from './charts/ChartStatisticsPanel';
+import { SmartAccountWizard } from './charts/SmartAccountWizard';
+import { AccountTemplateManager } from './charts/AccountTemplateManager';
+import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -44,6 +49,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
+  const [showWizard, setShowWizard] = useState(false);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
   
@@ -293,15 +299,50 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">إدارة دليل الحسابات</h2>
+          <h2 className="text-2xl font-bold">إدارة دليل الحسابات المحسن</h2>
+          <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
         </div>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              إضافة حساب جديد
-            </Button>
-          </DialogTrigger>
+      </div>
+
+      {/* Enhanced Tabs */}
+      <Tabs defaultValue="accounts" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="accounts" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            قائمة الحسابات
+          </TabsTrigger>
+          <TabsTrigger value="wizard" className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4" />
+            معالج ذكي
+          </TabsTrigger>
+          <TabsTrigger value="validation" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            التحقق والإصلاح
+          </TabsTrigger>
+          <TabsTrigger value="statistics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            الإحصائيات
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Folder className="h-4 w-4" />
+            القوالب
+          </TabsTrigger>
+          <TabsTrigger value="visualization" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            العرض التفاعلي
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Accounts Tab */}
+        <TabsContent value="accounts" className="space-y-6">
+          <div className="flex justify-end">
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  إضافة حساب جديد
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>إضافة حساب جديد</DialogTitle>
@@ -403,10 +444,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-      </div>
+            </Dialog>
+          </div>
 
-      {/* Filters */}
+          {/* Filters */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex gap-4 items-center">
@@ -481,6 +522,36 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Smart Wizard Tab */}
+        <TabsContent value="wizard">
+          <SmartAccountWizard 
+            open={showWizard} 
+            onOpenChange={setShowWizard}
+          />
+        </TabsContent>
+
+        {/* Validation Tab */}
+        <TabsContent value="validation">
+          <ChartValidationPanel />
+        </TabsContent>
+
+        {/* Statistics Tab */}
+        <TabsContent value="statistics">
+          <ChartStatisticsPanel />
+        </TabsContent>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates">
+          <AccountTemplateManager />
+        </TabsContent>
+
+        {/* Visualization Tab */}
+        <TabsContent value="visualization">
+          <EnhancedAccountsVisualization />
+        </TabsContent>
+      </Tabs>
 
       {/* View Account Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
