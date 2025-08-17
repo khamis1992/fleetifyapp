@@ -9367,7 +9367,7 @@ export type Database = {
         Returns: Json
       }
       calculate_account_level: {
-        Args: { account_id: string }
+        Args: { account_id_param: string }
         Returns: number
       }
       calculate_account_level_from_code: {
@@ -10619,6 +10619,16 @@ export type Database = {
           error_message_ar: string
           is_header: boolean
           is_valid: boolean
+        }[]
+      }
+      validate_account_hierarchy: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          account_code: string
+          account_id: string
+          account_name: string
+          issue_description: string
+          issue_type: string
         }[]
       }
       validate_account_level_for_entries: {
