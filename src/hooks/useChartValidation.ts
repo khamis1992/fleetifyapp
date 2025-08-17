@@ -14,11 +14,29 @@ interface ValidationResult {
   };
   total_issues: number;
   details?: {
-    orphaned_accounts?: any[];
-    circular_references?: any[];
-    incorrect_levels?: any[];
-    duplicate_codes?: any[];
-    missing_parents?: any[];
+    orphaned_accounts: Array<{
+      id: string;
+      account_code: string;
+      account_name: string;
+      account_name_ar?: string;
+      parent_account_id: string;
+    }>;
+    duplicate_codes: Array<{
+      account_code: string;
+      accounts: Array<{
+        id: string;
+        account_name: string;
+        account_name_ar?: string;
+      }>;
+    }>;
+    incorrect_levels: Array<{
+      id: string;
+      account_code: string;
+      account_name: string;
+      account_name_ar?: string;
+      current_level: number;
+      expected_level: number;
+    }>;
   };
 }
 

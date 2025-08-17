@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 export const ChartValidationPanel: React.FC = () => {
   const { data: validation, isLoading, refetch } = useChartValidation();
   const fixHierarchy = useFixChartHierarchy();
-  const [expandedIssues, setExpandedIssues] = React.useState<Record<string, boolean>>({});
+  const [expandedIssues, setExpandedIssues] = useState<Record<string, boolean>>({});
 
   const toggleIssueExpansion = (issueType: string) => {
     setExpandedIssues(prev => ({
@@ -95,11 +95,16 @@ export const ChartValidationPanel: React.FC = () => {
           <div className="space-y-2 mt-3">
             {details.map((account: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
-                <div className="flex items-center gap-2">
-                  <code className="px-1 py-0.5 bg-background rounded text-xs">
-                    {account.account_code}
-                  </code>
-                  <span>{account.account_name_ar || account.account_name}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <code className="px-1 py-0.5 bg-background rounded text-xs">
+                      {account.account_code}
+                    </code>
+                    <span className="font-medium">{account.account_name_ar || account.account_name}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    يشير إلى حساب أب غير موجود: {account.parent_account_id}
+                  </div>
                 </div>
                 <Badge variant="outline" className="text-xs">
                   يتيم
@@ -132,11 +137,13 @@ export const ChartValidationPanel: React.FC = () => {
           <div className="space-y-2 mt-3">
             {details.map((account: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
-                <div className="flex items-center gap-2">
-                  <code className="px-1 py-0.5 bg-background rounded text-xs">
-                    {account.account_code}
-                  </code>
-                  <span>{account.account_name_ar || account.account_name}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <code className="px-1 py-0.5 bg-background rounded text-xs">
+                      {account.account_code}
+                    </code>
+                    <span className="font-medium">{account.account_name_ar || account.account_name}</span>
+                  </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   المستوى: {account.current_level} → {account.expected_level}
@@ -224,10 +231,12 @@ export const ChartValidationPanel: React.FC = () => {
                               <div>
                                 <div className="font-medium flex items-center gap-2">
                                   {getIssueTitle(issueType)}
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
+                                  {details.length > 0 && (
+                                    isExpanded ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )
                                   )}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
@@ -240,11 +249,13 @@ export const ChartValidationPanel: React.FC = () => {
                             </Badge>
                           </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="px-3 pb-3">
-                            {renderIssueDetails(issueType, details)}
-                          </div>
-                        </CollapsibleContent>
+                        {details.length > 0 && (
+                          <CollapsibleContent>
+                            <div className="px-3 pb-3">
+                              {renderIssueDetails(issueType, details)}
+                            </div>
+                          </CollapsibleContent>
+                        )}
                       </Collapsible>
                     </div>
                   );
