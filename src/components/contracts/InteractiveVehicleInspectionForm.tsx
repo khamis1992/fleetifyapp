@@ -360,7 +360,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
               <div className="border rounded-lg p-4 bg-background relative">
                 <div 
                   className="relative w-full h-[300px] bg-cover bg-center bg-no-repeat rounded mx-auto max-w-md"
-                  style={{ backgroundImage: 'url(/مخطط.png)' }}
+                  style={{ backgroundImage: 'url(/lovable-uploads/12a7aafa-1cea-42b9-9f80-7d744260ed1e.png)' }}
                 >
                   <canvas
                     ref={canvasRef}
