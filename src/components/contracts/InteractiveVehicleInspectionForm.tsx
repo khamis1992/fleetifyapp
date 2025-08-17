@@ -485,6 +485,17 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
             </Card>
           </div>
 
+          {/* Important Legal Notice */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-sm font-medium text-primary border border-primary/30 rounded-lg p-4 bg-primary/10">
+                  بالتوقيع، يُعد هذا المستند ملحقًا مكملًا لشروط عقد الإيجار ومُلزمًا للطرفين.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 print:hidden">
             <Button variant="outline" onClick={clearCanvas}>
