@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContractCalculations } from '@/hooks/useContractCalculations'
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles'
+import InteractiveVehicleInspectionForm from './InteractiveVehicleInspectionForm'
 import { useAvailableVehiclesByDateRange } from '@/hooks/useAvailableVehiclesByDateRange'
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
@@ -365,7 +366,7 @@ export const CustomerVehicleStep: React.FC = () => {
         {data.vehicle_id && data.vehicle_id !== 'none' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">فحص حالة المركبة</h3>
-            <VehicleConditionWizardStep 
+            <InteractiveVehicleInspectionForm 
               vehicleId={data.vehicle_id}
               contractId={undefined} // Will be set after contract creation
               onComplete={(reportId) => {
