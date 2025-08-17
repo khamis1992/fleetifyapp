@@ -193,7 +193,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
         overall_condition: 'good' as const,
         mileage: parseInt(mileage) || 0,
         fuel_level: fuelLevel[0],
-        general_notes: additionalNotes,
+        notes: additionalNotes,
         condition_items: accessories.reduce((acc, item) => ({
           ...acc,
           [item.id]: item.checked ? 'present' : 'missing'

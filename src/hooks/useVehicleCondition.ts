@@ -8,7 +8,7 @@ export interface VehicleConditionReport {
   dispatch_permit_id?: string; // Optional for contract reports
   vehicle_id: string;
   inspector_id: string;
-  inspection_type: 'pre_dispatch' | 'post_dispatch';
+  inspection_type: 'pre_dispatch' | 'post_dispatch' | 'contract_inspection';
   overall_condition: 'excellent' | 'good' | 'fair' | 'poor';
   mileage_reading?: number;
   fuel_level?: number;
@@ -101,7 +101,18 @@ export const useCreateConditionReport = () => {
 
       if (error) {
         console.error('Error creating condition report:', error);
-        throw error;
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        
+        // Provide more specific error messages
+        if (error.message?.includes('invalid input value')) {
+          throw new Error('خطأ في البيانات المدخلة. تحقق من صحة جميع الحقول');
+        } else if (error.message?.includes('permission denied')) {
+          throw new Error('غير مصرح لك بإنشاء تقارير حالة المركبات');
+        } else if (error.message?.includes('foreign key')) {
+          throw new Error('المركبة المحددة غير موجودة أو غير صحيحة');
+        }
+        
+        throw new Error(`فشل في إنشاء تقرير حالة المركبة: ${error.message || 'خطأ غير محدد'}`);
       }
 
       // Update vehicle's odometer reading if mileage is provided
@@ -132,9 +143,10 @@ export const useCreateConditionReport = () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
       toast.success('Vehicle condition report created successfully');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating condition report:', error);
-      toast.error('Failed to create condition report');
+      const errorMessage = error.message || 'Failed to create condition report';
+      toast.error(errorMessage);
     },
   });
 };
