@@ -9,13 +9,7 @@ import {
   FileCode, 
   Download, 
   Upload, 
-  BookOpen, 
-  Building, 
-  ShoppingCart, 
-  Stethoscope,
-  GraduationCap,
   Car,
-  Home,
   Info,
   CheckCircle,
   Clock
@@ -35,46 +29,6 @@ interface AccountTemplate {
 
 const PREDEFINED_TEMPLATES: AccountTemplate[] = [
   {
-    id: 'general_business',
-    name: 'General Business',
-    nameAr: 'الأعمال العامة',
-    description: 'دليل حسابات شامل للأعمال التجارية العامة',
-    icon: <Building className="h-5 w-5" />,
-    accountsCount: 150,
-    category: 'business',
-    preview: ['النقدية', 'البنوك', 'المدينون', 'المخزون', 'الدائنون']
-  },
-  {
-    id: 'retail',
-    name: 'Retail & Trading',
-    nameAr: 'التجارة والبيع بالتجزئة',
-    description: 'مخصص لشركات البيع بالتجزئة والتجارة',
-    icon: <ShoppingCart className="h-5 w-5" />,
-    accountsCount: 120,
-    category: 'industry',
-    preview: ['المبيعات', 'تكلفة البضاعة المباعة', 'مخزون البضائع', 'مصاريف التسويق']
-  },
-  {
-    id: 'medical',
-    name: 'Medical & Healthcare',
-    nameAr: 'الطبية والرعاية الصحية',
-    description: 'للمستشفيات والعيادات ومراكز الرعاية الصحية',
-    icon: <Stethoscope className="h-5 w-5" />,
-    accountsCount: 95,
-    category: 'industry',
-    preview: ['إيرادات الاستشارات', 'المعدات الطبية', 'مصاريف التأمين الطبي']
-  },
-  {
-    id: 'education',
-    name: 'Educational Institutions',
-    nameAr: 'المؤسسات التعليمية',
-    description: 'للمدارس والجامعات والمراكز التعليمية',
-    icon: <GraduationCap className="h-5 w-5" />,
-    accountsCount: 85,
-    category: 'industry',
-    preview: ['الرسوم الدراسية', 'رواتب المعلمين', 'المعدات التعليمية']
-  },
-  {
     id: 'automotive',
     name: 'Automotive',
     nameAr: 'السيارات والنقل',
@@ -82,17 +36,7 @@ const PREDEFINED_TEMPLATES: AccountTemplate[] = [
     icon: <Car className="h-5 w-5" />,
     accountsCount: 110,
     category: 'industry',
-    preview: ['مبيعات السيارات', 'قطع الغيار', 'مصاريف الصيانة']
-  },
-  {
-    id: 'real_estate',
-    name: 'Real Estate',
-    nameAr: 'العقارات',
-    description: 'لشركات التطوير العقاري والوساطة العقارية',
-    icon: <Home className="h-5 w-5" />,
-    accountsCount: 130,
-    category: 'industry',
-    preview: ['إيرادات المبيعات العقارية', 'تكلفة الأراضي', 'عمولات البيع']
+    preview: ['مبيعات السيارات', 'قطع الغيار', 'مصاريف الصيانة', 'إيرادات الخدمات', 'تكلفة قطع الغيار']
   }
 ];
 
@@ -209,7 +153,7 @@ export const AccountTemplateManager: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="business" className="space-y-4">
+      <Tabs defaultValue="industry" className="space-y-4">
         <TabsList>
           <TabsTrigger value="business">قوالب الأعمال العامة</TabsTrigger>
           <TabsTrigger value="industry">قوالب متخصصة</TabsTrigger>
