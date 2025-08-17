@@ -16,7 +16,7 @@ export interface VehicleConditionReport {
   notes?: string;
   photos: string[];
   condition_items: Record<string, any>;
-  damage_items: any[];
+  damage_points: any[];
   inspector_signature?: string;
   customer_signature?: string;
   status: 'pending' | 'approved' | 'requires_attention';
@@ -33,7 +33,7 @@ export interface CreateConditionReportData {
   fuel_level?: number;
   notes?: string;
   condition_items: Record<string, any>;
-  damage_items?: any[];
+  damage_points?: any[];
   photos?: string[];
   contract_id?: string | null; // Optional for contract reports
 }
@@ -44,7 +44,7 @@ export interface UpdateConditionReportData {
   fuel_level?: number;
   notes?: string;
   condition_items?: Record<string, any>;
-  damage_items?: any[];
+  damage_points?: any[];
   photos?: string[];
   inspector_signature?: string;
   customer_signature?: string;
@@ -86,6 +86,7 @@ export const useCreateConditionReport = () => {
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
+      // Create the condition report
       const { data, error } = await supabase
         .from('vehicle_condition_reports')
         .insert([{
@@ -101,6 +102,28 @@ export const useCreateConditionReport = () => {
       if (error) {
         console.error('Error creating condition report:', error);
         throw error;
+      }
+
+      // Update vehicle's odometer reading if mileage is provided
+      if (reportData.mileage_reading && reportData.vehicle_id) {
+        console.log('Updating vehicle odometer reading:', reportData.mileage_reading);
+        
+        const { error: vehicleUpdateError } = await supabase
+          .from('vehicles')
+          .update({
+            odometer_reading: reportData.mileage_reading,
+            current_mileage: reportData.mileage_reading,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', reportData.vehicle_id);
+
+        if (vehicleUpdateError) {
+          console.error('Error updating vehicle odometer:', vehicleUpdateError);
+          // Don't throw error here - condition report was created successfully
+          // Just log the error and continue
+        } else {
+          console.log('Vehicle odometer updated successfully');
+        }
       }
 
       return data as VehicleConditionReport;

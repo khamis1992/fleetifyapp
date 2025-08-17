@@ -28,7 +28,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
     mileage_reading: report.mileage_reading || 0,
     fuel_level: report.fuel_level || 100,
     notes: report.notes || '',
-    damage_items: report.damage_items,
+    damage_points: report.damage_points,
     status: report.status
   });
 
@@ -47,7 +47,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
       mileage_reading: formData.mileage_reading,
       fuel_level: formData.fuel_level,
       notes: formData.notes,
-      damage_items: formData.damage_items,
+      damage_points: formData.damage_points,
       status: formData.status
     };
 
@@ -180,8 +180,8 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
         </CardHeader>
         <CardContent>
           <VehicleConditionDiagram
-            damagePoints={formData.damage_items}
-            onDamagePointsChange={(points) => setFormData({ ...formData, damage_items: points })}
+            damagePoints={formData.damage_points}
+            onDamagePointsChange={(points) => setFormData({ ...formData, damage_points: points })}
           />
         </CardContent>
       </Card>

@@ -107,16 +107,51 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
       return;
     }
 
-    try {
-      // Get user's company
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
+    // Validation
+    if (mileage <= 0) {
+      toast.error('يرجى إدخال قراءة عداد صحيحة');
+      return;
+    }
 
-      if (!profile) {
+    if (fuelLevel < 0 || fuelLevel > 100) {
+      toast.error('يرجى إدخال مستوى وقود صحيح (0-100%)');
+      return;
+    }
+
+    try {
+      // Get user's company and current vehicle data
+      const [profileResult, vehicleResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('vehicles')
+          .select('odometer_reading, current_mileage')
+          .eq('id', vehicleId)
+          .single()
+      ]);
+
+      if (profileResult.error) {
+        console.error('Error fetching profile:', profileResult.error);
         toast.error('لم يتم العثور على بيانات المستخدم');
+        return;
+      }
+
+      if (vehicleResult.error) {
+        console.error('Error fetching vehicle:', vehicleResult.error);
+        toast.error('لم يتم العثور على بيانات المركبة');
+        return;
+      }
+
+      const profile = profileResult.data;
+      const vehicle = vehicleResult.data;
+
+      // Validate mileage reading
+      const currentOdometer = vehicle.odometer_reading || vehicle.current_mileage || 0;
+      if (mileage < currentOdometer) {
+        toast.error(`قراءة العداد يجب أن تكون أكبر من أو تساوي القراءة الحالية (${currentOdometer.toLocaleString()} كم)`);
         return;
       }
 
@@ -135,7 +170,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
           };
           return acc;
         }, {} as Record<string, any>),
-        damage_items: damagePoints,
+        damage_points: damagePoints,
         contract_id: contractId || null
       };
 

@@ -74,7 +74,7 @@ export const useVehicleConditionComparison = (contractId: string) => {
 
       // Compare damages if both reports exist
       const damageChanges = compareDamages(
-        initialReport?.damage_items || [],
+        initialReport?.damage_points || [],
         Array.isArray(returnData?.damages) ? returnData.damages : []
       );
 

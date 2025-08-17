@@ -524,6 +524,13 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       console.log('📝 [CONTRACT_WIZARD] بدء إرسال العقد')
       console.log('📝 [CONTRACT_WIZARD] البيانات الخام قبل الإعداد:', data)
       
+      // Additional validation for vehicle condition report if vehicle is selected
+      if (data.vehicle_id && data.vehicle_id !== 'none' && !data.vehicle_condition_report_id) {
+        toast.error('يجب إنشاء تقرير حالة المركبة قبل إنشاء العقد')
+        setCurrentStep(2) // Go back to customer/vehicle step
+        return
+      }
+      
       // التحقق النهائي من البيانات
       const isValid = await validateCurrentStep()
       if (!isValid) {
@@ -540,6 +547,19 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       }
       
       console.log('📝 [CONTRACT_WIZARD] البيانات النهائية للإرسال:', finalData)
+      
+      // Additional pre-submission validation
+      if (!finalData.customer_id) {
+        toast.error('معرف العميل مفقود - يرجى اختيار العميل مرة أخرى')
+        setCurrentStep(2)
+        return
+      }
+      
+      if (!finalData.contract_amount || finalData.contract_amount <= 0) {
+        toast.error('مبلغ العقد غير صحيح - يرجى تحديد مبلغ أكبر من صفر')
+        setCurrentStep(3)
+        return
+      }
       
       // انتظار اكتمال عملية قاعدة البيانات
       const result = await onSubmit(finalData)
@@ -559,29 +579,55 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       console.log('🎉 [CONTRACT_WIZARD] تم إنشاء العقد بنجاح')
     } catch (error: any) {
       console.error('❌ [CONTRACT_WIZARD] خطأ في إرسال العقد:', error)
+      console.error('❌ [CONTRACT_WIZARD] تفاصيل الخطأ:', {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code
+      })
       
       // تحسين رسائل الخطأ للمستخدم
       let errorMessage = 'خطأ في إنشاء العقد'
+      let navigateToStep: number | null = null
       
       if (error?.message) {
-        if (error.message.includes('العميل مطلوب')) {
+        if (error.message.includes('العميل مطلوب') || error.message.includes('customer')) {
           errorMessage = 'يرجى اختيار العميل'
-        } else if (error.message.includes('مبلغ العقد مطلوب')) {
+          navigateToStep = 2
+        } else if (error.message.includes('مبلغ العقد مطلوب') || error.message.includes('amount')) {
           errorMessage = 'يرجى إدخال مبلغ العقد'
-        } else if (error.message.includes('تواريخ العقد مطلوبة')) {
+          navigateToStep = 3
+        } else if (error.message.includes('تواريخ العقد مطلوبة') || error.message.includes('date')) {
           errorMessage = 'يرجى تحديد تواريخ العقد'
-        } else if (error.message.includes('نوع العقد مطلوب')) {
+          navigateToStep = 1
+        } else if (error.message.includes('نوع العقد مطلوب') || error.message.includes('contract_type')) {
           errorMessage = 'يرجى اختيار نوع العقد'
+          navigateToStep = 0
         } else if (error.message.includes('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')) {
           errorMessage = 'تواريخ العقد غير صحيحة'
+          navigateToStep = 1
+        } else if (error.message.includes('المركبة غير متاحة') || error.message.includes('vehicle')) {
+          errorMessage = 'المركبة المحددة غير متاحة في التواريخ المطلوبة'
+          navigateToStep = 2
+        } else if (error.message.includes('محظور') || error.message.includes('blacklisted')) {
+          errorMessage = 'العميل المحدد محظور من النظام'
+          navigateToStep = 2
+        } else if (error.message.includes('condition_report') || error.message.includes('تقرير حالة')) {
+          errorMessage = 'خطأ في تقرير حالة المركبة - يرجى إعادة إنشاؤه'
+          navigateToStep = 2
         } else {
           errorMessage = error.message
         }
       }
       
+      // Navigate to relevant step if specified
+      if (navigateToStep !== null) {
+        setCurrentStep(navigateToStep)
+      }
+      
       toast.error(errorMessage, {
         description: 'يرجى مراجعة البيانات والمحاولة مرة أخرى',
-        duration: 6000
+        duration: 8000
       })
     }
   }
