@@ -493,15 +493,6 @@ export const SmartAccountWizardTab: React.FC = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Wand2 className="h-5 w-5" />
-          معالج إنشاء الحسابات الذكي
-        </CardTitle>
-        <CardDescription>
-          أداة ذكية لإنشاء الحسابات مع تولید الأكواد تلقائياً وتحديد المستويات
-        </CardDescription>
-      </CardHeader>
       <CardContent className="space-y-6">
         {/* Progress Steps */}
         <div className="flex items-center justify-between">
