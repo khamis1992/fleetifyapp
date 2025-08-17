@@ -110,13 +110,6 @@ export const ChartValidationPanel: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Debug information */}
-        {validation && (
-          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-            Debug: {JSON.stringify(validation, null, 2)}
-          </div>
-        )}
-        
         {validation?.is_valid ? (
           <Alert>
             <CheckCircle className="h-4 w-4" />
@@ -137,7 +130,8 @@ export const ChartValidationPanel: React.FC = () => {
               <h4 className="font-medium">المشاكل المكتشفة:</h4>
               <div className="grid gap-3">
                 {validation?.issues ? Object.entries(validation.issues).map(([issueType, count]) => {
-                  if (count === 0) return null;
+                  const numCount = Number(count);
+                  if (numCount === 0) return null;
                   
                   return (
                     <div key={issueType} className="flex items-center justify-between p-3 border rounded-lg">
@@ -151,7 +145,7 @@ export const ChartValidationPanel: React.FC = () => {
                         </div>
                       </div>
                       <Badge variant="destructive">
-                        {count}
+                        {numCount}
                       </Badge>
                     </div>
                   );
