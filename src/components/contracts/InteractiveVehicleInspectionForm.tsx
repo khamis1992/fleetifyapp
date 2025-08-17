@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useContractVehicle } from '@/hooks/useContractVehicle';
 import { useCreateConditionReport } from '@/hooks/useVehicleCondition';
-import { Printer, Calendar, Clock, Eraser, Undo, X, Circle } from 'lucide-react';
+import { Printer, Calendar, Clock, Eraser, Undo, X } from 'lucide-react';
 
 interface InteractiveVehicleInspectionFormProps {
   vehicleId: string;
@@ -21,8 +21,8 @@ interface InteractiveVehicleInspectionFormProps {
 interface DrawingPoint {
   x: number;
   y: number;
-  type: 'damage' | 'scratch' | 'dent';
-  tool: 'x' | 'o' | 'pen';
+  type: 'damage';
+  tool: 'x';
 }
 
 interface AccessoryItem {
@@ -40,7 +40,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentTool, setCurrentTool] = useState<'x' | 'o' | 'pen'>('x');
+  const [currentTool, setCurrentTool] = useState<'x'>('x');
   const [drawingHistory, setDrawingHistory] = useState<DrawingPoint[]>([]);
   const [fuelLevel, setFuelLevel] = useState([50]);
   const [mileage, setMileage] = useState('');
@@ -81,25 +81,23 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const canvas = canvasRef.current;
+    const rect = canvas?.getBoundingClientRect();
+    if (!rect || !canvas) return;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Calculate proper coordinates accounting for canvas scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
     drawMark(x, y);
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || currentTool !== 'pen') return;
-
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    drawMark(x, y);
+    // Remove pen tool functionality
+    return;
   };
 
   const handleCanvasMouseUp = () => {
@@ -113,34 +111,21 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
     ctx.strokeStyle = '#DC2626';
     ctx.lineWidth = 3;
-
-    switch (currentTool) {
-      case 'x':
-        ctx.beginPath();
-        ctx.moveTo(x - 8, y - 8);
-        ctx.lineTo(x + 8, y + 8);
-        ctx.moveTo(x + 8, y - 8);
-        ctx.lineTo(x - 8, y + 8);
-        ctx.stroke();
-        break;
-      case 'o':
-        ctx.beginPath();
-        ctx.arc(x, y, 8, 0, 2 * Math.PI);
-        ctx.stroke();
-        break;
-      case 'pen':
-        ctx.beginPath();
-        ctx.arc(x, y, 2, 0, 2 * Math.PI);
-        ctx.fill();
-        break;
-    }
+    
+    // Only draw X marks for damage
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y - 8);
+    ctx.lineTo(x + 8, y + 8);
+    ctx.moveTo(x + 8, y - 8);
+    ctx.lineTo(x - 8, y + 8);
+    ctx.stroke();
 
     // Add to history
     setDrawingHistory(prev => [...prev, {
       x,
       y,
-      type: currentTool === 'x' ? 'damage' : currentTool === 'o' ? 'scratch' : 'dent',
-      tool: currentTool
+      type: 'damage',
+      tool: 'x'
     }]);
   };
 
@@ -168,32 +153,17 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
     // Clear canvas but keep it transparent
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Redraw all marks
+    // Redraw all marks (only X marks now)
     ctx.strokeStyle = '#DC2626';
-    ctx.fillStyle = '#DC2626';
     ctx.lineWidth = 3;
 
     drawingHistory.forEach(point => {
-      switch (point.tool) {
-        case 'x':
-          ctx.beginPath();
-          ctx.moveTo(point.x - 8, point.y - 8);
-          ctx.lineTo(point.x + 8, point.y + 8);
-          ctx.moveTo(point.x + 8, point.y - 8);
-          ctx.lineTo(point.x - 8, point.y + 8);
-          ctx.stroke();
-          break;
-        case 'o':
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
-          ctx.stroke();
-          break;
-        case 'pen':
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
-          ctx.fill();
-          break;
-      }
+      ctx.beginPath();
+      ctx.moveTo(point.x - 8, point.y - 8);
+      ctx.lineTo(point.x + 8, point.y + 8);
+      ctx.moveTo(point.x + 8, point.y - 8);
+      ctx.lineTo(point.x - 8, point.y + 8);
+      ctx.stroke();
     });
   };
 
@@ -321,27 +291,11 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
               <CardTitle className="text-lg">كروكي المركبة</CardTitle>
               <div className="flex gap-2 print:hidden">
                 <Button
-                  variant={currentTool === 'x' ? 'default' : 'outline'}
+                  variant="default"
                   size="sm"
-                  onClick={() => setCurrentTool('x')}
                 >
                   <X className="h-4 w-4 ml-1" />
                   تلف
-                </Button>
-                <Button
-                  variant={currentTool === 'o' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentTool('o')}
-                >
-                  <Circle className="h-4 w-4 ml-1" />
-                  خدش
-                </Button>
-                <Button
-                  variant={currentTool === 'pen' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentTool('pen')}
-                >
-                  قلم
                 </Button>
                 <Separator orientation="vertical" className="h-8" />
                 <Button variant="outline" size="sm" onClick={undoLastMark}>
