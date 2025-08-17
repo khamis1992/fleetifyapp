@@ -127,16 +127,6 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       return;
     }
     
-    // Check if account is system account
-    if (draggedAccount.is_system) {
-      toast({
-        title: "عملية غير مسموحة",
-        description: "لا يمكن تعديل الحسابات النظامية",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Calculate new level
     const newLevel = targetParent.account_level + 1;
     
@@ -156,10 +146,12 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       
       // Expand target parent to show the moved account
       setExpandedNodes(prev => new Set([...prev, targetParentId]));
-    } catch (error) {
+    } catch (error: any) {
+      // Display the actual database error message for dynamic response
+      const errorMessage = error?.message || error?.details || "حدث خطأ أثناء نقل الحساب";
       toast({
         title: "خطأ في التحديث",
-        description: "حدث خطأ أثناء نقل الحساب",
+        description: errorMessage,
         variant: "destructive",
       });
     }
