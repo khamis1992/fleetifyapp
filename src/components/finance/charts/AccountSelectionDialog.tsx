@@ -203,7 +203,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[70vh] bg-background border shadow-lg z-50" dir="rtl">
+      <DialogContent className="max-w-2xl h-[60vh] max-h-[600px] bg-background border shadow-lg z-50" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             <Info className="h-5 w-5" />
