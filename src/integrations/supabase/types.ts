@@ -10336,6 +10336,10 @@ export type Database = {
         Args: { input_user_id: string }
         Returns: string
       }
+      get_user_company_safe: {
+        Args: { user_id_param?: string }
+        Returns: string
+      }
       get_user_company_secure: {
         Args: { user_id_param: string }
         Returns: string
