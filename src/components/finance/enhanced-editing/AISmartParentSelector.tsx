@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Check, ChevronDown, Bot, TrendingUp, Users, Sparkles, Target, Clock } from 'lucide-react';
+import { Check, ChevronDown, Bot, TrendingUp, Users, Sparkles, Target, Clock, AlertTriangle, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEnhancedAccountSuggestions, EnhancedSuggestion } from '@/hooks/useEnhancedAccountSuggestions';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
@@ -41,24 +41,24 @@ const getCategoryIcon = (category: EnhancedSuggestion['category']) => {
 const getCategoryColor = (category: EnhancedSuggestion['category']) => {
   switch (category) {
     case 'perfect_match':
-      return 'bg-green-100 text-green-800 border-green-200';
+      return 'bg-success/10 text-success border-success/20';
     case 'similar_name':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-primary/10 text-primary border-primary/20';
     case 'ai_suggested':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
+      return 'bg-accent/10 text-accent-foreground border-accent/30';
     case 'usage_based':
-      return 'bg-orange-100 text-orange-800 border-orange-200';
+      return 'bg-warning/10 text-warning-foreground border-warning/20';
     case 'type_match':
-      return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      return 'bg-secondary/20 text-secondary-foreground border-secondary/30';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-muted text-muted-foreground border-border';
   }
 };
 
 const getConfidenceColor = (confidence: number) => {
-  if (confidence >= 0.8) return 'text-green-600';
-  if (confidence >= 0.6) return 'text-yellow-600';
-  return 'text-red-600';
+  if (confidence >= 0.8) return 'text-success font-bold';
+  if (confidence >= 0.6) return 'text-warning font-semibold';
+  return 'text-destructive font-medium';
 };
 
 export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
@@ -176,23 +176,42 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
           </Button>
         </PopoverTrigger>
         
-        <PopoverContent className="w-96 p-0" align="start">
+        <PopoverContent className="w-[500px] p-0 shadow-elevated" align="start">
+          <div className="border-b border-border bg-gradient-accent p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-warning/20">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg arabic-heading-sm">اقتراحات ذكية لاختيار الحساب الأب</h3>
+                <p className="text-sm text-muted-foreground arabic-body-sm">مدعوم بالذكاء الاصطناعي لاختيار أفضل حساب أب مناسب</p>
+              </div>
+            </div>
+          </div>
+          
           <Command>
             <CommandInput
-              placeholder="ابحث في الحسابات..."
+              placeholder="ابحث في الحسابات المقترحة..."
               value={searchQuery}
               onValueChange={setSearchQuery}
-              className="arabic-body"
+              className="arabic-body border-0 focus:ring-0"
             />
-            <CommandList className="max-h-96">
-              <CommandEmpty className="py-6 text-center text-sm arabic-body">
+            <CommandList className="max-h-[400px]">
+              <CommandEmpty className="py-8 text-center text-sm arabic-body">
                 {isAnalyzing ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin h-4 w-4 border border-primary border-t-transparent rounded-full" />
-                    <span>جاري التحليل الذكي...</span>
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-primary animate-pulse" />
+                      <span className="font-medium">جاري التحليل الذكي للحسابات...</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">يتم تحليل البيانات لإعطائك أفضل الاقتراحات</p>
                   </div>
                 ) : (
-                  "لا توجد حسابات مطابقة"
+                  <div className="text-muted-foreground">
+                    <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>لا توجد حسابات مطابقة للبحث</p>
+                  </div>
                 )}
               </CommandEmpty>
 
@@ -234,32 +253,32 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
                       key={suggestion.id}
                       value={suggestion.id}
                       onSelect={() => handleSelect(suggestion.id)}
-                      className="arabic-body p-3"
+                      className="arabic-body p-4 transition-smooth hover:bg-card-hover cursor-pointer"
                     >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex flex-col gap-1 flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs bg-muted px-1 rounded">
+                      <div className="flex items-center justify-between w-full gap-4">
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="flex flex-col gap-2 flex-1 min-w-0">
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-xs bg-secondary/20 text-secondary-foreground px-2 py-1 rounded-md border">
                                 {suggestion.code}
                               </span>
-                              <span className="font-medium truncate">
+                              <span className="font-semibold text-base truncate text-foreground">
                                 {suggestion.name}
                               </span>
                             </div>
                             
                             {suggestion.path.length > 1 && (
-                              <div className="text-xs text-muted-foreground truncate">
-                                {suggestion.path.slice(0, -1).join(' / ')}
+                              <div className="text-sm text-muted-foreground truncate mr-2">
+                                المسار: {suggestion.path.slice(0, -1).join(' ← ')}
                               </div>
                             )}
                             
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-3 mt-1">
                               <Badge 
                                 variant="outline" 
-                                className={cn("text-xs", getCategoryColor(suggestion.category))}
+                                className={cn("text-sm px-3 py-1 font-medium", getCategoryColor(suggestion.category))}
                               >
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2">
                                   {getCategoryIcon(suggestion.category)}
                                   <span>{suggestion.reason}</span>
                                 </div>
@@ -268,7 +287,10 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
                               {suggestion.aiGenerated && (
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Bot className="h-3 w-3 text-purple-600" />
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-accent/10 rounded-md border border-accent/20">
+                                      <Bot className="h-3 w-3 text-accent-foreground" />
+                                      <span className="text-xs font-medium text-accent-foreground">AI</span>
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent>
                                     <p>اقتراح مدعوم بالذكاء الاصطناعي</p>
@@ -278,18 +300,23 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
                             </div>
                           </div>
                           
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="flex items-center gap-2">
-                              <span className={cn("text-xs font-medium", getConfidenceColor(suggestion.confidence))}>
+                          <div className="flex flex-col items-center gap-3 min-w-[120px]">
+                            <div className="flex items-center gap-3">
+                              <span className={cn("text-2xl font-bold", getConfidenceColor(suggestion.confidence))}>
                                 {Math.round(suggestion.confidence * 100)}%
                               </span>
-                              {value === suggestion.id && <Check className="h-4 w-4 text-primary" />}
+                              {value === suggestion.id && (
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-success text-success-foreground">
+                                  <Check className="h-4 w-4" />
+                                </div>
+                              )}
                             </div>
                             
-                            <div className="w-16">
+                            <div className="w-full max-w-[100px]">
                               <Progress 
                                 value={suggestion.confidence * 100} 
-                                className="h-1"
+                                variant="success"
+                                className="h-3 bg-secondary/30"
                               />
                             </div>
                           </div>
@@ -301,12 +328,15 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
               ))}
               
               {filteredSuggestions.length === 0 && !isAnalyzing && (
-                <div className="py-6 text-center">
-                  <div className="text-sm text-muted-foreground arabic-body">
-                    لم يتم العثور على اقتراحات ذكية
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1 arabic-body">
-                    جرب البحث عن حساب معين أو تحقق من اسم الحساب
+                <div className="py-8 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <AlertTriangle className="h-12 w-12 text-muted-foreground/50" />
+                    <div className="text-base font-medium text-muted-foreground arabic-body">
+                      لم يتم العثور على اقتراحات ذكية
+                    </div>
+                    <div className="text-sm text-muted-foreground arabic-body-sm max-w-xs">
+                      لا توجد اقتراحات متاحة لهذا الحساب حالياً. جرب تحديث اسم الحساب أو نوعه للحصول على اقتراحات أفضل.
+                    </div>
                   </div>
                 </div>
               )}
