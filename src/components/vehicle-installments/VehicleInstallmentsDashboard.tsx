@@ -145,29 +145,36 @@ const VehicleInstallmentsDashboard = () => {
               <CardTitle>اتفاقيات الأقساط</CardTitle>
               <CardDescription>قائمة جميع اتفاقيات الأقساط مع التجار</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('all')}
-              >
-                الكل
-              </Button>
-              <Button
-                variant={statusFilter === 'active' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('active')}
-              >
-                نشط
-              </Button>
-              <Button
-                variant={statusFilter === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('completed')}
-              >
-                مكتمل
-              </Button>
-            </div>
+             <div className="flex gap-2">
+               <Button
+                 variant={statusFilter === 'all' ? 'default' : 'outline'}
+                 size="sm"
+                 onClick={() => setStatusFilter('all')}
+               >
+                 الكل
+               </Button>
+               <Button
+                 variant={statusFilter === 'draft' ? 'default' : 'outline'}
+                 size="sm"
+                 onClick={() => setStatusFilter('draft')}
+               >
+                 مسودة
+               </Button>
+               <Button
+                 variant={statusFilter === 'active' ? 'default' : 'outline'}
+                 size="sm"
+                 onClick={() => setStatusFilter('active')}
+               >
+                 نشط
+               </Button>
+               <Button
+                 variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                 size="sm"
+                 onClick={() => setStatusFilter('completed')}
+               >
+                 مكتمل
+               </Button>
+             </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -190,11 +197,15 @@ const VehicleInstallmentsDashboard = () => {
                       <h3 className="font-semibold">{installment.agreement_number}</h3>
                       {getStatusBadge(installment.status)}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                      <div>
-                        <span className="font-medium">المركبة: </span>
-                        {installment.vehicles?.plate_number} - {installment.vehicles?.make} {installment.vehicles?.model}
-                      </div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                       <div>
+                         <span className="font-medium">المركبة: </span>
+                         {installment.contract_type === 'multi_vehicle' 
+                           ? `عقد متعدد المركبات (${installment.total_vehicles_count || 0} مركبة)`
+                           : installment.vehicles?.plate_number 
+                             ? `${installment.vehicles.plate_number} - ${installment.vehicles.make} ${installment.vehicles.model}`
+                             : 'غير محدد'}
+                       </div>
                       <div>
                         <span className="font-medium">التاجر: </span>
                         {installment.customers?.customer_type === 'individual' 

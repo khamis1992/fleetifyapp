@@ -27,6 +27,8 @@ export const useVehicleInstallments = () => {
 
       if (!profile?.company_id) throw new Error('Company not found');
 
+      console.log('Fetching vehicle installments for company:', profile.company_id);
+
       const { data, error } = await supabase
         .from('vehicle_installments')
         .select(`
@@ -49,6 +51,8 @@ export const useVehicleInstallments = () => {
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
+      console.log('Vehicle installments query result:', { data, error });
+      
       if (error) throw error;
       return data as unknown as VehicleInstallmentWithDetails[];
     },
