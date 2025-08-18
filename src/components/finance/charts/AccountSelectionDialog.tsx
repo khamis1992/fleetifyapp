@@ -54,15 +54,14 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
     ];
   }, [accounts]);
 
-  // Auto-select essential accounts on first load
+  // Reset selection when dialog closes
   React.useEffect(() => {
-    if (open && selectedAccountIds.size === 0) {
-      const essentialIds = new Set(
-        allAccounts.filter(acc => acc.essential).map(acc => acc.id)
-      );
-      setSelectedAccountIds(essentialIds);
+    if (!open) {
+      setSelectedAccountIds(new Set());
+      setSearchTerm('');
+      setActiveTab('assets');
     }
-  }, [open, allAccounts, selectedAccountIds.size]);
+  }, [open]);
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
@@ -148,11 +147,11 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
       {accountList.map((account) => (
         <div
           key={account.id}
-          className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
-            selectedAccountIds.has(account.id) 
-              ? 'bg-primary/5 border-primary/20' 
-              : 'bg-background hover:bg-muted/50'
-          }`}
+      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+        selectedAccountIds.has(account.id) 
+          ? 'bg-primary/10 border-primary/30' 
+          : 'bg-card hover:bg-muted/50 border-border'
+      }`}
           dir="rtl"
         >
           <Checkbox

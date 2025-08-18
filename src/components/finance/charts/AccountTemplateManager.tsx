@@ -54,14 +54,26 @@ export const AccountTemplateManager: React.FC = () => {
   const handleApplyTemplate = (templateId: string) => {
     if (templateId === 'general_business') {
       copyDefaultAccounts.mutate();
+    } else if (templateId === 'car_rental') {
+      // Apply car rental specific accounts
+      const carRentalAccounts = getAccountsByBusinessType('car_rental');
+      const allCarRentalAccounts = [
+        ...carRentalAccounts.assets,
+        ...carRentalAccounts.liabilities,
+        ...carRentalAccounts.revenue,
+        ...carRentalAccounts.expenses,
+        ...carRentalAccounts.equity
+      ];
+      copySelectedAccounts.mutate(allCarRentalAccounts);
     } else {
-      // For now, we'll use the default accounts for all templates
-      // In a real implementation, you'd have different RPC functions for different templates
       copyDefaultAccounts.mutate();
     }
   };
 
   const handleSelectAccounts = (template: AccountTemplate) => {
+    console.log('🎯 Selecting accounts for template:', template);
+    const accounts = getAccountsByBusinessType('car_rental');
+    console.log('📋 Retrieved accounts:', accounts);
     setSelectedTemplate(template);
     setShowAccountSelection(true);
   };
@@ -118,12 +130,12 @@ export const AccountTemplateManager: React.FC = () => {
             <Button 
               size="sm"
               onClick={() => handleApplyTemplate(template.id)}
-              disabled={copyDefaultAccounts.isPending}
+              disabled={copyDefaultAccounts.isPending || copySelectedAccounts.isPending}
               className="flex-1 flex items-center gap-2"
             >
-              {copyDefaultAccounts.isPending ? (
+              {(copyDefaultAccounts.isPending || copySelectedAccounts.isPending) ? (
                 <>
-                  <span>تطبيق الكل</span>
+                  <span>جاري التطبيق...</span>
                   <Clock className="h-3 w-3" />
                 </>
               ) : (
