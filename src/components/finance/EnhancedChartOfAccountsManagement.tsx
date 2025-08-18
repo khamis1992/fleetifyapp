@@ -20,6 +20,7 @@ import { ChartValidationPanel } from './charts/ChartValidationPanel';
 import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
+import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 
@@ -215,20 +216,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               className="h-8 w-8 p-0"
               onClick={() => {
                 setEditingAccount(account);
-                setFormData({
-                  account_code: account.account_code,
-                  account_name: account.account_name,
-                  account_name_ar: account.account_name_ar || '',
-                  account_type: account.account_type,
-                  account_subtype: account.account_subtype || '',
-                  balance_type: account.balance_type,
-                  parent_account_id: account.parent_account_id || '',
-                  is_header: account.is_header,
-                  description: account.description || ''
-                });
                 setShowEditDialog(true);
               }}
-              title="تعديل"
+              title="تعديل متقدم"
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -526,127 +516,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Account Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">تعديل الحساب</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await updateAccount.mutateAsync({ id: editingAccount.id, updates: formData });
-              setShowEditDialog(false);
-              toast.success('تم تحديث الحساب بنجاح');
-            } catch (error) {
-              toast.error('حدث خطأ في تحديث الحساب');
-            }
-          }} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit_account_code" className="text-right">رمز الحساب</Label>
-                <Input
-                  id="edit_account_code"
-                  value={formData.account_code}
-                  onChange={(e) => setFormData({...formData, account_code: e.target.value})}
-                  required
-                  className="text-right"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_account_name" className="text-right">اسم الحساب</Label>
-                <Input
-                  id="edit_account_name"
-                  value={formData.account_name}
-                  onChange={(e) => setFormData({...formData, account_name: e.target.value})}
-                  required
-                  className="text-right"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_account_name_ar" className="text-right">اسم الحساب بالعربية</Label>
-                <Input
-                  id="edit_account_name_ar"
-                  value={formData.account_name_ar}
-                  onChange={(e) => setFormData({...formData, account_name_ar: e.target.value})}
-                  className="text-right"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_account_type" className="text-right">نوع الحساب</Label>
-                <Select
-                  value={formData.account_type}
-                  onValueChange={(value) => setFormData({...formData, account_type: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="assets">الأصول</SelectItem>
-                    <SelectItem value="liabilities">الخصوم</SelectItem>
-                    <SelectItem value="equity">حقوق الملكية</SelectItem>
-                    <SelectItem value="revenue">الإيرادات</SelectItem>
-                    <SelectItem value="expenses">المصروفات</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit_balance_type" className="text-right">نوع الرصيد</Label>
-                <Select
-                  value={formData.balance_type}
-                  onValueChange={(value) => setFormData({...formData, balance_type: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="debit">مدين</SelectItem>
-                    <SelectItem value="credit">دائن</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit_parent_account" className="text-right">الحساب الأب</Label>
-                <ParentAccountSelector
-                  value={formData.parent_account_id}
-                  onValueChange={(value) => setFormData({...formData, parent_account_id: value})}
-                  placeholder="اختر الحساب الأب (اختياري)"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 justify-end">
-              <Label htmlFor="edit_is_header" className="text-right">حساب إجمالي (للتقارير فقط)</Label>
-              <Switch
-                id="edit_is_header"
-                checked={formData.is_header}
-                onCheckedChange={(checked) => setFormData({...formData, is_header: checked})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit_description" className="text-right">الوصف</Label>
-              <Input
-                id="edit_description"
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="وصف اختياري للحساب"
-                className="text-right"
-                dir="rtl"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="submit" disabled={updateAccount.isPending}>
-                {updateAccount.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
-                إلغاء
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Enhanced Account Edit Dialog */}
+      <EnhancedAccountEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        account={editingAccount}
+        onSuccess={() => {
+          setShowEditDialog(false);
+          setEditingAccount(null);
+        }}
+      />
 
       {/* Delete Account Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
