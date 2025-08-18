@@ -39,6 +39,7 @@ import { VehicleSelector } from "./VehicleSelector";
 
 const multiVehicleSchema = z.object({
   vendor_company_name: z.string().min(1, "يجب إدخال اسم شركة التاجر"),
+  vendor_phone: z.string().min(1, "يجب إدخال رقم هاتف التاجر"),
   agreement_number: z.string().min(1, "يجب إدخال رقم الاتفاقية"),
   total_amount: z.number().min(1, "يجب إدخال المبلغ الإجمالي"),
   down_payment: z.number().min(0, "يجب إدخال الدفعة المقدمة"),
@@ -75,6 +76,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
     resolver: zodResolver(multiVehicleSchema),
     defaultValues: {
       vendor_company_name: "",
+      vendor_phone: "",
       agreement_number: "",
       total_amount: 0,
       down_payment: 0,
@@ -374,36 +376,37 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
       const companyName = data.vendor_company_name.trim();
 
-      const { data: existing, error: searchError } = await supabase
-        .from('customers')
-        .select('id, customer_type, company_name')
-        .eq('company_id', companyId)
-        .ilike('company_name', companyName)
-        .maybeSingle();
-
-      if (searchError) {
-        console.error('Error searching customer:', searchError);
-      }
-
-      if (existing?.id) {
-        vendorId = existing.id;
-      } else {
-        const { data: created, error: insertError } = await supabase
+        const { data: existing, error: searchError } = await supabase
           .from('customers')
-          .insert({
-            company_id: companyId,
-            customer_type: 'corporate',
-            company_name: companyName,
-            created_by: user!.id,
-          } as any)
-          .select('id')
-          .single();
+          .select('id, customer_type, company_name')
+          .eq('company_id', companyId)
+          .ilike('company_name', companyName)
+          .maybeSingle();
 
-        if (insertError) {
-          throw insertError;
+        if (searchError) {
+          console.error('Error searching customer:', searchError);
         }
-        vendorId = created.id;
-      }
+
+        if (existing?.id) {
+          vendorId = existing.id;
+        } else {
+          const { data: created, error: insertError } = await supabase
+            .from('customers')
+            .insert({
+              company_id: companyId,
+              customer_type: 'corporate',
+              company_name: companyName,
+              phone: data.vendor_phone || '+965', // إضافة رقم الهاتف مع قيمة افتراضية
+              created_by: user!.id,
+            } as any)
+            .select('id')
+            .single();
+
+          if (insertError) {
+            throw insertError;
+          }
+          vendorId = created.id;
+        }
     } catch (e: any) {
       console.error('Vendor resolution failed:', e);
       toast.error("حدث خطأ أثناء تحديد التاجر");
@@ -480,6 +483,20 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                         <FormLabel>شركة التاجر</FormLabel>
                         <FormControl>
                           <Input placeholder="اسم شركة التاجر" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="vendor_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رقم هاتف التاجر</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+965" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
