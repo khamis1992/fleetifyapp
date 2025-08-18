@@ -195,138 +195,162 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="text-right flex items-center gap-3">
-            <TreePine className="h-5 w-5" />
-            تعديل الحساب: {account.account_name}
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto bg-gradient-card shadow-elevated" dir="rtl">
+        <DialogHeader className="border-b border-border/50 pb-6">
+          <DialogTitle className="arabic-heading-sm text-right flex items-center gap-3 text-foreground">
+            <TreePine className="h-6 w-6 text-primary" />
+            تعديل الحساب: {account.account_name || account.account_name_ar}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basic" className="flex items-center gap-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
+          <TabsList className="grid w-full grid-cols-4 bg-background/50 p-1 rounded-lg h-12">
+            <TabsTrigger 
+              value="basic" 
+              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+            >
               <Target className="h-4 w-4" />
               المعلومات الأساسية
             </TabsTrigger>
-            <TabsTrigger value="hierarchy" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="hierarchy" 
+              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+            >
               <TreePine className="h-4 w-4" />
               الهيكل الهرمي
             </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="preview" 
+              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+            >
               <Eye className="h-4 w-4" />
               معاينة التغييرات
             </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="ai" 
+              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
+            >
               <Lightbulb className="h-4 w-4" />
               الاقتراحات الذكية
             </TabsTrigger>
           </TabsList>
 
           {/* Basic Information Tab */}
-          <TabsContent value="basic" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">معلومات الحساب</CardTitle>
+          <TabsContent value="basic" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    معلومات الحساب
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="account_code">رمز الحساب</Label>
+                <CardContent className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="account_code" className="arabic-body text-foreground font-medium">رمز الحساب</Label>
                     <Input
                       id="account_code"
                       value={formData.account_code}
                       onChange={(e) => setFormData({ ...formData, account_code: e.target.value })}
-                      className="text-right"
+                      className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11"
                       dir="rtl"
+                      placeholder="أدخل رمز الحساب..."
                     />
                   </div>
                   
-                  <div>
-                    <Label htmlFor="account_name">اسم الحساب (إنجليزي)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_name" className="arabic-body text-foreground font-medium">اسم الحساب (إنجليزي)</Label>
                     <Input
                       id="account_name"
                       value={formData.account_name}
                       onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                      className="text-right"
+                      className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11"
                       dir="rtl"
+                      placeholder="أدخل اسم الحساب بالإنجليزية..."
                     />
                   </div>
                   
-                  <div>
-                    <Label htmlFor="account_name_ar">اسم الحساب (عربي)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_name_ar" className="arabic-body text-foreground font-medium">اسم الحساب (عربي)</Label>
                     <Input
                       id="account_name_ar"
                       value={formData.account_name_ar}
                       onChange={(e) => setFormData({ ...formData, account_name_ar: e.target.value })}
-                      className="text-right"
+                      className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11"
                       dir="rtl"
+                      placeholder="أدخل اسم الحساب بالعربية..."
                     />
                   </div>
                   
-                  <div>
-                    <Label htmlFor="description">الوصف</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="arabic-body text-foreground font-medium">الوصف</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="text-right"
+                      className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm resize-none"
                       dir="rtl"
                       rows={3}
+                      placeholder="أدخل وصفاً للحساب..."
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">إعدادات الحساب</CardTitle>
+              <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    إعدادات الحساب
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>نوع الحساب</Label>
+                <CardContent className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="arabic-body text-foreground font-medium">نوع الحساب</Label>
                     <Select value={formData.account_type} onValueChange={(value) => setFormData({ ...formData, account_type: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11" dir="rtl">
+                        <SelectValue placeholder="اختر نوع الحساب" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="assets">الأصول</SelectItem>
-                        <SelectItem value="liabilities">الخصوم</SelectItem>
-                        <SelectItem value="equity">حقوق الملكية</SelectItem>
-                        <SelectItem value="revenue">الإيرادات</SelectItem>
-                        <SelectItem value="expenses">المصروفات</SelectItem>
+                      <SelectContent className="bg-popover border-border shadow-elevated">
+                        <SelectItem value="assets" className="arabic-body text-right">الأصول</SelectItem>
+                        <SelectItem value="liabilities" className="arabic-body text-right">الخصوم</SelectItem>
+                        <SelectItem value="equity" className="arabic-body text-right">حقوق الملكية</SelectItem>
+                        <SelectItem value="revenue" className="arabic-body text-right">الإيرادات</SelectItem>
+                        <SelectItem value="expenses" className="arabic-body text-right">المصروفات</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div>
-                    <Label>طبيعة الرصيد</Label>
+                  <div className="space-y-2">
+                    <Label className="arabic-body text-foreground font-medium">طبيعة الرصيد</Label>
                     <Select value={formData.balance_type} onValueChange={(value) => setFormData({ ...formData, balance_type: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11" dir="rtl">
+                        <SelectValue placeholder="اختر طبيعة الرصيد" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="debit">مدين</SelectItem>
-                        <SelectItem value="credit">دائن</SelectItem>
+                      <SelectContent className="bg-popover border-border shadow-elevated">
+                        <SelectItem value="debit" className="arabic-body text-right">مدين</SelectItem>
+                        <SelectItem value="credit" className="arabic-body text-right">دائن</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="is_header">حساب رئيسي</Label>
+                  <div className="flex items-center justify-between p-4 bg-accent/20 rounded-lg border border-border/30">
+                    <Label htmlFor="is_header" className="arabic-body text-foreground font-medium">حساب رئيسي</Label>
                     <Switch
                       id="is_header"
                       checked={formData.is_header}
                       onCheckedChange={(checked) => setFormData({ ...formData, is_header: checked })}
+                      className="data-[state=checked]:bg-primary"
                     />
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="is_active">حساب نشط</Label>
+                  <div className="flex items-center justify-between p-4 bg-accent/20 rounded-lg border border-border/30">
+                    <Label htmlFor="is_active" className="arabic-body text-foreground font-medium">حساب نشط</Label>
                     <Switch
                       id="is_active"
                       checked={formData.is_active}
                       onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                      className="data-[state=checked]:bg-primary"
                     />
                   </div>
                 </CardContent>
@@ -335,29 +359,44 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
 
             {/* Validation Issues */}
             {validationIssues.length > 0 && (
-              <div className="space-y-3">
-                {validationIssues.map((issue, index) => (
-                  <Alert key={index} variant={issue.type === 'error' ? 'destructive' : 'default'}>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-right">
-                      <div className="font-medium">{issue.message}</div>
-                      {issue.suggestion && (
-                        <div className="text-sm mt-1 text-muted-foreground">{issue.suggestion}</div>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                ))}
+              <div className="space-y-4">
+                <h4 className="arabic-heading-sm text-foreground flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  التحققات والتنبيهات
+                </h4>
+                <div className="space-y-3">
+                  {validationIssues.map((issue, index) => (
+                    <Alert 
+                      key={index} 
+                      variant={issue.type === 'error' ? 'destructive' : 'default'}
+                      className="bg-gradient-card shadow-card border-0"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-right arabic-body">
+                        <div className="font-medium">{issue.message}</div>
+                        {issue.suggestion && (
+                          <div className="arabic-body-sm mt-2 text-muted-foreground bg-accent/10 p-2 rounded-md">
+                            💡 {issue.suggestion}
+                          </div>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>
 
           {/* Hierarchy Tab */}
-          <TabsContent value="hierarchy" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">اختيار الحساب الأب</CardTitle>
-                  <CardDescription>
+          <TabsContent value="hierarchy" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
+                    <TreePine className="h-5 w-5 text-primary" />
+                    اختيار الحساب الأب
+                  </CardTitle>
+                  <CardDescription className="arabic-body text-muted-foreground">
                     اختر الحساب الذي سيكون أباً لهذا الحساب في الهيكل الهرمي
                   </CardDescription>
                 </CardHeader>
@@ -371,10 +410,13 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">عرض تفاعلي للهيكل</CardTitle>
-                  <CardDescription>
+              <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
+                    <Move className="h-5 w-5 text-primary" />
+                    عرض تفاعلي للهيكل
+                  </CardTitle>
+                  <CardDescription className="arabic-body text-muted-foreground">
                     شجرة تفاعلية توضح موقع الحساب في الهيكل العام
                   </CardDescription>
                 </CardHeader>
@@ -391,13 +433,16 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
           </TabsContent>
 
           {/* Preview Tab */}
-          <TabsContent value="preview" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
+          <TabsContent value="preview" className="space-y-6 mt-6">
+            <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
+              <CardHeader className="pb-4">
+                <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
                   معاينة التغييرات
                 </CardTitle>
+                <CardDescription className="arabic-body text-muted-foreground">
+                  مراجعة جميع التغييرات المقترحة قبل الحفظ
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {hasChanges ? (
@@ -406,12 +451,18 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                       const originalValue = originalData[key as keyof typeof originalData];
                       if (value !== originalValue) {
                         return (
-                          <div key={key} className="flex items-center gap-4 p-3 bg-accent/50 rounded-lg">
-                            <Badge variant="outline">{getFieldLabel(key)}</Badge>
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-muted-foreground">{String(originalValue) || 'فارغ'}</span>
-                              <ArrowRight className="h-4 w-4" />
-                              <span className="font-medium">{String(value) || 'فارغ'}</span>
+                          <div key={key} className="flex items-center gap-4 p-4 bg-accent/10 rounded-lg border border-border/30 transition-smooth hover:bg-accent/20">
+                            <Badge variant="outline" className="arabic-body-sm bg-primary/10 text-primary border-primary/20">
+                              {getFieldLabel(key)}
+                            </Badge>
+                            <div className="flex items-center gap-3 arabic-body flex-1">
+                              <span className="text-muted-foreground bg-background/80 px-3 py-1 rounded-md">
+                                {String(originalValue) || 'فارغ'}
+                              </span>
+                              <ArrowRight className="h-4 w-4 text-primary" />
+                              <span className="font-medium text-foreground bg-primary/10 px-3 py-1 rounded-md">
+                                {String(value) || 'فارغ'}
+                              </span>
                             </div>
                           </div>
                         );
@@ -420,8 +471,10 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    لم يتم إجراء أي تغييرات بعد
+                  <div className="text-center py-12">
+                    <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="arabic-body text-muted-foreground">لم يتم إجراء أي تغييرات بعد</p>
+                    <p className="arabic-body-sm text-muted-foreground/70 mt-2">ابدأ بتعديل المعلومات في التبويبات الأخرى</p>
                   </div>
                 )}
               </CardContent>
@@ -429,32 +482,34 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
           </TabsContent>
 
           {/* AI Suggestions Tab */}
-          <TabsContent value="ai" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5" />
+          <TabsContent value="ai" className="space-y-6 mt-6">
+            <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
+              <CardHeader className="pb-4">
+                <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-primary" />
                   الاقتراحات الذكية
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="arabic-body text-muted-foreground">
                   اقتراحات لتحسين إعداد الحساب وموقعه في الهيكل
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {aiSuggestions.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {aiSuggestions.map((suggestion, index) => (
-                      <Alert key={index}>
-                        <Lightbulb className="h-4 w-4" />
-                        <AlertDescription className="text-right">
+                      <Alert key={index} className="bg-gradient-card shadow-card border-0 transition-smooth hover:shadow-elevated">
+                        <Lightbulb className="h-4 w-4 text-primary" />
+                        <AlertDescription className="text-right arabic-body text-foreground">
                           {suggestion}
                         </AlertDescription>
                       </Alert>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    لا توجد اقتراحات في الوقت الحالي
+                  <div className="text-center py-12">
+                    <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="arabic-body text-muted-foreground">لا توجد اقتراحات في الوقت الحالي</p>
+                    <p className="arabic-body-sm text-muted-foreground/70 mt-2">سيتم عرض الاقتراحات عند توفرها</p>
                   </div>
                 )}
               </CardContent>
@@ -463,10 +518,10 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
         </Tabs>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center pt-6 border-t">
+        <div className="flex justify-between items-center pt-6 border-t border-border/50 bg-background/50 -mx-6 -mb-6 px-6 pb-6 mt-8">
           <div className="flex items-center gap-2">
             {hasChanges && (
-              <Badge variant="secondary" className="flex items-center gap-1">
+              <Badge variant="secondary" className="arabic-body-sm flex items-center gap-2 bg-warning/10 text-warning border-warning/20">
                 <Move className="h-3 w-3" />
                 يوجد تغييرات غير محفوظة
               </Badge>
@@ -474,13 +529,17 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
           </div>
           
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="arabic-body px-6 h-11 border-border/50 hover:bg-background/80 transition-smooth"
+            >
               إلغاء
             </Button>
             <Button 
               onClick={handleSave} 
               disabled={!hasChanges || updateAccount.isPending || validationIssues.some(i => i.type === 'error')}
-              className="flex items-center gap-2"
+              className="arabic-body flex items-center gap-2 bg-gradient-primary hover:shadow-glow transition-smooth px-6 h-11"
             >
               <Save className="h-4 w-4" />
               {updateAccount.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
