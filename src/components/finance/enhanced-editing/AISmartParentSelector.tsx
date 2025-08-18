@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Check, ChevronDown, Bot, TrendingUp, Users, Sparkles, Target, Clock } from 'lucide-react';
+import { Check, ChevronDown, Bot, TrendingUp, Users, Sparkles, Target, Clock, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEnhancedAccountSuggestions, EnhancedSuggestion } from '@/hooks/useEnhancedAccountSuggestions';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
@@ -180,6 +180,10 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
                 <span className="font-mono text-xs bg-muted px-1 rounded">
                   {selectedAccount.account_code}
                 </span>
+                <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                  <Hash className="h-3 w-3 mr-1" />
+                  {selectedAccount.account_level || 1}
+                </Badge>
                 <span className="truncate">
                   {selectedAccount.account_name_ar || selectedAccount.account_name}
                 </span>
@@ -263,6 +267,10 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
                               <span className="font-mono text-xs bg-muted px-1 rounded">
                                 {suggestion.code}
                               </span>
+                              <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                                <Hash className="h-3 w-3 mr-1" />
+                                {allAccounts?.find(acc => acc.id === suggestion.id)?.account_level || 1}
+                              </Badge>
                               <span className="font-medium truncate">
                                 {suggestion.name}
                               </span>
