@@ -189,11 +189,20 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
   const handleSave = async () => {
     try {
+      console.log('Starting save process for vehicle condition report...');
+      console.log('Vehicle ID:', vehicleId);
+      console.log('Contract ID:', contractId);
+      console.log('Raw mileage input:', mileage);
+      console.log('Raw fuel level:', fuelLevel);
+      
       // Validation
       const mileageValue = parseInt(mileage) || 0;
       const fuelLevelValue = fuelLevel[0];
 
-      if (mileageValue <= 0) {
+      console.log('Parsed mileage value:', mileageValue);
+      console.log('Fuel level value:', fuelLevelValue);
+
+      if (!mileage.trim() || mileageValue <= 0) {
         toast({
           title: "خطأ في البيانات",
           description: "يرجى إدخال قراءة عداد صحيحة أكبر من 0",
@@ -211,7 +220,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
         return;
       }
 
-      if (!vehicleId) {
+      if (!vehicleId || vehicleId === 'none') {
         toast({
           title: "خطأ في البيانات",
           description: "لم يتم تحديد المركبة بشكل صحيح",
@@ -222,24 +231,30 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
       const conditionData = {
         overall_condition: 'good' as const,
-        mileage_reading: mileageValue, // Fixed: was 'mileage', now 'mileage_reading'
+        mileage_reading: mileageValue,
         fuel_level: fuelLevelValue,
-        notes: additionalNotes,
+        notes: additionalNotes || '',
         condition_items: accessories.reduce((acc, item) => ({
           ...acc,
           [item.id]: item.checked ? 'present' : 'missing'
         }), {}),
-        damage_points: drawingHistory
+        damage_points: drawingHistory || []
       };
 
-      console.log('Saving condition report with data:', conditionData);
+      console.log('Condition data prepared:', conditionData);
 
-      const result = await createConditionReportMutation.mutateAsync({
+      const requestData = {
         vehicle_id: vehicleId,
         contract_id: contractId || undefined,
-        inspection_type: 'contract_inspection',
+        inspection_type: 'contract_inspection' as const,
         ...conditionData
-      });
+      };
+
+      console.log('Final request data:', requestData);
+
+      const result = await createConditionReportMutation.mutateAsync(requestData);
+
+      console.log('Condition report created successfully:', result);
 
       toast({
         title: "تم حفظ التقرير بنجاح",
@@ -249,21 +264,34 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
       onComplete?.(result.id);
     } catch (error) {
       console.error('Error saving condition report:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error constructor:', error?.constructor?.name);
       
       // Provide more specific error messages
       let errorMessage = "حدث خطأ أثناء حفظ تقرير حالة المركبة";
+      let errorDetails = "";
       
       if (error instanceof Error) {
-        if (error.message.includes('invalid input value')) {
+        errorDetails = error.message;
+        console.error('Error message:', error.message);
+        
+        if (error.message.includes('invalid input value') || error.message.includes('خطأ في البيانات المدخلة')) {
           errorMessage = "خطأ في البيانات المدخلة. تحقق من صحة جميع الحقول";
-        } else if (error.message.includes('permission denied')) {
+        } else if (error.message.includes('permission denied') || error.message.includes('غير مصرح')) {
           errorMessage = "غير مصرح لك بإنشاء تقارير حالة المركبات";
-        } else if (error.message.includes('foreign key')) {
+        } else if (error.message.includes('foreign key') || error.message.includes('المركبة المحددة غير موجودة')) {
           errorMessage = "المركبة المحددة غير موجودة أو غير صحيحة";
-        } else if (error.message.includes('duplicate key')) {
+        } else if (error.message.includes('duplicate key') || error.message.includes('يوجد تقرير حالة مسبق')) {
           errorMessage = "يوجد تقرير حالة مسبق لهذه المركبة";
+        } else if (error.message.includes('null value') || error.message.includes('بعض الحقول المطلوبة فارغة')) {
+          errorMessage = "بعض الحقول المطلوبة فارغة. تحقق من البيانات";
+        } else {
+          errorMessage = `خطأ في حفظ التقرير: ${error.message}`;
         }
       }
+      
+      console.error('Final error message:', errorMessage);
+      console.error('Error details:', errorDetails);
       
       toast({
         title: "خطأ في حفظ التقرير",
