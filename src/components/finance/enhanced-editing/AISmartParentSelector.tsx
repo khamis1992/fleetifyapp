@@ -70,7 +70,8 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
   placeholder = "اختر الحساب الأب",
   disabled = false,
 }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [autoOpened, setAutoOpened] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<EnhancedSuggestion[]>([]);
   const { data: allAccounts } = useChartOfAccounts();
@@ -89,12 +90,17 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
     }
   }, [currentAccountId, accountName, accountType, value, generateEnhancedSuggestions]);
 
-  // Auto-load suggestions on mount
+  // Auto-load suggestions on mount and open dropdown
   useEffect(() => {
-    if (currentAccountId && accountName) {
-      loadSuggestions();
+    if (currentAccountId && accountName && !autoOpened) {
+      const autoOpenDropdown = async () => {
+        await loadSuggestions();
+        setOpen(true);
+        setAutoOpened(true);
+      };
+      autoOpenDropdown();
     }
-  }, [currentAccountId, accountName, loadSuggestions]);
+  }, [currentAccountId, accountName, loadSuggestions, autoOpened]);
 
   // Handle selection
   const handleSelect = useCallback((selectedValue: string) => {
@@ -160,7 +166,6 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
             aria-expanded={open}
             className="w-full justify-between arabic-body"
             disabled={disabled}
-            onClick={loadSuggestions}
           >
             {selectedAccount ? (
               <div className="flex items-center gap-2 truncate">
