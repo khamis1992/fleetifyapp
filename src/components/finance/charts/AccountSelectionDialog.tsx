@@ -272,8 +272,8 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
           </Alert>
 
           {/* Account Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-            <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-5 bg-muted/50 shrink-0">
               <TabsTrigger value="assets" className="flex items-center gap-1 data-[state=active]:bg-background">
                 <Building className="h-3 w-3" />
                 الأصول ({filteredAccounts.assets.length})
@@ -296,23 +296,25 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 mt-4">
-              <ScrollArea className="h-[400px] bg-background border rounded-md p-2">
-                <TabsContent value="assets" className="mt-0">
-                  {renderAccountList(filteredAccounts.assets, 'assets')}
-                </TabsContent>
-                <TabsContent value="liabilities" className="mt-0">
-                  {renderAccountList(filteredAccounts.liabilities, 'liabilities')}
-                </TabsContent>
-                <TabsContent value="revenue" className="mt-0">
-                  {renderAccountList(filteredAccounts.revenue, 'revenue')}
-                </TabsContent>
-                <TabsContent value="expenses" className="mt-0">
-                  {renderAccountList(filteredAccounts.expenses, 'expenses')}
-                </TabsContent>
-                <TabsContent value="equity" className="mt-0">
-                  {renderAccountList(filteredAccounts.equity, 'equity')}
-                </TabsContent>
+            <div className="flex-1 mt-4 min-h-0">
+              <ScrollArea className="h-full bg-background border rounded-md">
+                <div className="p-4">
+                  <TabsContent value="assets" className="mt-0">
+                    {renderAccountList(filteredAccounts.assets, 'assets')}
+                  </TabsContent>
+                  <TabsContent value="liabilities" className="mt-0">
+                    {renderAccountList(filteredAccounts.liabilities, 'liabilities')}
+                  </TabsContent>
+                  <TabsContent value="revenue" className="mt-0">
+                    {renderAccountList(filteredAccounts.revenue, 'revenue')}
+                  </TabsContent>
+                  <TabsContent value="expenses" className="mt-0">
+                    {renderAccountList(filteredAccounts.expenses, 'expenses')}
+                  </TabsContent>
+                  <TabsContent value="equity" className="mt-0">
+                    {renderAccountList(filteredAccounts.equity, 'equity')}
+                  </TabsContent>
+                </div>
               </ScrollArea>
             </div>
           </Tabs>
