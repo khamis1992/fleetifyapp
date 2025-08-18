@@ -19,6 +19,7 @@ export const SmartParentSelector: React.FC<SmartParentSelectorProps> = ({
   placeholder = "اختر الحساب الأب"
 }) => {
   // Use the new AI-enhanced selector
+  // For new accounts without currentAccountId, we still provide smart suggestions
   return (
     <AISmartParentSelector
       value={value}

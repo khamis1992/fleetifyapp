@@ -77,36 +77,44 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
   const { data: allAccounts } = useChartOfAccounts();
   const { generateEnhancedSuggestions, recordUserChoice, isAnalyzing } = useEnhancedAccountSuggestions();
 
-  // Load suggestions when opened
+  // Load suggestions
   const loadSuggestions = useCallback(async () => {
-    if (currentAccountId && accountName) {
-      const newSuggestions = await generateEnhancedSuggestions(
-        currentAccountId,
+    if (!accountName.trim()) return;
+    
+    try {
+      const results = await generateEnhancedSuggestions(
+        currentAccountId, // Can be undefined for new accounts
         accountName,
-        accountType,
-        value
+        accountType
       );
-      setSuggestions(newSuggestions);
+      setSuggestions(results);
+    } catch (error) {
+      console.error('Error loading suggestions:', error);
+      setSuggestions([]);
     }
-  }, [currentAccountId, accountName, accountType, value, generateEnhancedSuggestions]);
+  }, [currentAccountId, accountName, accountType, generateEnhancedSuggestions]);
 
   // Auto-load suggestions on mount and open dropdown
   useEffect(() => {
-    if (currentAccountId && accountName && !autoOpened) {
+    // Only auto-open for existing accounts (currentAccountId exists) or when we have account info
+    if (accountName && accountType && !autoOpened) {
       const autoOpenDropdown = async () => {
         await loadSuggestions();
-        setOpen(true);
+        // Only auto-open if we have a currentAccountId (editing existing account)
+        if (currentAccountId) {
+          setOpen(true);
+        }
         setAutoOpened(true);
       };
       autoOpenDropdown();
     }
-  }, [currentAccountId, accountName, loadSuggestions, autoOpened]);
+  }, [currentAccountId, accountName, accountType, loadSuggestions, autoOpened]);
 
   // Handle selection
   const handleSelect = useCallback((selectedValue: string) => {
-    if (currentAccountId && suggestions.length > 0) {
+    if (suggestions.length > 0) {
       recordUserChoice(
-        currentAccountId,
+        currentAccountId, // Can be undefined for new accounts
         value || '',
         suggestions.map(s => s.id),
         selectedValue

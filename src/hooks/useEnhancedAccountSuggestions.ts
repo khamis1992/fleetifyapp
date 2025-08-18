@@ -136,13 +136,13 @@ export const useEnhancedAccountSuggestions = () => {
 
   // Learn from user choices
   const recordUserChoice = useCallback((
-    accountId: string,
+    accountId: string | undefined,
     parentId: string,
     suggestedParents: string[],
     chosenParent: string
   ) => {
     const choice: UserChoice = {
-      accountId,
+      accountId: accountId || 'new',
       parentId,
       suggestedParents,
       chosenParent,
@@ -162,14 +162,15 @@ export const useEnhancedAccountSuggestions = () => {
 
   // Generate enhanced suggestions
   const generateEnhancedSuggestions = useCallback(async (
-    accountId: string,
+    accountId: string | undefined,
     accountName: string,
     accountType?: string,
     currentParentId?: string
   ): Promise<EnhancedSuggestion[]> => {
     if (!accounts) return [];
     
-    const cacheKey = `${accountId}-${accountName}-${accountType}`;
+    // Use a special cache key for new accounts
+    const cacheKey = `${accountId || 'new'}-${accountName}-${accountType}`;
     if (suggestionCacheRef.current.has(cacheKey)) {
       return suggestionCacheRef.current.get(cacheKey)!;
     }
@@ -184,9 +185,9 @@ export const useEnhancedAccountSuggestions = () => {
       
       // 2. Filter potential parent accounts
       const potentialParents = accounts.filter(acc => 
-        acc.id !== accountId && 
+        (!accountId || acc.id !== accountId) && // Skip self only if accountId exists
         acc.is_active && 
-        !wouldCreateCycle(accountId, acc.id, accounts)
+        (!accountId || !wouldCreateCycle(accountId, acc.id, accounts)) // Check cycles only if accountId exists
       );
       
       // 3. Generate suggestions based on different strategies
@@ -198,9 +199,9 @@ export const useEnhancedAccountSuggestions = () => {
         // Type compatibility check
         const isTypeCompatible = checkTypeCompatibility(accountType, parent.account_type);
         
-        // Learning from past choices
+        // Learning from past choices (only for existing accounts)
         const pastChoices = userChoicesRef.current.filter(choice => 
-          choice.accountId === accountId || similarity > 0.7
+          accountId && (choice.accountId === accountId || similarity > 0.7)
         );
         const learningScore = pastChoices.length > 0 
           ? pastChoices.filter(c => c.chosenParent === parent.id).length / pastChoices.length 

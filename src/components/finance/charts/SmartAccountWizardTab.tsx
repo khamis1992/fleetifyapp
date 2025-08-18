@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useCreateSmartAccount, useSuggestAccountCode } from '@/hooks/useChartValidation';
 import { useCreateAccount } from '@/hooks/useChartOfAccounts';
-import { ParentAccountSelector } from '../ParentAccountSelector';
+import { SmartParentSelector } from '../enhanced-editing/SmartParentSelector';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface WizardData {
@@ -254,9 +254,11 @@ export const SmartAccountWizardTab: React.FC = () => {
     <div className="space-y-4">
       <div>
         <Label htmlFor="parentAccount">الحساب الأب (اختياري)</Label>
-        <ParentAccountSelector
+        <SmartParentSelector
           value={wizardData.parentAccountId}
           onValueChange={(value) => setWizardData(prev => ({ ...prev, parentAccountId: value }))}
+          accountName={wizardData.accountName}
+          accountType={wizardData.accountType}
           placeholder="اختر الحساب الأب (اختياري للمستوى الأول)"
         />
       </div>
