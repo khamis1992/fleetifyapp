@@ -8179,14 +8179,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_vehicle_installments_vehicle_id"
+            foreignKeyName: "vehicle_installments_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_vehicle_installments_vendor_id"
+            foreignKeyName: "vehicle_installments_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "customers"
