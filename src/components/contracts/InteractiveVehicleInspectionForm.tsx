@@ -189,18 +189,50 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
   const handleSave = async () => {
     try {
+      // Validation
+      const mileageValue = parseInt(mileage) || 0;
+      const fuelLevelValue = fuelLevel[0];
+
+      if (mileageValue <= 0) {
+        toast({
+          title: "خطأ في البيانات",
+          description: "يرجى إدخال قراءة عداد صحيحة أكبر من 0",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (fuelLevelValue < 0 || fuelLevelValue > 100) {
+        toast({
+          title: "خطأ في البيانات", 
+          description: "يرجى إدخال مستوى وقود صحيح بين 0 و 100%",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!vehicleId) {
+        toast({
+          title: "خطأ في البيانات",
+          description: "لم يتم تحديد المركبة بشكل صحيح",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const conditionData = {
         overall_condition: 'good' as const,
-        mileage: parseInt(mileage) || 0,
-        fuel_level: fuelLevel[0],
+        mileage_reading: mileageValue, // Fixed: was 'mileage', now 'mileage_reading'
+        fuel_level: fuelLevelValue,
         notes: additionalNotes,
         condition_items: accessories.reduce((acc, item) => ({
           ...acc,
           [item.id]: item.checked ? 'present' : 'missing'
         }), {}),
         damage_points: drawingHistory
-        // Signatures will be filled manually after printing
       };
+
+      console.log('Saving condition report with data:', conditionData);
 
       const result = await createConditionReportMutation.mutateAsync({
         vehicle_id: vehicleId,
@@ -216,9 +248,26 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
       onComplete?.(result.id);
     } catch (error) {
+      console.error('Error saving condition report:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = "حدث خطأ أثناء حفظ تقرير حالة المركبة";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('invalid input value')) {
+          errorMessage = "خطأ في البيانات المدخلة. تحقق من صحة جميع الحقول";
+        } else if (error.message.includes('permission denied')) {
+          errorMessage = "غير مصرح لك بإنشاء تقارير حالة المركبات";
+        } else if (error.message.includes('foreign key')) {
+          errorMessage = "المركبة المحددة غير موجودة أو غير صحيحة";
+        } else if (error.message.includes('duplicate key')) {
+          errorMessage = "يوجد تقرير حالة مسبق لهذه المركبة";
+        }
+      }
+      
       toast({
         title: "خطأ في حفظ التقرير",
-        description: "حدث خطأ أثناء حفظ تقرير حالة المركبة",
+        description: errorMessage,
         variant: "destructive",
       });
     }

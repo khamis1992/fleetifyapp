@@ -79,37 +79,82 @@ export const useCreateConditionReport = () => {
 
   return useMutation({
     mutationFn: async (reportData: CreateConditionReportData) => {
+      console.log('Creating condition report with data:', reportData);
+      
+      // Validate required fields
+      if (!reportData.vehicle_id) {
+        throw new Error('معرف المركبة مطلوب');
+      }
+      
+      if (!reportData.inspection_type) {
+        throw new Error('نوع الفحص مطلوب');
+      }
+
+      // Validate mileage if provided
+      if (reportData.mileage_reading !== undefined && reportData.mileage_reading <= 0) {
+        throw new Error('قراءة العداد يجب أن تكون أكبر من 0');
+      }
+
+      // Validate fuel level if provided
+      if (reportData.fuel_level !== undefined && (reportData.fuel_level < 0 || reportData.fuel_level > 100)) {
+        throw new Error('مستوى الوقود يجب أن يكون بين 0 و 100');
+      }
+
       // Get user's company_id first
-      const { data: profile } = await supabase
+      const userResult = await supabase.auth.getUser();
+      if (!userResult.data.user?.id) {
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', userResult.data.user.id)
         .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw new Error('فشل في الحصول على بيانات المستخدم');
+      }
+
+      if (!profile?.company_id) {
+        throw new Error('لم يتم العثور على بيانات الشركة للمستخدم');
+      }
+
+      // Prepare the data for insertion
+      const insertData = {
+        ...reportData,
+        dispatch_permit_id: reportData.dispatch_permit_id || null,
+        contract_id: reportData.contract_id || null,
+        company_id: profile.company_id,
+        inspector_id: userResult.data.user.id,
+      };
+
+      console.log('Inserting condition report data:', insertData);
 
       // Create the condition report
       const { data, error } = await supabase
         .from('vehicle_condition_reports')
-        .insert([{
-          ...reportData,
-          dispatch_permit_id: reportData.dispatch_permit_id || null,
-          contract_id: reportData.contract_id || null,
-          company_id: profile?.company_id,
-          inspector_id: (await supabase.auth.getUser()).data.user?.id,
-        }])
+        .insert([insertData])
         .select()
         .single();
 
       if (error) {
         console.error('Error creating condition report:', error);
         console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Data that failed:', JSON.stringify(insertData, null, 2));
         
         // Provide more specific error messages
         if (error.message?.includes('invalid input value')) {
           throw new Error('خطأ في البيانات المدخلة. تحقق من صحة جميع الحقول');
-        } else if (error.message?.includes('permission denied')) {
+        } else if (error.message?.includes('permission denied') || error.code === '42501') {
           throw new Error('غير مصرح لك بإنشاء تقارير حالة المركبات');
-        } else if (error.message?.includes('foreign key')) {
+        } else if (error.message?.includes('foreign key') || error.code === '23503') {
           throw new Error('المركبة المحددة غير موجودة أو غير صحيحة');
+        } else if (error.message?.includes('duplicate key') || error.code === '23505') {
+          throw new Error('يوجد تقرير حالة مسبق لهذه المركبة والعقد');
+        } else if (error.message?.includes('null value') || error.code === '23502') {
+          throw new Error('بعض الحقول المطلوبة فارغة');
         }
         
         throw new Error(`فشل في إنشاء تقرير حالة المركبة: ${error.message || 'خطأ غير محدد'}`);
@@ -137,15 +182,16 @@ export const useCreateConditionReport = () => {
         }
       }
 
+      console.log('Condition report created successfully:', data);
       return data as VehicleConditionReport;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
-      toast.success('Vehicle condition report created successfully');
+      toast.success('تم إنشاء تقرير حالة المركبة بنجاح');
     },
     onError: (error: any) => {
       console.error('Error creating condition report:', error);
-      const errorMessage = error.message || 'Failed to create condition report';
+      const errorMessage = error.message || 'فشل في إنشاء تقرير حالة المركبة';
       toast.error(errorMessage);
     },
   });
