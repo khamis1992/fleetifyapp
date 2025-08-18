@@ -253,6 +253,26 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             </Button>
           </div>
 
+          {/* Action Buttons - Always Visible */}
+          <div className="flex gap-2 p-2 border rounded-lg bg-muted/30">
+            <Button 
+              onClick={handleApply}
+              disabled={selectedAccountIds.size === 0 || isApplying}
+              className="flex-1 h-10"
+              size="sm"
+            >
+              {isApplying ? 'جاري التطبيق...' : `تطبيق (${selectedAccountIds.size})`}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="px-6 h-10"
+              size="sm"
+            >
+              إلغاء
+            </Button>
+          </div>
+
           {/* Account Tabs - Take remaining space */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="grid w-full grid-cols-5 h-9 bg-muted/50">
@@ -280,7 +300,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
             <div className="flex-1 mt-2 overflow-hidden">
               <ScrollArea className="h-full border rounded-md" dir="rtl">
-                <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="p-3 space-y-2">
                   <TabsContent value="assets" className="mt-0">
                     {renderAccountList(filteredAccounts.assets, 'assets')}
                   </TabsContent>
@@ -300,24 +320,6 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
               </ScrollArea>
             </div>
           </Tabs>
-
-          {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t">
-            <Button 
-              onClick={handleApply}
-              disabled={selectedAccountIds.size === 0 || isApplying}
-              className="flex-1 h-9"
-            >
-              {isApplying ? 'جاري التطبيق...' : `تطبيق (${selectedAccountIds.size})`}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              className="px-6 h-9"
-            >
-              إلغاء
-            </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
