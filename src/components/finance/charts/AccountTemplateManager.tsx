@@ -14,6 +14,9 @@ import {
   Clock
 } from 'lucide-react';
 import { useCopyDefaultAccounts } from '@/hooks/useChartOfAccounts';
+import { AccountSelectionDialog } from './AccountSelectionDialog';
+import { useBusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
+import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 
 interface AccountTemplate {
   id: string;
@@ -42,8 +45,11 @@ const PREDEFINED_TEMPLATES: AccountTemplate[] = [
 export const AccountTemplateManager: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<AccountTemplate | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showAccountSelection, setShowAccountSelection] = useState(false);
   
   const copyDefaultAccounts = useCopyDefaultAccounts();
+  const copySelectedAccounts = useCopySelectedAccounts();
+  const { getAccountsByBusinessType } = useBusinessTypeAccounts();
 
   const handleApplyTemplate = (templateId: string) => {
     if (templateId === 'general_business') {
@@ -53,6 +59,20 @@ export const AccountTemplateManager: React.FC = () => {
       // In a real implementation, you'd have different RPC functions for different templates
       copyDefaultAccounts.mutate();
     }
+  };
+
+  const handleSelectAccounts = (template: AccountTemplate) => {
+    setSelectedTemplate(template);
+    setShowAccountSelection(true);
+  };
+
+  const handleApplySelectedAccounts = (selectedAccounts: any[]) => {
+    copySelectedAccounts.mutate(selectedAccounts, {
+      onSuccess: () => {
+        setShowAccountSelection(false);
+        setSelectedTemplate(null);
+      }
+    });
   };
 
   const renderTemplateCard = (template: AccountTemplate) => (
@@ -103,15 +123,23 @@ export const AccountTemplateManager: React.FC = () => {
             >
               {copyDefaultAccounts.isPending ? (
                 <>
-                  <span>تطبيق...</span>
+                  <span>تطبيق الكل</span>
                   <Clock className="h-3 w-3" />
                 </>
               ) : (
                 <>
-                  <span>تطبيق</span>
+                  <span>تطبيق الكل</span>
                   <CheckCircle className="h-3 w-3" />
                 </>
               )}
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handleSelectAccounts(template)}
+              className="flex-1"
+            >
+              اختيار الحسابات
             </Button>
             <Button 
               size="sm" 
@@ -213,6 +241,18 @@ export const AccountTemplateManager: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Account Selection Dialog */}
+      {selectedTemplate && (
+        <AccountSelectionDialog
+          open={showAccountSelection}
+          onOpenChange={setShowAccountSelection}
+          accounts={getAccountsByBusinessType('car_rental')} // Use car_rental as example
+          templateName={selectedTemplate.nameAr}
+          onApply={handleApplySelectedAccounts}
+          isApplying={copySelectedAccounts.isPending}
+        />
+      )}
     </div>
   );
 };

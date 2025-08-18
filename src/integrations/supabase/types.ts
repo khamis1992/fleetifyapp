@@ -9591,6 +9591,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: undefined
       }
+      copy_selected_accounts_to_company: {
+        Args: { selected_account_codes: string[]; target_company_id: string }
+        Returns: undefined
+      }
       create_bank_transaction_journal_entry: {
         Args: { transaction_id_param: string }
         Returns: string

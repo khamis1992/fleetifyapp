@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Search, 
-  CheckAll, 
+  Check, 
   X, 
   Info, 
   Star, 
@@ -227,7 +227,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
             <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={selectAll}>
-                <CheckAll className="h-3 w-3 ml-1" />
+                <Check className="h-3 w-3 ml-1" />
                 تحديد الكل
               </Button>
               <Button size="sm" variant="outline" onClick={selectEssential}>
