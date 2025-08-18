@@ -8130,7 +8130,7 @@ export type Database = {
           total_amount: number
           total_vehicles_count: number | null
           updated_at: string
-          vehicle_id: string
+          vehicle_id: string | null
           vendor_id: string
         }
         Insert: {
@@ -8152,7 +8152,7 @@ export type Database = {
           total_amount?: number
           total_vehicles_count?: number | null
           updated_at?: string
-          vehicle_id: string
+          vehicle_id?: string | null
           vendor_id: string
         }
         Update: {
@@ -8174,7 +8174,7 @@ export type Database = {
           total_amount?: number
           total_vehicles_count?: number | null
           updated_at?: string
-          vehicle_id?: string
+          vehicle_id?: string | null
           vendor_id?: string
         }
         Relationships: []

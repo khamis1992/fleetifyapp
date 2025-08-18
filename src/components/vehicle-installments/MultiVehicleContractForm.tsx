@@ -376,40 +376,60 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
       const companyName = data.vendor_company_name.trim();
 
-        const { data: existing, error: searchError } = await supabase
+      if (!companyName) {
+        toast.error('اسم شركة التاجر مطلوب');
+        return;
+      }
+
+      console.log('Resolving vendor for company:', companyName);
+
+      const { data: existing, error: searchError } = await supabase
+        .from('customers')
+        .select('id, customer_type, company_name')
+        .eq('company_id', companyId)
+        .ilike('company_name', companyName)
+        .maybeSingle();
+
+      if (searchError) {
+        console.error('Error searching customer:', searchError);
+        throw new Error(`خطأ في البحث عن العميل: ${searchError.message}`);
+      }
+
+      if (existing?.id) {
+        console.log('Found existing vendor:', existing.id);
+        vendorId = existing.id;
+      } else {
+        console.log('Creating new vendor...');
+        
+        // Validate required fields for new customer
+        if (!data.vendor_phone?.trim()) {
+          toast.error('رقم هاتف التاجر مطلوب لإنشاء عميل جديد');
+          return;
+        }
+
+        const { data: created, error: insertError } = await supabase
           .from('customers')
-          .select('id, customer_type, company_name')
-          .eq('company_id', companyId)
-          .ilike('company_name', companyName)
-          .maybeSingle();
+          .insert({
+            company_id: companyId,
+            customer_type: 'corporate',
+            company_name: companyName,
+            phone: data.vendor_phone.trim(),
+            created_by: user!.id,
+          } as any)
+          .select('id')
+          .single();
 
-        if (searchError) {
-          console.error('Error searching customer:', searchError);
+        if (insertError) {
+          console.error('Error creating customer:', insertError);
+          throw new Error(`خطأ في إنشاء العميل: ${insertError.message}`);
         }
-
-        if (existing?.id) {
-          vendorId = existing.id;
-        } else {
-          const { data: created, error: insertError } = await supabase
-            .from('customers')
-            .insert({
-              company_id: companyId,
-              customer_type: 'corporate',
-              company_name: companyName,
-              phone: data.vendor_phone || '+965', // إضافة رقم الهاتف مع قيمة افتراضية
-              created_by: user!.id,
-            } as any)
-            .select('id')
-            .single();
-
-          if (insertError) {
-            throw insertError;
-          }
-          vendorId = created.id;
-        }
+        
+        console.log('Created new vendor:', created.id);
+        vendorId = created.id;
+      }
     } catch (e: any) {
       console.error('Vendor resolution failed:', e);
-      toast.error("حدث خطأ أثناء تحديد التاجر");
+      toast.error(e.message || "حدث خطأ أثناء تحديد التاجر");
       return;
     }
 
