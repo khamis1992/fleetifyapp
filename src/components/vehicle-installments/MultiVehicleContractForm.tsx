@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Calculator, Loader2, AlertCircle, CheckSquare, Filter } from "lucide-react";
+import { Plus, Trash2, Calculator, Loader2, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,9 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,8 +62,6 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
   const { formatCurrency } = useCurrencyFormatter();
   const [vehicleAllocations, setVehicleAllocations] = useState<VehicleAllocation[]>([]);
   const [distributionMode, setDistributionMode] = useState<'equal' | 'custom'>('equal');
-  const [makeFilter, setMakeFilter] = useState<string>("all");
-  const [searchFilter, setSearchFilter] = useState<string>("");
   
   const companyId = useCurrentCompanyId();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
@@ -88,62 +84,6 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
   // استخدام hook المركبات المحدث مع دعم تصفح الشركات
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useVehicles();
-
-  // استخراج قائمة الماركات المتاحة
-  const availableMakes = useMemo(() => {
-    if (!vehicles || !Array.isArray(vehicles)) return [];
-    const makes = new Set<string>();
-    vehicles.forEach(vehicle => {
-      if (vehicle?.make && vehicle.make.trim()) {
-        makes.add(vehicle.make.trim());
-      }
-    });
-    return Array.from(makes).sort();
-  }, [vehicles]);
-
-  // تصفية المركبات المتاحة بناءً على الفلاتر
-  const filteredVehicles = useMemo(() => {
-    if (!vehicles || !Array.isArray(vehicles)) return [];
-    
-    let filtered = vehicles.filter(vehicle => {
-      if (!vehicle?.id || !vehicle?.plate_number) return false;
-      
-      // استثناء المركبات المحددة مسبقاً
-      const isAlreadySelected = vehicleAllocations.some(allocation => 
-        allocation.vehicle_id === vehicle.id
-      );
-      if (isAlreadySelected) return false;
-      
-      return true;
-    });
-
-    // تطبيق فلتر الماركة
-    if (makeFilter && makeFilter !== 'all') {
-      filtered = filtered.filter(vehicle => 
-        vehicle.make?.trim() === makeFilter.trim()
-      );
-    }
-
-    // تطبيق فلتر البحث
-    if (searchFilter && searchFilter.trim().length > 0) {
-      const searchLower = searchFilter.toLowerCase().trim();
-      filtered = filtered.filter(vehicle => {
-        const plateNumber = (vehicle.plate_number || '').toString().toLowerCase();
-        const make = (vehicle.make || '').toString().toLowerCase();
-        const model = (vehicle.model || '').toString().toLowerCase();
-        const year = (vehicle.year || '').toString().toLowerCase();
-        
-        return (
-          plateNumber.includes(searchLower) ||
-          make.includes(searchLower) ||
-          model.includes(searchLower) ||
-          year.includes(searchLower)
-        );
-      });
-    }
-
-    return filtered;
-  }, [vehicles, vehicleAllocations, makeFilter, searchFilter]);
 
   // تسجيل معلومات الشركة الحالية للتشخيص
   console.log('🏢 [MULTI_VEHICLE_FORM] معلومات الشركة:', {
@@ -280,39 +220,6 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
       ...allocation,
       allocated_amount: amountPerVehicle
     })));
-  };
-
-  const selectAllFilteredVehicles = () => {
-    if (!filteredVehicles || filteredVehicles.length === 0) {
-      toast.error("لا توجد مركبات متاحة للتحديد");
-      return;
-    }
-
-    const totalAmount = form.getValues('total_amount');
-    const downPayment = form.getValues('down_payment');
-    const amountToDistribute = totalAmount - downPayment;
-    
-    if (amountToDistribute <= 0) {
-      toast.error("يجب إدخال المبلغ الإجمالي والدفعة المقدمة أولاً");
-      return;
-    }
-
-    // إضافة جميع المركبات المفلترة
-    const newAllocations = filteredVehicles.map(vehicle => ({
-      vehicle_id: vehicle.id,
-      allocated_amount: 0
-    }));
-
-    // توزيع المبلغ بالتساوي
-    const amountPerVehicle = amountToDistribute / newAllocations.length;
-    const allocationsWithAmounts = newAllocations.map(allocation => ({
-      ...allocation,
-      allocated_amount: amountPerVehicle
-    }));
-
-    setVehicleAllocations(prev => [...prev, ...allocationsWithAmounts]);
-    
-    toast.success(`تم تحديد ${newAllocations.length} مركبة وتوزيع المبلغ بالتساوي`);
   };
 
   const getTotalAllocated = () => {
@@ -652,77 +559,6 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* فلاتر المركبات وخيار تحديد الكل */}
-                <Card className="bg-muted/30">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      فلترة وتحديد المركبات
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* فلتر الماركة */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">الماركة</label>
-                        <Select value={makeFilter} onValueChange={setMakeFilter}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="جميع الماركات" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">جميع الماركات</SelectItem>
-                            {availableMakes.map((make) => (
-                              <SelectItem key={make} value={make}>
-                                {make}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* فلتر البحث */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">البحث</label>
-                        <Input
-                          placeholder="بحث بواسطة رقم اللوحة، الماركة، أو الموديل..."
-                          value={searchFilter}
-                          onChange={(e) => setSearchFilter(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* معلومات الفلتر وخيار تحديد الكل */}
-                    {(makeFilter !== 'all' || searchFilter.trim()) && (
-                      <>
-                        <Separator />
-                        <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-primary">
-                              المركبات المفلترة: {filteredVehicles.length} مركبة
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {makeFilter !== 'all' && `الماركة: ${makeFilter}`}
-                              {makeFilter !== 'all' && searchFilter.trim() && ' • '}
-                              {searchFilter.trim() && `البحث: "${searchFilter}"`}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="default"
-                            size="sm"
-                            onClick={selectAllFilteredVehicles}
-                            disabled={filteredVehicles.length === 0 || vehiclesLoading}
-                            className="flex items-center gap-2"
-                          >
-                            <CheckSquare className="h-4 w-4" />
-                            تحديد الكل ({filteredVehicles.length})
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
                 {vehicleAllocations.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     {vehiclesLoading ? (
