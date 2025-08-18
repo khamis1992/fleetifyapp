@@ -42,6 +42,20 @@ export const SmartParentSelector: React.FC<SmartParentSelectorProps> = ({
   const { data: allAccounts } = useChartOfAccounts();
   const validator = new AccountMoveValidator(allAccounts || []);
 
+  // بناء المسار للحساب - تم نقل الدالة هنا لتجنب مشكلة التهيئة
+  const buildAccountPath = (account: any, accounts: any[]): string[] => {
+    const path: string[] = [];
+    let current = account;
+    
+    while (current) {
+      path.unshift(current.account_name_ar || current.account_name);
+      if (!current.parent_account_id) break;
+      current = accounts.find(acc => acc.id === current.parent_account_id);
+    }
+    
+    return path;
+  };
+
   // إعداد خيارات الحسابات المناسبة
   const accountOptions = useMemo(() => {
     if (!allAccounts || !currentAccountId) return [];
@@ -111,20 +125,6 @@ export const SmartParentSelector: React.FC<SmartParentSelectorProps> = ({
       option.nameAr?.toLowerCase().includes(query)
     );
   }, [accountOptions, searchQuery]);
-
-  // بناء المسار للحساب
-  const buildAccountPath = (account: any, accounts: any[]): string[] => {
-    const path: string[] = [];
-    let current = account;
-    
-    while (current) {
-      path.unshift(current.account_name_ar || current.account_name);
-      if (!current.parent_account_id) break;
-      current = accounts.find(acc => acc.id === current.parent_account_id);
-    }
-    
-    return path;
-  };
 
   // الحصول على الحساب المحدد
   const selectedAccount = allAccounts?.find(acc => acc.id === value);
