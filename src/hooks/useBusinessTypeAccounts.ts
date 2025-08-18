@@ -493,6 +493,14 @@ export const useBusinessTypeAccounts = () => {
   return {
     getAccountsByBusinessType,
     generateAccountCode,
+    getTotalAccountsCount: (businessType: keyof typeof BUSINESS_SPECIFIC_ACCOUNTS): number => {
+      const accounts = getAccountsByBusinessType(businessType);
+      return accounts.assets.length + 
+             accounts.liabilities.length + 
+             accounts.revenue.length + 
+             accounts.expenses.length + 
+             accounts.equity.length;
+    },
     ESSENTIAL_ACCOUNTS
   };
 };

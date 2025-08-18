@@ -29,26 +29,27 @@ interface AccountTemplate {
   preview: string[];
 }
 
-const PREDEFINED_TEMPLATES: AccountTemplate[] = [
-  {
-    id: 'car_rental',
-    name: 'Car Rental & Transportation',
-    nameAr: 'السيارات والنقل',
-    description: 'لشركات تأجير السيارات وخدمات النقل والمواصلات',
-    icon: <Car className="h-5 w-5" />,
-    accountsCount: 139,
-    category: 'industry',
-    preview: ['أسطول المركبات', 'إيرادات التأجير', 'صيانة المركبات', 'تأمين المركبات', 'رسوم التأخير', 'رواتب السائقين', 'مصاريف الوقود', 'رسوم الترخيص']
-  }
-];
-
 export const AccountTemplateManager: React.FC = () => {
+  const { getTotalAccountsCount, getAccountsByBusinessType } = useBusinessTypeAccounts();
+  
+  const PREDEFINED_TEMPLATES: AccountTemplate[] = [
+    {
+      id: 'car_rental',
+      name: 'Car Rental & Transportation',
+      nameAr: 'السيارات والنقل',
+      description: 'لشركات تأجير السيارات وخدمات النقل والمواصلات',
+      icon: <Car className="h-5 w-5" />,
+      accountsCount: getTotalAccountsCount('car_rental'),
+      category: 'industry',
+      preview: ['أسطول المركبات', 'إيرادات التأجير', 'صيانة المركبات', 'تأمين المركبات', 'رسوم التأخير', 'رواتب السائقين', 'مصاريف الوقود', 'رسوم الترخيص']
+    }
+  ];
+
   const [selectedTemplate, setSelectedTemplate] = useState<AccountTemplate | null>(null);
   const [showAccountSelection, setShowAccountSelection] = useState(false);
   
   const copyDefaultAccounts = useCopyDefaultAccounts();
   const copySelectedAccounts = useCopySelectedAccounts();
-  const { getAccountsByBusinessType } = useBusinessTypeAccounts();
 
   const handleApplyTemplate = (templateId: string) => {
     if (templateId === 'general_business') {
