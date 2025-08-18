@@ -168,6 +168,7 @@ All colors MUST be HSL.
     @apply bg-background text-foreground font-cairo;
     font-feature-settings: "rlig" 1, "calt" 1;
     direction: rtl;
+    text-align: right;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -486,6 +487,11 @@ All colors MUST be HSL.
   }
   
   /* RTL support and Arabic text improvements */
+  * {
+    direction: rtl;
+    text-align: right;
+  }
+  
   [dir="rtl"] {
     text-align: right;
   }
