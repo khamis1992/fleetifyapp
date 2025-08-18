@@ -36,7 +36,7 @@ const PREDEFINED_TEMPLATES: AccountTemplate[] = [
     nameAr: 'السيارات والنقل',
     description: 'لشركات تأجير السيارات وخدمات النقل والمواصلات',
     icon: <Car className="h-5 w-5" />,
-    accountsCount: 25,
+    accountsCount: 139,
     category: 'industry',
     preview: ['أسطول المركبات', 'إيرادات التأجير', 'صيانة المركبات', 'تأمين المركبات', 'رسوم التأخير', 'رواتب السائقين', 'مصاريف الوقود', 'رسوم الترخيص']
   }
@@ -44,7 +44,6 @@ const PREDEFINED_TEMPLATES: AccountTemplate[] = [
 
 export const AccountTemplateManager: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<AccountTemplate | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
   const [showAccountSelection, setShowAccountSelection] = useState(false);
   
   const copyDefaultAccounts = useCopyDefaultAccounts();
@@ -153,17 +152,6 @@ export const AccountTemplateManager: React.FC = () => {
             >
               اختيار الحسابات
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => {
-                setSelectedTemplate(template);
-                setShowPreview(true);
-              }}
-              className="flex-1"
-            >
-              معاينة
-            </Button>
           </div>
         </div>
       </CardContent>
@@ -197,62 +185,6 @@ export const AccountTemplateManager: React.FC = () => {
           .filter(t => t.category === 'industry')
           .map(renderTemplateCard)}
       </div>
-
-      {/* Template Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-right">
-              {selectedTemplate?.icon}
-              معاينة قالب: {selectedTemplate?.nameAr}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedTemplate && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2 text-right">نظرة عامة</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-right">عدد الحسابات: {selectedTemplate.accountsCount}</div>
-                  <div className="text-right">النوع: {selectedTemplate.category === 'business' ? 'عام' : 'متخصص'}</div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-3 text-right">أمثلة من الحسابات المتضمنة:</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {selectedTemplate.preview.map((account, index) => (
-                    <div key={index} className="flex items-center gap-2 text-right">
-                      <span>{account}</span>
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4 border-t">
-                <Button 
-                  onClick={() => {
-                    handleApplyTemplate(selectedTemplate.id);
-                    setShowPreview(false);
-                  }}
-                  disabled={copyDefaultAccounts.isPending}
-                  className="flex-1"
-                >
-                  تطبيق القالب
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowPreview(false)}
-                  className="flex-1"
-                >
-                  إغلاق
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Account Selection Dialog */}
       {selectedTemplate && (
