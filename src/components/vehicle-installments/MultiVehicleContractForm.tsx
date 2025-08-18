@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -63,6 +63,10 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
   const [vehicleAllocations, setVehicleAllocations] = useState<VehicleAllocation[]>([]);
   const [distributionMode, setDistributionMode] = useState<'equal' | 'custom'>('equal');
   
+  // States for filtering
+  const [searchFilter, setSearchFilter] = useState("");
+  const [makeFilter, setMakeFilter] = useState("all");
+  
   const companyId = useCurrentCompanyId();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   const createInstallment = useCreateVehicleInstallment();
@@ -92,6 +96,96 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
     browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
     vehiclesCount: vehicles?.length || 0
   });
+
+  // Get available makes for filtering
+  const availableMakes = useMemo(() => {
+    if (!vehicles || !Array.isArray(vehicles)) return [];
+    const makes = new Set<string>();
+    vehicles.forEach(vehicle => {
+      if (vehicle?.make && vehicle.make.trim()) {
+        makes.add(vehicle.make.trim());
+      }
+    });
+    return Array.from(makes).sort();
+  }, [vehicles]);
+
+  // Filter vehicles based on search and make filters
+  const filteredVehicles = useMemo(() => {
+    if (!vehicles || !Array.isArray(vehicles)) return [];
+    
+    let result = vehicles.filter(vehicle => {
+      if (!vehicle) return false;
+      // Exclude already selected vehicles
+      const isAlreadySelected = vehicleAllocations.some(alloc => alloc.vehicle_id === vehicle.id);
+      return !isAlreadySelected;
+    });
+
+    // Apply make filter
+    if (makeFilter && makeFilter !== "all") {
+      result = result.filter(vehicle => vehicle.make === makeFilter);
+    }
+
+    // Apply search filter
+    if (searchFilter && searchFilter.trim()) {
+      const searchLower = searchFilter.toLowerCase().trim();
+      result = result.filter(vehicle => {
+        const plateNumber = (vehicle.plate_number || '').toLowerCase();
+        const make = (vehicle.make || '').toLowerCase();
+        const model = (vehicle.model || '').toLowerCase();
+        const year = (vehicle.year || '').toString().toLowerCase();
+        
+        return (
+          plateNumber.includes(searchLower) ||
+          make.includes(searchLower) ||
+          model.includes(searchLower) ||
+          year.includes(searchLower)
+        );
+      });
+    }
+
+    return result;
+  }, [vehicles, vehicleAllocations, makeFilter, searchFilter]);
+
+  // Check if any filters are active
+  const hasActiveFilters = makeFilter !== "all" || (searchFilter && searchFilter.trim().length > 0);
+
+  // Select all filtered vehicles function
+  const selectAllFilteredVehicles = () => {
+    if (!filteredVehicles || filteredVehicles.length === 0) {
+      toast.error("لا توجد مركبات لتحديدها");
+      return;
+    }
+
+    const totalAmount = form.getValues('total_amount');
+    const downPayment = form.getValues('down_payment');
+    const amountToDistribute = totalAmount - downPayment;
+    
+    if (amountToDistribute <= 0) {
+      toast.error("يجب إدخال المبلغ الإجمالي والدفعة المقدمة أولاً");
+      return;
+    }
+
+    // Calculate total vehicles that will be in allocations
+    const totalVehiclesCount = vehicleAllocations.length + filteredVehicles.length;
+    const amountPerVehicle = amountToDistribute / totalVehiclesCount;
+
+    // Create new allocations for filtered vehicles
+    const newAllocations = filteredVehicles.map(vehicle => ({
+      vehicle_id: vehicle.id,
+      allocated_amount: amountPerVehicle
+    }));
+
+    // Update existing allocations with new equal distribution
+    const updatedExistingAllocations = vehicleAllocations.map(alloc => ({
+      ...alloc,
+      allocated_amount: amountPerVehicle
+    }));
+
+    // Combine all allocations
+    setVehicleAllocations([...updatedExistingAllocations, ...newAllocations]);
+    
+    toast.success(`تم تحديد ${filteredVehicles.length} مركبة وتوزيع المبالغ بالتساوي`);
+  };
 
   const addVehicle = () => {
     try {
@@ -339,12 +433,23 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
     await createInstallment.mutateAsync(formData);
     setOpen(false);
+    setSearchFilter("");
+    setMakeFilter("all");
     form.reset();
     setVehicleAllocations([]);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      setOpen(newOpen);
+      if (!newOpen) {
+        // Reset filters when dialog closes
+        setSearchFilter("");
+        setMakeFilter("all");
+        form.reset();
+        setVehicleAllocations([]);
+      }
+    }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -558,7 +663,64 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                {/* Filters and Select All Section */}
+                <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">فلاتر البحث</h3>
+                    {hasActiveFilters && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={selectAllFilteredVehicles}
+                        disabled={!filteredVehicles || filteredVehicles.length === 0}
+                      >
+                        تحديد الكل ({filteredVehicles?.length || 0})
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Make Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">فلترة حسب الماركة</label>
+                      <select
+                        value={makeFilter}
+                        onChange={(e) => setMakeFilter(e.target.value)}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="all">جميع الماركات</option>
+                        {availableMakes.map((make) => (
+                          <option key={make} value={make}>
+                            {make}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Search Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">البحث في المركبات</label>
+                      <Input
+                        placeholder="ابحث برقم اللوحة، الماركة، أو الموديل..."
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filter Results Info */}
+                  {hasActiveFilters && (
+                    <div className="text-sm text-muted-foreground">
+                      عرض {filteredVehicles?.length || 0} مركبة من أصل {vehicles?.length || 0}
+                      {makeFilter !== "all" && ` • ماركة: ${makeFilter}`}
+                      {searchFilter && searchFilter.trim() && ` • بحث: "${searchFilter}"`}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              <CardContent className="space-y-4 pt-0">
                 {vehicleAllocations.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     {vehiclesLoading ? (
