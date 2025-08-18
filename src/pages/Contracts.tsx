@@ -200,11 +200,11 @@ export default function Contracts() {
       {/* Contract Management Tabs */}
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="expired">المنتهية</TabsTrigger>
-          <TabsTrigger value="suspended">المعلقة</TabsTrigger>
-          <TabsTrigger value="active">النشطة</TabsTrigger>
-          <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
           <TabsTrigger value="all">جميع العقود</TabsTrigger>
+          <TabsTrigger value="active">النشطة</TabsTrigger>
+          <TabsTrigger value="suspended">المعلقة</TabsTrigger>
+          <TabsTrigger value="expired">المنتهية</TabsTrigger>
+          <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
