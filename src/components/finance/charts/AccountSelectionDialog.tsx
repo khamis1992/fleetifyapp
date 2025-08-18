@@ -143,7 +143,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   };
 
   const renderAccountList = (accountList: AccountTemplate[], type: string) => (
-    <div className="space-y-2 pb-4">
+    <div className="space-y-2 pb-8">
       {accountList.map((account) => (
         <div
           key={account.id}
