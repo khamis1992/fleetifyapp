@@ -243,6 +243,74 @@ export const useAccountDeletionPreview = () => {
   });
 };
 
+export const useDeleteAllAccounts = () => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      confirmationText, 
+      forceDeleteSystem = false 
+    }: { 
+      confirmationText: string; 
+      forceDeleteSystem?: boolean; 
+    }) => {
+      if (!companyId) throw new Error("معرف الشركة مطلوب");
+
+      const { data, error } = await supabase.rpc("delete_all_accounts", {
+        company_id_param: companyId,
+        force_delete_system: forceDeleteSystem,
+        confirmation_text: confirmationText,
+      });
+
+      if (error) throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
+      
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "فشل في حذف جميع الحسابات");
+      
+      return result;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      
+      const summary = data.summary;
+      toast({
+        title: "تم حذف جميع الحسابات",
+        description: `تم حذف ${summary.total_processed} حساب (${summary.deleted_permanently} نهائي، ${summary.deleted_soft} مؤقت)`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "خطأ في حذف جميع الحسابات",
+        description: error.message,
+      });
+    },
+  });
+};
+
+export const useAllAccountsDeletionPreview = () => {
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!companyId) throw new Error("معرف الشركة مطلوب");
+
+      const { data, error } = await supabase.rpc("get_all_accounts_deletion_preview", {
+        company_id_param: companyId,
+      });
+
+      if (error) throw new Error(`فشل في جلب معاينة حذف جميع الحسابات: ${error.message}`);
+      
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "فشل في جلب معاينة حذف جميع الحسابات");
+      
+      return result;
+    },
+  });
+};
+
 export const useCopyDefaultAccounts = () => {
   const queryClient = useQueryClient();
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();

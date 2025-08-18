@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder, Skull } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -21,8 +21,10 @@ import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
+import { DeleteAllAccountsDialog } from './DeleteAllAccountsDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AccountFormData {
   account_code: string;
@@ -47,15 +49,21 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('accounts');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
+  const { user } = useAuth();
   
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
+
+  // Check if user can delete all accounts (super admin only)
+  const isSuperAdmin = user?.roles?.includes('super_admin');
+  const canDeleteAll = isSuperAdmin;
 
   const [formData, setFormData] = useState<AccountFormData>({
     account_code: '',
@@ -317,11 +325,24 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
         {/* Accounts Tab */}
         <TabsContent value="accounts" className="space-y-6">
-          <div className="flex justify-end">
-            <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
-              <span>إضافة حساب جديد</span>
-              <Plus className="h-4 w-4" />
-            </Button>
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
+                <span>إضافة حساب جديد</span>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {canDeleteAll && (
+              <Button 
+                variant="destructive" 
+                onClick={() => setShowDeleteAllDialog(true)} 
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+              >
+                <span>حذف جميع الحسابات</span>
+                <Skull className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           {/* Filters */}
@@ -569,6 +590,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         accountId={statementAccount?.id}
         accountCode={statementAccount?.account_code}
         accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
+      />
+
+      {/* Delete All Accounts Dialog */}
+      <DeleteAllAccountsDialog
+        open={showDeleteAllDialog}
+        onOpenChange={setShowDeleteAllDialog}
+        onSuccess={() => {
+          setShowDeleteAllDialog(false);
+        }}
       />
     </div>
   );

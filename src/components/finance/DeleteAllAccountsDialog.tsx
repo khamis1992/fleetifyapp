@@ -1,0 +1,352 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Loader2, 
+  AlertTriangle, 
+  Trash2, 
+  Archive, 
+  Shield, 
+  Database,
+  Skull,
+  CheckCircle,
+  XCircle
+} from "lucide-react";
+import { useDeleteAllAccounts, useAllAccountsDeletionPreview } from "@/hooks/useChartOfAccounts";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface DeleteAllAccountsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+const CONFIRMATION_TEXT = "DELETE ALL ACCOUNTS PERMANENTLY";
+
+export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = ({
+  open,
+  onOpenChange,
+  onSuccess,
+}) => {
+  const [confirmationInput, setConfirmationInput] = useState('');
+  const [forceDeleteSystem, setForceDeleteSystem] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const { user } = useAuth();
+  
+  const previewMutation = useAllAccountsDeletionPreview();
+  const deleteAllMutation = useDeleteAllAccounts();
+
+  const isSuperAdmin = user?.roles?.includes('super_admin');
+  const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
+  const canProceed = isValidConfirmation && (previewData?.summary?.system_accounts === 0 || forceDeleteSystem);
+
+  useEffect(() => {
+    if (open) {
+      previewMutation.mutate(undefined, {
+        onSuccess: (data) => {
+          setPreviewData(data);
+        },
+      });
+    } else {
+      // Reset state when dialog closes
+      setConfirmationInput('');
+      setForceDeleteSystem(false);
+      setPreviewData(null);
+      setCurrentStep(1);
+    }
+  }, [open]);
+
+  const handleDeleteAll = async () => {
+    if (!canProceed) return;
+
+    try {
+      await deleteAllMutation.mutateAsync({
+        confirmationText: confirmationInput,
+        forceDeleteSystem,
+      });
+      
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
+  const isLoading = previewMutation.isPending || deleteAllMutation.isPending;
+  const hasSystemAccounts = previewData?.summary?.system_accounts > 0;
+
+  const getStepStatus = (step: number) => {
+    if (currentStep > step) return 'completed';
+    if (currentStep === step) return 'active';
+    return 'pending';
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Skull className="h-5 w-5" />
+            حذف جميع الحسابات - عملية خطيرة
+          </DialogTitle>
+        </DialogHeader>
+
+        {previewMutation.isPending ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin ml-2" />
+            <span>جاري تحليل جميع الحسابات...</span>
+          </div>
+        ) : previewData ? (
+          <div className="space-y-6">
+            {/* Progress Indicator */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  getStepStatus(1) === 'completed' ? 'bg-green-500 text-white' :
+                  getStepStatus(1) === 'active' ? 'bg-blue-500 text-white' :
+                  'bg-gray-300 text-gray-600'
+                }`}>
+                  {getStepStatus(1) === 'completed' ? <CheckCircle className="h-3 w-3" /> : '1'}
+                </div>
+                <span className="text-sm">معاينة</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-300 mx-2" />
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  getStepStatus(2) === 'completed' ? 'bg-green-500 text-white' :
+                  getStepStatus(2) === 'active' ? 'bg-blue-500 text-white' :
+                  'bg-gray-300 text-gray-600'
+                }`}>
+                  {getStepStatus(2) === 'completed' ? <CheckCircle className="h-3 w-3" /> : '2'}
+                </div>
+                <span className="text-sm">تأكيد</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-300 mx-2" />
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  getStepStatus(3) === 'completed' ? 'bg-red-500 text-white' :
+                  getStepStatus(3) === 'active' ? 'bg-red-500 text-white' :
+                  'bg-gray-300 text-gray-600'
+                }`}>
+                  {getStepStatus(3) === 'completed' ? <CheckCircle className="h-3 w-3" /> : '3'}
+                </div>
+                <span className="text-sm">حذف</span>
+              </div>
+            </div>
+
+            {/* Critical Warning */}
+            <Alert className="border-destructive bg-destructive/10">
+              <Skull className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-destructive font-medium">
+                <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
+                الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
+              </AlertDescription>
+            </Alert>
+
+            {/* Summary Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 border rounded-lg text-center">
+                <Database className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                <div className="font-bold text-lg">{previewData.summary.total_accounts}</div>
+                <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
+              </div>
+              
+              <div className="p-4 border rounded-lg text-center">
+                <Trash2 className="h-6 w-6 mx-auto mb-2 text-red-500" />
+                <div className="font-bold text-lg text-red-600">
+                  {previewData.summary.will_be_deleted_permanently}
+                </div>
+                <div className="text-sm text-muted-foreground">حذف نهائي</div>
+              </div>
+              
+              <div className="p-4 border rounded-lg text-center">
+                <Archive className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
+                <div className="font-bold text-lg text-yellow-600">
+                  {previewData.summary.will_be_deleted_soft}
+                </div>
+                <div className="text-sm text-muted-foreground">حذف مؤقت</div>
+              </div>
+              
+              {hasSystemAccounts && (
+                <div className="p-4 border rounded-lg text-center border-orange-200 bg-orange-50">
+                  <Shield className="h-6 w-6 mx-auto mb-2 text-orange-500" />
+                  <div className="font-bold text-lg text-orange-600">
+                    {previewData.summary.system_accounts}
+                  </div>
+                  <div className="text-sm text-orange-700">حسابات نظام</div>
+                </div>
+              )}
+            </div>
+
+            {/* Preview Table */}
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                معاينة الحسابات التي ستتأثر:
+                {previewData.showing_sample && (
+                  <Badge variant="outline">عرض أول 50 حساب</Badge>
+                )}
+              </h4>
+              
+              <ScrollArea className="h-64 border rounded-lg">
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {previewData.preview_accounts?.map((account: any, index: number) => (
+                      <div 
+                        key={index} 
+                        className={`p-2 rounded border text-xs ${
+                          account.deletion_type === 'permanent' 
+                            ? 'border-red-200 bg-red-50' 
+                            : 'border-yellow-200 bg-yellow-50'
+                        }`}
+                      >
+                        <div className="font-medium">{account.account_code}</div>
+                        <div className="text-muted-foreground truncate">{account.account_name}</div>
+                        <div className="flex items-center justify-between mt-1">
+                          <Badge 
+                            variant={account.deletion_type === 'permanent' ? 'destructive' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {account.deletion_type === 'permanent' ? 'حذف نهائي' : 'حذف مؤقت'}
+                          </Badge>
+                          {account.is_system && (
+                            <Shield className="h-3 w-3 text-orange-500" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* System Accounts Warning */}
+            {hasSystemAccounts && (
+              <Alert className="border-orange-200 bg-orange-50">
+                <Shield className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <strong>تحذير حسابات النظام:</strong> يوجد {previewData.summary.system_accounts} حساب نظام.
+                  حذف هذه الحسابات قد يؤثر على وظائف النظام الأساسية.
+                  {!isSuperAdmin && " (متاح للمدير العام فقط)"}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Confirmation Input */}
+            <div className="space-y-4">
+              <Separator />
+              <h4 className="font-semibold text-destructive">تأكيد الحذف:</h4>
+              <p className="text-sm text-muted-foreground">
+                لتأكيد حذف جميع الحسابات، يرجى كتابة النص التالي بالضبط:
+              </p>
+              <div className="p-3 bg-muted rounded border font-mono text-center">
+                {CONFIRMATION_TEXT}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmation">اكتب النص أعلاه للتأكيد:</Label>
+                <Input
+                  id="confirmation"
+                  value={confirmationInput}
+                  onChange={(e) => setConfirmationInput(e.target.value)}
+                  placeholder="DELETE ALL ACCOUNTS PERMANENTLY"
+                  className={`font-mono ${
+                    confirmationInput && !isValidConfirmation 
+                      ? 'border-destructive' 
+                      : isValidConfirmation 
+                      ? 'border-green-500' 
+                      : ''
+                  }`}
+                />
+                {confirmationInput && !isValidConfirmation && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <XCircle className="h-3 w-3" />
+                    النص غير صحيح
+                  </p>
+                )}
+                {isValidConfirmation && (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    تم التأكيد
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* System Accounts Override */}
+            {hasSystemAccounts && isSuperAdmin && (
+              <div className="space-y-3">
+                <Separator />
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="forceSystem"
+                    checked={forceDeleteSystem}
+                    onCheckedChange={(checked) => setForceDeleteSystem(!!checked)}
+                  />
+                  <label htmlFor="forceSystem" className="text-sm text-destructive font-medium">
+                    أؤكد حذف حسابات النظام أيضاً (خطير جداً - قد يعطل النظام)
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Final Warning */}
+            {isValidConfirmation && (
+              <Alert className="border-destructive bg-destructive/5">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription>
+                  <strong>تحذير أخير:</strong> بمجرد النقر على "حذف جميع الحسابات"، ستبدأ العملية فوراً.
+                  الحسابات التي ليس بها قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها!
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        ) : null}
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
+            إلغاء
+          </Button>
+          
+          <Button
+            variant="destructive"
+            onClick={handleDeleteAll}
+            disabled={isLoading || !canProceed}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {deleteAllMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                جاري الحذف...
+              </>
+            ) : (
+              <>
+                <Skull className="h-4 w-4 ml-2" />
+                حذف جميع الحسابات نهائياً
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

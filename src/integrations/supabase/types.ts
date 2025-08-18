@@ -9894,6 +9894,14 @@ export type Database = {
         Args: { encrypted_data: string }
         Returns: string
       }
+      delete_all_accounts: {
+        Args: {
+          company_id_param: string
+          confirmation_text?: string
+          force_delete_system?: boolean
+        }
+        Returns: Json
+      }
       distribute_vehicle_installment_amount: {
         Args: {
           p_installment_id: string
@@ -10112,6 +10120,10 @@ export type Database = {
           id: string
           is_header: boolean
         }[]
+      }
+      get_all_accounts_deletion_preview: {
+        Args: { company_id_param: string }
+        Returns: Json
       }
       get_available_customer_accounts: {
         Args: { company_id_param: string }
