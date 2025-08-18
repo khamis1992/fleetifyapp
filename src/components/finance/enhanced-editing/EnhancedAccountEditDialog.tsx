@@ -168,6 +168,39 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     }
   };
 
+  const getDisplayValue = (key: string, value: any): string => {
+    if (!value && value !== false) return 'فارغ';
+    
+    switch (key) {
+      case 'parent_account_id':
+        if (!value) return 'حساب رئيسي';
+        const parentAccount = allAccounts?.find(acc => acc.id === value);
+        return parentAccount ? (parentAccount.account_name_ar || parentAccount.account_name || parentAccount.account_code) : 'حساب غير معروف';
+      
+      case 'account_type':
+        const typeLabels: Record<string, string> = {
+          'assets': 'الأصول',
+          'liabilities': 'الخصوم',
+          'equity': 'حقوق الملكية',
+          'revenue': 'الإيرادات',
+          'expenses': 'المصروفات'
+        };
+        return typeLabels[value] || value;
+      
+      case 'balance_type':
+        return value === 'debit' ? 'مدين' : value === 'credit' ? 'دائن' : value;
+      
+      case 'is_header':
+        return value ? 'نعم' : 'لا';
+      
+      case 'is_active':
+        return value ? 'نشط' : 'غير نشط';
+      
+      default:
+        return String(value);
+    }
+  };
+
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
 
   if (!account) return null;
@@ -427,15 +460,15 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                             <Badge variant="outline" className="arabic-body-sm bg-primary/10 text-primary border-primary/20">
                               {getFieldLabel(key)}
                             </Badge>
-                            <div className="flex items-center gap-3 arabic-body flex-1">
-                              <span className="text-muted-foreground bg-background/80 px-3 py-1 rounded-md">
-                                {String(originalValue) || 'فارغ'}
-                              </span>
-                              <ArrowRight className="h-4 w-4 text-primary" />
-                              <span className="font-medium text-foreground bg-primary/10 px-3 py-1 rounded-md">
-                                {String(value) || 'فارغ'}
-                              </span>
-                            </div>
+                             <div className="flex items-center gap-3 arabic-body flex-1">
+                               <span className="text-muted-foreground bg-background/80 px-3 py-1 rounded-md">
+                                 {getDisplayValue(key, originalValue)}
+                               </span>
+                               <ArrowRight className="h-4 w-4 text-primary" />
+                               <span className="font-medium text-foreground bg-primary/10 px-3 py-1 rounded-md">
+                                 {getDisplayValue(key, value)}
+                               </span>
+                             </div>
                           </div>
                         );
                       }
