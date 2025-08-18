@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -70,7 +70,7 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
   placeholder = "اختر الحساب الأب",
   disabled = false,
 }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<EnhancedSuggestion[]>([]);
   const { data: allAccounts } = useChartOfAccounts();
@@ -88,6 +88,13 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
       setSuggestions(newSuggestions);
     }
   }, [currentAccountId, accountName, accountType, value, generateEnhancedSuggestions]);
+
+  // Auto-load suggestions on mount
+  useEffect(() => {
+    if (currentAccountId && accountName) {
+      loadSuggestions();
+    }
+  }, [currentAccountId, accountName, loadSuggestions]);
 
   // Handle selection
   const handleSelect = useCallback((selectedValue: string) => {
