@@ -8177,7 +8177,22 @@ export type Database = {
           vehicle_id?: string | null
           vendor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_vehicle_installments_vehicle_id"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_vehicle_installments_vendor_id"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_insurance: {
         Row: {

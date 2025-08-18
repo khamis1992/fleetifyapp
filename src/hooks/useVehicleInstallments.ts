@@ -33,14 +33,14 @@ export const useVehicleInstallments = () => {
         .from('vehicle_installments')
         .select(`
           *,
-          vehicles:vehicle_id (
+          vehicles (
             id,
             plate_number,
             model,
             make,
             year
           ),
-          customers:vendor_id (
+          customers!vehicle_installments_vendor_id_fkey (
             id,
             first_name,
             last_name,
