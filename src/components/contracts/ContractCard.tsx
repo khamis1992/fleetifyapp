@@ -39,58 +39,9 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div className="flex gap-2">
-            {showDeleteButton && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => onDeleteContract?.(contract)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                حذف
-              </Button>
-            )}
-            {showCancelButton && contract.status === 'active' && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => onCancelContract?.(contract)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                إلغاء
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onViewDetails?.(contract)}
-            >
-              عرض
-            </Button>
-            {showRenewButton && contract.status === 'active' && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => onRenew?.(contract)}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                تجديد
-              </Button>
-            )}
-            {showManageButton && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => onManageStatus?.(contract)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                إدارة
-              </Button>
-            )}
-          </div>
-          
-          <div className="flex-1 space-y-2 mr-4">
+        <div className="space-y-4">
+          {/* Contract main content */}
+          <div className="space-y-2">
             <div className="flex items-center gap-2 justify-end">
               <Badge className={getStatusColor(contract.status)}>
                 {getStatusIcon(contract.status)}
@@ -152,6 +103,57 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             
             {contract.description && (
               <p className="text-sm text-muted-foreground text-right">{contract.description}</p>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2 justify-start pt-2 border-t">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onViewDetails?.(contract)}
+            >
+              عرض
+            </Button>
+            {showRenewButton && contract.status === 'active' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onRenew?.(contract)}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                تجديد
+              </Button>
+            )}
+            {showManageButton && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onManageStatus?.(contract)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                إدارة
+              </Button>
+            )}
+            {showCancelButton && contract.status === 'active' && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onCancelContract?.(contract)}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                إلغاء
+              </Button>
+            )}
+            {showDeleteButton && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDeleteContract?.(contract)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                حذف
+              </Button>
             )}
           </div>
         </div>
