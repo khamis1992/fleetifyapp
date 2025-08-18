@@ -143,15 +143,15 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   };
 
   const renderAccountList = (accountList: AccountTemplate[], type: string) => (
-    <div className="space-y-2">
+    <div className="space-y-2 pb-4">
       {accountList.map((account) => (
         <div
           key={account.id}
-      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-        selectedAccountIds.has(account.id) 
-          ? 'bg-primary/10 border-primary/30' 
-          : 'bg-card hover:bg-muted/50 border-border'
-      }`}
+          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+            selectedAccountIds.has(account.id) 
+              ? 'bg-primary/10 border-primary/30' 
+              : 'bg-card hover:bg-muted/50 border-border'
+          }`}
           dir="rtl"
         >
           <Checkbox
