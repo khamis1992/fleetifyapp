@@ -143,7 +143,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   };
 
   const renderAccountList = (accountList: AccountTemplate[], type: string) => (
-    <div className="space-y-2">
+    <div className="space-y-2 pb-16">
       {accountList.map((account) => (
         <div
           key={account.id}
@@ -203,16 +203,16 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[90vw] md:max-w-4xl max-h-[90vh] flex flex-col" dir="rtl">
-        <DialogHeader className="pb-3 border-b">
+      <DialogContent className="sm:max-w-[90vw] md:max-w-4xl h-[85vh] overflow-hidden" dir="rtl">
+        <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-semibold text-right flex items-center gap-2">
             <Info className="h-4 w-4" />
             اختيار الحسابات من قالب: {templateName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col flex-1 min-h-0 gap-3 py-3">
-          {/* Search and Statistics */}
+        <div className="flex flex-col h-full space-y-3">
+          {/* Search and Statistics in one row */}
           <div className="flex gap-4 items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -235,7 +235,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
           </div>
 
           {/* Quick Actions */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={selectAll} className="h-8 px-3">
               <Check className="h-3 w-3 ml-1" />
               تحديد الكل
@@ -253,9 +253,9 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             </Button>
           </div>
 
-          {/* Account Tabs - Flexible content area */}
+          {/* Account Tabs - Take remaining space */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-5 h-9 bg-muted/50 shrink-0">
+            <TabsList className="grid w-full grid-cols-5 h-9 bg-muted/50">
               <TabsTrigger value="assets" className="text-xs px-1 data-[state=active]:bg-background">
                 <Building className="h-3 w-3 ml-1" />
                 الأصول ({filteredAccounts.assets.length})
@@ -278,9 +278,9 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 min-h-0 mt-2">
-              <ScrollArea className="h-full border rounded-md bg-background" dir="rtl">
-                <div className="p-3">
+            <div className="flex-1 mt-2 overflow-hidden">
+              <ScrollArea className="h-full border rounded-md" dir="rtl">
+                <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
                   <TabsContent value="assets" className="mt-0">
                     {renderAccountList(filteredAccounts.assets, 'assets')}
                   </TabsContent>
@@ -300,32 +300,24 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
               </ScrollArea>
             </div>
           </Tabs>
-        </div>
 
-        {/* Fixed Action Buttons */}
-        <div className="flex gap-2 pt-3 border-t bg-background shrink-0">
-          <Button 
-            onClick={handleApply}
-            disabled={selectedAccountIds.size === 0 || isApplying}
-            className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-          >
-            {isApplying ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                جاري التطبيق...
-              </span>
-            ) : (
-              `تطبيق الحسابات المحددة (${selectedAccountIds.size})`
-            )}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-            className="px-8 h-10 border-2"
-            disabled={isApplying}
-          >
-            إلغاء
-          </Button>
+          {/* Actions */}
+          <div className="flex gap-2 pt-2 border-t">
+            <Button 
+              onClick={handleApply}
+              disabled={selectedAccountIds.size === 0 || isApplying}
+              className="flex-1 h-9"
+            >
+              {isApplying ? 'جاري التطبيق...' : `تطبيق (${selectedAccountIds.size})`}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="px-6 h-9"
+            >
+              إلغاء
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
