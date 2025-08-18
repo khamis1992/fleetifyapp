@@ -297,7 +297,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             </TabsList>
 
             <div className="flex-1 mt-4 min-h-0">
-              <ScrollArea className="h-full bg-background border rounded-md">
+              <ScrollArea className="h-[300px] bg-background border rounded-md">
                 <div className="p-4">
                   <TabsContent value="assets" className="mt-0">
                     {renderAccountList(filteredAccounts.assets, 'assets')}
