@@ -203,102 +203,84 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[60vh] max-h-[600px] bg-background border shadow-lg z-50" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-right">
-            <Info className="h-5 w-5" />
+      <DialogContent className="sm:max-w-[90vw] md:max-w-4xl h-[85vh] overflow-hidden" dir="rtl">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-lg font-semibold text-right flex items-center gap-2">
+            <Info className="h-4 w-4" />
             اختيار الحسابات من قالب: {templateName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col h-full space-y-4">
-          {/* Search and Quick Actions */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col h-full space-y-3">
+          {/* Search and Statistics in one row */}
+          <div className="flex gap-4 items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="البحث في الحسابات..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-right bg-background"
+                className="pl-10 text-right h-9"
                 dir="rtl"
               />
             </div>
-
-            <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="outline" onClick={selectAll}>
-                <Check className="h-3 w-3 ml-1" />
-                تحديد الكل
-              </Button>
-              <Button size="sm" variant="outline" onClick={selectEssential}>
-                <Star className="h-3 w-3 ml-1" />
-                الأساسية فقط
-              </Button>
-              <Button size="sm" variant="outline" onClick={selectRecommended}>
-                الموصى بها
-              </Button>
-              <Button size="sm" variant="outline" onClick={clearSelection}>
-                <X className="h-3 w-3 ml-1" />
-                إلغاء التحديد
-              </Button>
-            </div>
-
-            {/* Statistics */}
-            <div className="grid grid-cols-4 gap-4 p-3 bg-muted/30 border rounded-lg">
-              <div className="text-center">
-                <div className="text-lg font-bold text-primary">{statistics.selected}</div>
-                <div className="text-xs text-muted-foreground">محدد</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold">{statistics.total}</div>
-                <div className="text-xs text-muted-foreground">الإجمالي</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-destructive">{statistics.essential}</div>
-                <div className="text-xs text-muted-foreground">أساسي</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-yellow-600">{statistics.recommended}</div>
-                <div className="text-xs text-muted-foreground">موصى به</div>
-              </div>
+            <div className="flex gap-1 text-xs">
+              <span className="px-2 py-1 bg-primary text-primary-foreground rounded">
+                محدد: {statistics.selected}
+              </span>
+              <span className="px-2 py-1 bg-muted text-muted-foreground rounded">
+                الكل: {statistics.total}
+              </span>
             </div>
           </div>
 
-          <Alert className="bg-muted/20 border">
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-right">
-              الحسابات الأساسية مطلوبة لضمان عمل النظام بشكل صحيح. يمكنك إلغاء تحديد الحسابات غير المرغوب فيها.
-            </AlertDescription>
-          </Alert>
+          {/* Quick Actions */}
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={selectAll} className="h-8 px-3">
+              <Check className="h-3 w-3 ml-1" />
+              تحديد الكل
+            </Button>
+            <Button size="sm" variant="outline" onClick={selectEssential} className="h-8 px-3">
+              <Star className="h-3 w-3 ml-1" />
+              الأساسية فقط
+            </Button>
+            <Button size="sm" variant="outline" onClick={selectRecommended} className="h-8 px-3">
+              الموصى بها
+            </Button>
+            <Button size="sm" variant="outline" onClick={clearSelection} className="h-8 px-3">
+              <X className="h-3 w-3 ml-1" />
+              إلغاء التحديد
+            </Button>
+          </div>
 
-          {/* Account Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-5 bg-muted/50 shrink-0">
-              <TabsTrigger value="assets" className="flex items-center gap-1 data-[state=active]:bg-background">
-                <Building className="h-3 w-3" />
+          {/* Account Tabs - Take remaining space */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-5 h-9 bg-muted/50">
+              <TabsTrigger value="assets" className="text-xs px-1 data-[state=active]:bg-background">
+                <Building className="h-3 w-3 ml-1" />
                 الأصول ({filteredAccounts.assets.length})
               </TabsTrigger>
-              <TabsTrigger value="liabilities" className="flex items-center gap-1 data-[state=active]:bg-background">
-                <TrendingUp className="h-3 w-3" />
+              <TabsTrigger value="liabilities" className="text-xs px-1 data-[state=active]:bg-background">
+                <TrendingUp className="h-3 w-3 ml-1" />
                 الخصوم ({filteredAccounts.liabilities.length})
               </TabsTrigger>
-              <TabsTrigger value="revenue" className="flex items-center gap-1 data-[state=active]:bg-background">
-                <DollarSign className="h-3 w-3" />
+              <TabsTrigger value="revenue" className="text-xs px-1 data-[state=active]:bg-background">
+                <DollarSign className="h-3 w-3 ml-1" />
                 الإيرادات ({filteredAccounts.revenue.length})
               </TabsTrigger>
-              <TabsTrigger value="expenses" className="flex items-center gap-1 data-[state=active]:bg-background">
-                <Users className="h-3 w-3" />
+              <TabsTrigger value="expenses" className="text-xs px-1 data-[state=active]:bg-background">
+                <Users className="h-3 w-3 ml-1" />
                 المصروفات ({filteredAccounts.expenses.length})
               </TabsTrigger>
-              <TabsTrigger value="equity" className="flex items-center gap-1 data-[state=active]:bg-background">
-                <Shield className="h-3 w-3" />
+              <TabsTrigger value="equity" className="text-xs px-1 data-[state=active]:bg-background">
+                <Shield className="h-3 w-3 ml-1" />
                 الملكية ({filteredAccounts.equity.length})
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 mt-4 min-h-0">
-              <ScrollArea className="h-[300px] bg-background border rounded-md">
-                <div className="p-4">
+            <div className="flex-1 mt-2 overflow-hidden">
+              <ScrollArea className="h-full border rounded-md">
+                <div className="p-3">
                   <TabsContent value="assets" className="mt-0">
                     {renderAccountList(filteredAccounts.assets, 'assets')}
                   </TabsContent>
@@ -319,21 +301,19 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             </div>
           </Tabs>
 
-          <Separator />
-
           {/* Actions */}
-          <div className="flex gap-3 pt-2 bg-background">
+          <div className="flex gap-2 pt-2 border-t">
             <Button 
               onClick={handleApply}
               disabled={selectedAccountIds.size === 0 || isApplying}
-              className="flex-1"
+              className="flex-1 h-9"
             >
-              {isApplying ? 'جاري التطبيق...' : `تطبيق الحسابات المحددة (${selectedAccountIds.size})`}
+              {isApplying ? 'جاري التطبيق...' : `تطبيق (${selectedAccountIds.size})`}
             </Button>
             <Button 
               variant="outline" 
               onClick={() => onOpenChange(false)}
-              className="flex-1"
+              className="px-6 h-9"
             >
               إلغاء
             </Button>
