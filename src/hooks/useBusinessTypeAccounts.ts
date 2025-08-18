@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 export interface AccountTemplate {
   id: string;
   code: string;
@@ -115,31 +113,30 @@ const BUSINESS_SPECIFIC_ACCOUNTS: Record<string, Partial<BusinessTypeAccounts>> 
 };
 
 export const useBusinessTypeAccounts = () => {
+  // Move useMemo to hook level to comply with Rules of Hooks
   const getAccountsByBusinessType = (businessType: string): BusinessTypeAccounts => {
-    return useMemo(() => {
-      // Start with essential accounts
-      const baseAccounts: BusinessTypeAccounts = {
-        assets: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'assets'),
-        liabilities: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'liabilities'),
-        revenue: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'revenue'),
-        expenses: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'expenses'),
-        equity: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'equity')
+    // Start with essential accounts
+    const baseAccounts: BusinessTypeAccounts = {
+      assets: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'assets'),
+      liabilities: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'liabilities'),
+      revenue: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'revenue'),
+      expenses: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'expenses'),
+      equity: ESSENTIAL_ACCOUNTS.filter(acc => acc.accountType === 'equity')
+    };
+    
+    // Add business-specific accounts
+    const specificAccounts = BUSINESS_SPECIFIC_ACCOUNTS[businessType];
+    if (specificAccounts) {
+      return {
+        assets: [...baseAccounts.assets, ...(specificAccounts.assets || [])],
+        liabilities: [...baseAccounts.liabilities, ...(specificAccounts.liabilities || [])],
+        revenue: [...baseAccounts.revenue, ...(specificAccounts.revenue || [])],
+        expenses: [...baseAccounts.expenses, ...(specificAccounts.expenses || [])],
+        equity: baseAccounts.equity
       };
-      
-      // Add business-specific accounts
-      const specificAccounts = BUSINESS_SPECIFIC_ACCOUNTS[businessType];
-      if (specificAccounts) {
-        return {
-          assets: [...baseAccounts.assets, ...(specificAccounts.assets || [])],
-          liabilities: [...baseAccounts.liabilities, ...(specificAccounts.liabilities || [])],
-          revenue: [...baseAccounts.revenue, ...(specificAccounts.revenue || [])],
-          expenses: [...baseAccounts.expenses, ...(specificAccounts.expenses || [])],
-          equity: baseAccounts.equity
-        };
-      }
-      
-      return baseAccounts;
-    }, [businessType]);
+    }
+    
+    return baseAccounts;
   };
 
   const generateAccountCode = (accountType: string, existingCodes: string[]): string => {
