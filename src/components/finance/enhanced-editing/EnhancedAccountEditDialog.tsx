@@ -63,7 +63,6 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
   const [originalData, setOriginalData] = useState(formData);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [previewChanges, setPreviewChanges] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   
   const updateAccount = useUpdateAccount();
   const { data: allAccounts } = useChartOfAccounts();
@@ -86,9 +85,6 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
       };
       setFormData(data);
       setOriginalData(data);
-      
-      // Generate AI suggestions
-      generateAISuggestions(account);
     }
   }, [account]);
 
@@ -99,23 +95,6 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     }
   }, [formData, account]);
 
-  const generateAISuggestions = (acc: ChartOfAccount) => {
-    const suggestions: string[] = [];
-    
-    if (!acc.account_name_ar) {
-      suggestions.push('يُنصح بإضافة اسم عربي للحساب لتحسين الفهم والتقارير');
-    }
-    
-    if (acc.account_level && acc.account_level > 3 && acc.is_header) {
-      suggestions.push('الحسابات في المستوى 4 وما فوق عادة لا تكون حسابات رئيسية');
-    }
-    
-    if (!acc.description) {
-      suggestions.push('إضافة وصف مختصر يساعد في فهم الغرض من الحساب');
-    }
-    
-    setAiSuggestions(suggestions);
-  };
 
   const validateChanges = () => {
     const issues: ValidationIssue[] = [];
@@ -204,7 +183,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
-          <TabsList className="grid w-full grid-cols-4 bg-background/50 p-1 rounded-lg h-12">
+          <TabsList className="grid w-full grid-cols-3 bg-background/50 p-1 rounded-lg h-12">
             <TabsTrigger 
               value="basic" 
               className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
@@ -225,13 +204,6 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
             >
               <Eye className="h-4 w-4" />
               معاينة التغييرات
-            </TabsTrigger>
-            <TabsTrigger 
-              value="ai" 
-              className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
-            >
-              <Lightbulb className="h-4 w-4" />
-              الاقتراحات الذكية
             </TabsTrigger>
           </TabsList>
 
@@ -481,40 +453,6 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
             </Card>
           </TabsContent>
 
-          {/* AI Suggestions Tab */}
-          <TabsContent value="ai" className="space-y-6 mt-6">
-            <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-              <CardHeader className="pb-4">
-                <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-primary" />
-                  الاقتراحات الذكية
-                </CardTitle>
-                <CardDescription className="arabic-body text-muted-foreground">
-                  اقتراحات لتحسين إعداد الحساب وموقعه في الهيكل
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {aiSuggestions.length > 0 ? (
-                  <div className="space-y-4">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <Alert key={index} className="bg-gradient-card shadow-card border-0 transition-smooth hover:shadow-elevated">
-                        <Lightbulb className="h-4 w-4 text-primary" />
-                        <AlertDescription className="text-right arabic-body text-foreground">
-                          {suggestion}
-                        </AlertDescription>
-                      </Alert>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="arabic-body text-muted-foreground">لا توجد اقتراحات في الوقت الحالي</p>
-                    <p className="arabic-body-sm text-muted-foreground/70 mt-2">سيتم عرض الاقتراحات عند توفرها</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         {/* Action Buttons */}
