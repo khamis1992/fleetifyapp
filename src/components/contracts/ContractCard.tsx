@@ -37,7 +37,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   const { formatCurrency } = useCurrencyFormatter();
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow font-cairo">
       <CardContent className="pt-6">
         <div className="space-y-4">
           {/* Contract main content */}
