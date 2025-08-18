@@ -9781,6 +9781,10 @@ export type Database = {
         Args: { maintenance_id_param: string }
         Returns: string
       }
+      create_openai_edge_function: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_payment_bank_transaction: {
         Args: { payment_id_param: string }
         Returns: string

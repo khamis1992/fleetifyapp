@@ -1,21 +1,35 @@
-import React, { useState, useMemo } from 'react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, ChevronDown, Search, TreePine, Target, Lightbulb, ArrowRight } from 'lucide-react';
-import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
-import { AccountMoveValidator } from './AccountMoveValidator';
-import { cn } from '@/lib/utils';
+import React from 'react';
+import { AISmartParentSelector } from './AISmartParentSelector';
 
 interface SmartParentSelectorProps {
   value?: string;
   onValueChange: (value: string) => void;
   currentAccountId?: string;
+  accountName?: string;
   accountType?: string;
   placeholder?: string;
 }
+
+export const SmartParentSelector: React.FC<SmartParentSelectorProps> = ({
+  value,
+  onValueChange,
+  currentAccountId,
+  accountName = '',
+  accountType,
+  placeholder = "اختر الحساب الأب"
+}) => {
+  // Use the new AI-enhanced selector
+  return (
+    <AISmartParentSelector
+      value={value}
+      onValueChange={onValueChange}
+      currentAccountId={currentAccountId}
+      accountName={accountName}
+      accountType={accountType}
+      placeholder={placeholder}
+    />
+  );
+};
 
 interface AccountOption {
   id: string;
