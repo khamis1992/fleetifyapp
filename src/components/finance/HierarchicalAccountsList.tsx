@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { ChartOfAccount } from '@/hooks/useFinance';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
+import { AccountDeleteConfirmDialog } from '@/components/finance/AccountDeleteConfirmDialog';
 import {
   Table,
   TableBody,
@@ -42,7 +43,19 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
 }) => {
   const { user } = useAuth();
   const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<ChartOfAccount | null>(null);
   const { formatCurrency } = useCurrencyFormatter();
+
+  const handleDeleteClick = (account: ChartOfAccount) => {
+    setAccountToDelete(account);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    setAccountToDelete(null);
+    setDeleteDialogOpen(false);
+  };
   
   // Check if user is super admin or company admin
   const isSuperAdmin = user?.roles?.includes('super_admin');

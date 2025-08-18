@@ -176,6 +176,73 @@ export const useDeleteAccount = () => {
   });
 };
 
+export const useCascadeDeleteAccount = () => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ accountId, forceDelete = false }: { accountId: string; forceDelete?: boolean }) => {
+      const { data, error } = await supabase.rpc("cascade_delete_account_with_children", {
+        account_id_param: accountId,
+        force_delete: forceDelete,
+      });
+
+      if (error) throw new Error(`فشل في حذف الحساب: ${error.message}`);
+      
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "فشل في حذف الحساب");
+      
+      return result;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      
+      const deletedCount = data.total_deleted || 0;
+      const permanentDeleted = data.deleted_accounts?.filter((acc: any) => acc.deletion_type === 'permanent')?.length || 0;
+      const softDeleted = data.deleted_accounts?.filter((acc: any) => acc.deletion_type === 'soft')?.length || 0;
+      
+      let description = `تم حذف ${deletedCount} حساب`;
+      if (permanentDeleted > 0 && softDeleted > 0) {
+        description += ` (${permanentDeleted} نهائي، ${softDeleted} مؤقت)`;
+      } else if (permanentDeleted > 0) {
+        description += ` نهائياً`;
+      } else {
+        description += ` مؤقتاً`;
+      }
+      
+      toast({
+        title: "تم حذف الحسابات بنجاح",
+        description,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "خطأ في حذف الحساب",
+        description: error.message,
+      });
+    },
+  });
+};
+
+export const useAccountDeletionPreview = () => {
+  return useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data, error } = await supabase.rpc("get_account_deletion_preview", {
+        account_id_param: accountId,
+      });
+
+      if (error) throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
+      
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "فشل في جلب معاينة الحذف");
+      
+      return result;
+    },
+  });
+};
+
 export const useCopyDefaultAccounts = () => {
   const queryClient = useQueryClient();
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();

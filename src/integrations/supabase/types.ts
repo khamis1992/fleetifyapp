@@ -9454,6 +9454,10 @@ export type Database = {
         Args: { _action?: string; _company_id?: string; _user_id: string }
         Returns: boolean
       }
+      cascade_delete_account_with_children: {
+        Args: { account_id_param: string; force_delete?: boolean }
+        Returns: Json
+      }
       check_and_fix_user_data_integrity: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -10093,6 +10097,10 @@ export type Database = {
       get_account_by_type: {
         Args: { account_type_code: string; company_id_param: string }
         Returns: string
+      }
+      get_account_deletion_preview: {
+        Args: { account_id_param: string }
+        Returns: Json
       }
       get_accounts_by_type_fixed: {
         Args: { account_type_param: string; company_id_param: string }
