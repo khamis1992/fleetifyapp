@@ -31,14 +31,14 @@ interface AccountTemplate {
 
 const PREDEFINED_TEMPLATES: AccountTemplate[] = [
   {
-    id: 'automotive',
-    name: 'Automotive',
+    id: 'car_rental',
+    name: 'Car Rental & Transportation',
     nameAr: 'السيارات والنقل',
-    description: 'لشركات بيع وصيانة السيارات والنقل',
+    description: 'لشركات تأجير السيارات وخدمات النقل والمواصلات',
     icon: <Car className="h-5 w-5" />,
-    accountsCount: 110,
+    accountsCount: 25,
     category: 'industry',
-    preview: ['مبيعات السيارات', 'قطع الغيار', 'مصاريف الصيانة', 'إيرادات الخدمات', 'تكلفة قطع الغيار']
+    preview: ['أسطول المركبات', 'إيرادات التأجير', 'صيانة المركبات', 'تأمين المركبات', 'رسوم التأخير', 'رواتب السائقين', 'مصاريف الوقود', 'رسوم الترخيص']
   }
 ];
 

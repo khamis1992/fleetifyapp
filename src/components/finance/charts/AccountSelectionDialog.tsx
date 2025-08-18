@@ -204,7 +204,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh]" dir="rtl">
+      <DialogContent className="max-w-4xl h-[80vh] bg-background border shadow-lg z-50" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             <Info className="h-5 w-5" />
@@ -221,7 +221,8 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
                 placeholder="البحث في الحسابات..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-right"
+                className="pl-10 text-right bg-background"
+                dir="rtl"
               />
             </div>
 
@@ -244,7 +245,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             </div>
 
             {/* Statistics */}
-            <div className="grid grid-cols-4 gap-4 p-3 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-4 gap-4 p-3 bg-muted/30 border rounded-lg">
               <div className="text-center">
                 <div className="text-lg font-bold text-primary">{statistics.selected}</div>
                 <div className="text-xs text-muted-foreground">محدد</div>
@@ -264,7 +265,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             </div>
           </div>
 
-          <Alert>
+          <Alert className="bg-muted/20 border">
             <Info className="h-4 w-4" />
             <AlertDescription className="text-right">
               الحسابات الأساسية مطلوبة لضمان عمل النظام بشكل صحيح. يمكنك إلغاء تحديد الحسابات غير المرغوب فيها.
@@ -273,31 +274,31 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
 
           {/* Account Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="assets" className="flex items-center gap-1">
+            <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+              <TabsTrigger value="assets" className="flex items-center gap-1 data-[state=active]:bg-background">
                 <Building className="h-3 w-3" />
                 الأصول ({filteredAccounts.assets.length})
               </TabsTrigger>
-              <TabsTrigger value="liabilities" className="flex items-center gap-1">
+              <TabsTrigger value="liabilities" className="flex items-center gap-1 data-[state=active]:bg-background">
                 <TrendingUp className="h-3 w-3" />
                 الخصوم ({filteredAccounts.liabilities.length})
               </TabsTrigger>
-              <TabsTrigger value="revenue" className="flex items-center gap-1">
+              <TabsTrigger value="revenue" className="flex items-center gap-1 data-[state=active]:bg-background">
                 <DollarSign className="h-3 w-3" />
                 الإيرادات ({filteredAccounts.revenue.length})
               </TabsTrigger>
-              <TabsTrigger value="expenses" className="flex items-center gap-1">
+              <TabsTrigger value="expenses" className="flex items-center gap-1 data-[state=active]:bg-background">
                 <Users className="h-3 w-3" />
                 المصروفات ({filteredAccounts.expenses.length})
               </TabsTrigger>
-              <TabsTrigger value="equity" className="flex items-center gap-1">
+              <TabsTrigger value="equity" className="flex items-center gap-1 data-[state=active]:bg-background">
                 <Shield className="h-3 w-3" />
                 الملكية ({filteredAccounts.equity.length})
               </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 mt-4">
-              <ScrollArea className="h-[400px]">
+              <ScrollArea className="h-[400px] bg-background border rounded-md p-2">
                 <TabsContent value="assets" className="mt-0">
                   {renderAccountList(filteredAccounts.assets, 'assets')}
                 </TabsContent>
@@ -320,7 +321,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
           <Separator />
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 bg-background">
             <Button 
               onClick={handleApply}
               disabled={selectedAccountIds.size === 0 || isApplying}
