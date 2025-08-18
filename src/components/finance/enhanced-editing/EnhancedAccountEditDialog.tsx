@@ -410,6 +410,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                     value={formData.parent_account_id}
                     onValueChange={(value) => setFormData({ ...formData, parent_account_id: value })}
                     currentAccountId={account.id}
+                    accountName={formData.account_name_ar || formData.account_name || ''}
                     accountType={formData.account_type}
                   />
                 </CardContent>

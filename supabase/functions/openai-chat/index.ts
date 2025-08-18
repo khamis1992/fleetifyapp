@@ -15,17 +15,24 @@ serve(async (req) => {
   }
 
   try {
+    const { messages, model = 'gpt-4.1-2025-04-14', max_completion_tokens = 1000, temperature } = await req.json();
+
     if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+      throw new Error('OpenAI API key not configured');
     }
 
-    const { messages, model = 'gpt-4o-mini', stream = false, temperature = 0.7, max_tokens } = await req.json();
+    const requestBody: any = {
+      model,
+      messages,
+      max_completion_tokens,
+    };
 
-    if (!messages || !Array.isArray(messages)) {
-      throw new Error('Messages array is required');
+    // Only add temperature for legacy models
+    if (model.includes('gpt-4o') && temperature !== undefined) {
+      requestBody.temperature = temperature;
     }
 
-    console.log('OpenAI Chat request:', { model, stream, messageCount: messages.length });
+    console.log('Making OpenAI request with model:', model);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -33,13 +40,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        stream,
-        temperature,
-        ...(max_tokens && { max_tokens }),
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -48,31 +49,16 @@ serve(async (req) => {
       throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
     }
 
-    if (stream) {
-      // Handle streaming response
-      return new Response(response.body, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
-    } else {
-      // Handle normal response
-      const data = await response.json();
-      console.log('OpenAI response received successfully');
-      
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const data = await response.json();
+    
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error in openai-chat function:', error);
-    
     return new Response(JSON.stringify({ 
-      error: error.message,
-      fallback: 'عذراً، حدث خطأ تقني مؤقت. يرجى المحاولة مرة أخرى.'
+      error: 'An error occurred while processing the request',
+      details: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
