@@ -42,10 +42,14 @@ export const ContractCard: React.FC<ContractCardProps> = ({
         <div className="space-y-4">
           {/* Contract main content */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-2 justify-start">
+              <h3 className="font-semibold text-lg">
+                عقد رقم{' '}
+                <NumberDisplay value={contract.contract_number} className="inline" />
+              </h3>
               <Badge className={getStatusColor(contract.status)}>
                 {getStatusIcon(contract.status)}
-                <span className="mr-1">
+                <span className="ml-1">
                   {contract.status === 'active' ? 'نشط' :
                    contract.status === 'draft' ? 'مسودة' :
                    contract.status === 'expired' ? 'منتهي' :
@@ -54,60 +58,56 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                    contract.status === 'renewed' ? 'مجدد' : contract.status}
                 </span>
               </Badge>
-              <h3 className="font-semibold text-lg">
-                <NumberDisplay value={contract.contract_number} className="inline" />
-                {' '}عقد رقم
-              </h3>
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex items-center gap-2 justify-start">
+                <FileText className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
                    {getContractTypeLabel(contract.contract_type)}
                 </span>
-                <FileText className="h-4 w-4 text-muted-foreground" />
               </div>
               
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex items-center gap-2 justify-start">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
                   {formatDateInGregorian(contract.start_date)} - {formatDateInGregorian(contract.end_date)}
                 </span>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
               </div>
               
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex items-center gap-2 justify-start">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
                   {formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </span>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </div>
               
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex items-center gap-2 justify-start">
+                <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
                   {getCustomerName(contract.customers)}
                 </span>
-                <Users className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
             
             {/* Cost center badge */}
             {(contract.cost_center || contract.cost_center_id) && (
-              <div className="flex items-center justify-end mt-1 gap-2 text-sm text-muted-foreground">
-                <span>مركز التكلفة:</span>
+              <div className="flex items-center justify-start mt-1 gap-2 text-sm text-muted-foreground">
                 <Badge variant="outline">
                   <NumberDisplay value={contract.cost_center?.center_code || '—'} className="inline" />
                   {contract.cost_center?.center_name ? ` • ${contract.cost_center.center_name}` : ''}
                 </Badge>
+                <span>مركز التكلفة:</span>
               </div>
             )}
             
             {contract.description && (
-              <p className="text-sm text-muted-foreground text-right">{contract.description}</p>
+              <p className="text-sm text-muted-foreground text-left">{contract.description}</p>
             )}
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2 justify-start pt-2 border-t">
+          <div className="flex gap-2 justify-end pt-2 border-t">
             <Button 
               variant="outline" 
               size="sm" 
