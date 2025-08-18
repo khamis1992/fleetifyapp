@@ -101,72 +101,66 @@ export const AccountStatementDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col bg-gradient-card shadow-elevated" dir="rtl">
-        <DialogHeader className="border-b border-border/50 pb-6">
-          <DialogTitle className="arabic-heading-sm text-right flex items-center gap-3 text-foreground">
-            <FileText className="h-6 w-6 text-primary" />
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
             كشف حساب
           </DialogTitle>
-          <DialogDescription className="arabic-body text-muted-foreground text-right">
+          <DialogDescription>
             إنشاء كشف حساب مفصل أو موجز لفترة زمنية محددة
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto space-y-6 mt-6">
+        <div className="flex-1 overflow-auto space-y-6">
           {/* Filters Section */}
-          <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
-                <Filter className="h-5 w-5 text-primary" />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Filter className="h-4 w-4" />
                 إعدادات الكشف
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
-                <Label htmlFor="account" className="arabic-body text-foreground font-medium">الحساب</Label>
+                <Label htmlFor="account">الحساب</Label>
                 <Input
                   id="account"
                   value={accountCode ? `${accountCode} - ${accountName}` : ''}
                   readOnly
                   placeholder="اختر حساب"
-                  className="arabic-body text-right border-input-border bg-input/80 backdrop-blur-sm h-11"
-                  dir="rtl"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="dateFrom" className="arabic-body text-foreground font-medium">من تاريخ</Label>
+                <Label htmlFor="dateFrom">من تاريخ</Label>
                 <Input
                   id="dateFrom"
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="arabic-body text-right border-input-border bg-input/80 backdrop-blur-sm h-11"
-                  dir="rtl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dateTo" className="arabic-body text-foreground font-medium">إلى تاريخ</Label>
+                <Label htmlFor="dateTo">إلى تاريخ</Label>
                 <Input
                   id="dateTo"
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="arabic-body text-right border-input-border bg-input/80 backdrop-blur-sm h-11"
-                  dir="rtl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="statementType" className="arabic-body text-foreground font-medium">نوع الكشف</Label>
+                <Label htmlFor="statementType">نوع الكشف</Label>
                 <Select value={statementType} onValueChange={(value: 'detailed' | 'summary') => setStatementType(value)}>
-                  <SelectTrigger className="arabic-body text-right border-input-border bg-input/80 backdrop-blur-sm h-11" dir="rtl">
-                    <SelectValue placeholder="اختر نوع الكشف" />
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover border-border shadow-elevated">
-                    <SelectItem value="detailed" className="arabic-body text-right">مفصل</SelectItem>
-                    <SelectItem value="summary" className="arabic-body text-right">موجز</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="detailed">مفصل</SelectItem>
+                    <SelectItem value="summary">موجز</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -174,23 +168,16 @@ export const AccountStatementDialog = ({
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex justify-between items-center py-4">
-            <Button 
-              onClick={handleGenerateStatement} 
-              className="arabic-body flex items-center gap-2 bg-gradient-primary hover:shadow-glow transition-smooth px-6 h-11"
-            >
+          <div className="flex justify-between items-center">
+            <Button onClick={handleGenerateStatement} className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               إنشاء الكشف
             </Button>
             
             {statementData && (
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrint}
-                  className="arabic-body flex items-center gap-2 border-border/50 hover:bg-background/80 transition-smooth px-6 h-11"
-                >
-                  <Printer className="h-4 w-4" />
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handlePrint}>
+                  <Printer className="h-4 w-4 mr-2" />
                   طباعة
                 </Button>
               </div>
@@ -199,22 +186,15 @@ export const AccountStatementDialog = ({
 
           {/* Loading State */}
           {isLoading && (
-            <div className="flex justify-center py-12">
-              <div className="text-center">
-                <LoadingSpinner />
-                <p className="arabic-body text-muted-foreground mt-4">جاري تحميل كشف الحساب...</p>
-              </div>
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <div className="text-center py-12">
-              <div className="arabic-body text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-6">
-                <FileText className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <p className="font-medium mb-2">خطأ في تحميل البيانات</p>
-                <p className="arabic-body-sm text-destructive/80">{error.message}</p>
-              </div>
+            <div className="text-center py-8 text-destructive">
+              خطأ في تحميل البيانات: {error.message}
             </div>
           )}
 
@@ -222,32 +202,32 @@ export const AccountStatementDialog = ({
           {statementData && (
             <div className="space-y-6 print:text-black">
               {/* Statement Header */}
-              <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-                <CardHeader className="pb-4">
-                  <CardTitle className="arabic-heading-sm text-center text-foreground">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-center text-xl">
                     كشف حساب - {statementData.statement_type === 'detailed' ? 'مفصل' : 'موجز'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="text-center p-4 bg-accent/10 rounded-lg border border-border/30">
-                      <span className="arabic-body font-medium text-muted-foreground block mb-2">رمز الحساب</span>
-                      <div className="arabic-body font-bold text-foreground">{statementData.account_code}</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">رمز الحساب:</span>
+                      <div>{statementData.account_code}</div>
                     </div>
-                    <div className="text-center p-4 bg-accent/10 rounded-lg border border-border/30">
-                      <span className="arabic-body font-medium text-muted-foreground block mb-2">اسم الحساب</span>
-                      <div className="arabic-body font-bold text-foreground">{statementData.account_name_ar || statementData.account_name}</div>
+                    <div>
+                      <span className="font-medium">اسم الحساب:</span>
+                      <div>{statementData.account_name_ar || statementData.account_name}</div>
                     </div>
-                    <div className="text-center p-4 bg-accent/10 rounded-lg border border-border/30">
-                      <span className="arabic-body font-medium text-muted-foreground block mb-2">الفترة</span>
-                      <div className="arabic-body-sm font-bold text-foreground">
+                    <div>
+                      <span className="font-medium">الفترة:</span>
+                      <div>
                         {format(new Date(statementData.period_from), 'dd/MM/yyyy', { locale: ar })} - {' '}
                         {format(new Date(statementData.period_to), 'dd/MM/yyyy', { locale: ar })}
                       </div>
                     </div>
-                    <div className="text-center p-4 bg-accent/10 rounded-lg border border-border/30">
-                      <span className="arabic-body font-medium text-muted-foreground block mb-2">تاريخ الإنشاء</span>
-                      <div className="arabic-body font-bold text-foreground">{format(new Date(), 'dd/MM/yyyy', { locale: ar })}</div>
+                    <div>
+                      <span className="font-medium">تاريخ الإنشاء:</span>
+                      <div>{format(new Date(), 'dd/MM/yyyy', { locale: ar })}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -255,78 +235,74 @@ export const AccountStatementDialog = ({
 
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-                  <CardContent className="pt-6 text-center">
-                    <div className="arabic-heading-sm font-bold text-primary mb-2">
-                      {formatCurrency(statementData.opening_balance)}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {formatCurrency(statementData.opening_balance)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">الرصيد الافتتاحي</div>
+                      <Badge variant="outline" className="mt-1">
+                        {formatBalance(statementData.opening_balance, statementData.balance_type).type}
+                      </Badge>
                     </div>
-                    <div className="arabic-body-sm text-muted-foreground mb-3">الرصيد الافتتاحي</div>
-                    <Badge variant="outline" className="arabic-body-sm bg-primary/10 text-primary border-primary/20">
-                      {formatBalance(statementData.opening_balance, statementData.balance_type).type}
-                    </Badge>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-                  <CardContent className="pt-6 text-center">
-                    <div className="arabic-heading-sm font-bold text-success mb-2">
-                      {formatCurrency(statementData.total_debits)}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(statementData.total_debits)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">إجمالي المدين</div>
                     </div>
-                    <div className="arabic-body-sm text-muted-foreground mb-3">إجمالي المدين</div>
-                    <Badge variant="outline" className="arabic-body-sm bg-success/10 text-success border-success/20">
-                      مدين
-                    </Badge>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-                  <CardContent className="pt-6 text-center">
-                    <div className="arabic-heading-sm font-bold text-destructive mb-2">
-                      {formatCurrency(statementData.total_credits)}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        {formatCurrency(statementData.total_credits)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">إجمالي الدائن</div>
                     </div>
-                    <div className="arabic-body-sm text-muted-foreground mb-3">إجمالي الدائن</div>
-                    <Badge variant="outline" className="arabic-body-sm bg-destructive/10 text-destructive border-destructive/20">
-                      دائن
-                    </Badge>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-                  <CardContent className="pt-6 text-center">
-                    <div className={`arabic-heading-sm font-bold mb-2 ${formatBalance(statementData.closing_balance, statementData.balance_type).className}`}>
-                      {formatCurrency(statementData.closing_balance)}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${formatBalance(statementData.closing_balance, statementData.balance_type).className}`}>
+                        {formatCurrency(statementData.closing_balance)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">الرصيد الختامي</div>
+                      <Badge variant="outline" className="mt-1">
+                        {formatBalance(statementData.closing_balance, statementData.balance_type).type}
+                      </Badge>
                     </div>
-                    <div className="arabic-body-sm text-muted-foreground mb-3">الرصيد الختامي</div>
-                    <Badge 
-                      variant="outline" 
-                      className={`arabic-body-sm ${formatBalance(statementData.closing_balance, statementData.balance_type).type === 'مدين' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-success/10 text-success border-success/20'}`}
-                    >
-                      {formatBalance(statementData.closing_balance, statementData.balance_type).type}
-                    </Badge>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Transactions Table */}
-              <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-0">
-                <CardHeader className="pb-4">
-                  <CardTitle className="arabic-heading-sm text-foreground flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    تفاصيل الحركات ({statementData.transactions.length} حركة)
-                  </CardTitle>
+              <Card>
+                <CardHeader>
+                  <CardTitle>تفاصيل الحركات ({statementData.transactions.length} حركة)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto rounded-lg border border-border/30">
+                  <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-accent/10">
-                          <TableHead className="arabic-body font-semibold text-right">التاريخ</TableHead>
-                          <TableHead className="arabic-body font-semibold text-right">رقم القيد</TableHead>
-                          <TableHead className="arabic-body font-semibold text-right">البيان</TableHead>
-                          {statementData.statement_type === 'detailed' && <TableHead className="arabic-body font-semibold text-right">مركز التكلفة</TableHead>}
-                          <TableHead className="arabic-body font-semibold text-right">مدين</TableHead>
-                          <TableHead className="arabic-body font-semibold text-right">دائن</TableHead>
-                          <TableHead className="arabic-body font-semibold text-right">الرصيد</TableHead>
+                        <TableRow>
+                          <TableHead>التاريخ</TableHead>
+                          <TableHead>رقم القيد</TableHead>
+                          <TableHead>البيان</TableHead>
+                          {statementData.statement_type === 'detailed' && <TableHead>مركز التكلفة</TableHead>}
+                          <TableHead className="text-right">مدين</TableHead>
+                          <TableHead className="text-right">دائن</TableHead>
+                          <TableHead className="text-right">الرصيد</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -334,47 +310,31 @@ export const AccountStatementDialog = ({
                           <TableRow>
                             <TableCell 
                               colSpan={statementData.statement_type === 'detailed' ? 7 : 6} 
-                              className="text-center py-12 arabic-body text-muted-foreground"
+                              className="text-center py-8 text-muted-foreground"
                             >
-                              <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
                               لا توجد حركات في هذه الفترة
                             </TableCell>
                           </TableRow>
                         ) : (
                           statementData.transactions.map((transaction) => (
-                            <TableRow key={transaction.id} className="hover:bg-accent/5 transition-smooth">
-                              <TableCell className="arabic-body text-right">
+                            <TableRow key={transaction.id}>
+                              <TableCell>
                                 {format(new Date(transaction.entry_date), 'dd/MM/yyyy', { locale: ar })}
                               </TableCell>
-                              <TableCell className="font-mono arabic-body text-right font-medium text-primary">
-                                {transaction.entry_number}
-                              </TableCell>
-                              <TableCell className="arabic-body text-right">{transaction.description}</TableCell>
+                              <TableCell className="font-mono">{transaction.entry_number}</TableCell>
+                              <TableCell>{transaction.description}</TableCell>
                               {statementData.statement_type === 'detailed' && (
-                                <TableCell className="arabic-body text-right text-muted-foreground">
-                                  {transaction.cost_center_name || '-'}
-                                </TableCell>
+                                <TableCell>{transaction.cost_center_name || '-'}</TableCell>
                               )}
-                              <TableCell className="text-right arabic-body font-medium">
-                                {transaction.debit_amount > 0 ? (
-                                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                                    {formatCurrency(transaction.debit_amount)}
-                                  </Badge>
-                                ) : '-'}
+                              <TableCell className="text-right text-blue-600">
+                                {transaction.debit_amount > 0 ? formatCurrency(transaction.debit_amount) : '-'}
                               </TableCell>
-                              <TableCell className="text-right arabic-body font-medium">
-                                {transaction.credit_amount > 0 ? (
-                                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                                    {formatCurrency(transaction.credit_amount)}
-                                  </Badge>
-                                ) : '-'}
+                              <TableCell className="text-right text-green-600">
+                                {transaction.credit_amount > 0 ? formatCurrency(transaction.credit_amount) : '-'}
                               </TableCell>
-                              <TableCell className={`text-right arabic-body font-bold ${formatBalance(transaction.running_balance, statementData.balance_type).className}`}>
+                              <TableCell className={`text-right font-medium ${formatBalance(transaction.running_balance, statementData.balance_type).className}`}>
                                 {formatCurrency(transaction.running_balance)}
-                                <Badge 
-                                  variant="outline" 
-                                  className={`mr-2 arabic-body-sm ${formatBalance(transaction.running_balance, statementData.balance_type).type === 'مدين' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-success/10 text-success border-success/20'}`}
-                                >
+                                <Badge variant="outline" className="mr-1 text-xs">
                                   {formatBalance(transaction.running_balance, statementData.balance_type).type}
                                 </Badge>
                               </TableCell>
