@@ -185,11 +185,11 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
           <TabsList className="grid w-full grid-cols-3 bg-background/50 p-1 rounded-lg h-12">
             <TabsTrigger 
-              value="preview" 
+              value="basic" 
               className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
             >
-              <Eye className="h-4 w-4" />
-              معاينة التغييرات
+              <Target className="h-4 w-4" />
+              المعلومات الأساسية
             </TabsTrigger>
             <TabsTrigger 
               value="hierarchy" 
@@ -199,11 +199,11 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
               الهيكل الهرمي
             </TabsTrigger>
             <TabsTrigger 
-              value="basic" 
+              value="preview" 
               className="arabic-body-sm flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-smooth"
             >
-              <Target className="h-4 w-4" />
-              المعلومات الأساسية
+              <Eye className="h-4 w-4" />
+              معاينة التغييرات
             </TabsTrigger>
           </TabsList>
 
