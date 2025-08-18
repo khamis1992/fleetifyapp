@@ -71,9 +71,6 @@ export const AccountTemplateManager: React.FC = () => {
   };
 
   const handleSelectAccounts = (template: AccountTemplate) => {
-    console.log('🎯 Selecting accounts for template:', template);
-    const accounts = getAccountsByBusinessType('car_rental');
-    console.log('📋 Retrieved accounts:', accounts);
     setSelectedTemplate(template);
     setShowAccountSelection(true);
   };
