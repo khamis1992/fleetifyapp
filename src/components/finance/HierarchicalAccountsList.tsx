@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Plus, FileText, Edit2, Trash2, Eye, Trending
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ChartOfAccount } from '@/hooks/useFinance';
+import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccountDeleteConfirmDialog } from '@/components/finance/AccountDeleteConfirmDialog';
@@ -302,11 +302,11 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
                   <Edit2 className="h-3 w-3" />
                 </Button>
               )}
-              {onDeleteAccount && (!account.is_system || isSuperAdmin || isCompanyAdmin) && (
+              {(!account.is_system || isSuperAdmin || isCompanyAdmin) && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onDeleteAccount(account)}
+                  onClick={() => handleDeleteClick(account)}
                   className={cn(
                     "h-8 w-8 p-0 text-destructive hover:text-destructive",
                     account.is_system && (isSuperAdmin || isCompanyAdmin) && "ring-2 ring-destructive ring-opacity-50"
@@ -350,23 +350,32 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-48">كود الحساب</TableHead>
-            <TableHead>اسم الحساب</TableHead>
-            <TableHead className="w-32">نوع الحساب</TableHead>
-            <TableHead className="w-24">طبيعة الرصيد</TableHead>
-            <TableHead className="w-32 text-left">الرصيد الحالي</TableHead>
-            <TableHead className="w-24">الحالة</TableHead>
-            <TableHead className="w-16">إجراءات</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {hierarchy.map(account => renderAccount(account, 0))}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-48">كود الحساب</TableHead>
+              <TableHead>اسم الحساب</TableHead>
+              <TableHead className="w-32">نوع الحساب</TableHead>
+              <TableHead className="w-24">طبيعة الرصيد</TableHead>
+              <TableHead className="w-32 text-left">الرصيد الحالي</TableHead>
+              <TableHead className="w-24">الحالة</TableHead>
+              <TableHead className="w-16">إجراءات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {hierarchy.map(account => renderAccount(account, 0))}
+          </TableBody>
+        </Table>
+      </div>
+      
+      <AccountDeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        account={accountToDelete}
+        onSuccess={handleDeleteSuccess}
+      />
+    </>
   );
 };
