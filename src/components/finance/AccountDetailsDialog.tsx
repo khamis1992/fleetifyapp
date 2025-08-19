@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ChartOfAccount } from '@/hooks/useFinance';
+import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
@@ -187,8 +187,8 @@ export const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
               {account.is_system && (
                 <Badge variant="outline">حساب نظام</Badge>
               )}
-              {account.is_default && (
-                <Badge variant="outline">حساب افتراضي</Badge>
+              {account.is_system && (
+                <Badge variant="outline">حساب نظام</Badge>
               )}
             </div>
           </div>

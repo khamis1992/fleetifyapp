@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, TestTube } from "lucide-react";
 import { useCreateInvoice, useCostCenters, useFixedAssets } from "@/hooks/useFinance";
+import { ChartOfAccount } from "@/hooks/useChartOfAccounts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveContracts } from "@/hooks/useContracts";

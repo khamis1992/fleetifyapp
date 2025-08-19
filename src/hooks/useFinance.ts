@@ -4,28 +4,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { toast } from "sonner"
 
-// Types
-export interface ChartOfAccount {
-  id: string
-  company_id: string
-  account_code: string
-  account_name: string
-  account_name_ar?: string
-  account_type: 'assets' | 'liabilities' | 'equity' | 'revenue' | 'expenses'
-  account_subtype?: string
-  parent_account_id?: string
-  account_level?: number
-  sort_order?: number
-  is_header?: boolean
-  is_default?: boolean
-  is_active: boolean
-  is_system: boolean
-  balance_type: 'debit' | 'credit'
-  current_balance: number
-  description?: string
-  created_at: string
-  updated_at: string
-}
+// Types - Import ChartOfAccount from useChartOfAccounts to avoid conflicts
+import type { ChartOfAccount } from './useChartOfAccounts'
 
 export interface JournalEntry {
   id: string

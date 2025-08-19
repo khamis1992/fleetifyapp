@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertTriangle, Trash2, Archive, FileX } from "lucide-react";
 import { useAccountDeletionPreview, useCascadeDeleteAccount, useDeleteAccount } from "@/hooks/useChartOfAccounts";
 import type { ChartOfAccount } from "@/hooks/useChartOfAccounts";
+import { toast } from "sonner";
 
 interface AccountDeleteConfirmDialogProps {
   open: boolean;
@@ -52,22 +53,33 @@ export const AccountDeleteConfirmDialog: React.FC<AccountDeleteConfirmDialogProp
   }, [open, account]);
 
   const handleDelete = async () => {
-    if (!account) return;
+    if (!account || !deletionType) return;
+
+    console.log('🗑️ [DELETE_DIALOG] Starting deletion:', { 
+      accountId: account.id, 
+      accountName: account.account_name,
+      deletionType, 
+      forceDelete 
+    });
 
     try {
       if (deletionType === 'cascade') {
-        await cascadeDeleteMutation.mutateAsync({ 
-          accountId: account.id, 
-          forceDelete 
+        console.log('🗑️ [DELETE_DIALOG] Performing cascade deletion...');
+        await cascadeDeleteMutation.mutateAsync({
+          accountId: account.id,
+          forceDelete
         });
       } else {
+        console.log('🗑️ [DELETE_DIALOG] Performing soft deletion...');
         await softDeleteMutation.mutateAsync(account.id);
       }
       
+      console.log('✅ [DELETE_DIALOG] Deletion successful');
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
-      // Error handling is done in the hooks
+      console.error('❌ [DELETE_DIALOG] Delete error:', error);
+      toast.error(`خطأ في حذف الحساب: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
     }
   };
 
