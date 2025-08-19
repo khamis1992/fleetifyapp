@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AccountDeleteConfirmDialog } from '@/components/finance/AccountDeleteConfirmDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -549,39 +550,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       />
 
       {/* Delete Account Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">تأكيد حذف الحساب</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-right">هل أنت متأكد من رغبتك في حذف هذا الحساب؟</p>
-            {editingAccount && (
-              <div className="p-4 bg-muted rounded text-right">
-                <p><strong>رمز الحساب:</strong> {editingAccount.account_code}</p>
-                <p><strong>اسم الحساب:</strong> {editingAccount.account_name}</p>
-              </div>
-            )}
-            <p className="text-sm text-muted-foreground text-right">
-              ملاحظة: لا يمكن حذف الحسابات النظام أو الحسابات التي تحتوي على معاملات
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button 
-                variant="destructive" 
-                onClick={() => {
-                  toast.info('وظيفة الحذف غير مفعلة حالياً');
-                  setShowDeleteDialog(false);
-                }}
-              >
-                حذف الحساب
-              </Button>
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                إلغاء
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AccountDeleteConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        account={editingAccount}
+        onSuccess={() => {
+          setShowDeleteDialog(false);
+          setEditingAccount(null);
+        }}
+      />
 
       {/* Account Statement Dialog */}
       <AccountStatementDialog
