@@ -47,7 +47,8 @@ export const useEnhancedAccountDeletion = () => {
       const { data, error } = await supabase.rpc('enhanced_cascade_delete_account', {
         account_id_param: accountId,
         force_delete: false,
-        transfer_to_account_id: null
+        transfer_to_account_id: null,
+        analysis_only: true  // تحليل فقط بدون حذف
       });
 
       if (error) {
@@ -56,11 +57,6 @@ export const useEnhancedAccountDeletion = () => {
       }
 
       console.log('[ENHANCED_DELETION] Analysis result:', data);
-      
-      // إرجاع التحليل حتى لو كان فشل (لعرض التفاصيل للمستخدم)
-      if (data && !data.success && !data.can_delete) {
-        return data as unknown as DeletionAnalysis;
-      }
       
       return data as unknown as DeletionAnalysis;
     },
@@ -87,7 +83,8 @@ export const useEnhancedAccountDeletion = () => {
       const { data, error } = await supabase.rpc('enhanced_cascade_delete_account', {
         account_id_param: accountId,
         force_delete: options.force_delete || false,
-        transfer_to_account_id: options.transfer_to_account_id || null
+        transfer_to_account_id: options.transfer_to_account_id || null,
+        analysis_only: false  // حذف فعلي
       });
 
       if (error) {
