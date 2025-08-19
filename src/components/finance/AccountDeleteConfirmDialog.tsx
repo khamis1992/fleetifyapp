@@ -80,17 +80,23 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
     console.log('[DELETE_DIALOG] Starting enhanced deletion process:', {
       accountId: account.id,
       deletionType,
-      transferToAccountId
+      transferToAccountId,
+      currentDeletionType: deletionType
     });
 
     const options: DeletionOptions = {};
 
+    // Ensure force_delete is properly set based on deletion type
     if (deletionType === 'force_delete') {
       options.force_delete = true;
     } else if (deletionType === 'transfer') {
       options.force_delete = true;
-      options.transfer_to_account_id = transferToAccountId;
+      if (transferToAccountId) {
+        options.transfer_to_account_id = transferToAccountId;
+      }
     }
+
+    console.log('[DELETE_DIALOG] Options being passed:', options);
 
     try {
       await deleteAccount.mutateAsync({
