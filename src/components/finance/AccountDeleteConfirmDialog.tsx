@@ -29,7 +29,7 @@ interface AccountDeleteConfirmDialogProps {
 }
 
 const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: AccountDeleteConfirmDialogProps) => {
-  const [deletionType, setDeletionType] = useState<'deactivate' | 'force_delete' | 'transfer'>('deactivate');
+  const [deletionType, setDeletionType] = useState<'normal' | 'force_delete' | 'transfer'>('normal');
   const [transferToAccountId, setTransferToAccountId] = useState<string>('');
   const [analysisData, setAnalysisData] = useState<DeletionAnalysis | null>(null);
   
@@ -86,15 +86,18 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
 
     const options: DeletionOptions = {};
 
-    // Ensure force_delete is properly set based on deletion type
+    // Set deletion options based on type
     if (deletionType === 'force_delete') {
       options.force_delete = true;
     } else if (deletionType === 'transfer') {
-      options.force_delete = true;
-      if (transferToAccountId) {
-        options.transfer_to_account_id = transferToAccountId;
+      if (!transferToAccountId) {
+        console.error('[DELETE_DIALOG] Transfer account not selected');
+        return;
       }
+      options.force_delete = true; // يحتاج force_delete ليتم النقل
+      options.transfer_to_account_id = transferToAccountId;
     }
+    // For normal deletion, no special options needed
 
     console.log('[DELETE_DIALOG] Options being passed:', options);
 
@@ -200,30 +203,47 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
             </div>
 
             {/* Analysis Results */}
-            {analysisData && !analysisData.can_delete && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <p className="font-medium">لا يمكن حذف هذا الحساب - يحتوي على بيانات مرتبطة:</p>
-                    <div className="space-y-1">
-                      {analysisData.linked_tables?.map((table) => (
-                        <div key={table} className="flex items-center gap-2">
-                          <span>{getTableDisplayName(table)}</span>
-                          <Badge variant="secondary">
-                            {analysisData.table_counts?.[table] || 0} سجل
-                          </Badge>
+            {analysisData && (
+              <div className="space-y-4">
+                {!analysisData.can_delete ? (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="space-y-2">
+                        <p className="font-medium">هذا الحساب يحتوي على بيانات مرتبطة:</p>
+                        <div className="space-y-1">
+                          {analysisData.linked_tables?.map((table) => (
+                            <div key={table} className="flex items-center gap-2">
+                              <span>{getTableDisplayName(table)}</span>
+                              <Badge variant="secondary">
+                                {analysisData.table_counts?.[table] || 0} سجل
+                              </Badge>
+                            </div>
+                          )) || []}
                         </div>
-                      )) || []}
-                    </div>
-                    {analysisData.child_accounts_count > 0 && (
-                      <p className="text-sm">
-                        عدد الحسابات الفرعية: {analysisData.child_accounts_count}
-                      </p>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
+                        {(analysisData.child_accounts_count || 0) > 0 && (
+                          <p className="text-sm">
+                            عدد الحسابات الفرعية: {analysisData.child_accounts_count}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {analysisData.message || 'يمكنك اختيار نقل البيانات إلى حساب آخر أو الحذف القسري.'}
+                        </p>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert>
+                    <Database className="h-4 w-4" />
+                    <AlertDescription>
+                      هذا الحساب آمن للحذف - لا توجد بيانات مرتبطة به.
+                      {(analysisData.child_accounts_count || 0) > 0 && (
+                        <span> سيتم حذف {analysisData.child_accounts_count} حساب فرعي معه.</span>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
             )}
 
             {analysisData?.account_info?.is_system && (
@@ -237,17 +257,19 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
 
             {/* Deletion Options */}
             <div className="space-y-4">
-              <Label className="text-base font-medium">خيارات المعالجة</Label>
+              <Label className="text-base font-medium">خيارات الحذف</Label>
               <RadioGroup 
                 value={deletionType} 
-                onValueChange={(value) => setDeletionType(value as 'deactivate' | 'force_delete' | 'transfer')}
+                onValueChange={(value) => setDeletionType(value as 'normal' | 'force_delete' | 'transfer')}
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="deactivate" id="deactivate" />
-                  <Label htmlFor="deactivate" className="cursor-pointer">
-                    إلغاء التفعيل (الخيار الآمن) - يحتفظ بالبيانات
-                  </Label>
-                </div>
+                {analysisData?.can_delete && (
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="normal" id="normal" />
+                    <Label htmlFor="normal" className="cursor-pointer">
+                      حذف عادي - آمن للحسابات بدون بيانات مرتبطة
+                    </Label>
+                  </div>
+                )}
                 
                 {analysisData && !analysisData.can_delete && (
                   <>
@@ -261,7 +283,7 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="force_delete" id="force_delete" />
                       <Label htmlFor="force_delete" className="cursor-pointer text-destructive">
-                        حذف نهائي (خطر - سيتم فقدان جميع البيانات المرتبطة)
+                        حذف قسري (خطر - سيتم فقدان جميع البيانات المرتبطة)
                       </Label>
                     </div>
                   </>
@@ -302,23 +324,23 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
             </div>
 
             {/* Enhanced Preview Data */}
-            {analysisData && analysisData.can_delete && (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  هذا الحساب آمن للحذف - لا توجد بيانات مرتبطة به.
-                  {analysisData.child_accounts_count > 0 && (
-                    <span> سيتم حذف {analysisData.child_accounts_count} حساب فرعي معه.</span>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-
             {deletionType === 'transfer' && transferToAccountId && (
               <Alert>
                 <ArrowRight className="h-4 w-4" />
                 <AlertDescription>
-                  سيتم نقل جميع البيانات المرتبطة إلى الحساب المحدد ثم حذف الحساب الحالي.
+                  سيتم نقل جميع البيانات المرتبطة إلى الحساب المحدد ثم حذف الحساب الحالي نهائياً.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {deletionType === 'normal' && analysisData?.can_delete && (
+              <Alert>
+                <Database className="h-4 w-4" />
+                <AlertDescription>
+                  سيتم حذف الحساب نهائياً من قاعدة البيانات.
+                  {(analysisData.child_accounts_count || 0) > 0 && (
+                    <span> سيتم حذف {analysisData.child_accounts_count} حساب فرعي معه.</span>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -352,9 +374,9 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
             ) : (
               <>
                 <Trash2 className="h-4 w-4 ml-2" />
-                {deletionType === 'deactivate' && 'إلغاء التفعيل'}
+                {deletionType === 'normal' && 'حذف الحساب'}
                 {deletionType === 'transfer' && 'نقل وحذف'}
-                {deletionType === 'force_delete' && 'حذف نهائي'}
+                {deletionType === 'force_delete' && 'حذف قسري'}
               </>
             )}
           </Button>
