@@ -96,16 +96,23 @@ export const useEnhancedAccountDeletion = () => {
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
 
-      // Show appropriate success message
-      const actionMessages = {
-        transferred: 'تم نقل بيانات الحساب وحذفه بنجاح',
-        deleted: 'تم حذف الحساب وجميع البيانات المرتبطة به',
-        deactivated: 'تم إلغاء تفعيل الحساب بنجاح'
-      };
+      // Check if the operation actually succeeded
+      if (result.success) {
+        // Show appropriate success message
+        const actionMessages = {
+          transferred: 'تم نقل بيانات الحساب وحذفه بنجاح',
+          deleted: 'تم حذف الحساب وجميع البيانات المرتبطة به',
+          deactivated: 'تم إلغاء تفعيل الحساب بنجاح'
+        };
 
-      toast.success(actionMessages[result.action] || 'تم تنفيذ العملية بنجاح');
-      
-      console.log('[ENHANCED_DELETION] Operation completed successfully:', result);
+        toast.success(actionMessages[result.action] || 'تم تنفيذ العملية بنجاح');
+        console.log('[ENHANCED_DELETION] Operation completed successfully:', result);
+      } else {
+        // Handle the case where the operation returned but failed
+        console.error('[ENHANCED_DELETION] Operation failed with result:', result);
+        toast.error(result.error || 'فشل في تنفيذ العملية');
+        throw new Error(result.error || 'Operation failed');
+      }
     },
     onError: (error) => {
       console.error('[ENHANCED_DELETION] Deletion failed:', error);
