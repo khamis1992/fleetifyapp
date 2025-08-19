@@ -34,6 +34,20 @@ export const AccountDeleteConfirmDialog: React.FC<AccountDeleteConfirmDialogProp
   const [forceDelete, setForceDelete] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   
+  console.log('[DELETE_DIALOG_RENDER] Dialog rendered with:', {
+    open,
+    account: account ? {
+      id: account.id,
+      code: account.account_code,
+      name: account.account_name,
+      isSystem: account.is_system,
+      isActive: account.is_active
+    } : null,
+    deletionType,
+    forceDelete,
+    previewData: !!previewData
+  });
+  
   const previewMutation = useAccountDeletionPreview();
   const cascadeDeleteMutation = useCascadeDeleteAccount();
   const softDeleteMutation = useDeleteAccount();
@@ -105,15 +119,30 @@ export const AccountDeleteConfirmDialog: React.FC<AccountDeleteConfirmDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" style={{ zIndex: 9999 }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-destructive" />
             حذف الحساب
+            {/* Debug indicator */}
+            {account && (
+              <Badge variant="outline" className="text-xs">
+                {account.account_code}
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
-        {previewMutation.isPending ? (
+        {!account ? (
+          <div className="py-8 text-center">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                لم يتم تحديد الحساب المراد حذفه. يرجى المحاولة مرة أخرى.
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : previewMutation.isPending ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span className="mr-2">جاري تحليل الحساب...</span>

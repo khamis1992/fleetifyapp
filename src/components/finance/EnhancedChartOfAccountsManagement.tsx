@@ -236,8 +236,32 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               variant="outline"
               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
               onClick={() => {
+                console.log('[DELETE_BTN_CLICK] Starting deletion process for account:', {
+                  accountId: account.id,
+                  accountCode: account.account_code,
+                  accountName: account.account_name,
+                  isSystemAccount: account.is_system,
+                  isActive: account.is_active,
+                  parentId: account.parent_account_id
+                });
+                console.log('[DELETE_BTN_CLICK] User permissions:', {
+                  userId: user?.id,
+                  userRoles: user?.roles,
+                  isSuperAdmin: isSuperAdmin,
+                  canDeleteAll: canDeleteAll
+                });
+                
                 setEditingAccount(account);
+                console.log('[DELETE_BTN_CLICK] Account set for deletion, opening dialog...');
                 setShowDeleteDialog(true);
+                
+                // Verify states after setting
+                setTimeout(() => {
+                  console.log('[DELETE_BTN_CLICK] States after setting:', {
+                    showDeleteDialog: true, // This should be true now
+                    editingAccount: account
+                  });
+                }, 100);
               }}
               title="حذف"
             >
@@ -552,11 +576,24 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       {/* Delete Account Dialog */}
       <AccountDeleteConfirmDialog
         open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
+        onOpenChange={(open) => {
+          console.log('[DELETE_DIALOG] Dialog state changing:', {
+            previousState: showDeleteDialog,
+            newState: open,
+            account: editingAccount
+          });
+          setShowDeleteDialog(open);
+          if (!open) {
+            console.log('[DELETE_DIALOG] Closing dialog, clearing account...');
+            setEditingAccount(null);
+          }
+        }}
         account={editingAccount}
         onSuccess={() => {
+          console.log('[DELETE_SUCCESS] Account deleted successfully, closing dialog...');
           setShowDeleteDialog(false);
           setEditingAccount(null);
+          toast.success('تم حذف الحساب بنجاح');
         }}
       />
 
