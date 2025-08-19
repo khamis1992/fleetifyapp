@@ -50,6 +50,11 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   const [currentStep, setCurrentStep] = useState(1);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletionProgress, setDeletionProgress] = useState(0);
+  const [deletionResults, setDeletionResults] = useState<{
+    successful: Array<{code: string, name: string}>;
+    failed: Array<{code: string, name: string, error: string}>;
+    completed: boolean;
+  }>({ successful: [], failed: [], completed: false });
   const { user } = useAuth();
   
   const { data: allAccounts } = useChartOfAccounts();
@@ -88,6 +93,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       setCurrentStep(1);
       setIsDeleting(false);
       setDeletionProgress(0);
+      setDeletionResults({ successful: [], failed: [], completed: false });
     }
   }, [open, allAccounts]);
 
@@ -96,6 +102,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
     setIsDeleting(true);
     setCurrentStep(3);
+    setDeletionResults({ successful: [], failed: [], completed: false });
     
     try {
       console.log('[DELETE_ALL] Starting enhanced deletion process for all accounts');
@@ -103,36 +110,61 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       // Get root accounts (those without parents) first
       const rootAccounts = allAccounts.filter(acc => !acc.parent_account_id);
       const totalAccounts = rootAccounts.length;
-      let deletedCount = 0;
+      let processedCount = 0;
+      const successful: Array<{code: string, name: string}> = [];
+      const failed: Array<{code: string, name: string, error: string}> = [];
+
+      console.log(`[DELETE_ALL] Found ${totalAccounts} root accounts to delete`);
 
       for (const account of rootAccounts) {
         console.log(`[DELETE_ALL] Processing account ${account.account_code}`);
         
         try {
           // Use force delete for all accounts
-          await deleteAccount.mutateAsync({
+          const result = await deleteAccount.mutateAsync({
             accountId: account.id,
             options: { force_delete: true }
           });
           
-          deletedCount++;
-          setDeletionProgress((deletedCount / totalAccounts) * 100);
+          console.log(`[DELETE_ALL] Successfully deleted account ${account.account_code}:`, result);
+          successful.push({ 
+            code: account.account_code, 
+            name: account.account_name 
+          });
           
-        } catch (error) {
+        } catch (error: any) {
           console.error(`[DELETE_ALL] Failed to delete account ${account.account_code}:`, error);
-          // Continue with other accounts
+          failed.push({ 
+            code: account.account_code, 
+            name: account.account_name, 
+            error: error?.message || 'خطأ غير معروف'
+          });
         }
+        
+        processedCount++;
+        setDeletionProgress((processedCount / totalAccounts) * 100);
       }
       
-      console.log('[DELETE_ALL] Enhanced deletion process completed');
-      toast.success('تم حذف جميع الحسابات بنجاح');
+      // Update results
+      setDeletionResults({ successful, failed, completed: true });
       
-      onSuccess?.();
-      onOpenChange(false);
+      // Show appropriate message based on results
+      if (failed.length === 0) {
+        console.log('[DELETE_ALL] All accounts deleted successfully');
+        toast.success(`تم حذف جميع الحسابات بنجاح (${successful.length} حساب)`);
+        onSuccess?.();
+        onOpenChange(false);
+      } else if (successful.length === 0) {
+        console.log('[DELETE_ALL] All deletions failed');
+        toast.error(`فشل في حذف جميع الحسابات (${failed.length} حساب)`);
+      } else {
+        console.log('[DELETE_ALL] Partial success');
+        toast.warning(`تم حذف ${successful.length} حساب بنجاح، فشل في حذف ${failed.length} حساب`);
+      }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DELETE_ALL] Enhanced deletion process failed:', error);
-      toast.error('فشل في حذف جميع الحسابات: ' + error.message);
+      toast.error('فشل في عملية الحذف: ' + error.message);
     } finally {
       setIsDeleting(false);
     }
@@ -172,6 +204,117 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
             <p className="text-center text-sm text-muted-foreground">
               تم الانتهاء من {Math.round(deletionProgress)}%
             </p>
+          </div>
+        ) : deletionResults.completed ? (
+          <div className="space-y-6">
+            {/* Deletion Results */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                <h3 className="font-semibold text-lg">نتائج عملية الحذف</h3>
+              </div>
+              
+              {/* Results Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border rounded-lg text-center border-green-200 bg-green-50">
+                  <CheckCircle className="h-6 w-6 mx-auto mb-2 text-green-500" />
+                  <div className="font-bold text-lg text-green-600">
+                    {deletionResults.successful.length}
+                  </div>
+                  <div className="text-sm text-green-700">تم حذفها بنجاح</div>
+                </div>
+                
+                <div className="p-4 border rounded-lg text-center border-red-200 bg-red-50">
+                  <XCircle className="h-6 w-6 mx-auto mb-2 text-red-500" />
+                  <div className="font-bold text-lg text-red-600">
+                    {deletionResults.failed.length}
+                  </div>
+                  <div className="text-sm text-red-700">فشل في حذفها</div>
+                </div>
+                
+                <div className="p-4 border rounded-lg text-center">
+                  <Database className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                  <div className="font-bold text-lg">
+                    {deletionResults.successful.length + deletionResults.failed.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">إجمالي المعالج</div>
+                </div>
+              </div>
+
+              {/* Failed Deletions Details */}
+              {deletionResults.failed.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-red-600 flex items-center gap-2">
+                    <XCircle className="h-4 w-4" />
+                    الحسابات التي فشل حذفها ({deletionResults.failed.length}):
+                  </h4>
+                  
+                  <ScrollArea className="h-64 border rounded-lg border-red-200">
+                    <div className="p-4 space-y-2">
+                      {deletionResults.failed.map((account, index) => (
+                        <div 
+                          key={index}
+                          className="p-3 border border-red-200 bg-red-50 rounded text-sm"
+                        >
+                          <div className="font-medium text-red-800">
+                            {account.code} - {account.name}
+                          </div>
+                          <div className="text-red-600 mt-1">
+                            <strong>السبب:</strong> {account.error}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Successful Deletions */}
+              {deletionResults.successful.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-green-600 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    الحسابات المحذوفة بنجاح ({deletionResults.successful.length}):
+                  </h4>
+                  
+                  <ScrollArea className="h-32 border rounded-lg border-green-200">
+                    <div className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {deletionResults.successful.map((account, index) => (
+                          <div 
+                            key={index}
+                            className="p-2 border border-green-200 bg-green-50 rounded text-xs"
+                          >
+                            <div className="font-medium text-green-800">
+                              {account.code} - {account.name}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeletionResults({ successful: [], failed: [], completed: false });
+                    setCurrentStep(1);
+                  }}
+                >
+                  إعادة المحاولة
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => onOpenChange(false)}
+                >
+                  إغلاق
+                </Button>
+              </div>
+            </div>
           </div>
         ) : previewData ? (
           <div className="space-y-6">
