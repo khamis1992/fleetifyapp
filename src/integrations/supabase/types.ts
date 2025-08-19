@@ -79,6 +79,56 @@ export type Database = {
           },
         ]
       }
+      account_deletion_log: {
+        Row: {
+          affected_records: Json | null
+          company_id: string
+          created_at: string
+          deleted_account_code: string | null
+          deleted_account_id: string | null
+          deleted_account_name: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          deletion_type: string
+          id: string
+          transfer_to_account_id: string | null
+        }
+        Insert: {
+          affected_records?: Json | null
+          company_id: string
+          created_at?: string
+          deleted_account_code?: string | null
+          deleted_account_id?: string | null
+          deleted_account_name?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type: string
+          id?: string
+          transfer_to_account_id?: string | null
+        }
+        Update: {
+          affected_records?: Json | null
+          company_id?: string
+          created_at?: string
+          deleted_account_code?: string | null
+          deleted_account_id?: string | null
+          deleted_account_name?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string
+          id?: string
+          transfer_to_account_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_deletion_log_transfer_to_account_id_fkey"
+            columns: ["transfer_to_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_mappings: {
         Row: {
           chart_of_accounts_id: string
@@ -3937,6 +3987,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -10433,6 +10490,19 @@ export type Database = {
       is_super_admin: {
         Args: { p_user_id: string }
         Returns: boolean
+      }
+      log_account_deletion: {
+        Args: {
+          p_affected_records?: Json
+          p_company_id: string
+          p_deleted_account_code: string
+          p_deleted_account_id: string
+          p_deleted_account_name: string
+          p_deletion_reason?: string
+          p_deletion_type: string
+          p_transfer_to_account_id?: string
+        }
+        Returns: string
       }
       log_contract_creation_step: {
         Args: {
