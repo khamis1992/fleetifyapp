@@ -9914,6 +9914,14 @@ export type Database = {
         Args: { data: string }
         Returns: string
       }
+      enhanced_cascade_delete_account: {
+        Args: {
+          account_id_param: string
+          force_delete?: boolean
+          transfer_to_account_id?: string
+        }
+        Returns: Json
+      }
       ensure_essential_account_mappings: {
         Args: { company_id_param: string }
         Returns: Json
