@@ -198,14 +198,14 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
                   <div className="space-y-2">
                     <p className="font-medium">لا يمكن حذف هذا الحساب - يحتوي على بيانات مرتبطة:</p>
                     <div className="space-y-1">
-                      {analysisData.linked_tables.map((table) => (
+                      {analysisData.linked_tables?.map((table) => (
                         <div key={table} className="flex items-center gap-2">
                           <span>{getTableDisplayName(table)}</span>
                           <Badge variant="secondary">
-                            {analysisData.table_counts[table]} سجل
+                            {analysisData.table_counts?.[table] || 0} سجل
                           </Badge>
                         </div>
-                      ))}
+                      )) || []}
                     </div>
                     {analysisData.child_accounts_count > 0 && (
                       <p className="text-sm">
