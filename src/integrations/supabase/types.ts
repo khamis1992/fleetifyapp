@@ -9380,6 +9380,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      analyze_account_deletion_enhanced: {
+        Args: { account_id_param: string }
+        Returns: Json
+      }
       analyze_system_performance: {
         Args: { company_id_param: string; hours_back?: number }
         Returns: Json
