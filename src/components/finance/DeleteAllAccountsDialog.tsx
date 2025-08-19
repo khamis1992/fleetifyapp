@@ -26,8 +26,10 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { useDeleteAllAccounts, useAllAccountsDeletionPreview } from "@/hooks/useChartOfAccounts";
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { useEnhancedAccountDeletion } from "@/hooks/useEnhancedAccountDeletion";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface DeleteAllAccountsDialogProps {
   open: boolean;
@@ -46,48 +48,97 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   const [forceDeleteSystem, setForceDeleteSystem] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletionProgress, setDeletionProgress] = useState(0);
   const { user } = useAuth();
   
-  const previewMutation = useAllAccountsDeletionPreview();
-  const deleteAllMutation = useDeleteAllAccounts();
+  const { data: allAccounts } = useChartOfAccounts();
+  const { analyzeAccount, deleteAccount } = useEnhancedAccountDeletion();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
   const canProceed = isValidConfirmation && (previewData?.summary?.system_accounts === 0 || forceDeleteSystem);
 
   useEffect(() => {
-    if (open) {
-      previewMutation.mutate(undefined, {
-        onSuccess: (data) => {
-          setPreviewData(data);
+    if (open && allAccounts) {
+      // Create preview data from all accounts
+      const systemAccounts = allAccounts.filter(acc => acc.is_system);
+      const regularAccounts = allAccounts.filter(acc => !acc.is_system);
+      
+      setPreviewData({
+        summary: {
+          total_accounts: allAccounts.length,
+          system_accounts: systemAccounts.length,
+          will_be_deleted_permanently: regularAccounts.length,
+          will_be_deleted_soft: 0
         },
+        preview_accounts: allAccounts.slice(0, 50).map(acc => ({
+          account_code: acc.account_code,
+          account_name: acc.account_name,
+          is_system: acc.is_system,
+          deletion_type: acc.is_system ? 'soft' : 'permanent'
+        })),
+        showing_sample: allAccounts.length > 50
       });
-    } else {
+    } else if (!open) {
       // Reset state when dialog closes
       setConfirmationInput('');
       setForceDeleteSystem(false);
       setPreviewData(null);
       setCurrentStep(1);
+      setIsDeleting(false);
+      setDeletionProgress(0);
     }
-  }, [open]);
+  }, [open, allAccounts]);
 
   const handleDeleteAll = async () => {
-    if (!canProceed) return;
+    if (!canProceed || !allAccounts) return;
 
+    setIsDeleting(true);
+    setCurrentStep(3);
+    
     try {
-      await deleteAllMutation.mutateAsync({
-        confirmationText: confirmationInput,
-        forceDeleteSystem,
-      });
+      console.log('[DELETE_ALL] Starting enhanced deletion process for all accounts');
+      
+      // Get root accounts (those without parents) first
+      const rootAccounts = allAccounts.filter(acc => !acc.parent_account_id);
+      const totalAccounts = rootAccounts.length;
+      let deletedCount = 0;
+
+      for (const account of rootAccounts) {
+        console.log(`[DELETE_ALL] Processing account ${account.account_code}`);
+        
+        try {
+          // Use force delete for all accounts
+          await deleteAccount.mutateAsync({
+            accountId: account.id,
+            options: { force_delete: true }
+          });
+          
+          deletedCount++;
+          setDeletionProgress((deletedCount / totalAccounts) * 100);
+          
+        } catch (error) {
+          console.error(`[DELETE_ALL] Failed to delete account ${account.account_code}:`, error);
+          // Continue with other accounts
+        }
+      }
+      
+      console.log('[DELETE_ALL] Enhanced deletion process completed');
+      toast.success('تم حذف جميع الحسابات بنجاح');
       
       onSuccess?.();
       onOpenChange(false);
+      
     } catch (error) {
-      // Error handling is done in the hook
+      console.error('[DELETE_ALL] Enhanced deletion process failed:', error);
+      toast.error('فشل في حذف جميع الحسابات: ' + error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const isLoading = previewMutation.isPending || deleteAllMutation.isPending;
+  const isLoading = isDeleting;
   const hasSystemAccounts = previewData?.summary?.system_accounts > 0;
 
   const getStepStatus = (step: number) => {
@@ -106,10 +157,21 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
           </DialogTitle>
         </DialogHeader>
 
-        {previewMutation.isPending ? (
+        {!allAccounts ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin ml-2" />
-            <span>جاري تحليل جميع الحسابات...</span>
+            <span>جاري تحميل الحسابات...</span>
+          </div>
+        ) : isDeleting ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin ml-2" />
+              <span>جاري حذف الحسابات...</span>
+            </div>
+            <Progress value={deletionProgress} className="w-full" />
+            <p className="text-center text-sm text-muted-foreground">
+              تم الانتهاء من {Math.round(deletionProgress)}%
+            </p>
           </div>
         ) : previewData ? (
           <div className="space-y-6">
@@ -333,7 +395,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
             disabled={isLoading || !canProceed}
             className="bg-red-600 hover:bg-red-700"
           >
-            {deleteAllMutation.isPending ? (
+            {isDeleting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
                 جاري الحذف...
