@@ -9921,8 +9921,8 @@ export type Database = {
       enhanced_cascade_delete_account: {
         Args: {
           account_id_param: string
-          force_delete_param?: boolean
-          transfer_to_account_id_param?: string
+          force_delete?: boolean
+          transfer_to_account_id?: string
         }
         Returns: Json
       }
