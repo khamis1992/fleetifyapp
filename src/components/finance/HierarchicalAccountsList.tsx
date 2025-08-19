@@ -69,6 +69,14 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isCompanyAdmin = user?.roles?.includes('company_admin');
   
+  console.log('👤 [USER_ROLES] Current user permissions:', {
+    userId: user?.id,
+    roles: user?.roles,
+    isSuperAdmin,
+    isCompanyAdmin,
+    hasUser: !!user
+  });
+  
   const isExpanded = (accountId: string) => {
     return onToggleExpanded ? expandedAccounts.has(accountId) : localExpanded.has(accountId);
   };
@@ -314,7 +322,19 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDeleteClick(account)}
+                  onClick={() => {
+                    console.log('🔘 [DELETE_BTN] Delete button clicked:', {
+                      accountId: account.id,
+                      accountCode: account.account_code,
+                      accountName: account.account_name,
+                      isSystem: account.is_system,
+                      userRoles: user?.roles,
+                      isSuperAdmin,
+                      isCompanyAdmin,
+                      canDelete: (!account.is_system || isSuperAdmin || isCompanyAdmin)
+                    });
+                    handleDeleteClick(account);
+                  }}
                   className={cn(
                     "h-8 w-8 p-0 text-destructive hover:text-destructive",
                     account.is_system && (isSuperAdmin || isCompanyAdmin) && "ring-2 ring-destructive ring-opacity-50"
