@@ -119,11 +119,14 @@ const AccountDeleteConfirmDialog = ({ open, onOpenChange, account, onSuccess }: 
   const getTableDisplayName = (tableName: string) => {
     const tableNames: Record<string, string> = {
       'journal_entry_lines': 'قيود اليومية',
+      'contracts': 'العقود',
       'payments': 'المدفوعات',
       'invoices': 'الفواتير',
       'customers': 'العملاء',
-      'contracts': 'العقود',
-      'budget_items': 'بنود الميزانية'
+      'budget_items': 'بنود الميزانية',
+      'customer_accounts': 'حسابات العملاء',
+      'essential_account_mappings': 'ربط الحسابات الأساسية',
+      'account_mappings': 'ربط الحسابات'
     };
     return tableNames[tableName] || tableName;
   };
