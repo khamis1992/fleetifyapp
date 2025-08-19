@@ -40,9 +40,14 @@ export const AccountDeleteConfirmDialog: React.FC<AccountDeleteConfirmDialogProp
 
   useEffect(() => {
     if (open && account) {
+      console.log('🔍 [DELETE_DIALOG] Loading preview for account:', account.id);
       previewMutation.mutate(account.id, {
         onSuccess: (data) => {
+          console.log('✅ [DELETE_DIALOG] Preview loaded:', data);
           setPreviewData(data);
+        },
+        onError: (error) => {
+          console.error('❌ [DELETE_DIALOG] Preview error:', error);
         },
       });
     } else {
@@ -266,11 +271,20 @@ export const AccountDeleteConfirmDialog: React.FC<AccountDeleteConfirmDialogProp
           </Button>
           <Button
             variant="destructive"
-            onClick={handleDelete}
+            onClick={() => {
+              console.log('🔘 [DELETE_DIALOG] Delete button clicked:', {
+                isLoading,
+                previewData: !!previewData,
+                deletionType,
+                isSystemAccount: previewData?.account?.is_system,
+                forceDelete
+              });
+              handleDelete();
+            }}
             disabled={
               isLoading || 
               !previewData || 
-              (previewData.account.is_system && deletionType === 'cascade' && !forceDelete)
+              (previewData?.account?.is_system && deletionType === 'cascade' && !forceDelete)
             }
           >
             {isLoading ? (
