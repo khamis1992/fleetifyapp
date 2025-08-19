@@ -48,11 +48,19 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
   const { formatCurrency } = useCurrencyFormatter();
 
   const handleDeleteClick = (account: ChartOfAccount) => {
+    console.log('🔘 [DELETE_CLICK] Account selected for deletion:', {
+      id: account.id,
+      code: account.account_code,
+      name: account.account_name,
+      isSystem: account.is_system,
+      isActive: account.is_active
+    });
     setAccountToDelete(account);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteSuccess = () => {
+    console.log('✅ [DELETE_SUCCESS] Account deletion completed successfully');
     setAccountToDelete(null);
     setDeleteDialogOpen(false);
   };
@@ -370,12 +378,19 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
         </Table>
       </div>
       
-      <AccountDeleteConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        account={accountToDelete}
-        onSuccess={handleDeleteSuccess}
-      />
+        <AccountDeleteConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            console.log('🔄 [DELETE_DIALOG] Dialog state changed:', {
+              open,
+              hasAccount: !!accountToDelete,
+              accountId: accountToDelete?.id
+            });
+            setDeleteDialogOpen(open);
+          }}
+          account={accountToDelete}
+          onSuccess={handleDeleteSuccess}
+        />
     </>
   );
 };
