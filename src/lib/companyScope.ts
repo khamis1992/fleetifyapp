@@ -25,7 +25,8 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
     )
   ) as UserRole[];
 
-  const companyId = user?.profile?.company_id;
+  // Extract company_id consistently with useUnifiedCompanyAccess
+  const companyId = user?.company?.id || (user as any)?.company_id || user?.profile?.company_id;
   
   return {
     user,

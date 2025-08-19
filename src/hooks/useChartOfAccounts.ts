@@ -37,6 +37,8 @@ export const useChartOfAccounts = () => {
       try {
         validateCompanyAccess(companyId);
         
+        console.log('[CHART_OF_ACCOUNTS] Fetching accounts for company:', companyId);
+        
         const { data, error } = await supabase
           .from("chart_of_accounts")
           .select("*")
@@ -49,6 +51,9 @@ export const useChartOfAccounts = () => {
           throw new Error(`فشل في تحميل دليل الحسابات: ${error.message}`);
         }
 
+        console.log('[CHART_OF_ACCOUNTS] Fetched accounts count:', data?.length || 0);
+        console.log('[CHART_OF_ACCOUNTS] Sample accounts:', data?.slice(0, 3)?.map(acc => ({ code: acc.account_code, name: acc.account_name })));
+        
         return (data || []) as ChartOfAccount[];
       } catch (error) {
         console.error("Chart of accounts access error:", error);
