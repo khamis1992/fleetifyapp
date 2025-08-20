@@ -288,10 +288,10 @@ export const useDeleteAllAccounts = () => {
     }) => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
 
-      const { data, error } = await supabase.rpc("delete_all_accounts", {
-        company_id_param: companyId,
-        force_delete_system: forceDeleteSystem,
-        confirmation_text: confirmationText,
+      const { data, error } = await supabase.rpc("bulk_delete_company_accounts", {
+        target_company_id: companyId,
+        include_system_accounts: forceDeleteSystem,
+        deletion_reason: confirmationText,
       });
 
       if (error) throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
@@ -328,7 +328,7 @@ export const useAllAccountsDeletionPreview = () => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
 
       const { data, error } = await supabase.rpc("get_all_accounts_deletion_preview", {
-        company_id_param: companyId,
+        target_company_id: companyId,
       });
 
       if (error) throw new Error(`فشل في جلب معاينة حذف جميع الحسابات: ${error.message}`);

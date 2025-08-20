@@ -96,7 +96,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
     }
   }, [open]); // Remove getAllAccountsDeletionPreview from dependencies
 
-  // Reload preview when force delete option changes - separate effect with proper dependencies
+  // Reload preview when force delete option changes - separate effect without function in dependencies
   useEffect(() => {
     if (open && previewData) {
       const reloadPreview = async () => {
@@ -114,7 +114,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
       reloadPreview();
     }
-  }, [forceDeleteSystem, open, getAllAccountsDeletionPreview]); // Include all necessary dependencies
+  }, [forceDeleteSystem]); // Only depend on forceDeleteSystem to avoid infinite loop
 
   const handleDeleteAll = async () => {
     if (!canProceed) return;
