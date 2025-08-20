@@ -446,14 +446,44 @@ export const useDeleteAllAccounts = () => {
           throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
         }
         
-        const result = data as any;
-        if (!result?.success) {
-          console.error('❌ [DELETE_ALL] Operation failed:', result?.error);
-          throw new Error(result?.error || "فشل في حذف جميع الحسابات");
+        // تحسين معالجة النتائج
+        let result;
+        try {
+          result = data as any;
+          
+          // التحقق من أن النتيجة موجودة وليست null
+          if (!result) {
+            console.error('❌ [DELETE_ALL] No result returned from RPC');
+            throw new Error("لم يتم الحصول على نتيجة من عملية الحذف");
+          }
+          
+          // التحقق من نجاح العملية
+          if (result.success === false) {
+            console.error('❌ [DELETE_ALL] Operation failed:', result?.error);
+            throw new Error(result?.error || "فشل في حذف جميع الحسابات");
+          }
+          
+          // إذا لم تكن هناك خاصية success، نفترض النجاح إذا كانت هناك بيانات
+          if (result.success === undefined && (result.deleted_count !== undefined || result.message)) {
+            result.success = true;
+          }
+          
+        } catch (parseError) {
+          console.error('❌ [DELETE_ALL] Error parsing result:', parseError);
+          throw new Error("خطأ في معالجة نتيجة الحذف");
         }
         
         console.log('✅ [DELETE_ALL] Success:', result);
-        return result;
+        
+        // تنسيق النتيجة للإرجاع
+        return {
+          success: true,
+          deleted_count: result.deleted_count || 0,
+          system_accounts_deleted: result.system_accounts_deleted || 0,
+          total_accounts: result.total_accounts || 0,
+          remaining_accounts: result.remaining_accounts || 0,
+          message: result.message || 'تم حذف الحسابات بنجاح'
+        };
         
       } catch (error: any) {
         console.error('💥 [DELETE_ALL] Comprehensive deletion failed:', error);
