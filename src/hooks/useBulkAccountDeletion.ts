@@ -68,7 +68,7 @@ export const useGetBulkDeletionPreview = () => {
         forceDeleteSystem
       });
       
-      const { data, error } = await supabase.rpc('get_all_accounts_deletion_preview', {
+      const { data, error } = await supabase.rpc('get_enhanced_accounts_deletion_preview', {
         target_company_id: companyId,
         force_delete_system: forceDeleteSystem
       });
@@ -125,7 +125,7 @@ export const useBulkAccountDeletion = () => {
         userId: user?.id
       });
       
-      const { data, error } = await supabase.rpc('bulk_delete_company_accounts', {
+      const { data, error } = await supabase.rpc('enhanced_bulk_delete_company_accounts', {
         target_company_id: companyId,
         include_system_accounts: forceDeleteSystem,
         deletion_reason: `Bulk deletion by user ${user?.id} at ${new Date().toISOString()}`

@@ -10004,6 +10004,14 @@ export type Database = {
         Args: { data: string }
         Returns: string
       }
+      enhanced_bulk_delete_company_accounts: {
+        Args: {
+          deletion_reason?: string
+          include_system_accounts?: boolean
+          target_company_id: string
+        }
+        Returns: Json
+      }
       ensure_essential_account_mappings: {
         Args: { company_id_param: string }
         Returns: Json
@@ -10345,6 +10353,10 @@ export type Database = {
           total_paid: number
           vehicle_info: string
         }[]
+      }
+      get_enhanced_accounts_deletion_preview: {
+        Args: { force_delete_system?: boolean; target_company_id: string }
+        Returns: Json
       }
       get_entry_allowed_accounts: {
         Args: { company_id_param: string }
