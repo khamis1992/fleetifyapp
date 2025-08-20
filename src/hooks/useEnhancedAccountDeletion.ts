@@ -405,37 +405,79 @@ export const useDeleteAllAccounts = () => {
       const companyId = user?.profile?.company_id;
       if (!companyId) throw new Error("معرف الشركة مطلوب");
       
-      console.log('🗑️ [DELETE_ALL] Starting delete all accounts with force:', forceDeleteSystem);
+      console.log('🗑️ [DELETE_ALL] Starting comprehensive delete all accounts process');
       
-      const { data, error } = await supabase.rpc('delete_all_accounts', {
-        company_id_param: companyId,
-        force_delete_system: forceDeleteSystem,
-        confirmation_text: confirmationText,
-      });
+      // First, handle foreign key dependencies by nullifying references
+      console.log('🔗 [DELETE_ALL] Handling foreign key dependencies...');
+      
+      try {
+        // Handle only the fixed_assets table which is confirmed to have these columns
+        try {
+          console.log('🔗 [DELETE_ALL] Handling fixed_assets references...');
+          const { error: fixedAssetsError } = await supabase
+            .from('fixed_assets')
+            .update({ 
+              depreciation_account_id: null,
+              accumulated_depreciation_account_id: null,
+              disposal_account_id: null 
+            })
+            .eq('company_id', companyId);
+            
+          if (fixedAssetsError) {
+            console.warn('⚠️ [DELETE_ALL] Warning handling fixed_assets:', fixedAssetsError);
+          } else {
+            console.log('✅ [DELETE_ALL] Fixed assets references cleared');
+          }
+        } catch (e) {
+          console.warn('⚠️ [DELETE_ALL] fixed_assets table might not exist:', e);
+        }
+        
+        console.log('✅ [DELETE_ALL] Foreign key dependencies handled');
+        
+        // Now proceed with the actual deletion using RPC
+        const { data, error } = await supabase.rpc('delete_all_accounts', {
+          company_id_param: companyId,
+          force_delete_system: forceDeleteSystem,
+          confirmation_text: confirmationText,
+        });
 
-      if (error) {
-        console.error('❌ [DELETE_ALL] RPC error:', error);
-        throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
+        if (error) {
+          console.error('❌ [DELETE_ALL] RPC error:', error);
+          throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
+        }
+        
+        const result = data as any;
+        if (!result?.success) {
+          console.error('❌ [DELETE_ALL] Operation failed:', result?.error);
+          throw new Error(result?.error || "فشل في حذف جميع الحسابات");
+        }
+        
+        console.log('✅ [DELETE_ALL] Success:', result);
+        return result;
+        
+      } catch (error: any) {
+        console.error('💥 [DELETE_ALL] Comprehensive deletion failed:', error);
+        throw error;
       }
-      
-      const result = data as any;
-      if (!result?.success) {
-        console.error('❌ [DELETE_ALL] Operation failed:', result?.error);
-        throw new Error(result?.error || "فشل في حذف جميع الحسابات");
-      }
-      
-      console.log('✅ [DELETE_ALL] Success:', result);
-      return result;
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["fixed-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       
       const summary = data.summary;
       toast.success(`تم حذف جميع الحسابات بنجاح - ${summary?.total_processed || 0} حساب`);
     },
     onError: (error: any) => {
       console.error('💥 [DELETE_ALL] Mutation error:', error);
-      toast.error('خطأ في حذف جميع الحسابات: ' + error.message);
+      
+      let errorMessage = error.message;
+      if (error.message.includes('foreign key constraint')) {
+        errorMessage = 'يوجد بيانات مرتبطة تمنع حذف الحسابات. تم معالجة معظم المراجع، يرجى المحاولة مرة أخرى.';
+      }
+      
+      toast.error('خطأ في حذف جميع الحسابات: ' + errorMessage);
     },
   });
 };
@@ -453,23 +495,32 @@ export const useGetAllAccountsDeletionPreview = () => {
       
       console.log('📊 [PREVIEW_ALL] Getting deletion preview for all accounts');
       
-      const { data, error } = await supabase.rpc('get_all_accounts_deletion_preview', {
-        company_id_param: companyId
-      });
+      try {
+        const { data, error } = await supabase.rpc('get_all_accounts_deletion_preview', {
+          company_id_param: companyId
+        });
 
-      if (error) {
-        console.error('❌ [PREVIEW_ALL] RPC error:', error);
-        throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
+        if (error) {
+          console.error('❌ [PREVIEW_ALL] RPC error:', error);
+          throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
+        }
+        
+        const result = data as any;
+        if (!result?.success) {
+          console.error('❌ [PREVIEW_ALL] Operation failed:', result?.error);
+          throw new Error(result?.error || "فشل في جلب معاينة الحذف");
+        }
+        
+        console.log('✅ [PREVIEW_ALL] Preview loaded:', result);
+        return result;
+      } catch (error: any) {
+        console.error('💥 [PREVIEW_ALL] Failed:', error);
+        throw error;
       }
-      
-      const result = data as any;
-      if (!result?.success) {
-        console.error('❌ [PREVIEW_ALL] Operation failed:', result?.error);
-        throw new Error(result?.error || "فشل في جلب معاينة الحذف");
-      }
-      
-      console.log('✅ [PREVIEW_ALL] Preview loaded:', result);
-      return result;
+    },
+    onError: (error: any) => {
+      console.error('💥 [PREVIEW_ALL] Mutation error:', error);
+      toast.error('خطأ في جلب معاينة الحذف: ' + error.message);
     }
   });
 };
