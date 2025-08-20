@@ -203,14 +203,16 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <ScrollArea className="max-h-[80vh] pr-4">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
             حذف جميع الحسابات - عملية خطيرة
           </DialogTitle>
         </DialogHeader>
+
+        <ScrollArea className="flex-1 max-h-[75vh] pr-4">
+          <div className="space-y-6 pb-4">
 
         {!allAccounts ? (
           <div className="flex items-center justify-center py-8">
@@ -594,6 +596,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
           </div>
         ) : null}
 
+          </div>
         </ScrollArea>
         
         <DialogFooter className="mt-4">
