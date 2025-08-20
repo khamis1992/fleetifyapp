@@ -70,6 +70,8 @@ import { ExportAccountsUtility } from './ExportAccountsUtility';
 interface EnhancedAccountsVisualizationProps {
   onSelectAccount?: (account: ChartOfAccount) => void;
   selectedAccountId?: string;
+  showInactiveAccounts?: boolean;
+  showSystemAccounts?: boolean;
 }
 
 interface TreeNode extends ChartOfAccount {
@@ -80,8 +82,10 @@ interface TreeNode extends ChartOfAccount {
 export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizationProps> = ({
   onSelectAccount,
   selectedAccountId,
+  showInactiveAccounts = false,
+  showSystemAccounts = false,
 }) => {
-  const { data: accounts, isLoading } = useChartOfAccounts();
+  const { data: accounts, isLoading } = useChartOfAccounts(showInactiveAccounts);
   const { formatCurrency } = useCurrencyFormatter();
   const updateAccount = useUpdateAccount();
   const { toast } = useToast();
@@ -95,8 +99,11 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
   const [filterType, setFilterType] = useState(() => 
     localStorage.getItem('chart-filter-type') || 'all'
   );
-  const [showInactiveAccounts, setShowInactiveAccounts] = useState(() => 
+  const [localShowInactiveAccounts, setLocalShowInactiveAccounts] = useState(() => 
     localStorage.getItem('chart-show-inactive') === 'true'
+  );
+  const [localShowSystemAccounts, setLocalShowSystemAccounts] = useState(() => 
+    localStorage.getItem('chart-show-system') === 'true'
   );
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>(() => 
     localStorage.getItem('chart-view-mode') as 'compact' | 'detailed' || 'detailed'
@@ -137,8 +144,12 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
   }, [filterType]);
   
   useEffect(() => {
-    localStorage.setItem('chart-show-inactive', showInactiveAccounts.toString());
-  }, [showInactiveAccounts]);
+    localStorage.setItem('chart-show-inactive', localShowInactiveAccounts.toString());
+  }, [localShowInactiveAccounts]);
+  
+  useEffect(() => {
+    localStorage.setItem('chart-show-system', localShowSystemAccounts.toString());
+  }, [localShowSystemAccounts]);
   
   useEffect(() => {
     localStorage.setItem('chart-view-mode', viewMode);
@@ -438,9 +449,10 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
         (account.account_name_ar && account.account_name_ar.includes(searchTerm));
       
       const matchesType = filterType === 'all' || account.account_type === filterType;
-      const matchesActive = showInactiveAccounts || account.is_active;
+      const matchesActive = showInactiveAccounts || localShowInactiveAccounts || account.is_active;
+      const matchesSystem = showSystemAccounts || localShowSystemAccounts || !account.is_system;
       
-      return matchesSearch && matchesType && matchesActive;
+      return matchesSearch && matchesType && matchesActive && matchesSystem;
     });
 
     const buildTree = (parentId: string | null = null, level: number = 0): TreeNode[] => {
@@ -476,7 +488,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
     };
 
     return buildTree();
-  }, [accounts, searchTerm, filterType, showInactiveAccounts, sortBy, sortOrder]);
+  }, [accounts, searchTerm, filterType, showInactiveAccounts, localShowInactiveAccounts, showSystemAccounts, localShowSystemAccounts, sortBy, sortOrder]);
 
   const toggleNode = (nodeId: string) => {
     const newExpanded = new Set(expandedNodes);
@@ -716,12 +728,23 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowInactiveAccounts(!showInactiveAccounts)}
+              onClick={() => setLocalShowInactiveAccounts(!localShowInactiveAccounts)}
               className="flex items-center gap-2"
               dir="rtl"
             >
-              {showInactiveAccounts ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              <span>{showInactiveAccounts ? "إخفاء" : "إظهار"} غير النشط</span>
+              {showInactiveAccounts || localShowInactiveAccounts ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              <span>{showInactiveAccounts || localShowInactiveAccounts ? "إخفاء" : "إظهار"} غير النشط</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocalShowSystemAccounts(!localShowSystemAccounts)}
+              className="flex items-center gap-2"
+              dir="rtl"
+            >
+              {showSystemAccounts || localShowSystemAccounts ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              <span>{showSystemAccounts || localShowSystemAccounts ? "إخفاء" : "إظهار"} النظامية</span>
             </Button>
           </div>
 
@@ -760,6 +783,32 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
                   <li>يمكن سحب جميع الحسابات بما في ذلك النظامية وغير النشطة</li>
                   <li>لا يمكن نقل الحساب إلى حساب فرعي منه لتجنب التداخل الدائري</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Account Statistics */}
+          <div className="border rounded-lg p-3 bg-card">
+            <div className="grid grid-cols-4 gap-4 text-center text-sm">
+              <div>
+                <div className="font-medium text-primary">{accounts?.length || 0}</div>
+                <div className="text-muted-foreground">إجمالي الحسابات</div>
+              </div>
+              <div>
+                <div className="font-medium text-green-600">{accountTree.length}</div>
+                <div className="text-muted-foreground">الحسابات الرئيسية</div>
+              </div>
+              <div>
+                <div className="font-medium text-orange-600">
+                  {accounts?.filter(acc => !acc.is_active).length || 0}
+                </div>
+                <div className="text-muted-foreground">غير نشطة</div>
+              </div>
+              <div>
+                <div className="font-medium text-purple-600">
+                  {accounts?.filter(acc => acc.is_system).length || 0}
+                </div>
+                <div className="text-muted-foreground">نظامية</div>
               </div>
             </div>
           </div>
