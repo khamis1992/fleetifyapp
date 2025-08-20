@@ -9660,7 +9660,7 @@ export type Database = {
         Args: {
           account_id_param: string
           deletion_mode?: string
-          transfer_to_account_id?: string
+          transfer_to_account_id_param?: string
           user_id_param?: string
         }
         Returns: Json
