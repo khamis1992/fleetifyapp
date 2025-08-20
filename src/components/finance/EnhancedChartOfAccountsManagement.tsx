@@ -24,6 +24,7 @@ import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualiz
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
 import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
 import { AccountMaintenanceTools } from './AccountMaintenanceTools';
+import AccountsListWithActions from './AccountsListWithActions';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -367,10 +368,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <span>قائمة الحسابات</span>
             <Layers className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="management" className="flex items-center gap-2">
+            <span>إدارة الحسابات</span>
+            <Trash2 className="h-4 w-4" />
           </TabsTrigger>
           <TabsTrigger value="validation" className="flex items-center gap-2">
             <span>التحقق والإصلاح</span>
@@ -517,6 +522,46 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Account Management Tab */}
+        <TabsContent value="management" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">إدارة الحسابات المتقدمة</h3>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAllDialog(true)}
+                className="text-red-600 hover:text-red-700"
+              >
+                <Skull className="h-4 w-4 mr-2" />
+                حذف جميع الحسابات
+              </Button>
+            </div>
+          </div>
+          
+          <AccountsListWithActions
+            onViewAccount={(account) => {
+              setViewingAccount(account);
+              setShowViewDialog(true);
+            }}
+            onEditAccount={(account) => {
+              setEditingAccount(account);
+              setShowEditDialog(true);
+            }}
+            onDeleteAccount={(account) => {
+              // تم حذف الحساب بنجاح - لا حاجة لإجراء إضافي
+              console.log('تم حذف الحساب:', account.account_code);
+            }}
+            showActions={{
+              view: true,
+              edit: true,
+              delete: true,
+              statement: true
+            }}
+            maxHeight="h-[600px]"
+            showFilters={true}
+          />
         </TabsContent>
 
         {/* Validation Tab */}

@@ -12,6 +12,16 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { 
   Loader2, 
   AlertTriangle, 
@@ -21,9 +31,10 @@ import {
   XCircle
 } from "lucide-react";
 import { useDirectBulkAccountDeletion, useDiagnoseAccountDeletionFailures, useCleanupAllReferences } from "@/hooks/useDirectAccountDeletion";
-import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { useChartOfAccounts, useDeleteAccount } from "@/hooks/useChartOfAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import AccountDeletionStats from "./AccountDeletionStats";
 
 interface SimpleDeleteAllAccountsDialogProps {
   open: boolean;
@@ -44,18 +55,40 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const [deletionProgress, setDeletionProgress] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const { data: allAccounts, isLoading: accountsLoading } = useChartOfAccounts();
   const deleteAllAccounts = useDirectBulkAccountDeletion();
   const diagnoseFailures = useDiagnoseAccountDeletionFailures();
   const cleanupReferences = useCleanupAllReferences();
+  const deleteSingleAccount = useDeleteAccount();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
   const totalAccounts = allAccounts?.length || 0;
   const systemAccounts = allAccounts?.filter(acc => acc.is_system).length || 0;
   const regularAccounts = totalAccounts - systemAccounts;
+
+  const handleDeleteSingle = async (accountId: string, accountCode: string) => {
+    if (!accountId) return;
+    
+    setDeletingAccountId(accountId);
+    
+    try {
+      console.log('[DELETE_SINGLE] حذف حساب منفرد:', { accountId, accountCode });
+      
+      await deleteSingleAccount.mutateAsync(accountId);
+      
+      toast.success(`تم حذف الحساب ${accountCode} بنجاح`);
+      
+    } catch (error: any) {
+      console.error('[DELETE_SINGLE] فشل حذف الحساب:', error);
+      toast.error(`فشل في حذف الحساب ${accountCode}: ${error.message}`);
+    } finally {
+      setDeletingAccountId(null);
+    }
+  };
 
   const handleDeleteAll = async () => {
     if (!isValidConfirmation) {
@@ -118,12 +151,13 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
     setDeletionProgress(0);
     setShowResults(false);
     setResults(null);
+    setDeletingAccountId(null);
     onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+         <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
@@ -235,90 +269,172 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* تحذير خطير */}
-            <Alert className="border-destructive bg-destructive/10">
-              <Skull className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-destructive font-medium">
-                <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
-                الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
-              </AlertDescription>
-            </Alert>
+                     <div className="space-y-6">
+             {/* إحصائيات الحذف */}
+             <AccountDeletionStats
+               totalAccounts={totalAccounts}
+               deletedCount={results?.deleted_count || 0}
+               deactivatedCount={results?.deactivated_count || 0}
+               failedCount={results?.error_count || 0}
+               systemAccounts={systemAccounts}
+               isProcessing={isDeleting}
+             />
 
-                         {/* إحصائيات سريعة */}
-             <div className="grid grid-cols-2 gap-4">
-               <div className="p-4 border rounded-lg text-center">
-                 <div className="font-bold text-lg">{totalAccounts}</div>
-                 <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
-               </div>
-               <div className="p-4 border rounded-lg text-center">
-                 <div className="font-bold text-lg text-orange-600">{systemAccounts}</div>
-                 <div className="text-sm text-muted-foreground">حسابات نظامية</div>
-               </div>
-             </div>
+             {/* تحذير خطير */}
+             <Alert className="border-destructive bg-destructive/10">
+               <Skull className="h-4 w-4 text-destructive" />
+               <AlertDescription className="text-destructive font-medium">
+                 <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
+                 الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
+               </AlertDescription>
+             </Alert>
 
-             {/* أدوات التحضير */}
-             <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
-               <h4 className="font-semibold text-blue-800">أدوات التحضير (موصى بها قبل الحذف):</h4>
-               
-               <div className="flex gap-2">
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={async () => {
-                     try {
-                       await cleanupReferences.mutateAsync();
-                     } catch (error: any) {
-                       console.error('فشل التنظيف:', error);
-                     }
-                   }}
-                   disabled={cleanupReferences.isPending}
-                   className="flex-1"
-                 >
-                   {cleanupReferences.isPending ? (
-                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                   ) : (
-                     <Trash2 className="h-4 w-4 mr-2" />
-                   )}
-                   تنظيف المراجع المعلقة
-                 </Button>
-                 
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={async () => {
-                     try {
-                       const diagnosis = await diagnoseFailures.mutateAsync();
-                       console.log('🔍 تشخيص شامل:', diagnosis);
-                       
-                        const summary = (diagnosis as any)?.analysis_summary;
-                        let message = `تحليل ${(diagnosis as any)?.total_issues || 0} مشكلة:\n`;
-                        message += `• ${summary?.vendor_account_issues || 0} مشكلة في حسابات التجار\n`;
-                        message += `• ${summary?.customer_account_issues || 0} مشكلة في حسابات العملاء\n`;
-                        message += `• ${summary?.mapping_issues || 0} مشكلة في ربط الحسابات\n`;
-                        message += `• ${summary?.maintenance_issues || 0} مشكلة في حسابات الصيانة`;
-                       
-                       toast.info(message);
-                     } catch (error: any) {
-                       console.error('فشل التشخيص:', error);
-                     }
-                   }}
-                   disabled={diagnoseFailures.isPending}
-                   className="flex-1"
-                 >
-                   {diagnoseFailures.isPending ? (
-                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                   ) : (
-                     <AlertTriangle className="h-4 w-4 mr-2" />
-                   )}
-                   تشخيص الحسابات
-                 </Button>
-               </div>
-               
-               <p className="text-sm text-blue-700">
-                 💡 نصيحة: قم بتشغيل "تنظيف المراجع المعلقة" أولاً لتقليل أخطاء الحذف
-               </p>
-             </div>
+                           {/* قائمة الحسابات مع أزرار الحذف المنفرد */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  قائمة الحسابات ({totalAccounts} حساب)
+                </h4>
+                
+                <ScrollArea className="h-64 border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">رمز الحساب</TableHead>
+                        <TableHead className="text-right">اسم الحساب</TableHead>
+                        <TableHead className="text-center">النوع</TableHead>
+                        <TableHead className="text-center">الحالة</TableHead>
+                        <TableHead className="text-center">إجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allAccounts?.map((account) => (
+                        <TableRow key={account.id}>
+                          <TableCell className="font-mono text-sm">
+                            {account.account_code}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div>
+                              <div className="font-medium">
+                                {account.account_name_ar || account.account_name}
+                              </div>
+                              {account.account_name_ar && (
+                                <div className="text-xs text-muted-foreground">
+                                  {account.account_name}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <Badge variant="outline" className="text-xs">
+                                {account.account_type === 'asset' ? 'أصول' :
+                                 account.account_type === 'liability' ? 'خصوم' :
+                                 account.account_type === 'equity' ? 'حقوق ملكية' :
+                                 account.account_type === 'revenue' ? 'إيرادات' :
+                                 account.account_type === 'expense' ? 'مصروفات' :
+                                 account.account_type}
+                              </Badge>
+                              {account.is_system && (
+                                <Badge variant="destructive" className="text-xs">
+                                  نظامي
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={account.is_active ? 'default' : 'secondary'}>
+                              {account.is_active ? 'نشط' : 'غير نشط'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteSingle(account.id, account.account_code)}
+                              disabled={deletingAccountId === account.id || isDeleting}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              {deletingAccountId === account.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+                
+                <p className="text-sm text-muted-foreground">
+                  💡 يمكنك حذف الحسابات واحد تلو الآخر، أو استخدام "حذف جميع الحسابات" أدناه
+                </p>
+              </div>
+
+              {/* أدوات التحضير */}
+              <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
+                <h4 className="font-semibold text-blue-800">أدوات التحضير (موصى بها قبل الحذف):</h4>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await cleanupReferences.mutateAsync();
+                      } catch (error: any) {
+                        console.error('فشل التنظيف:', error);
+                      }
+                    }}
+                    disabled={cleanupReferences.isPending}
+                    className="flex-1"
+                  >
+                    {cleanupReferences.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    تنظيف المراجع المعلقة
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const diagnosis = await diagnoseFailures.mutateAsync();
+                        console.log('🔍 تشخيص شامل:', diagnosis);
+                        
+                         const summary = (diagnosis as any)?.analysis_summary;
+                         let message = `تحليل ${(diagnosis as any)?.total_issues || 0} مشكلة:\n`;
+                         message += `• ${summary?.vendor_account_issues || 0} مشكلة في حسابات التجار\n`;
+                         message += `• ${summary?.customer_account_issues || 0} مشكلة في حسابات العملاء\n`;
+                         message += `• ${summary?.mapping_issues || 0} مشكلة في ربط الحسابات\n`;
+                         message += `• ${summary?.maintenance_issues || 0} مشكلة في حسابات الصيانة`;
+                        
+                        toast.info(message);
+                      } catch (error: any) {
+                        console.error('فشل التشخيص:', error);
+                      }
+                    }}
+                    disabled={diagnoseFailures.isPending}
+                    className="flex-1"
+                  >
+                    {diagnoseFailures.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                    )}
+                    تشخيص الحسابات
+                  </Button>
+                </div>
+                
+                <p className="text-sm text-blue-700">
+                  💡 نصيحة: قم بتشغيل "تنظيف المراجع المعلقة" أولاً لتقليل أخطاء الحذف
+                </p>
+              </div>
 
             {/* خيار الحسابات النظامية */}
             {systemAccounts > 0 && (
