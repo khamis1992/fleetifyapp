@@ -22,6 +22,20 @@ export interface AccountDeletionAnalysis {
   total_dependencies: number;
   can_delete: boolean;
   error?: string;
+  message?: string;
+  linked_tables?: string[];
+  table_counts?: Record<string, number>;
+  child_accounts_count?: number;
+}
+
+// Aliases for compatibility
+export type DeletionAnalysis = AccountDeletionAnalysis;
+
+export interface DeletionOptions {
+  deletionMode?: DeletionMode;
+  transferToAccountId?: string;
+  force_delete?: boolean;
+  transfer_to_account_id?: string;
 }
 
 export interface AccountDeletionResult {
@@ -49,7 +63,7 @@ export const useAnalyzeAccountDependencies = () => {
     mutationFn: async (accountId: string): Promise<AccountDeletionAnalysis> => {
       console.log('🔍 [ACCOUNT_DELETION] تحليل تبعيات الحساب:', accountId);
       
-      const { data, error } = await supabase.rpc('analyze_account_dependencies', {
+      const { data, error } = await supabase.rpc('analyze_account_dependencies' as any, {
         account_id_param: accountId
       });
       
@@ -59,7 +73,7 @@ export const useAnalyzeAccountDependencies = () => {
       }
       
       console.log('✅ [ACCOUNT_DELETION] نتائج التحليل:', data);
-      return data;
+      return data as AccountDeletionAnalysis;
     },
     onError: (error) => {
       console.error('❌ [ACCOUNT_DELETION] فشل تحليل التبعيات:', error);
@@ -80,10 +94,12 @@ export const useComprehensiveAccountDeletion = () => {
       accountId,
       deletionMode = 'soft',
       transferToAccountId,
+      options,
     }: {
       accountId: string;
       deletionMode?: DeletionMode;
       transferToAccountId?: string;
+      options?: DeletionOptions;
     }): Promise<AccountDeletionResult> => {
       console.log('🗑️ [ACCOUNT_DELETION] بدء عملية الحذف:', {
         accountId,
@@ -92,7 +108,7 @@ export const useComprehensiveAccountDeletion = () => {
         userId: user?.id
       });
       
-      const { data, error } = await supabase.rpc('comprehensive_delete_account', {
+      const { data, error } = await supabase.rpc('comprehensive_delete_account' as any, {
         account_id_param: accountId,
         deletion_mode: deletionMode,
         transfer_to_account_id: transferToAccountId,
@@ -104,13 +120,14 @@ export const useComprehensiveAccountDeletion = () => {
         throw new Error(error.message);
       }
       
-      if (!data.success) {
-        console.error('❌ [ACCOUNT_DELETION] فشل العملية:', data.error);
-        throw new Error(data.error);
+      const result = data as AccountDeletionResult;
+      if (!result.success) {
+        console.error('❌ [ACCOUNT_DELETION] فشل العملية:', result.error);
+        throw new Error(result.error);
       }
       
-      console.log('✅ [ACCOUNT_DELETION] نجح الحذف:', data);
-      return data;
+      console.log('✅ [ACCOUNT_DELETION] نجح الحذف:', result);
+      return result;
     },
     onSuccess: (result) => {
       // تحديث جميع الاستعلامات المرتبطة
@@ -157,7 +174,7 @@ export const useVerifyAccountIntegrity = () => {
       
       console.log('🔍 [ACCOUNT_INTEGRITY] فحص سلامة البيانات للشركة:', companyId);
       
-      const { data, error } = await supabase.rpc('verify_account_deletion_integrity', {
+      const { data, error } = await supabase.rpc('verify_account_deletion_integrity' as any, {
         company_id_param: companyId
       });
       
@@ -199,7 +216,7 @@ export const useCleanupOrphanedReferences = () => {
       
       console.log('🧹 [ACCOUNT_CLEANUP] بدء تنظيف البيانات المعلقة للشركة:', companyId);
       
-      const { data, error } = await supabase.rpc('cleanup_orphaned_account_references', {
+      const { data, error } = await supabase.rpc('cleanup_orphaned_account_references' as any, {
         company_id_param: companyId
       });
       
@@ -224,8 +241,8 @@ export const useCleanupOrphanedReferences = () => {
       // عرض تفاصيل التنظيف
       const cleanedRecords = result.cleaned_records;
       if (cleanedRecords) {
-        const totalCleaned = Object.values(cleanedRecords).reduce((sum: number, count) => sum + (count as number), 0);
-        if (totalCleaned > 0) {
+        const totalCleaned = Object.values(cleanedRecords).reduce((sum: number, count) => sum + (typeof count === 'number' ? count : 0), 0);
+        if (typeof totalCleaned === 'number' && totalCleaned > 0) {
           toast.info(`تم تنظيف ${totalCleaned} سجل معلق`);
         }
       }
@@ -337,4 +354,35 @@ export const formatDeletionConfirmation = (
     default:
       return `هل تريد حذف الحساب "${accountName}"؟`;
   }
+};
+
+/**
+ * Main hook that combines all enhanced account deletion functionality
+ */
+export const useEnhancedAccountDeletion = () => {
+  const analyzeDependencies = useAnalyzeAccountDependencies();
+  const deleteAccount = useComprehensiveAccountDeletion();
+  const verifyIntegrity = useVerifyAccountIntegrity();
+  const cleanup = useCleanupOrphanedReferences();
+  const getDeletionLog = useAccountDeletionLog();
+
+  return {
+    // Analysis methods
+    analyzeAccount: analyzeDependencies,
+    isAnalyzing: analyzeDependencies.isPending,
+    analysisData: analyzeDependencies.data,
+    analysisError: analyzeDependencies.error,
+    
+    // Deletion methods  
+    deleteAccount,
+    isDeleting: deleteAccount.isPending,
+    deletionError: deleteAccount.error,
+    
+    // Utility methods
+    verifyIntegrity,
+    cleanup,
+    getDeletionLog,
+    determineDeletionStrategy,
+    formatDeletionConfirmation,
+  };
 };

@@ -160,7 +160,7 @@ export const useDeleteAccount = () => {
       console.log('🗑️ [ACCOUNT_DELETE] بدء حذف الحساب (النمط القديم):', accountId);
       
       // استخدام الدالة الجديدة المحسنة بدلاً من التحديث المباشر
-      const { data, error } = await supabase.rpc('comprehensive_delete_account', {
+      const { data, error } = await supabase.rpc('comprehensive_delete_account' as any, {
         account_id_param: accountId,
         deletion_mode: 'soft' // استخدام الحذف الآمن كافتراضي
       });
@@ -170,13 +170,14 @@ export const useDeleteAccount = () => {
         throw error;
       }
 
-      if (!data.success) {
-        console.error('❌ [ACCOUNT_DELETE] فشل العملية:', data.error);
-        throw new Error(data.error);
+      const result = data as any;
+      if (!result.success) {
+        console.error('❌ [ACCOUNT_DELETE] فشل العملية:', result.error);
+        throw new Error(result.error);
       }
 
-      console.log('✅ [ACCOUNT_DELETE] نجح الحذف:', data);
-      return data;
+      console.log('✅ [ACCOUNT_DELETE] نجح الحذف:', result);
+      return result;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
@@ -184,7 +185,7 @@ export const useDeleteAccount = () => {
       
       toast({
         title: "تم حذف الحساب بنجاح",
-        description: result.operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
+        description: (result as any).operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
       });
     },
     onError: (error: any) => {
