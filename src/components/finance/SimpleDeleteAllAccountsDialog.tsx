@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,13 +122,16 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
             حذف جميع الحسابات - عملية خطيرة
           </DialogTitle>
         </DialogHeader>
+
+        <ScrollArea className="flex-1 max-h-[70vh] pr-2" style={{ overflowY: 'auto' }}>
+          <div className="space-y-6 pb-4">
 
         {accountsLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -290,7 +294,10 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
           </div>
         )}
 
-        <DialogFooter>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="flex-shrink-0 mt-4">
           <Button
             variant="outline"
             onClick={handleClose}
