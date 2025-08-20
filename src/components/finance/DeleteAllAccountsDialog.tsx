@@ -203,7 +203,8 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <ScrollArea className="max-h-[80vh] pr-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
@@ -593,7 +594,9 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
           </div>
         ) : null}
 
-        <DialogFooter>
+        </ScrollArea>
+        
+        <DialogFooter className="mt-4">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
