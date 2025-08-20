@@ -72,9 +72,14 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
     if (analyzeQuery.data) {
       setAnalysis(analyzeQuery.data);
       
-      // تحديد الاستراتيجية الموصى بها
-      const strategy = determineDeletionStrategy(analyzeQuery.data);
-      setSelectedMode(strategy.recommendedMode);
+      // تحديد الاستراتيجية الموصى بها فقط إذا كان التحليل ناجحاً
+      if (analyzeQuery.data.success) {
+        const strategy = determineDeletionStrategy(analyzeQuery.data);
+        setSelectedMode(strategy.recommendedMode);
+      } else {
+        // في حالة فشل التحليل، استخدم الوضع الآمن
+        setSelectedMode('soft');
+      }
       
       setStep('confirmation');
     }
@@ -172,6 +177,18 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
         {/* مرحلة التأكيد */}
         {step === 'confirmation' && analysis && (
           <div className="space-y-6">
+            {/* في حالة فشل التحليل */}
+            {!analysis.success && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>خطأ في التحليل:</strong> {analysis.error || 'لا يمكن تحليل البيانات المرتبطة بالحساب'}
+                  <br />
+                  <span className="text-sm">سيتم استخدام الوضع الآمن (إلغاء التفعيل) فقط.</span>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* معلومات الحساب */}
             <Card>
               <CardHeader>
@@ -181,20 +198,20 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-sm text-muted-foreground">رمز الحساب:</span>
-                    <div className="font-medium">{analysis.account_info.code}</div>
+                    <div className="font-medium">{analysis.account_info?.code || accountCode}</div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">اسم الحساب:</span>
-                    <div className="font-medium">{analysis.account_info.name}</div>
+                    <div className="font-medium">{analysis.account_info?.name || accountName}</div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">نوع الحساب:</span>
-                    <div className="font-medium">{analysis.account_info.type}</div>
+                    <div className="font-medium">{analysis.account_info?.type || 'غير محدد'}</div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">حساب نظامي:</span>
-                    <Badge variant={analysis.account_info.is_system ? 'destructive' : 'default'}>
-                      {analysis.account_info.is_system ? 'نعم' : 'لا'}
+                    <Badge variant={analysis.account_info?.is_system ? 'destructive' : 'default'}>
+                      {analysis.account_info?.is_system ? 'نعم' : 'لا'}
                     </Badge>
                   </div>
                 </div>
@@ -202,7 +219,7 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
             </Card>
 
             {/* البيانات المرتبطة */}
-            {analysis.total_dependencies > 0 && (
+            {analysis.success && analysis.total_dependencies > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -212,7 +229,7 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {analysis.dependencies.map((dep, index) => (
+                    {analysis.dependencies?.map((dep, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div>
                           <div className="font-medium">{dep.description}</div>
@@ -253,7 +270,7 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
                     </div>
                   </div>
 
-                  {analysis.total_dependencies > 0 && (
+                  {analysis.success && analysis.total_dependencies > 0 && (
                     <div 
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                         selectedMode === 'transfer' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200'
@@ -274,24 +291,27 @@ export const EnhancedAccountDeleteDialog: React.FC<EnhancedAccountDeleteDialogPr
                     </div>
                   )}
 
-                  <div 
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      selectedMode === 'force' ? 'border-red-500 bg-red-50' : 'border-gray-200'
-                    }`}
-                    onClick={() => setSelectedMode('force')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${getDeletionModeColor('force')}`}>
-                        {getDeletionModeIcon('force')}
-                      </div>
-                      <div>
-                        <div className="font-medium">حذف قسري (خطر)</div>
-                        <div className="text-sm text-muted-foreground">
-                          حذف الحساب وجميع البيانات المرتبطة نهائياً
+                  {/* إظهار خيار الحذف القسري فقط في حالة نجاح التحليل أو عدم وجود تبعيات */}
+                  {(!analysis.success || analysis.total_dependencies === 0) && (
+                    <div 
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        selectedMode === 'force' ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                      }`}
+                      onClick={() => setSelectedMode('force')}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${getDeletionModeColor('force')}`}>
+                          {getDeletionModeIcon('force')}
+                        </div>
+                        <div>
+                          <div className="font-medium">حذف قسري (خطر)</div>
+                          <div className="text-sm text-muted-foreground">
+                            حذف الحساب وجميع البيانات المرتبطة نهائياً
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* اختيار الحساب البديل للنقل */}

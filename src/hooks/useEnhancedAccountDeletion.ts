@@ -296,6 +296,15 @@ export const determineDeletionStrategy = (analysis: AccountDeletionAnalysis): {
   requiresTransfer: boolean;
   warningMessage?: string;
 } => {
+  // التحقق من صحة البيانات
+  if (!analysis || !analysis.account_info) {
+    return {
+      recommendedMode: 'soft',
+      requiresTransfer: false,
+      warningMessage: 'لا يمكن تحديد الاستراتيجية المناسبة - سيتم إلغاء التفعيل فقط'
+    };
+  }
+
   // إذا كان حساب نظامي
   if (analysis.account_info.is_system) {
     return {
@@ -306,7 +315,7 @@ export const determineDeletionStrategy = (analysis: AccountDeletionAnalysis): {
   }
   
   // إذا لم توجد تبعيات
-  if (analysis.total_dependencies === 0) {
+  if (!analysis.total_dependencies || analysis.total_dependencies === 0) {
     return {
       recommendedMode: 'force',
       requiresTransfer: false
@@ -314,7 +323,7 @@ export const determineDeletionStrategy = (analysis: AccountDeletionAnalysis): {
   }
   
   // إذا وجدت قيود محاسبية
-  const hasJournalEntries = analysis.dependencies.some(dep => dep.table_name === 'journal_entry_lines');
+  const hasJournalEntries = analysis.dependencies?.some(dep => dep.table_name === 'journal_entry_lines');
   if (hasJournalEntries) {
     return {
       recommendedMode: 'transfer',
