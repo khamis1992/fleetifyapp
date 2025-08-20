@@ -9976,18 +9976,8 @@ export type Database = {
         Args: { encrypted_data: string }
         Returns: string
       }
-      delete_all_accounts: {
-        Args:
-          | {
-              company_id_param: string
-              confirmation_text?: string
-              force_delete_system?: boolean
-            }
-          | {
-              force_delete_system?: boolean
-              force_deletion?: boolean
-              target_company_id: string
-            }
+      delete_all_accounts_v2: {
+        Args: { company_id: string; force_system: boolean; reason: string }
         Returns: Json
       }
       distribute_vehicle_installment_amount: {
