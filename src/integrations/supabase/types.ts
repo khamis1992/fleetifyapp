@@ -9441,6 +9441,10 @@ export type Database = {
         Args: { account_id_param: string }
         Returns: Json
       }
+      analyze_account_dependencies: {
+        Args: { account_id_param: string }
+        Returns: Json
+      }
       analyze_system_performance: {
         Args: { company_id_param: string; hours_back?: number }
         Returns: Json
@@ -9636,6 +9640,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_orphaned_account_references: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
       cleanup_orphaned_contract_files: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -9643,6 +9651,19 @@ export type Database = {
       cleanup_orphaned_contract_logs: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      column_exists: {
+        Args: { column_name: string; table_name: string }
+        Returns: boolean
+      }
+      comprehensive_delete_account: {
+        Args: {
+          account_id_param: string
+          deletion_mode?: string
+          transfer_to_account_id?: string
+          user_id_param?: string
+        }
+        Returns: Json
       }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
@@ -9974,15 +9995,6 @@ export type Database = {
       encrypt_sensitive_data: {
         Args: { data: string }
         Returns: string
-      }
-      enhanced_cascade_delete_account: {
-        Args: {
-          account_id_param: string
-          analysis_only?: boolean
-          force_delete?: boolean
-          transfer_to_account_id?: string
-        }
-        Returns: Json
       }
       ensure_essential_account_mappings: {
         Args: { company_id_param: string }
@@ -10842,6 +10854,10 @@ export type Database = {
           p_to_company_id: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      verify_account_deletion_integrity: {
+        Args: { company_id_param: string }
         Returns: Json
       }
     }
