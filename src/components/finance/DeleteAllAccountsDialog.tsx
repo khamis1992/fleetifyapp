@@ -27,7 +27,7 @@ import {
   XCircle
 } from "lucide-react";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
-import { useEnhancedAccountDeletion } from "@/hooks/useEnhancedAccountDeletion";
+import { useDirectDeletionPreview, useDirectBulkAccountDeletion } from "@/hooks/useDirectAccountDeletion";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -58,7 +58,8 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   const { user } = useAuth();
   
   const { data: allAccounts } = useChartOfAccounts();
-  const { deleteAccount, getAllAccountsDeletionPreview, deleteAllAccounts } = useEnhancedAccountDeletion();
+  const getPreview = useDirectDeletionPreview();
+  const deleteAllAccounts = useDirectBulkAccountDeletion();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
@@ -68,10 +69,10 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   // Load preview data when dialog opens - initial load only
   useEffect(() => {
     if (open) {
-      const loadPreview = async () => {
+              const loadPreview = async () => {
         try {
           console.log('[DELETE_ALL] Loading initial deletion preview');
-          const preview = await getAllAccountsDeletionPreview.mutateAsync({
+          const preview = await getPreview.mutateAsync({
             forceDeleteSystem: false // Always start with false for initial load
           });
           console.log('[DELETE_ALL] Preview loaded:', preview);
@@ -99,10 +100,10 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   // Reload preview when force delete option changes - separate effect without function in dependencies
   useEffect(() => {
     if (open && previewData) {
-      const reloadPreview = async () => {
+              const reloadPreview = async () => {
         try {
           console.log('[DELETE_ALL] Reloading preview with force_delete_system:', forceDeleteSystem);
-          const preview = await getAllAccountsDeletionPreview.mutateAsync({
+          const preview = await getPreview.mutateAsync({
             forceDeleteSystem: forceDeleteSystem
           });
           setPreviewData(preview);
@@ -124,26 +125,42 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
     setDeletionResults({ successful: [], failed: [], completed: false });
     
     try {
-      console.log('[DELETE_ALL] Starting enhanced deletion process using unified system');
+      console.log('[DELETE_ALL] Starting bulk deletion process');
       
       const result = await deleteAllAccounts.mutateAsync({
-        confirmationText: CONFIRMATION_TEXT,
         forceDeleteSystem: forceDeleteSystem
       });
       
-      console.log('[DELETE_ALL] Delete all result:', result);
+      console.log('[DELETE_ALL] Bulk delete result:', result);
       
-      // Parse results from the unified system
-      const successful = result.success_details?.map((detail: any) => ({
-        code: detail.account_code || 'Unknown',
-        name: detail.account_name || 'Unknown'
-      })) || [];
+      // Parse results from the direct system
+      const successful = [];
+      const failed = [];
       
-      const failed = result.error_details?.map((detail: any) => ({
-        code: detail.account_code || 'Unknown',
-        name: detail.account_name || 'Unknown',
-        error: detail.error || 'خطأ غير معروف'
-      })) || [];
+      // إنشاء قوائم النجاح والفشل من النتائج
+      for (let i = 0; i < (result.deleted_count || 0); i++) {
+        successful.push({
+          code: `حساب ${i + 1}`,
+          name: 'تم حذفه نهائياً'
+        });
+      }
+      
+      for (let i = 0; i < (result.deactivated_count || 0); i++) {
+        successful.push({
+          code: `حساب ${successful.length + 1}`,
+          name: 'تم إلغاء تفعيله'
+        });
+      }
+      
+      if (result.errors && result.errors.length > 0) {
+        result.errors.forEach((error: string, index: number) => {
+          failed.push({
+            code: `خطأ ${index + 1}`,
+            name: 'فشل في المعالجة',
+            error: error
+          });
+        });
+      }
       
       setDeletionResults({ successful, failed, completed: true });
       setDeletionProgress(100);
