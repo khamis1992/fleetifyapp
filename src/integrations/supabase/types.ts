@@ -10211,9 +10211,7 @@ export type Database = {
         }[]
       }
       get_all_accounts_deletion_preview: {
-        Args:
-          | { company_id_param: string }
-          | { force_delete_system?: boolean; target_company_id: string }
+        Args: { force_delete_system?: boolean; target_company_id: string }
         Returns: Json
       }
       get_available_customer_accounts: {

@@ -65,14 +65,14 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   const hasSystemAccounts = previewData?.system_accounts > 0;
   const canProceed = isValidConfirmation && (!hasSystemAccounts || forceDeleteSystem);
 
-  // Load preview data when dialog opens
+  // Load preview data when dialog opens - initial load only
   useEffect(() => {
     if (open) {
       const loadPreview = async () => {
         try {
-          console.log('[DELETE_ALL] Loading deletion preview with force_delete_system:', forceDeleteSystem);
+          console.log('[DELETE_ALL] Loading initial deletion preview');
           const preview = await getAllAccountsDeletionPreview.mutateAsync({
-            forceDeleteSystem: forceDeleteSystem
+            forceDeleteSystem: false // Always start with false for initial load
           });
           console.log('[DELETE_ALL] Preview loaded:', preview);
           setPreviewData(preview);
@@ -94,9 +94,9 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       setDeletionProgress(0);
       setDeletionResults({ successful: [], failed: [], completed: false });
     }
-  }, [open, getAllAccountsDeletionPreview]);
+  }, [open]); // Remove getAllAccountsDeletionPreview from dependencies
 
-  // Reload preview when force delete option changes
+  // Reload preview when force delete option changes - separate effect with proper dependencies
   useEffect(() => {
     if (open && previewData) {
       const reloadPreview = async () => {
@@ -114,7 +114,7 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
       reloadPreview();
     }
-  }, [forceDeleteSystem]);
+  }, [forceDeleteSystem, open, getAllAccountsDeletionPreview]); // Include all necessary dependencies
 
   const handleDeleteAll = async () => {
     if (!canProceed) return;
