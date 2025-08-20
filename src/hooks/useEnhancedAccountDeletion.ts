@@ -123,7 +123,29 @@ export const useComprehensiveAccountDeletion = () => {
       const result = data as AccountDeletionResult;
       if (!result.success) {
         console.error('❌ [ACCOUNT_DELETION] فشل العملية:', result.error);
-        throw new Error(result.error);
+        
+        // Provide more specific error messages
+        let errorMessage = result.error || 'فشل في حذف الحساب';
+        
+        if (data?.account_info?.is_system) {
+          errorMessage = 'لا يمكن حذف الحسابات النظامية. هذه الحسابات مطلوبة لسير العمل الطبيعي للنظام.';
+        } else if (data?.dependencies_count > 0) {
+          const dependenciesCount = data.dependencies_count;
+          const affectedTables = data.affected_tables || [];
+          const tableNames = affectedTables.map((table: any) => {
+            switch(table.table_name) {
+              case 'journal_entry_lines': return 'قيود اليومية';
+              case 'budget_items': return 'بنود الميزانية';
+              case 'chart_of_accounts': return 'حسابات فرعية';
+              case 'banks': return 'حسابات بنكية';
+              default: return table.table_name;
+            }
+          }).join('، ');
+          
+          errorMessage = `لا يمكن حذف الحساب لوجود ${dependenciesCount} سجل مرتبط في: ${tableNames}. يرجى نقل البيانات أو استخدام خيار النقل أولاً.`;
+        }
+        
+        throw new Error(errorMessage);
       }
       
       console.log('✅ [ACCOUNT_DELETION] نجح الحذف:', result);
