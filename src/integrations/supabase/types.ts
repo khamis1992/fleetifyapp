@@ -9449,6 +9449,14 @@ export type Database = {
         Args: { company_id_param: string; hours_back?: number }
         Returns: Json
       }
+      bulk_delete_company_accounts: {
+        Args: {
+          deletion_reason: string
+          include_system_accounts: boolean
+          target_company_id: string
+        }
+        Returns: Json
+      }
       calculate_account_level: {
         Args: { account_id_param: string }
         Returns: number

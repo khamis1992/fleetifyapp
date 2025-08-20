@@ -434,26 +434,18 @@ export const useDeleteAllAccounts = () => {
         
         console.log('✅ [DELETE_ALL] Foreign key dependencies handled');
         
-        // Now proceed with the actual deletion using new RPC function
-        console.log('🔄 [DELETE_ALL] Calling delete_all_accounts_v2 with params:', {
-          company_id: companyId,
-          force_system: forceDeleteSystem,
-          reason: confirmationText || 'Bulk account deletion'
+        // استخدام الدالة الجديدة مع تسجيل مفصل
+        console.log('🔄 [DELETE_ALL] Calling bulk_delete_company_accounts with params:', {
+          target_company_id: companyId,
+          include_system_accounts: forceDeleteSystem,
+          deletion_reason: confirmationText || 'Bulk account deletion'
         });
 
-        // Add timeout to prevent hanging
-        const deletePromise = supabase.rpc('delete_all_accounts_v2', {
-          company_id: companyId,
-          force_system: forceDeleteSystem,
-          reason: confirmationText || 'Bulk account deletion'
+        const { data, error } = await supabase.rpc('bulk_delete_company_accounts', {
+          target_company_id: companyId,
+          include_system_accounts: forceDeleteSystem,
+          deletion_reason: confirmationText || 'Bulk account deletion'
         });
-
-        // Set a timeout of 30 seconds
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('انتهت مهلة العملية - تم إلغاء الحذف')), 30000)
-        );
-
-        const { data, error } = await Promise.race([deletePromise, timeoutPromise]);
         
         console.log('✅ [DELETE_ALL] RPC call completed, data:', data);
 
