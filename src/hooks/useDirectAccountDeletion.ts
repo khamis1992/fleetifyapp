@@ -272,3 +272,95 @@ export const useDirectDeletionPreview = () => {
     }
   });
 };
+
+/**
+ * Hook لتشخيص أسباب فشل حذف الحسابات
+ */
+export const useDiagnoseAccountDeletionFailures = () => {
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🔍 [DIAGNOSE] تشخيص أسباب فشل حذف الحسابات للشركة:', companyId);
+      
+      const { data, error } = await supabase.rpc('diagnose_account_deletion_failures', {
+        target_company_id: companyId
+      });
+      
+      if (error) {
+        console.error('❌ [DIAGNOSE] خطأ في التشخيص:', error);
+        throw new Error(error.message);
+      }
+      
+      if (!data.success) {
+        console.error('❌ [DIAGNOSE] فشل التشخيص:', data.error);
+        throw new Error(data.error);
+      }
+      
+      console.log('✅ [DIAGNOSE] نتائج التشخيص:', data);
+      return data;
+    },
+    onError: (error) => {
+      console.error('❌ [DIAGNOSE] فشل hook التشخيص:', error);
+      toast.error('خطأ في تشخيص الحسابات: ' + error.message);
+    }
+  });
+};
+
+/**
+ * Hook لتنظيف جميع المراجع المعلقة
+ */
+export const useCleanupAllReferences = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🧹 [CLEANUP] تنظيف جميع المراجع المعلقة للشركة:', companyId);
+      
+      const { data, error } = await supabase.rpc('cleanup_all_account_references', {
+        target_company_id: companyId
+      });
+      
+      if (error) {
+        console.error('❌ [CLEANUP] خطأ في التنظيف:', error);
+        throw new Error(error.message);
+      }
+      
+      if (!data.success) {
+        console.error('❌ [CLEANUP] فشل التنظيف:', data.error);
+        throw new Error(data.error);
+      }
+      
+      console.log('✅ [CLEANUP] نتائج التنظيف:', data);
+      return data;
+    },
+    onSuccess: (result) => {
+      // تحديث جميع الاستعلامات المرتبطة
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['account-mappings'] });
+      
+      toast.success(result.message);
+      
+      if (result.total_cleaned > 0) {
+        toast.info(`تم تنظيف ${result.total_cleaned} مرجع معلق`);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ [CLEANUP] فشل hook التنظيف:', error);
+      toast.error('خطأ في تنظيف المراجع: ' + error.message);
+    }
+  });
+};

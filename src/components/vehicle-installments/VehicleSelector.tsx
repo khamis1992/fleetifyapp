@@ -240,13 +240,13 @@ export function VehicleSelector({
             const model = (vehicle.model || '').toString().toLowerCase();
             const year = (vehicle.year || '').toString().toLowerCase();
             
-            return (
+      return (
               plateNumber.includes(searchLower) ||
               make.includes(searchLower) ||
               model.includes(searchLower) ||
               year.includes(searchLower)
-            );
-          });
+      );
+    });
           console.log(`✅ تطبيق البحث "${searchLower}"، النتائج: ${result.length}`);
         }
 
@@ -319,14 +319,14 @@ export function VehicleSelector({
     }
 
     // Main component render with ABSOLUTE SAFETY
-    return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
             disabled={disabled || (Array.isArray(safeVehicles) && safeVehicles.length === 0)}
           >
             {selectedVehicle ? 
@@ -335,10 +335,10 @@ export function VehicleSelector({
                 "لا توجد مركبات متاحة" : 
                 placeholder
             }
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0" align="start">
           {/* CRITICAL: Only render Command when absolutely safe */}
           {(() => {
             try {
@@ -408,8 +408,8 @@ export function VehicleSelector({
                     value={selectedVehicleId || ''}
                     onValueChange={() => {}} // Controlled externally
                   >
-                    <CommandInput 
-                      placeholder="البحث بواسطة رقم اللوحة، الماركة، أو الموديل..." 
+          <CommandInput 
+            placeholder="البحث بواسطة رقم اللوحة، الماركة، أو الموديل..." 
                       value={searchValue || ''}
                       onValueChange={(value) => {
                         try {
@@ -427,7 +427,7 @@ export function VehicleSelector({
                         : "لم يتم العثور على مركبات مطابقة"
                       }
                     </CommandEmpty>
-                    <CommandGroup className="max-h-[200px] overflow-auto">
+          <CommandGroup className="max-h-[200px] overflow-auto">
                       {(() => {
                         try {
                           console.log('🔄 عرض قائمة المركبات:', filteredVehicles.length);
@@ -466,9 +466,9 @@ export function VehicleSelector({
 
                               try {
                                 return (
-                                  <CommandItem
+              <CommandItem
                                     key={`vehicle-${vehicle.id}-${index}`}
-                                    value={vehicle.id}
+                value={vehicle.id}
                                     onSelect={(currentValue) => {
                                       try {
                                         console.log('🎯 تم اختيار المركبة:', currentValue);
@@ -480,8 +480,8 @@ export function VehicleSelector({
 
                                         if (typeof onSelect === 'function') {
                                           onSelect(currentValue);
-                                          setOpen(false);
-                                          setSearchValue("");
+                  setOpen(false);
+                  setSearchValue("");
                                           console.log('✅ تم تحديد المركبة بنجاح');
                                         } else {
                                           console.error('❌ onSelect ليس دالة');
@@ -491,30 +491,30 @@ export function VehicleSelector({
                                       }
                                     }}
                                     className="flex items-center justify-between cursor-pointer"
-                                  >
-                                     <div className="flex flex-col">
+              >
+                <div className="flex flex-col">
                                        <span className="font-medium">
                                          {vehicle.plate_number || 'غير محدد'}
                                        </span>
-                                       <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                                          {[vehicle.make, vehicle.model, vehicle.year]
                                            .filter(Boolean)
                                            .join(' ') || 'معلومات غير متاحة'}
-                                       </span>
+                  </span>
                                        {/* عرض الأسعار */}
                                        <div className="text-xs text-muted-foreground flex gap-2 mt-1">
                                          {vehicle.daily_rate && <span>يومي: {vehicle.daily_rate.toLocaleString()} د.ك</span>}
                                          {vehicle.weekly_rate && <span>أسبوعي: {vehicle.weekly_rate.toLocaleString()} د.ك</span>}
                                          {vehicle.monthly_rate && <span>شهري: {vehicle.monthly_rate.toLocaleString()} د.ك</span>}
                                        </div>
-                                     </div>
-                                    <Check
-                                      className={cn(
-                                        "ml-2 h-4 w-4",
-                                        selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                  </CommandItem>
+                </div>
+                <Check
+                  className={cn(
+                    "ml-2 h-4 w-4",
+                    selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              </CommandItem>
                                 );
                               } catch (error) {
                                 console.error('💥 خطأ في إنشاء عنصر المركبة:', error);
@@ -537,9 +537,9 @@ export function VehicleSelector({
                           );
                         }
                       })()}
-                    </CommandGroup>
+          </CommandGroup>
                     </CommandList>
-                  </Command>
+        </Command>
                 </div>
               );
             } catch (error) {
@@ -552,9 +552,9 @@ export function VehicleSelector({
               );
             }
           })()}
-        </PopoverContent>
-      </Popover>
-    );
+      </PopoverContent>
+    </Popover>
+  );
   } catch (error) {
     console.error('💥 خطأ شامل في VehicleSelector:', error);
     return (

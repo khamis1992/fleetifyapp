@@ -409,7 +409,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
         const { data: created, error: insertError } = await supabase
           .from('customers')
-          .insert({
+.insert({
             company_id: companyId,
             customer_type: 'corporate',
             company_name: companyName,
@@ -789,7 +789,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                   <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
                     <div className="flex-1">
                       <label className="text-sm font-medium">المركبة</label>
-                       <VehicleSelector
+                      <VehicleSelector
                         vehicles={(() => {
                           try {
                             console.log('🔄 إعداد المركبات لـ VehicleSelector...');

@@ -66,12 +66,12 @@ export const useAnalyzeAccountDependencies = () => {
       const { data, error } = await supabase.rpc('analyze_account_dependencies' as any, {
         account_id_param: accountId
       });
-      
+
       if (error) {
         console.error('❌ [ACCOUNT_DELETION] خطأ في تحليل التبعيات:', error);
         throw new Error(error.message);
       }
-      
+
       console.log('✅ [ACCOUNT_DELETION] نتائج التحليل:', data);
       return data as AccountDeletionAnalysis;
     },
@@ -90,13 +90,13 @@ export const useComprehensiveAccountDeletion = () => {
   const { user } = useAuth();
   
   return useMutation({
-    mutationFn: async ({
-      accountId,
+    mutationFn: async ({ 
+      accountId, 
       deletionMode = 'soft',
       transferToAccountId,
       options,
-    }: {
-      accountId: string;
+    }: { 
+      accountId: string; 
       deletionMode?: DeletionMode;
       transferToAccountId?: string;
       options?: DeletionOptions;
@@ -107,14 +107,14 @@ export const useComprehensiveAccountDeletion = () => {
         transferToAccountId,
         userId: user?.id
       });
-      
+
       const { data, error } = await supabase.rpc('comprehensive_delete_account' as any, {
         account_id_param: accountId,
         deletion_mode: deletionMode,
         transfer_to_account_id: transferToAccountId,
         user_id_param: user?.id
       });
-      
+
       if (error) {
         console.error('❌ [ACCOUNT_DELETION] خطأ في الحذف:', error);
         throw new Error(error.message);
@@ -157,7 +157,7 @@ export const useComprehensiveAccountDeletion = () => {
       queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      
+
       // عرض رسالة النجاح
       const operation = result.operation;
       if (operation) {

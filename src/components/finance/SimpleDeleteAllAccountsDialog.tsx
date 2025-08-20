@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +20,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { useDirectBulkAccountDeletion } from "@/hooks/useDirectAccountDeletion";
+import { useDirectBulkAccountDeletion, useDiagnoseAccountDeletionFailures, useCleanupAllReferences } from "@/hooks/useDirectAccountDeletion";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -49,6 +48,8 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const { user } = useAuth();
   const { data: allAccounts, isLoading: accountsLoading } = useChartOfAccounts();
   const deleteAllAccounts = useDirectBulkAccountDeletion();
+  const diagnoseFailures = useDiagnoseAccountDeletionFailures();
+  const cleanupReferences = useCleanupAllReferences();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
@@ -122,16 +123,13 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
             حذف جميع الحسابات - عملية خطيرة
           </DialogTitle>
         </DialogHeader>
-
-        <ScrollArea className="flex-1 max-h-[70vh] pr-2" style={{ overflowY: 'auto' }}>
-          <div className="space-y-6 pb-4">
 
         {accountsLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -174,12 +172,55 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                       <div className="font-bold text-lg text-yellow-600">{results.deactivated_count || 0}</div>
                       <div className="text-sm">تم إلغاء تفعيلها</div>
                     </div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-blue-600">{results.total_processed || 0}</div>
-                      <div className="text-sm">إجمالي المعالج</div>
-                    </div>
-                  </div>
-                </div>
+                                         <div className="text-center">
+                       <div className="font-bold text-lg text-blue-600">{results.total_processed || 0}</div>
+                       <div className="text-sm">إجمالي المعالج</div>
+                     </div>
+                   </div>
+                   
+                   {/* زر تشخيص الأخطاء */}
+                   {(results.error_count || 0) > 0 && (
+                     <div className="mt-4">
+                       <Button
+                         variant="outline"
+                         onClick={async () => {
+                           try {
+                             const diagnosis = await diagnoseFailures.mutateAsync();
+                             console.log('🔍 تشخيص مفصل للأخطاء:', diagnosis);
+                             
+                             const summary = diagnosis.analysis_summary;
+                             let message = 'أسباب الفشل:\n';
+                             if (summary.vendor_account_issues > 0) {
+                               message += `• ${summary.vendor_account_issues} حساب مرتبط بحسابات التجار\n`;
+                             }
+                             if (summary.customer_account_issues > 0) {
+                               message += `• ${summary.customer_account_issues} حساب مرتبط بحسابات العملاء\n`;
+                             }
+                             if (summary.mapping_issues > 0) {
+                               message += `• ${summary.mapping_issues} حساب مرتبط بتخصيصات الحسابات\n`;
+                             }
+                             if (summary.maintenance_issues > 0) {
+                               message += `• ${summary.maintenance_issues} حساب مرتبط بحسابات الصيانة\n`;
+                             }
+                             
+                             toast.info(message);
+                           } catch (error: any) {
+                             toast.error('فشل في التشخيص: ' + error.message);
+                           }
+                         }}
+                         disabled={diagnoseFailures.isPending}
+                         className="w-full"
+                       >
+                         {diagnoseFailures.isPending ? (
+                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                         ) : (
+                           <AlertTriangle className="h-4 w-4 mr-2" />
+                         )}
+                         تشخيص أسباب الفشل
+                       </Button>
+                     </div>
+                   )}
+                 </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-red-600">{results?.error || 'حدث خطأ غير معروف'}</p>
@@ -204,17 +245,80 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
               </AlertDescription>
             </Alert>
 
-            {/* إحصائيات سريعة */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg text-center">
-                <div className="font-bold text-lg">{totalAccounts}</div>
-                <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
-              </div>
-              <div className="p-4 border rounded-lg text-center">
-                <div className="font-bold text-lg text-orange-600">{systemAccounts}</div>
-                <div className="text-sm text-muted-foreground">حسابات نظامية</div>
-              </div>
-            </div>
+                         {/* إحصائيات سريعة */}
+             <div className="grid grid-cols-2 gap-4">
+               <div className="p-4 border rounded-lg text-center">
+                 <div className="font-bold text-lg">{totalAccounts}</div>
+                 <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
+               </div>
+               <div className="p-4 border rounded-lg text-center">
+                 <div className="font-bold text-lg text-orange-600">{systemAccounts}</div>
+                 <div className="text-sm text-muted-foreground">حسابات نظامية</div>
+               </div>
+             </div>
+
+             {/* أدوات التحضير */}
+             <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
+               <h4 className="font-semibold text-blue-800">أدوات التحضير (موصى بها قبل الحذف):</h4>
+               
+               <div className="flex gap-2">
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={async () => {
+                     try {
+                       await cleanupReferences.mutateAsync();
+                     } catch (error: any) {
+                       console.error('فشل التنظيف:', error);
+                     }
+                   }}
+                   disabled={cleanupReferences.isPending}
+                   className="flex-1"
+                 >
+                   {cleanupReferences.isPending ? (
+                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                   ) : (
+                     <Trash2 className="h-4 w-4 mr-2" />
+                   )}
+                   تنظيف المراجع المعلقة
+                 </Button>
+                 
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={async () => {
+                     try {
+                       const diagnosis = await diagnoseFailures.mutateAsync();
+                       console.log('🔍 تشخيص شامل:', diagnosis);
+                       
+                       const summary = diagnosis.analysis_summary;
+                       let message = `تحليل ${diagnosis.total_issues} مشكلة:\n`;
+                       message += `• ${summary.vendor_account_issues || 0} مشكلة في حسابات التجار\n`;
+                       message += `• ${summary.customer_account_issues || 0} مشكلة في حسابات العملاء\n`;
+                       message += `• ${summary.mapping_issues || 0} مشكلة في ربط الحسابات\n`;
+                       message += `• ${summary.maintenance_issues || 0} مشكلة في حسابات الصيانة`;
+                       
+                       toast.info(message);
+                     } catch (error: any) {
+                       console.error('فشل التشخيص:', error);
+                     }
+                   }}
+                   disabled={diagnoseFailures.isPending}
+                   className="flex-1"
+                 >
+                   {diagnoseFailures.isPending ? (
+                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                   ) : (
+                     <AlertTriangle className="h-4 w-4 mr-2" />
+                   )}
+                   تشخيص الحسابات
+                 </Button>
+               </div>
+               
+               <p className="text-sm text-blue-700">
+                 💡 نصيحة: قم بتشغيل "تنظيف المراجع المعلقة" أولاً لتقليل أخطاء الحذف
+               </p>
+             </div>
 
             {/* خيار الحسابات النظامية */}
             {systemAccounts > 0 && (
@@ -294,10 +398,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
           </div>
         )}
 
-          </div>
-        </ScrollArea>
-
-        <DialogFooter className="flex-shrink-0 mt-4">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={handleClose}

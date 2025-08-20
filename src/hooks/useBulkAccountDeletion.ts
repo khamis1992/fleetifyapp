@@ -68,7 +68,7 @@ export const useGetBulkDeletionPreview = () => {
         forceDeleteSystem
       });
       
-      const { data, error } = await supabase.rpc('get_enhanced_accounts_deletion_preview', {
+      const { data, error } = await supabase.rpc('get_all_accounts_deletion_preview', {
         target_company_id: companyId,
         force_delete_system: forceDeleteSystem
       });
@@ -78,14 +78,13 @@ export const useGetBulkDeletionPreview = () => {
         throw new Error(error.message);
       }
       
-      const result = data as any;
-      if (!result?.success) {
-        console.error('❌ [BULK_PREVIEW] فشل المعاينة:', result?.error);
-        throw new Error(result?.error || 'خطأ في المعاينة');
+      if (!data.success) {
+        console.error('❌ [BULK_PREVIEW] فشل المعاينة:', data.error);
+        throw new Error(data.error);
       }
       
-      console.log('✅ [BULK_PREVIEW] نجحت المعاينة:', result);
-      return result as BulkDeletionPreview;
+      console.log('✅ [BULK_PREVIEW] نجحت المعاينة:', data);
+      return data;
     },
     onError: (error) => {
       console.error('❌ [BULK_PREVIEW] فشل hook المعاينة:', error);
@@ -125,7 +124,7 @@ export const useBulkAccountDeletion = () => {
         userId: user?.id
       });
       
-      const { data, error } = await supabase.rpc('enhanced_bulk_delete_company_accounts', {
+      const { data, error } = await supabase.rpc('bulk_delete_company_accounts', {
         target_company_id: companyId,
         include_system_accounts: forceDeleteSystem,
         deletion_reason: `Bulk deletion by user ${user?.id} at ${new Date().toISOString()}`
@@ -136,14 +135,13 @@ export const useBulkAccountDeletion = () => {
         throw new Error(error.message);
       }
       
-      const result = data as any;
-      if (!result?.success) {
-        console.error('❌ [BULK_DELETE] فشل العملية:', result?.error);
-        throw new Error(result?.error || 'خطأ في عملية الحذف');
+      if (!data.success) {
+        console.error('❌ [BULK_DELETE] فشل العملية:', data.error);
+        throw new Error(data.error);
       }
       
-      console.log('✅ [BULK_DELETE] نجح الحذف الجماعي:', result);
-      return result as BulkDeletionResult;
+      console.log('✅ [BULK_DELETE] نجح الحذف الجماعي:', data);
+      return data;
     },
     onSuccess: (result) => {
       // تحديث جميع الاستعلامات المرتبطة
