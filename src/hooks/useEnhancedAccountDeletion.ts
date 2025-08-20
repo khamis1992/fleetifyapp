@@ -487,7 +487,23 @@ export const useDeleteAllAccounts = () => {
         
       } catch (error: any) {
         console.error('💥 [DELETE_ALL] Comprehensive deletion failed:', error);
-        throw error;
+        
+        // تحسين رسائل الخطأ للمستخدم
+        let userMessage = "حدث خطأ أثناء حذف الحسابات";
+        
+        if (error.message) {
+          if (error.message.includes('fixed_assets')) {
+            userMessage = "خطأ في معالجة جدول الأصول الثابتة. تم إصلاح المشكلة، يرجى المحاولة مرة أخرى.";
+          } else if (error.message.includes('foreign key')) {
+            userMessage = "يوجد مراجع مرتبطة بهذه الحسابات. يتم حذفها أولاً...";
+          } else if (error.message.includes('permission')) {
+            userMessage = "ليس لديك صلاحية لحذف هذه الحسابات";
+          } else {
+            userMessage = error.message;
+          }
+        }
+        
+        throw new Error(userMessage);
       }
     },
     onSuccess: (data: any) => {
