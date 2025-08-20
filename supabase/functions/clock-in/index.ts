@@ -13,7 +13,36 @@ serve(async (req) => {
   }
 
   try {
-    const { employeeId, latitude, longitude } = await req.json();
+    const requestBody = await req.json();
+    const { employeeId, latitude, longitude } = requestBody;
+    
+    console.log('Clock-in request received:', { 
+      employeeId, 
+      hasLocation: !!(latitude && longitude),
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!employeeId) {
+      console.error('Missing employeeId in request');
+      return new Response(JSON.stringify({ 
+        error: 'معرف الموظف مطلوب',
+        success: false
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!latitude || !longitude) {
+      console.error('Missing location data in request');
+      return new Response(JSON.stringify({ 
+        error: 'بيانات الموقع مطلوبة لتسجيل الحضور',
+        success: false
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -27,11 +56,21 @@ serve(async (req) => {
       .single();
 
     if (empError || !employee) {
-      return new Response(JSON.stringify({ error: 'Employee not found' }), {
+      console.error('Employee lookup error:', empError);
+      return new Response(JSON.stringify({ 
+        error: 'لم يتم العثور على بيانات الموظف',
+        success: false,
+        details: empError?.message 
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Employee found:', { 
+      employeeId, 
+      companyId: employee.company_id 
+    });
 
     // Verify location first
     const locationResponse = await supabase.functions.invoke('verify-location', {
@@ -45,8 +84,10 @@ serve(async (req) => {
     if (locationResponse.error) {
       console.error('Location verification error:', locationResponse.error);
       return new Response(JSON.stringify({ 
-        error: 'Failed to verify location',
-        success: false
+        error: 'فشل في التحقق من الموقع. يرجى المحاولة مرة أخرى',
+        success: false,
+        details: locationResponse.error.message,
+        errorCode: 'LOCATION_VERIFICATION_FAILED'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -55,21 +96,29 @@ serve(async (req) => {
 
     const locationData = locationResponse.data;
     
+    console.log('Location verification result:', {
+      withinRange: locationData.withinRange,
+      distance: locationData.distance,
+      allowedRadius: locationData.allowedRadius,
+      needsConfiguration: locationData.needsConfiguration
+    });
+
     if (!locationData.withinRange) {
-      let errorMessage = 'You are outside the allowed work area';
+      let errorMessage = 'أنت خارج منطقة العمل المسموحة';
       
       if (locationData.needsConfiguration) {
-        errorMessage = 'Office location is not configured. Please contact your administrator.';
+        errorMessage = 'لم يتم تكوين موقع المكتب. يرجى التواصل مع المسؤول لإعداد موقع المكتب.';
       } else if (locationData.distance && locationData.allowedRadius) {
-        errorMessage = `You are ${locationData.distance}m away from the office. Maximum allowed distance is ${locationData.allowedRadius}m.`;
+        errorMessage = `أنت على بعد ${Math.round(locationData.distance)}م من المكتب. المسافة المسموحة هي ${locationData.allowedRadius}م.`;
       }
       
       return new Response(JSON.stringify({ 
         error: errorMessage,
         success: false,
-        distance: locationData.distance,
+        distance: Math.round(locationData.distance || 0),
         allowedRadius: locationData.allowedRadius,
-        needsConfiguration: locationData.needsConfiguration
+        needsConfiguration: locationData.needsConfiguration,
+        errorCode: 'LOCATION_OUT_OF_RANGE'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -87,9 +136,15 @@ serve(async (req) => {
       .single();
 
     if (existingRecord && existingRecord.check_in_time) {
+      console.log('Employee already clocked in today:', { 
+        employeeId, 
+        existingCheckIn: existingRecord.check_in_time 
+      });
       return new Response(JSON.stringify({ 
-        error: 'Already clocked in today',
-        record: existingRecord
+        error: 'تم تسجيل الحضور مسبقاً اليوم',
+        success: false,
+        record: existingRecord,
+        errorCode: 'ALREADY_CLOCKED_IN'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -114,24 +169,40 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error('Clock-in error:', error);
-      return new Response(JSON.stringify({ error: 'Failed to clock in' }), {
+      console.error('Clock-in database error:', error);
+      return new Response(JSON.stringify({ 
+        error: 'فشل في تسجيل الحضور. يرجى المحاولة مرة أخرى',
+        success: false,
+        details: error.message,
+        errorCode: 'DATABASE_ERROR'
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('Clock-in successful:', { 
+      employeeId, 
+      recordId: record.id,
+      checkInTime: record.check_in_time
+    });
+
     return new Response(JSON.stringify({ 
       success: true,
       record,
-      message: 'Successfully clocked in'
+      message: 'تم تسجيل الحضور بنجاح'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in clock-in function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Unexpected error in clock-in function:', error);
+    return new Response(JSON.stringify({ 
+      error: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى',
+      success: false,
+      details: error.message,
+      errorCode: 'UNEXPECTED_ERROR'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

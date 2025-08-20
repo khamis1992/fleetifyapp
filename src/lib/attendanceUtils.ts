@@ -19,15 +19,36 @@ export const getCurrentTime = () => {
 };
 
 export const formatLocationError = (error: any, locationData?: any) => {
+  // Handle Arabic error messages from the server
+  if (error?.error && typeof error.error === 'string') {
+    return error.error;
+  }
+  
   if (error?.needsConfiguration || locationData?.needsConfiguration) {
-    return 'Office location is not configured. Please contact your administrator to set up the office location.';
+    return 'لم يتم تكوين موقع المكتب. يرجى التواصل مع المسؤول لإعداد موقع المكتب.';
   }
   
   if (locationData?.distance && locationData?.allowedRadius) {
-    return `You are ${locationData.distance}m away from the office. Maximum allowed distance is ${locationData.allowedRadius}m.`;
+    return `أنت على بعد ${Math.round(locationData.distance)}م من المكتب. المسافة المسموحة هي ${locationData.allowedRadius}م.`;
   }
   
-  return error?.message || 'You are outside the allowed work area.';
+  // Check for specific error codes
+  if (error?.errorCode) {
+    switch (error.errorCode) {
+      case 'LOCATION_OUT_OF_RANGE':
+        return 'أنت خارج منطقة العمل المسموحة';
+      case 'ALREADY_CLOCKED_IN':
+        return 'تم تسجيل الحضور مسبقاً اليوم';
+      case 'LOCATION_VERIFICATION_FAILED':
+        return 'فشل في التحقق من الموقع. يرجى المحاولة مرة أخرى';
+      case 'DATABASE_ERROR':
+        return 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى';
+      default:
+        return 'حدث خطأ غير متوقع';
+    }
+  }
+  
+  return error?.message || 'أنت خارج منطقة العمل المسموحة.';
 };
 
 export const isLocationConfigured = (locationStatus: string | null) => {

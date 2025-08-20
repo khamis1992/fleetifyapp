@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatLocationError } from '@/lib/attendanceUtils';
 
 interface LocationData {
   latitude: number;
@@ -60,56 +61,102 @@ export const useAttendance = () => {
   // Clock in
   const clockIn = useMutation({
     mutationFn: async ({ employeeId, latitude, longitude }: ClockInData) => {
+      console.log('Attempting clock-in with:', { employeeId, hasLocation: !!(latitude && longitude) });
+      
       const { data, error } = await supabase.functions.invoke('clock-in', {
         body: { employeeId, latitude, longitude },
       });
 
-      if (error) throw error;
+      console.log('Clock-in response:', { data, error });
+
+      if (error) {
+        console.error('Clock-in error:', error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: (data) => {
+      console.log('Clock-in success:', data);
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message || 'تم تسجيل الحضور بنجاح');
         queryClient.invalidateQueries({ queryKey: ['attendance'] });
       } else {
-        // Handle specific error cases
-        if (data.needsConfiguration) {
-          toast.error('Office location not configured. Please contact your administrator.');
-        } else {
-          toast.error(data.error || 'Failed to clock in');
-        }
+        // Handle specific error cases from the response
+        const errorMessage = formatLocationError(data, data);
+        toast.error(errorMessage);
       }
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to clock in');
+      console.error('Clock-in mutation error:', error);
+      
+      // Try to parse error response for better error handling
+      let errorData = error;
+      try {
+        if (error.message && typeof error.message === 'string') {
+          // If error message contains JSON, try to parse it
+          const match = error.message.match(/\{.*\}/);
+          if (match) {
+            errorData = JSON.parse(match[0]);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not parse error response:', e);
+      }
+      
+      const errorMessage = formatLocationError(errorData, errorData);
+      toast.error(errorMessage);
     },
   });
 
   // Clock out
   const clockOut = useMutation({
     mutationFn: async ({ employeeId, latitude, longitude }: ClockOutData) => {
+      console.log('Attempting clock-out with:', { employeeId, hasLocation: !!(latitude && longitude) });
+      
       const { data, error } = await supabase.functions.invoke('clock-out', {
         body: { employeeId, latitude, longitude },
       });
 
-      if (error) throw error;
+      console.log('Clock-out response:', { data, error });
+
+      if (error) {
+        console.error('Clock-out error:', error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: (data) => {
+      console.log('Clock-out success:', data);
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message || 'تم تسجيل الانصراف بنجاح');
         queryClient.invalidateQueries({ queryKey: ['attendance'] });
       } else {
-        // Handle specific error cases
-        if (data.needsConfiguration) {
-          toast.error('Office location not configured. Please contact your administrator.');
-        } else {
-          toast.error(data.error || 'Failed to clock out');
-        }
+        // Handle specific error cases from the response
+        const errorMessage = formatLocationError(data, data);
+        toast.error(errorMessage);
       }
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to clock out');
+      console.error('Clock-out mutation error:', error);
+      
+      // Try to parse error response for better error handling
+      let errorData = error;
+      try {
+        if (error.message && typeof error.message === 'string') {
+          // If error message contains JSON, try to parse it
+          const match = error.message.match(/\{.*\}/);
+          if (match) {
+            errorData = JSON.parse(match[0]);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not parse error response:', e);
+      }
+      
+      const errorMessage = formatLocationError(errorData, errorData);
+      toast.error(errorMessage);
     },
   });
 
