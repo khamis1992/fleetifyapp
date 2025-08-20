@@ -489,15 +489,16 @@ export const useGetAllAccountsDeletionPreview = () => {
   const { user } = useAuth();
   
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ forceDeleteSystem = false }: { forceDeleteSystem?: boolean } = {}) => {
       const companyId = user?.profile?.company_id;
       if (!companyId) throw new Error("معرف الشركة مطلوب");
       
-      console.log('📊 [PREVIEW_ALL] Getting deletion preview for all accounts');
+      console.log('📊 [PREVIEW_ALL] Getting deletion preview for all accounts with force_delete_system:', forceDeleteSystem);
       
       try {
         const { data, error } = await supabase.rpc('get_all_accounts_deletion_preview', {
-          company_id_param: companyId
+          target_company_id: companyId,
+          force_delete_system: forceDeleteSystem
         });
 
         if (error) {
@@ -505,12 +506,7 @@ export const useGetAllAccountsDeletionPreview = () => {
           throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
         }
         
-        const result = data as any;
-        if (!result?.success) {
-          console.error('❌ [PREVIEW_ALL] Operation failed:', result?.error);
-          throw new Error(result?.error || "فشل في جلب معاينة الحذف");
-        }
-        
+        const result = data;
         console.log('✅ [PREVIEW_ALL] Preview loaded:', result);
         return result;
       } catch (error: any) {

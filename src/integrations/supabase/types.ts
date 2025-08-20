@@ -9977,11 +9977,13 @@ export type Database = {
         Returns: string
       }
       delete_all_accounts: {
-        Args: {
-          company_id_param: string
-          confirmation_text?: string
-          force_delete_system?: boolean
-        }
+        Args:
+          | {
+              company_id_param: string
+              confirmation_text?: string
+              force_delete_system?: boolean
+            }
+          | { force_delete_system?: boolean; target_company_id: string }
         Returns: Json
       }
       distribute_vehicle_installment_amount: {
@@ -10204,7 +10206,9 @@ export type Database = {
         }[]
       }
       get_all_accounts_deletion_preview: {
-        Args: { company_id_param: string }
+        Args:
+          | { company_id_param: string }
+          | { force_delete_system?: boolean; target_company_id: string }
         Returns: Json
       }
       get_available_customer_accounts: {

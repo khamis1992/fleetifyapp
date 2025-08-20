@@ -62,15 +62,18 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
-  const canProceed = isValidConfirmation && (previewData?.summary?.system_accounts === 0 || forceDeleteSystem);
+  const hasSystemAccounts = previewData?.system_accounts > 0;
+  const canProceed = isValidConfirmation && (!hasSystemAccounts || forceDeleteSystem);
 
   // Load preview data when dialog opens
   useEffect(() => {
     const loadPreview = async () => {
       if (open && !previewData) {
         try {
-          console.log('[DELETE_ALL] Loading deletion preview...');
-          const preview = await getAllAccountsDeletionPreview.mutateAsync();
+          console.log('[DELETE_ALL] Loading deletion preview with force_delete_system:', forceDeleteSystem);
+          const preview = await getAllAccountsDeletionPreview.mutateAsync({
+            forceDeleteSystem: forceDeleteSystem
+          });
           console.log('[DELETE_ALL] Preview loaded:', preview);
           setPreviewData(preview);
         } catch (error: any) {
@@ -93,7 +96,14 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       setDeletionProgress(0);
       setDeletionResults({ successful: [], failed: [], completed: false });
     }
-  }, [open, getAllAccountsDeletionPreview]);
+  }, [open, forceDeleteSystem, getAllAccountsDeletionPreview]);
+
+  // Reload preview when force delete option changes
+  useEffect(() => {
+    if (open && forceDeleteSystem !== undefined) {
+      setPreviewData(null); // Clear current preview to force reload
+    }
+  }, [forceDeleteSystem, open]);
 
   const handleDeleteAll = async () => {
     if (!canProceed) return;
@@ -113,19 +123,23 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       console.log('[DELETE_ALL] Delete all result:', result);
       
       // Parse results from the unified system
-      const successful = result.details?.map((detail: any) => ({
+      const successful = result.success_details?.map((detail: any) => ({
         code: detail.account_code || 'Unknown',
         name: detail.account_name || 'Unknown'
       })) || [];
       
-      const failed: Array<{code: string, name: string, error: string}> = [];
+      const failed = result.error_details?.map((detail: any) => ({
+        code: detail.account_code || 'Unknown',
+        name: detail.account_name || 'Unknown',
+        error: detail.error || 'خطأ غير معروف'
+      })) || [];
       
       setDeletionResults({ successful, failed, completed: true });
       setDeletionProgress(100);
       
       // Show success message
-      console.log('[DELETE_ALL] All accounts deleted successfully');
-      toast.success(`تم حذف جميع الحسابات بنجاح (${successful.length} حساب)`);
+      console.log('[DELETE_ALL] All accounts processed');
+      toast.success(`تمت معالجة الحسابات: ${successful.length} تم حذفها، ${failed.length} فشل`);
       onSuccess?.();
       
     } catch (error: any) {
@@ -152,7 +166,6 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   };
 
   const isLoading = isDeleting;
-  const hasSystemAccounts = previewData?.summary?.system_accounts > 0;
 
   const getStepStatus = (step: number) => {
     if (currentStep > step) return 'completed';
@@ -344,93 +357,158 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
               </AlertDescription>
             </Alert>
 
+            {/* System Accounts Warning */}
+            {hasSystemAccounts && (
+              <Alert className="border-orange-500 bg-orange-50">
+                <Shield className="h-4 w-4 text-orange-500" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-medium text-orange-800">
+                      تم العثور على {previewData.system_accounts} حساب نظامي
+                    </p>
+                    <p className="text-orange-700 text-sm">
+                      {previewData.warning_message}
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Force Delete System Accounts Option */}
+            {hasSystemAccounts && (
+              <div className="space-y-3 p-4 border-2 border-red-200 bg-red-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="force-delete-system"
+                    checked={forceDeleteSystem}
+                    onCheckedChange={(checked) => setForceDeleteSystem(checked as boolean)}
+                  />
+                  <Label
+                    htmlFor="force-delete-system"
+                    className="text-sm font-medium text-red-800 cursor-pointer flex items-center gap-2"
+                  >
+                    <Skull className="h-4 w-4" />
+                    حذف الحسابات النظامية قسرياً (خطير جداً!)
+                  </Label>
+                </div>
+                <Alert className="border-red-500 bg-red-100">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800 text-sm">
+                    <strong>تحذير شديد الخطورة:</strong> تفعيل هذا الخيار سيحذف الحسابات النظامية نهائياً! 
+                    هذا قد يؤدي إلى عطل في النظام وفقدان البيانات المهمة. استخدم هذا الخيار فقط إذا كنت متأكداً تماماً 
+                    وتخطط لإعادة بناء دليل الحسابات من الصفر.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
             {/* Summary Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 border rounded-lg text-center">
                 <Database className="h-6 w-6 mx-auto mb-2 text-blue-500" />
-                <div className="font-bold text-lg">{previewData.summary.total_accounts}</div>
+                <div className="font-bold text-lg">{previewData.total_accounts}</div>
                 <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
               </div>
               
               <div className="p-4 border rounded-lg text-center">
                 <Trash2 className="h-6 w-6 mx-auto mb-2 text-red-500" />
                 <div className="font-bold text-lg text-red-600">
-                  {previewData.summary.will_be_deleted_permanently}
+                  {previewData.will_be_deleted}
                 </div>
-                <div className="text-sm text-muted-foreground">حذف نهائي</div>
+                <div className="text-sm text-muted-foreground">سيتم حذفها</div>
               </div>
               
               <div className="p-4 border rounded-lg text-center">
                 <Archive className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
                 <div className="font-bold text-lg text-yellow-600">
-                  {previewData.summary.will_be_deleted_soft}
+                  {previewData.will_be_deactivated}
                 </div>
-                <div className="text-sm text-muted-foreground">حذف مؤقت</div>
+                <div className="text-sm text-muted-foreground">سيتم إلغاء تفعيلها</div>
               </div>
               
               {hasSystemAccounts && (
                 <div className="p-4 border rounded-lg text-center border-orange-200 bg-orange-50">
                   <Shield className="h-6 w-6 mx-auto mb-2 text-orange-500" />
                   <div className="font-bold text-lg text-orange-600">
-                    {previewData.summary.system_accounts}
+                    {previewData.system_accounts}
                   </div>
                   <div className="text-sm text-orange-700">حسابات نظام</div>
                 </div>
               )}
             </div>
 
-            {/* Preview Table */}
-            <div className="space-y-3">
-              <h4 className="font-semibold flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                معاينة الحسابات التي ستتأثر:
-                {previewData.showing_sample && (
-                  <Badge variant="outline">عرض أول 50 حساب</Badge>
-                )}
-              </h4>
-              
-              <ScrollArea className="h-64 border rounded-lg">
-                <div className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {previewData.preview_accounts?.map((account: any, index: number) => (
-                      <div 
-                        key={index} 
-                        className={`p-2 rounded border text-xs ${
-                          account.deletion_type === 'permanent' 
-                            ? 'border-red-200 bg-red-50' 
-                            : 'border-yellow-200 bg-yellow-50'
-                        }`}
-                      >
-                        <div className="font-medium">{account.account_code}</div>
-                        <div className="text-muted-foreground truncate">{account.account_name}</div>
-                        <div className="flex items-center justify-between mt-1">
-                          <Badge 
-                            variant={account.deletion_type === 'permanent' ? 'destructive' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {account.deletion_type === 'permanent' ? 'حذف نهائي' : 'حذف مؤقت'}
+            {/* Regular Accounts Preview */}
+            {previewData.sample_accounts && previewData.sample_accounts.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  الحسابات العادية التي ستحذف:
+                  <Badge variant="outline">عينة من {previewData.sample_accounts.length}</Badge>
+                </h4>
+                
+                <ScrollArea className="h-32 border rounded-lg">
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {previewData.sample_accounts.map((account: any, index: number) => (
+                        <div 
+                          key={index} 
+                          className="p-2 rounded border border-red-200 bg-red-50 text-xs"
+                        >
+                          <div className="font-medium">{account.account_code}</div>
+                          <div className="text-muted-foreground truncate">{account.account_name}</div>
+                          <Badge variant="destructive" className="text-xs mt-1">
+                            {account.action === 'will_be_deleted' ? 'سيتم حذفه' : 'حذف قسري'}
                           </Badge>
-                          {account.is_system && (
-                            <Shield className="h-3 w-3 text-orange-500" />
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </ScrollArea>
-            </div>
+                </ScrollArea>
+              </div>
+            )}
 
-            {/* System Accounts Warning */}
-            {hasSystemAccounts && (
-              <Alert className="border-orange-200 bg-orange-50">
-                <Shield className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-800">
-                  <strong>تحذير حسابات النظام:</strong> يوجد {previewData.summary.system_accounts} حساب نظام.
-                  حذف هذه الحسابات قد يؤثر على وظائف النظام الأساسية.
-                  {!isSuperAdmin && " (متاح للمدير العام فقط)"}
-                </AlertDescription>
-              </Alert>
+            {/* System Accounts Preview */}
+            {previewData.system_accounts_sample && previewData.system_accounts_sample.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2 text-orange-600">
+                  <Shield className="h-4 w-4" />
+                  الحسابات النظامية:
+                  <Badge variant="outline" className="border-orange-300">
+                    عينة من {previewData.system_accounts_sample.length}
+                  </Badge>
+                </h4>
+                
+                <ScrollArea className="h-32 border rounded-lg border-orange-200">
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {previewData.system_accounts_sample.map((account: any, index: number) => (
+                        <div 
+                          key={index} 
+                          className={`p-2 rounded border text-xs ${
+                            account.action === 'will_be_force_deleted' 
+                              ? 'border-red-200 bg-red-50' 
+                              : 'border-orange-200 bg-orange-50'
+                          }`}
+                        >
+                          <div className="font-medium">{account.account_code}</div>
+                          <div className="text-muted-foreground truncate">{account.account_name}</div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Badge 
+                              variant={account.action === 'will_be_force_deleted' ? 'destructive' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {account.action === 'will_be_force_deleted' ? 'حذف قسري' : 'إلغاء تفعيل'}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              نظامي
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </ScrollArea>
+              </div>
             )}
 
             {/* Confirmation Input */}
@@ -473,23 +551,6 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
                 )}
               </div>
             </div>
-
-            {/* System Accounts Override */}
-            {hasSystemAccounts && isSuperAdmin && (
-              <div className="space-y-3">
-                <Separator />
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox
-                    id="forceSystem"
-                    checked={forceDeleteSystem}
-                    onCheckedChange={(checked) => setForceDeleteSystem(!!checked)}
-                  />
-                  <label htmlFor="forceSystem" className="text-sm text-destructive font-medium">
-                    أؤكد حذف حسابات النظام أيضاً (خطير جداً - قد يعطل النظام)
-                  </label>
-                </div>
-              </div>
-            )}
 
             {/* Final Warning */}
             {isValidConfirmation && (
