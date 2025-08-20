@@ -531,10 +531,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
         {/* Visualization Tab */}
         <TabsContent value="visualization">
-          <EnhancedAccountsVisualization 
-            showInactiveAccounts={showInactiveAccounts}
-            showSystemAccounts={true}
-          />
+          <EnhancedAccountsVisualization />
         </TabsContent>
 
         {/* Maintenance Tools Tab */}
