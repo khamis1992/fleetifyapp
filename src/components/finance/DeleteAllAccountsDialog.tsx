@@ -211,8 +211,8 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[75vh] pr-4">
-          <div className="space-y-6 pb-4">
+        <ScrollArea className="flex-1 max-h-[70vh] pr-2" style={{ overflowY: 'auto' }}>
+          <div className="space-y-6 pb-4 min-h-[400px]">
 
         {!allAccounts ? (
           <div className="flex items-center justify-center py-8">
