@@ -9980,7 +9980,7 @@ export type Database = {
         Args:
           | {
               company_id_param: string
-              confirmation_text: string
+              confirmation_text?: string
               force_delete_system?: boolean
             }
           | {

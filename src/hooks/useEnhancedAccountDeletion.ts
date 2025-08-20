@@ -440,50 +440,33 @@ export const useDeleteAllAccounts = () => {
           force_delete_system: forceDeleteSystem,
           confirmation_text: confirmationText,
         });
+        
+        console.log('✅ [DELETE_ALL] RPC call completed, data:', data);
 
         if (error) {
           console.error('❌ [DELETE_ALL] RPC error:', error);
           throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
         }
         
-        // تحسين معالجة النتائج
-        let result;
-        try {
-          result = data as any;
-          
-          // التحقق من أن النتيجة موجودة وليست null
-          if (!result) {
-            console.error('❌ [DELETE_ALL] No result returned from RPC');
-            throw new Error("لم يتم الحصول على نتيجة من عملية الحذف");
-          }
-          
-          // التحقق من نجاح العملية
-          if (result.success === false) {
-            console.error('❌ [DELETE_ALL] Operation failed:', result?.error);
-            throw new Error(result?.error || "فشل في حذف جميع الحسابات");
-          }
-          
-          // إذا لم تكن هناك خاصية success، نفترض النجاح إذا كانت هناك بيانات
-          if (result.success === undefined && (result.deleted_count !== undefined || result.message)) {
-            result.success = true;
-          }
-          
-        } catch (parseError) {
-          console.error('❌ [DELETE_ALL] Error parsing result:', parseError);
-          throw new Error("خطأ في معالجة نتيجة الحذف");
+        // Process the result from the function
+        const result = data as any;
+        
+        // Check if we got a valid result
+        if (!result) {
+          console.error('❌ [DELETE_ALL] No result returned from RPC');
+          throw new Error("لم يتم الحصول على نتيجة من عملية الحذف");
+        }
+        
+        // Check if the operation was successful
+        if (result.success === false) {
+          console.error('❌ [DELETE_ALL] Operation failed:', result.error);
+          throw new Error(result.error || "فشل في حذف جميع الحسابات");
         }
         
         console.log('✅ [DELETE_ALL] Success:', result);
         
-        // تنسيق النتيجة للإرجاع
-        return {
-          success: true,
-          deleted_count: result.deleted_count || 0,
-          system_accounts_deleted: result.system_accounts_deleted || 0,
-          total_accounts: result.total_accounts || 0,
-          remaining_accounts: result.remaining_accounts || 0,
-          message: result.message || 'تم حذف الحسابات بنجاح'
-        };
+        // Return the result directly from the database function
+        return result;
         
       } catch (error: any) {
         console.error('💥 [DELETE_ALL] Comprehensive deletion failed:', error);
@@ -512,8 +495,8 @@ export const useDeleteAllAccounts = () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       
-      const summary = data.summary;
-      toast.success(`تم حذف جميع الحسابات بنجاح - ${summary?.total_processed || 0} حساب`);
+      console.log('🎉 [DELETE_ALL] Success callback with data:', data);
+      toast.success(data.message || `تم حذف ${data.deleted_count || 0} حساب بنجاح`);
     },
     onError: (error: any) => {
       console.error('💥 [DELETE_ALL] Mutation error:', error);
