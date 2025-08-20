@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AccountDeleteConfirmDialog } from '@/components/finance/AccountDeleteConfirmDialog';
+import { EnhancedAccountDeleteDialog } from '@/components/finance/EnhancedAccountDeleteDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +23,7 @@ import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
 import { DeleteAllAccountsDialog } from './DeleteAllAccountsDialog';
+import { AccountMaintenanceTools } from './AccountMaintenanceTools';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -329,7 +330,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <span>قائمة الحسابات</span>
             <Layers className="h-4 w-4" />
@@ -345,6 +346,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <TabsTrigger value="visualization" className="flex items-center gap-2">
             <span>العرض التفاعلي</span>
             <Eye className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="maintenance" className="flex items-center gap-2">
+            <span>أدوات الصيانة</span>
+            <Wand2 className="h-4 w-4" />
           </TabsTrigger>
         </TabsList>
 
@@ -462,6 +467,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         <TabsContent value="visualization">
           <EnhancedAccountsVisualization />
         </TabsContent>
+
+        {/* Maintenance Tools Tab */}
+        <TabsContent value="maintenance">
+          <AccountMaintenanceTools />
+        </TabsContent>
       </Tabs>
 
       {/* Smart Wizard Dialog */}
@@ -573,28 +583,17 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         }}
       />
 
-      {/* Delete Account Dialog */}
-      <AccountDeleteConfirmDialog
-        open={showDeleteDialog}
-        onOpenChange={(open) => {
-          console.log('[DELETE_DIALOG] Dialog state changing:', {
-            previousState: showDeleteDialog,
-            newState: open,
-            account: editingAccount
-          });
-          setShowDeleteDialog(open);
-          if (!open) {
-            console.log('[DELETE_DIALOG] Closing dialog, clearing account...');
-            setEditingAccount(null);
-          }
-        }}
-        account={editingAccount}
-        onSuccess={() => {
-          console.log('[DELETE_SUCCESS] Account deleted successfully, closing dialog...');
+      {/* Enhanced Delete Account Dialog */}
+      <EnhancedAccountDeleteDialog
+        isOpen={showDeleteDialog}
+        onClose={() => {
+          console.log('[DELETE_DIALOG] Enhanced dialog closing, clearing account...');
           setShowDeleteDialog(false);
           setEditingAccount(null);
-          toast.success('تم حذف الحساب بنجاح');
         }}
+        accountId={editingAccount?.id || ''}
+        accountName={editingAccount?.account_name || ''}
+        accountCode={editingAccount?.account_code || ''}
       />
 
       {/* Account Statement Dialog */}
