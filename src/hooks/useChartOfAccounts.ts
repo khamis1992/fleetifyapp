@@ -24,11 +24,11 @@ export interface ChartOfAccount {
   updated_at: string;
 }
 
-export const useChartOfAccounts = () => {
+export const useChartOfAccounts = (includeInactive: boolean = false) => {
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: ["chart-of-accounts", companyId],
+    queryKey: ["chart-of-accounts", companyId, includeInactive],
     queryFn: async () => {
       if (!companyId) {
         throw new Error("معرف الشركة غير متوفر");
@@ -37,14 +37,19 @@ export const useChartOfAccounts = () => {
       try {
         validateCompanyAccess(companyId);
         
-        console.log('[CHART_OF_ACCOUNTS] Fetching accounts for company:', companyId);
+        console.log('[CHART_OF_ACCOUNTS] Fetching accounts for company:', companyId, 'includeInactive:', includeInactive);
         
-        const { data, error } = await supabase
+        let query = supabase
           .from("chart_of_accounts")
           .select("*")
-          .eq("company_id", companyId)
-          .eq("is_active", true)
-          .order("account_code");
+          .eq("company_id", companyId);
+
+        // Only filter by is_active if not including inactive accounts
+        if (!includeInactive) {
+          query = query.eq("is_active", true);
+        }
+
+        const { data, error } = await query.order("account_code");
 
         if (error) {
           console.error("Error fetching chart of accounts:", error);
@@ -52,7 +57,9 @@ export const useChartOfAccounts = () => {
         }
 
         console.log('[CHART_OF_ACCOUNTS] Fetched accounts count:', data?.length || 0);
-        console.log('[CHART_OF_ACCOUNTS] Sample accounts:', data?.slice(0, 3)?.map(acc => ({ code: acc.account_code, name: acc.account_name })));
+        console.log('[CHART_OF_ACCOUNTS] Active accounts:', data?.filter(acc => acc.is_active)?.length || 0);
+        console.log('[CHART_OF_ACCOUNTS] Inactive accounts:', data?.filter(acc => !acc.is_active)?.length || 0);
+        console.log('[CHART_OF_ACCOUNTS] Sample accounts:', data?.slice(0, 3)?.map(acc => ({ code: acc.account_code, name: acc.account_name, active: acc.is_active })));
         
         return (data || []) as ChartOfAccount[];
       } catch (error) {

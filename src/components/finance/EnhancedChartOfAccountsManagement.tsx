@@ -44,6 +44,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('active'); // New filter for account status
+  const [showInactiveAccounts, setShowInactiveAccounts] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -57,7 +59,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('accounts');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
 
-  const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts();
+  const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts(showInactiveAccounts);
   const { user } = useAuth();
   
   const createAccount = useCreateAccount();
@@ -139,12 +141,27 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   };
 
   const renderAccountRow = (account: any, level: number = 0): JSX.Element[] => {
+    // Handle undefined or null account
+    if (!account) {
+      console.warn('[RENDER_ACCOUNT_ROW] Account is undefined or null');
+      return [];
+    }
+
     const hasChildren = account.children && account.children.length > 0;
     const isExpanded = expandedNodes.has(account.id);
     const paddingLeft = level * 24;
 
+    // Safe access to account properties with fallbacks
+    const accountCode = account.account_code || 'غير محدد';
+    const accountName = account.account_name_ar || account.account_name || 'غير محدد';
+    const accountType = account.account_type || 'غير محدد';
+    const accountLevel = account.account_level || 1;
+    const isHeader = account.is_header || false;
+    const balanceType = account.balance_type || 'debit';
+    const isActive = account.is_active !== undefined ? account.is_active : true;
+
     const rows: JSX.Element[] = [
-      <TableRow key={account.id} className={level > 0 ? "bg-muted/30" : ""}>
+      <TableRow key={account.id || `row-${level}-${Date.now()}`} className={`${level > 0 ? "bg-muted/30" : ""} ${!isActive ? "opacity-60" : ""}`}>
         <TableCell>
           <div className="flex items-center" style={{ paddingLeft }}>
             {hasChildren ? (
@@ -161,37 +178,38 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             ) : (
               <div className="w-6 mr-2" />
             )}
-            <span className="font-mono text-left">{account.account_code}</span>
+            <span className="font-mono text-left">{accountCode}</span>
+            {!isActive && <Badge variant="destructive" className="mr-2 text-xs">غير نشط</Badge>}
           </div>
         </TableCell>
-        <TableCell className="text-right">{account.account_name_ar || account.account_name}</TableCell>
+        <TableCell className="text-right">{accountName}</TableCell>
         <TableCell className="text-center">
           <Badge variant="outline">
-            {getAccountTypeLabel(account.account_type)}
+            {getAccountTypeLabel(accountType)}
           </Badge>
         </TableCell>
         <TableCell className="text-center">
           <div className="flex items-center justify-center gap-2">
             <Layers className="h-4 w-4 text-muted-foreground" />
             <Badge variant="secondary" className="font-mono">
-              {account.account_level || 1}
+              {accountLevel}
             </Badge>
           </div>
         </TableCell>
         <TableCell className="text-center">
           <AccountLevelBadge 
-            accountLevel={account.account_level || 1} 
-            isHeader={account.is_header || false} 
+            accountLevel={accountLevel} 
+            isHeader={isHeader} 
           />
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={account.balance_type === 'debit' ? 'default' : 'secondary'}>
-            {account.balance_type === 'debit' ? 'مدين' : 'دائن'}
+          <Badge variant={balanceType === 'debit' ? 'default' : 'secondary'}>
+            {balanceType === 'debit' ? 'مدين' : 'دائن'}
           </Badge>
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={account.is_active ? 'default' : 'destructive'}>
-            {account.is_active ? 'نشط' : 'غير نشط'}
+          <Badge variant={isActive ? 'default' : 'destructive'}>
+            {isActive ? 'نشط' : 'غير نشط'}
           </Badge>
         </TableCell>
         <TableCell className="text-center">
@@ -284,18 +302,37 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   };
 
   const filterAccounts = (accounts: any[]) => {
-    if (!accounts) return [];
+    if (!accounts || !Array.isArray(accounts)) {
+      console.warn('[FILTER_ACCOUNTS] Accounts is not a valid array:', accounts);
+      return [];
+    }
     
     return accounts.filter(account => {
-      const matchesSearch = 
-        account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        account.account_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (account.account_name_ar && account.account_name_ar.includes(searchTerm));
+      // Handle undefined account
+      if (!account) {
+        console.warn('[FILTER_ACCOUNTS] Found undefined account in array');
+        return false;
+      }
+
+      // Safe string operations with fallbacks
+      const accountName = account.account_name || '';
+      const accountCode = account.account_code || '';
+      const accountNameAr = account.account_name_ar || '';
+      
+      const matchesSearch = searchTerm === '' || 
+        accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        accountCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        accountNameAr.includes(searchTerm);
       
       const matchesType = filterType === 'all' || account.account_type === filterType;
       const matchesLevel = filterLevel === 'all' || account.account_level?.toString() === filterLevel;
       
-      return matchesSearch && matchesType && matchesLevel;
+      // Status filter
+      const matchesStatus = filterStatus === 'all' || 
+        (filterStatus === 'active' && account.is_active) ||
+        (filterStatus === 'inactive' && !account.is_active);
+      
+      return matchesSearch && matchesType && matchesLevel && matchesStatus;
     });
   };
 
@@ -375,48 +412,77 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             )}
           </div>
 
-          {/* Filters */}
+          {/* Enhanced Filters */}
           <Card>
             <CardContent className="pt-6" dir="rtl">
-              <div className="flex gap-4 items-center">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="البحث في الحسابات..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pr-10 text-right"
-                      dir="rtl"
+              <div className="space-y-4">
+                {/* Toggle for inactive accounts */}
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="show-inactive"
+                      checked={showInactiveAccounts}
+                      onCheckedChange={setShowInactiveAccounts}
                     />
+                    <Label htmlFor="show-inactive" className="text-sm font-medium">
+                      عرض الحسابات غير النشطة
+                    </Label>
                   </div>
+                  <Badge variant="secondary">
+                    {allAccounts ? `${allAccounts.length} حساب` : '0 حساب'}
+                  </Badge>
                 </div>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="تصفية حسب النوع" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                    <SelectItem value="all">جميع الأنواع</SelectItem>
-                    <SelectItem value="assets">الأصول</SelectItem>
-                    <SelectItem value="liabilities">الخصوم</SelectItem>
-                    <SelectItem value="equity">حقوق الملكية</SelectItem>
-                    <SelectItem value="revenue">الإيرادات</SelectItem>
-                    <SelectItem value="expenses">المصروفات</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={filterLevel} onValueChange={setFilterLevel}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="تصفية حسب المستوى" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                    <SelectItem value="all">جميع المستويات</SelectItem>
-                    <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
-                    <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
-                    <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
-                    <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
-                    <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
-                  </SelectContent>
-                </Select>
+
+                <div className="flex gap-4 items-center">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="البحث في الحسابات..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pr-10 text-right"
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="تصفية حسب النوع" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                      <SelectItem value="all">جميع الأنواع</SelectItem>
+                      <SelectItem value="assets">الأصول</SelectItem>
+                      <SelectItem value="liabilities">الخصوم</SelectItem>
+                      <SelectItem value="equity">حقوق الملكية</SelectItem>
+                      <SelectItem value="revenue">الإيرادات</SelectItem>
+                      <SelectItem value="expenses">المصروفات</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterLevel} onValueChange={setFilterLevel}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="تصفية حسب المستوى" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                      <SelectItem value="all">جميع المستويات</SelectItem>
+                      <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
+                      <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
+                      <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
+                      <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
+                      <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="تصفية حسب الحالة" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+                      <SelectItem value="all">جميع الحالات</SelectItem>
+                      <SelectItem value="active">نشط فقط</SelectItem>
+                      <SelectItem value="inactive">غير نشط فقط</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
