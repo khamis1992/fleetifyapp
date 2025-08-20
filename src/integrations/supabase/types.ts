@@ -9451,8 +9451,8 @@ export type Database = {
       }
       bulk_delete_company_accounts: {
         Args: {
-          deletion_reason: string
-          include_system_accounts: boolean
+          deletion_reason?: string
+          include_system_accounts?: boolean
           target_company_id: string
         }
         Returns: Json
@@ -9634,6 +9634,10 @@ export type Database = {
           start_date_param: string
           vehicle_id_param: string
         }
+        Returns: Json
+      }
+      cleanup_all_account_references: {
+        Args: { target_company_id: string }
         Returns: Json
       }
       cleanup_contract_issues: {
