@@ -78,13 +78,14 @@ export const useGetBulkDeletionPreview = () => {
         throw new Error(error.message);
       }
       
-      if (!data.success) {
-        console.error('❌ [BULK_PREVIEW] فشل المعاينة:', data.error);
-        throw new Error(data.error);
+      const result = data as unknown as BulkDeletionPreview;
+      if (!result.success) {
+        console.error('❌ [BULK_PREVIEW] فشل المعاينة:', result.error);
+        throw new Error(result.error);
       }
       
-      console.log('✅ [BULK_PREVIEW] نجحت المعاينة:', data);
-      return data;
+      console.log('✅ [BULK_PREVIEW] نجحت المعاينة:', result);
+      return result;
     },
     onError: (error) => {
       console.error('❌ [BULK_PREVIEW] فشل hook المعاينة:', error);
@@ -135,13 +136,14 @@ export const useBulkAccountDeletion = () => {
         throw new Error(error.message);
       }
       
-      if (!data.success) {
-        console.error('❌ [BULK_DELETE] فشل العملية:', data.error);
-        throw new Error(data.error);
+      const result = data as unknown as BulkDeletionResult;
+      if (!result.success) {
+        console.error('❌ [BULK_DELETE] فشل العملية:', result.error);
+        throw new Error(result.error);
       }
       
-      console.log('✅ [BULK_DELETE] نجح الحذف الجماعي:', data);
-      return data;
+      console.log('✅ [BULK_DELETE] نجح الحذف الجماعي:', result);
+      return result;
     },
     onSuccess: (result) => {
       // تحديث جميع الاستعلامات المرتبطة

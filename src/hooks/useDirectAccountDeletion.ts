@@ -288,8 +288,8 @@ export const useDiagnoseAccountDeletionFailures = () => {
       
       console.log('🔍 [DIAGNOSE] تشخيص أسباب فشل حذف الحسابات للشركة:', companyId);
       
-      const { data, error } = await supabase.rpc('diagnose_account_deletion_failures', {
-        target_company_id: companyId
+      const { data, error } = await supabase.rpc('analyze_account_deletion_enhanced', {
+        account_id_param: companyId
       });
       
       if (error) {
@@ -297,13 +297,14 @@ export const useDiagnoseAccountDeletionFailures = () => {
         throw new Error(error.message);
       }
       
-      if (!data.success) {
-        console.error('❌ [DIAGNOSE] فشل التشخيص:', data.error);
-        throw new Error(data.error);
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [DIAGNOSE] فشل التشخيص:', result?.error);
+        throw new Error(result?.error || 'فشل التشخيص');
       }
       
-      console.log('✅ [DIAGNOSE] نتائج التشخيص:', data);
-      return data;
+      console.log('✅ [DIAGNOSE] نتائج التشخيص:', result);
+      return result;
     },
     onError: (error) => {
       console.error('❌ [DIAGNOSE] فشل hook التشخيص:', error);
@@ -337,13 +338,14 @@ export const useCleanupAllReferences = () => {
         throw new Error(error.message);
       }
       
-      if (!data.success) {
-        console.error('❌ [CLEANUP] فشل التنظيف:', data.error);
-        throw new Error(data.error);
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [CLEANUP] فشل التنظيف:', result?.error);
+        throw new Error(result?.error || 'فشل التنظيف');
       }
       
-      console.log('✅ [CLEANUP] نتائج التنظيف:', data);
-      return data;
+      console.log('✅ [CLEANUP] نتائج التنظيف:', result);
+      return result;
     },
     onSuccess: (result) => {
       // تحديث جميع الاستعلامات المرتبطة
@@ -352,9 +354,9 @@ export const useCleanupAllReferences = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['account-mappings'] });
       
-      toast.success(result.message);
+      toast.success(result?.message || 'تم التنظيف بنجاح');
       
-      if (result.total_cleaned > 0) {
+      if (result?.total_cleaned > 0) {
         toast.info(`تم تنظيف ${result.total_cleaned} مرجع معلق`);
       }
     },
