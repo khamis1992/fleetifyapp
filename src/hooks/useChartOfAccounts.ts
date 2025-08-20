@@ -157,21 +157,38 @@ export const useDeleteAccount = () => {
 
   return useMutation({
     mutationFn: async (accountId: string) => {
-      const { error } = await supabase
-        .from("chart_of_accounts")
-        .update({ is_active: false })
-        .eq("id", accountId);
+      console.log('🗑️ [ACCOUNT_DELETE] بدء حذف الحساب (النمط القديم):', accountId);
+      
+      // استخدام الدالة الجديدة المحسنة بدلاً من التحديث المباشر
+      const { data, error } = await supabase.rpc('comprehensive_delete_account', {
+        account_id_param: accountId,
+        deletion_mode: 'soft' // استخدام الحذف الآمن كافتراضي
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [ACCOUNT_DELETE] خطأ في الحذف:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        console.error('❌ [ACCOUNT_DELETE] فشل العملية:', data.error);
+        throw new Error(data.error);
+      }
+
+      console.log('✅ [ACCOUNT_DELETE] نجح الحذف:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] });
+      
       toast({
         title: "تم حذف الحساب بنجاح",
-        description: "تم إلغاء تفعيل الحساب من دليل الحسابات",
+        description: result.operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
       });
     },
     onError: (error: any) => {
+      console.error('❌ [ACCOUNT_DELETE] فشل الحذف:', error);
       toast({
         variant: "destructive",
         title: "خطأ في حذف الحساب",
