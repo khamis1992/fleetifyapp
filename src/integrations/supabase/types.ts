@@ -9983,6 +9983,11 @@ export type Database = {
               confirmation_text?: string
               force_delete_system?: boolean
             }
+          | {
+              force_delete_system?: boolean
+              force_deletion?: boolean
+              target_company_id: string
+            }
           | { force_delete_system?: boolean; target_company_id: string }
         Returns: Json
       }
