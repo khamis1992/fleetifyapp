@@ -9988,7 +9988,6 @@ export type Database = {
               force_deletion?: boolean
               target_company_id: string
             }
-          | { force_delete_system?: boolean; target_company_id: string }
         Returns: Json
       }
       distribute_vehicle_installment_amount: {

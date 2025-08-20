@@ -434,7 +434,7 @@ export const useDeleteAllAccounts = () => {
         
         console.log('✅ [DELETE_ALL] Foreign key dependencies handled');
         
-        // Now proceed with the actual deletion using RPC
+        // Now proceed with the actual deletion using RPC with correct parameter order
         const { data, error } = await supabase.rpc('delete_all_accounts', {
           company_id_param: companyId,
           force_delete_system: forceDeleteSystem,
