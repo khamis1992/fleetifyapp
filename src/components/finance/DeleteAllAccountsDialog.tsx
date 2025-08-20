@@ -67,8 +67,8 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
 
   // Load preview data when dialog opens
   useEffect(() => {
-    const loadPreview = async () => {
-      if (open && !previewData) {
+    if (open) {
+      const loadPreview = async () => {
         try {
           console.log('[DELETE_ALL] Loading deletion preview with force_delete_system:', forceDeleteSystem);
           const preview = await getAllAccountsDeletionPreview.mutateAsync({
@@ -81,10 +81,8 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
           toast.error('فشل في تحميل معاينة الحذف: ' + error.message);
           onOpenChange(false);
         }
-      }
-    };
+      };
 
-    if (open) {
       loadPreview();
     } else {
       // Reset state when dialog closes
@@ -96,14 +94,27 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       setDeletionProgress(0);
       setDeletionResults({ successful: [], failed: [], completed: false });
     }
-  }, [open, forceDeleteSystem, getAllAccountsDeletionPreview]);
+  }, [open, getAllAccountsDeletionPreview]);
 
   // Reload preview when force delete option changes
   useEffect(() => {
-    if (open && forceDeleteSystem !== undefined) {
-      setPreviewData(null); // Clear current preview to force reload
+    if (open && previewData) {
+      const reloadPreview = async () => {
+        try {
+          console.log('[DELETE_ALL] Reloading preview with force_delete_system:', forceDeleteSystem);
+          const preview = await getAllAccountsDeletionPreview.mutateAsync({
+            forceDeleteSystem: forceDeleteSystem
+          });
+          setPreviewData(preview);
+        } catch (error: any) {
+          console.error('[DELETE_ALL] Failed to reload preview:', error);
+          toast.error('فشل في إعادة تحميل معاينة الحذف: ' + error.message);
+        }
+      };
+
+      reloadPreview();
     }
-  }, [forceDeleteSystem, open]);
+  }, [forceDeleteSystem]);
 
   const handleDeleteAll = async () => {
     if (!canProceed) return;
