@@ -388,6 +388,93 @@ export const formatDeletionConfirmation = (
 };
 
 /**
+ * Hook لحذف جميع الحسابات 
+ */
+export const useDeleteAllAccounts = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ 
+      confirmationText, 
+      forceDeleteSystem = false 
+    }: { 
+      confirmationText: string; 
+      forceDeleteSystem?: boolean; 
+    }) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error("معرف الشركة مطلوب");
+      
+      console.log('🗑️ [DELETE_ALL] Starting delete all accounts with force:', forceDeleteSystem);
+      
+      const { data, error } = await supabase.rpc('delete_all_accounts', {
+        company_id_param: companyId,
+        force_delete_system: forceDeleteSystem,
+        confirmation_text: confirmationText,
+      });
+
+      if (error) {
+        console.error('❌ [DELETE_ALL] RPC error:', error);
+        throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
+      }
+      
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [DELETE_ALL] Operation failed:', result?.error);
+        throw new Error(result?.error || "فشل في حذف جميع الحسابات");
+      }
+      
+      console.log('✅ [DELETE_ALL] Success:', result);
+      return result;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts"] });
+      
+      const summary = data.summary;
+      toast.success(`تم حذف جميع الحسابات بنجاح - ${summary?.total_processed || 0} حساب`);
+    },
+    onError: (error: any) => {
+      console.error('💥 [DELETE_ALL] Mutation error:', error);
+      toast.error('خطأ في حذف جميع الحسابات: ' + error.message);
+    },
+  });
+};
+
+/**
+ * Hook لمعاينة حذف جميع الحسابات
+ */
+export const useGetAllAccountsDeletionPreview = () => {
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) throw new Error("معرف الشركة مطلوب");
+      
+      console.log('📊 [PREVIEW_ALL] Getting deletion preview for all accounts');
+      
+      const { data, error } = await supabase.rpc('get_all_accounts_deletion_preview', {
+        company_id_param: companyId
+      });
+
+      if (error) {
+        console.error('❌ [PREVIEW_ALL] RPC error:', error);
+        throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
+      }
+      
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [PREVIEW_ALL] Operation failed:', result?.error);
+        throw new Error(result?.error || "فشل في جلب معاينة الحذف");
+      }
+      
+      console.log('✅ [PREVIEW_ALL] Preview loaded:', result);
+      return result;
+    }
+  });
+};
+
+/**
  * Main hook that combines all enhanced account deletion functionality
  */
 export const useEnhancedAccountDeletion = () => {
@@ -396,6 +483,8 @@ export const useEnhancedAccountDeletion = () => {
   const verifyIntegrity = useVerifyAccountIntegrity();
   const cleanup = useCleanupOrphanedReferences();
   const getDeletionLog = useAccountDeletionLog();
+  const deleteAllAccounts = useDeleteAllAccounts();
+  const getAllAccountsDeletionPreview = useGetAllAccountsDeletionPreview();
 
   return {
     // Analysis methods
@@ -408,6 +497,10 @@ export const useEnhancedAccountDeletion = () => {
     deleteAccount,
     isDeleting: deleteAccount.isPending,
     deletionError: deleteAccount.error,
+    
+    // Delete all methods
+    deleteAllAccounts,
+    getAllAccountsDeletionPreview,
     
     // Utility methods
     verifyIntegrity,

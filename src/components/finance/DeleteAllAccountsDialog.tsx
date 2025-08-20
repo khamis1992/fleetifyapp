@@ -58,34 +58,32 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
   const { user } = useAuth();
   
   const { data: allAccounts } = useChartOfAccounts();
-  const { analyzeAccount, deleteAccount } = useEnhancedAccountDeletion();
+  const { deleteAccount, getAllAccountsDeletionPreview, deleteAllAccounts } = useEnhancedAccountDeletion();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
   const canProceed = isValidConfirmation && (previewData?.summary?.system_accounts === 0 || forceDeleteSystem);
 
+  // Load preview data when dialog opens
   useEffect(() => {
-    if (open && allAccounts) {
-      // Create preview data from all accounts
-      const systemAccounts = allAccounts.filter(acc => acc.is_system);
-      const regularAccounts = allAccounts.filter(acc => !acc.is_system);
-      
-      setPreviewData({
-        summary: {
-          total_accounts: allAccounts.length,
-          system_accounts: systemAccounts.length,
-          will_be_deleted_permanently: regularAccounts.length,
-          will_be_deleted_soft: 0
-        },
-        preview_accounts: allAccounts.slice(0, 50).map(acc => ({
-          account_code: acc.account_code,
-          account_name: acc.account_name,
-          is_system: acc.is_system,
-          deletion_type: acc.is_system ? 'soft' : 'permanent'
-        })),
-        showing_sample: allAccounts.length > 50
-      });
-    } else if (!open) {
+    const loadPreview = async () => {
+      if (open && !previewData) {
+        try {
+          console.log('[DELETE_ALL] Loading deletion preview...');
+          const preview = await getAllAccountsDeletionPreview.mutateAsync();
+          console.log('[DELETE_ALL] Preview loaded:', preview);
+          setPreviewData(preview);
+        } catch (error: any) {
+          console.error('[DELETE_ALL] Failed to load preview:', error);
+          toast.error('فشل في تحميل معاينة الحذف: ' + error.message);
+          onOpenChange(false);
+        }
+      }
+    };
+
+    if (open) {
+      loadPreview();
+    } else {
       // Reset state when dialog closes
       setConfirmationInput('');
       setForceDeleteSystem(false);
@@ -95,76 +93,59 @@ export const DeleteAllAccountsDialog: React.FC<DeleteAllAccountsDialogProps> = (
       setDeletionProgress(0);
       setDeletionResults({ successful: [], failed: [], completed: false });
     }
-  }, [open, allAccounts]);
+  }, [open, getAllAccountsDeletionPreview]);
 
   const handleDeleteAll = async () => {
-    if (!canProceed || !allAccounts) return;
+    if (!canProceed) return;
 
     setIsDeleting(true);
     setCurrentStep(3);
     setDeletionResults({ successful: [], failed: [], completed: false });
     
     try {
-      console.log('[DELETE_ALL] Starting enhanced deletion process for all accounts');
+      console.log('[DELETE_ALL] Starting enhanced deletion process using unified system');
       
-      // Get root accounts (those without parents) first
-      const rootAccounts = allAccounts.filter(acc => !acc.parent_account_id);
-      const totalAccounts = rootAccounts.length;
-      let processedCount = 0;
-      const successful: Array<{code: string, name: string}> = [];
+      const result = await deleteAllAccounts.mutateAsync({
+        confirmationText: CONFIRMATION_TEXT,
+        forceDeleteSystem: forceDeleteSystem
+      });
+      
+      console.log('[DELETE_ALL] Delete all result:', result);
+      
+      // Parse results from the unified system
+      const successful = result.details?.map((detail: any) => ({
+        code: detail.account_code || 'Unknown',
+        name: detail.account_name || 'Unknown'
+      })) || [];
+      
       const failed: Array<{code: string, name: string, error: string}> = [];
-
-      console.log(`[DELETE_ALL] Found ${totalAccounts} root accounts to delete`);
-
-      for (const account of rootAccounts) {
-        console.log(`[DELETE_ALL] Processing account ${account.account_code}`);
-        
-        try {
-          // Use force delete for all accounts
-          const result = await deleteAccount.mutateAsync({
-            accountId: account.id,
-            options: { force_delete: true }
-          });
-          
-          console.log(`[DELETE_ALL] Successfully deleted account ${account.account_code}:`, result);
-          successful.push({ 
-            code: account.account_code, 
-            name: account.account_name 
-          });
-          
-        } catch (error: any) {
-          console.error(`[DELETE_ALL] Failed to delete account ${account.account_code}:`, error);
-          failed.push({ 
-            code: account.account_code, 
-            name: account.account_name, 
-            error: error?.message || 'خطأ غير معروف'
-          });
-        }
-        
-        processedCount++;
-        setDeletionProgress((processedCount / totalAccounts) * 100);
-      }
       
-      // Update results
       setDeletionResults({ successful, failed, completed: true });
+      setDeletionProgress(100);
       
-      // Show appropriate message based on results
-      if (failed.length === 0) {
-        console.log('[DELETE_ALL] All accounts deleted successfully');
-        toast.success(`تم حذف جميع الحسابات بنجاح (${successful.length} حساب)`);
-        onSuccess?.();
-        onOpenChange(false);
-      } else if (successful.length === 0) {
-        console.log('[DELETE_ALL] All deletions failed');
-        toast.error(`فشل في حذف جميع الحسابات (${failed.length} حساب)`);
-      } else {
-        console.log('[DELETE_ALL] Partial success');
-        toast.warning(`تم حذف ${successful.length} حساب بنجاح، فشل في حذف ${failed.length} حساب`);
-      }
+      // Show success message
+      console.log('[DELETE_ALL] All accounts deleted successfully');
+      toast.success(`تم حذف جميع الحسابات بنجاح (${successful.length} حساب)`);
+      onSuccess?.();
       
     } catch (error: any) {
       console.error('[DELETE_ALL] Enhanced deletion process failed:', error);
-      toast.error('فشل في عملية الحذف: ' + error.message);
+      
+      // Extract error details if available
+      const errorMessage = error?.message || 'خطأ غير معروف في عملية الحذف';
+      const failed = [{
+        code: 'ALL',
+        name: 'جميع الحسابات',
+        error: errorMessage
+      }];
+      
+      setDeletionResults({ 
+        successful: [], 
+        failed, 
+        completed: true 
+      });
+      
+      toast.error('فشل في عملية الحذف: ' + errorMessage);
     } finally {
       setIsDeleting(false);
     }
