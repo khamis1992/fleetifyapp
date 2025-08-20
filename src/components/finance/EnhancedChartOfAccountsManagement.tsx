@@ -22,7 +22,7 @@ import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
-import { DeleteAllAccountsDialog } from './DeleteAllAccountsDialog';
+import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
 import { AccountMaintenanceTools } from './AccountMaintenanceTools';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
@@ -671,8 +671,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
       />
 
-      {/* Delete All Accounts Dialog */}
-      <DeleteAllAccountsDialog
+      {/* Simple Delete All Accounts Dialog */}
+      <SimpleDeleteAllAccountsDialog
         open={showDeleteAllDialog}
         onOpenChange={setShowDeleteAllDialog}
         onSuccess={() => {
