@@ -20,7 +20,7 @@ import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { getCleanCarRentalAccountsCount } from '@/hooks/useBusinessTypeAccountsNew';
+import { getCarRentalTemplateCount } from '@/hooks/useCarRentalTemplate';
 import { useToast } from '@/hooks/use-toast';
 
 interface AccountTemplate {
@@ -46,7 +46,7 @@ export const AccountTemplateManager: React.FC = () => {
       nameAr: 'السيارات والنقل - منظم محاسبياً',
       description: 'قالب محاسبي محترف لشركات تأجير السيارات مع تسلسل هرمي صحيح وحسابات عملية بدون أسماء وهمية',
       icon: <Car className="h-5 w-5" />,
-      accountsCount: getCleanCarRentalAccountsCount(),
+      accountsCount: getCarRentalTemplateCount(),
       category: 'industry',
       preview: ['أصول المركبات', 'تمويل المركبات', 'إيرادات التأجير', 'مصروفات الصيانة', 'تسلسل هرمي محاسبي صحيح', 'بدون حسابات وهمية']
     }
@@ -369,8 +369,8 @@ export const AccountTemplateManager: React.FC = () => {
               <div className="space-y-2">
                 <p>تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة</p>
                 <p className="text-sm text-blue-600 font-medium">
-                  ✨ تم تحسين النظام: الآن يتم نسخ جميع الحسابات مباشرة من القالب المنظم ({getCleanCarRentalAccountsCount()} حساب محاسبي صحيح) 
-                  بدلاً من الاقتصار على الحسابات الأساسية (232 حساب) - تم حذف الحسابات الوهمية
+                  ✨ تم تحسين النظام: الآن يتم نسخ جميع الحسابات مباشرة من القالب المحاسبي المنظم ({getCarRentalTemplateCount()} حساب احترافي) 
+                  بدلاً من الاقتصار على الحسابات الأساسية (232 حساب) - هيكل محاسبي صحيح من المستوى 1-5
                 </p>
               </div>
             </AlertDescription>
