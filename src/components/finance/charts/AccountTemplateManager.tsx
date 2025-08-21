@@ -50,6 +50,9 @@ export const AccountTemplateManager: React.FC = () => {
     }
   ];
 
+  // تشخيص القوالب
+  console.log('📋 [TEMPLATES] القوالب المعرفة:', PREDEFINED_TEMPLATES.map(t => ({ id: t.id, name: t.nameAr, count: t.accountsCount })));
+
   const [selectedTemplate, setSelectedTemplate] = useState<AccountTemplate | null>(null);
   const [showAccountSelection, setShowAccountSelection] = useState(false);
   
@@ -87,6 +90,30 @@ export const AccountTemplateManager: React.FC = () => {
       toast.info(`🚀 سيتم استخدام النظام المحسن لنسخ ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`);
       
       console.log('🎯 [TEMPLATE] استدعاء directTemplateCopy...');
+      
+      // التحقق من وجود الـ hook
+      if (!directTemplateCopy || !directTemplateCopy.mutate) {
+        console.error('❌ [TEMPLATE] directTemplateCopy غير معرف أو معطل!');
+        alert('❌ خطأ: النظام المحسن غير متوفر، سيتم استخدام النظام القديم');
+        
+        // استخدام النظام القديم كـ fallback
+        console.log('🔄 [TEMPLATE] استخدام النظام القديم كبديل');
+        const carRentalAccounts = getAccountsByBusinessType('car_rental');
+        const allCarRentalAccounts = [
+          ...carRentalAccounts.assets,
+          ...carRentalAccounts.liabilities,
+          ...carRentalAccounts.revenue,
+          ...carRentalAccounts.expenses,
+          ...carRentalAccounts.equity
+        ];
+        copySelectedAccounts.mutate(allCarRentalAccounts);
+        return;
+      }
+      
+      // تأكيد إضافي
+      alert('🚀 سيتم استخدام النظام المحسن الجديد!');
+      
+      console.log('🚀 [TEMPLATE] استدعاء النظام المحسن...');
       directTemplateCopy.mutate('car_rental');
     } else {
       console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للقالب:', templateId);
@@ -215,7 +242,10 @@ export const AccountTemplateManager: React.FC = () => {
           <div className="flex gap-2 pt-2">
             <Button 
               size="sm"
-              onClick={() => handleApplyTemplate(template.id)}
+              onClick={() => {
+                console.log('🎯 [BUTTON_CLICK] تم الضغط على تطبيق الكل للقالب:', template.id);
+                handleApplyTemplate(template.id);
+              }}
               disabled={copyDefaultAccounts.isPending || copySelectedAccounts.isPending || directTemplateCopy.isPending}
               className="flex-1 flex items-center gap-2"
             >
