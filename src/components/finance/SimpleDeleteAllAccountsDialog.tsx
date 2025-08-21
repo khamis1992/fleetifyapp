@@ -267,45 +267,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
         ) : (
           <div className="space-y-6">
             {/* أزرار الاختبار والتشخيص */}
-            <div className="flex justify-center gap-2 mb-4">
-              <Button 
-                variant="outline" 
-                onClick={() => previewMutation.mutate()}
-                disabled={previewMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                {previewMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    فحص Hook...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    فحص Hook
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={testDirectFetch}
-                disabled={directTestLoading}
-                className="flex items-center gap-2"
-              >
-                {directTestLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    اختبار مباشر...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    اختبار مباشر
-                  </>
-                )}
-              </Button>
-            </div>
 
             {/* عرض نتائج المعاينة */}
             {previewMutation.data && (
