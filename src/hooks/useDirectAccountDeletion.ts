@@ -27,14 +27,22 @@ export const useDirectDeletionPreview = () => {
         throw new Error('معرف الشركة غير متوفر');
       }
       
-      console.log('🔍 [DELETION_PREVIEW] معاينة الحسابات للشركة:', companyId);
+      console.log('🔍 [DELETION_PREVIEW] معاينة الحسابات للشركة:', {
+        companyId,
+        companyIdType: typeof companyId,
+        companyIdLength: companyId?.length
+      });
       
-      // جلب جميع الحسابات النشطة
-      const { data: allAccounts, error: fetchError } = await supabase
+      // جلب جميع الحسابات النشطة (نفس منطق useChartOfAccounts)
+      let query = supabase
         .from('chart_of_accounts')
         .select('id, account_code, account_name, is_system, is_active, company_id')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
+        .eq('company_id', companyId);
+
+      // تصفية الحسابات النشطة فقط
+      query = query.eq('is_active', true);
+
+      const { data: allAccounts, error: fetchError } = await query.order('account_code');
       
       if (fetchError) {
         console.error('❌ [DELETION_PREVIEW] خطأ في جلب الحسابات:', fetchError);
@@ -87,20 +95,27 @@ export const useDirectBulkAccountDeletion = () => {
       
       console.log('🗑️ [BULK_DELETE] بدء حذف جميع الحسابات:', {
         companyId,
+        userProfileCompanyId: user?.profile?.company_id,
         forceDeleteSystem,
         userId: user?.id,
-        deletionMode
+        deletionMode,
+        userRoles: user?.roles
       });
       
       const startTime = Date.now();
       
-      // جلب جميع الحسابات مع تشخيص مفصل
+      // جلب جميع الحسابات مع تشخيص مفصل (نفس منطق useChartOfAccounts)
       console.log('📋 [BULK_DELETE] جلب الحسابات من الشركة:', companyId);
-      const { data: accounts, error: fetchError } = await supabase
+      
+      let query = supabase
         .from('chart_of_accounts')
         .select('id, account_code, account_name, is_system, is_active, company_id')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
+        .eq('company_id', companyId);
+
+      // تصفية الحسابات النشطة فقط
+      query = query.eq('is_active', true);
+
+      const { data: accounts, error: fetchError } = await query.order('account_code');
       
       console.log('📋 [BULK_DELETE] نتيجة جلب الحسابات:', {
         accountsCount: accounts?.length || 0,

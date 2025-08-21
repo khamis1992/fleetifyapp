@@ -25,7 +25,9 @@ import {
 } from "lucide-react";
 import { useDirectBulkAccountDeletion, useDirectDeletionPreview } from "@/hooks/useDirectAccountDeletion";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AccountDeletionStats from "./AccountDeletionStats";
 
@@ -51,16 +53,63 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const [results, setResults] = useState<any>(null);
 
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
   const { data: allAccounts, isLoading: accountsLoading } = useChartOfAccounts();
   const deleteAllAccounts = useDirectBulkAccountDeletion();
   const previewMutation = useDirectDeletionPreview();
+  
+  // hook للمقارنة المباشرة
+  const [directTestAccounts, setDirectTestAccounts] = useState<any[]>([]);
+  const [directTestLoading, setDirectTestLoading] = useState(false);
+  
+  const testDirectFetch = async () => {
+    if (!companyId) return;
+    
+    setDirectTestLoading(true);
+    try {
+      console.log('🧪 [DIRECT_TEST] اختبار جلب مباشر للحسابات، companyId:', companyId);
+      
+      const { data, error } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name, is_system, is_active, company_id')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('account_code');
+      
+      console.log('🧪 [DIRECT_TEST] النتيجة:', {
+        accountsCount: data?.length || 0,
+        error,
+        sampleAccounts: data?.slice(0, 3)
+      });
+      
+      setDirectTestAccounts(data || []);
+      
+      if (error) {
+        toast.error('خطأ في الاختبار المباشر: ' + error.message);
+      } else {
+        toast.success(`تم العثور على ${data?.length || 0} حساب في الاختبار المباشر`);
+      }
+    } catch (err: any) {
+      console.error('🧪 [DIRECT_TEST] خطأ:', err);
+      toast.error('خطأ في الاختبار: ' + err.message);
+    } finally {
+      setDirectTestLoading(false);
+    }
+  };
 
-  // تشخيص إضافي
-  console.log('🔍 [DELETE_ALL_DIALOG] معلومات الحالة:', {
+  // تشخيص إضافي مفصل
+  console.log('🔍 [DELETE_ALL_DIALOG] معلومات الحالة التفصيلية:', {
     userCompanyId: user?.profile?.company_id,
+    userRoles: user?.roles,
     allAccountsCount: allAccounts?.length || 0,
     accountsLoading,
-    sampleAccounts: allAccounts?.slice(0, 3)
+    sampleAccounts: allAccounts?.slice(0, 3)?.map(acc => ({
+      id: acc?.id,
+      code: acc?.account_code,
+      name: acc?.account_name,
+      companyId: acc?.company_id,
+      isActive: acc?.is_active
+    }))
   });
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
@@ -217,8 +266,8 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
           </div>
         ) : (
           <div className="space-y-6">
-            {/* زر معاينة للتشخيص */}
-            <div className="flex justify-center mb-4">
+            {/* أزرار الاختبار والتشخيص */}
+            <div className="flex justify-center gap-2 mb-4">
               <Button 
                 variant="outline" 
                 onClick={() => previewMutation.mutate()}
@@ -228,12 +277,31 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                 {previewMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    جاري فحص الحسابات...
+                    فحص Hook...
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    فحص الحسابات المتاحة
+                    فحص Hook
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={testDirectFetch}
+                disabled={directTestLoading}
+                className="flex items-center gap-2"
+              >
+                {directTestLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    اختبار مباشر...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    اختبار مباشر
                   </>
                 )}
               </Button>
@@ -242,11 +310,26 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
             {/* عرض نتائج المعاينة */}
             {previewMutation.data && (
               <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">نتائج فحص الحسابات:</h4>
+                <h4 className="font-semibold text-green-800 mb-2">نتائج فحص Hook:</h4>
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div>إجمالي: {previewMutation.data.total_accounts}</div>
                   <div>نظامية: {previewMutation.data.system_accounts}</div>
                   <div>عادية: {previewMutation.data.regular_accounts}</div>
+                </div>
+              </div>
+            )}
+
+            {/* عرض نتائج الاختبار المباشر */}
+            {directTestAccounts.length > 0 && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">نتائج الاختبار المباشر:</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>إجمالي: {directTestAccounts.length}</div>
+                  <div>نظامية: {directTestAccounts.filter(acc => acc.is_system).length}</div>
+                  <div>عادية: {directTestAccounts.filter(acc => !acc.is_system).length}</div>
+                </div>
+                <div className="mt-2 text-xs text-blue-700">
+                  أول 3 حسابات: {directTestAccounts.slice(0, 3).map(acc => acc.account_code).join(', ')}
                 </div>
               </div>
             )}
