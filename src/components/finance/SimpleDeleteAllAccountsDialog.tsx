@@ -18,7 +18,10 @@ import {
   AlertTriangle, 
   Skull,
   CheckCircle,
-  XCircle
+  XCircle,
+  Shield,
+  ArrowRight,
+  Trash2
 } from "lucide-react";
 import { useDirectBulkAccountDeletion, useDirectDeletionPreview } from "@/hooks/useDirectAccountDeletion";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
@@ -41,6 +44,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
 }) => {
   const [confirmationInput, setConfirmationInput] = useState('');
   const [forceDeleteSystem, setForceDeleteSystem] = useState(false);
+  const [deletionMode, setDeletionMode] = useState<'soft' | 'auto' | 'force'>('soft');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletionProgress, setDeletionProgress] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -80,7 +84,8 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
 
       const result = await deleteAllAccounts.mutateAsync({
         confirmationText: CONFIRMATION_TEXT,
-        forceDeleteSystem: forceDeleteSystem
+        forceDeleteSystem: forceDeleteSystem,
+        deletionMode: deletionMode
       });
 
       clearInterval(progressInterval);
@@ -115,6 +120,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const handleClose = () => {
     setConfirmationInput('');
     setForceDeleteSystem(false);
+    setDeletionMode('soft');
     setIsDeleting(false);
     setDeletionProgress(0);
     setShowResults(false);
@@ -248,6 +254,58 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
               <p className="text-sm text-blue-700">
                 💡 ملاحظة: الحسابات التي تحتوي على قيود محاسبية سيتم إلغاء تفعيلها فقط
               </p>
+            </div>
+
+            {/* خيارات نمط الحذف */}
+            <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+              <h4 className="font-semibold text-blue-800">اختر نمط الحذف:</h4>
+              
+              <div className="space-y-2">
+                <div 
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    deletionMode === 'soft' ? 'border-blue-500 bg-blue-100' : 'border-gray-200 bg-white'
+                  }`}
+                  onClick={() => setDeletionMode('soft')}
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-blue-500" />
+                    <span className="font-medium">إلغاء التفعيل (آمن)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    إخفاء الحسابات دون حذف البيانات - الخيار الأكثر أماناً
+                  </p>
+                </div>
+
+                <div 
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    deletionMode === 'auto' ? 'border-yellow-500 bg-yellow-100' : 'border-gray-200 bg-white'
+                  }`}
+                  onClick={() => setDeletionMode('auto')}
+                >
+                  <div className="flex items-center gap-2">
+                    <ArrowRight className="h-4 w-4 text-yellow-500" />
+                    <span className="font-medium">حذف ذكي (تلقائي)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    يقرر النظام بذكاء: حذف الحسابات الفارغة وإلغاء تفعيل التي تحتوي على بيانات
+                  </p>
+                </div>
+
+                <div 
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    deletionMode === 'force' ? 'border-red-500 bg-red-100' : 'border-gray-200 bg-white'
+                  }`}
+                  onClick={() => setDeletionMode('force')}
+                >
+                  <div className="flex items-center gap-2">
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                    <span className="font-medium">حذف قسري (خطير!)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    حذف جميع الحسابات والبيانات المرتبطة نهائياً - لا يمكن التراجع!
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* خيار الحسابات النظامية */}
