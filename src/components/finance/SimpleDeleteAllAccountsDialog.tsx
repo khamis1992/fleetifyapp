@@ -16,7 +16,6 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Loader2, 
   AlertTriangle, 
-  Trash2, 
   Skull,
   CheckCircle,
   XCircle
@@ -57,8 +56,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const totalAccounts = allAccounts?.length || 0;
   const systemAccounts = allAccounts?.filter(acc => acc.is_system).length || 0;
   const regularAccounts = totalAccounts - systemAccounts;
-
-
 
   const handleDeleteAll = async () => {
     if (!isValidConfirmation) {
@@ -126,8 +123,8 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   };
 
   return (
-         <Dialog open={open} onOpenChange={onOpenChange}>
-       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
@@ -176,21 +173,21 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                       <div className="font-bold text-lg text-yellow-600">{results.deactivated_count || 0}</div>
                       <div className="text-sm">تم إلغاء تفعيلها</div>
                     </div>
-                                         <div className="text-center">
-                       <div className="font-bold text-lg text-blue-600">{results.total_processed || 0}</div>
-                       <div className="text-sm">إجمالي المعالج</div>
-                     </div>
-                   </div>
-                    
-                    {/* معلومات إضافية */}
-                    {(results.failed_count || 0) > 0 && (
-                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="text-sm text-yellow-800">
-                          ⚠️ فشل في معالجة {results.failed_count} حساب. قد تحتاج لمراجعة هذه الحسابات يدوياً.
-                        </p>
-                      </div>
-                    )}
-                 </div>
+                    <div className="text-center">
+                      <div className="font-bold text-lg text-blue-600">{results.total_processed || 0}</div>
+                      <div className="text-sm">إجمالي المعالج</div>
+                    </div>
+                  </div>
+                  
+                  {/* معلومات إضافية */}
+                  {(results.failed_count || 0) > 0 && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-sm text-yellow-800">
+                        ⚠️ فشل في معالجة {results.failed_count} حساب. قد تحتاج لمراجعة هذه الحسابات يدوياً.
+                      </p>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-red-600">{results?.error || 'حدث خطأ غير معروف'}</p>
@@ -205,54 +202,53 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
             </div>
           </div>
         ) : (
-                     <div className="space-y-6">
-             {/* إحصائيات الحذف */}
-             <AccountDeletionStats
-               totalAccounts={totalAccounts}
-               deletedCount={results?.deleted_count || 0}
-               deactivatedCount={results?.deactivated_count || 0}
-               failedCount={results?.error_count || 0}
-               systemAccounts={systemAccounts}
-               isProcessing={isDeleting}
-             />
+          <div className="space-y-6">
+            {/* إحصائيات الحذف */}
+            <AccountDeletionStats
+              totalAccounts={totalAccounts}
+              deletedCount={results?.deleted_count || 0}
+              deactivatedCount={results?.deactivated_count || 0}
+              failedCount={results?.error_count || 0}
+              systemAccounts={systemAccounts}
+              isProcessing={isDeleting}
+            />
 
-             {/* تحذير خطير */}
-             <Alert className="border-destructive bg-destructive/10">
-               <Skull className="h-4 w-4 text-destructive" />
-               <AlertDescription className="text-destructive font-medium">
-                 <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
-                 الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
-               </AlertDescription>
-             </Alert>
+            {/* تحذير خطير */}
+            <Alert className="border-destructive bg-destructive/10">
+              <Skull className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-destructive font-medium">
+                <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
+                الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
+              </AlertDescription>
+            </Alert>
 
-             
-              {/* معلومات الحسابات */}
-              <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
-                <h4 className="font-semibold text-blue-800">إحصائيات الحسابات:</h4>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">إجمالي الحسابات:</span>
-                    <span className="mr-2">{totalAccounts}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">الحسابات النظامية:</span>
-                    <span className="mr-2">{systemAccounts}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">الحسابات العادية:</span>
-                    <span className="mr-2">{regularAccounts}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">سيتم المعالجة:</span>
-                    <span className="mr-2">{forceDeleteSystem ? totalAccounts : regularAccounts}</span>
-                  </div>
+            {/* معلومات الحسابات */}
+            <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
+              <h4 className="font-semibold text-blue-800">إحصائيات الحسابات:</h4>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">إجمالي الحسابات:</span>
+                  <span className="mr-2">{totalAccounts}</span>
                 </div>
-                
-                <p className="text-sm text-blue-700">
-                  💡 ملاحظة: الحسابات التي تحتوي على قيود محاسبية سيتم إلغاء تفعيلها فقط
-                </p>
+                <div>
+                  <span className="font-medium">الحسابات النظامية:</span>
+                  <span className="mr-2">{systemAccounts}</span>
+                </div>
+                <div>
+                  <span className="font-medium">الحسابات العادية:</span>
+                  <span className="mr-2">{regularAccounts}</span>
+                </div>
+                <div>
+                  <span className="font-medium">سيتم المعالجة:</span>
+                  <span className="mr-2">{forceDeleteSystem ? totalAccounts : regularAccounts}</span>
+                </div>
               </div>
+              
+              <p className="text-sm text-blue-700">
+                💡 ملاحظة: الحسابات التي تحتوي على قيود محاسبية سيتم إلغاء تفعيلها فقط
+              </p>
+            </div>
 
             {/* خيار الحسابات النظامية */}
             {systemAccounts > 0 && (
