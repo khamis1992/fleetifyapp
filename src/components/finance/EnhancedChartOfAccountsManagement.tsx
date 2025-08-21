@@ -109,16 +109,18 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   };
 
   const handleDeleteAllAccounts = async () => {
-    // فحص الصلاحيات مع تفاصيل أكثر
-    console.log('🔐 [AUTH_CHECK] فحص صلاحيات المستخدم:', {
-      userId: user?.id,
-      userRoles: user?.roles,
-      isSuperAdmin: user?.roles?.includes('super_admin'),
-      hasRoles: !!user?.roles
-    });
-    
-    if (!user?.roles?.includes('super_admin')) {
-      toast.error('ليس لديك صلاحية لحذف جميع الحسابات - مطلوب صلاحية المدير العام');
+    if (!isSuperAdmin) {
+      toast.error('ليس لديك صلاحية لحذف جميع الحسابات');
+      return;
+    }
+
+    const confirmText = 'DELETE ALL ACCOUNTS PERMANENTLY';
+    const userInput = window.prompt(
+      `تحذير شديد الخطورة!\n\nهذا الإجراء سيحذف جميع الحسابات نهائياً!\n\nلتأكيد العملية، اكتب النص التالي بالضبط:\n${confirmText}`
+    );
+
+    if (userInput !== confirmText) {
+      toast.error('تم إلغاء العملية - النص غير صحيح');
       return;
     }
 
@@ -128,71 +130,37 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       return;
     }
 
-    const confirmText = 'DELETE ALL ACCOUNTS PERMANENTLY';
-    const userInput = window.prompt(
-      `⚠️ تحذير شديد الخطورة!\n\n` +
-      `سيتم حذف ${accounts.length} حساب نهائياً!\n\n` +
-      `هذا الإجراء لا يمكن التراجع عنه!\n\n` +
-      `لتأكيد العملية، اكتب النص التالي بالضبط:\n\n${confirmText}`
-    );
-
-    if (userInput !== confirmText) {
-      toast.error('تم إلغاء العملية - النص غير صحيح أو تم الإلغاء');
-      return;
-    }
-
-    console.log('🗑️ [BULK_DELETE] بدء حذف جميع الحسابات باستخدام hook الحذف المنفرد الناجح');
-    toast.info(`🚀 بدء حذف ${accounts.length} حساب...`);
+    toast.info(`بدء حذف ${accounts.length} حساب...`);
     
     let successCount = 0;
     let failCount = 0;
-    const startTime = Date.now();
     
     for (let i = 0; i < accounts.length; i++) {
       const account = accounts[i];
       try {
-        console.log(`[${i + 1}/${accounts.length}] حذف الحساب:`, account.account_code);
+        console.log(`حذف الحساب ${i + 1}/${accounts.length}:`, account.account_code);
         
-        // استخدام نفس hook الحذف المنفرد الذي يعمل بنجاح ✅
+        // استخدام نفس hook الحذف المنفرد الذي يعمل
         await deleteAccount.mutateAsync(account.id);
         successCount++;
         
-        // تحديث التقدم كل 3 حسابات أو في النهاية
-        if ((i + 1) % 3 === 0 || i === accounts.length - 1) {
-          const progress = Math.round(((i + 1) / accounts.length) * 100);
-          toast.info(`📊 التقدم: ${progress}% (${i + 1}/${accounts.length})`);
+        // تحديث التقدم كل 5 حسابات
+        if ((i + 1) % 5 === 0) {
+          toast.info(`تم معالجة ${i + 1} من ${accounts.length} حساب...`);
         }
         
       } catch (error: any) {
-        console.error(`❌ فشل حذف الحساب ${account.account_code}:`, error);
+        console.error('فشل حذف الحساب:', account.account_code, error);
         failCount++;
       }
-      
-      // توقف قصير لتجنب إرهاق النظام
-      if (i < accounts.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
     }
     
-    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    // النتيجة النهائية
+    toast.success(`تمت معالجة جميع الحسابات: ${successCount} نجح، ${failCount} فشل`);
     
-    // النتيجة النهائية مع تفاصيل
-    if (failCount === 0) {
-      toast.success(`🎉 تم حذف جميع الحسابات بنجاح!\n✅ ${successCount} حساب تم حذفه\n⏱️ المدة: ${duration} ثانية`);
-    } else {
-      toast.success(`📊 تمت معالجة جميع الحسابات:\n✅ ${successCount} نجح\n❌ ${failCount} فشل\n⏱️ المدة: ${duration} ثانية`);
-      
-      if (failCount > 0) {
-        toast.warning(`⚠️ فشل في حذف ${failCount} حساب - قد تحتاج لحذفها يدوياً أو تحتوي على بيانات مرتبطة`);
-      }
+    if (failCount > 0) {
+      toast.warning(`فشل في حذف ${failCount} حساب - قد تحتاج لحذفها يدوياً`);
     }
-    
-    console.log('✅ [BULK_DELETE] اكتملت العملية:', {
-      totalAccounts: accounts.length,
-      successCount,
-      failCount,
-      duration: duration + 's'
-    });
   };
 
   const toggleNode = (accountId: string) => {
@@ -491,20 +459,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
                 <span>إضافة حساب جديد</span>
                 <Plus className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="destructive"
-                onClick={handleDeleteAllAccounts}
-                disabled={deleteAccount.isPending}
-                className="flex items-center gap-2"
-              >
-                {deleteAccount.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Skull className="h-4 w-4" />
-                )}
-                <span>حذف جميع الحسابات</span>
               </Button>
             </div>
             
