@@ -17,6 +17,7 @@ import { useCopyDefaultAccounts } from '@/hooks/useChartOfAccounts';
 import { AccountSelectionDialog } from './AccountSelectionDialog';
 import { useBusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
 import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
+import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 
 interface AccountTemplate {
   id: string;
@@ -50,21 +51,15 @@ export const AccountTemplateManager: React.FC = () => {
   
   const copyDefaultAccounts = useCopyDefaultAccounts();
   const copySelectedAccounts = useCopySelectedAccounts();
+  const directTemplateCopy = useDirectTemplateCopy();
 
   const handleApplyTemplate = (templateId: string) => {
     if (templateId === 'general_business') {
       copyDefaultAccounts.mutate();
     } else if (templateId === 'car_rental') {
-      // Apply car rental specific accounts
-      const carRentalAccounts = getAccountsByBusinessType('car_rental');
-      const allCarRentalAccounts = [
-        ...carRentalAccounts.assets,
-        ...carRentalAccounts.liabilities,
-        ...carRentalAccounts.revenue,
-        ...carRentalAccounts.expenses,
-        ...carRentalAccounts.equity
-      ];
-      copySelectedAccounts.mutate(allCarRentalAccounts);
+      // استخدام النسخ المباشر للحصول على جميع الحسابات
+      console.log('🎯 [TEMPLATE] تطبيق قالب التأجير باستخدام النسخ المباشر');
+      directTemplateCopy.mutate('car_rental');
     } else {
       copyDefaultAccounts.mutate();
     }
@@ -130,10 +125,10 @@ export const AccountTemplateManager: React.FC = () => {
             <Button 
               size="sm"
               onClick={() => handleApplyTemplate(template.id)}
-              disabled={copyDefaultAccounts.isPending || copySelectedAccounts.isPending}
+              disabled={copyDefaultAccounts.isPending || copySelectedAccounts.isPending || directTemplateCopy.isPending}
               className="flex-1 flex items-center gap-2"
             >
-              {(copyDefaultAccounts.isPending || copySelectedAccounts.isPending) ? (
+              {(copyDefaultAccounts.isPending || copySelectedAccounts.isPending || directTemplateCopy.isPending) ? (
                 <>
                   <span>جاري التطبيق...</span>
                   <Clock className="h-3 w-3" />
@@ -175,7 +170,13 @@ export const AccountTemplateManager: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-right">
-              تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة
+              <div className="space-y-2">
+                <p>تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة</p>
+                <p className="text-sm text-blue-600 font-medium">
+                  ✨ تم تحسين النظام: الآن يتم نسخ جميع الحسابات مباشرة من القالب ({getTotalAccountsCount('car_rental')} حساب) 
+                  بدلاً من الاقتصار على الحسابات الأساسية (232 حساب)
+                </p>
+              </div>
             </AlertDescription>
           </Alert>
         </CardContent>
