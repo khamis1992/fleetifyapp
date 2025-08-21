@@ -154,9 +154,34 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     }
     
     try {
+      // Clean form data to handle UUID fields properly
+      const cleanedFormData = { ...formData };
+      
+      // Convert empty strings to null for UUID fields
+      if (cleanedFormData.parent_account_id === '') {
+        cleanedFormData.parent_account_id = null;
+      }
+      
+      // Ensure all required fields have valid values
+      const updates = Object.entries(cleanedFormData).reduce((acc, [key, value]) => {
+        // Handle UUID fields specially
+        if (key === 'parent_account_id' && (value === '' || value === undefined)) {
+          acc[key] = null;
+        } else if (value !== undefined && value !== '') {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+      
+      console.log('🔄 Updating account with cleaned data:', {
+        accountId: account.id,
+        updates,
+        originalFormData: formData
+      });
+      
       await updateAccount.mutateAsync({
         id: account.id,
-        updates: formData
+        updates
       });
       
       toast.success('تم تعديل الحساب بنجاح');
@@ -164,7 +189,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating account:', error);
-      toast.error('حدث خطأ في تعديل الحساب');
+      toast.error('حدث خطأ في تعديل الحساب: ' + (error as any)?.message || 'خطأ غير معروف');
     }
   };
 
