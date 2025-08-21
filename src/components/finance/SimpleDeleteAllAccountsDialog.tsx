@@ -55,6 +55,14 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const deleteAllAccounts = useDirectBulkAccountDeletion();
   const previewMutation = useDirectDeletionPreview();
 
+  // تشخيص إضافي
+  console.log('🔍 [DELETE_ALL_DIALOG] معلومات الحالة:', {
+    userCompanyId: user?.profile?.company_id,
+    allAccountsCount: allAccounts?.length || 0,
+    accountsLoading,
+    sampleAccounts: allAccounts?.slice(0, 3)
+  });
+
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
   const totalAccounts = allAccounts?.length || 0;
@@ -209,6 +217,40 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
           </div>
         ) : (
           <div className="space-y-6">
+            {/* زر معاينة للتشخيص */}
+            <div className="flex justify-center mb-4">
+              <Button 
+                variant="outline" 
+                onClick={() => previewMutation.mutate()}
+                disabled={previewMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                {previewMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري فحص الحسابات...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    فحص الحسابات المتاحة
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* عرض نتائج المعاينة */}
+            {previewMutation.data && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-semibold text-green-800 mb-2">نتائج فحص الحسابات:</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>إجمالي: {previewMutation.data.total_accounts}</div>
+                  <div>نظامية: {previewMutation.data.system_accounts}</div>
+                  <div>عادية: {previewMutation.data.regular_accounts}</div>
+                </div>
+              </div>
+            )}
+
             {/* إحصائيات الحذف */}
             <AccountDeletionStats
               totalAccounts={totalAccounts}

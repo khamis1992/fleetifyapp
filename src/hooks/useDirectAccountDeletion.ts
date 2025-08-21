@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 
 export interface BulkDeletionResult {
@@ -15,11 +16,55 @@ export interface BulkDeletionResult {
 }
 
 /**
+ * Hook لمعاينة الحذف الجماعي
+ */
+export const useDirectDeletionPreview = () => {
+  const { companyId } = useUnifiedCompanyAccess();
+  
+  return useMutation({
+    mutationFn: async () => {
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🔍 [DELETION_PREVIEW] معاينة الحسابات للشركة:', companyId);
+      
+      // جلب جميع الحسابات النشطة
+      const { data: allAccounts, error: fetchError } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name, is_system, is_active, company_id')
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+      
+      if (fetchError) {
+        console.error('❌ [DELETION_PREVIEW] خطأ في جلب الحسابات:', fetchError);
+        throw fetchError;
+      }
+      
+      console.log('📊 [DELETION_PREVIEW] الحسابات المتاحة:', {
+        total: allAccounts?.length || 0,
+        systemAccounts: allAccounts?.filter(acc => acc.is_system).length || 0,
+        regularAccounts: allAccounts?.filter(acc => !acc.is_system).length || 0,
+        sampleAccounts: allAccounts?.slice(0, 5)
+      });
+      
+      return {
+        total_accounts: allAccounts?.length || 0,
+        system_accounts: allAccounts?.filter(acc => acc.is_system).length || 0,
+        regular_accounts: allAccounts?.filter(acc => !acc.is_system).length || 0,
+        accounts: allAccounts || []
+      };
+    }
+  });
+};
+
+/**
  * Hook موحد لحذف جميع الحسابات باستخدام comprehensive_delete_account
  */
 export const useDirectBulkAccountDeletion = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
   
   return useMutation({
     mutationFn: async ({
@@ -31,7 +76,6 @@ export const useDirectBulkAccountDeletion = () => {
       forceDeleteSystem?: boolean;
       deletionMode?: 'soft' | 'auto' | 'force';
     }): Promise<BulkDeletionResult> => {
-      const companyId = user?.profile?.company_id;
       if (!companyId) {
         throw new Error('معرف الشركة غير متوفر');
       }
@@ -44,17 +88,25 @@ export const useDirectBulkAccountDeletion = () => {
       console.log('🗑️ [BULK_DELETE] بدء حذف جميع الحسابات:', {
         companyId,
         forceDeleteSystem,
-        userId: user?.id
+        userId: user?.id,
+        deletionMode
       });
       
       const startTime = Date.now();
       
-      // جلب جميع الحسابات
+      // جلب جميع الحسابات مع تشخيص مفصل
+      console.log('📋 [BULK_DELETE] جلب الحسابات من الشركة:', companyId);
       const { data: accounts, error: fetchError } = await supabase
         .from('chart_of_accounts')
-        .select('id, account_code, account_name, is_system')
+        .select('id, account_code, account_name, is_system, is_active, company_id')
         .eq('company_id', companyId)
         .eq('is_active', true);
+      
+      console.log('📋 [BULK_DELETE] نتيجة جلب الحسابات:', {
+        accountsCount: accounts?.length || 0,
+        accounts: accounts?.slice(0, 3), // أول 3 حسابات للمراجعة
+        fetchError
+      });
       
       if (fetchError) {
         throw new Error(`خطأ في جلب الحسابات: ${fetchError.message}`);
