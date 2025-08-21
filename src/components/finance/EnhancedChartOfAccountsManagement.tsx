@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder, Skull } from 'lucide-react';
-import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder, Skull, Loader2 } from 'lucide-react';
+import { useChartOfAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '@/hooks/useChartOfAccounts';
+import { supabase } from '@/integrations/supabase/client';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
@@ -22,7 +23,7 @@ import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
-import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
+
 import { AccountMaintenanceTools } from './AccountMaintenanceTools';
 import AccountsListWithActions from './AccountsListWithActions';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -54,7 +55,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('accounts');
@@ -65,6 +66,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
+  const deleteAccount = useDeleteAccount();
 
   // Check if user can delete all accounts (super admin only)
   const isSuperAdmin = user?.roles?.includes('super_admin');
@@ -103,6 +105,61 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     } catch (error) {
       console.error('Error creating account:', error);
       toast.error('حدث خطأ في إنشاء الحساب');
+    }
+  };
+
+  const handleDeleteAllAccounts = async () => {
+    if (!isSuperAdmin) {
+      toast.error('ليس لديك صلاحية لحذف جميع الحسابات');
+      return;
+    }
+
+    const confirmText = 'DELETE ALL ACCOUNTS PERMANENTLY';
+    const userInput = window.prompt(
+      `تحذير شديد الخطورة!\n\nهذا الإجراء سيحذف جميع الحسابات نهائياً!\n\nلتأكيد العملية، اكتب النص التالي بالضبط:\n${confirmText}`
+    );
+
+    if (userInput !== confirmText) {
+      toast.error('تم إلغاء العملية - النص غير صحيح');
+      return;
+    }
+
+    const accounts = allAccounts || [];
+    if (accounts.length === 0) {
+      toast.info('لا توجد حسابات للحذف');
+      return;
+    }
+
+    toast.info(`بدء حذف ${accounts.length} حساب...`);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[i];
+      try {
+        console.log(`حذف الحساب ${i + 1}/${accounts.length}:`, account.account_code);
+        
+        // استخدام نفس hook الحذف المنفرد الذي يعمل
+        await deleteAccount.mutateAsync(account.id);
+        successCount++;
+        
+        // تحديث التقدم كل 5 حسابات
+        if ((i + 1) % 5 === 0) {
+          toast.info(`تم معالجة ${i + 1} من ${accounts.length} حساب...`);
+        }
+        
+      } catch (error: any) {
+        console.error('فشل حذف الحساب:', account.account_code, error);
+        failCount++;
+      }
+    }
+    
+    // النتيجة النهائية
+    toast.success(`تمت معالجة جميع الحسابات: ${successCount} نجح، ${failCount} فشل`);
+    
+    if (failCount > 0) {
+      toast.warning(`فشل في حذف ${failCount} حساب - قد تحتاج لحذفها يدوياً`);
     }
   };
 
@@ -405,16 +462,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               </Button>
             </div>
             
-            {canDeleteAll && (
-              <Button 
-                variant="destructive" 
-                onClick={() => setShowDeleteAllDialog(true)} 
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
-              >
-                <span>حذف جميع الحسابات</span>
-                <Skull className="h-4 w-4" />
-              </Button>
-            )}
+
           </div>
 
           {/* Enhanced Filters */}
@@ -531,10 +579,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setShowDeleteAllDialog(true)}
+                onClick={handleDeleteAllAccounts}
+                disabled={deleteAccount.isPending}
                 className="text-red-600 hover:text-red-700"
               >
-                <Skull className="h-4 w-4 mr-2" />
+                {deleteAccount.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Skull className="h-4 w-4 mr-2" />
+                )}
                 حذف جميع الحسابات
               </Button>
             </div>
@@ -716,14 +769,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
       />
 
-      {/* Simple Delete All Accounts Dialog */}
-      <SimpleDeleteAllAccountsDialog
-        open={showDeleteAllDialog}
-        onOpenChange={setShowDeleteAllDialog}
-        onSuccess={() => {
-          setShowDeleteAllDialog(false);
-        }}
-      />
+
     </div>
   );
 };
