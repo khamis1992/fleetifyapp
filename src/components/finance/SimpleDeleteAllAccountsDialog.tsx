@@ -312,33 +312,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
               </AlertDescription>
             </Alert>
 
-            {/* معلومات الحسابات */}
-            <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
-              <h4 className="font-semibold text-blue-800">إحصائيات الحسابات:</h4>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">إجمالي الحسابات:</span>
-                  <span className="mr-2">{totalAccounts}</span>
-                </div>
-                <div>
-                  <span className="font-medium">الحسابات النظامية:</span>
-                  <span className="mr-2">{systemAccounts}</span>
-                </div>
-                <div>
-                  <span className="font-medium">الحسابات العادية:</span>
-                  <span className="mr-2">{regularAccounts}</span>
-                </div>
-                <div>
-                  <span className="font-medium">سيتم المعالجة:</span>
-                  <span className="mr-2">{forceDeleteSystem ? totalAccounts : regularAccounts}</span>
-                </div>
-              </div>
-              
-              <p className="text-sm text-blue-700">
-                💡 ملاحظة: الحسابات التي تحتوي على قيود محاسبية سيتم إلغاء تفعيلها فقط
-              </p>
-            </div>
 
             {/* خيارات نمط الحذف */}
             <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
