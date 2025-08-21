@@ -191,7 +191,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
-            حذف جميع الحسابات - عملية خطيرة
           </DialogTitle>
         </DialogHeader>
 
