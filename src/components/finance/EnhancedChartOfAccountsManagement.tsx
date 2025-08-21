@@ -25,7 +25,7 @@ import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEdi
 import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
 
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AccountFormData {
@@ -61,6 +61,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
   const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts(showInactiveAccounts);
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
@@ -98,10 +99,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         is_header: false,
         description: ''
       });
-      toast.success('تم إنشاء الحساب بنجاح');
+      toast({
+        title: "تم إنشاء الحساب بنجاح"
+      });
     } catch (error) {
       console.error('Error creating account:', error);
-      toast.error('حدث خطأ في إنشاء الحساب');
+      toast({
+        variant: "destructive",
+        title: "حدث خطأ في إنشاء الحساب"
+      });
     }
   };
 

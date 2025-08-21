@@ -203,38 +203,24 @@ export const useDirectTemplateCopy = () => {
       return result;
     },
     onMutate: (businessType) => {
-      // إشعار بداية العملية
+      // Log only, no toast to avoid notification spam
       console.log('🚀 [DIRECT_COPY] تم استدعاء النسخ المباشر للقالب:', businessType);
-      toast({
-        title: "🚀 بدء النسخ المحسن الجديد",
-        description: "جاري نسخ جميع الحسابات مباشرة من القالب (النظام المحسن)...",
-      });
     },
     onSuccess: (result) => {
       // تحديث الاستعلامات
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] });
 
+      // تنبيه شامل واحد بدلاً من تنبيهات متعددة
+      const statusMessage = result.skipped_accounts > 0 || result.failed_accounts > 0 
+        ? `${result.message} (متخطاة: ${result.skipped_accounts}, فاشلة: ${result.failed_accounts})`
+        : result.message;
+
       toast({
-        title: "✅ تم نسخ القالب المحسن بنجاح",
-        description: `${result.message} (النسخ المباشر المحسن)`,
+        title: "✅ تم نسخ القالب بنجاح",
+        description: statusMessage,
+        variant: result.failed_accounts > 0 ? "destructive" : "default"
       });
-
-      // إشعارات إضافية
-      if (result.skipped_accounts > 0) {
-        toast({
-          title: "تم تخطي حسابات موجودة",
-          description: `تم تخطي ${result.skipped_accounts} حساب موجود مسبقاً`,
-        });
-      }
-
-      if (result.failed_accounts > 0) {
-        toast({
-          variant: "destructive",
-          title: "فشل في نسخ بعض الحسابات",
-          description: `فشل في نسخ ${result.failed_accounts} حساب`,
-        });
-      }
     },
     onError: (error: any) => {
       console.error('❌ [DIRECT_COPY] فشل النسخ المباشر:', error);

@@ -21,7 +21,7 @@ import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { getCleanCarRentalAccountsCount } from '@/hooks/useBusinessTypeAccountsNew';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface AccountTemplate {
   id: string;
@@ -37,6 +37,7 @@ interface AccountTemplate {
 export const AccountTemplateManager: React.FC = () => {
   const { getTotalAccountsCount, getAccountsByBusinessType } = useBusinessTypeAccounts();
   const { companyId } = useUnifiedCompanyAccess();
+  const { toast } = useToast();
   
   const PREDEFINED_TEMPLATES: AccountTemplate[] = [
     {
@@ -87,15 +88,11 @@ export const AccountTemplateManager: React.FC = () => {
         total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
       });
       
-      // إشعار فوري للمستخدم
-      toast.info(`🚀 سيتم استخدام النظام المحسن لنسخ ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`);
-      
       console.log('🎯 [TEMPLATE] استدعاء directTemplateCopy...');
       
       // التحقق من وجود الـ hook
       if (!directTemplateCopy || !directTemplateCopy.mutate) {
         console.error('❌ [TEMPLATE] directTemplateCopy غير معرف أو معطل!');
-        alert('❌ خطأ: النظام المحسن غير متوفر، سيتم استخدام النظام القديم');
         
         // استخدام النظام القديم كـ fallback
         console.log('🔄 [TEMPLATE] استخدام النظام القديم كبديل');
@@ -110,9 +107,6 @@ export const AccountTemplateManager: React.FC = () => {
         copySelectedAccounts.mutate(allCarRentalAccounts);
         return;
       }
-      
-      // تأكيد إضافي
-      alert('🚀 سيتم استخدام النظام المحسن الجديد!');
       
       console.log('🚀 [TEMPLATE] استدعاء النظام المحسن...');
       directTemplateCopy.mutate('car_rental');
@@ -142,7 +136,10 @@ export const AccountTemplateManager: React.FC = () => {
   // دالة اختبار مباشرة للتشخيص
   const handleDirectTest = async () => {
     if (!companyId) {
-      toast.error('معرف الشركة غير متوفر');
+      toast({
+        variant: "destructive",
+        title: "معرف الشركة غير متوفر"
+      });
       return;
     }
 
@@ -176,7 +173,11 @@ export const AccountTemplateManager: React.FC = () => {
 
       if (error) {
         console.error('❌ [DIRECT_TEST] خطأ في جلب الحسابات:', error);
-        toast.error('خطأ في جلب الحسابات: ' + error.message);
+        toast({
+          variant: "destructive",
+          title: "خطأ في جلب الحسابات",
+          description: error.message
+        });
         return;
       }
 
@@ -193,11 +194,18 @@ export const AccountTemplateManager: React.FC = () => {
         sampleNewAccounts: newAccounts.slice(0, 5).map(acc => acc.code + ' - ' + acc.nameAr)
       });
 
-      toast.success(`اختبار مكتمل: ${newAccounts.length} حساب جديد من أصل ${allAccounts.length} في القالب`);
+      toast({
+        title: "اختبار مكتمل",
+        description: `${newAccounts.length} حساب جديد من أصل ${allAccounts.length} في القالب`
+      });
 
     } catch (error: any) {
       console.error('❌ [DIRECT_TEST] خطأ في الاختبار:', error);
-      toast.error('خطأ في الاختبار: ' + error.message);
+      toast({
+        variant: "destructive",
+        title: "خطأ في الاختبار",
+        description: error.message
+      });
     }
   };
 
@@ -270,7 +278,6 @@ export const AccountTemplateManager: React.FC = () => {
                 variant="default"
                 onClick={() => {
                   console.log('🚀 [FORCE_NEW] فرض استخدام النظام المحسن');
-                  toast.info('🚀 فرض استخدام النظام المحسن الجديد');
                   directTemplateCopy.mutate('car_rental');
                 }}
                 disabled={directTemplateCopy.isPending}
@@ -325,7 +332,10 @@ export const AccountTemplateManager: React.FC = () => {
                       equity: accounts.equity.length,
                       total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
                     });
-                    toast.info(`القالب يحتوي على ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`);
+                    toast({
+                      title: "اختبار سريع",
+                      description: `القالب يحتوي على ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`
+                    });
                   }}
                   className="px-2"
                   title="اختبار سريع"
