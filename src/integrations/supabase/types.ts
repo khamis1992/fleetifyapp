@@ -9992,6 +9992,14 @@ export type Database = {
         Args: { company_id: string; force_system: boolean; reason: string }
         Returns: Json
       }
+      diagnose_account_deletion_failures: {
+        Args: { target_company_id: string }
+        Returns: Json
+      }
+      direct_delete_all_accounts: {
+        Args: { include_system_accounts?: boolean; target_company_id: string }
+        Returns: Json
+      }
       distribute_vehicle_installment_amount: {
         Args: {
           p_installment_id: string
@@ -10046,6 +10054,14 @@ export type Database = {
       }
       fix_chart_hierarchy: {
         Args: { company_id_param: string }
+        Returns: Json
+      }
+      force_delete_all_accounts: {
+        Args: {
+          cleanup_first?: boolean
+          include_system_accounts?: boolean
+          target_company_id: string
+        }
         Returns: Json
       }
       generate_approval_request_number: {
@@ -10712,6 +10728,14 @@ export type Database = {
           status: string
           vehicle_plate: string
         }[]
+      }
+      simple_account_diagnosis: {
+        Args: { target_company_id: string }
+        Returns: Json
+      }
+      simple_cleanup_references: {
+        Args: { target_company_id: string }
+        Returns: Json
       }
       soft_delete_account: {
         Args: { account_id_param: string }
