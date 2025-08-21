@@ -16,11 +16,12 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Loader2, 
   AlertTriangle, 
+  Trash2, 
   Skull,
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { useDirectBulkAccountDeletion, useDirectDeletionPreview } from "@/hooks/useDirectAccountDeletion";
+import { useDirectBulkAccountDeletion, useDiagnoseAccountDeletionFailures, useCleanupAllReferences } from "@/hooks/useDirectAccountDeletion";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -49,13 +50,16 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const { user } = useAuth();
   const { data: allAccounts, isLoading: accountsLoading } = useChartOfAccounts();
   const deleteAllAccounts = useDirectBulkAccountDeletion();
-  const previewMutation = useDirectDeletionPreview();
+  const diagnoseFailures = useDiagnoseAccountDeletionFailures();
+  const cleanupReferences = useCleanupAllReferences();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
   const totalAccounts = allAccounts?.length || 0;
   const systemAccounts = allAccounts?.filter(acc => acc.is_system).length || 0;
   const regularAccounts = totalAccounts - systemAccounts;
+
+
 
   const handleDeleteAll = async () => {
     if (!isValidConfirmation) {
@@ -79,7 +83,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
       }, 500);
 
       const result = await deleteAllAccounts.mutateAsync({
-        confirmationText: CONFIRMATION_TEXT,
         forceDeleteSystem: forceDeleteSystem
       });
 
@@ -123,8 +126,8 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+         <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
@@ -173,21 +176,61 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                       <div className="font-bold text-lg text-yellow-600">{results.deactivated_count || 0}</div>
                       <div className="text-sm">تم إلغاء تفعيلها</div>
                     </div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-blue-600">{results.total_processed || 0}</div>
-                      <div className="text-sm">إجمالي المعالج</div>
-                    </div>
-                  </div>
-                  
-                  {/* معلومات إضافية */}
-                  {(results.failed_count || 0) > 0 && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                      <p className="text-sm text-yellow-800">
-                        ⚠️ فشل في معالجة {results.failed_count} حساب. قد تحتاج لمراجعة هذه الحسابات يدوياً.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                                         <div className="text-center">
+                       <div className="font-bold text-lg text-blue-600">{results.total_processed || 0}</div>
+                       <div className="text-sm">إجمالي المعالج</div>
+                     </div>
+                   </div>
+                   
+                   {/* زر تشخيص الأخطاء */}
+                   {(results.error_count || 0) > 0 && (
+                     <div className="mt-4">
+                       <Button
+                         variant="outline"
+                         onClick={async () => {
+                           try {
+                             const diagnosis = await diagnoseFailures.mutateAsync();
+                             console.log('🔍 تشخيص مفصل للأخطاء:', diagnosis);
+                             
+                                                           const summary = (diagnosis as any)?.analysis_summary;
+                             let message = 'تحليل أسباب الفشل:\n';
+                             if (summary?.system_account_issues > 0) {
+                               message += `• ${summary.system_account_issues} حساب نظامي محمي\n`;
+                             }
+                             if (summary?.transaction_issues > 0) {
+                               message += `• ${summary.transaction_issues} حساب يحتوي على معاملات\n`;
+                             }
+                             if (summary?.child_account_issues > 0) {
+                               message += `• ${summary.child_account_issues} حساب له حسابات فرعية\n`;
+                             }
+                             
+                             // إضافة توصيات
+                             const recommendations = (diagnosis as any)?.recommendations;
+                             if (recommendations && recommendations.length > 0) {
+                               message += '\nالتوصيات:\n';
+                               recommendations.forEach((rec: string, index: number) => {
+                                 message += `${index + 1}. ${rec}\n`;
+                               });
+                             }
+                             
+                             toast.info(message);
+                           } catch (error: any) {
+                             toast.error('فشل في التشخيص: ' + error.message);
+                           }
+                         }}
+                         disabled={diagnoseFailures.isPending}
+                         className="w-full"
+                       >
+                         {diagnoseFailures.isPending ? (
+                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                         ) : (
+                           <AlertTriangle className="h-4 w-4 mr-2" />
+                         )}
+                         تشخيص أسباب الفشل
+                       </Button>
+                     </div>
+                   )}
+                 </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-red-600">{results?.error || 'حدث خطأ غير معروف'}</p>
@@ -202,53 +245,90 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* إحصائيات الحذف */}
-            <AccountDeletionStats
-              totalAccounts={totalAccounts}
-              deletedCount={results?.deleted_count || 0}
-              deactivatedCount={results?.deactivated_count || 0}
-              failedCount={results?.error_count || 0}
-              systemAccounts={systemAccounts}
-              isProcessing={isDeleting}
-            />
+                     <div className="space-y-6">
+             {/* إحصائيات الحذف */}
+             <AccountDeletionStats
+               totalAccounts={totalAccounts}
+               deletedCount={results?.deleted_count || 0}
+               deactivatedCount={results?.deactivated_count || 0}
+               failedCount={results?.error_count || 0}
+               systemAccounts={systemAccounts}
+               isProcessing={isDeleting}
+             />
 
-            {/* تحذير خطير */}
-            <Alert className="border-destructive bg-destructive/10">
-              <Skull className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-destructive font-medium">
-                <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
-                الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
-              </AlertDescription>
-            </Alert>
+             {/* تحذير خطير */}
+             <Alert className="border-destructive bg-destructive/10">
+               <Skull className="h-4 w-4 text-destructive" />
+               <AlertDescription className="text-destructive font-medium">
+                 <strong>تحذير شديد الخطورة:</strong> هذه العملية ستحذف جميع الحسابات في دليل الحسابات! 
+                 الحسابات التي لا تحتوي على قيود محاسبية ستُحذف نهائياً ولا يمكن استرداجها.
+               </AlertDescription>
+             </Alert>
 
-            {/* معلومات الحسابات */}
-            <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
-              <h4 className="font-semibold text-blue-800">إحصائيات الحسابات:</h4>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">إجمالي الحسابات:</span>
-                  <span className="mr-2">{totalAccounts}</span>
+             
+
+              {/* أدوات التحضير */}
+              <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
+                <h4 className="font-semibold text-blue-800">أدوات التحضير (موصى بها قبل الحذف):</h4>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await cleanupReferences.mutateAsync();
+                      } catch (error: any) {
+                        console.error('فشل التنظيف:', error);
+                      }
+                    }}
+                    disabled={cleanupReferences.isPending}
+                    className="flex-1"
+                  >
+                    {cleanupReferences.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    تنظيف المراجع المعلقة
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const diagnosis = await diagnoseFailures.mutateAsync();
+                        console.log('🔍 تشخيص شامل:', diagnosis);
+                        
+                                                const summary = (diagnosis as any)?.analysis_summary;
+                       let message = `تحليل ${(diagnosis as any)?.total_accounts || 0} حساب:\n`;
+                       message += `• ${summary?.system_account_issues || 0} حساب نظامي\n`;
+                       message += `• ${summary?.transaction_issues || 0} حساب له معاملات\n`;
+                       message += `• ${summary?.child_account_issues || 0} حساب له حسابات فرعية\n`;
+                       message += `• ${(diagnosis as any)?.safe_to_delete || 0} حساب آمن للحذف`;
+                        
+                        toast.info(message);
+                      } catch (error: any) {
+                        console.error('فشل التشخيص:', error);
+                      }
+                    }}
+                    disabled={diagnoseFailures.isPending}
+                    className="flex-1"
+                  >
+                    {diagnoseFailures.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                    )}
+                    تشخيص الحسابات
+                  </Button>
                 </div>
-                <div>
-                  <span className="font-medium">الحسابات النظامية:</span>
-                  <span className="mr-2">{systemAccounts}</span>
-                </div>
-                <div>
-                  <span className="font-medium">الحسابات العادية:</span>
-                  <span className="mr-2">{regularAccounts}</span>
-                </div>
-                <div>
-                  <span className="font-medium">سيتم المعالجة:</span>
-                  <span className="mr-2">{forceDeleteSystem ? totalAccounts : regularAccounts}</span>
-                </div>
+                
+                <p className="text-sm text-blue-700">
+                  💡 نصيحة: قم بتشغيل "تنظيف المراجع المعلقة" أولاً لتقليل أخطاء الحذف
+                </p>
               </div>
-              
-              <p className="text-sm text-blue-700">
-                💡 ملاحظة: الحسابات التي تحتوي على قيود محاسبية سيتم إلغاء تفعيلها فقط
-              </p>
-            </div>
 
             {/* خيار الحسابات النظامية */}
             {systemAccounts > 0 && (

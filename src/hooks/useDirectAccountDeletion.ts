@@ -3,19 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export interface BulkDeletionResult {
-  success: boolean;
-  message: string;
-  deleted_count: number;
-  deactivated_count: number;
-  failed_count: number;
-  total_processed: number;
-  operation_duration: string;
-  error?: string;
-}
-
 /**
- * Hook موحد لحذف جميع الحسابات باستخدام comprehensive_delete_account
+ * Hook مبسط جداً لحذف جميع الحسابات بدون تعقيدات
  */
 export const useDirectBulkAccountDeletion = () => {
   const queryClient = useQueryClient();
@@ -23,103 +12,401 @@ export const useDirectBulkAccountDeletion = () => {
   
   return useMutation({
     mutationFn: async ({
-      confirmationText,
       forceDeleteSystem = false
     }: {
-      confirmationText: string;
       forceDeleteSystem?: boolean;
-    }): Promise<BulkDeletionResult> => {
+    } = {}) => {
       const companyId = user?.profile?.company_id;
       if (!companyId) {
         throw new Error('معرف الشركة غير متوفر');
       }
       
-      // التحقق من نص التأكيد
-      if (confirmationText !== 'DELETE ALL ACCOUNTS PERMANENTLY') {
-        throw new Error('نص التأكيد غير صحيح');
-      }
-      
-      console.log('🗑️ [BULK_DELETE] بدء حذف جميع الحسابات:', {
+      console.log('🗑️ [DIRECT_DELETE] بدء الحذف المباشر للحسابات:', {
         companyId,
-        forceDeleteSystem,
-        userId: user?.id
+        forceDeleteSystem
       });
       
-      const startTime = Date.now();
+      let deletedCount = 0;
+      let deactivatedCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
       
       // جلب جميع الحسابات
       const { data: accounts, error: fetchError } = await supabase
         .from('chart_of_accounts')
         .select('id, account_code, account_name, is_system')
         .eq('company_id', companyId)
-        .eq('is_active', true);
+        .order('is_system', { ascending: true }); // الحسابات العادية أولاً
       
       if (fetchError) {
-        throw new Error(`خطأ في جلب الحسابات: ${fetchError.message}`);
+        throw new Error('فشل في جلب الحسابات: ' + fetchError.message);
       }
       
       if (!accounts || accounts.length === 0) {
         return {
           success: true,
-          message: 'لا توجد حسابات نشطة للحذف',
+          message: 'لا توجد حسابات للحذف',
           deleted_count: 0,
           deactivated_count: 0,
-          failed_count: 0,
-          total_processed: 0,
-          operation_duration: '0ms'
+          error_count: 0
         };
       }
       
-      // فلترة الحسابات حسب خيار forceDeleteSystem
-      const accountsToProcess = forceDeleteSystem 
-        ? accounts 
-        : accounts.filter(account => !account.is_system);
+      console.log(`🔍 [DIRECT_DELETE] وجد ${accounts.length} حساب للمعالجة`);
       
-      let deleted_count = 0;
-      let deactivated_count = 0;
-      let failed_count = 0;
-      
-      // حذف كل حساب باستخدام comprehensive_delete_account
-      for (const account of accountsToProcess) {
+      // معالجة كل حساب على حدة
+      for (const account of accounts) {
         try {
-          const { data, error } = await supabase.rpc('comprehensive_delete_account', {
-            account_id_param: account.id,
-            deletion_mode: 'auto'
-          });
+          // فحص وجود معاملات
+          const { count: transactionCount } = await supabase
+            .from('journal_entry_lines')
+            .select('*', { count: 'exact', head: true })
+            .eq('account_id', account.id);
           
-          if (error) {
-            console.error(`❌ فشل حذف الحساب ${account.account_code}:`, error);
-            failed_count++;
-          } else if (data && typeof data === 'object' && 'action' in data) {
-            const result = data as any;
-            if (result.action === 'deleted') {
-              deleted_count++;
-            } else if (result.action === 'deactivated') {
-              deactivated_count++;
+          const hasTransactions = (transactionCount || 0) > 0;
+          
+          if (account.is_system && !forceDeleteSystem) {
+            // إلغاء تفعيل الحسابات النظامية
+            const { error } = await supabase
+              .from('chart_of_accounts')
+              .update({ is_active: false })
+              .eq('id', account.id);
+            
+            if (error) {
+              errors.push(`${account.account_code}: ${error.message}`);
+              errorCount++;
+            } else {
+              deactivatedCount++;
             }
-            console.log(`✅ تم معالجة الحساب ${account.account_code}: ${result.action}`);
+            
+          } else if (hasTransactions) {
+            // إلغاء تفعيل الحسابات التي لها معاملات
+            const { error } = await supabase
+              .from('chart_of_accounts')
+              .update({ is_active: false })
+              .eq('id', account.id);
+            
+            if (error) {
+              errors.push(`${account.account_code}: ${error.message}`);
+              errorCount++;
+            } else {
+              deactivatedCount++;
+            }
+            
+          } else {
+            // حذف الحسابات التي لا تحتوي على معاملات
+            
+            // أولاً: تنظيف أي مراجع محتملة
+            try {
+              // تنظيف العقود
+              await supabase
+                .from('contracts')
+                .update({ account_id: null })
+                .eq('account_id', account.id);
+            } catch (e) {
+              // تجاهل الخطأ إذا كان العمود غير موجود
+            }
+            
+            try {
+              // تنظيف المدفوعات
+              await supabase
+                .from('payments')
+                .update({ account_id: null })
+                .eq('account_id', account.id);
+            } catch (e) {
+              // تجاهل الخطأ إذا كان العمود غير موجود
+            }
+            
+            // ثانياً: حذف الحساب
+            const { error } = await supabase
+              .from('chart_of_accounts')
+              .delete()
+              .eq('id', account.id);
+            
+            if (error) {
+              errors.push(`${account.account_code}: ${error.message}`);
+              errorCount++;
+            } else {
+              deletedCount++;
+            }
           }
-        } catch (err) {
-          console.error(`❌ خطأ في معالجة الحساب ${account.account_code}:`, err);
-          failed_count++;
+          
+        } catch (error: any) {
+          console.error(`❌ [DIRECT_DELETE] خطأ في معالجة الحساب ${account.account_code}:`, error);
+          errors.push(`${account.account_code}: ${error.message}`);
+          errorCount++;
         }
+        
+        // تحديث التقدم
+        const progress = Math.round(((deletedCount + deactivatedCount + errorCount) / accounts.length) * 100);
+        console.log(`📊 [DIRECT_DELETE] التقدم: ${progress}%`);
       }
       
-      const endTime = Date.now();
-      const duration = `${endTime - startTime}ms`;
+      const totalProcessed = deletedCount + deactivatedCount + errorCount;
+      const message = `تمت معالجة ${totalProcessed} حساب: ${deletedCount} تم حذفها، ${deactivatedCount} تم إلغاء تفعيلها، ${errorCount} فشل`;
       
-      const result: BulkDeletionResult = {
+      console.log('✅ [DIRECT_DELETE] اكتملت العملية:', {
+        deletedCount,
+        deactivatedCount,
+        errorCount,
+        totalProcessed
+      });
+      
+      return {
         success: true,
-        message: `تم معالجة ${accountsToProcess.length} حساب بنجاح`,
-        deleted_count,
-        deactivated_count,
-        failed_count,
-        total_processed: accountsToProcess.length,
-        operation_duration: duration
+        message,
+        deleted_count: deletedCount,
+        deactivated_count: deactivatedCount,
+        error_count: errorCount,
+        total_processed: totalProcessed,
+        errors: errors.slice(0, 10) // أول 10 أخطاء فقط
       };
+    },
+    onSuccess: (result) => {
+      // تحديث جميع الاستعلامات
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       
-      console.log('✅ [BULK_DELETE] اكتمل الحذف الجماعي:', result);
+      toast.success(result.message);
+      
+      if (result.error_count > 0) {
+        toast.warning(`فشل في معالجة ${result.error_count} حساب`);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ [DIRECT_DELETE] فشل الحذف المباشر:', error);
+      toast.error('خطأ في حذف الحسابات: ' + error.message);
+    }
+  });
+};
+
+/**
+ * Hook مبسط لمعاينة الحذف
+ */
+export const useDirectDeletionPreview = () => {
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async ({
+      forceDeleteSystem = false
+    }: {
+      forceDeleteSystem?: boolean;
+    } = {}) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('📊 [DIRECT_PREVIEW] معاينة مباشرة للحذف:', {
+        companyId,
+        forceDeleteSystem
+      });
+      
+      // جلب إحصائيات الحسابات
+      const { data: allAccounts, error: accountsError } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name, is_system')
+        .eq('company_id', companyId);
+      
+      if (accountsError) {
+        throw new Error('فشل في جلب الحسابات: ' + accountsError.message);
+      }
+      
+      const totalAccounts = allAccounts?.length || 0;
+      const systemAccounts = allAccounts?.filter(acc => acc.is_system).length || 0;
+      const regularAccounts = totalAccounts - systemAccounts;
+      
+      // فحص الحسابات التي لها معاملات
+      const { data: accountsWithTransactions } = await supabase
+        .from('journal_entry_lines')
+        .select('account_id')
+        .in('account_id', allAccounts?.map(acc => acc.id) || []);
+      
+      const uniqueAccountsWithTransactions = new Set(accountsWithTransactions?.map(jel => jel.account_id) || []);
+      const accountsWithTransactionsCount = uniqueAccountsWithTransactions.size;
+      const accountsWithoutTransactions = totalAccounts - accountsWithTransactionsCount;
+      
+      // تحديد ما سيحدث
+      let willBeDeleted = 0;
+      let willBeDeactivated = 0;
+      
+      if (forceDeleteSystem) {
+        willBeDeleted = accountsWithoutTransactions;
+        willBeDeactivated = accountsWithTransactionsCount;
+      } else {
+        willBeDeleted = Math.max(0, accountsWithoutTransactions - systemAccounts);
+        willBeDeactivated = accountsWithTransactionsCount + systemAccounts;
+      }
+      
+      // عينة من الحسابات
+      const sampleAccounts = allAccounts?.slice(0, 10).map(acc => ({
+        account_code: acc.account_code,
+        account_name: acc.account_name,
+        action: uniqueAccountsWithTransactions.has(acc.id) ? 'will_be_deactivated' : 'will_be_deleted'
+      })) || [];
+      
+      const systemAccountsSample = allAccounts?.filter(acc => acc.is_system).slice(0, 5).map(acc => ({
+        account_code: acc.account_code,
+        account_name: acc.account_name,
+        action: forceDeleteSystem ? 'will_be_force_deleted' : 'will_be_deactivated'
+      })) || [];
+      
+      return {
+        success: true,
+        total_accounts: totalAccounts,
+        system_accounts: systemAccounts,
+        regular_accounts: regularAccounts,
+        will_be_deleted: willBeDeleted,
+        will_be_deactivated: willBeDeactivated,
+        sample_accounts: sampleAccounts,
+        system_accounts_sample: systemAccountsSample,
+        warning_message: systemAccounts > 0 && !forceDeleteSystem 
+          ? 'الحسابات النظامية سيتم إلغاء تفعيلها فقط لحماية النظام'
+          : 'جميع الحسابات ستتم معالجتها حسب حالتها'
+      };
+    },
+    onError: (error) => {
+      console.error('❌ [DIRECT_PREVIEW] فشل المعاينة المباشرة:', error);
+      toast.error('خطأ في معاينة الحذف: ' + error.message);
+    }
+  });
+};
+
+/**
+ * Hook لتشخيص أسباب فشل حذف الحسابات
+ */
+export const useDiagnoseAccountDeletionFailures = () => {
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🔍 [DIAGNOSE] تشخيص أسباب فشل حذف الحسابات للشركة:', companyId);
+      
+      const { data, error } = await supabase.rpc('simple_account_diagnosis', {
+        target_company_id: companyId
+      });
+      
+      if (error) {
+        console.error('❌ [DIAGNOSE] خطأ في التشخيص:', error);
+        throw new Error(error.message);
+      }
+      
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [DIAGNOSE] فشل التشخيص:', result?.error);
+        throw new Error(result?.error || 'فشل التشخيص');
+      }
+      
+      console.log('✅ [DIAGNOSE] نتائج التشخيص:', result);
       return result;
+    },
+    onError: (error) => {
+      console.error('❌ [DIAGNOSE] فشل hook التشخيص:', error);
+      toast.error('خطأ في تشخيص الحسابات: ' + error.message);
+    }
+  });
+};
+
+/**
+ * Hook لتنظيف جميع المراجع المعلقة
+ */
+export const useCleanupAllReferences = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🧹 [CLEANUP] تنظيف جميع المراجع المعلقة للشركة:', companyId);
+      
+      const { data, error } = await supabase.rpc('simple_cleanup_references', {
+        target_company_id: companyId
+      });
+      
+      if (error) {
+        console.error('❌ [CLEANUP] خطأ في التنظيف:', error);
+        throw new Error(error.message);
+      }
+      
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [CLEANUP] فشل التنظيف:', result?.error);
+        throw new Error(result?.error || 'فشل التنظيف');
+      }
+      
+      console.log('✅ [CLEANUP] نتائج التنظيف:', result);
+      return result;
+    },
+    onSuccess: (result) => {
+      // تحديث جميع الاستعلامات المرتبطة
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['account-mappings'] });
+      
+      toast.success(result?.message || 'تم التنظيف بنجاح');
+      
+      if (result?.total_cleaned > 0) {
+        toast.info(`تم تنظيف ${result.total_cleaned} مرجع معلق`);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ [CLEANUP] فشل hook التنظيف:', error);
+      toast.error('خطأ في تنظيف المراجع: ' + error.message);
+    }
+  });
+};
+
+/**
+ * Hook مبسط لحذف جميع الحسابات
+ */
+export const useDirectBulkAccountDeletion = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async ({
+      forceDeleteSystem = false
+    }: {
+      forceDeleteSystem?: boolean;
+    } = {}) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🗑️ [BULK_DELETE] بدء حذف جميع الحسابات:', {
+        companyId,
+        forceDeleteSystem
+      });
+      
+      const { data, error } = await supabase.rpc('direct_delete_all_accounts', {
+        target_company_id: companyId,
+        include_system_accounts: forceDeleteSystem
+      });
+      
+      if (error) {
+        console.error('❌ [BULK_DELETE] خطأ في RPC:', error);
+        throw new Error(error.message);
+      }
+      
+      if (!data.success) {
+        console.error('❌ [BULK_DELETE] فشل العملية:', data.error);
+        throw new Error(data.error);
+      }
+      
+      console.log('✅ [BULK_DELETE] نجح الحذف الجماعي:', data);
+      return data;
     },
     onSuccess: (result) => {
       // تحديث جميع الاستعلامات المرتبطة
@@ -127,10 +414,6 @@ export const useDirectBulkAccountDeletion = () => {
       queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
       
       toast.success(result.message);
       
@@ -146,89 +429,8 @@ export const useDirectBulkAccountDeletion = () => {
       }
     },
     onError: (error) => {
-      console.error('❌ [BULK_DELETE] فشل hook الحذف:', error);
+      console.error('❌ [BULK_DELETE] فشل hook الحذف الجماعي:', error);
       toast.error('خطأ في حذف جميع الحسابات: ' + error.message);
-    }
-  });
-};
-
-/**
- * Hook لمعاينة حذف جميع الحسابات
- */
-export const useDirectDeletionPreview = () => {
-  const { user } = useAuth();
-  
-  return useMutation({
-    mutationFn: async ({ 
-      forceDeleteSystem = false 
-    }: { 
-      forceDeleteSystem?: boolean 
-    } = {}) => {
-      const companyId = user?.profile?.company_id;
-      if (!companyId) {
-        throw new Error('معرف الشركة غير متوفر');
-      }
-      
-      console.log('📊 [BULK_PREVIEW] جلب معاينة حذف جميع الحسابات:', {
-        companyId,
-        forceDeleteSystem
-      });
-      
-      // جلب جميع الحسابات النشطة
-      const { data: accounts, error } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code, account_name, is_system')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
-      
-      if (error) {
-        throw new Error(`خطأ في جلب الحسابات: ${error.message}`);
-      }
-      
-      if (!accounts) {
-        return {
-          success: true,
-          total_accounts: 0,
-          system_accounts: 0,
-          regular_accounts: 0,
-          will_be_deleted: 0,
-          will_be_deactivated: 0,
-          sample_accounts: [],
-          system_accounts_sample: [],
-          warning_message: 'لا توجد حسابات نشطة'
-        };
-      }
-      
-      const systemAccounts = accounts.filter(acc => acc.is_system);
-      const regularAccounts = accounts.filter(acc => !acc.is_system);
-      
-      const accountsToProcess = forceDeleteSystem ? accounts : regularAccounts;
-      
-      return {
-        success: true,
-        total_accounts: accounts.length,
-        system_accounts: systemAccounts.length,
-        regular_accounts: regularAccounts.length,
-        will_be_deleted: accountsToProcess.length,
-        will_be_deactivated: 0, // سيتم تحديد هذا أثناء العملية الفعلية
-        sample_accounts: accountsToProcess.slice(0, 5).map(acc => ({
-          account_code: acc.account_code,
-          account_name: acc.account_name,
-          action: 'سيتم المعالجة'
-        })),
-        system_accounts_sample: systemAccounts.slice(0, 5).map(acc => ({
-          account_code: acc.account_code,
-          account_name: acc.account_name,
-          action: forceDeleteSystem ? 'سيتم المعالجة' : 'سيتم التجاهل'
-        })),
-        warning_message: forceDeleteSystem 
-          ? 'تحذير: سيتم حذف جميع الحسابات بما في ذلك حسابات النظام!'
-          : 'سيتم حذف الحسابات العادية فقط. حسابات النظام محمية.'
-      };
-    },
-    onError: (error) => {
-      console.error('❌ [BULK_PREVIEW] فشل hook المعاينة:', error);
-      toast.error('خطأ في معاينة الحذف: ' + error.message);
     }
   });
 };
