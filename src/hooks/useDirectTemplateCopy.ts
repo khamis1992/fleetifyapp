@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import { useBusinessTypeAccounts, AccountTemplate } from "./useBusinessTypeAccounts";
+import { getCleanCarRentalAccounts, getCleanCarRentalAccountsCount } from "./useBusinessTypeAccountsNew";
 
 interface DirectCopyResult {
   success: boolean;
@@ -31,15 +32,30 @@ export const useDirectTemplateCopy = () => {
 
       console.log('🚀 [DIRECT_COPY] بدء نسخ قالب مباشر:', { businessType, companyId });
 
-      // جلب جميع حسابات القالب من JavaScript
-      const templateAccounts = getAccountsByBusinessType(businessType);
-      const allAccounts = [
-        ...templateAccounts.assets,
-        ...templateAccounts.liabilities,
-        ...templateAccounts.revenue,
-        ...templateAccounts.expenses,
-        ...templateAccounts.equity
-      ];
+      // جلب جميع حسابات القالب من JavaScript (استخدام القالب المنظم للتأجير)
+      let templateAccounts;
+      let allAccounts;
+      
+      if (businessType === 'car_rental') {
+        console.log('🚗 [DIRECT_COPY] استخدام القالب المنظم للتأجير');
+        templateAccounts = getCleanCarRentalAccounts();
+        allAccounts = [
+          ...templateAccounts.assets,
+          ...templateAccounts.liabilities,
+          ...templateAccounts.revenue,
+          ...templateAccounts.expenses,
+          ...templateAccounts.equity
+        ];
+      } else {
+        templateAccounts = getAccountsByBusinessType(businessType);
+        allAccounts = [
+          ...templateAccounts.assets,
+          ...templateAccounts.liabilities,
+          ...templateAccounts.revenue,
+          ...templateAccounts.expenses,
+          ...templateAccounts.equity
+        ];
+      }
 
       console.log('📊 [DIRECT_COPY] إحصائيات القالب:', {
         assets: templateAccounts.assets.length,

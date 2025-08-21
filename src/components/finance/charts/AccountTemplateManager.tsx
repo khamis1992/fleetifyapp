@@ -20,6 +20,7 @@ import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { getCleanCarRentalAccountsCount } from '@/hooks/useBusinessTypeAccountsNew';
 import { toast } from 'sonner';
 
 interface AccountTemplate {
@@ -41,12 +42,12 @@ export const AccountTemplateManager: React.FC = () => {
     {
       id: 'car_rental',
       name: 'Car Rental & Transportation',
-      nameAr: 'السيارات والنقل - مع المستوى السادس',
-      description: 'قالب شامل لشركات تأجير السيارات يشمل حسابات تفصيلية للمستوى السادس للعملاء الأفراد والمركبات والموردين المحددين',
+      nameAr: 'السيارات والنقل - منظم محاسبياً',
+      description: 'قالب محاسبي محترف لشركات تأجير السيارات مع تسلسل هرمي صحيح وحسابات عملية بدون أسماء وهمية',
       icon: <Car className="h-5 w-5" />,
-      accountsCount: getTotalAccountsCount('car_rental'),
+      accountsCount: getCleanCarRentalAccountsCount(),
       category: 'industry',
-      preview: ['أسطول المركبات الفردية', 'عملاء بالاسم', 'موردين محددين', 'إيرادات تفصيلية', 'مصاريف متخصصة', 'المستوى 6 للتتبع الدقيق']
+      preview: ['أصول المركبات', 'تمويل المركبات', 'إيرادات التأجير', 'مصروفات الصيانة', 'تسلسل هرمي محاسبي صحيح', 'بدون حسابات وهمية']
     }
   ];
 
@@ -358,8 +359,8 @@ export const AccountTemplateManager: React.FC = () => {
               <div className="space-y-2">
                 <p>تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة</p>
                 <p className="text-sm text-blue-600 font-medium">
-                  ✨ تم تحسين النظام: الآن يتم نسخ جميع الحسابات مباشرة من القالب ({getTotalAccountsCount('car_rental')} حساب) 
-                  بدلاً من الاقتصار على الحسابات الأساسية (232 حساب)
+                  ✨ تم تحسين النظام: الآن يتم نسخ جميع الحسابات مباشرة من القالب المنظم ({getCleanCarRentalAccountsCount()} حساب محاسبي صحيح) 
+                  بدلاً من الاقتصار على الحسابات الأساسية (232 حساب) - تم حذف الحسابات الوهمية
                 </p>
               </div>
             </AlertDescription>

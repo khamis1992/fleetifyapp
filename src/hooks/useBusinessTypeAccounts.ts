@@ -90,18 +90,18 @@ const ESSENTIAL_ACCOUNTS: AccountTemplate[] = [
   { id: 'employee_basic_salaries', code: '52111', nameEn: 'Employee Basic Salaries', nameAr: 'رواتب الموظفين الأساسية', accountType: 'expenses', accountLevel: 5, balanceType: 'debit', parentCode: '5211', essential: true, recommended: true, description: 'الرواتب الأساسية لجميع الموظفين', isEntryLevel: true }
 ];
 
-// Business-specific account templates
+// Business-specific account templates - Car Rental (محسن ومنظم محاسبياً)
 const BUSINESS_SPECIFIC_ACCOUNTS: Record<string, Partial<BusinessTypeAccounts>> = {
   car_rental: {
     assets: [
-      // Level 3 - Vehicle Assets Group
+      // ===== المستوى 3 - مجموعات الأصول الرئيسية =====
       { id: 'vehicle_assets_group', code: '1150', nameEn: 'Vehicle Assets', nameAr: 'أصول المركبات', accountType: 'assets', accountLevel: 3, balanceType: 'debit', parentCode: '1500', essential: true, recommended: true, description: 'مجموعة أصول المركبات والمعدات', isHeader: true },
       
-      // Level 4 - Vehicle Categories
-      { id: 'vehicle_fleet', code: '1151', nameEn: 'Vehicle Fleet', nameAr: 'أسطول المركبات', accountType: 'assets', accountLevel: 4, balanceType: 'debit', parentCode: '1150', essential: true, recommended: true, description: 'المركبات المملوكة للشركة' },
-      { id: 'vehicle_equipment', code: '1152', nameEn: 'Vehicle Equipment', nameAr: 'معدات المركبات', accountType: 'assets', accountLevel: 4, balanceType: 'debit', parentCode: '1150', essential: false, recommended: true, description: 'المعدات والتجهيزات الإضافية للمركبات' },
-      { id: 'spare_parts_inventory', code: '1153', nameEn: 'Spare Parts Inventory', nameAr: 'مخزون قطع الغيار', accountType: 'assets', accountLevel: 4, balanceType: 'debit', parentCode: '1150', essential: false, recommended: true, description: 'مخزون قطع الغيار والإطارات' },
-      { id: 'accumulated_depreciation', code: '1159', nameEn: 'Accumulated Depreciation - Vehicles', nameAr: 'مجمع إهلاك المركبات', accountType: 'assets', accountLevel: 4, balanceType: 'credit', parentCode: '1150', essential: true, recommended: true, description: 'مجمع إهلاك أسطول المركبات' },
+      // ===== المستوى 4 - فئات المركبات =====
+      { id: 'vehicle_fleet', code: '1151', nameEn: 'Vehicle Fleet', nameAr: 'أسطول المركبات', accountType: 'assets', accountLevel: 4, balanceType: 'debit', parentCode: '1150', essential: true, recommended: true, description: 'المركبات المملوكة للشركة', isHeader: true },
+      { id: 'vehicle_equipment', code: '1152', nameEn: 'Vehicle Equipment', nameAr: 'معدات المركبات', accountType: 'assets', accountLevel: 4, balanceType: 'debit', parentCode: '1150', essential: false, recommended: true, description: 'المعدات والتجهيزات الإضافية للمركبات', isHeader: true },
+      { id: 'spare_parts_inventory', code: '1153', nameEn: 'Spare Parts Inventory', nameAr: 'مخزون قطع الغيار', accountType: 'assets', accountLevel: 4, balanceType: 'debit', parentCode: '1150', essential: false, recommended: true, description: 'مخزون قطع الغيار والإطارات', isHeader: true },
+      { id: 'accumulated_depreciation', code: '1159', nameEn: 'Accumulated Depreciation - Vehicles', nameAr: 'مجمع إهلاك المركبات', accountType: 'assets', accountLevel: 4, balanceType: 'credit', parentCode: '1150', essential: true, recommended: true, description: 'مجمع إهلاك أسطول المركبات', isHeader: true },
       
       // Level 3 - Inventory Assets
       { id: 'inventory_assets_group', code: '1160', nameEn: 'Inventory Assets', nameAr: 'أصول المخزون', accountType: 'assets', accountLevel: 3, balanceType: 'debit', parentCode: '1100', essential: false, recommended: true, description: 'مخزون السلع والمواد', isHeader: true },
