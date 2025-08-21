@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, Wand2, CheckCircle, Folder, Skull } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -23,7 +23,7 @@ import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
 import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
-import { AccountMaintenanceTools } from './AccountMaintenanceTools';
+
 import AccountsListWithActions from './AccountsListWithActions';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
@@ -368,7 +368,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <span>قائمة الحسابات</span>
             <Layers className="h-4 w-4" />
@@ -388,10 +388,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <TabsTrigger value="visualization" className="flex items-center gap-2">
             <span>العرض التفاعلي</span>
             <Eye className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="maintenance" className="flex items-center gap-2">
-            <span>أدوات الصيانة</span>
-            <Wand2 className="h-4 w-4" />
           </TabsTrigger>
         </TabsList>
 
@@ -579,10 +575,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <EnhancedAccountsVisualization />
         </TabsContent>
 
-        {/* Maintenance Tools Tab */}
-        <TabsContent value="maintenance">
-          <AccountMaintenanceTools />
-        </TabsContent>
       </Tabs>
 
       {/* Smart Wizard Dialog */}
