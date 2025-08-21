@@ -144,20 +144,20 @@ export const useDirectBulkAccountDeletion = () => {
         ? accounts 
         : accounts.filter(account => !account.is_system);
       
-      console.log('🚀 [BULK_DELETE] استخدام الدالة المبسطة للحذف الجماعي');
+      console.log('🚀 [BULK_DELETE] استخدام الدالة المصححة للحذف الجماعي');
       
-      // استخدام الدالة المبسطة للحذف الجماعي
+      // استخدام الدالة المصححة للحذف الجماعي
       const { data: bulkResult, error: bulkError } = await supabase.rpc('direct_delete_all_accounts', {
         target_company_id: companyId,
         include_system_accounts: forceDeleteSystem
       });
       
       if (bulkError) {
-        console.error('❌ [BULK_DELETE] خطأ في الدالة المبسطة:', bulkError);
+        console.error('❌ [BULK_DELETE] خطأ في الدالة المصححة:', bulkError);
         throw new Error(`خطأ في حذف جميع الحسابات: ${bulkError.message}`);
       }
       
-      console.log('📊 [BULK_DELETE] نتيجة الدالة المبسطة:', bulkResult);
+      console.log('📊 [BULK_DELETE] نتيجة الدالة المصححة:', bulkResult);
       
       const bulkData = bulkResult as any;
       
