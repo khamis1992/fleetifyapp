@@ -22,6 +22,12 @@ export const useCopySelectedAccounts = () => {
         throw new Error("لم يتم تحديد أي حسابات");
       }
 
+      console.log('📋 [OLD_COPY_SELECTED] استخدام النسخ المحدد القديم:', {
+        accountCodesCount: accountCodes.length,
+        selectedAccountsCount: selectedAccounts.length,
+        sampleCodes: accountCodes.slice(0, 5)
+      });
+
       // استدعاء الوظيفة الجديدة لنسخ الحسابات المحددة
       const { error } = await supabase.rpc("copy_selected_accounts_to_company", {
         target_company_id: companyId,

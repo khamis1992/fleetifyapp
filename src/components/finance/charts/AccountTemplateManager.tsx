@@ -66,6 +66,11 @@ export const AccountTemplateManager: React.FC = () => {
     } else if (templateId === 'car_rental') {
       // استخدام النسخ المباشر للحصول على جميع الحسابات
       console.log('🚗 [TEMPLATE] تطبيق قالب التأجير باستخدام النسخ المباشر');
+      console.log('🔍 [TEMPLATE] التحقق من الـ hooks المتاحة:', {
+        hasDirectTemplateCopy: !!directTemplateCopy,
+        hasCopySelectedAccounts: !!copySelectedAccounts,
+        hasCopyDefaultAccounts: !!copyDefaultAccounts
+      });
       
       // عرض إحصائيات القالب قبل النسخ
       const accounts = getAccountsByBusinessType('car_rental');
@@ -78,6 +83,10 @@ export const AccountTemplateManager: React.FC = () => {
         total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
       });
       
+      // إشعار فوري للمستخدم
+      toast.info(`🚀 سيتم استخدام النظام المحسن لنسخ ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`);
+      
+      console.log('🎯 [TEMPLATE] استدعاء directTemplateCopy...');
       directTemplateCopy.mutate('car_rental');
     } else {
       console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للقالب:', templateId);
@@ -222,6 +231,34 @@ export const AccountTemplateManager: React.FC = () => {
                 </>
               )}
             </Button>
+            
+            {/* زر فرض النسخ المحسن للتأجير */}
+            {template.id === 'car_rental' && (
+              <Button 
+                size="sm"
+                variant="default"
+                onClick={() => {
+                  console.log('🚀 [FORCE_NEW] فرض استخدام النظام المحسن');
+                  toast.info('🚀 فرض استخدام النظام المحسن الجديد');
+                  directTemplateCopy.mutate('car_rental');
+                }}
+                disabled={directTemplateCopy.isPending}
+                className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
+                title="فرض النظام المحسن"
+              >
+                {directTemplateCopy.isPending ? (
+                  <>
+                    <Clock className="h-3 w-3" />
+                    <span className="text-xs">محسن...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs">محسن</span>
+                    <CheckCircle className="h-3 w-3" />
+                  </>
+                )}
+              </Button>
+            )}
             <Button 
               size="sm" 
               variant="outline"

@@ -352,17 +352,26 @@ export const useCopyDefaultAccounts = () => {
       
       validateCompanyAccess(companyId);
 
+      console.log('📋 [OLD_COPY_DEFAULT] استخدام النسخ الافتراضي القديم (232 حساب)');
+      
       const { error } = await supabase.rpc("copy_default_accounts_to_company", {
         target_company_id: companyId,
       });
 
       if (error) throw new Error(`فشل في نسخ الحسابات الافتراضية: ${error.message}`);
     },
+    onMutate: () => {
+      console.log('⚠️ [OLD_COPY_DEFAULT] تم استدعاء النسخ الافتراضي القديم!');
+      toast({
+        title: "⚠️ النظام القديم",
+        description: "يتم استخدام النظام القديم (232 حساب فقط)",
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
       toast({
-        title: "تم نسخ الحسابات الافتراضية",
-        description: "تم إضافة دليل الحسابات الافتراضي للشركة",
+        title: "تم نسخ الحسابات الافتراضية (القديم)",
+        description: "تم إضافة دليل الحسابات الافتراضي للشركة (232 حساب)",
       });
     },
     onError: (error: any) => {
