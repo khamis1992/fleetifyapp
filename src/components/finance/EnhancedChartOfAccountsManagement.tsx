@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { EnhancedAccountDeleteDialog } from '@/components/finance/EnhancedAccountDeleteDialog';
+import { SimpleAccountDeleteDialog } from '@/components/finance/SimpleAccountDeleteDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -694,11 +694,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         }}
       />
 
-      {/* Enhanced Delete Account Dialog */}
-      <EnhancedAccountDeleteDialog
+      {/* Simple Delete Account Dialog */}
+      <SimpleAccountDeleteDialog
         isOpen={showDeleteDialog}
         onClose={() => {
-          console.log('[DELETE_DIALOG] Enhanced dialog closing, clearing account...');
+          console.log('[DELETE_DIALOG] Simple dialog closing, clearing account...');
           setShowDeleteDialog(false);
           setEditingAccount(null);
         }}

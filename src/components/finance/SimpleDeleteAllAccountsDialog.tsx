@@ -12,16 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+
 import { 
   Loader2, 
   AlertTriangle, 
@@ -31,7 +22,7 @@ import {
   XCircle
 } from "lucide-react";
 import { useDirectBulkAccountDeletion, useDiagnoseAccountDeletionFailures, useCleanupAllReferences } from "@/hooks/useDirectAccountDeletion";
-import { useChartOfAccounts, useDeleteAccount } from "@/hooks/useChartOfAccounts";
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import AccountDeletionStats from "./AccountDeletionStats";
@@ -55,14 +46,12 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const [deletionProgress, setDeletionProgress] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any>(null);
-  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const { data: allAccounts, isLoading: accountsLoading } = useChartOfAccounts();
   const deleteAllAccounts = useDirectBulkAccountDeletion();
   const diagnoseFailures = useDiagnoseAccountDeletionFailures();
   const cleanupReferences = useCleanupAllReferences();
-  const deleteSingleAccount = useDeleteAccount();
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isValidConfirmation = confirmationInput === CONFIRMATION_TEXT;
@@ -70,25 +59,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
   const systemAccounts = allAccounts?.filter(acc => acc.is_system).length || 0;
   const regularAccounts = totalAccounts - systemAccounts;
 
-  const handleDeleteSingle = async (accountId: string, accountCode: string) => {
-    if (!accountId) return;
-    
-    setDeletingAccountId(accountId);
-    
-    try {
-      console.log('[DELETE_SINGLE] حذف حساب منفرد:', { accountId, accountCode });
-      
-      await deleteSingleAccount.mutateAsync(accountId);
-      
-      toast.success(`تم حذف الحساب ${accountCode} بنجاح`);
-      
-    } catch (error: any) {
-      console.error('[DELETE_SINGLE] فشل حذف الحساب:', error);
-      toast.error(`فشل في حذف الحساب ${accountCode}: ${error.message}`);
-    } finally {
-      setDeletingAccountId(null);
-    }
-  };
+
 
   const handleDeleteAll = async () => {
     if (!isValidConfirmation) {
@@ -151,7 +122,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
     setDeletionProgress(0);
     setShowResults(false);
     setResults(null);
-    setDeletingAccountId(null);
     onOpenChange(false);
   };
 
@@ -289,89 +259,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                </AlertDescription>
              </Alert>
 
-                           {/* قائمة الحسابات مع أزرار الحذف المنفرد */}
-              <div className="space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" />
-                  قائمة الحسابات ({totalAccounts} حساب)
-                </h4>
-                
-                <ScrollArea className="h-64 border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">رمز الحساب</TableHead>
-                        <TableHead className="text-right">اسم الحساب</TableHead>
-                        <TableHead className="text-center">النوع</TableHead>
-                        <TableHead className="text-center">الحالة</TableHead>
-                        <TableHead className="text-center">إجراءات</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allAccounts?.map((account) => (
-                        <TableRow key={account.id}>
-                          <TableCell className="font-mono text-sm">
-                            {account.account_code}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div>
-                              <div className="font-medium">
-                                {account.account_name_ar || account.account_name}
-                              </div>
-                              {account.account_name_ar && (
-                                <div className="text-xs text-muted-foreground">
-                                  {account.account_name}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="space-y-1">
-                              <Badge variant="outline" className="text-xs">
-                                {account.account_type === 'asset' ? 'أصول' :
-                                 account.account_type === 'liability' ? 'خصوم' :
-                                 account.account_type === 'equity' ? 'حقوق ملكية' :
-                                 account.account_type === 'revenue' ? 'إيرادات' :
-                                 account.account_type === 'expense' ? 'مصروفات' :
-                                 account.account_type}
-                              </Badge>
-                              {account.is_system && (
-                                <Badge variant="destructive" className="text-xs">
-                                  نظامي
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={account.is_active ? 'default' : 'secondary'}>
-                              {account.is_active ? 'نشط' : 'غير نشط'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteSingle(account.id, account.account_code)}
-                              disabled={deletingAccountId === account.id || isDeleting}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              {deletingAccountId === account.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-                
-                <p className="text-sm text-muted-foreground">
-                  💡 يمكنك حذف الحسابات واحد تلو الآخر، أو استخدام "حذف جميع الحسابات" أدناه
-                </p>
-              </div>
+             
 
               {/* أدوات التحضير */}
               <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
