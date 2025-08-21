@@ -144,66 +144,41 @@ export const useDirectBulkAccountDeletion = () => {
         ? accounts 
         : accounts.filter(account => !account.is_system);
       
-      let deleted_count = 0;
-      let deactivated_count = 0;
-      let failed_count = 0;
+      console.log('🚀 [BULK_DELETE] استخدام الدالة المبسطة للحذف الجماعي');
       
-      // حذف كل حساب باستخدام comprehensive_delete_account (نفس منطق الحذف الفردي)
-      for (const account of accountsToProcess) {
-        try {
-          console.log(`🗑️ معالجة الحساب: ${account.account_code} (${account.id})`);
-          
-          // استخدام نفس الدالة المستخدمة في الحذف الفردي
-          const { data, error } = await supabase.rpc('comprehensive_delete_account', {
-            account_id_param: account.id,
-            deletion_mode: deletionMode // استخدام النمط المحدد من المستخدم
-          });
-          
-          if (error) {
-            console.error(`❌ فشل حذف الحساب ${account.account_code}:`, error);
-            failed_count++;
-          } else {
-            // تحليل النتيجة بنفس طريقة الحذف الفردي
-            const result = data as any;
-            console.log(`📋 نتيجة معالجة ${account.account_code}:`, result);
-            
-            if (result && typeof result === 'object' && 'action' in result) {
-              if (result.action === 'deleted') {
-                deleted_count++;
-                console.log(`✅ تم حذف الحساب ${account.account_code} نهائياً`);
-              } else if (result.action === 'deactivated' || result.action === 'soft_deleted') {
-                deactivated_count++;
-                console.log(`⚠️ تم إلغاء تفعيل الحساب ${account.account_code}`);
-              } else {
-                // في حالة عدم وضوح النتيجة، نعتبرها نجاح
-                deleted_count++;
-                console.log(`✅ تم معالجة الحساب ${account.account_code} بنجاح`);
-              }
-            } else {
-              // إذا لم تعد الدالة كائن واضح، نعتبرها نجاح
-              deleted_count++;
-              console.log(`✅ تم معالجة الحساب ${account.account_code}`);
-            }
-          }
-        } catch (err: any) {
-          console.error(`❌ خطأ في معالجة الحساب ${account.account_code}:`, err);
-          failed_count++;
-        }
-        
-        // إضافة تأخير صغير لتجنب الضغط على قاعدة البيانات
-        await new Promise(resolve => setTimeout(resolve, 50));
+      // استخدام الدالة المبسطة للحذف الجماعي
+      const { data: bulkResult, error: bulkError } = await supabase.rpc('direct_delete_all_accounts', {
+        target_company_id: companyId,
+        include_system_accounts: forceDeleteSystem
+      });
+      
+      if (bulkError) {
+        console.error('❌ [BULK_DELETE] خطأ في الدالة المبسطة:', bulkError);
+        throw new Error(`خطأ في حذف جميع الحسابات: ${bulkError.message}`);
       }
+      
+      console.log('📊 [BULK_DELETE] نتيجة الدالة المبسطة:', bulkResult);
+      
+      const bulkData = bulkResult as any;
+      
+      if (!bulkData.success) {
+        throw new Error(bulkData.error || 'فشل في حذف الحسابات');
+      }
+      
+      const deleted_count = bulkData.deleted_count || 0;
+      const deactivated_count = bulkData.deactivated_count || 0;
+      const failed_count = bulkData.failed_count || 0;
       
       const endTime = Date.now();
       const duration = `${endTime - startTime}ms`;
       
       const result: BulkDeletionResult = {
         success: true,
-        message: `تم معالجة ${accountsToProcess.length} حساب بنجاح`,
+        message: bulkData.message || `تم معالجة ${bulkData.total_processed || 0} حساب بنجاح`,
         deleted_count,
         deactivated_count,
         failed_count,
-        total_processed: accountsToProcess.length,
+        total_processed: bulkData.total_processed || 0,
         operation_duration: duration
       };
       
