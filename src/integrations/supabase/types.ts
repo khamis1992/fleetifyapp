@@ -10658,6 +10658,10 @@ export type Database = {
           vehicle_number: string
         }[]
       }
+      recalculate_account_levels: {
+        Args: { company_id_param: string }
+        Returns: undefined
+      }
       recalculate_bank_balance: {
         Args: { bank_id_param: string }
         Returns: number
@@ -10675,6 +10679,10 @@ export type Database = {
       refresh_company_stats_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      reset_company_chart_for_complete_template: {
+        Args: { target_company_id: string; template_name?: string }
+        Returns: Json
       }
       reverse_journal_entry: {
         Args: {
