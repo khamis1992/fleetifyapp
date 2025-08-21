@@ -192,20 +192,26 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                              const diagnosis = await diagnoseFailures.mutateAsync();
                              console.log('🔍 تشخيص مفصل للأخطاء:', diagnosis);
                              
-                              const summary = (diagnosis as any)?.analysis_summary;
-                              let message = 'أسباب الفشل:\n';
-                              if (summary?.vendor_account_issues > 0) {
-                                message += `• ${summary.vendor_account_issues} حساب مرتبط بحسابات التجار\n`;
-                              }
-                              if (summary?.customer_account_issues > 0) {
-                                message += `• ${summary.customer_account_issues} حساب مرتبط بحسابات العملاء\n`;
-                              }
-                              if (summary?.mapping_issues > 0) {
-                                message += `• ${summary.mapping_issues} حساب مرتبط بتخصيصات الحسابات\n`;
-                              }
-                              if (summary?.maintenance_issues > 0) {
-                                message += `• ${summary.maintenance_issues} حساب مرتبط بحسابات الصيانة\n`;
-                              }
+                                                           const summary = (diagnosis as any)?.analysis_summary;
+                             let message = 'تحليل أسباب الفشل:\n';
+                             if (summary?.system_account_issues > 0) {
+                               message += `• ${summary.system_account_issues} حساب نظامي محمي\n`;
+                             }
+                             if (summary?.transaction_issues > 0) {
+                               message += `• ${summary.transaction_issues} حساب يحتوي على معاملات\n`;
+                             }
+                             if (summary?.child_account_issues > 0) {
+                               message += `• ${summary.child_account_issues} حساب له حسابات فرعية\n`;
+                             }
+                             
+                             // إضافة توصيات
+                             const recommendations = (diagnosis as any)?.recommendations;
+                             if (recommendations && recommendations.length > 0) {
+                               message += '\nالتوصيات:\n';
+                               recommendations.forEach((rec: string, index: number) => {
+                                 message += `${index + 1}. ${rec}\n`;
+                               });
+                             }
                              
                              toast.info(message);
                            } catch (error: any) {
@@ -295,12 +301,12 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
                         const diagnosis = await diagnoseFailures.mutateAsync();
                         console.log('🔍 تشخيص شامل:', diagnosis);
                         
-                         const summary = (diagnosis as any)?.analysis_summary;
-                         let message = `تحليل ${(diagnosis as any)?.total_issues || 0} مشكلة:\n`;
-                         message += `• ${summary?.vendor_account_issues || 0} مشكلة في حسابات التجار\n`;
-                         message += `• ${summary?.customer_account_issues || 0} مشكلة في حسابات العملاء\n`;
-                         message += `• ${summary?.mapping_issues || 0} مشكلة في ربط الحسابات\n`;
-                         message += `• ${summary?.maintenance_issues || 0} مشكلة في حسابات الصيانة`;
+                                                const summary = (diagnosis as any)?.analysis_summary;
+                       let message = `تحليل ${(diagnosis as any)?.total_accounts || 0} حساب:\n`;
+                       message += `• ${summary?.system_account_issues || 0} حساب نظامي\n`;
+                       message += `• ${summary?.transaction_issues || 0} حساب له معاملات\n`;
+                       message += `• ${summary?.child_account_issues || 0} حساب له حسابات فرعية\n`;
+                       message += `• ${(diagnosis as any)?.safe_to_delete || 0} حساب آمن للحذف`;
                         
                         toast.info(message);
                       } catch (error: any) {

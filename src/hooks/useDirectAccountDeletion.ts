@@ -288,8 +288,8 @@ export const useDiagnoseAccountDeletionFailures = () => {
       
       console.log('🔍 [DIAGNOSE] تشخيص أسباب فشل حذف الحسابات للشركة:', companyId);
       
-      const { data, error } = await supabase.rpc('analyze_account_deletion_enhanced', {
-        account_id_param: companyId
+      const { data, error } = await supabase.rpc('simple_account_diagnosis', {
+        target_company_id: companyId
       });
       
       if (error) {
@@ -329,7 +329,7 @@ export const useCleanupAllReferences = () => {
       
       console.log('🧹 [CLEANUP] تنظيف جميع المراجع المعلقة للشركة:', companyId);
       
-      const { data, error } = await supabase.rpc('cleanup_all_account_references', {
+      const { data, error } = await supabase.rpc('simple_cleanup_references', {
         target_company_id: companyId
       });
       
