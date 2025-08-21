@@ -366,3 +366,71 @@ export const useCleanupAllReferences = () => {
     }
   });
 };
+
+/**
+ * Hook مبسط لحذف جميع الحسابات
+ */
+export const useDirectBulkAccountDeletion = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async ({
+      forceDeleteSystem = false
+    }: {
+      forceDeleteSystem?: boolean;
+    } = {}) => {
+      const companyId = user?.profile?.company_id;
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+      
+      console.log('🗑️ [BULK_DELETE] بدء حذف جميع الحسابات:', {
+        companyId,
+        forceDeleteSystem
+      });
+      
+      const { data, error } = await supabase.rpc('direct_delete_all_accounts', {
+        target_company_id: companyId,
+        include_system_accounts: forceDeleteSystem
+      });
+      
+      if (error) {
+        console.error('❌ [BULK_DELETE] خطأ في RPC:', error);
+        throw new Error(error.message);
+      }
+      
+      if (!data.success) {
+        console.error('❌ [BULK_DELETE] فشل العملية:', data.error);
+        throw new Error(data.error);
+      }
+      
+      console.log('✅ [BULK_DELETE] نجح الحذف الجماعي:', data);
+      return data;
+    },
+    onSuccess: (result) => {
+      // تحديث جميع الاستعلامات المرتبطة
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      
+      toast.success(result.message);
+      
+      // عرض تفاصيل إضافية
+      if (result.deleted_count > 0) {
+        toast.info(`تم حذف ${result.deleted_count} حساب نهائياً`);
+      }
+      if (result.deactivated_count > 0) {
+        toast.info(`تم إلغاء تفعيل ${result.deactivated_count} حساب`);
+      }
+      if (result.failed_count > 0) {
+        toast.warning(`فشل في معالجة ${result.failed_count} حساب`);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ [BULK_DELETE] فشل hook الحذف الجماعي:', error);
+      toast.error('خطأ في حذف جميع الحسابات: ' + error.message);
+    }
+  });
+};
