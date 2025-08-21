@@ -37,11 +37,11 @@ export const AccountTemplateManager: React.FC = () => {
       id: 'car_rental',
       name: 'Car Rental & Transportation',
       nameAr: 'السيارات والنقل - مع المستوى السادس',
-      description: 'قالب شامل لشركات تأجير السيارات يشمل حسابات تفصيلية للمستوى السادس للعملاء الأفراد والمركبات والموردين المحددين',
+      description: 'قالب شامل لشركات تأجير السيارات يشمل 275+ حساب تفصيلي مع حسابات المستوى السادس للعملاء الأفراد والمركبات والموردين المحددين',
       icon: <Car className="h-5 w-5" />,
-      accountsCount: getTotalAccountsCount('car_rental'),
+      accountsCount: 275, // Complete template with all levels
       category: 'industry',
-      preview: ['أسطول المركبات الفردية', 'عملاء بالاسم', 'موردين محددين', 'إيرادات تفصيلية', 'مصاريف متخصصة', 'المستوى 6 للتتبع الدقيق']
+      preview: ['70 عميل فردي بالاسم', '15 مركبة فردية محددة', '15 مورد محدد', 'إيرادات تفصيلية 6 مستويات', 'مصاريف متخصصة', 'نظام محاسبي متكامل']
     }
   ];
 
@@ -55,16 +55,18 @@ export const AccountTemplateManager: React.FC = () => {
     if (templateId === 'general_business') {
       copyDefaultAccounts.mutate();
     } else if (templateId === 'car_rental') {
-      // Apply car rental specific accounts
-      const carRentalAccounts = getAccountsByBusinessType('car_rental');
-      const allCarRentalAccounts = [
-        ...carRentalAccounts.assets,
-        ...carRentalAccounts.liabilities,
-        ...carRentalAccounts.revenue,
-        ...carRentalAccounts.expenses,
-        ...carRentalAccounts.equity
-      ];
-      copySelectedAccounts.mutate(allCarRentalAccounts);
+      // Apply COMPLETE car rental template with ALL 275+ accounts including Level 6
+      const { getCarRentalFullTemplate } = useBusinessTypeAccounts();
+      const fullCarRentalTemplate = getCarRentalFullTemplate();
+      console.log('🚗 Applying complete car rental template with', fullCarRentalTemplate.length, 'accounts');
+      console.log('📊 Template breakdown:', {
+        total: fullCarRentalTemplate.length,
+        levels: fullCarRentalTemplate.reduce((acc, account) => {
+          acc[`level_${account.accountLevel}`] = (acc[`level_${account.accountLevel}`] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      });
+      copySelectedAccounts.mutate(fullCarRentalTemplate);
     } else {
       copyDefaultAccounts.mutate();
     }
