@@ -190,7 +190,6 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
-            <Skull className="h-5 w-5" />
           </DialogTitle>
         </DialogHeader>
 
