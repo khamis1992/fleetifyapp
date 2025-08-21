@@ -10676,10 +10676,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      reset_company_chart_for_complete_template: {
-        Args: { target_company_id: string; template_name?: string }
-        Returns: Json
-      }
       reverse_journal_entry: {
         Args: {
           entry_id: string
