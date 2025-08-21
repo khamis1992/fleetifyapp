@@ -226,83 +226,4 @@ export const useDirectBulkAccountDeletion = () => {
   });
 };
 
-/**
- * Hook لمعاينة حذف جميع الحسابات
- */
-export const useDirectDeletionPreview = () => {
-  const { user } = useAuth();
-  
-  return useMutation({
-    mutationFn: async ({ 
-      forceDeleteSystem = false 
-    }: { 
-      forceDeleteSystem?: boolean 
-    } = {}) => {
-      const companyId = user?.profile?.company_id;
-      if (!companyId) {
-        throw new Error('معرف الشركة غير متوفر');
-      }
-      
-      console.log('📊 [BULK_PREVIEW] جلب معاينة حذف جميع الحسابات:', {
-        companyId,
-        forceDeleteSystem
-      });
-      
-      // جلب جميع الحسابات النشطة
-      const { data: accounts, error } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code, account_name, is_system')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
-      
-      if (error) {
-        throw new Error(`خطأ في جلب الحسابات: ${error.message}`);
-      }
-      
-      if (!accounts) {
-        return {
-          success: true,
-          total_accounts: 0,
-          system_accounts: 0,
-          regular_accounts: 0,
-          will_be_deleted: 0,
-          will_be_deactivated: 0,
-          sample_accounts: [],
-          system_accounts_sample: [],
-          warning_message: 'لا توجد حسابات نشطة'
-        };
-      }
-      
-      const systemAccounts = accounts.filter(acc => acc.is_system);
-      const regularAccounts = accounts.filter(acc => !acc.is_system);
-      
-      const accountsToProcess = forceDeleteSystem ? accounts : regularAccounts;
-      
-      return {
-        success: true,
-        total_accounts: accounts.length,
-        system_accounts: systemAccounts.length,
-        regular_accounts: regularAccounts.length,
-        will_be_deleted: accountsToProcess.length,
-        will_be_deactivated: 0, // سيتم تحديد هذا أثناء العملية الفعلية
-        sample_accounts: accountsToProcess.slice(0, 5).map(acc => ({
-          account_code: acc.account_code,
-          account_name: acc.account_name,
-          action: 'سيتم المعالجة'
-        })),
-        system_accounts_sample: systemAccounts.slice(0, 5).map(acc => ({
-          account_code: acc.account_code,
-          account_name: acc.account_name,
-          action: forceDeleteSystem ? 'سيتم المعالجة' : 'سيتم التجاهل'
-        })),
-        warning_message: forceDeleteSystem 
-          ? 'تحذير: سيتم حذف جميع الحسابات بما في ذلك حسابات النظام!'
-          : 'سيتم حذف الحسابات العادية فقط. حسابات النظام محمية.'
-      };
-    },
-    onError: (error) => {
-      console.error('❌ [BULK_PREVIEW] فشل hook المعاينة:', error);
-      toast.error('خطأ في معاينة الحذف: ' + error.message);
-    }
-  });
-};
+
