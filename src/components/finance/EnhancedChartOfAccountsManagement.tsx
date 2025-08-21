@@ -109,8 +109,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   };
 
   const handleDeleteAllAccounts = async () => {
-    if (!isSuperAdmin) {
-      toast.error('ليس لديك صلاحية لحذف جميع الحسابات');
+    // فحص الصلاحيات مع تفاصيل أكثر
+    console.log('🔐 [AUTH_CHECK] فحص صلاحيات المستخدم:', {
+      userId: user?.id,
+      userRoles: user?.roles,
+      isSuperAdmin: user?.roles?.includes('super_admin'),
+      hasRoles: !!user?.roles
+    });
+    
+    if (!user?.roles?.includes('super_admin')) {
+      toast.error('ليس لديك صلاحية لحذف جميع الحسابات - مطلوب صلاحية المدير العام');
       return;
     }
 
@@ -485,21 +493,19 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 <Plus className="h-4 w-4" />
               </Button>
               
-              {canDeleteAll && (
-                <Button 
-                  variant="destructive"
-                  onClick={handleDeleteAllAccounts}
-                  disabled={deleteAccount.isPending}
-                  className="flex items-center gap-2"
-                >
-                  {deleteAccount.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Skull className="h-4 w-4" />
-                  )}
-                  <span>حذف جميع الحسابات</span>
-                </Button>
-              )}
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteAllAccounts}
+                disabled={deleteAccount.isPending}
+                className="flex items-center gap-2"
+              >
+                {deleteAccount.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Skull className="h-4 w-4" />
+                )}
+                <span>حذف جميع الحسابات</span>
+              </Button>
             </div>
             
 
