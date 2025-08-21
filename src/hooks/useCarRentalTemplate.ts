@@ -383,12 +383,12 @@ export const CAR_RENTAL_TEMPLATE: BusinessTypeAccounts = {
 
 // دالة للحصول على قالب التأجير المنظم
 export const getCarRentalTemplate = (): BusinessTypeAccounts => {
-  return CAR_RENTAL_ACCOUNTS;
+  return CAR_RENTAL_TEMPLATE;
 };
 
 // دالة لحساب إجمالي الحسابات في القالب المنظم
 export const getCarRentalTemplateCount = (): number => {
-  const template = CAR_RENTAL_ACCOUNTS;
+  const template = CAR_RENTAL_TEMPLATE;
   return template.assets.length + 
          template.liabilities.length + 
          template.revenue.length + 
