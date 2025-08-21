@@ -125,16 +125,21 @@ export const CAR_RENTAL_TEMPLATE: BusinessTypeAccounts = {
     { id: 'customer_deposits_receivable', code: '11921', nameEn: 'Customer Deposits Receivable', nameAr: 'ودائع العملاء المستحقة', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1192', essential: true, recommended: true, description: 'ودائع الضمان المستحقة من العملاء', isEntryLevel: true },
     { id: 'insurance_claims_receivable', code: '11931', nameEn: 'Insurance Claims Receivable', nameAr: 'مطالبات التأمين المستحقة', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1193', essential: false, recommended: true, description: 'المطالبات المستحقة من شركات التأمين', isEntryLevel: true },
 
-    // المركبات
+    // المركبات التفصيلية
     { id: 'sedan_fleet', code: '15111', nameEn: 'Sedan Fleet', nameAr: 'أسطول السيارات الصالون', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1511', essential: true, recommended: true, description: 'السيارات الصالون في الأسطول', isEntryLevel: true },
     { id: 'suv_fleet', code: '15112', nameEn: 'SUV Fleet', nameAr: 'أسطول السيارات الرياضية', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1511', essential: false, recommended: true, description: 'السيارات الرياضية في الأسطول', isEntryLevel: true },
     { id: 'van_fleet', code: '15113', nameEn: 'Van Fleet', nameAr: 'أسطول الحافلات الصغيرة', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1511', essential: false, recommended: true, description: 'الحافلات الصغيرة في الأسطول', isEntryLevel: true },
 
-    // المعدات
+    { id: 'trucks_fleet', code: '15121', nameEn: 'Trucks Fleet', nameAr: 'أسطول الشاحنات', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1512', essential: false, recommended: true, description: 'الشاحنات والمركبات التجارية', isEntryLevel: true },
+
+    // المعدات التفصيلية
     { id: 'gps_devices', code: '15211', nameEn: 'GPS Tracking Devices', nameAr: 'أجهزة التتبع', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1521', essential: true, recommended: true, description: 'أجهزة التتبع والملاحة', isEntryLevel: true },
     { id: 'safety_equipment', code: '15212', nameEn: 'Safety Equipment', nameAr: 'معدات السلامة', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1521', essential: false, recommended: true, description: 'معدات الأمان والسلامة', isEntryLevel: true },
+    { id: 'communication_devices', code: '15213', nameEn: 'Communication Devices', nameAr: 'أجهزة الاتصال', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1521', essential: false, recommended: true, description: 'أجهزة الاتصال والراديو', isEntryLevel: true },
 
-    // مجمع الإهلاك
+    { id: 'computers_printers', code: '15221', nameEn: 'Computers & Printers', nameAr: 'أجهزة الحاسوب والطابعات', accountType: 'assets', accountLevel: 5, balanceType: 'debit', parentCode: '1522', essential: false, recommended: true, description: 'أجهزة الحاسوب والطابعات', isEntryLevel: true },
+
+    // مجمع الإهلاك التفصيلي
     { id: 'vehicle_depreciation', code: '15911', nameEn: 'Vehicle Depreciation', nameAr: 'مجمع إهلاك المركبات', accountType: 'assets', accountLevel: 5, balanceType: 'credit', parentCode: '1591', essential: true, recommended: true, description: 'مجمع إهلاك أسطول المركبات', isEntryLevel: true },
     { id: 'equipment_depreciation', code: '15921', nameEn: 'Equipment Depreciation', nameAr: 'مجمع إهلاك المعدات', accountType: 'assets', accountLevel: 5, balanceType: 'credit', parentCode: '1592', essential: true, recommended: true, description: 'مجمع إهلاك المعدات والأجهزة', isEntryLevel: true }
   ],
