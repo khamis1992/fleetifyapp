@@ -18,6 +18,9 @@ import { AccountSelectionDialog } from './AccountSelectionDialog';
 import { useBusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
 import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { toast } from 'sonner';
 
 interface AccountTemplate {
   id: string;
@@ -32,6 +35,7 @@ interface AccountTemplate {
 
 export const AccountTemplateManager: React.FC = () => {
   const { getTotalAccountsCount, getAccountsByBusinessType } = useBusinessTypeAccounts();
+  const { companyId } = useUnifiedCompanyAccess();
   
   const PREDEFINED_TEMPLATES: AccountTemplate[] = [
     {
@@ -54,13 +58,29 @@ export const AccountTemplateManager: React.FC = () => {
   const directTemplateCopy = useDirectTemplateCopy();
 
   const handleApplyTemplate = (templateId: string) => {
+    console.log('🎯 [TEMPLATE] بدء تطبيق القالب:', templateId);
+    
     if (templateId === 'general_business') {
+      console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للأعمال العامة');
       copyDefaultAccounts.mutate();
     } else if (templateId === 'car_rental') {
       // استخدام النسخ المباشر للحصول على جميع الحسابات
-      console.log('🎯 [TEMPLATE] تطبيق قالب التأجير باستخدام النسخ المباشر');
+      console.log('🚗 [TEMPLATE] تطبيق قالب التأجير باستخدام النسخ المباشر');
+      
+      // عرض إحصائيات القالب قبل النسخ
+      const accounts = getAccountsByBusinessType('car_rental');
+      console.log('📊 [TEMPLATE] إحصائيات القالب:', {
+        assets: accounts.assets.length,
+        liabilities: accounts.liabilities.length,
+        revenue: accounts.revenue.length,
+        expenses: accounts.expenses.length,
+        equity: accounts.equity.length,
+        total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
+      });
+      
       directTemplateCopy.mutate('car_rental');
     } else {
+      console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للقالب:', templateId);
       copyDefaultAccounts.mutate();
     }
   };
@@ -80,6 +100,68 @@ export const AccountTemplateManager: React.FC = () => {
         setSelectedTemplate(null);
       }
     });
+  };
+
+  // دالة اختبار مباشرة للتشخيص
+  const handleDirectTest = async () => {
+    if (!companyId) {
+      toast.error('معرف الشركة غير متوفر');
+      return;
+    }
+
+    console.log('🧪 [DIRECT_TEST] بدء الاختبار المباشر');
+    
+    try {
+      // جلب حسابات القالب
+      const templateAccounts = getAccountsByBusinessType('car_rental');
+      const allAccounts = [
+        ...templateAccounts.assets,
+        ...templateAccounts.liabilities,
+        ...templateAccounts.revenue,
+        ...templateAccounts.expenses,
+        ...templateAccounts.equity
+      ];
+
+      console.log('📊 [DIRECT_TEST] إحصائيات القالب:', {
+        total: allAccounts.length,
+        assets: templateAccounts.assets.length,
+        liabilities: templateAccounts.liabilities.length,
+        revenue: templateAccounts.revenue.length,
+        expenses: templateAccounts.expenses.length,
+        equity: templateAccounts.equity.length
+      });
+
+      // جلب الحسابات الموجودة
+      const { data: existingAccounts, error } = await supabase
+        .from('chart_of_accounts')
+        .select('account_code, account_name')
+        .eq('company_id', companyId);
+
+      if (error) {
+        console.error('❌ [DIRECT_TEST] خطأ في جلب الحسابات:', error);
+        toast.error('خطأ في جلب الحسابات: ' + error.message);
+        return;
+      }
+
+      console.log('📋 [DIRECT_TEST] الحسابات الموجودة:', existingAccounts?.length || 0);
+
+      // حساب الحسابات التي ستتم إضافتها
+      const existingCodes = new Set(existingAccounts?.map(acc => acc.account_code) || []);
+      const newAccounts = allAccounts.filter(acc => !existingCodes.has(acc.code));
+
+      console.log('🆕 [DIRECT_TEST] الحسابات الجديدة:', {
+        newAccountsCount: newAccounts.length,
+        existingAccountsCount: existingCodes.size,
+        totalTemplateAccounts: allAccounts.length,
+        sampleNewAccounts: newAccounts.slice(0, 5).map(acc => acc.code + ' - ' + acc.nameAr)
+      });
+
+      toast.success(`اختبار مكتمل: ${newAccounts.length} حساب جديد من أصل ${allAccounts.length} في القالب`);
+
+    } catch (error: any) {
+      console.error('❌ [DIRECT_TEST] خطأ في الاختبار:', error);
+      toast.error('خطأ في الاختبار: ' + error.message);
+    }
   };
 
   const renderTemplateCard = (template: AccountTemplate) => (
@@ -148,6 +230,42 @@ export const AccountTemplateManager: React.FC = () => {
             >
               اختيار الحسابات
             </Button>
+            
+            {/* أزرار اختبار للتشخيص */}
+            {template.id === 'car_rental' && (
+              <div className="flex gap-1">
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={handleDirectTest}
+                  className="px-2"
+                  title="اختبار شامل"
+                >
+                  🧪
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={() => {
+                    console.log('🎯 [QUICK_TEST] اختبار سريع للقالب');
+                    const accounts = getAccountsByBusinessType('car_rental');
+                    console.log('📊 أعداد الحسابات:', {
+                      assets: accounts.assets.length,
+                      liabilities: accounts.liabilities.length,
+                      revenue: accounts.revenue.length,
+                      expenses: accounts.expenses.length,
+                      equity: accounts.equity.length,
+                      total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
+                    });
+                    toast.info(`القالب يحتوي على ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`);
+                  }}
+                  className="px-2"
+                  title="اختبار سريع"
+                >
+                  ⚡
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

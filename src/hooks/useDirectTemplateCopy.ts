@@ -50,6 +50,13 @@ export const useDirectTemplateCopy = () => {
         total: allAccounts.length
       });
 
+      // عرض أول 5 حسابات من كل نوع للتحقق
+      console.log('📋 [DIRECT_COPY] عينة من الحسابات:');
+      console.log('أصول:', templateAccounts.assets.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
+      console.log('خصوم:', templateAccounts.liabilities.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
+      console.log('إيرادات:', templateAccounts.revenue.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
+      console.log('مصروفات:', templateAccounts.expenses.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
+
       // جلب الحسابات الموجودة في الشركة
       const { data: existingAccounts, error: fetchError } = await supabase
         .from('chart_of_accounts')
@@ -110,6 +117,11 @@ export const useDirectTemplateCopy = () => {
             }
           }
 
+          // تحويل نوع الحساب للصيغة الصحيحة المتوقعة في قاعدة البيانات
+          const dbAccountType = account.accountType === 'expenses' ? 'expenses' : account.accountType;
+          
+          console.log(`📝 [DIRECT_COPY] إنشاء الحساب: ${account.code} - ${account.nameAr} (نوع: ${dbAccountType})`);
+
           // إنشاء الحساب
           const { data: newAccount, error: insertError } = await supabase
             .from('chart_of_accounts')
@@ -118,7 +130,7 @@ export const useDirectTemplateCopy = () => {
               account_code: account.code,
               account_name: account.nameEn,
               account_name_ar: account.nameAr,
-              account_type: account.accountType,
+              account_type: dbAccountType,
               balance_type: account.balanceType,
               account_level: account.accountLevel,
               is_header: account.isHeader || false,
@@ -162,7 +174,25 @@ export const useDirectTemplateCopy = () => {
       };
 
       console.log('✅ [DIRECT_COPY] اكتملت عملية النسخ:', result);
+      
+      // تشخيص إضافي مفصل
+      if (failed_accounts > 0) {
+        console.error('❌ [DIRECT_COPY] الأخطاء:', errors.slice(0, 5));
+      }
+      
+      if (copied_accounts < allAccounts.length / 2) {
+        console.warn('⚠️ [DIRECT_COPY] تم نسخ أقل من نصف الحسابات. قد تكون هناك مشكلة.');
+      }
+      
       return result;
+    },
+    onMutate: (businessType) => {
+      // إشعار بداية العملية
+      console.log('🚀 [DIRECT_COPY] تم استدعاء النسخ المباشر للقالب:', businessType);
+      toast({
+        title: "🚀 بدء النسخ المحسن الجديد",
+        description: "جاري نسخ جميع الحسابات مباشرة من القالب (النظام المحسن)...",
+      });
     },
     onSuccess: (result) => {
       // تحديث الاستعلامات
@@ -170,8 +200,8 @@ export const useDirectTemplateCopy = () => {
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] });
 
       toast({
-        title: "تم نسخ القالب بنجاح",
-        description: result.message,
+        title: "✅ تم نسخ القالب المحسن بنجاح",
+        description: `${result.message} (النسخ المباشر المحسن)`,
       });
 
       // إشعارات إضافية
