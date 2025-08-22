@@ -39,28 +39,36 @@ export const useDirectTemplateCopy = () => {
         try {
           console.log('🚗 [DIRECT_COPY] جلب القالب الكامل من JSON...');
           const response = await fetch('/car_rental_complete_template.json');
+          console.log('📡 [DIRECT_COPY] استجابة الخادم:', response.status, response.statusText);
+          
           if (!response.ok) {
-            throw new Error(`فشل في تحميل القالب: ${response.statusText}`);
+            throw new Error(`فشل في تحميل القالب: ${response.status} ${response.statusText}`);
           }
           
           const templateData = await response.json();
+          console.log('📊 [DIRECT_COPY] بيانات القالب المُحملة:', {
+            hasMetadata: !!templateData.template_metadata,
+            hasAccounts: !!templateData.chart_of_accounts,
+            accountsCount: templateData.chart_of_accounts?.length || 0
+          });
+          
           allAccounts = templateData.chart_of_accounts || [];
           
-          console.log('✅ [DIRECT_COPY] تم جلب القالب الكامل:', {
+          if (allAccounts.length === 0) {
+            throw new Error('قائمة الحسابات فارغة في القالب');
+          }
+          
+          console.log('✅ [DIRECT_COPY] تم جلب القالب الكامل بنجاح:', {
             total_accounts: allAccounts.length,
-            metadata: templateData.template_metadata
+            sample_accounts: allAccounts.slice(0, 3).map(acc => ({ 
+              code: acc.code, 
+              name: acc.name_ar,
+              level: acc.level
+            }))
           });
         } catch (error) {
-          console.error('❌ [DIRECT_COPY] خطأ في جلب القالب الكامل، التبديل للقالب الافتراضي:', error);
-          // استخدام القالب الافتراضي كبديل
-          const templateAccounts = getCarRentalTemplate();
-          allAccounts = [
-            ...templateAccounts.assets,
-            ...templateAccounts.liabilities,
-            ...templateAccounts.revenue,
-            ...templateAccounts.expenses,
-            ...templateAccounts.equity
-          ];
+          console.error('❌ [DIRECT_COPY] خطأ في جلب القالب الكامل:', error);
+          throw new Error(`فشل في تحميل القالب الكامل: ${error.message}`);
         }
       } else {
         // استخدام القالب الافتراضي للأنواع الأخرى
