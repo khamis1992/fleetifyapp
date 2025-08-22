@@ -144,29 +144,6 @@ export const AccountTemplateManager: React.FC = () => {
         </CardHeader>
         <CardContent>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-primary/10 rounded-lg">
-              <div className="text-2xl font-bold text-primary">{stats.totalAccounts}</div>
-              <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {metadata?.total_accounts !== stats.totalAccounts && 
-                  `(متوقع: ${metadata?.total_accounts})`
-                }
-              </div>
-            </div>
-            <div className="text-center p-4 bg-green-100 rounded-lg">
-              <div className="text-2xl font-bold text-green-700">{stats.essentialAccounts}</div>
-              <div className="text-sm text-muted-foreground">حسابات أساسية</div>
-            </div>
-            <div className="text-center p-4 bg-blue-100 rounded-lg">
-              <div className="text-2xl font-bold text-blue-700">{stats.entryLevelAccounts}</div>
-              <div className="text-sm text-muted-foreground">حسابات تشغيلية</div>
-            </div>
-            <div className="text-center p-4 bg-purple-100 rounded-lg">
-              <div className="text-2xl font-bold text-purple-700">6</div>
-              <div className="text-sm text-muted-foreground">مستويات هرمية</div>
-            </div>
-          </div>
 
           {/* Account Types Distribution */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
