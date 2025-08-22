@@ -163,9 +163,9 @@ export const useDirectTemplateCopy = () => {
             }
           }
 
-          console.log(`📝 [DIRECT_COPY] إنشاء الحساب: ${accountCode} - ${nameAr} (نوع: ${accountType})`);
+          console.log(`📝 [DIRECT_COPY] إنشاء الحساب: ${accountCode} - ${nameAr} (نوع: ${accountType}, مستوى: ${level})`);
 
-          // إنشاء الحساب
+          // إنشاء الحساب - التريغر سيحسب المستوى تلقائياً من كود الحساب
           const { data: newAccount, error: insertError } = await supabase
             .from('chart_of_accounts')
             .insert({
@@ -175,7 +175,7 @@ export const useDirectTemplateCopy = () => {
               account_name_ar: nameAr,
               account_type: accountType,
               balance_type: balanceType,
-              account_level: level,
+              // لا نرسل account_level - سيتم حسابه تلقائياً من التريغر
               is_header: isHeader,
               is_system: false,
               description: description,
@@ -183,7 +183,7 @@ export const useDirectTemplateCopy = () => {
               current_balance: 0,
               is_active: true
             })
-            .select('id')
+            .select('id, account_level')
             .single();
 
           if (insertError) {
@@ -196,7 +196,7 @@ export const useDirectTemplateCopy = () => {
             if (newAccount) {
               parentMapping.set(accountCode, newAccount.id);
             }
-            console.log(`✅ تم إنشاء الحساب: ${accountCode} - ${nameAr}`);
+            console.log(`✅ تم إنشاء الحساب: ${accountCode} - ${nameAr} (مستوى محسوب: ${newAccount?.account_level || 'غير محدد'})`);
           }
 
         } catch (error: any) {
