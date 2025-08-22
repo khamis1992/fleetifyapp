@@ -143,16 +143,6 @@ export const AccountTemplateManager: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Debug Information */}
-          <div className="mb-4 p-3 bg-muted/50 rounded-lg text-xs">
-            <div className="font-medium mb-2">معلومات التشخيص:</div>
-            <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-              <div>الحالة: {templateReady ? '✅ جاهز' : '❌ غير جاهز'}</div>
-              <div>البيانات الفعلية: {getAllAccounts().length}</div>
-              <div>البيانات المتوقعة: {metadata?.total_accounts || 0}</div>
-              <div>آخر تحديث: {new Date().toLocaleTimeString('ar-SA')}</div>
-            </div>
-          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="text-center p-4 bg-primary/10 rounded-lg">
