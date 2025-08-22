@@ -20,7 +20,7 @@ import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { getCarRentalTemplateCount } from '@/hooks/useCarRentalTemplate';
+import { getCarRentalTemplateCount, getCarRentalTemplate } from '@/hooks/useCarRentalTemplate';
 import { useToast } from '@/hooks/use-toast';
 
 interface AccountTemplate {
@@ -69,33 +69,18 @@ export const AccountTemplateManager: React.FC = () => {
       console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للأعمال العامة');
       copyDefaultAccounts.mutate();
     } else if (templateId === 'car_rental') {
-      // استخدام النسخ المباشر للحصول على جميع الحسابات
-      console.log('🚗 [TEMPLATE] تطبيق قالب التأجير باستخدام النسخ المباشر');
-      console.log('🔍 [TEMPLATE] التحقق من الـ hooks المتاحة:', {
-        hasDirectTemplateCopy: !!directTemplateCopy,
-        hasCopySelectedAccounts: !!copySelectedAccounts,
-        hasCopyDefaultAccounts: !!copyDefaultAccounts
-      });
+      // 🔧 إصلاح: فرض استخدام النظام المحسن دائماً للتأجير
+      console.log('🚗 [TEMPLATE] تطبيق قالب التأجير - فرض استخدام النظام المحسن');
       
-      // عرض إحصائيات القالب قبل النسخ
-      const accounts = getAccountsByBusinessType('car_rental');
-      console.log('📊 [TEMPLATE] إحصائيات القالب:', {
-        assets: accounts.assets.length,
-        liabilities: accounts.liabilities.length,
-        revenue: accounts.revenue.length,
-        expenses: accounts.expenses.length,
-        equity: accounts.equity.length,
-        total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
-      });
-      
-      console.log('🎯 [TEMPLATE] استدعاء directTemplateCopy...');
-      
-      // التحقق من وجود الـ hook
-      if (!directTemplateCopy || !directTemplateCopy.mutate) {
-        console.error('❌ [TEMPLATE] directTemplateCopy غير معرف أو معطل!');
+      // التحقق من وجود النظام المحسن
+      if (directTemplateCopy && directTemplateCopy.mutate) {
+        console.log('✅ [TEMPLATE] استخدام النظام المحسن (directTemplateCopy)');
+        console.log('📊 [TEMPLATE] سيتم نسخ', getCarRentalTemplateCount(), 'حساب من القالب المحاسبي المنظم');
+        directTemplateCopy.mutate('car_rental');
+      } else {
+        console.error('❌ [TEMPLATE] النظام المحسن غير متوفر! استخدام النظام القديم كبديل');
         
-        // استخدام النظام القديم كـ fallback
-        console.log('🔄 [TEMPLATE] استخدام النظام القديم كبديل');
+        // استخدام النظام القديم كـ fallback (لكن مع تحذير)
         const carRentalAccounts = getAccountsByBusinessType('car_rental');
         const allCarRentalAccounts = [
           ...carRentalAccounts.assets,
@@ -104,12 +89,17 @@ export const AccountTemplateManager: React.FC = () => {
           ...carRentalAccounts.expenses,
           ...carRentalAccounts.equity
         ];
+        
+        console.log('⚠️ [TEMPLATE] النظام القديم سينسخ', allCarRentalAccounts.length, 'حساب فقط بدلاً من', getCarRentalTemplateCount());
+        
+        toast({
+          variant: "destructive",
+          title: "تحذير: استخدام النظام القديم",
+          description: `سيتم نسخ ${allCarRentalAccounts.length} حساب فقط بدلاً من ${getCarRentalTemplateCount()} حساب من القالب المحسن`
+        });
+        
         copySelectedAccounts.mutate(allCarRentalAccounts);
-        return;
       }
-      
-      console.log('🚀 [TEMPLATE] استدعاء النظام المحسن...');
-      directTemplateCopy.mutate('car_rental');
     } else {
       console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للقالب:', templateId);
       copyDefaultAccounts.mutate();
@@ -117,9 +107,34 @@ export const AccountTemplateManager: React.FC = () => {
   };
 
   const handleSelectAccounts = (template: AccountTemplate) => {
-    console.log('🎯 Selecting accounts for template:', template);
-    const accounts = getAccountsByBusinessType('car_rental');
-    console.log('📋 Retrieved accounts:', accounts);
+    console.log('🎯 [SELECT] اختيار حسابات للقالب:', template.id);
+    
+    let accounts;
+    if (template.id === 'car_rental') {
+      // 🔧 إصلاح: استخدام القالب المحسن للتأجير
+      console.log('🚗 [SELECT] استخدام القالب المحسن للتأجير');
+      const carRentalTemplate = getCarRentalTemplate();
+      accounts = {
+        assets: carRentalTemplate.assets,
+        liabilities: carRentalTemplate.liabilities,
+        revenue: carRentalTemplate.revenue,
+        expenses: carRentalTemplate.expenses,
+        equity: carRentalTemplate.equity
+      };
+      console.log('📊 [SELECT] حسابات القالب المحسن:', {
+        assets: accounts.assets.length,
+        liabilities: accounts.liabilities.length,
+        revenue: accounts.revenue.length,
+        expenses: accounts.expenses.length,
+        equity: accounts.equity.length,
+        total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
+      });
+    } else {
+      // استخدام النظام القديم للقوالب الأخرى
+      accounts = getAccountsByBusinessType('car_rental');
+      console.log('📋 [SELECT] استخدام النظام القديم:', accounts);
+    }
+    
     setSelectedTemplate(template);
     setShowAccountSelection(true);
   };
@@ -146,8 +161,9 @@ export const AccountTemplateManager: React.FC = () => {
     console.log('🧪 [DIRECT_TEST] بدء الاختبار المباشر');
     
     try {
-      // جلب حسابات القالب
-      const templateAccounts = getAccountsByBusinessType('car_rental');
+      // جلب حسابات القالب المحسن
+      console.log('🧪 [DIRECT_TEST] استخدام القالب المحسن للاختبار');
+      const templateAccounts = getCarRentalTemplate();
       const allAccounts = [
         ...templateAccounts.assets,
         ...templateAccounts.liabilities,
@@ -322,19 +338,20 @@ export const AccountTemplateManager: React.FC = () => {
                   size="sm" 
                   variant="secondary"
                   onClick={() => {
-                    console.log('🎯 [QUICK_TEST] اختبار سريع للقالب');
-                    const accounts = getAccountsByBusinessType('car_rental');
-                    console.log('📊 أعداد الحسابات:', {
+                    console.log('🎯 [QUICK_TEST] اختبار سريع للقالب المحسن');
+                    const accounts = getCarRentalTemplate();
+                    const totalAccounts = accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length;
+                    console.log('📊 أعداد الحسابات المحسنة:', {
                       assets: accounts.assets.length,
                       liabilities: accounts.liabilities.length,
                       revenue: accounts.revenue.length,
                       expenses: accounts.expenses.length,
                       equity: accounts.equity.length,
-                      total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
+                      total: totalAccounts
                     });
                     toast({
-                      title: "اختبار سريع",
-                      description: `القالب يحتوي على ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`
+                      title: "اختبار سريع - القالب المحسن",
+                      description: `القالب المحسن يحتوي على ${totalAccounts} حساب محاسبي منظم`
                     });
                   }}
                   className="px-2"
@@ -389,7 +406,11 @@ export const AccountTemplateManager: React.FC = () => {
         <AccountSelectionDialog
           open={showAccountSelection}
           onOpenChange={setShowAccountSelection}
-          accounts={getAccountsByBusinessType('car_rental')} // Use car_rental as example
+          accounts={
+            selectedTemplate.id === 'car_rental' 
+              ? getCarRentalTemplate() 
+              : getAccountsByBusinessType('car_rental')
+          }
           templateName={selectedTemplate.nameAr}
           onApply={handleApplySelectedAccounts}
           isApplying={copySelectedAccounts.isPending}
