@@ -187,15 +187,6 @@ export const AccountTemplateManager: React.FC = () => {
               اختيار حسابات محددة
             </Button>
 
-            <Button 
-              onClick={() => window.location.reload()}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Clock className="h-4 w-4" />
-              إعادة تحميل
-            </Button>
           </div>
         </CardContent>
       </Card>
