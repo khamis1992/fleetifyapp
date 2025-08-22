@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
-import { AccountTemplate } from "./useBusinessTypeAccounts";
+import { AccountTemplate } from "./useTemplateSystem";
 
 export const useCopySelectedAccounts = () => {
   const queryClient = useQueryClient();

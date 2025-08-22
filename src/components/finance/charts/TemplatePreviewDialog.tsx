@@ -51,7 +51,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
     searchAccounts,
     validateHierarchy,
     isReady
-  } = useCompleteCarRentalTemplate();
+  } = useTemplateSystem();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);

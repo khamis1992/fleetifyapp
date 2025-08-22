@@ -20,13 +20,12 @@ import {
   Building,
   Users
 } from 'lucide-react';
-import { AccountTemplate, BusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
+import { AccountTemplate } from '@/hooks/useTemplateSystem';
 
 interface AccountSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  accounts: BusinessTypeAccounts;
-  templateName: string;
+  accounts: AccountTemplate[];
   onApply: (selectedAccounts: AccountTemplate[]) => void;
   isApplying?: boolean;
 }
@@ -35,7 +34,6 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   open,
   onOpenChange,
   accounts,
-  templateName,
   onApply,
   isApplying = false
 }) => {
@@ -43,16 +41,8 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('assets');
 
-  // Flatten all accounts for easy access
-  const allAccounts = useMemo(() => {
-    return [
-      ...accounts.assets,
-      ...accounts.liabilities,
-      ...accounts.revenue,
-      ...accounts.expenses,
-      ...accounts.equity
-    ];
-  }, [accounts]);
+  // Use accounts directly since they're already an array
+  const allAccounts = useMemo(() => accounts, [accounts]);
 
   // Reset selection when dialog closes
   React.useEffect(() => {
@@ -66,20 +56,11 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
     
-    const filterAccountList = (accountList: AccountTemplate[]) =>
-      accountList.filter(acc =>
-        acc.nameAr.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        acc.nameEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        acc.code.includes(searchTerm)
-      );
-
-    return {
-      assets: filterAccountList(accounts.assets),
-      liabilities: filterAccountList(accounts.liabilities),
-      revenue: filterAccountList(accounts.revenue),
-      expenses: filterAccountList(accounts.expenses),
-      equity: filterAccountList(accounts.equity)
-    };
+    return accounts.filter(acc =>
+      acc.name_ar.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      acc.name_en.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      acc.code.includes(searchTerm)
+    );
   }, [accounts, searchTerm]);
 
   const getAccountTypeIcon = (type: string) => {
@@ -115,20 +96,20 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   };
 
   const selectAll = () => {
-    const allIds = new Set(allAccounts.map(acc => acc.id));
+    const allIds = new Set(allAccounts.map(acc => acc.code));
     setSelectedAccountIds(allIds);
   };
 
   const selectEssential = () => {
     const essentialIds = new Set(
-      allAccounts.filter(acc => acc.essential).map(acc => acc.id)
+      allAccounts.filter(acc => acc.essential).map(acc => acc.code)
     );
     setSelectedAccountIds(essentialIds);
   };
 
   const selectRecommended = () => {
     const recommendedIds = new Set(
-      allAccounts.filter(acc => acc.essential || acc.recommended).map(acc => acc.id)
+      allAccounts.filter(acc => acc.essential).map(acc => acc.code)
     );
     setSelectedAccountIds(recommendedIds);
   };
@@ -138,7 +119,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   };
 
   const handleApply = () => {
-    const selectedAccounts = allAccounts.filter(acc => selectedAccountIds.has(acc.id));
+    const selectedAccounts = allAccounts.filter(acc => selectedAccountIds.has(acc.code));
     onApply(selectedAccounts);
   };
 
@@ -146,32 +127,27 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
     <div className="space-y-2 pb-16">
       {accountList.map((account) => (
         <div
-          key={account.id}
+          key={account.code}
           className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-            selectedAccountIds.has(account.id) 
+            selectedAccountIds.has(account.code) 
               ? 'bg-primary/10 border-primary/30' 
               : 'bg-card hover:bg-muted/50 border-border'
           }`}
           dir="rtl"
         >
           <Checkbox
-            id={account.id}
-            checked={selectedAccountIds.has(account.id)}
-            onCheckedChange={() => toggleAccount(account.id)}
+            id={account.code}
+            checked={selectedAccountIds.has(account.code)}
+            onCheckedChange={() => toggleAccount(account.code)}
           />
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm">{account.nameAr}</span>
+              <span className="font-medium text-sm">{account.name_ar}</span>
               {account.essential && (
                 <Badge variant="destructive" className="text-xs">
                   <Star className="h-3 w-3 mr-1" />
                   أساسي
-                </Badge>
-              )}
-              {account.recommended && !account.essential && (
-                <Badge variant="secondary" className="text-xs">
-                  موصى به
                 </Badge>
               )}
             </div>
@@ -180,7 +156,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
               <div className="flex items-center gap-2">
                 <span>الكود: {account.code}</span>
                 <span>•</span>
-                <span>{account.nameEn}</span>
+                <span>{account.name_en}</span>
               </div>
               <div>{account.description}</div>
             </div>
@@ -198,7 +174,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
     total: allAccounts.length,
     selected: selectedAccountIds.size,
     essential: allAccounts.filter(acc => acc.essential).length,
-    recommended: allAccounts.filter(acc => acc.recommended).length
+    recommended: allAccounts.filter(acc => acc.essential).length
   };
 
   return (
@@ -207,7 +183,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-semibold text-right flex items-center gap-2">
             <Info className="h-4 w-4" />
-            اختيار الحسابات من قالب: {templateName}
+            اختيار الحسابات من قالب تأجير السيارات
           </DialogTitle>
         </DialogHeader>
 
@@ -278,23 +254,23 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
             <TabsList className="grid w-full grid-cols-5 h-9 bg-muted/50">
               <TabsTrigger value="assets" className="text-xs px-1 data-[state=active]:bg-background">
                 <Building className="h-3 w-3 ml-1" />
-                الأصول ({filteredAccounts.assets.length})
+                الأصول ({filteredAccounts.filter(acc => acc.account_type === 'assets').length})
               </TabsTrigger>
               <TabsTrigger value="liabilities" className="text-xs px-1 data-[state=active]:bg-background">
                 <TrendingUp className="h-3 w-3 ml-1" />
-                الخصوم ({filteredAccounts.liabilities.length})
+                الخصوم ({filteredAccounts.filter(acc => acc.account_type === 'liabilities').length})
               </TabsTrigger>
               <TabsTrigger value="revenue" className="text-xs px-1 data-[state=active]:bg-background">
                 <DollarSign className="h-3 w-3 ml-1" />
-                الإيرادات ({filteredAccounts.revenue.length})
+                الإيرادات ({filteredAccounts.filter(acc => acc.account_type === 'revenue').length})
               </TabsTrigger>
               <TabsTrigger value="expenses" className="text-xs px-1 data-[state=active]:bg-background">
                 <Users className="h-3 w-3 ml-1" />
-                المصروفات ({filteredAccounts.expenses.length})
+                المصروفات ({filteredAccounts.filter(acc => acc.account_type === 'expenses').length})
               </TabsTrigger>
               <TabsTrigger value="equity" className="text-xs px-1 data-[state=active]:bg-background">
                 <Shield className="h-3 w-3 ml-1" />
-                الملكية ({filteredAccounts.equity.length})
+                الملكية ({filteredAccounts.filter(acc => acc.account_type === 'equity').length})
               </TabsTrigger>
             </TabsList>
 
@@ -302,19 +278,19 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
               <ScrollArea className="h-full border rounded-md" dir="rtl">
                 <div className="p-3 space-y-2">
                   <TabsContent value="assets" className="mt-0">
-                    {renderAccountList(filteredAccounts.assets, 'assets')}
+                    {renderAccountList(filteredAccounts.filter(acc => acc.account_type === 'assets'), 'assets')}
                   </TabsContent>
                   <TabsContent value="liabilities" className="mt-0">
-                    {renderAccountList(filteredAccounts.liabilities, 'liabilities')}
+                    {renderAccountList(filteredAccounts.filter(acc => acc.account_type === 'liabilities'), 'liabilities')}
                   </TabsContent>
                   <TabsContent value="revenue" className="mt-0">
-                    {renderAccountList(filteredAccounts.revenue, 'revenue')}
+                    {renderAccountList(filteredAccounts.filter(acc => acc.account_type === 'revenue'), 'revenue')}
                   </TabsContent>
                   <TabsContent value="expenses" className="mt-0">
-                    {renderAccountList(filteredAccounts.expenses, 'expenses')}
+                    {renderAccountList(filteredAccounts.filter(acc => acc.account_type === 'expenses'), 'expenses')}
                   </TabsContent>
                   <TabsContent value="equity" className="mt-0">
-                    {renderAccountList(filteredAccounts.equity, 'equity')}
+                    {renderAccountList(filteredAccounts.filter(acc => acc.account_type === 'equity'), 'equity')}
                   </TabsContent>
                 </div>
               </ScrollArea>

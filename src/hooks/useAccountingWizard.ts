@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
-import { useBusinessTypeAccounts } from './useBusinessTypeAccounts';
+import { useTemplateSystem } from './useTemplateSystem';
 import { WizardData } from '@/components/finance/AccountingSystemWizard';
 import { toast } from 'sonner';
 import { ConflictResolutionStrategy } from '@/components/finance/ConflictResolutionDialog';
@@ -10,7 +10,7 @@ import { ConflictResolutionStrategy } from '@/components/finance/ConflictResolut
 export const useAccountingWizard = () => {
   const [progress, setProgress] = useState(0);
   const { companyId } = useUnifiedCompanyAccess();
-  const { getAccountsByBusinessType } = useBusinessTypeAccounts();
+  const { getAccountsByType } = useTemplateSystem();
 
   const setupAccountingSystem = useMutation({
     mutationFn: async (data: { wizardData: WizardData; conflictStrategy?: ConflictResolutionStrategy }) => {
@@ -20,14 +20,14 @@ export const useAccountingWizard = () => {
       setProgress(10);
       
       // 1. Create base chart of accounts
-      const businessAccounts = getAccountsByBusinessType(wizardData.businessType);
+      const businessAccounts = getAccountsByType();
       const allAccounts = [
         ...businessAccounts.assets,
         ...businessAccounts.liabilities,
         ...businessAccounts.revenue,
         ...businessAccounts.expenses,
         ...businessAccounts.equity
-      ].filter(account => wizardData.selectedAccounts.includes(account.id));
+      ].filter(account => wizardData.selectedAccounts.includes(account.code));
       
       setProgress(30);
       
@@ -35,11 +35,11 @@ export const useAccountingWizard = () => {
       const accountsToCreate = allAccounts.map(account => ({
         company_id: companyId,
         account_code: account.code,
-        account_name: account.nameEn,
-        account_name_ar: account.nameAr,
-        account_type: account.accountType,
-        balance_type: account.balanceType,
-        account_level: account.accountLevel,
+        account_name: account.name_en,
+        account_name_ar: account.name_ar,
+        account_type: account.account_type,
+        balance_type: account.balance_type,
+        account_level: account.level,
         is_header: false,
         is_active: true,
         is_system: account.essential,

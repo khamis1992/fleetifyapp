@@ -13,7 +13,7 @@ import {
   Target
 } from 'lucide-react';
 import { WizardData } from '../AccountingSystemWizard';
-import { useBusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
+import { useTemplateSystem } from '@/hooks/useTemplateSystem';
 
 interface Props {
   data: WizardData;
@@ -81,22 +81,22 @@ export const AccountsMapping: React.FC<Props> = ({
   onNext, 
   onBack 
 }) => {
-  const { getAccountsByBusinessType } = useBusinessTypeAccounts();
+  const { getAccountsByType } = useTemplateSystem();
   const [mappings, setMappings] = useState<Record<string, string>>(
     data.accountMappings || {}
   );
 
-  const businessAccounts = getAccountsByBusinessType(data.businessType);
+  const accounts = getAccountsByType();
   const selectedAccountIds = data.selectedAccounts || [];
   
   // Get available accounts for each type
   const getAvailableAccounts = (accountType: string) => {
     const allAccounts = [
-      ...businessAccounts.assets,
-      ...businessAccounts.liabilities,
-      ...businessAccounts.revenue,
-      ...businessAccounts.expenses,
-      ...businessAccounts.equity
+      ...accounts.assets,
+      ...accounts.liabilities,
+      ...accounts.revenue,
+      ...accounts.expenses,
+      ...accounts.equity
     ];
     
     return allAccounts.filter(acc => 

@@ -17,7 +17,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { WizardData } from '../AccountingSystemWizard';
-import { useBusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
+import { useTemplateSystem } from '@/hooks/useTemplateSystem';
 
 interface Props {
   data: WizardData;
@@ -32,18 +32,18 @@ export const AccountsCustomization: React.FC<Props> = ({
   onNext, 
   onBack 
 }) => {
-  const { getAccountsByBusinessType } = useBusinessTypeAccounts();
+  const { getAccountsByType } = useTemplateSystem();
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(data.selectedAccounts || []);
   
-  const businessAccounts = getAccountsByBusinessType(data.businessType);
+  const businessAccounts = getAccountsByType();
 
   useEffect(() => {
     // Pre-select essential accounts
     const essentialAccounts = [
-      ...businessAccounts.assets.filter(acc => acc.essential).map(acc => acc.id),
-      ...businessAccounts.liabilities.filter(acc => acc.essential).map(acc => acc.id),
-      ...businessAccounts.revenue.filter(acc => acc.essential).map(acc => acc.id),
-      ...businessAccounts.expenses.filter(acc => acc.essential).map(acc => acc.id),
+      ...businessAccounts.assets.filter(acc => acc.essential).map(acc => acc.code),
+      ...businessAccounts.liabilities.filter(acc => acc.essential).map(acc => acc.code),
+      ...businessAccounts.revenue.filter(acc => acc.essential).map(acc => acc.code),
+      ...businessAccounts.expenses.filter(acc => acc.essential).map(acc => acc.code),
     ];
     
     if (selectedAccounts.length === 0) {
@@ -51,13 +51,13 @@ export const AccountsCustomization: React.FC<Props> = ({
     }
   }, [businessAccounts]);
 
-  const handleAccountToggle = (accountId: string, isEssential: boolean) => {
+  const handleAccountToggle = (accountCode: string, isEssential: boolean) => {
     if (isEssential) return; // Can't unselect essential accounts
     
     setSelectedAccounts(prev => 
-      prev.includes(accountId) 
-        ? prev.filter(id => id !== accountId)
-        : [...prev, accountId]
+      prev.includes(accountCode) 
+        ? prev.filter(code => code !== accountCode)
+        : [...prev, accountCode]
     );
   };
 
@@ -77,17 +77,17 @@ export const AccountsCustomization: React.FC<Props> = ({
         <Icon className={`h-5 w-5 ${color}`} />
         <h4 className="font-semibold">{title}</h4>
         <Badge variant="outline" className="text-xs">
-          {accounts.filter(acc => selectedAccounts.includes(acc.id)).length} من {accounts.length}
+          {accounts.filter(acc => selectedAccounts.includes(acc.code)).length} من {accounts.length}
         </Badge>
       </div>
       
       <div className="space-y-2">
         {accounts.map((account) => (
           <div 
-            key={account.id}
+            key={account.code}
             className={`
               flex items-center space-x-3 p-3 rounded-lg border transition-colors
-              ${selectedAccounts.includes(account.id) 
+              ${selectedAccounts.includes(account.code) 
                 ? 'bg-primary/5 border-primary/20' 
                 : 'bg-background hover:bg-muted/50'
               }
@@ -95,23 +95,18 @@ export const AccountsCustomization: React.FC<Props> = ({
             `}
           >
             <Checkbox
-              checked={selectedAccounts.includes(account.id)}
-              onCheckedChange={() => handleAccountToggle(account.id, account.essential)}
+              checked={selectedAccounts.includes(account.code)}
+              onCheckedChange={() => handleAccountToggle(account.code, account.essential)}
               disabled={account.essential}
               className="data-[state=checked]:bg-primary"
             />
             
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium">{account.nameAr}</span>
+                <span className="font-medium">{account.name_ar}</span>
                 {account.essential && (
                   <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
                     أساسي
-                  </Badge>
-                )}
-                {account.recommended && (
-                  <Badge variant="outline" className="text-xs">
-                    مقترح
                   </Badge>
                 )}
               </div>
@@ -130,14 +125,14 @@ export const AccountsCustomization: React.FC<Props> = ({
     </div>
   );
 
-  const essentialCount = selectedAccounts.filter(id => {
+  const essentialCount = selectedAccounts.filter(code => {
     const allAccounts = [
       ...businessAccounts.assets,
       ...businessAccounts.liabilities,
       ...businessAccounts.revenue,
       ...businessAccounts.expenses
     ];
-    const account = allAccounts.find(acc => acc.id === id);
+    const account = allAccounts.find(acc => acc.code === code);
     return account?.essential;
   }).length;
 
@@ -174,7 +169,7 @@ export const AccountsCustomization: React.FC<Props> = ({
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {businessAccounts.revenue.filter(acc => selectedAccounts.includes(acc.id)).length}
+                {businessAccounts.revenue.filter(acc => selectedAccounts.includes(acc.code)).length}
               </div>
               <div className="text-sm text-muted-foreground">حسابات إيرادات</div>
             </div>
@@ -185,7 +180,7 @@ export const AccountsCustomization: React.FC<Props> = ({
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
-                {businessAccounts.expenses.filter(acc => selectedAccounts.includes(acc.id)).length}
+                {businessAccounts.expenses.filter(acc => selectedAccounts.includes(acc.code)).length}
               </div>
               <div className="text-sm text-muted-foreground">حسابات مصروفات</div>
             </div>

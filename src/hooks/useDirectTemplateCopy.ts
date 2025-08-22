@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
-import { useBusinessTypeAccounts } from "./useBusinessTypeAccounts";
+
 
 interface DirectCopyResult {
   success: boolean;
@@ -21,7 +21,7 @@ export const useDirectTemplateCopy = () => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
   const { toast } = useToast();
-  const { getAccountsByBusinessType } = useBusinessTypeAccounts();
+  
 
   return useMutation({
     mutationFn: async (businessType: string): Promise<DirectCopyResult> => {
@@ -70,16 +70,7 @@ export const useDirectTemplateCopy = () => {
           throw new Error(`فشل في تحميل القالب الكامل من JSON: ${error.message}`);
         }
       } else {
-        // استخدام القالب الافتراضي للأنواع الأخرى
-        console.log('📋 [DIRECT_COPY] استخدام قالب الأعمال الافتراضي للنوع:', businessType);
-        const templateAccounts = getAccountsByBusinessType(businessType);
-        allAccounts = [
-          ...templateAccounts.assets,
-          ...templateAccounts.liabilities,
-          ...templateAccounts.revenue,
-          ...templateAccounts.expenses,
-          ...templateAccounts.equity
-        ];
+        throw new Error(`نوع النشاط "${businessType}" غير مدعوم حالياً. فقط car_rental متاح.`);
       }
 
       if (allAccounts.length === 0) {
