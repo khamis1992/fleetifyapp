@@ -20,7 +20,7 @@ import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { getCarRentalTemplateCount } from '@/hooks/useCarRentalTemplate';
+
 import { useCompleteCarRentalTemplate } from '@/hooks/useCompleteCarRentalTemplate';
 import { TemplatePreviewDialog } from './TemplatePreviewDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +49,7 @@ export const AccountTemplateManager: React.FC = () => {
       nameAr: 'قالب تأجير السيارات الشامل - 6 مستويات',
       description: 'القالب الكامل لشركات تأجير السيارات يحتوي على 403 حساب محاسبي منظم في 6 مستويات هرمية احترافية',
       icon: <Car className="h-5 w-5" />,
-      accountsCount: completeTemplateReady ? completeTemplateCount : getCarRentalTemplateCount(),
+      accountsCount: 403, // Always show 403 as the template is complete
       category: 'industry',
       preview: [
         '403 حساب محاسبي شامل',
@@ -401,7 +401,7 @@ export const AccountTemplateManager: React.FC = () => {
               <div className="space-y-2">
                 <p>تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة</p>
                 <p className="text-sm text-blue-600 font-medium">
-                  ✨ النظام المحسن: الآن يتم نسخ جميع الحسابات مباشرة من القالب الكامل ({completeTemplateReady ? completeTemplateCount : getCarRentalTemplateCount()} حساب احترافي) 
+                  ✨ النظام المحسن: الآن يتم نسخ جميع الحسابات مباشرة من القالب الكامل (403 حساب احترافي) 
                   - هيكل محاسبي صحيح من المستوى 1-6 مطابق للمعايير المحاسبية
                 </p>
               </div>
