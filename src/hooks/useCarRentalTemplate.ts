@@ -24,7 +24,7 @@ export interface BusinessTypeAccounts {
 
 /**
  * قالب دليل الحسابات الشامل لشركات تأجير السيارات
- * هيكل محاسبي احترافي من المستوى 1 إلى 5
+ * هيكل محاسبي احترافي من المستوى 1 إلى 5 (50 حساب)
  * محدث من الملف: car_rental_complete_template.json
  */
 export const CAR_RENTAL_TEMPLATE: BusinessTypeAccounts = {
