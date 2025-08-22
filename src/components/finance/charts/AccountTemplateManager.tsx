@@ -143,21 +143,37 @@ export const AccountTemplateManager: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Debug Information */}
+          <div className="mb-4 p-3 bg-muted/50 rounded-lg text-xs">
+            <div className="font-medium mb-2">معلومات التشخيص:</div>
+            <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+              <div>الحالة: {templateReady ? '✅ جاهز' : '❌ غير جاهز'}</div>
+              <div>البيانات الفعلية: {getAllAccounts().length}</div>
+              <div>البيانات المتوقعة: {metadata?.total_accounts || 0}</div>
+              <div>آخر تحديث: {new Date().toLocaleTimeString('ar-SA')}</div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
+            <div className="text-center p-4 bg-primary/10 rounded-lg">
               <div className="text-2xl font-bold text-primary">{stats.totalAccounts}</div>
               <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {metadata?.total_accounts !== stats.totalAccounts && 
+                  `(متوقع: ${metadata?.total_accounts})`
+                }
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.essentialAccounts}</div>
+            <div className="text-center p-4 bg-green-100 rounded-lg">
+              <div className="text-2xl font-bold text-green-700">{stats.essentialAccounts}</div>
               <div className="text-sm text-muted-foreground">حسابات أساسية</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.entryLevelAccounts}</div>
+            <div className="text-center p-4 bg-blue-100 rounded-lg">
+              <div className="text-2xl font-bold text-blue-700">{stats.entryLevelAccounts}</div>
               <div className="text-sm text-muted-foreground">حسابات تشغيلية</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">6</div>
+            <div className="text-center p-4 bg-purple-100 rounded-lg">
+              <div className="text-2xl font-bold text-purple-700">6</div>
               <div className="text-sm text-muted-foreground">مستويات هرمية</div>
             </div>
           </div>
@@ -225,6 +241,16 @@ export const AccountTemplateManager: React.FC = () => {
             >
               <CheckCircle className="h-4 w-4" />
               اختيار حسابات محددة
+            </Button>
+
+            <Button 
+              onClick={() => window.location.reload()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              إعادة تحميل
             </Button>
           </div>
         </CardContent>
