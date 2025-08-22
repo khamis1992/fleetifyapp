@@ -21,6 +21,8 @@ import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { getCarRentalTemplateCount } from '@/hooks/useCarRentalTemplate';
+import { useCompleteCarRentalTemplate } from '@/hooks/useCompleteCarRentalTemplate';
+import { TemplatePreviewDialog } from './TemplatePreviewDialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface AccountTemplate {
@@ -37,26 +39,42 @@ interface AccountTemplate {
 export const AccountTemplateManager: React.FC = () => {
   const { getTotalAccountsCount, getAccountsByBusinessType } = useBusinessTypeAccounts();
   const { companyId } = useUnifiedCompanyAccess();
+  const { totalAccounts: completeTemplateCount, isReady: completeTemplateReady } = useCompleteCarRentalTemplate();
   const { toast } = useToast();
   
   const PREDEFINED_TEMPLATES: AccountTemplate[] = [
     {
       id: 'car_rental',
-      name: 'Car Rental & Transportation',
-      nameAr: 'السيارات والنقل - منظم محاسبياً',
-      description: 'قالب محاسبي محترف لشركات تأجير السيارات مع تسلسل هرمي صحيح وحسابات عملية بدون أسماء وهمية',
+      name: 'Car Rental & Transportation - Complete Template',
+      nameAr: 'قالب تأجير السيارات الشامل - 6 مستويات',
+      description: 'القالب الكامل لشركات تأجير السيارات يحتوي على 403 حساب محاسبي منظم في 6 مستويات هرمية احترافية',
       icon: <Car className="h-5 w-5" />,
-      accountsCount: getCarRentalTemplateCount(),
+      accountsCount: completeTemplateReady ? completeTemplateCount : getCarRentalTemplateCount(),
       category: 'industry',
-      preview: ['أصول المركبات', 'تمويل المركبات', 'إيرادات التأجير', 'مصروفات الصيانة', 'تسلسل هرمي محاسبي صحيح', 'بدون حسابات وهمية']
+      preview: [
+        '403 حساب محاسبي شامل',
+        '6 مستويات هرمية منظمة',
+        'أصول المركبات مع الإهلاك',
+        'إيرادات التأجير المتخصصة',
+        'مصروفات الصيانة المفصلة',
+        'حسابات العملاء والموردين',
+        'إدارة الوقود والتأمين',
+        'هيكل محاسبي مطابق للمعايير'
+      ]
     }
   ];
 
   // تشخيص القوالب
-  console.log('📋 [TEMPLATES] القوالب المعرفة:', PREDEFINED_TEMPLATES.map(t => ({ id: t.id, name: t.nameAr, count: t.accountsCount })));
+  console.log('📋 [TEMPLATES] القوالب المعرفة:', PREDEFINED_TEMPLATES.map(t => ({ 
+    id: t.id, 
+    name: t.nameAr, 
+    count: t.accountsCount,
+    isComplete: t.id === 'car_rental' && completeTemplateReady
+  })));
 
   const [selectedTemplate, setSelectedTemplate] = useState<AccountTemplate | null>(null);
   const [showAccountSelection, setShowAccountSelection] = useState(false);
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
   
   const copyDefaultAccounts = useCopyDefaultAccounts();
   const copySelectedAccounts = useCopySelectedAccounts();
@@ -265,11 +283,25 @@ export const AccountTemplateManager: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <span>تطبيق الكل</span>
+                  <span>تطبيق مباشر</span>
                   <CheckCircle className="h-3 w-3" />
                 </>
               )}
             </Button>
+            
+            {/* زر المعاينة المحسن */}
+            {template.id === 'car_rental' && completeTemplateReady && (
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => setShowTemplatePreview(true)}
+                className="flex items-center gap-1"
+                title="معاينة القالب الكامل"
+              >
+                <span className="text-xs">معاينة</span>
+                <Info className="h-3 w-3" />
+              </Button>
+            )}
             
             {/* زر فرض النسخ المحسن للتأجير */}
             {template.id === 'car_rental' && (
@@ -369,8 +401,8 @@ export const AccountTemplateManager: React.FC = () => {
               <div className="space-y-2">
                 <p>تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة</p>
                 <p className="text-sm text-blue-600 font-medium">
-                  ✨ تم تحسين النظام: الآن يتم نسخ جميع الحسابات مباشرة من القالب المحاسبي المنظم ({getCarRentalTemplateCount()} حساب احترافي) 
-                  بدلاً من الاقتصار على الحسابات الأساسية (232 حساب) - هيكل محاسبي صحيح من المستوى 1-5
+                  ✨ النظام المحسن: الآن يتم نسخ جميع الحسابات مباشرة من القالب الكامل ({completeTemplateReady ? completeTemplateCount : getCarRentalTemplateCount()} حساب احترافي) 
+                  - هيكل محاسبي صحيح من المستوى 1-6 مطابق للمعايير المحاسبية
                 </p>
               </div>
             </AlertDescription>
@@ -383,6 +415,17 @@ export const AccountTemplateManager: React.FC = () => {
           .filter(t => t.category === 'industry')
           .map(renderTemplateCard)}
       </div>
+
+      {/* Template Preview Dialog */}
+      <TemplatePreviewDialog
+        open={showTemplatePreview}
+        onOpenChange={setShowTemplatePreview}
+        onApply={() => {
+          setShowTemplatePreview(false);
+          handleApplyTemplate('car_rental');
+        }}
+        isApplying={directTemplateCopy.isPending}
+      />
 
       {/* Account Selection Dialog */}
       {selectedTemplate && (

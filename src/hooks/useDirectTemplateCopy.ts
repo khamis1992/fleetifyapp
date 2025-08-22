@@ -32,22 +32,39 @@ export const useDirectTemplateCopy = () => {
 
       console.log('🚀 [DIRECT_COPY] بدء نسخ قالب مباشر:', { businessType, companyId });
 
-      // جلب جميع حسابات القالب من JavaScript (استخدام القالب المنظم للتأجير)
-      let templateAccounts;
+      // جلب جميع حسابات القالب - استخدام القالب الكامل لتأجير السيارات
       let allAccounts;
       
       if (businessType === 'car_rental') {
-        console.log('🚗 [DIRECT_COPY] استخدام القالب المحاسبي المنظم للتأجير');
-        templateAccounts = getCarRentalTemplate();
-        allAccounts = [
-          ...templateAccounts.assets,
-          ...templateAccounts.liabilities,
-          ...templateAccounts.revenue,
-          ...templateAccounts.expenses,
-          ...templateAccounts.equity
-        ];
+        try {
+          console.log('🚗 [DIRECT_COPY] جلب القالب الكامل من JSON...');
+          const response = await fetch('/car_rental_complete_template.json');
+          if (!response.ok) {
+            throw new Error(`فشل في تحميل القالب: ${response.statusText}`);
+          }
+          
+          const templateData = await response.json();
+          allAccounts = templateData.chart_of_accounts || [];
+          
+          console.log('✅ [DIRECT_COPY] تم جلب القالب الكامل:', {
+            total_accounts: allAccounts.length,
+            metadata: templateData.template_metadata
+          });
+        } catch (error) {
+          console.error('❌ [DIRECT_COPY] خطأ في جلب القالب الكامل، التبديل للقالب الافتراضي:', error);
+          // استخدام القالب الافتراضي كبديل
+          const templateAccounts = getCarRentalTemplate();
+          allAccounts = [
+            ...templateAccounts.assets,
+            ...templateAccounts.liabilities,
+            ...templateAccounts.revenue,
+            ...templateAccounts.expenses,
+            ...templateAccounts.equity
+          ];
+        }
       } else {
-        templateAccounts = getAccountsByBusinessType(businessType);
+        // استخدام القالب الافتراضي للأنواع الأخرى
+        const templateAccounts = getAccountsByBusinessType(businessType);
         allAccounts = [
           ...templateAccounts.assets,
           ...templateAccounts.liabilities,
@@ -57,21 +74,18 @@ export const useDirectTemplateCopy = () => {
         ];
       }
 
-      console.log('📊 [DIRECT_COPY] إحصائيات القالب:', {
-        assets: templateAccounts.assets.length,
-        liabilities: templateAccounts.liabilities.length,
-        revenue: templateAccounts.revenue.length,
-        expenses: templateAccounts.expenses.length,
-        equity: templateAccounts.equity.length,
-        total: allAccounts.length
-      });
+      if (allAccounts.length === 0) {
+        throw new Error('القالب فارغ أو غير متوفر');
+      }
 
-      // عرض أول 5 حسابات من كل نوع للتحقق
-      console.log('📋 [DIRECT_COPY] عينة من الحسابات:');
-      console.log('أصول:', templateAccounts.assets.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
-      console.log('خصوم:', templateAccounts.liabilities.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
-      console.log('إيرادات:', templateAccounts.revenue.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
-      console.log('مصروفات:', templateAccounts.expenses.slice(0, 5).map(acc => `${acc.code} - ${acc.nameAr}`));
+      console.log('📊 [DIRECT_COPY] إحصائيات القالب:', {
+        total: allAccounts.length,
+        sample: allAccounts.slice(0, 3).map(acc => ({
+          code: acc.code || acc.account_code,
+          name: acc.name_ar || acc.nameAr,
+          type: acc.account_type || acc.accountType
+        }))
+      });
 
       // جلب الحسابات الموجودة في الشركة
       const { data: existingAccounts, error: fetchError } = await supabase
@@ -96,26 +110,42 @@ export const useDirectTemplateCopy = () => {
 
       // ترتيب الحسابات حسب المستوى لضمان إنشاء الحسابات الأب أولاً
       const sortedAccounts = allAccounts.sort((a, b) => {
-        if (a.accountLevel !== b.accountLevel) {
-          return a.accountLevel - b.accountLevel;
+        const levelA = a.level || a.accountLevel;
+        const levelB = b.level || b.accountLevel;
+        const codeA = a.code || a.account_code;
+        const codeB = b.code || b.account_code;
+        
+        if (levelA !== levelB) {
+          return levelA - levelB;
         }
-        return a.code.localeCompare(b.code);
+        return codeA.localeCompare(codeB);
       });
 
       // نسخ كل حساب
       for (const account of sortedAccounts) {
         try {
+          // التعامل مع تنسيق القالب الجديد والقديم
+          const accountCode = account.code || account.account_code;
+          const nameAr = account.name_ar || account.nameAr;
+          const nameEn = account.name_en || account.nameEn;
+          const accountType = account.account_type || account.accountType;
+          const level = account.level || account.accountLevel;
+          const balanceType = account.balance_type || account.balanceType;
+          const parentCode = account.parent_code || account.parentCode;
+          const isHeader = account.is_header ?? account.isHeader ?? false;
+          const description = account.description || '';
+
           // تحقق من وجود الحساب
-          if (existingCodes.has(account.code)) {
+          if (existingCodes.has(accountCode)) {
             skipped_accounts++;
-            console.log(`⏭️ تم تخطي الحساب الموجود: ${account.code}`);
+            console.log(`⏭️ تم تخطي الحساب الموجود: ${accountCode}`);
             continue;
           }
 
           // البحث عن الحساب الأب
           let parent_account_id: string | null = null;
-          if (account.parentCode) {
-            parent_account_id = parentMapping.get(account.parentCode) || null;
+          if (parentCode) {
+            parent_account_id = parentMapping.get(parentCode) || null;
             
             // إذا لم نجد الحساب الأب في الخريطة، ابحث في قاعدة البيانات
             if (!parent_account_id) {
@@ -123,35 +153,32 @@ export const useDirectTemplateCopy = () => {
                 .from('chart_of_accounts')
                 .select('id')
                 .eq('company_id', companyId)
-                .eq('account_code', account.parentCode)
+                .eq('account_code', parentCode)
                 .single();
               
               if (parentAccount) {
                 parent_account_id = parentAccount.id;
-                parentMapping.set(account.parentCode, parentAccount.id);
+                parentMapping.set(parentCode, parentAccount.id);
               }
             }
           }
 
-          // تحويل نوع الحساب للصيغة الصحيحة المتوقعة في قاعدة البيانات
-          const dbAccountType = account.accountType === 'expenses' ? 'expenses' : account.accountType;
-          
-          console.log(`📝 [DIRECT_COPY] إنشاء الحساب: ${account.code} - ${account.nameAr} (نوع: ${dbAccountType})`);
+          console.log(`📝 [DIRECT_COPY] إنشاء الحساب: ${accountCode} - ${nameAr} (نوع: ${accountType})`);
 
           // إنشاء الحساب
           const { data: newAccount, error: insertError } = await supabase
             .from('chart_of_accounts')
             .insert({
               company_id: companyId,
-              account_code: account.code,
-              account_name: account.nameEn,
-              account_name_ar: account.nameAr,
-              account_type: dbAccountType,
-              balance_type: account.balanceType,
-              account_level: account.accountLevel,
-              is_header: account.isHeader || false,
+              account_code: accountCode,
+              account_name: nameEn,
+              account_name_ar: nameAr,
+              account_type: accountType,
+              balance_type: balanceType,
+              account_level: level,
+              is_header: isHeader,
               is_system: false,
-              description: account.description,
+              description: description,
               parent_account_id: parent_account_id,
               current_balance: 0,
               is_active: true
@@ -161,21 +188,22 @@ export const useDirectTemplateCopy = () => {
 
           if (insertError) {
             failed_accounts++;
-            errors.push(`${account.code}: ${insertError.message}`);
-            console.error(`❌ فشل إنشاء الحساب ${account.code}:`, insertError);
+            errors.push(`${accountCode}: ${insertError.message}`);
+            console.error(`❌ فشل إنشاء الحساب ${accountCode}:`, insertError);
           } else {
             copied_accounts++;
             // حفظ الحساب الجديد في الخريطة للمراجع المستقبلية
             if (newAccount) {
-              parentMapping.set(account.code, newAccount.id);
+              parentMapping.set(accountCode, newAccount.id);
             }
-            console.log(`✅ تم إنشاء الحساب: ${account.code} - ${account.nameAr}`);
+            console.log(`✅ تم إنشاء الحساب: ${accountCode} - ${nameAr}`);
           }
 
         } catch (error: any) {
           failed_accounts++;
-          errors.push(`${account.code}: ${error.message}`);
-          console.error(`❌ خطأ في معالجة الحساب ${account.code}:`, error);
+          const accountCode = account.code || account.account_code;
+          errors.push(`${accountCode}: ${error.message}`);
+          console.error(`❌ خطأ في معالجة الحساب ${accountCode}:`, error);
         }
       }
 
