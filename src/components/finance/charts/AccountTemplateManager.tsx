@@ -164,21 +164,6 @@ export const AccountTemplateManager: React.FC = () => {
             </Badge>
           </div>
 
-          {/* Existing Accounts Warning */}
-          {existingAccounts.hasAccounts && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <span className="font-medium text-amber-800">
-                  يوجد {existingAccounts.totalAccounts} حساب موجود مسبقاً
-                </span>
-              </div>
-              <div className="text-sm text-amber-700">
-                الحسابات الموجودة: {existingAccounts.sampleCodes.slice(0, 5).join(', ')}
-                {existingAccounts.sampleCodes.length > 5 && '...'}
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
