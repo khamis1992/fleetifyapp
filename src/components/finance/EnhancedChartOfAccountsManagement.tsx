@@ -23,11 +23,9 @@ import { AccountTemplateManager } from './charts/AccountTemplateManager';
 import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
 import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
 import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
-
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-
 interface AccountFormData {
   account_code: string;
   account_name: string;
@@ -39,7 +37,6 @@ interface AccountFormData {
   is_header: boolean;
   description?: string;
 }
-
 export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -58,18 +55,22 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [statementAccount, setStatementAccount] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('accounts');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
-
-  const { data: allAccounts, isLoading: allAccountsLoading } = useChartOfAccounts(showInactiveAccounts);
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
+  const {
+    data: allAccounts,
+    isLoading: allAccountsLoading
+  } = useChartOfAccounts(showInactiveAccounts);
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
 
   // Check if user can delete all accounts (super admin only)
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const canDeleteAll = isSuperAdmin;
-
   const [formData, setFormData] = useState<AccountFormData>({
     account_code: '',
     account_name: '',
@@ -81,10 +82,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     is_header: false,
     description: ''
   });
-
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       await createAccount.mutateAsync(formData);
       setShowForm(false);
@@ -110,7 +109,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       });
     }
   };
-
   const toggleNode = (accountId: string) => {
     const newExpanded = new Set(expandedNodes);
     if (newExpanded.has(accountId)) {
@@ -120,21 +118,21 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     }
     setExpandedNodes(newExpanded);
   };
-
   const buildAccountTree = (accounts: any[]) => {
     if (!accounts) return [];
-    
+
     // Filter accounts first
     const filtered = filterAccounts(accounts);
-    
+
     // Group by parent-child relationship
     const accountMap = new Map();
     const rootAccounts: any[] = [];
-    
     filtered.forEach(account => {
-      accountMap.set(account.id, { ...account, children: [] });
+      accountMap.set(account.id, {
+        ...account,
+        children: []
+      });
     });
-    
     filtered.forEach(account => {
       if (account.parent_account_id && accountMap.has(account.parent_account_id)) {
         accountMap.get(account.parent_account_id).children.push(accountMap.get(account.id));
@@ -142,17 +140,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         rootAccounts.push(accountMap.get(account.id));
       }
     });
-    
     return rootAccounts;
   };
-
   const renderAccountRow = (account: any, level: number = 0): JSX.Element[] => {
     // Handle undefined or null account
     if (!account) {
       console.warn('[RENDER_ACCOUNT_ROW] Account is undefined or null');
       return [];
     }
-
     const hasChildren = account.children && account.children.length > 0;
     const isExpanded = expandedNodes.has(account.id);
     const paddingLeft = level * 24;
@@ -165,25 +160,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     const isHeader = account.is_header || false;
     const balanceType = account.balance_type || 'debit';
     const isActive = account.is_active !== undefined ? account.is_active : true;
-
-    const rows: JSX.Element[] = [
-      <TableRow key={account.id || `row-${level}-${Date.now()}`} className={`${level > 0 ? "bg-muted/30" : ""} ${!isActive ? "opacity-60" : ""}`}>
+    const rows: JSX.Element[] = [<TableRow key={account.id || `row-${level}-${Date.now()}`} className={`${level > 0 ? "bg-muted/30" : ""} ${!isActive ? "opacity-60" : ""}`}>
         <TableCell>
-          <div className="flex items-center" style={{ paddingLeft }}>
-            {hasChildren ? (
-              <button
-                onClick={() => toggleNode(account.id)}
-                className="mr-2 p-1 hover:bg-accent rounded"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </button>
-            ) : (
-              <div className="w-6 mr-2" />
-            )}
+          <div className="flex items-center" style={{
+          paddingLeft
+        }}>
+            {hasChildren ? <button onClick={() => toggleNode(account.id)} className="mr-2 p-1 hover:bg-accent rounded">
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button> : <div className="w-6 mr-2" />}
             <span className="font-mono text-left">{accountCode}</span>
             {!isActive && <Badge variant="destructive" className="mr-2 text-xs">غير نشط</Badge>}
           </div>
@@ -203,10 +187,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </div>
         </TableCell>
         <TableCell className="text-center">
-          <AccountLevelBadge 
-            accountLevel={accountLevel} 
-            isHeader={isHeader} 
-          />
+          <AccountLevelBadge accountLevel={accountLevel} isHeader={isHeader} />
         </TableCell>
         <TableCell className="text-center">
           <Badge variant={balanceType === 'debit' ? 'default' : 'secondary'}>
@@ -220,82 +201,57 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         </TableCell>
         <TableCell className="text-center">
           <div className="flex gap-2 justify-center">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => {
-                setViewingAccount(account);
-                setShowViewDialog(true);
-              }}
-              title="معاينة"
-            >
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
+            setViewingAccount(account);
+            setShowViewDialog(true);
+          }} title="معاينة">
               <Eye className="h-4 w-4" />
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => {
-                setStatementAccount(account);
-                setShowStatementDialog(true);
-              }}
-              title="كشف حساب"
-            >
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
+            setStatementAccount(account);
+            setShowStatementDialog(true);
+          }} title="كشف حساب">
               <FileText className="h-4 w-4" />
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => {
-                setEditingAccount(account);
-                setShowEditDialog(true);
-              }}
-              title="تعديل متقدم"
-            >
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
+            setEditingAccount(account);
+            setShowEditDialog(true);
+          }} title="تعديل متقدم">
               <Edit className="h-4 w-4" />
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-              onClick={() => {
-                console.log('[DELETE_BTN_CLICK] Starting deletion process for account:', {
-                  accountId: account.id,
-                  accountCode: account.account_code,
-                  accountName: account.account_name,
-                  isSystemAccount: account.is_system,
-                  isActive: account.is_active,
-                  parentId: account.parent_account_id
-                });
-                console.log('[DELETE_BTN_CLICK] User permissions:', {
-                  userId: user?.id,
-                  userRoles: user?.roles,
-                  isSuperAdmin: isSuperAdmin,
-                  canDeleteAll: canDeleteAll
-                });
-                
-                setEditingAccount(account);
-                console.log('[DELETE_BTN_CLICK] Account set for deletion, opening dialog...');
-                setShowDeleteDialog(true);
-                
-                // Verify states after setting
-                setTimeout(() => {
-                  console.log('[DELETE_BTN_CLICK] States after setting:', {
-                    showDeleteDialog: true, // This should be true now
-                    editingAccount: account
-                  });
-                }, 100);
-              }}
-              title="حذف"
-            >
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => {
+            console.log('[DELETE_BTN_CLICK] Starting deletion process for account:', {
+              accountId: account.id,
+              accountCode: account.account_code,
+              accountName: account.account_name,
+              isSystemAccount: account.is_system,
+              isActive: account.is_active,
+              parentId: account.parent_account_id
+            });
+            console.log('[DELETE_BTN_CLICK] User permissions:', {
+              userId: user?.id,
+              userRoles: user?.roles,
+              isSuperAdmin: isSuperAdmin,
+              canDeleteAll: canDeleteAll
+            });
+            setEditingAccount(account);
+            console.log('[DELETE_BTN_CLICK] Account set for deletion, opening dialog...');
+            setShowDeleteDialog(true);
+
+            // Verify states after setting
+            setTimeout(() => {
+              console.log('[DELETE_BTN_CLICK] States after setting:', {
+                showDeleteDialog: true,
+                // This should be true now
+                editingAccount: account
+              });
+            }, 100);
+          }} title="حذف">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </TableCell>
-      </TableRow>
-    ];
+      </TableRow>];
 
     // Add children if expanded
     if (hasChildren && isExpanded) {
@@ -303,16 +259,13 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         rows.push(...renderAccountRow(child, level + 1));
       });
     }
-
     return rows;
   };
-
   const filterAccounts = (accounts: any[]) => {
     if (!accounts || !Array.isArray(accounts)) {
       console.warn('[FILTER_ACCOUNTS] Accounts is not a valid array:', accounts);
       return [];
     }
-    
     return accounts.filter(account => {
       // Handle undefined account
       if (!account) {
@@ -324,24 +277,15 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       const accountName = account.account_name || '';
       const accountCode = account.account_code || '';
       const accountNameAr = account.account_name_ar || '';
-      
-      const matchesSearch = searchTerm === '' || 
-        accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        accountCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        accountNameAr.includes(searchTerm);
-      
+      const matchesSearch = searchTerm === '' || accountName.toLowerCase().includes(searchTerm.toLowerCase()) || accountCode.toLowerCase().includes(searchTerm.toLowerCase()) || accountNameAr.includes(searchTerm);
       const matchesType = filterType === 'all' || account.account_type === filterType;
       const matchesLevel = filterLevel === 'all' || account.account_level?.toString() === filterLevel;
-      
+
       // Status filter
-      const matchesStatus = filterStatus === 'all' || 
-        (filterStatus === 'active' && account.is_active) ||
-        (filterStatus === 'inactive' && !account.is_active);
-      
+      const matchesStatus = filterStatus === 'all' || filterStatus === 'active' && account.is_active || filterStatus === 'inactive' && !account.is_active;
       return matchesSearch && matchesType && matchesLevel && matchesStatus;
     });
   };
-
   const getAccountTypeLabel = (type: string) => {
     const types = {
       assets: 'الأصول',
@@ -352,21 +296,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     };
     return types[type as keyof typeof types] || type;
   };
-
   if (allAccountsLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
+    return <div className="flex items-center justify-center h-64">
         <LoadingSpinner />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center" dir="rtl">
         <div className="text-right">
-          <h2 className="text-2xl font-bold">إدارة دليل الحسابات المحسن</h2>
+          <h2 className="text-2xl font-bold">دليل الحسابات </h2>
           <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
         </div>
       </div>
@@ -402,16 +341,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               </Button>
             </div>
             
-            {canDeleteAll && (
-              <Button 
-                variant="destructive" 
-                onClick={() => setShowDeleteAllDialog(true)} 
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
-              >
+            {canDeleteAll && <Button variant="destructive" onClick={() => setShowDeleteAllDialog(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700">
                 <span>حذف جميع الحسابات</span>
                 <Skull className="h-4 w-4" />
-              </Button>
-            )}
+              </Button>}
           </div>
 
           {/* Enhanced Filters */}
@@ -421,11 +354,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 {/* Toggle for inactive accounts */}
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Switch
-                      id="show-inactive"
-                      checked={showInactiveAccounts}
-                      onCheckedChange={setShowInactiveAccounts}
-                    />
+                    <Switch id="show-inactive" checked={showInactiveAccounts} onCheckedChange={setShowInactiveAccounts} />
                     <Label htmlFor="show-inactive" className="text-sm font-medium">
                       عرض الحسابات غير النشطة
                     </Label>
@@ -439,13 +368,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="البحث في الحسابات..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pr-10 text-right"
-                        dir="rtl"
-                      />
+                      <Input placeholder="البحث في الحسابات..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pr-10 text-right" dir="rtl" />
                     </div>
                   </div>
                   <Select value={filterType} onValueChange={setFilterType}>
@@ -512,9 +435,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {buildAccountTree(allAccounts || []).map((account) => (
-                    renderAccountRow(account)
-                  )).flat()}
+                  {buildAccountTree(allAccounts || []).map(account => renderAccountRow(account)).flat()}
                 </TableBody>
               </Table>
             </CardContent>
@@ -555,8 +476,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-right">معاينة الحساب</DialogTitle>
           </DialogHeader>
-          {viewingAccount && (
-            <div dir="rtl" className="w-full">
+          {viewingAccount && <div dir="rtl" className="w-full">
             <Tabs defaultValue="info" className="w-full" dir="rtl">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
@@ -612,11 +532,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                   <div>
                     <Label>تاريخ الإنشاء</Label>
                     <div className="p-2 bg-muted rounded">
-                      {new Date(viewingAccount.created_at).toLocaleDateString('en-GB', { 
-                        year: 'numeric', 
-                        month: '2-digit', 
-                        day: '2-digit' 
-                      })}
+                      {new Date(viewingAccount.created_at).toLocaleDateString('en-GB', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
                     </div>
                   </div>
                 </div>
@@ -632,52 +552,29 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 </Button>
               </div>
             </Tabs>
-            </div>
-          )}
+            </div>}
         </DialogContent>
       </Dialog>
 
       {/* Enhanced Account Edit Dialog */}
-      <EnhancedAccountEditDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        account={editingAccount}
-        onSuccess={() => {
-          setShowEditDialog(false);
-          setEditingAccount(null);
-        }}
-      />
+      <EnhancedAccountEditDialog open={showEditDialog} onOpenChange={setShowEditDialog} account={editingAccount} onSuccess={() => {
+      setShowEditDialog(false);
+      setEditingAccount(null);
+    }} />
 
       {/* Simple Delete Account Dialog */}
-      <SimpleAccountDeleteDialog
-        isOpen={showDeleteDialog}
-        onClose={() => {
-          console.log('[DELETE_DIALOG] Simple dialog closing, clearing account...');
-          setShowDeleteDialog(false);
-          setEditingAccount(null);
-        }}
-        accountId={editingAccount?.id || ''}
-        accountName={editingAccount?.account_name || ''}
-        accountCode={editingAccount?.account_code || ''}
-      />
+      <SimpleAccountDeleteDialog isOpen={showDeleteDialog} onClose={() => {
+      console.log('[DELETE_DIALOG] Simple dialog closing, clearing account...');
+      setShowDeleteDialog(false);
+      setEditingAccount(null);
+    }} accountId={editingAccount?.id || ''} accountName={editingAccount?.account_name || ''} accountCode={editingAccount?.account_code || ''} />
 
       {/* Account Statement Dialog */}
-      <AccountStatementDialog
-        open={showStatementDialog}
-        onOpenChange={setShowStatementDialog}
-        accountId={statementAccount?.id}
-        accountCode={statementAccount?.account_code}
-        accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
-      />
+      <AccountStatementDialog open={showStatementDialog} onOpenChange={setShowStatementDialog} accountId={statementAccount?.id} accountCode={statementAccount?.account_code} accountName={statementAccount?.account_name_ar || statementAccount?.account_name} />
 
       {/* Simple Delete All Accounts Dialog */}
-      <SimpleDeleteAllAccountsDialog
-        open={showDeleteAllDialog}
-        onOpenChange={setShowDeleteAllDialog}
-        onSuccess={() => {
-          setShowDeleteAllDialog(false);
-        }}
-      />
-    </div>
-  );
+      <SimpleDeleteAllAccountsDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog} onSuccess={() => {
+      setShowDeleteAllDialog(false);
+    }} />
+    </div>;
 };
