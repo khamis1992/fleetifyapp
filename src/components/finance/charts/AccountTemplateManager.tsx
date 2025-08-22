@@ -223,30 +223,6 @@ export const AccountTemplateManager: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Template Metadata */}
-      {metadata && (
-        <Card>
-          <CardHeader>
-            <CardTitle>معلومات القالب</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">اسم القالب:</span> {metadata.name}
-              </div>
-              <div>
-                <span className="font-medium">النسخة:</span> {metadata.version}
-              </div>
-              <div>
-                <span className="font-medium">تاريخ الإنشاء:</span> {metadata.created_date}
-              </div>
-              <div>
-                <span className="font-medium">نوع النشاط:</span> تأجير السيارات
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Dialogs */}
       <AccountSelectionDialog
