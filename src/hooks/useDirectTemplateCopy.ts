@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import { useBusinessTypeAccounts, AccountTemplate } from "./useBusinessTypeAccounts";
-import { getCarRentalTemplate, getCarRentalTemplateCount } from "./useCarRentalTemplate";
+
 
 interface DirectCopyResult {
   success: boolean;
@@ -72,6 +72,7 @@ export const useDirectTemplateCopy = () => {
         }
       } else {
         // استخدام القالب الافتراضي للأنواع الأخرى
+        console.log('📋 [DIRECT_COPY] استخدام قالب الأعمال الافتراضي للنوع:', businessType);
         const templateAccounts = getAccountsByBusinessType(businessType);
         allAccounts = [
           ...templateAccounts.assets,

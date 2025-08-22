@@ -112,17 +112,11 @@ export const AccountTemplateManager: React.FC = () => {
       if (!directTemplateCopy || !directTemplateCopy.mutate) {
         console.error('❌ [TEMPLATE] directTemplateCopy غير معرف أو معطل!');
         
-        // استخدام النظام القديم كـ fallback
-        console.log('🔄 [TEMPLATE] استخدام النظام القديم كبديل');
-        const carRentalAccounts = getAccountsByBusinessType('car_rental');
-        const allCarRentalAccounts = [
-          ...carRentalAccounts.assets,
-          ...carRentalAccounts.liabilities,
-          ...carRentalAccounts.revenue,
-          ...carRentalAccounts.expenses,
-          ...carRentalAccounts.equity
-        ];
-        copySelectedAccounts.mutate(allCarRentalAccounts);
+        toast({
+          variant: "destructive",
+          title: "خطأ في النظام",
+          description: "hook النسخ المباشر غير متوفر. يرجى إعادة تحميل الصفحة."
+        });
         return;
       }
       
