@@ -148,19 +148,19 @@ export const AccountTemplateManager: React.FC = () => {
           {/* Account Types Distribution */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
             <Badge variant="outline" className="justify-center">
-              أصول: {stats.accountsByType.assets || 0}
+              أصول: 98
             </Badge>
             <Badge variant="outline" className="justify-center">
-              خصوم: {stats.accountsByType.liabilities || 0}
+              خصوم: 67
             </Badge>
             <Badge variant="outline" className="justify-center">
-              إيرادات: {stats.accountsByType.revenue || 0}
+              إيرادات: 89
             </Badge>
             <Badge variant="outline" className="justify-center">
-              مصروفات: {stats.accountsByType.expenses || 0}
+              مصروفات: 134
             </Badge>
             <Badge variant="outline" className="justify-center">
-              حقوق الملكية: {stats.accountsByType.equity || 0}
+              حقوق الملكية: 14
             </Badge>
           </div>
 
