@@ -378,17 +378,17 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <span>قائمة الحسابات</span>
             <Layers className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="validation" className="flex items-center gap-2">
-            <span>التحقق والإصلاح</span>
-            <CheckCircle className="h-4 w-4" />
+          <TabsTrigger value="visualization" className="flex items-center gap-2">
+            <span>العرض التفاعلي</span>
+            <Eye className="h-4 w-4" />
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <span>القوالب</span>
             <Folder className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="visualization" className="flex items-center gap-2">
-            <span>العرض التفاعلي</span>
-            <Eye className="h-4 w-4" />
+          <TabsTrigger value="validation" className="flex items-center gap-2">
+            <span>التحقق والإصلاح</span>
+            <CheckCircle className="h-4 w-4" />
           </TabsTrigger>
         </TabsList>
 
