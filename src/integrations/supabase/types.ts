@@ -9458,7 +9458,7 @@ export type Database = {
         Returns: Json
       }
       calculate_account_level: {
-        Args: { account_id_param: string }
+        Args: { account_code: string } | { account_id_param: string }
         Returns: number
       }
       calculate_account_level_from_code: {
