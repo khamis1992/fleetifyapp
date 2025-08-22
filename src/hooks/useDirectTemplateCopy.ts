@@ -2,8 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
-import { useBusinessTypeAccounts, AccountTemplate } from "./useBusinessTypeAccounts";
-
+import { useBusinessTypeAccounts } from "./useBusinessTypeAccounts";
 
 interface DirectCopyResult {
   success: boolean;
@@ -16,7 +15,7 @@ interface DirectCopyResult {
 }
 
 /**
- * Hook لنسخ قوالب الحسابات مباشرة من JavaScript بدلاً من قاعدة البيانات
+ * Hook لنسخ قوالب الحسابات مباشرة من JSON بدلاً من النظام القديم
  */
 export const useDirectTemplateCopy = () => {
   const queryClient = useQueryClient();
@@ -32,10 +31,10 @@ export const useDirectTemplateCopy = () => {
 
       console.log('🚀 [DIRECT_COPY] بدء نسخ قالب مباشر:', { businessType, companyId });
 
-      // جلب جميع حسابات القالب - استخدام القالب الكامل لتأجير السيارات
       let allAccounts;
       
       if (businessType === 'car_rental') {
+        // ✅ استخدام القالب الكامل JSON حصرياً
         try {
           console.log('🚗 [DIRECT_COPY] جلب القالب الكامل من JSON...');
           const response = await fetch('/car_rental_complete_template.json');
@@ -68,7 +67,7 @@ export const useDirectTemplateCopy = () => {
           });
         } catch (error) {
           console.error('❌ [DIRECT_COPY] خطأ في جلب القالب الكامل:', error);
-          throw new Error(`فشل في تحميل القالب الكامل: ${error.message}`);
+          throw new Error(`فشل في تحميل القالب الكامل من JSON: ${error.message}`);
         }
       } else {
         // استخدام القالب الافتراضي للأنواع الأخرى
@@ -89,6 +88,7 @@ export const useDirectTemplateCopy = () => {
 
       console.log('📊 [DIRECT_COPY] إحصائيات القالب:', {
         total: allAccounts.length,
+        businessType: businessType,
         sample: allAccounts.slice(0, 3).map(acc => ({
           code: acc.code || acc.account_code,
           name: acc.name_ar || acc.nameAr,
@@ -228,19 +228,14 @@ export const useDirectTemplateCopy = () => {
 
       console.log('✅ [DIRECT_COPY] اكتملت عملية النسخ:', result);
       
-      // تشخيص إضافي مفصل
-      if (failed_accounts > 0) {
-        console.error('❌ [DIRECT_COPY] الأخطاء:', errors.slice(0, 5));
-      }
-      
-      if (copied_accounts < allAccounts.length / 2) {
-        console.warn('⚠️ [DIRECT_COPY] تم نسخ أقل من نصف الحسابات. قد تكون هناك مشكلة.');
+      // تحذير إذا كان النظام يستخدم القالب القديم بدلاً من JSON
+      if (businessType === 'car_rental' && copied_accounts === 34) {
+        console.warn('⚠️ [DIRECT_COPY] يبدو أن النظام لا يزال يستخدم القالب القديم (34 حساب). يجب استخدام JSON.');
       }
       
       return result;
     },
     onMutate: (businessType) => {
-      // Log only, no toast to avoid notification spam
       console.log('🚀 [DIRECT_COPY] تم استدعاء النسخ المباشر للقالب:', businessType);
     },
     onSuccess: (result) => {
@@ -248,7 +243,7 @@ export const useDirectTemplateCopy = () => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] });
 
-      // تنبيه شامل واحد بدلاً من تنبيهات متعددة
+      // تنبيه شامل واحد
       const statusMessage = result.skipped_accounts > 0 || result.failed_accounts > 0 
         ? `${result.message} (متخطاة: ${result.skipped_accounts}, فاشلة: ${result.failed_accounts})`
         : result.message;

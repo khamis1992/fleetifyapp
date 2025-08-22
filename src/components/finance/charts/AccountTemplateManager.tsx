@@ -95,16 +95,8 @@ export const AccountTemplateManager: React.FC = () => {
         hasCopyDefaultAccounts: !!copyDefaultAccounts
       });
       
-      // عرض إحصائيات القالب قبل النسخ
-      const accounts = getAccountsByBusinessType('car_rental');
-      console.log('📊 [TEMPLATE] إحصائيات القالب:', {
-        assets: accounts.assets.length,
-        liabilities: accounts.liabilities.length,
-        revenue: accounts.revenue.length,
-        expenses: accounts.expenses.length,
-        equity: accounts.equity.length,
-        total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
-      });
+      // سيتم استخدام النظام المحسن JSON مباشرة
+      console.log('🚗 [TEMPLATE] سيتم تحميل القالب الكامل (403 حساب) من JSON');
       
       console.log('🎯 [TEMPLATE] استدعاء directTemplateCopy...');
       
@@ -130,8 +122,7 @@ export const AccountTemplateManager: React.FC = () => {
 
   const handleSelectAccounts = (template: AccountTemplate) => {
     console.log('🎯 Selecting accounts for template:', template);
-    const accounts = getAccountsByBusinessType('car_rental');
-    console.log('📋 Retrieved accounts:', accounts);
+    // استخدام النظام العام للاختيار (ليس التأجير المحدد)
     setSelectedTemplate(template);
     setShowAccountSelection(true);
   };
@@ -145,7 +136,7 @@ export const AccountTemplateManager: React.FC = () => {
     });
   };
 
-  // دالة اختبار مباشرة للتشخيص
+  // دالة اختبار JSON Template مباشرة
   const handleDirectTest = async () => {
     if (!companyId) {
       toast({
@@ -155,26 +146,26 @@ export const AccountTemplateManager: React.FC = () => {
       return;
     }
 
-    console.log('🧪 [DIRECT_TEST] بدء الاختبار المباشر');
+    console.log('🧪 [JSON_TEST] بدء اختبار القالب JSON');
     
     try {
-      // جلب حسابات القالب
-      const templateAccounts = getAccountsByBusinessType('car_rental');
-      const allAccounts = [
-        ...templateAccounts.assets,
-        ...templateAccounts.liabilities,
-        ...templateAccounts.revenue,
-        ...templateAccounts.expenses,
-        ...templateAccounts.equity
-      ];
+      // تحميل القالب JSON مباشرة
+      const response = await fetch('/car_rental_complete_template.json');
+      if (!response.ok) {
+        throw new Error(`فشل تحميل JSON: ${response.status}`);
+      }
+      
+      const templateData = await response.json();
+      const allAccounts = templateData.chart_of_accounts || [];
 
-      console.log('📊 [DIRECT_TEST] إحصائيات القالب:', {
+      console.log('📊 [JSON_TEST] بيانات القالب JSON:', {
         total: allAccounts.length,
-        assets: templateAccounts.assets.length,
-        liabilities: templateAccounts.liabilities.length,
-        revenue: templateAccounts.revenue.length,
-        expenses: templateAccounts.expenses.length,
-        equity: templateAccounts.equity.length
+        hasMetadata: !!templateData.template_metadata,
+        sampleAccounts: allAccounts.slice(0, 3).map(acc => ({ 
+          code: acc.code, 
+          name: acc.name_ar,
+          type: acc.account_type
+        }))
       });
 
       // جلب الحسابات الموجودة
@@ -184,7 +175,7 @@ export const AccountTemplateManager: React.FC = () => {
         .eq('company_id', companyId);
 
       if (error) {
-        console.error('❌ [DIRECT_TEST] خطأ في جلب الحسابات:', error);
+        console.error('❌ [JSON_TEST] خطأ في جلب الحسابات:', error);
         toast({
           variant: "destructive",
           title: "خطأ في جلب الحسابات",
@@ -193,29 +184,26 @@ export const AccountTemplateManager: React.FC = () => {
         return;
       }
 
-      console.log('📋 [DIRECT_TEST] الحسابات الموجودة:', existingAccounts?.length || 0);
-
-      // حساب الحسابات التي ستتم إضافتها
       const existingCodes = new Set(existingAccounts?.map(acc => acc.account_code) || []);
       const newAccounts = allAccounts.filter(acc => !existingCodes.has(acc.code));
 
-      console.log('🆕 [DIRECT_TEST] الحسابات الجديدة:', {
-        newAccountsCount: newAccounts.length,
+      console.log('🆕 [JSON_TEST] النتائج:', {
+        jsonAccountsCount: allAccounts.length,
         existingAccountsCount: existingCodes.size,
-        totalTemplateAccounts: allAccounts.length,
-        sampleNewAccounts: newAccounts.slice(0, 5).map(acc => acc.code + ' - ' + acc.nameAr)
+        newAccountsCount: newAccounts.length,
+        sampleNewAccounts: newAccounts.slice(0, 5).map(acc => acc.code + ' - ' + acc.name_ar)
       });
 
       toast({
-        title: "اختبار مكتمل",
-        description: `${newAccounts.length} حساب جديد من أصل ${allAccounts.length} في القالب`
+        title: "✅ اختبار JSON مكتمل",
+        description: `القالب JSON يحتوي على ${allAccounts.length} حساب - ${newAccounts.length} جديد`
       });
 
     } catch (error: any) {
-      console.error('❌ [DIRECT_TEST] خطأ في الاختبار:', error);
+      console.error('❌ [JSON_TEST] خطأ في اختبار JSON:', error);
       toast({
         variant: "destructive",
-        title: "خطأ في الاختبار",
+        title: "❌ فشل اختبار JSON",
         description: error.message
       });
     }
@@ -347,24 +335,28 @@ export const AccountTemplateManager: React.FC = () => {
                 <Button 
                   size="sm" 
                   variant="secondary"
-                  onClick={() => {
-                    console.log('🎯 [QUICK_TEST] اختبار سريع للقالب');
-                    const accounts = getAccountsByBusinessType('car_rental');
-                    console.log('📊 أعداد الحسابات:', {
-                      assets: accounts.assets.length,
-                      liabilities: accounts.liabilities.length,
-                      revenue: accounts.revenue.length,
-                      expenses: accounts.expenses.length,
-                      equity: accounts.equity.length,
-                      total: accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length
-                    });
-                    toast({
-                      title: "اختبار سريع",
-                      description: `القالب يحتوي على ${accounts.assets.length + accounts.liabilities.length + accounts.revenue.length + accounts.expenses.length + accounts.equity.length} حساب`
-                    });
+                  onClick={async () => {
+                    console.log('🎯 [QUICK_JSON] اختبار سريع للقالب JSON');
+                    try {
+                      const response = await fetch('/car_rental_complete_template.json');
+                      const templateData = await response.json();
+                      const accountsCount = templateData.chart_of_accounts?.length || 0;
+                      console.log('📊 عدد حسابات JSON:', accountsCount);
+                      toast({
+                        title: "✅ اختبار سريع JSON",
+                        description: `القالب JSON يحتوي على ${accountsCount} حساب`
+                      });
+                    } catch (error) {
+                      console.error('❌ فشل اختبار JSON:', error);
+                      toast({
+                        variant: "destructive",
+                        title: "❌ فشل اختبار JSON",
+                        description: "لم يتم تحميل ملف JSON"
+                      });
+                    }
                   }}
                   className="px-2"
-                  title="اختبار سريع"
+                  title="اختبار سريع JSON"
                 >
                   ⚡
                 </Button>
@@ -426,7 +418,7 @@ export const AccountTemplateManager: React.FC = () => {
         <AccountSelectionDialog
           open={showAccountSelection}
           onOpenChange={setShowAccountSelection}
-          accounts={getAccountsByBusinessType('car_rental')} // Use car_rental as example
+          accounts={getAccountsByBusinessType('general_business')} // استخدام النظام العام للاختيار
           templateName={selectedTemplate.nameAr}
           onApply={handleApplySelectedAccounts}
           isApplying={copySelectedAccounts.isPending}
