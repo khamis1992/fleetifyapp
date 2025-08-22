@@ -64,6 +64,13 @@ export const AccountTemplateManager: React.FC = () => {
 
   const handleApplyTemplate = (templateId: string) => {
     console.log('🎯 [TEMPLATE] بدء تطبيق القالب:', templateId);
+    console.log('🔍 [TEMPLATE] فحص الـ hooks المتاحة:', {
+      hasDirectTemplateCopy: !!directTemplateCopy,
+      hasCopySelectedAccounts: !!copySelectedAccounts,
+      hasCopyDefaultAccounts: !!copyDefaultAccounts,
+      directTemplateCopyMutate: !!directTemplateCopy?.mutate,
+      templateIdCheck: templateId === 'car_rental'
+    });
     
     if (templateId === 'general_business') {
       console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للأعمال العامة');
@@ -72,33 +79,30 @@ export const AccountTemplateManager: React.FC = () => {
       // 🔧 إصلاح: فرض استخدام النظام المحسن دائماً للتأجير
       console.log('🚗 [TEMPLATE] تطبيق قالب التأجير - فرض استخدام النظام المحسن');
       
-      // التحقق من وجود النظام المحسن
+      // 🚨 فرض استخدام النظام المحسن فقط
       if (directTemplateCopy && directTemplateCopy.mutate) {
         console.log('✅ [TEMPLATE] استخدام النظام المحسن (directTemplateCopy)');
         console.log('📊 [TEMPLATE] سيتم نسخ', getCarRentalTemplateCount(), 'حساب من القالب المحاسبي المنظم');
-        directTemplateCopy.mutate('car_rental');
-      } else {
-        console.error('❌ [TEMPLATE] النظام المحسن غير متوفر! استخدام النظام القديم كبديل');
         
-        // استخدام النظام القديم كـ fallback (لكن مع تحذير)
-        const carRentalAccounts = getAccountsByBusinessType('car_rental');
-        const allCarRentalAccounts = [
-          ...carRentalAccounts.assets,
-          ...carRentalAccounts.liabilities,
-          ...carRentalAccounts.revenue,
-          ...carRentalAccounts.expenses,
-          ...carRentalAccounts.equity
-        ];
-        
-        console.log('⚠️ [TEMPLATE] النظام القديم سينسخ', allCarRentalAccounts.length, 'حساب فقط بدلاً من', getCarRentalTemplateCount());
-        
+        // تأكيد إضافي للمستخدم
         toast({
-          variant: "destructive",
-          title: "تحذير: استخدام النظام القديم",
-          description: `سيتم نسخ ${allCarRentalAccounts.length} حساب فقط بدلاً من ${getCarRentalTemplateCount()} حساب من القالب المحسن`
+          title: "🚀 استخدام النظام المحسن",
+          description: `سيتم نسخ ${getCarRentalTemplateCount()} حساب من القالب المحاسبي المنظم`
         });
         
-        copySelectedAccounts.mutate(allCarRentalAccounts);
+        directTemplateCopy.mutate('car_rental');
+      } else {
+        console.error('❌ [TEMPLATE] النظام المحسن غير متوفر!');
+        
+        // رفض استخدام النظام القديم وإظهار خطأ واضح
+        toast({
+          variant: "destructive",
+          title: "❌ النظام المحسن غير متوفر",
+          description: "لا يمكن تطبيق قالب التأجير. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى."
+        });
+        
+        console.error('🚫 [TEMPLATE] رفض استخدام النظام القديم لضمان الجودة');
+        return; // إيقاف التنفيذ بدلاً من استخدام النظام القديم
       }
     } else {
       console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للقالب:', templateId);
