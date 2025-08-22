@@ -24,7 +24,7 @@ import {
   Clock,
   Download
 } from 'lucide-react';
-import { useCompleteCarRentalTemplate, CompleteTemplateAccount } from '@/hooks/useCompleteCarRentalTemplate';
+import { useTemplateSystem, AccountTemplate } from '@/hooks/useTemplateSystem';
 
 interface TemplatePreviewDialogProps {
   open: boolean;
@@ -39,18 +39,18 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
   onApply,
   isApplying
 }) => {
-  const { 
-    template, 
-    loading, 
-    error, 
-    metadata,
-    accounts,
+  const {
+    template,
+    loading,
+    error,
     getTemplateStats,
     getAccountsByLevel,
     getAccountsByType,
     searchAccounts,
     validateHierarchy,
-    isReady
+    isReady,
+    getAllAccounts,
+    getMetadata
   } = useTemplateSystem();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,26 +86,11 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
   const stats = getTemplateStats();
   const accountsByType = getAccountsByType();
   const validation = validateHierarchy();
-  const filteredAccounts = searchTerm ? searchAccounts(searchTerm) : accounts;
+  const allAccounts = getAllAccounts();
+  const metadata = getMetadata();
+  const filteredAccounts = searchTerm ? searchAccounts(searchTerm) : allAccounts;
 
-  // تحويل AccountTemplate إلى CompleteTemplateAccount للتوافق
-  const convertToCompleteAccounts = (templateAccounts: any[]): CompleteTemplateAccount[] => {
-    return templateAccounts.map(account => ({
-      code: account.code,
-      name_ar: account.nameAr || account.name_ar,
-      name_en: account.nameEn || account.name_en,
-      account_type: account.accountType || account.account_type,
-      level: account.accountLevel || account.level,
-      balance_type: account.balanceType || account.balance_type,
-      parent_code: account.parentCode || account.parent_code,
-      is_header: account.isHeader ?? account.is_header ?? false,
-      is_entry: account.isEntryLevel ?? account.is_entry ?? false,
-      essential: account.essential ?? false,
-      description: account.description || ''
-    }));
-  };
-
-  const renderAccountsList = (accountsToShow: CompleteTemplateAccount[]) => (
+  const renderAccountsList = (accountsToShow: AccountTemplate[]) => (
     <ScrollArea className="h-96">
       <div className="space-y-2">
         {accountsToShow.map((account) => (
@@ -169,33 +154,33 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{stats.total}</div>
+                    <div className="text-2xl font-bold text-primary">{stats.totalAccounts}</div>
                     <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
                   </div>
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{stats.assets}</div>
+                    <div className="text-2xl font-bold text-blue-600">{stats.accountsByType.assets || 0}</div>
                     <div className="text-sm text-blue-600">الأصول</div>
                   </div>
                   <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{stats.liabilities}</div>
+                    <div className="text-2xl font-bold text-red-600">{stats.accountsByType.liabilities || 0}</div>
                     <div className="text-sm text-red-600">الخصوم</div>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{stats.revenue}</div>
+                    <div className="text-2xl font-bold text-green-600">{stats.accountsByType.revenue || 0}</div>
                     <div className="text-sm text-green-600">الإيرادات</div>
                   </div>
                   <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{stats.expenses}</div>
+                    <div className="text-2xl font-bold text-orange-600">{stats.accountsByType.expenses || 0}</div>
                     <div className="text-sm text-orange-600">المصروفات</div>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{stats.equity}</div>
+                    <div className="text-2xl font-bold text-purple-600">{stats.accountsByType.equity || 0}</div>
                     <div className="text-sm text-purple-600">حقوق الملكية</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-6 gap-2">
-                  {Object.entries(stats.byLevel).map(([level, count]) => (
+                  {Object.entries(stats.accountsByLevel).map(([level, count]) => (
                     <div key={level} className="text-center p-2 bg-gray-50 rounded">
                       <div className="font-bold">{count}</div>
                       <div className="text-xs">مستوى {level}</div>
@@ -210,20 +195,20 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                       <p><strong>النسخة:</strong> {metadata?.version}</p>
                       <p><strong>تاريخ الإنشاء:</strong> {metadata?.created_date}</p>
                       <p><strong>نوع النشاط:</strong> {metadata?.business_type}</p>
-                      <p><strong>حسابات رأس:</strong> {stats.headerAccounts} | <strong>حسابات تفصيلية:</strong> {stats.entryAccounts}</p>
+                      <p><strong>حسابات أساسية:</strong> {stats.essentialAccounts} | <strong>حسابات تشغيلية:</strong> {stats.entryLevelAccounts}</p>
                     </div>
                   </AlertDescription>
                 </Alert>
 
                 {/* نتائج التحقق من التسلسل الهرمي */}
-                <Alert className={validation.valid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                  {validation.valid ? (
+                <Alert className={validation.isValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  {validation.isValid ? (
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   ) : (
                     <AlertTriangle className="h-4 w-4 text-red-600" />
                   )}
                   <AlertDescription className="text-right">
-                    {validation.valid ? (
+                    {validation.isValid ? (
                       <span className="text-green-700">✅ التسلسل الهرمي للقالب صحيح ومنظم</span>
                     ) : (
                       <div className="text-red-700">
@@ -257,40 +242,40 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                   variant={selectedLevel === level ? 'default' : 'outline'}
                   onClick={() => setSelectedLevel(level)}
                 >
-                  المستوى {level} ({stats.byLevel[level] || 0})
+                  المستوى {level} ({stats.accountsByLevel[level] || 0})
                 </Button>
               ))}
             </div>
             {renderAccountsList(
               selectedLevel 
                 ? getAccountsByLevel(selectedLevel)
-                : accounts
+                : allAccounts
             )}
           </TabsContent>
 
           <TabsContent value="types" className="space-y-4">
             <Tabs defaultValue="assets" dir="rtl">
               <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="assets">الأصول ({stats.assets})</TabsTrigger>
-                <TabsTrigger value="liabilities">الخصوم ({stats.liabilities})</TabsTrigger>
-                <TabsTrigger value="equity">حقوق الملكية ({stats.equity})</TabsTrigger>
-                <TabsTrigger value="revenue">الإيرادات ({stats.revenue})</TabsTrigger>
-                <TabsTrigger value="expenses">المصروفات ({stats.expenses})</TabsTrigger>
+                <TabsTrigger value="assets">الأصول ({stats.accountsByType.assets || 0})</TabsTrigger>
+                <TabsTrigger value="liabilities">الخصوم ({stats.accountsByType.liabilities || 0})</TabsTrigger>
+                <TabsTrigger value="equity">حقوق الملكية ({stats.accountsByType.equity || 0})</TabsTrigger>
+                <TabsTrigger value="revenue">الإيرادات ({stats.accountsByType.revenue || 0})</TabsTrigger>
+                <TabsTrigger value="expenses">المصروفات ({stats.accountsByType.expenses || 0})</TabsTrigger>
               </TabsList>
               <TabsContent value="assets">
-                {renderAccountsList(convertToCompleteAccounts(accountsByType.assets))}
+                {renderAccountsList(accountsByType.assets)}
               </TabsContent>
               <TabsContent value="liabilities">
-                {renderAccountsList(convertToCompleteAccounts(accountsByType.liabilities))}
+                {renderAccountsList(accountsByType.liabilities)}
               </TabsContent>
               <TabsContent value="equity">
-                {renderAccountsList(convertToCompleteAccounts(accountsByType.equity))}
+                {renderAccountsList(accountsByType.equity)}
               </TabsContent>
               <TabsContent value="revenue">
-                {renderAccountsList(convertToCompleteAccounts(accountsByType.revenue))}
+                {renderAccountsList(accountsByType.revenue)}
               </TabsContent>
               <TabsContent value="expenses">
-                {renderAccountsList(convertToCompleteAccounts(accountsByType.expenses))}
+                {renderAccountsList(accountsByType.expenses)}
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -306,7 +291,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
               />
             </div>
             <div className="text-sm text-muted-foreground text-right">
-              {searchTerm ? `${filteredAccounts.length} حساب من أصل ${accounts.length}` : `${accounts.length} حساب متاح`}
+              {searchTerm ? `${filteredAccounts.length} حساب من أصل ${allAccounts.length}` : `${allAccounts.length} حساب متاح`}
             </div>
             {renderAccountsList(filteredAccounts)}
           </TabsContent>
@@ -318,7 +303,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           </Button>
           <Button 
             onClick={onApply}
-            disabled={isApplying || !validation.valid}
+            disabled={isApplying || !validation.isValid}
             className="gap-2"
           >
             {isApplying ? (
@@ -329,7 +314,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                تطبيق القالب ({stats.total} حساب)
+                تطبيق القالب ({stats.totalAccounts} حساب)
               </>
             )}
           </Button>

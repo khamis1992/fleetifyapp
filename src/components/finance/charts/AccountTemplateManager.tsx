@@ -1,429 +1,275 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  FileCode, 
-  Download, 
-  Upload, 
-  Car,
-  Info,
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import {
+  Download,
+  FileText,
   CheckCircle,
-  Clock
+  AlertTriangle,
+  Clock,
+  Building,
+  Users
 } from 'lucide-react';
 import { useCopyDefaultAccounts } from '@/hooks/useChartOfAccounts';
 import { AccountSelectionDialog } from './AccountSelectionDialog';
-import { useBusinessTypeAccounts } from '@/hooks/useBusinessTypeAccounts';
 import { useCopySelectedAccounts } from '@/hooks/useCopySelectedAccounts';
 import { useDirectTemplateCopy } from '@/hooks/useDirectTemplateCopy';
+import { useTemplateSystem, AccountTemplate } from '@/hooks/useTemplateSystem';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-
-import { useCompleteCarRentalTemplate } from '@/hooks/useCompleteCarRentalTemplate';
 import { TemplatePreviewDialog } from './TemplatePreviewDialog';
-import { useToast } from '@/hooks/use-toast';
 
-interface AccountTemplate {
-  id: string;
-  name: string;
-  nameAr: string;
-  description: string;
-  icon: React.ReactNode;
-  accountsCount: number;
-  category: 'business' | 'industry' | 'custom';
-  preview: string[];
+interface ExistingAccountsSummary {
+  totalAccounts: number;
+  hasAccounts: boolean;
+  sampleCodes: string[];
 }
 
 export const AccountTemplateManager: React.FC = () => {
-  const { getTotalAccountsCount, getAccountsByBusinessType } = useBusinessTypeAccounts();
+  const { 
+    getAllAccounts, 
+    getTemplateStats, 
+    getAccountsByType, 
+    loading: templateLoading, 
+    error: templateError,
+    isReady: templateReady,
+    totalAccounts,
+    getMetadata
+  } = useTemplateSystem();
+  
   const { companyId } = useUnifiedCompanyAccess();
-  const { totalAccounts: completeTemplateCount, isReady: completeTemplateReady } = useCompleteCarRentalTemplate();
   const { toast } = useToast();
-  
-  const PREDEFINED_TEMPLATES: AccountTemplate[] = [
-    {
-      id: 'car_rental',
-      name: 'Car Rental & Transportation - Complete Template',
-      nameAr: 'قالب تأجير السيارات الشامل - 6 مستويات',
-      description: 'القالب الكامل لشركات تأجير السيارات يحتوي على 403 حساب محاسبي منظم في 6 مستويات هرمية احترافية',
-      icon: <Car className="h-5 w-5" />,
-      accountsCount: 403, // Always show 403 as the template is complete
-      category: 'industry',
-      preview: [
-        '403 حساب محاسبي شامل',
-        '6 مستويات هرمية منظمة',
-        'أصول المركبات مع الإهلاك',
-        'إيرادات التأجير المتخصصة',
-        'مصروفات الصيانة المفصلة',
-        'حسابات العملاء والموردين',
-        'إدارة الوقود والتأمين',
-        'هيكل محاسبي مطابق للمعايير'
-      ]
-    }
-  ];
-
-  // تشخيص القوالب
-  console.log('📋 [TEMPLATES] القوالب المعرفة:', PREDEFINED_TEMPLATES.map(t => ({ 
-    id: t.id, 
-    name: t.nameAr, 
-    count: t.accountsCount,
-    isComplete: t.id === 'car_rental' && completeTemplateReady
-  })));
-
-  const [selectedTemplate, setSelectedTemplate] = useState<AccountTemplate | null>(null);
-  const [showAccountSelection, setShowAccountSelection] = useState(false);
-  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
-  
   const copyDefaultAccounts = useCopyDefaultAccounts();
   const copySelectedAccounts = useCopySelectedAccounts();
   const directTemplateCopy = useDirectTemplateCopy();
+  
+  const [showSelectionDialog, setShowSelectionDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [existingAccounts, setExistingAccounts] = useState<ExistingAccountsSummary>({
+    totalAccounts: 0,
+    hasAccounts: false,
+    sampleCodes: []
+  });
 
-  const handleApplyTemplate = (templateId: string) => {
-    console.log('🎯 [TEMPLATE] بدء تطبيق القالب:', templateId);
-    
-    if (templateId === 'general_business') {
-      console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للأعمال العامة');
-      copyDefaultAccounts.mutate();
-    } else if (templateId === 'car_rental') {
-      // استخدام النسخ المباشر للحصول على جميع الحسابات
-      console.log('🚗 [TEMPLATE] تطبيق قالب التأجير باستخدام النسخ المباشر');
-      console.log('🔍 [TEMPLATE] التحقق من الـ hooks المتاحة:', {
-        hasDirectTemplateCopy: !!directTemplateCopy,
-        hasCopySelectedAccounts: !!copySelectedAccounts,
-        hasCopyDefaultAccounts: !!copyDefaultAccounts
-      });
-      
-      // سيتم استخدام النظام المحسن JSON مباشرة
-      console.log('🚗 [TEMPLATE] سيتم تحميل القالب الكامل (403 حساب) من JSON');
-      
-      console.log('🎯 [TEMPLATE] استدعاء directTemplateCopy...');
-      
-      // التحقق من وجود الـ hook
-      if (!directTemplateCopy || !directTemplateCopy.mutate) {
-        console.error('❌ [TEMPLATE] directTemplateCopy غير معرف أو معطل!');
-        
-        toast({
-          variant: "destructive",
-          title: "خطأ في النظام",
-          description: "hook النسخ المباشر غير متوفر. يرجى إعادة تحميل الصفحة."
+  // Check existing accounts in the company
+  useEffect(() => {
+    const checkExistingAccounts = async () => {
+      if (!companyId) return;
+
+      try {
+        const { data: accounts } = await supabase
+          .from('chart_of_accounts')
+          .select('account_code')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .order('account_code')
+          .limit(10);
+
+        setExistingAccounts({
+          totalAccounts: accounts?.length || 0,
+          hasAccounts: (accounts?.length || 0) > 0,
+          sampleCodes: accounts?.map(acc => acc.account_code) || []
         });
-        return;
+      } catch (error) {
+        console.error('Error checking existing accounts:', error);
       }
-      
-      console.log('🚀 [TEMPLATE] استدعاء النظام المحسن...');
-      directTemplateCopy.mutate('car_rental');
-    } else {
-      console.log('📋 [TEMPLATE] استخدام النسخ الافتراضي للقالب:', templateId);
-      copyDefaultAccounts.mutate();
-    }
-  };
+    };
 
-  const handleSelectAccounts = (template: AccountTemplate) => {
-    console.log('🎯 Selecting accounts for template:', template);
-    // استخدام النظام العام للاختيار (ليس التأجير المحدد)
-    setSelectedTemplate(template);
-    setShowAccountSelection(true);
-  };
+    checkExistingAccounts();
+  }, [companyId]);
 
-  const handleApplySelectedAccounts = (selectedAccounts: any[]) => {
-    copySelectedAccounts.mutate(selectedAccounts, {
-      onSuccess: () => {
-        setShowAccountSelection(false);
-        setSelectedTemplate(null);
-      }
-    });
-  };
-
-  // دالة اختبار JSON Template مباشرة
-  const handleDirectTest = async () => {
-    if (!companyId) {
+  const handleDirectCopy = () => {
+    if (!templateReady) {
       toast({
-        variant: "destructive",
-        title: "معرف الشركة غير متوفر"
+        title: "القالب غير جاهز",
+        description: "يرجى انتظار تحميل القالب",
+        variant: "destructive"
       });
       return;
     }
 
-    console.log('🧪 [JSON_TEST] بدء اختبار القالب JSON');
-    
-    try {
-      // تحميل القالب JSON مباشرة
-      const response = await fetch('/car_rental_complete_template.json');
-      if (!response.ok) {
-        throw new Error(`فشل تحميل JSON: ${response.status}`);
-      }
-      
-      const templateData = await response.json();
-      const allAccounts = templateData.chart_of_accounts || [];
-
-      console.log('📊 [JSON_TEST] بيانات القالب JSON:', {
-        total: allAccounts.length,
-        hasMetadata: !!templateData.template_metadata,
-        sampleAccounts: allAccounts.slice(0, 3).map(acc => ({ 
-          code: acc.code, 
-          name: acc.name_ar,
-          type: acc.account_type
-        }))
-      });
-
-      // جلب الحسابات الموجودة
-      const { data: existingAccounts, error } = await supabase
-        .from('chart_of_accounts')
-        .select('account_code, account_name')
-        .eq('company_id', companyId);
-
-      if (error) {
-        console.error('❌ [JSON_TEST] خطأ في جلب الحسابات:', error);
-        toast({
-          variant: "destructive",
-          title: "خطأ في جلب الحسابات",
-          description: error.message
-        });
-        return;
-      }
-
-      const existingCodes = new Set(existingAccounts?.map(acc => acc.account_code) || []);
-      const newAccounts = allAccounts.filter(acc => !existingCodes.has(acc.code));
-
-      console.log('🆕 [JSON_TEST] النتائج:', {
-        jsonAccountsCount: allAccounts.length,
-        existingAccountsCount: existingCodes.size,
-        newAccountsCount: newAccounts.length,
-        sampleNewAccounts: newAccounts.slice(0, 5).map(acc => acc.code + ' - ' + acc.name_ar)
-      });
-
-      toast({
-        title: "✅ اختبار JSON مكتمل",
-        description: `القالب JSON يحتوي على ${allAccounts.length} حساب - ${newAccounts.length} جديد`
-      });
-
-    } catch (error: any) {
-      console.error('❌ [JSON_TEST] خطأ في اختبار JSON:', error);
-      toast({
-        variant: "destructive",
-        title: "❌ فشل اختبار JSON",
-        description: error.message
-      });
-    }
+    directTemplateCopy.mutate('car_rental');
   };
 
-  const renderTemplateCard = (template: AccountTemplate) => (
-    <Card key={template.id} className="group hover:shadow-md transition-shadow" dir="rtl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3 text-right">
-          {template.icon}
-          <div className="text-right">
-            <div className="text-base">{template.nameAr}</div>
-            <div className="text-sm text-muted-foreground font-normal">
-              {template.name}
-            </div>
-          </div>
-        </CardTitle>
-        <CardDescription className="text-right">{template.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Badge variant={template.category === 'business' ? 'default' : 'secondary'}>
-              {template.category === 'business' ? 'عام' : 'متخصص'}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {template.accountsCount} حساب
-            </Badge>
-          </div>
+  const handleSelectedCopy = (selectedAccounts: AccountTemplate[]) => {
+    copySelectedAccounts.mutate(selectedAccounts);
+    setShowSelectionDialog(false);
+  };
 
-          <div className="text-sm text-muted-foreground text-right">
-            <div className="font-medium mb-1">أمثلة من الحسابات:</div>
-            <div className="text-xs space-y-1">
-              {template.preview.slice(0, 3).map((account, index) => (
-                <div key={index} className="text-right">• {account}</div>
-              ))}
-              {template.preview.length > 3 && (
-                <div className="text-muted-foreground text-right">
-                  + {template.preview.length - 3} حساب آخر...
-                </div>
-              )}
-            </div>
-          </div>
+  // Template stats
+  const stats = getTemplateStats();
+  const metadata = getMetadata();
 
-          <div className="flex gap-2 pt-2">
-            <Button 
-              size="sm"
-              onClick={() => {
-                console.log('🎯 [BUTTON_CLICK] تم الضغط على تطبيق الكل للقالب:', template.id);
-                handleApplyTemplate(template.id);
-              }}
-              disabled={copyDefaultAccounts.isPending || copySelectedAccounts.isPending || directTemplateCopy.isPending}
-              className="flex-1 flex items-center gap-2"
-            >
-              {(copyDefaultAccounts.isPending || copySelectedAccounts.isPending || directTemplateCopy.isPending) ? (
-                <>
-                  <span>جاري التطبيق...</span>
-                  <Clock className="h-3 w-3" />
-                </>
-              ) : (
-                <>
-                  <span>تطبيق مباشر</span>
-                  <CheckCircle className="h-3 w-3" />
-                </>
-              )}
-            </Button>
-            
-            {/* زر المعاينة المحسن */}
-            {template.id === 'car_rental' && completeTemplateReady && (
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={() => setShowTemplatePreview(true)}
-                className="flex items-center gap-1"
-                title="معاينة القالب الكامل"
-              >
-                <span className="text-xs">معاينة</span>
-                <Info className="h-3 w-3" />
-              </Button>
-            )}
-            
-            {/* زر فرض النسخ المحسن للتأجير */}
-            {template.id === 'car_rental' && (
-              <Button 
-                size="sm"
-                variant="default"
-                onClick={() => {
-                  console.log('🚀 [FORCE_NEW] فرض استخدام النظام المحسن');
-                  directTemplateCopy.mutate('car_rental');
-                }}
-                disabled={directTemplateCopy.isPending}
-                className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
-                title="فرض النظام المحسن"
-              >
-                {directTemplateCopy.isPending ? (
-                  <>
-                    <Clock className="h-3 w-3" />
-                    <span className="text-xs">محسن...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-xs">محسن</span>
-                    <CheckCircle className="h-3 w-3" />
-                  </>
-                )}
-              </Button>
-            )}
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => handleSelectAccounts(template)}
-              className="flex-1"
-            >
-              اختيار الحسابات
-            </Button>
-            
-            {/* أزرار اختبار للتشخيص */}
-            {template.id === 'car_rental' && (
-              <div className="flex gap-1">
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={handleDirectTest}
-                  className="px-2"
-                  title="اختبار شامل"
-                >
-                  🧪
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={async () => {
-                    console.log('🎯 [QUICK_JSON] اختبار سريع للقالب JSON');
-                    try {
-                      const response = await fetch('/car_rental_complete_template.json');
-                      const templateData = await response.json();
-                      const accountsCount = templateData.chart_of_accounts?.length || 0;
-                      console.log('📊 عدد حسابات JSON:', accountsCount);
-                      toast({
-                        title: "✅ اختبار سريع JSON",
-                        description: `القالب JSON يحتوي على ${accountsCount} حساب`
-                      });
-                    } catch (error) {
-                      console.error('❌ فشل اختبار JSON:', error);
-                      toast({
-                        variant: "destructive",
-                        title: "❌ فشل اختبار JSON",
-                        description: "لم يتم تحميل ملف JSON"
-                      });
-                    }
-                  }}
-                  className="px-2"
-                  title="اختبار سريع JSON"
-                >
-                  ⚡
-                </Button>
-              </div>
-            )}
+  if (templateLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <Clock className="h-5 w-5 animate-spin mr-2" />
+            <span>جاري تحميل قالب الحسابات...</span>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (templateError) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center text-red-600">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            <span>خطأ في تحميل القالب: {templateError}</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6">
+      {/* Template Overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <FileCode className="h-5 w-5" />
-            قوالب دليل الحسابات
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            قالب دليل الحسابات - تأجير السيارات
           </CardTitle>
-          <CardDescription className="text-right">
-            اختر قالب جاهز يناسب نوع نشاطك التجاري لتوفير الوقت والجهد
+          <CardDescription>
+            قالب شامل ومحسن محاسبياً لشركات تأجير السيارات ({totalAccounts} حساب محاسبي)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-right">
-              <div className="space-y-2">
-                <p>تطبيق قالب سيضيف الحسابات الجديدة إلى دليلك الحالي دون حذف الحسابات الموجودة</p>
-                <p className="text-sm text-blue-600 font-medium">
-                  ✨ النظام المحسن: الآن يتم نسخ جميع الحسابات مباشرة من القالب الكامل (403 حساب احترافي) 
-                  - هيكل محاسبي صحيح من المستوى 1-6 مطابق للمعايير المحاسبية
-                </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{stats.totalAccounts}</div>
+              <div className="text-sm text-muted-foreground">إجمالي الحسابات</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.essentialAccounts}</div>
+              <div className="text-sm text-muted-foreground">حسابات أساسية</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{stats.entryLevelAccounts}</div>
+              <div className="text-sm text-muted-foreground">حسابات تشغيلية</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">6</div>
+              <div className="text-sm text-muted-foreground">مستويات هرمية</div>
+            </div>
+          </div>
+
+          {/* Account Types Distribution */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+            <Badge variant="outline" className="justify-center">
+              أصول: {stats.accountsByType.assets || 0}
+            </Badge>
+            <Badge variant="outline" className="justify-center">
+              خصوم: {stats.accountsByType.liabilities || 0}
+            </Badge>
+            <Badge variant="outline" className="justify-center">
+              إيرادات: {stats.accountsByType.revenue || 0}
+            </Badge>
+            <Badge variant="outline" className="justify-center">
+              مصروفات: {stats.accountsByType.expenses || 0}
+            </Badge>
+            <Badge variant="outline" className="justify-center">
+              حقوق الملكية: {stats.accountsByType.equity || 0}
+            </Badge>
+          </div>
+
+          {/* Existing Accounts Warning */}
+          {existingAccounts.hasAccounts && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="font-medium text-amber-800">
+                  يوجد {existingAccounts.totalAccounts} حساب موجود مسبقاً
+                </span>
               </div>
-            </AlertDescription>
-          </Alert>
+              <div className="text-sm text-amber-700">
+                الحسابات الموجودة: {existingAccounts.sampleCodes.slice(0, 5).join(', ')}
+                {existingAccounts.sampleCodes.length > 5 && '...'}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={() => setShowPreviewDialog(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              معاينة القالب
+            </Button>
+
+            <Button 
+              onClick={handleDirectCopy}
+              disabled={directTemplateCopy.isPending || !templateReady}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {directTemplateCopy.isPending ? 'جاري النسخ...' : 'نسخ كامل للقالب'}
+            </Button>
+
+            <Button 
+              onClick={() => setShowSelectionDialog(true)}
+              variant="outline"
+              disabled={!templateReady}
+              className="flex items-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              اختيار حسابات محددة
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {PREDEFINED_TEMPLATES
-          .filter(t => t.category === 'industry')
-          .map(renderTemplateCard)}
-      </div>
+      {/* Template Metadata */}
+      {metadata && (
+        <Card>
+          <CardHeader>
+            <CardTitle>معلومات القالب</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-medium">اسم القالب:</span> {metadata.name}
+              </div>
+              <div>
+                <span className="font-medium">النسخة:</span> {metadata.version}
+              </div>
+              <div>
+                <span className="font-medium">تاريخ الإنشاء:</span> {metadata.created_date}
+              </div>
+              <div>
+                <span className="font-medium">نوع النشاط:</span> تأجير السيارات
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Template Preview Dialog */}
-      <TemplatePreviewDialog
-        open={showTemplatePreview}
-        onOpenChange={setShowTemplatePreview}
-        onApply={() => {
-          setShowTemplatePreview(false);
-          handleApplyTemplate('car_rental');
-        }}
-        isApplying={directTemplateCopy.isPending}
+      {/* Dialogs */}
+      <AccountSelectionDialog
+        open={showSelectionDialog}
+        onOpenChange={setShowSelectionDialog}
+        accounts={getAllAccounts()}
+        onApply={handleSelectedCopy}
+        isApplying={copySelectedAccounts.isPending}
       />
 
-      {/* Account Selection Dialog */}
-      {selectedTemplate && (
-        <AccountSelectionDialog
-          open={showAccountSelection}
-          onOpenChange={setShowAccountSelection}
-          accounts={getAccountsByBusinessType('general_business')} // استخدام النظام العام للاختيار
-          templateName={selectedTemplate.nameAr}
-          onApply={handleApplySelectedAccounts}
-          isApplying={copySelectedAccounts.isPending}
-        />
-      )}
+      <TemplatePreviewDialog
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        onApply={handleDirectCopy}
+        isApplying={directTemplateCopy.isPending}
+      />
     </div>
   );
 };

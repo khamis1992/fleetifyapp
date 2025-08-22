@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  ArrowRight, 
-  ArrowLeft, 
-  Link,
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import {
+  Download,
+  FileText,
   CheckCircle,
   AlertTriangle,
+  Clock,
+  Building,
+  Users,
   Target
 } from 'lucide-react';
 import { WizardData } from '../AccountingSystemWizard';
@@ -22,58 +26,48 @@ interface Props {
   onBack: () => void;
 }
 
-interface AccountMapping {
-  key: string;
-  nameAr: string;
-  description: string;
-  required: boolean;
-  accountType: string;
-}
-
-const ACCOUNT_MAPPINGS: AccountMapping[] = [
-  {
-    key: 'default_receivables',
-    nameAr: 'حساب العملاء المدينون الافتراضي',
-    description: 'الحساب الذي سيتم ربط العملاء به تلقائياً',
-    required: true,
-    accountType: 'assets'
+const ACCOUNT_TYPES = {
+  sales: { 
+    nameAr: 'الإيرادات من المبيعات', 
+    nameEn: 'Sales Revenue',
+    accounts: ['revenue']
   },
-  {
-    key: 'default_payables',
-    nameAr: 'حساب الموردون الدائنون الافتراضي',
-    description: 'الحساب الذي سيتم ربط الموردين به تلقائياً',
-    required: true,
-    accountType: 'liabilities'
+  accounts_receivable: { 
+    nameAr: 'العملاء والمدينون', 
+    nameEn: 'Accounts Receivable',
+    accounts: ['assets']
   },
-  {
-    key: 'default_cash',
-    nameAr: 'حساب النقدية الافتراضي',
-    description: 'الحساب المستخدم للمعاملات النقدية',
-    required: true,
-    accountType: 'assets'
+  accounts_payable: { 
+    nameAr: 'الموردون والدائنون', 
+    nameEn: 'Accounts Payable',
+    accounts: ['liabilities']
   },
-  {
-    key: 'default_bank',
-    nameAr: 'الحساب البنكي الافتراضي',
-    description: 'الحساب المستخدم للمعاملات البنكية',
-    required: true,
-    accountType: 'assets'
+  cash: { 
+    nameAr: 'النقدية والبنوك', 
+    nameEn: 'Cash and Banks',
+    accounts: ['assets']
   },
-  {
-    key: 'default_revenue',
-    nameAr: 'حساب الإيرادات الافتراضي',
-    description: 'الحساب المستخدم لتسجيل الإيرادات العامة',
-    required: true,
-    accountType: 'revenue'
+  cost_of_sales: { 
+    nameAr: 'تكلفة المبيعات', 
+    nameEn: 'Cost of Sales',
+    accounts: ['expenses']
   },
-  {
-    key: 'default_expenses',
-    nameAr: 'حساب المصروفات الافتراضي',
-    description: 'الحساب المستخدم لتسجيل المصروفات العامة',
-    required: false,
-    accountType: 'expenses'
+  operating_expenses: { 
+    nameAr: 'المصروفات التشغيلية', 
+    nameEn: 'Operating Expenses',
+    accounts: ['expenses']
+  },
+  inventory: { 
+    nameAr: 'المخزون', 
+    nameEn: 'Inventory',
+    accounts: ['assets']
+  },
+  fixed_assets: { 
+    nameAr: 'الأصول الثابتة', 
+    nameEn: 'Fixed Assets',
+    accounts: ['assets']
   }
-];
+};
 
 export const AccountsMapping: React.FC<Props> = ({ 
   data, 
@@ -87,191 +81,91 @@ export const AccountsMapping: React.FC<Props> = ({
   );
 
   const accounts = getAccountsByType();
-  const selectedAccountIds = data.selectedAccounts || [];
   
-  // Get available accounts for each type
-  const getAvailableAccounts = (accountType: string) => {
-    const allAccounts = [
-      ...accounts.assets,
-      ...accounts.liabilities,
-      ...accounts.revenue,
-      ...accounts.expenses,
-      ...accounts.equity
-    ];
+  const allAccounts = [
+    ...accounts.assets,
+    ...accounts.liabilities,
+    ...accounts.revenue,
+    ...accounts.expenses,
+    ...accounts.equity
+  ];
+
+  const getAccountsByTypeFilter = (accountTypes: string[]) => {
+    return allAccounts.filter(acc => accountTypes.includes(acc.account_type));
+  };
+
+  const renderAccountTypeMapping = (typeKey: string) => {
+    const typeInfo = ACCOUNT_TYPES[typeKey as keyof typeof ACCOUNT_TYPES];
+    const availableAccounts = getAccountsByTypeFilter(typeInfo.accounts);
     
-    return allAccounts.filter(acc => 
-      acc.accountType === accountType && 
-      selectedAccountIds.includes(acc.id)
+    return (
+      <Card key={typeKey} className="p-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 text-primary" />
+            <h4 className="font-medium">{typeInfo.nameAr}</h4>
+            <Badge variant="outline" className="text-xs">
+              {typeInfo.nameEn}
+            </Badge>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">اختر الحساب المناسب:</label>
+            <select
+              className="w-full p-2 border border-input rounded-md bg-background"
+              value={mappings[typeKey] || ''}
+              onChange={(e) => {
+                const newMappings = { ...mappings, [typeKey]: e.target.value };
+                setMappings(newMappings);
+                onUpdate({ accountMappings: newMappings });
+              }}
+            >
+              <option value="">-- اختر حساب --</option>
+              {availableAccounts.map((account) => (
+                <option key={account.code} value={account.code}>
+                  {account.code} - {account.name_ar}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {mappings[typeKey] && (
+            <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+              <div className="font-medium">الحساب المحدد:</div>
+              <div>
+                {(() => {
+                  const selectedAccount = allAccounts.find(acc => acc.code === mappings[typeKey]);
+                  return selectedAccount ? `${selectedAccount.code} - ${selectedAccount.name_ar}` : 'غير محدد';
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
     );
   };
 
-  const handleMappingChange = (key: string, accountId: string) => {
-    const newMappings = { ...mappings, [key]: accountId };
-    setMappings(newMappings);
-  };
-
-  const handleNext = () => {
-    onUpdate({ accountMappings: mappings });
-    onNext();
-  };
-
-  // Auto-suggest mappings based on business type
-  const getAutoSuggestion = (mappingKey: string, accountType: string) => {
-    const availableAccounts = getAvailableAccounts(accountType);
-    
-    switch (mappingKey) {
-      case 'default_receivables':
-        return availableAccounts.find(acc => 
-          acc.id === 'accounts_receivable' || 
-          acc.nameAr.includes('مدين') || 
-          acc.nameAr.includes('عملاء')
-        );
-      case 'default_payables':
-        return availableAccounts.find(acc => 
-          acc.id === 'accounts_payable' || 
-          acc.nameAr.includes('دائن') || 
-          acc.nameAr.includes('موردين')
-        );
-      case 'default_cash':
-        return availableAccounts.find(acc => 
-          acc.id === 'cash' || 
-          acc.nameAr.includes('نقد') || 
-          acc.nameAr.includes('صندوق')
-        );
-      case 'default_bank':
-        return availableAccounts.find(acc => 
-          acc.id === 'bank' || 
-          acc.nameAr.includes('بنك')
-        );
-      case 'default_revenue':
-        if (data.businessType === 'car_rental') {
-          return availableAccounts.find(acc => acc.id === 'rental_revenue');
-        }
-        return availableAccounts.find(acc => 
-          acc.id === 'sales_revenue' || 
-          acc.nameAr.includes('إيرادات') || 
-          acc.nameAr.includes('مبيعات')
-        );
-      default:
-        return availableAccounts[0];
-    }
-  };
-
-  // Apply auto suggestions
-  const applyAutoSuggestions = () => {
-    const autoMappings: Record<string, string> = {};
-    
-    ACCOUNT_MAPPINGS.forEach(mapping => {
-      const suggestion = getAutoSuggestion(mapping.key, mapping.accountType);
-      if (suggestion) {
-        autoMappings[mapping.key] = suggestion.id;
-      }
-    });
-    
-    setMappings(autoMappings);
-  };
-
-  const requiredMappingsComplete = ACCOUNT_MAPPINGS
-    .filter(m => m.required)
-    .every(m => mappings[m.key]);
+  const completedMappings = Object.keys(mappings).filter(key => mappings[key]).length;
+  const totalMappings = Object.keys(ACCOUNT_TYPES).length;
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h3 className="text-xl font-semibold mb-2">ربط الحسابات الأساسية</h3>
+        <h3 className="text-xl font-semibold mb-2">ربط أنواع الحسابات</h3>
         <p className="text-muted-foreground">
-          حدد الحسابات التي سيتم استخدامها افتراضياً في العمليات المختلفة
+          اختر الحسابات المناسبة لكل نوع من أنواع العمليات المالية
         </p>
+        
+        <div className="mt-4">
+          <Badge variant={completedMappings === totalMappings ? "default" : "secondary"}>
+            {completedMappings} من {totalMappings} مكتمل
+          </Badge>
+        </div>
       </div>
 
-      <div className="flex justify-center mb-6">
-        <Button 
-          variant="outline" 
-          onClick={applyAutoSuggestions}
-          className="flex items-center gap-2"
-        >
-          <Target className="h-4 w-4" />
-          اقتراحات تلقائية
-        </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.keys(ACCOUNT_TYPES).map(renderAccountTypeMapping)}
       </div>
-
-      <div className="grid gap-4">
-        {ACCOUNT_MAPPINGS.map((mapping) => {
-          const availableAccounts = getAvailableAccounts(mapping.accountType);
-          const selectedAccount = availableAccounts.find(acc => acc.id === mappings[mapping.key]);
-          const autoSuggestion = getAutoSuggestion(mapping.key, mapping.accountType);
-          
-          return (
-            <Card key={mapping.key} className={`
-              ${mapping.required && !mappings[mapping.key] ? 'border-red-200 bg-red-50/30' : ''}
-              ${mappings[mapping.key] ? 'border-green-200 bg-green-50/30' : ''}
-            `}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-base">{mapping.nameAr}</CardTitle>
-                    {mapping.required && (
-                      <Badge variant="destructive" className="text-xs">مطلوب</Badge>
-                    )}
-                    {mappings[mapping.key] && (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    )}
-                  </div>
-                  <Link className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {mapping.description}
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Select 
-                    value={mappings[mapping.key] || ""} 
-                    onValueChange={(value) => handleMappingChange(mapping.key, value)}
-                  >
-                    <SelectTrigger className={`
-                      ${mapping.required && !mappings[mapping.key] ? 'border-red-300' : ''}
-                    `}>
-                      <SelectValue placeholder="اختر الحساب..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{account.code}</span>
-                            <span>-</span>
-                            <span>{account.nameAr}</span>
-                            {account.id === autoSuggestion?.id && (
-                              <Badge variant="secondary" className="text-xs ml-2">
-                                مقترح
-                              </Badge>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {selectedAccount && (
-                    <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                      {selectedAccount.description}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {!requiredMappingsComplete && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            يجب تحديد جميع الربطات المطلوبة (المحددة بـ "مطلوب") للمتابعة.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="flex justify-between pt-6">
         <Button 
@@ -279,17 +173,15 @@ export const AccountsMapping: React.FC<Props> = ({
           onClick={onBack}
           className="flex items-center gap-2"
         >
-          <ArrowLeft className="h-4 w-4" />
           السابق
         </Button>
         
         <Button 
-          onClick={handleNext}
-          disabled={!requiredMappingsComplete}
+          onClick={onNext}
           className="flex items-center gap-2"
+          disabled={completedMappings < totalMappings}
         >
-          التالي
-          <ArrowRight className="h-4 w-4" />
+          التالي ({completedMappings}/{totalMappings})
         </Button>
       </div>
     </div>
