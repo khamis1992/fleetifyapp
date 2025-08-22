@@ -158,12 +158,12 @@ export function CustomerDetailsDialog({
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="accounting">الحسابات المحاسبية</TabsTrigger>
-            <TabsTrigger value="notes">الملاحظات</TabsTrigger>
-            <TabsTrigger value="invoices">الفواتير</TabsTrigger>
-            <TabsTrigger value="contracts">العقود</TabsTrigger>
-            <TabsTrigger value="financial">المالية</TabsTrigger>
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
+            <TabsTrigger value="financial">المالية</TabsTrigger>
+            <TabsTrigger value="contracts">العقود</TabsTrigger>
+            <TabsTrigger value="invoices">الفواتير</TabsTrigger>
+            <TabsTrigger value="notes">الملاحظات</TabsTrigger>
+            <TabsTrigger value="accounting">الحسابات المحاسبية</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
