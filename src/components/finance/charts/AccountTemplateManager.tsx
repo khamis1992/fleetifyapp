@@ -167,14 +167,6 @@ export const AccountTemplateManager: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
-            <Button 
-              onClick={() => setShowPreviewDialog(true)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              معاينة القالب
-            </Button>
 
             <Button 
               onClick={handleDirectCopy}
