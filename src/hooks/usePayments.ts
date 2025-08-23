@@ -347,6 +347,7 @@ export const useDeletePayment = () => {
 };
 
 interface BulkDeleteOptions {
+  deleteAll?: boolean;
   onlyUnlinked?: boolean;
   startDate?: string;
   endDate?: string;
@@ -364,45 +365,56 @@ export const useBulkDeletePayments = () => {
         throw new Error("Company ID is required");
       }
       
+      console.log("🔧 [BULK_DELETE] بدء عملية الحذف مع الخيارات:", options);
+      
       // Build query to get payments to delete
       let query = supabase
         .from("payments")
         .select("*")
         .eq("company_id", user.profile.company_id);
       
-      // Apply filters only if specified
-      if (options.onlyUnlinked) {
-        query = query.is("invoice_id", null).is("contract_id", null);
-        console.log("🔍 تطبيق فلتر: المدفوعات غير المربوطة فقط");
+      // Handle deleteAll - ignore all filters when true
+      if (options.deleteAll) {
+        console.log("🔥 [BULK_DELETE] وضع حذف الكل مفعل - تجاهل جميع الفلاتر");
+      } else {
+        // Apply filters only if deleteAll is not true
+        if (options.onlyUnlinked) {
+          query = query.is("invoice_id", null).is("contract_id", null);
+          console.log("🔍 تطبيق فلتر: المدفوعات غير المربوطة فقط");
+        }
+        
+        if (options.startDate) {
+          query = query.gte("payment_date", options.startDate);
+          console.log(`🔍 تطبيق فلتر: من تاريخ ${options.startDate}`);
+        }
+        
+        if (options.endDate) {
+          query = query.lte("payment_date", options.endDate);
+          console.log(`🔍 تطبيق فلتر: إلى تاريخ ${options.endDate}`);
+        }
+        
+        if (options.paymentType && options.paymentType !== 'all') {
+          query = query.eq("payment_type", options.paymentType);
+          console.log(`🔍 تطبيق فلتر: نوع الدفع ${options.paymentType}`);
+        }
+        
+        if (options.paymentMethod && options.paymentMethod !== 'all') {
+          query = query.eq("payment_method", options.paymentMethod);
+          console.log(`🔍 تطبيق فلتر: طريقة الدفع ${options.paymentMethod}`);
+        }
       }
       
-      if (options.startDate) {
-        query = query.gte("payment_date", options.startDate);
-        console.log(`🔍 تطبيق فلتر: من تاريخ ${options.startDate}`);
-      }
-      
-      if (options.endDate) {
-        query = query.lte("payment_date", options.endDate);
-        console.log(`🔍 تطبيق فلتر: إلى تاريخ ${options.endDate}`);
-      }
-      
-      if (options.paymentType && options.paymentType !== 'all') {
-        query = query.eq("payment_type", options.paymentType);
-        console.log(`🔍 تطبيق فلتر: نوع الدفع ${options.paymentType}`);
-      }
-      
-      if (options.paymentMethod && options.paymentMethod !== 'all') {
-        query = query.eq("payment_method", options.paymentMethod);
-        console.log(`🔍 تطبيق فلتر: طريقة الدفع ${options.paymentMethod}`);
-      }
-      
-      // If no filters applied, we're deleting ALL payments for the company
-      const hasFilters = options.onlyUnlinked || options.startDate || options.endDate || 
+      // Log filtering status
+      const hasFilters = !options.deleteAll && (options.onlyUnlinked || options.startDate || options.endDate || 
                         (options.paymentType && options.paymentType !== 'all') || 
-                        (options.paymentMethod && options.paymentMethod !== 'all');
+                        (options.paymentMethod && options.paymentMethod !== 'all'));
       
-      if (!hasFilters) {
+      if (options.deleteAll) {
+        console.log("🔥 [BULK_DELETE] سيتم حذف جميع المدفوعات للشركة (بدون استثناء)");
+      } else if (!hasFilters) {
         console.log("⚠️ لا توجد فلاتر مطبقة - سيتم حذف جميع المدفوعات للشركة");
+      } else {
+        console.log("✅ فلاتر مطبقة - سيتم حذف المدفوعات المطابقة فقط");
       }
       
       const { data: paymentsToDelete, error: fetchError } = await query;
