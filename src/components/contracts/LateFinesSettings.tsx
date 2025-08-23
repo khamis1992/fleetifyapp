@@ -16,11 +16,11 @@ export const LateFinesSettings = () => {
   const calculateFines = useCalculateLateFines();
   
   const [formData, setFormData] = useState({
-    fine_type: settings?.fine_type || 'percentage',
-    fine_rate: settings?.fine_rate || 1,
-    grace_period_days: settings?.grace_period_days || 7,
-    max_fine_amount: settings?.max_fine_amount || 0,
-    is_active: settings?.is_active ?? true,
+    fine_type: (settings as any)?.fine_type || 'percentage',
+    fine_rate: (settings as any)?.fine_rate || 1,
+    grace_period_days: (settings as any)?.grace_period_days || 7,
+    max_fine_amount: (settings as any)?.max_fine_amount || 0,
+    is_active: (settings as any)?.is_active ?? true,
   });
 
   const handleSubmit = (e: React.FormEvent) => {

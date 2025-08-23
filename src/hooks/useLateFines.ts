@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface LateFineSettings {
   id?: string;
@@ -24,24 +24,22 @@ interface ContractFineCalculation {
 
 // hook لجلب إعدادات الغرامات
 export const useLateFineSettings = () => {
-  const { user } = useAuth();
+  const { user, companyFilter } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['late-fine-settings', user?.profile?.company_id],
+    queryKey: ['late-fine-settings', companyFilter?.company_id],
     queryFn: async () => {
-      if (!user?.profile?.company_id) throw new Error('Company ID not found');
+      if (!companyFilter?.company_id) throw new Error('Company ID not found');
       
-      const { data, error } = await supabase
-        .from('late_fine_settings')
-        .select('*')
-        .eq('company_id', user.profile.company_id)
-        .eq('is_active', true)
-        .single();
+      // استخدام RPC function للوصول للبيانات
+      const { data, error } = await supabase.rpc('get_late_fine_settings', {
+        p_company_id: companyFilter.company_id
+      });
       
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
+      if (error) throw error;
+      return data?.[0] || null;
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!user?.id && !!companyFilter?.company_id,
   });
 };
 
@@ -49,20 +47,20 @@ export const useLateFineSettings = () => {
 export const useUpdateLateFineSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { companyFilter } = useUnifiedCompanyAccess();
   
   return useMutation({
-    mutationFn: async (settings: Omit<LateFineSettings, 'id' | 'created_at' | 'updated_at'>) => {
-      if (!user?.profile?.company_id) throw new Error('Company ID not found');
+    mutationFn: async (settings: Omit<LateFineSettings, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+      if (!companyFilter?.company_id) throw new Error('Company ID not found');
       
-      const { data, error } = await supabase
-        .from('late_fine_settings')
-        .upsert({
-          ...settings,
-          company_id: user.profile.company_id,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('upsert_late_fine_settings', {
+        p_company_id: companyFilter.company_id,
+        p_fine_type: settings.fine_type,
+        p_fine_rate: settings.fine_rate,
+        p_grace_period_days: settings.grace_period_days,
+        p_max_fine_amount: settings.max_fine_amount,
+        p_is_active: settings.is_active
+      });
       
       if (error) throw error;
       return data;
@@ -134,15 +132,15 @@ export const calculateLateFine = (
 // hook لحساب الغرامات لجميع العقود المتأخرة
 export const useCalculateLateFines = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { companyFilter } = useUnifiedCompanyAccess();
   
   return useMutation({
     mutationFn: async () => {
-      if (!user?.profile?.company_id) throw new Error('Company ID not found');
+      if (!companyFilter?.company_id) throw new Error('Company ID not found');
       
       // استدعاء Edge Function لحساب وتحديث الغرامات
       const { data, error } = await supabase.functions.invoke('calculate-late-fines', {
-        body: { company_id: user.profile.company_id }
+        body: { company_id: companyFilter.company_id }
       });
       
       if (error) throw error;

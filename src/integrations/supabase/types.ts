@@ -4471,6 +4471,42 @@ export type Database = {
           },
         ]
       }
+      late_fine_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          fine_rate: number
+          fine_type: string
+          grace_period_days: number
+          id: string
+          is_active: boolean
+          max_fine_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          fine_rate?: number
+          fine_type: string
+          grace_period_days?: number
+          id?: string
+          is_active?: boolean
+          max_fine_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          fine_rate?: number
+          fine_type?: string
+          grace_period_days?: number
+          id?: string
+          is_active?: boolean
+          max_fine_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leave_balances: {
         Row: {
           created_at: string | null
