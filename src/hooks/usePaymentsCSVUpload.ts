@@ -75,25 +75,41 @@ export function usePaymentsCSVUpload() {
       const columnResults = detectDateColumns(data);
       const columnFormats: { [column: string]: any } = {};
       
-      // تحديد تنسيقات التواريخ للأعمدة ذات الصلة
+      // تحديد تنسيقات التواريخ للأعمدة ذات الصلة (أكثر ذكاءً)
       for (const [column, results] of Object.entries(columnResults)) {
-        if ((column.includes('date') || column === 'payment_date') && isDateColumn(results)) {
+        const isDateLikeColumn = 
+          column.includes('date') || 
+          column.includes('تاريخ') ||
+          column === 'payment_date' ||
+          column === 'original_due_date' ||
+          column.endsWith('_date') ||
+          column.includes('due') ||
+          column.includes('استحقاق') ||
+          column.includes('انتهاء');
+          
+        if (isDateLikeColumn && isDateColumn(results, 50)) { // خفض threshold إلى 50%
           const bestFormat = suggestBestFormat(results);
           if (bestFormat) {
             columnFormats[column] = bestFormat;
+            console.log(`🗓️ تم اكتشاف عمود تاريخ: ${column} بتنسيق ${bestFormat.label}`);
           }
         }
       }
       
       // إصلاح التواريخ في البيانات
       if (Object.keys(columnFormats).length > 0) {
-        console.log('تم اكتشاف أعمدة تواريخ:', columnFormats);
+        console.log('📅 جميع أعمدة التواريخ المكتشفة:', Object.keys(columnFormats));
         return fixDatesInData(data, columnFormats);
+      } else {
+        console.warn('⚠️ لم يتم اكتشاف أي أعمدة تواريخ في البيانات');
+        // إضافة معلومات تشخيصية
+        console.log('الأعمدة الموجودة:', Object.keys(data[0] || {}));
+        console.log('نتائج اكتشاف التواريخ:', columnResults);
       }
       
       return data;
     } catch (error) {
-      console.error('خطأ في معالجة التواريخ:', error);
+      console.error('❌ خطأ في معالجة التواريخ:', error);
       return data; // إرجاع البيانات الأصلية في حالة الخطأ
     }
   };

@@ -106,6 +106,10 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'نوع الدفعة': 'payment_type',
     'طريقة الدفع': 'payment_type',
     'تاريخ الدفع': 'payment_date',
+    'تاريخ الاستحقاق': 'original_due_date',
+    'تاريخ الانتهاء': 'original_due_date',
+    'التاريخ الأصلي': 'original_due_date',
+    'موعد الاستحقاق': 'original_due_date',
     'مبلغ السداد': 'amount',
     'قيمة الدفع': 'amount',
     'المبلغ المدفوع': 'amount',
@@ -119,6 +123,14 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'رقم الفاتورة': 'invoice_number',
     'المورد': 'vendor_name',
     'اسم المورد': 'vendor_name',
+    
+    // Additional date-related headers (English)
+    'due date': 'original_due_date',
+    'original due date': 'original_due_date',
+    'due_date': 'original_due_date',
+    'expiry date': 'original_due_date',
+    'expiration date': 'original_due_date',
+    'maturity date': 'original_due_date',
   };
 
 

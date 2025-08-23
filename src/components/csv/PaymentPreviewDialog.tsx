@@ -265,8 +265,22 @@ export function PaymentPreviewDialog({
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>{item.data.payment_method || '-'}</TableCell>
-                      <TableCell>{item.data.payment_date || '-'}</TableCell>
+                      <TableCell>{item.data.payment_type || item.data.payment_method || '-'}</TableCell>
+                       <TableCell>
+                         <div className="space-y-1">
+                           {item.data.payment_date && (
+                             <div className="text-sm font-medium">
+                               {new Date(item.data.payment_date).toLocaleDateString('ar-SA')}
+                             </div>
+                           )}
+                           {item.data.original_due_date && (
+                             <div className="text-xs text-muted-foreground">
+                               استحقاق: {new Date(item.data.original_due_date).toLocaleDateString('ar-SA')}
+                             </div>
+                           )}
+                           {!item.data.payment_date && !item.data.original_due_date && '-'}
+                         </div>
+                       </TableCell>
                       <TableCell>
                         {item.warnings.length > 0 && (
                           <div className="space-y-1">
