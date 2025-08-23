@@ -25,11 +25,45 @@ export const useBulkDeleteContracts = () => {
     errors: []
   });
 
-  const deleteContractAndRelatedData = async (contractId: string): Promise<boolean> => {
+  const deleteContractAndRelatedData = async (contractId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Delete related records in the correct order to avoid foreign key constraints
+      console.log(`Starting deletion for contract ${contractId}`);
       
-      // 1. Delete vehicle condition reports
+      // Get invoice IDs first to delete related payments
+      const { data: invoices, error: invoicesFetchError } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('contract_id', contractId);
+      
+      if (invoicesFetchError) {
+        console.warn(`Warning fetching invoices for contract ${contractId}:`, invoicesFetchError);
+      }
+
+      // 1. Delete payments related to invoices first
+      if (invoices && invoices.length > 0) {
+        for (const invoice of invoices) {
+          const { error: paymentsError } = await supabase
+            .from('payments')
+            .delete()
+            .eq('invoice_id', invoice.id);
+          
+          if (paymentsError) {
+            console.warn(`Warning deleting payments for invoice ${invoice.id}:`, paymentsError);
+          }
+        }
+      }
+
+      // 2. Delete any payments directly linked to contract
+      const { error: contractPaymentsError } = await supabase
+        .from('payments')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (contractPaymentsError) {
+        console.warn(`Warning deleting contract payments for ${contractId}:`, contractPaymentsError);
+      }
+
+      // 3. Delete vehicle condition reports
       const { error: conditionReportsError } = await supabase
         .from('vehicle_condition_reports')
         .delete()
@@ -39,17 +73,7 @@ export const useBulkDeleteContracts = () => {
         console.warn(`Warning deleting vehicle condition reports for contract ${contractId}:`, conditionReportsError);
       }
 
-      // 2. Delete contract payment schedules
-      const { error: scheduleError } = await supabase
-        .from('contract_payment_schedules')
-        .delete()
-        .eq('contract_id', contractId);
-      
-      if (scheduleError) {
-        console.warn(`Warning deleting payment schedules for contract ${contractId}:`, scheduleError);
-      }
-
-      // 3. Delete invoices
+      // 4. Delete invoices (after payments are deleted)
       const { error: invoiceError } = await supabase
         .from('invoices')
         .delete()
@@ -59,7 +83,17 @@ export const useBulkDeleteContracts = () => {
         console.warn(`Warning deleting invoices for contract ${contractId}:`, invoiceError);
       }
 
-      // 4. Delete contract documents
+      // 5. Delete contract payment schedules
+      const { error: scheduleError } = await supabase
+        .from('contract_payment_schedules')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (scheduleError) {
+        console.warn(`Warning deleting payment schedules for contract ${contractId}:`, scheduleError);
+      }
+
+      // 6. Delete contract documents
       const { error: documentsError } = await supabase
         .from('contract_documents')
         .delete()
@@ -69,7 +103,7 @@ export const useBulkDeleteContracts = () => {
         console.warn(`Warning deleting documents for contract ${contractId}:`, documentsError);
       }
 
-      // 5. Delete approval steps
+      // 7. Delete approval steps
       const { error: approvalError } = await supabase
         .from('contract_approval_steps')
         .delete()
@@ -79,20 +113,22 @@ export const useBulkDeleteContracts = () => {
         console.warn(`Warning deleting approval steps for contract ${contractId}:`, approvalError);
       }
 
-      // 6. Finally delete the contract itself
+      // 8. Finally delete the contract itself
       const { error: contractError } = await supabase
         .from('contracts')
         .delete()
         .eq('id', contractId);
 
       if (contractError) {
-        throw contractError;
+        console.error(`Error deleting contract ${contractId}:`, contractError);
+        return { success: false, error: contractError.message };
       }
 
-      return true;
-    } catch (error) {
+      console.log(`Successfully deleted contract ${contractId}`);
+      return { success: true };
+    } catch (error: any) {
       console.error(`Error deleting contract ${contractId}:`, error);
-      return false;
+      return { success: false, error: error.message || 'Unknown error' };
     }
   };
 
@@ -156,15 +192,15 @@ export const useBulkDeleteContracts = () => {
         
         // Process batch in parallel
         const batchPromises = batch.map(async (contract) => {
-          const success = await deleteContractAndRelatedData(contract.id);
+          const result = await deleteContractAndRelatedData(contract.id);
           
           processedCount++;
-          if (success) {
+          if (result.success) {
             deletedCount++;
           } else {
             errors.push({
               contractId: contract.id,
-              error: `فشل في حذف العقد ${contract.contract_number || contract.id}`
+              error: result.error || `فشل في حذف العقد ${contract.contract_number || contract.id}`
             });
           }
 

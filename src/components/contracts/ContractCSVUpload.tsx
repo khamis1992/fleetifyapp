@@ -378,7 +378,7 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
                     </ScrollArea>
                   </AlertDescription>
                 </Alert>
-              )}</div>
+              )}
 
               {/* أخطاء مفصلة */}
               {results.errors && results.errors.length > 0 && (
