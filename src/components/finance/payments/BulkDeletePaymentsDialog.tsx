@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Trash2, Calendar, Filter } from 'lucide-react';
+import { AlertTriangle, Trash2, Calendar, Filter, Eye, Copy, CheckCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useBulkDeletePayments } from '@/hooks/usePayments';
+import { useBulkDeletePayments, usePayments } from '@/hooks/usePayments';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { toast } from 'sonner';
 
 interface BulkDeletePaymentsDialogProps {
   isOpen: boolean;
@@ -32,13 +33,31 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   const [endDate, setEndDate] = useState('');
   const [paymentType, setPaymentType] = useState<string>('all');
   const [paymentMethod, setPaymentMethod] = useState<string>('all');
+  const [showPreview, setShowPreview] = useState(false);
   
   const bulkDeleteMutation = useBulkDeletePayments();
+  
+  // Preview query to count matching payments
+  const previewFilters = {
+    ...(onlyUnlinked && { invoice_id: null, contract_id: null }),
+    ...(startDate && { payment_date_gte: startDate }),
+    ...(endDate && { payment_date_lte: endDate }),
+    ...(paymentType !== 'all' && { payment_type: paymentType }),
+    ...(paymentMethod !== 'all' && { payment_method: paymentMethod }),
+  };
+  
+  const { data: previewPayments } = usePayments(previewFilters);
+  const previewCount = previewPayments?.length || 0;
   
   const isConfirmValid = confirmText === 'حذف جميع المدفوعات';
   
   const handleDelete = () => {
     if (!isConfirmValid) return;
+    
+    if (previewCount === 0) {
+      toast.error('لا توجد مدفوعات تطابق المعايير المحددة للحذف');
+      return;
+    }
     
     bulkDeleteMutation.mutate({
       onlyUnlinked,
@@ -47,22 +66,40 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
       paymentType: paymentType === 'all' ? undefined : paymentType,
       paymentMethod: paymentMethod === 'all' ? undefined : paymentMethod,
     }, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        if (result.deletedCount === 0) {
+          toast.error('لم يتم حذف أي مدفوعات. تحقق من المعايير المحددة.');
+        } else {
+          toast.success(`تم حذف ${result.deletedCount} مدفوع بنجاح`);
+        }
         onClose();
-        setConfirmText('');
-        setOnlyUnlinked(true);
-        setStartDate('');
-        setEndDate('');
-        setPaymentType('all');
-        setPaymentMethod('all');
+        resetForm();
+      },
+      onError: (error) => {
+        toast.error(`خطأ في حذف المدفوعات: ${error.message}`);
       }
     });
+  };
+  
+  const resetForm = () => {
+    setConfirmText('');
+    setOnlyUnlinked(true);
+    setStartDate('');
+    setEndDate('');
+    setPaymentType('all');
+    setPaymentMethod('all');
+    setShowPreview(false);
+  };
+  
+  const copyConfirmText = () => {
+    navigator.clipboard.writeText('حذف جميع المدفوعات');
+    toast.success('تم نسخ النص');
   };
 
   const handleClose = () => {
     if (bulkDeleteMutation.isPending) return;
     onClose();
-    setConfirmText('');
+    resetForm();
   };
 
   return (
@@ -148,39 +185,90 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
             </div>
           </div>
           
-          {/* إحصائيات */}
-          <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-            <div className="flex items-center gap-2 text-orange-800 dark:text-orange-200 text-sm font-medium mb-1">
-              <Calendar className="h-4 w-4" />
-              إحصائيات الحذف
-            </div>
-            <p className="text-sm text-orange-700 dark:text-orange-300">
-              إجمالي المدفوعات: {totalPayments}
-            </p>
-            {onlyUnlinked && (
-              <p className="text-sm text-orange-700 dark:text-orange-300">
-                • سيتم حذف المدفوعات غير المربوطة بفواتير أو عقود فقط
-              </p>
-            )}
-            {(startDate || endDate) && (
-              <p className="text-sm text-orange-700 dark:text-orange-300">
-                • سيتم حذف المدفوعات في النطاق الزمني المحدد فقط
-              </p>
+          {/* معاينة النتائج */}
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview(!showPreview)}
+              className="w-full flex items-center gap-2"
+              type="button"
+            >
+              <Eye className="h-4 w-4" />
+              {showPreview ? 'إخفاء المعاينة' : 'معاينة المدفوعات التي سيتم حذفها'}
+            </Button>
+            
+            {showPreview && (
+              <div className="bg-muted p-4 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Calendar className="h-4 w-4" />
+                  نتائج المعاينة
+                </div>
+                <div className="text-sm space-y-1">
+                  <p className="flex justify-between">
+                    <span>إجمالي المدفوعات في النظام:</span>
+                    <span className="font-medium">{totalPayments}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span>المدفوعات التي تطابق المعايير:</span>
+                    <span className={`font-medium ${previewCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      {previewCount}
+                    </span>
+                  </p>
+                </div>
+                
+                {previewCount === 0 && (
+                  <div className="bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ لا توجد مدفوعات تطابق المعايير المحددة
+                    </p>
+                  </div>
+                )}
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p><strong>المعايير المطبقة:</strong></p>
+                  {onlyUnlinked && <p>• المدفوعات غير المربوطة فقط</p>}
+                  {startDate && <p>• من تاريخ: {startDate}</p>}
+                  {endDate && <p>• إلى تاريخ: {endDate}</p>}
+                  {paymentType !== 'all' && <p>• نوع المدفوع: {paymentType}</p>}
+                  {paymentMethod !== 'all' && <p>• طريقة الدفع: {paymentMethod}</p>}
+                </div>
+              </div>
             )}
           </div>
           
           {/* تأكيد الحذف */}
           <div className="space-y-2">
-            <Label htmlFor="confirm-text" className="text-sm font-medium">
-              للتأكيد، اكتب: <span className="font-bold">"حذف جميع المدفوعات"</span>
-            </Label>
-            <Input
-              id="confirm-text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="اكتب النص هنا..."
-              className="text-center"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="confirm-text" className="text-sm font-medium">
+                للتأكيد، اكتب: <span className="font-bold">"حذف جميع المدفوعات"</span>
+              </Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyConfirmText}
+                className="h-6 px-2"
+                type="button"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="relative">
+              <Input
+                id="confirm-text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="اكتب النص هنا..."
+                className="text-center pr-10"
+              />
+              {isConfirmValid && (
+                <CheckCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+              )}
+            </div>
+            {previewCount === 0 && confirmText && (
+              <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                تحذير: لا توجد مدفوعات تطابق المعايير المحددة
+              </p>
+            )}
           </div>
         </div>
         
@@ -195,7 +283,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={!isConfirmValid || bulkDeleteMutation.isPending}
+            disabled={!isConfirmValid || bulkDeleteMutation.isPending || previewCount === 0}
             className="flex items-center gap-2"
           >
             {bulkDeleteMutation.isPending ? (
@@ -203,7 +291,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            حذف المدفوعات
+            حذف {previewCount} مدفوع
           </Button>
         </div>
       </DialogContent>
