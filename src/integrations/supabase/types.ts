@@ -5578,6 +5578,10 @@ export type Database = {
           id: string
           invoice_id: string | null
           journal_entry_id: string | null
+          late_fine_amount: number | null
+          late_fine_status: string | null
+          late_fine_type: string | null
+          late_fine_waiver_reason: string | null
           notes: string | null
           payment_date: string
           payment_method: string
@@ -5605,6 +5609,10 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           journal_entry_id?: string | null
+          late_fine_amount?: number | null
+          late_fine_status?: string | null
+          late_fine_type?: string | null
+          late_fine_waiver_reason?: string | null
           notes?: string | null
           payment_date: string
           payment_method: string
@@ -5632,6 +5640,10 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           journal_entry_id?: string | null
+          late_fine_amount?: number | null
+          late_fine_status?: string | null
+          late_fine_type?: string | null
+          late_fine_waiver_reason?: string | null
           notes?: string | null
           payment_date?: string
           payment_method?: string

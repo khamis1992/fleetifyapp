@@ -18,6 +18,10 @@ export interface Payment {
   invoice_id?: string;
   contract_id?: string;
   payment_status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  late_fine_amount?: number;
+  late_fine_status?: 'none' | 'paid' | 'waived' | 'pending';
+  late_fine_type?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
+  late_fine_waiver_reason?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -34,6 +38,10 @@ interface CreatePaymentData {
   vendor_id?: string;
   invoice_id?: string;
   contract_id?: string;
+  late_fine_amount?: number;
+  late_fine_status?: 'none' | 'paid' | 'waived' | 'pending';
+  late_fine_type?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
+  late_fine_waiver_reason?: string;
 }
 
 export const usePayments = (filters?: { 

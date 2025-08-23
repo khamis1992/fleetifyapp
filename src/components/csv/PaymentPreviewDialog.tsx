@@ -17,6 +17,10 @@ interface PaymentPreviewItem {
   hasBalance: boolean;
   isZeroPayment: boolean;
   warnings: string[];
+  lateFineAmount?: number;
+  lateFineStatus?: 'none' | 'paid' | 'waived' | 'pending';
+  lateFineType?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
+  lateFineWaiverReason?: string;
   contractInfo?: {
     contract_id: string;
     contract_number: string;
@@ -81,8 +85,12 @@ export function PaymentPreviewDialog({
   const totalPaidAmount = filteredItems
     .filter((_, index) => selectedItems.has(index))
     .reduce((sum, item) => sum + item.paidAmount, 0);
+  const totalLateFines = filteredItems
+    .filter((_, index) => selectedItems.has(index))
+    .reduce((sum, item) => sum + (item.lateFineAmount || 0), 0);
 
   const itemsWithBalance = filteredItems.filter(item => item.hasBalance).length;
+  const itemsWithFines = filteredItems.filter(item => item.lateFineAmount && item.lateFineAmount > 0).length;
   const zeroPayments = items.filter(item => item.isZeroPayment).length;
   const contractsLinked = filteredItems.filter(item => item.contractInfo).length;
   const overdueContracts = filteredItems.filter(item => 
@@ -105,7 +113,7 @@ export function PaymentPreviewDialog({
 
         <div className="space-y-4">
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="text-2xl font-bold text-green-600">{totalSelected}</div>
@@ -118,6 +126,14 @@ export function PaymentPreviewDialog({
                   {formatNumber(totalPaidAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">إجمالي المبلغ المحدد</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-orange-600">
+                  {formatNumber(totalLateFines)}
+                </div>
+                <p className="text-xs text-muted-foreground">إجمالي الغرامات</p>
               </CardContent>
             </Card>
             <Card>
@@ -147,6 +163,23 @@ export function PaymentPreviewDialog({
                 <p className="text-sm text-orange-700">
                   يوجد {itemsWithBalance} عنصر يحتوي على رصيد متبقي لم يتم دفعه. 
                   سيتم تسجيل المبلغ المدفوع فقط وإهمال الرصيد المتبقي.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {itemsWithFines > 0 && (
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-red-800 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  تنبيه: وجود غرامات تأخير
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-red-700">
+                  يوجد {itemsWithFines} عنصر يحتوي على غرامات تأخير بإجمالي {formatNumber(totalLateFines)} د.ك. 
+                  تأكد من طريقة معالجة الغرامات قبل الرفع.
                 </p>
               </CardContent>
             </Card>
@@ -206,6 +239,7 @@ export function PaymentPreviewDialog({
                     <TableHead>الصف</TableHead>
                     <TableHead>العميل</TableHead>
                     <TableHead>المبلغ المدفوع</TableHead>
+                    <TableHead>غرامة التأخير</TableHead>
                     <TableHead>معلومات العقد</TableHead>
                     <TableHead>طريقة الدفع</TableHead>
                     <TableHead>التاريخ</TableHead>
@@ -228,6 +262,38 @@ export function PaymentPreviewDialog({
                         <span className={item.isZeroPayment ? "text-gray-500" : "font-medium"}>
                           {formatNumber(item.paidAmount)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {item.lateFineAmount && item.lateFineAmount > 0 ? (
+                          <div className="space-y-1">
+                            <div className="font-medium text-orange-600">
+                              {formatNumber(item.lateFineAmount)}
+                            </div>
+                            <div className="text-xs">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  item.lateFineType === 'included_with_payment' ? 'text-green-700 border-green-300' :
+                                  item.lateFineType === 'separate_payment' ? 'text-orange-700 border-orange-300' :
+                                  item.lateFineType === 'waived' ? 'text-blue-700 border-blue-300' :
+                                  'text-gray-700 border-gray-300'
+                                }`}
+                              >
+                                {item.lateFineType === 'included_with_payment' && 'مدمج مع الدفعة'}
+                                {item.lateFineType === 'separate_payment' && 'دفعة منفصلة'}
+                                {item.lateFineType === 'waived' && 'معفى'}
+                                {item.lateFineType === 'none' && 'غير محدد'}
+                              </Badge>
+                            </div>
+                            {item.lateFineStatus === 'waived' && item.lateFineWaiverReason && (
+                              <div className="text-xs text-muted-foreground">
+                                سبب الإعفاء: {item.lateFineWaiverReason}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {item.contractInfo ? (

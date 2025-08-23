@@ -15,6 +15,10 @@ interface PaymentPreviewItem {
   hasBalance: boolean;
   isZeroPayment: boolean;
   warnings: string[];
+  lateFineAmount?: number;
+  lateFineStatus?: 'none' | 'paid' | 'waived' | 'pending';
+  lateFineType?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
+  lateFineWaiverReason?: string;
   contractInfo?: {
     contract_id: string;
     contract_number: string;
@@ -65,6 +69,9 @@ export function usePaymentsCSVUpload() {
     check_number: 'text' as const,
     bank_account: 'text' as const,
     currency: 'text' as const,
+    late_fine_amount: 'number' as const,
+    late_fine_handling: 'text' as const, // included | separate | waived
+    late_fine_waiver_reason: 'text' as const,
   };
 
   const paymentRequiredFields = ['payment_date', 'amount'];
@@ -128,6 +135,9 @@ export function usePaymentsCSVUpload() {
       'vendor_name',
       'invoice_number',
       'contract_number',
+      'late_fine_amount',
+      'late_fine_handling',
+      'late_fine_waiver_reason',
       'notes'
     ];
 
@@ -143,8 +153,11 @@ export function usePaymentsCSVUpload() {
       'شركة الهدى',
       '',
       'INV-2025-001',
+      'CON-001',
+      '25.000',
+      'included',
       '',
-      'قبض دفعة جزئية'
+      'قبض دفعة جزئية مع غرامة تأخير'
     ];
 
     const examplePayment = [
@@ -159,6 +172,9 @@ export function usePaymentsCSVUpload() {
       '',
       'مزود الخدمات الدولية',
       '',
+      '',
+      '0',
+      'none',
       '',
       'صرف كامل عبر حوالة بنكية'
     ];
@@ -296,6 +312,7 @@ export function usePaymentsCSVUpload() {
       const amountPaid = parseNumber(normalizedRow.amount_paid || normalizedRow.paid_amount || amount);
       const totalAmount = parseNumber(normalizedRow.total_amount || normalizedRow.amount || 0);
       const balance = parseNumber(normalizedRow.balance || 0);
+      const lateFineAmount = parseNumber(normalizedRow.late_fine_amount || 0);
       
       // Calculate actual paid amount and balance
       let finalPaidAmount = amountPaid;
@@ -359,6 +376,41 @@ export function usePaymentsCSVUpload() {
       if (finalPaidAmount <= 0) {
         warnings.push('مبلغ مدفوع صفر أو سالب');
       }
+
+      // Process late fine handling
+      const lateFineHandling = normalizedRow.late_fine_handling?.toLowerCase() || 'none';
+      let lateFineStatus: 'none' | 'paid' | 'waived' | 'pending' = 'none';
+      let lateFineType: 'none' | 'separate_payment' | 'included_with_payment' | 'waived' = 'none';
+      
+      if (lateFineAmount > 0) {
+        switch (lateFineHandling) {
+          case 'included':
+          case 'include':
+          case 'مدمج':
+            lateFineStatus = 'paid';
+            lateFineType = 'included_with_payment';
+            break;
+          case 'separate':
+          case 'منفصل':
+            lateFineStatus = 'pending';
+            lateFineType = 'separate_payment';
+            break;
+          case 'waived':
+          case 'إعفاء':
+          case 'معفى':
+            lateFineStatus = 'waived';
+            lateFineType = 'waived';
+            break;
+          default:
+            lateFineStatus = 'pending';
+            lateFineType = 'none';
+            warnings.push(`طريقة معالجة الغرامة غير واضحة: ${lateFineHandling}`);
+        }
+        
+        if (lateFineType === 'included_with_payment' && finalPaidAmount < lateFineAmount) {
+          warnings.push(`المبلغ المدفوع أقل من الغرامة المطلوبة (${lateFineAmount})`);
+        }
+      }
       
       items.push({
         rowNumber: row.rowNumber || index + 2,
@@ -369,6 +421,10 @@ export function usePaymentsCSVUpload() {
         hasBalance: finalBalance > 0,
         isZeroPayment: finalPaidAmount <= 0,
         warnings,
+        lateFineAmount: lateFineAmount > 0 ? lateFineAmount : undefined,
+        lateFineStatus,
+        lateFineType,
+        lateFineWaiverReason: normalizedRow.late_fine_waiver_reason,
         contractInfo
       });
     }
@@ -505,6 +561,37 @@ export function usePaymentsCSVUpload() {
         }
       }
 
+      // Process late fine data
+      const lateFineAmount = parseFloat(String(raw.late_fine_amount || '0').replace(/[,\s]/g, '')) || 0;
+      const lateFineHandling = raw.late_fine_handling?.toLowerCase() || 'none';
+      let lateFineStatus: 'none' | 'paid' | 'waived' | 'pending' = 'none';
+      let lateFineType: 'none' | 'separate_payment' | 'included_with_payment' | 'waived' = 'none';
+      
+      if (lateFineAmount > 0) {
+        switch (lateFineHandling) {
+          case 'included':
+          case 'include':
+          case 'مدمج':
+            lateFineStatus = 'paid';
+            lateFineType = 'included_with_payment';
+            break;
+          case 'separate':
+          case 'منفصل':
+            lateFineStatus = 'pending';
+            lateFineType = 'separate_payment';
+            break;
+          case 'waived':
+          case 'إعفاء':
+          case 'معفى':
+            lateFineStatus = 'waived';
+            lateFineType = 'waived';
+            break;
+          default:
+            lateFineStatus = 'pending';
+            lateFineType = 'none';
+        }
+      }
+
       if (!options?.dryRun) {
         const { error } = await supabase.from('payments').insert({
           company_id: targetCompanyId,
@@ -525,6 +612,10 @@ export function usePaymentsCSVUpload() {
           bank_account: raw.bank_account || null,
           payment_status: 'completed',
           created_by: user.id,
+          late_fine_amount: lateFineAmount,
+          late_fine_status: lateFineStatus,
+          late_fine_type: lateFineType,
+          late_fine_waiver_reason: raw.late_fine_waiver_reason || null,
         });
         if (error) {
           failed++;
