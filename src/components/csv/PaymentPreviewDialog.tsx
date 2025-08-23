@@ -424,17 +424,15 @@ export function PaymentPreviewDialog({
                             <div className="text-xs">
                               <Badge 
                                 variant="outline" 
-                                                                  className={`text-xs ${
-                                    (item.lateFineType === 'included_with_payment' || item.lateFineType === 'included') ? 'text-green-700 border-green-300' :
-                                    (item.lateFineType === 'separate_payment' || item.lateFineType === 'separate') ? 'text-orange-700 border-orange-300' :
+                                className={`text-xs ${
+                                    item.lateFineType === 'included_with_payment' ? 'text-green-700 border-green-300' :
+                                    item.lateFineType === 'separate_payment' ? 'text-orange-700 border-orange-300' :
                                     item.lateFineType === 'waived' ? 'text-blue-700 border-blue-300' :
                                     'text-red-700 border-red-300'
                                   }`}
                               >
                                 {item.lateFineType === 'included_with_payment' && '✅ مدمج مع الدفعة'}
-                                {item.lateFineType === 'included' && '✅ مدمج مع الدفعة'}
                                 {item.lateFineType === 'separate_payment' && '🔄 دفعة منفصلة'}
-                                {item.lateFineType === 'separate' && '🔄 دفعة منفصلة'}
                                 {item.lateFineType === 'waived' && '❌ معفى من الغرامة'}
                                 {(item.lateFineType === 'none' || !item.lateFineType) && '⚠️ طريقة المعالجة غير محددة'}
                               </Badge>
