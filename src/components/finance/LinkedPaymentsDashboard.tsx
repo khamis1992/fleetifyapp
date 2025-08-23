@@ -322,7 +322,7 @@ export function LinkedPaymentsDashboard({ className }: LinkedPaymentsDashboardPr
                   {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
                 </TableCell>
                 <TableCell>
-                  {payment.agreement_number || payment.contract_number || '-'}
+                  {payment.payment_number || '-'}
                 </TableCell>
                 <TableCell>
                   {payment.customers?.company_name || 

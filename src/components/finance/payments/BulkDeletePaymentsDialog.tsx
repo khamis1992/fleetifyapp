@@ -28,6 +28,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   totalPayments
 }) => {
   const [confirmText, setConfirmText] = useState('');
+  const [deleteAll, setDeleteAll] = useState(false);
   const [onlyUnlinked, setOnlyUnlinked] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -38,7 +39,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   const bulkDeleteMutation = useBulkDeletePayments();
   
   // Preview query to count matching payments
-  const previewFilters = {
+  const previewFilters = deleteAll ? {} : {
     ...(onlyUnlinked && { onlyUnlinked: true }),
     ...(startDate && { payment_date_gte: startDate }),
     ...(endDate && { payment_date_lte: endDate }),
@@ -47,7 +48,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   };
   
   const { data: previewPayments } = usePayments(previewFilters);
-  const previewCount = previewPayments?.length || 0;
+  const previewCount = deleteAll ? totalPayments : (previewPayments?.length || 0);
   
   const isConfirmValid = confirmText === 'حذف جميع المدفوعات';
   
@@ -59,13 +60,17 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
       return;
     }
     
-    bulkDeleteMutation.mutate({
+    const deleteParams = deleteAll ? {
+      deleteAll: true
+    } : {
       onlyUnlinked,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       paymentType: paymentType === 'all' ? undefined : paymentType,
       paymentMethod: paymentMethod === 'all' ? undefined : paymentMethod,
-    }, {
+    };
+    
+    bulkDeleteMutation.mutate(deleteParams, {
       onSuccess: (result) => {
         if (result.deletedCount === 0) {
           toast.error('لم يتم حذف أي مدفوعات. تحقق من المعايير المحددة.');
@@ -83,6 +88,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   
   const resetForm = () => {
     setConfirmText('');
+    setDeleteAll(false);
     setOnlyUnlinked(false);
     setStartDate('');
     setEndDate('');
@@ -121,11 +127,39 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
         </DialogHeader>
         
         <div className="space-y-4">
+          {/* خيار حذف الكل */}
+          <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="delete-all"
+                checked={deleteAll}
+                onCheckedChange={(checked) => {
+                  setDeleteAll(checked as boolean);
+                  if (checked) {
+                    setOnlyUnlinked(false);
+                    setStartDate('');
+                    setEndDate('');
+                    setPaymentType('all');
+                    setPaymentMethod('all');
+                  }
+                }}
+              />
+              <Label htmlFor="delete-all" className="text-sm font-medium text-red-800 dark:text-red-200">
+                حذف جميع المدفوعات (بدون استثناء) - خطر!
+              </Label>
+            </div>
+            {deleteAll && (
+              <p className="text-xs text-red-700 dark:text-red-300 mt-2">
+                ⚠️ سيتم حذف جميع الـ {totalPayments} مدفوع من النظام نهائياً!
+              </p>
+            )}
+          </div>
+
           {/* خيارات التصفية */}
-          <div className="bg-muted p-4 rounded-lg space-y-3">
+          <div className={`bg-muted p-4 rounded-lg space-y-3 ${deleteAll ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex items-center gap-2 text-sm font-medium">
               <Filter className="h-4 w-4" />
-              خيارات التصفية
+              خيارات التصفية {deleteAll && '(معطلة)'}
             </div>
             
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -133,6 +167,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                 id="only-unlinked"
                 checked={onlyUnlinked}
                 onCheckedChange={(checked) => setOnlyUnlinked(checked as boolean)}
+                disabled={deleteAll}
               />
               <Label htmlFor="only-unlinked" className="text-sm">
                 حذف المدفوعات غير المربوطة فقط (أكثر أماناً)
@@ -148,6 +183,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="text-sm"
+                  disabled={deleteAll}
                 />
               </div>
               <div className="space-y-1">
@@ -158,6 +194,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="text-sm"
+                  disabled={deleteAll}
                 />
               </div>
             </div>
@@ -165,7 +202,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">نوع المدفوع</Label>
-                <Select value={paymentType} onValueChange={setPaymentType}>
+                <Select value={paymentType} onValueChange={setPaymentType} disabled={deleteAll}>
                   <SelectTrigger className="text-sm">
                     <SelectValue placeholder="الكل" />
                   </SelectTrigger>
@@ -177,7 +214,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">طريقة الدفع</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={deleteAll}>
                   <SelectTrigger className="text-sm">
                     <SelectValue placeholder="الكل" />
                   </SelectTrigger>
@@ -229,17 +266,23 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                   </div>
                 )}
                 
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p><strong>المعايير المطبقة:</strong></p>
-                  {!onlyUnlinked && !startDate && !endDate && paymentType === 'all' && paymentMethod === 'all' && (
-                    <p className="text-red-600 dark:text-red-400 font-medium">• جميع المدفوعات (بدون قيود)</p>
-                  )}
-                  {onlyUnlinked && <p>• المدفوعات غير المربوطة فقط</p>}
-                  {startDate && <p>• من تاريخ: {startDate}</p>}
-                  {endDate && <p>• إلى تاريخ: {endDate}</p>}
-                  {paymentType !== 'all' && <p>• نوع المدفوع: {paymentType}</p>}
-                  {paymentMethod !== 'all' && <p>• طريقة الدفع: {paymentMethod}</p>}
-                </div>
+                 <div className="text-xs text-muted-foreground space-y-1">
+                   <p><strong>المعايير المطبقة:</strong></p>
+                   {deleteAll ? (
+                     <p className="text-red-600 dark:text-red-400 font-medium">• حذف جميع المدفوعات (بدون استثناء)</p>
+                   ) : (
+                     <>
+                       {!onlyUnlinked && !startDate && !endDate && paymentType === 'all' && paymentMethod === 'all' && (
+                         <p className="text-red-600 dark:text-red-400 font-medium">• جميع المدفوعات (بدون قيود)</p>
+                       )}
+                       {onlyUnlinked && <p>• المدفوعات غير المربوطة فقط</p>}
+                       {startDate && <p>• من تاريخ: {startDate}</p>}
+                       {endDate && <p>• إلى تاريخ: {endDate}</p>}
+                       {paymentType !== 'all' && <p>• نوع المدفوع: {paymentType}</p>}
+                       {paymentMethod !== 'all' && <p>• طريقة الدفع: {paymentMethod}</p>}
+                     </>
+                   )}
+                 </div>
               </div>
             )}
           </div>
@@ -299,7 +342,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            حذف {previewCount} مدفوع
+            {deleteAll ? 'حذف جميع المدفوعات' : `حذف ${previewCount} مدفوع`}
           </Button>
         </div>
       </DialogContent>

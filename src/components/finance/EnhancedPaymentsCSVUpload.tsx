@@ -498,8 +498,8 @@ export function EnhancedPaymentsCSVUpload({
                 <SmartCSVUpload
                   open={true}
                   onOpenChange={() => {}}
-                  onUploadComplete={handleFileUpload}
-                  entityType="المدفوعات"
+                  onUploadComplete={() => handleFileUpload([])}
+                  entityType="payment"
                   uploadFunction={smartUploadPayments}
                   downloadTemplate={downloadTemplate}
                   fieldTypes={paymentFieldTypes}

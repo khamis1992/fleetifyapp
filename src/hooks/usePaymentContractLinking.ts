@@ -41,11 +41,25 @@ export const usePaymentContractLinking = () => {
     queryFn: async (): Promise<PaymentLinkingStats> => {
       if (!companyId) throw new Error('Company ID is required');
       
-      const { data, error } = await supabase
-        .rpc('get_payment_linking_stats', { p_company_id: companyId });
+      // استخدام استعلام مباشر بدلاً من RPC غير موجود
+      const { data: paymentsData, error } = await supabase
+        .from('payments')
+        .select('id, contract_id')
+        .eq('company_id', companyId);
       
       if (error) throw error;
-      return data[0] || { total_payments: 0, linked_payments: 0, unlinked_payments: 0, linking_percentage: 0 };
+      
+      const totalPayments = paymentsData?.length || 0;
+      const linkedPayments = paymentsData?.filter(p => p.contract_id).length || 0;
+      const unlinkedPayments = totalPayments - linkedPayments;
+      const linkingPercentage = totalPayments > 0 ? (linkedPayments / totalPayments) * 100 : 0;
+      
+      return { 
+        total_payments: totalPayments, 
+        linked_payments: linkedPayments, 
+        unlinked_payments: unlinkedPayments, 
+        linking_percentage: linkingPercentage 
+      };
     },
     enabled: !!companyId
   });
@@ -118,21 +132,19 @@ export const usePaymentContractLinking = () => {
     if (!companyId) return [];
     
     try {
-      // البحث باستخدام الدالة المحسنة
+      // البحث المباشر في جدول العقود
       const { data: contractResults, error } = await supabase
-        .rpc('find_contract_by_identifiers', {
-          p_company_id: companyId,
-          p_agreement_number: payment.agreement_number || null,
-          p_contract_number: payment.contract_number || null,
-          p_customer_id: payment.customer_id || null
-        });
+        .from('contracts')
+        .select('*')
+        .eq('company_id', companyId)
+        .or(`contract_number.eq.${(payment as any).payment_number || ''},customer_id.eq.${payment.customer_id || ''}`);
       
       if (error) throw error;
       
       // تحويل النتائج وإضافة معلومات إضافية
       const results: ContractSearchResult[] = [];
       
-      for (const result of contractResults || []) {
+      for (const result of (contractResults as any[]) || []) {
         // جلب تفاصيل العقد الكاملة
         const { data: contractDetails, error: contractError } = await supabase
           .from('contracts')
@@ -204,24 +216,24 @@ export const usePaymentContractLinking = () => {
       
       if (updateError) throw updateError;
       
-      // تسجيل محاولة الربط
-      const { error: logError } = await supabase
-        .from('payment_contract_linking_attempts')
-        .insert({
-          payment_id: paymentId,
-          selected_contract_id: contractId,
-          linking_confidence: confidence,
-          linking_method: linkingMethod,
-          created_by: user.id,
-          company_id: companyId,
-          attempted_contract_identifiers: {},
-          matching_contracts: []
-        });
+      // تسجيل محاولة الربط (تعليق مؤقت حتى إنشاء الجدول)
+      // const { error: logError } = await supabase
+      //   .from('payment_contract_linking_attempts')
+      //   .insert({
+      //     payment_id: paymentId,
+      //     selected_contract_id: contractId,
+      //     linking_confidence: confidence,
+      //     linking_method: linkingMethod,
+      //     created_by: user.id,
+      //     company_id: companyId,
+      //     attempted_contract_identifiers: {},
+      //     matching_contracts: []
+      //   });
       
-      if (logError) {
-        console.warn('فشل في تسجيل محاولة الربط:', logError);
-        // لا نرمي خطأ هنا لأن الربط نفسه نجح
-      }
+      // if (logError) {
+      //   console.warn('فشل في تسجيل محاولة الربط:', logError);
+      //   // لا نرمي خطأ هنا لأن الربط نفسه نجح
+      // }
       
       return { success: true };
     },
