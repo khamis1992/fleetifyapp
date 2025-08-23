@@ -366,12 +366,20 @@ export const useBulkDeletePayments = () => {
       }
       
       console.log("🔧 [BULK_DELETE] بدء عملية الحذف مع الخيارات:", options);
+      console.log("🔧 [BULK_DELETE] company_id من user.profile:", user.profile.company_id);
+      console.log("🔧 [BULK_DELETE] معلومات المستخدم:", {
+        userId: user.id,
+        email: user.email,
+        companyId: user.profile.company_id
+      });
       
       // Build query to get payments to delete
       let query = supabase
         .from("payments")
         .select("*")
         .eq("company_id", user.profile.company_id);
+      
+      console.log("🔧 [BULK_DELETE] استعلام أساسي مبني للشركة:", user.profile.company_id);
       
       // Handle deleteAll - ignore all filters when true
       if (options.deleteAll) {
@@ -419,9 +427,36 @@ export const useBulkDeletePayments = () => {
       
       const { data: paymentsToDelete, error: fetchError } = await query;
       
-      if (fetchError) throw fetchError;
+      console.log("🔧 [BULK_DELETE] نتيجة الاستعلام:", {
+        paymentsFound: paymentsToDelete?.length || 0,
+        error: fetchError,
+        firstPayment: paymentsToDelete?.[0] ? {
+          id: paymentsToDelete[0].id,
+          company_id: paymentsToDelete[0].company_id,
+          payment_number: paymentsToDelete[0].payment_number
+        } : null
+      });
+      
+      if (fetchError) {
+        console.error("❌ [BULK_DELETE] خطأ في الاستعلام:", fetchError);
+        throw fetchError;
+      }
       
       if (!paymentsToDelete || paymentsToDelete.length === 0) {
+        console.log("⚠️ [BULK_DELETE] لم يتم العثور على مدفوعات للحذف");
+        console.log("🔍 [BULK_DELETE] تحقق من company_id:", user.profile.company_id);
+        
+        // Let's also check if there are ANY payments in the database for debugging
+        const { data: allPayments, error: checkError } = await supabase
+          .from("payments")
+          .select("company_id, count")
+          .eq("company_id", user.profile.company_id);
+        
+        console.log("🔍 [BULK_DELETE] فحص إجمالي المدفوعات للشركة:", {
+          totalPayments: allPayments?.length || 0,
+          checkError
+        });
+        
         return { deletedCount: 0, processedInvoices: 0 };
       }
       
