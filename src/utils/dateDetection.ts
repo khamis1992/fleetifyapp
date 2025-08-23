@@ -362,19 +362,10 @@ export const fixDatesInData = (
         const parsedDate = parseWithFormat(originalValue, format);
         
         if (parsedDate && isValidDate(parsedDate)) {
-          // تحويل إلى تنسيق ISO مع الحفاظ على الوقت إذا كان موجوداً
-          const hasTime = format.format === 'Excel Serial' && String(originalValue).includes('.');
-          
-          if (hasTime) {
-            fixedRow[column] = parsedDate.toISOString();
-            if (index < 3) { // عرض أول 3 تحويلات فقط
-              console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleString('ar-SA')} (${format.label})`);
-            }
-          } else {
-            fixedRow[column] = parsedDate.toISOString().split('T')[0];
-            if (index < 3) {
-              console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleDateString('ar-SA')} (${format.label})`);
-            }
+          // تحويل جميع التواريخ إلى تنسيق التاريخ فقط (YYYY-MM-DD)
+          fixedRow[column] = parsedDate.toISOString().split('T')[0];
+          if (index < 3) { // عرض أول 3 تحويلات فقط
+            console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleDateString('ar-SA')} (${format.label}) → ${fixedRow[column]}`);
           }
         } else {
           if (index < 3) {
