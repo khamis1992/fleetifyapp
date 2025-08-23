@@ -338,7 +338,7 @@ interface BulkDeleteOptions {
   onlyUnlinked?: boolean;
   startDate?: string;
   endDate?: string;
-  paymentType?: 'receipt' | 'payment';
+  paymentType?: string;
   paymentMethod?: string;
 }
 

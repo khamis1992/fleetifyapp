@@ -44,7 +44,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
       onlyUnlinked,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      paymentType: paymentType === 'all' ? undefined : paymentType as 'receipt' | 'payment',
+      paymentType: paymentType === 'all' ? undefined : paymentType,
       paymentMethod: paymentMethod === 'all' ? undefined : paymentMethod,
     }, {
       onSuccess: () => {
@@ -129,8 +129,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">الكل</SelectItem>
-                    <SelectItem value="receipt">إيصال استلام</SelectItem>
-                    <SelectItem value="payment">سند صرف</SelectItem>
+                    <SelectItem value="cash">نقد</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -142,10 +141,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">الكل</SelectItem>
-                    <SelectItem value="cash">نقد</SelectItem>
-                    <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                    <SelectItem value="check">شيك</SelectItem>
-                    <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
+                    <SelectItem value="received">مستلم</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
