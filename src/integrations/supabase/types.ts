@@ -10469,6 +10469,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_late_fine_settings: {
+        Args: { p_company_id: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          fine_rate: number
+          fine_type: string
+          grace_period_days: number
+          id: string
+          is_active: boolean
+          max_fine_amount: number
+          updated_at: string
+        }[]
+      }
       get_legal_account_mapping: {
         Args: {
           account_type_param: string
@@ -10884,6 +10898,17 @@ export type Database = {
       update_vehicle_installment_status: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      upsert_late_fine_settings: {
+        Args: {
+          p_company_id: string
+          p_fine_rate: number
+          p_fine_type: string
+          p_grace_period_days: number
+          p_is_active: boolean
+          p_max_fine_amount: number
+        }
+        Returns: string
       }
       user_belongs_to_company: {
         Args: { _company_id: string; _user_id: string }
