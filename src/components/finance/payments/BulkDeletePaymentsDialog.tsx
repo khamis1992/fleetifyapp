@@ -28,7 +28,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   totalPayments
 }) => {
   const [confirmText, setConfirmText] = useState('');
-  const [onlyUnlinked, setOnlyUnlinked] = useState(true);
+  const [onlyUnlinked, setOnlyUnlinked] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [paymentType, setPaymentType] = useState<string>('all');
@@ -83,7 +83,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   
   const resetForm = () => {
     setConfirmText('');
-    setOnlyUnlinked(true);
+    setOnlyUnlinked(false);
     setStartDate('');
     setEndDate('');
     setPaymentType('all');
@@ -111,7 +111,12 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
             حذف جميع المدفوعات
           </DialogTitle>
           <DialogDescription>
-            هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المدفوعات نهائياً من النظام.
+            ⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المدفوعات نهائياً من النظام.
+            {!onlyUnlinked && (
+              <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded text-red-800 dark:text-red-200 text-sm">
+                <strong>تحذير:</strong> سيتم حذف جميع المدفوعات بما في ذلك المربوطة بالعقود والفواتير!
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
         
@@ -130,7 +135,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                 onCheckedChange={(checked) => setOnlyUnlinked(checked as boolean)}
               />
               <Label htmlFor="only-unlinked" className="text-sm">
-                حذف المدفوعات غير المربوطة فقط (الموصى به)
+                حذف المدفوعات غير المربوطة فقط (أكثر أماناً)
               </Label>
             </div>
             
@@ -226,6 +231,9 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                 
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>المعايير المطبقة:</strong></p>
+                  {!onlyUnlinked && !startDate && !endDate && paymentType === 'all' && paymentMethod === 'all' && (
+                    <p className="text-red-600 dark:text-red-400 font-medium">• جميع المدفوعات (بدون قيود)</p>
+                  )}
                   {onlyUnlinked && <p>• المدفوعات غير المربوطة فقط</p>}
                   {startDate && <p>• من تاريخ: {startDate}</p>}
                   {endDate && <p>• إلى تاريخ: {endDate}</p>}

@@ -370,24 +370,39 @@ export const useBulkDeletePayments = () => {
         .select("*")
         .eq("company_id", user.profile.company_id);
       
+      // Apply filters only if specified
       if (options.onlyUnlinked) {
         query = query.is("invoice_id", null).is("contract_id", null);
+        console.log("🔍 تطبيق فلتر: المدفوعات غير المربوطة فقط");
       }
       
       if (options.startDate) {
         query = query.gte("payment_date", options.startDate);
+        console.log(`🔍 تطبيق فلتر: من تاريخ ${options.startDate}`);
       }
       
       if (options.endDate) {
         query = query.lte("payment_date", options.endDate);
+        console.log(`🔍 تطبيق فلتر: إلى تاريخ ${options.endDate}`);
       }
       
-      if (options.paymentType) {
+      if (options.paymentType && options.paymentType !== 'all') {
         query = query.eq("payment_type", options.paymentType);
+        console.log(`🔍 تطبيق فلتر: نوع الدفع ${options.paymentType}`);
       }
       
-      if (options.paymentMethod) {
+      if (options.paymentMethod && options.paymentMethod !== 'all') {
         query = query.eq("payment_method", options.paymentMethod);
+        console.log(`🔍 تطبيق فلتر: طريقة الدفع ${options.paymentMethod}`);
+      }
+      
+      // If no filters applied, we're deleting ALL payments for the company
+      const hasFilters = options.onlyUnlinked || options.startDate || options.endDate || 
+                        (options.paymentType && options.paymentType !== 'all') || 
+                        (options.paymentMethod && options.paymentMethod !== 'all');
+      
+      if (!hasFilters) {
+        console.log("⚠️ لا توجد فلاتر مطبقة - سيتم حذف جميع المدفوعات للشركة");
       }
       
       const { data: paymentsToDelete, error: fetchError } = await query;
@@ -455,20 +470,35 @@ export const useBulkDeletePayments = () => {
       // Delete payments in batches
       const batchSize = 100;
       let deletedCount = 0;
+      const totalToDelete = paymentsToDelete.length;
+      
+      console.log(`🗑️ بدء حذف ${totalToDelete} مدفوع على ${Math.ceil(totalToDelete / batchSize)} دفعة`);
       
       for (let i = 0; i < paymentsToDelete.length; i += batchSize) {
         const batch = paymentsToDelete.slice(i, i + batchSize);
         const ids = batch.map(p => p.id);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        const totalBatches = Math.ceil(totalToDelete / batchSize);
         
-        const { error: deleteError } = await supabase
+        console.log(`🔄 معالجة الدفعة ${batchNumber}/${totalBatches} (${batch.length} مدفوع)`);
+        
+        const { error: deleteError, count } = await supabase
           .from("payments")
-          .delete()
+          .delete({ count: 'exact' })
           .in("id", ids)
           .eq("company_id", user.profile.company_id);
         
-        if (deleteError) throw deleteError;
-        deletedCount += batch.length;
+        if (deleteError) {
+          console.error(`❌ خطأ في حذف الدفعة ${batchNumber}:`, deleteError);
+          throw deleteError;
+        }
+        
+        const actualDeleted = count || batch.length;
+        deletedCount += actualDeleted;
+        console.log(`✅ تم حذف ${actualDeleted} مدفوع من الدفعة ${batchNumber}`);
       }
+      
+      console.log(`🎉 تم الانتهاء من حذف ${deletedCount} مدفوع من أصل ${totalToDelete}`);
       
       return { deletedCount, processedInvoices };
     },

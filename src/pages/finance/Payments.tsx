@@ -23,7 +23,6 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
-import { PaymentImportDialog } from "@/components/finance/payments/PaymentImportDialog";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 
 const Payments = () => {
@@ -363,9 +362,13 @@ const Payments = () => {
         />
 
         {/* استيراد الدفعات من CSV/XLSX */}
-        <PaymentImportDialog 
-          isOpen={isImportOpen}
-          onClose={() => setIsImportOpen(false)}
+        <PaymentsCSVUpload 
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          onUploadComplete={() => {
+            setIsImportOpen(false);
+            // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
+          }}
         />
         
         <BulkDeletePaymentsDialog
