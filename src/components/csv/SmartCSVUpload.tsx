@@ -12,6 +12,8 @@ import * as XLSX from "xlsx";
 import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
 import { CSVTableEditor } from "./CSVTableEditor";
+import { DateFormatSelector } from "./DateFormatSelector";
+import { DateFormatOption } from "@/utils/dateDetection";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,6 +55,8 @@ export function SmartCSVUpload({
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
   const [editedRows, setEditedRows] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<'preview' | 'table'>('preview');
+  const [showDateSelector, setShowDateSelector] = useState(false);
+  const [pendingData, setPendingData] = useState<any[]>([]);
 
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   
@@ -99,6 +103,8 @@ export function SmartCSVUpload({
       setRawHeaders([]);
       setEditedRows([]);
       setActiveView('table');
+      setShowDateSelector(false);
+      setPendingData([]);
     } else {
       toast.error("يرجى اختيار ملف CSV أو XLSX صحيح");
     }
@@ -153,22 +159,32 @@ export function SmartCSVUpload({
       setEditedRows(rawRows.map((row, index) => ({ ...row, rowNumber: index + 2 })));
 
       const csvData = rawRows.map((row, index) => ({ ...normalizeCsvHeaders(row), rowNumber: index + 2 }));
-
-      const fixResults = CSVAutoFix.fixCSVData(csvData, fieldTypes, effectiveRequiredFields, 'qatar');
-      setFixes(fixResults);
-      setShowPreview(true);
-      setActiveView('table');
-
-      const totalFixes = fixResults.reduce((sum, row) => sum + row.fixes.length, 0);
-      const errorRows = fixResults.filter(row => row.hasErrors).length;
       
-      toast.success(`تم تحليل الملف: ${totalFixes} إصلاح محتمل، ${errorRows} صف يحتوي على أخطاء`);
+      // إظهار محدد تنسيق التواريخ أولاً
+      setPendingData(csvData);
+      setShowDateSelector(true);
     } catch (error) {
       console.error('Error analyzing file:', error);
       toast.error("خطأ في تحليل الملف");
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleDateFormatsConfirmed = (processedData: any[], columnFormats: { [column: string]: DateFormatOption }) => {
+    setShowDateSelector(false);
+    
+    // تطبيق إصلاحات CSV التقليدية على البيانات المعالجة
+    const fixResults = CSVAutoFix.fixCSVData(processedData, fieldTypes, effectiveRequiredFields, 'qatar');
+    setFixes(fixResults);
+    setShowPreview(true);
+    setActiveView('preview');
+
+    const totalFixes = fixResults.reduce((sum, row) => sum + row.fixes.length, 0);
+    const errorRows = fixResults.filter(row => row.hasErrors).length;
+    const dateColumns = Object.keys(columnFormats).length;
+    
+    toast.success(`تم تحليل الملف: ${totalFixes} إصلاح محتمل، ${errorRows} صف يحتوي على أخطاء، ${dateColumns} عمود تاريخ محول`);
   };
 
   const handleApproveFixes = async (approvedFixes: CSVRowFix[]) => {
@@ -370,6 +386,8 @@ export function SmartCSVUpload({
     setIsAnalyzing(false);
     setIsUploading(false);
     setUploadProgress(0);
+    setShowDateSelector(false);
+    setPendingData([]);
     onOpenChange(false);
   };
   return (
@@ -667,6 +685,14 @@ export function SmartCSVUpload({
             )}
           </div>
         )}
+
+        {/* محدد تنسيق التواريخ */}
+        <DateFormatSelector
+          open={showDateSelector}
+          onOpenChange={setShowDateSelector}
+          data={pendingData}
+          onConfirm={handleDateFormatsConfirmed}
+        />
       </DialogContent>
     </Dialog>
   );

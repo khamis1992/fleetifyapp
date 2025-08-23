@@ -1,5 +1,6 @@
 import { format, parse, isValid } from 'date-fns';
 import { normalizeArabicDigits, parseNumber, cleanNumericString } from './numberFormatter';
+import { detectDateFormat, normalizeDateValue } from './dateDetection';
 
 export interface FixResult {
   success: boolean;
@@ -79,7 +80,7 @@ export class CSVAutoFix {
   }
 
   /**
-   * إصلاح التواريخ التلقائي
+   * إصلاح التواريخ باستخدام النظام الذكي الجديد
    */
   static fixDate(value: any): FixResult {
     if (!value || value === '') {
@@ -92,6 +93,35 @@ export class CSVAutoFix {
       };
     }
 
+    const normalized = normalizeDateValue(value);
+    if (!normalized) {
+      return {
+        success: false,
+        originalValue: value,
+        fixedValue: value,
+        confidence: 'low',
+        reason: 'قيمة تاريخ غير صحيحة'
+      };
+    }
+
+    const detection = detectDateFormat(value);
+    
+    if (detection.isDate && detection.parsedDate) {
+      const isoDate = detection.parsedDate.toISOString().split('T')[0];
+      const wasFixed = String(value).trim() !== isoDate;
+      
+      return {
+        success: true,
+        originalValue: value,
+        fixedValue: isoDate,
+        confidence: detection.confidence >= 80 ? 'high' : detection.confidence >= 60 ? 'medium' : 'low',
+        reason: wasFixed 
+          ? `تحويل من ${detection.detectedFormat} (ثقة: ${detection.confidence}%)`
+          : 'تم تنسيق التاريخ'
+      };
+    }
+
+    // محاولة تحليل تقليدي كخيار احتياطي
     const stringValue = String(value).trim();
     
     // إذا كان التاريخ صحيحاً بالفعل
@@ -106,7 +136,7 @@ export class CSVAutoFix {
       };
     }
 
-    // محاولة تحليل التاريخ بصيغ مختلفة
+    // محاولة تحليل التاريخ بصيغ تقليدية
     for (const dateFormat of DATE_FORMATS) {
       try {
         const parsedDate = parse(stringValue, dateFormat, new Date());
@@ -115,7 +145,7 @@ export class CSVAutoFix {
             success: true,
             originalValue: value,
             fixedValue: format(parsedDate, 'yyyy-MM-dd'),
-            confidence: 'high',
+            confidence: 'medium',
             reason: `تم تحويل من ${dateFormat} إلى yyyy-MM-dd`
           };
         }
@@ -129,7 +159,7 @@ export class CSVAutoFix {
       originalValue: value,
       fixedValue: value,
       confidence: 'low',
-      reason: 'لا يمكن تحليل التاريخ'
+      reason: `تنسيق تاريخ غير مدعوم (ثقة: ${detection.confidence}%)`
     };
   }
 

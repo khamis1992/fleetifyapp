@@ -4,6 +4,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { normalizeCsvHeaders } from "@/utils/csv";
 import { parseNumber } from "@/utils/numberFormatter";
 import { toast } from "sonner";
+import { detectDateColumns, isDateColumn, suggestBestFormat, fixDatesInData } from "@/utils/dateDetection";
 
 interface PaymentPreviewItem {
   rowNumber: number;
@@ -67,6 +68,35 @@ export function usePaymentsCSVUpload() {
   };
 
   const paymentRequiredFields = ['payment_date', 'amount'];
+
+  const enhancePaymentDataWithDates = (data: any[]): any[] => {
+    try {
+      // اكتشاف الأعمدة التي تحتوي على تواريخ
+      const columnResults = detectDateColumns(data);
+      const columnFormats: { [column: string]: any } = {};
+      
+      // تحديد تنسيقات التواريخ للأعمدة ذات الصلة
+      for (const [column, results] of Object.entries(columnResults)) {
+        if ((column.includes('date') || column === 'payment_date') && isDateColumn(results)) {
+          const bestFormat = suggestBestFormat(results);
+          if (bestFormat) {
+            columnFormats[column] = bestFormat;
+          }
+        }
+      }
+      
+      // إصلاح التواريخ في البيانات
+      if (Object.keys(columnFormats).length > 0) {
+        console.log('تم اكتشاف أعمدة تواريخ:', columnFormats);
+        return fixDatesInData(data, columnFormats);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('خطأ في معالجة التواريخ:', error);
+      return data; // إرجاع البيانات الأصلية في حالة الخطأ
+    }
+  };
 
   const downloadTemplate = () => {
     const headers = [
@@ -345,11 +375,14 @@ export function usePaymentsCSVUpload() {
   ): Promise<CSVUploadResults> => {
     const targetCompanyId = options?.targetCompanyId || companyId;
     
+    // تطبيق التحسينات على التواريخ قبل المعالجة
+    const enhancedRows = enhancePaymentDataWithDates(rows);
+    
     // If in preview mode, just return analyzed data
     if (options?.previewMode) {
-      const previewData = await analyzePaymentData(rows, targetCompanyId);
+      const previewData = await analyzePaymentData(enhancedRows, targetCompanyId);
       return {
-        total: rows.length,
+        total: enhancedRows.length,
         successful: 0,
         failed: 0,
         skipped: 0,
@@ -374,8 +407,8 @@ export function usePaymentsCSVUpload() {
     let lastNumber = await getLastPaymentNumber(targetCompanyId);
 
     // Pre-resolve any invoice/customer/vendor ids when provided
-    for (let i = 0; i < rows.length; i++) {
-      const raw = rows[i] || {};
+    for (let i = 0; i < enhancedRows.length; i++) {
+      const raw = enhancedRows[i] || {};
       const rowNumber = raw.rowNumber || i + 2;
 
       // Normalize fields
@@ -511,10 +544,10 @@ export function usePaymentsCSVUpload() {
       }
 
       successful++;
-      setProgress(Math.round(((i + 1) / rows.length) * 100));
+      setProgress(Math.round(((i + 1) / enhancedRows.length) * 100));
     }
 
-    const summary = { total: rows.length, successful, failed, skipped, errors };
+    const summary = { total: enhancedRows.length, successful, failed, skipped, errors };
     setResults(summary);
     setIsUploading(false);
     setProgress(0);
