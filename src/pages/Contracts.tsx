@@ -24,6 +24,7 @@ import { ContractCancellationDialog } from "@/components/contracts/ContractCance
 import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog"
 import { ContractCSVUpload } from "@/components/contracts/ContractCSVUpload"
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings"
+import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog"
 
 // Hook imports
 import { useContractsData } from "@/hooks/useContractsData"
@@ -48,6 +49,7 @@ export default function Contracts() {
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
+  const [showBulkDelete, setShowBulkDelete] = useState(false)
   const [filters, setFilters] = useState<any>({})
 
   // Hooks
@@ -158,6 +160,10 @@ export default function Contracts() {
     setShowCSVUpload(true)
   }
 
+  const handleShowBulkDelete = () => {
+    setShowBulkDelete(true)
+  }
+
   const handleClearFilters = () => {
     setFilters({})
   }
@@ -182,6 +188,7 @@ export default function Contracts() {
         onShowTemplates={handleShowTemplates}
         onShowExport={handleShowExport}
         onShowCSVUpload={handleShowCSVUpload}
+        onShowBulkDelete={handleShowBulkDelete}
       />
 
       {/* Statistics Cards */}
@@ -317,6 +324,12 @@ export default function Contracts() {
           setShowCSVUpload(false)
           refetch()
         }}
+      />
+
+      {/* Bulk Delete Contracts Dialog */}
+      <BulkDeleteContractsDialog
+        open={showBulkDelete}
+        onOpenChange={setShowBulkDelete}
       />
 
       {showTemplateManager && (
