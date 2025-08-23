@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { normalizeCsvHeaders } from "@/utils/csv";
+import { parseNumber } from "@/utils/numberFormatter";
 import { toast } from "sonner";
+
+interface PaymentPreviewItem {
+  rowNumber: number;
+  data: any;
+  paidAmount: number;
+  totalAmount?: number;
+  balance?: number;
+  hasBalance: boolean;
+  isZeroPayment: boolean;
+  warnings: string[];
+}
 
 interface CSVUploadResults {
   total: number;
@@ -9,6 +22,7 @@ interface CSVUploadResults {
   failed: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
+  previewData?: PaymentPreviewItem[];
 }
 
 export function usePaymentsCSVUpload() {
@@ -23,6 +37,9 @@ export function usePaymentsCSVUpload() {
     payment_type: 'text' as const,     // cash | check | bank_transfer | credit_card | debit_card
     payment_date: 'date' as const,
     amount: 'number' as const,
+    amount_paid: 'number' as const,
+    total_amount: 'number' as const,
+    balance: 'number' as const,
     reference_number: 'text' as const,
     payment_number: 'text' as const,
     notes: 'text' as const,
@@ -47,7 +64,9 @@ export function usePaymentsCSVUpload() {
       'transaction_type',
       'payment_type',
       'payment_date',
-      'payment amount',
+      'amount_paid',
+      'total_amount',
+      'balance',
       'reference_number',
       'payment_number',
       'customer_name',
@@ -62,13 +81,15 @@ export function usePaymentsCSVUpload() {
       'cash',
       '2025-01-15',
       '150.000',
+      '200.000',
+      '50.000',
       'REF-123',
       'PAY-0001',
       'شركة الهدى',
       '',
       'INV-2025-001',
       '',
-      'قبض دفعة نقدية'
+      'قبض دفعة جزئية'
     ];
 
     const examplePayment = [
@@ -76,13 +97,15 @@ export function usePaymentsCSVUpload() {
       'bank_transfer',
       '2025-01-18',
       '250.000',
+      '250.000',
+      '0',
       'TRX-777',
       '',
       '',
       'مزود الخدمات الدولية',
       '',
       '',
-      'صرف عبر حوالة بنكية'
+      'صرف كامل عبر حوالة بنكية'
     ];
 
     const csv = [headers.join(','), exampleReceipt.join(','), examplePayment.join(',')].join('\n');
@@ -173,10 +196,89 @@ export function usePaymentsCSVUpload() {
 
   const formatPaymentNumber = (n: number) => `PAY-${String(n).padStart(4, '0')}`;
 
+  const analyzePaymentData = (rows: any[]): PaymentPreviewItem[] => {
+    return rows.map((row, index) => {
+      const normalizedRow = normalizeCsvHeaders(row);
+      
+      // Parse amounts
+      const amount = parseNumber(normalizedRow.amount || 0);
+      const amountPaid = parseNumber(normalizedRow.amount_paid || normalizedRow.paid_amount || amount);
+      const totalAmount = parseNumber(normalizedRow.total_amount || normalizedRow.amount || 0);
+      const balance = parseNumber(normalizedRow.balance || 0);
+      
+      // Calculate actual paid amount and balance
+      let finalPaidAmount = amountPaid;
+      let finalBalance = 0;
+      
+      // If we have both total_amount and amount_paid, use amount_paid as the paid amount
+      if (normalizedRow.total_amount && normalizedRow.amount_paid !== undefined) {
+        finalPaidAmount = amountPaid;
+        finalBalance = totalAmount - amountPaid;
+      }
+      // If we have amount and balance, calculate paid amount
+      else if (normalizedRow.amount && normalizedRow.balance !== undefined) {
+        finalPaidAmount = amount - balance;
+        finalBalance = balance;
+      }
+      // If only amount is provided, assume it's fully paid
+      else {
+        finalPaidAmount = amount;
+        finalBalance = 0;
+      }
+      
+      const warnings: string[] = [];
+      
+      // Validation warnings
+      if (finalPaidAmount > totalAmount && totalAmount > 0) {
+        warnings.push('المبلغ المدفوع أكبر من المبلغ الإجمالي');
+      }
+      
+      if (finalBalance > 0) {
+        warnings.push(`رصيد متبقي: ${finalBalance}`);
+      }
+      
+      if (finalPaidAmount <= 0) {
+        warnings.push('مبلغ مدفوع صفر أو سالب');
+      }
+      
+      return {
+        rowNumber: row.rowNumber || index + 2,
+        data: { ...normalizedRow, amount: finalPaidAmount },
+        paidAmount: finalPaidAmount,
+        totalAmount: totalAmount > 0 ? totalAmount : undefined,
+        balance: finalBalance > 0 ? finalBalance : undefined,
+        hasBalance: finalBalance > 0,
+        isZeroPayment: finalPaidAmount <= 0,
+        warnings
+      };
+    });
+  };
+
   const smartUploadPayments = async (
     rows: any[],
-    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean }
-  ) => {
+    options?: { 
+      upsert?: boolean; 
+      targetCompanyId?: string; 
+      autoCreateCustomers?: boolean; 
+      autoCompleteDates?: boolean; 
+      autoCompleteType?: boolean; 
+      autoCompleteAmounts?: boolean; 
+      dryRun?: boolean;
+      previewMode?: boolean;
+    }
+  ): Promise<CSVUploadResults> => {
+    // If in preview mode, just return analyzed data
+    if (options?.previewMode) {
+      return {
+        total: rows.length,
+        successful: 0,
+        failed: 0,
+        skipped: 0,
+        errors: [],
+        previewData: analyzePaymentData(rows)
+      };
+    }
+
     const targetCompanyId = options?.targetCompanyId || companyId;
     if (!user?.id || !targetCompanyId) {
       toast.error('لا يمكن الرفع بدون مستخدم وشركة');
@@ -344,6 +446,7 @@ export function usePaymentsCSVUpload() {
     progress,
     results,
     downloadTemplate,
+    analyzePaymentData,
     paymentFieldTypes,
     paymentRequiredFields,
     smartUploadPayments,
