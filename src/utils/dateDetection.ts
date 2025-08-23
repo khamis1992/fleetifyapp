@@ -92,13 +92,45 @@ export const DATE_FORMATS: DateFormatOption[] = [
     format: 'Excel Serial',
     label: 'رقم تسلسلي (Excel)',
     example: '44927',
+    regex: /^(\d{4,6}(?:\.\d+)?)$/,
+    parseFunction: (value: string) => {
+      const serial = parseFloat(value);
+      if (serial < 1 || serial > 50000) return null;
+      
+      // Excel serial date starts from 1900-01-01 (but Excel incorrectly treats 1900 as leap year)
+      // So we use 1899-12-30 as base to match Excel behavior
+      const excelEpoch = new Date(1899, 11, 30);
+      
+      // Calculate days and time from serial number
+      const wholeDays = Math.floor(serial);
+      const timeFraction = serial - wholeDays;
+      
+      // Add days to epoch
+      const date = new Date(excelEpoch.getTime() + wholeDays * 24 * 60 * 60 * 1000);
+      
+      // Add time if there's a decimal part
+      if (timeFraction > 0) {
+        const millisecondsInDay = 24 * 60 * 60 * 1000;
+        const timeInMs = timeFraction * millisecondsInDay;
+        date.setTime(date.getTime() + timeInMs);
+      }
+      
+      return isValidDate(date) ? date : null;
+    }
+  },
+  {
+    format: 'Excel Serial (Integer)',
+    label: 'رقم تسلسلي بدون وقت (Excel)',
+    example: '45474',
     regex: /^(\d{4,6})$/,
     parseFunction: (value: string) => {
       const serial = parseInt(value);
       if (serial < 1 || serial > 50000) return null;
-      // Excel serial date starts from 1900-01-01
-      const excelEpoch = new Date(1900, 0, 1);
-      const date = new Date(excelEpoch.getTime() + (serial - 1) * 24 * 60 * 60 * 1000);
+      
+      // Excel serial date with integer part only
+      const excelEpoch = new Date(1899, 11, 30);
+      const date = new Date(excelEpoch.getTime() + serial * 24 * 60 * 60 * 1000);
+      
       return isValidDate(date) ? date : null;
     }
   }
@@ -123,8 +155,13 @@ export const normalizeDateValue = (value: any): string => {
   // تحويل الأرقام العربية إلى إنجليزية
   normalized = normalizeArabicDigits(normalized);
   
-  // إزالة الأوقات إذا كانت موجودة
-  normalized = normalized.replace(/\s+\d{1,2}:\d{1,2}(:\d{1,2})?.*$/, '');
+  // لا نزيل الكسور العشرية للأرقام الكبيرة (Excel Serial Numbers)
+  const isLargeNumber = /^\d{4,6}(\.\d+)?$/.test(normalized);
+  
+  if (!isLargeNumber) {
+    // إزالة الأوقات إذا كانت موجودة للتواريخ النصية فقط
+    normalized = normalized.replace(/\s+\d{1,2}:\d{1,2}(:\d{1,2})?.*$/, '');
+  }
   
   return normalized;
 };
@@ -204,9 +241,16 @@ const calculateConfidence = (value: string, format: DateFormatOption, date: Date
     confidence += 10;
   }
   
-  // تقليل الثقة للأرقام التسلسلية
-  if (format.format === 'Excel Serial') {
-    confidence -= 20;
+  // تحسين الثقة للأرقام التسلسلية في النطاق المعقول
+  if (format.format === 'Excel Serial' || format.format === 'Excel Serial (Integer)') {
+    const serial = parseFloat(value);
+    if (serial >= 40000 && serial <= 50000) { // نطاق 2009-2037 تقريباً
+      confidence += 15; // زيادة الثقة للتواريخ الحديثة
+    } else if (serial >= 30000 && serial <= 55000) { // نطاق أوسع
+      confidence += 5;
+    } else {
+      confidence -= 10; // تقليل الثقة للتواريخ البعيدة
+    }
   }
   
   return Math.min(100, Math.max(0, confidence));
@@ -307,15 +351,35 @@ export const fixDatesInData = (
   data: any[], 
   columnFormats: { [column: string]: DateFormatOption }
 ): any[] => {
-  return data.map(row => {
+  console.log('🔄 بدء معالجة التواريخ للبيانات...');
+  
+  return data.map((row, index) => {
     const fixedRow = { ...row };
     
     for (const [column, format] of Object.entries(columnFormats)) {
       if (row[column]) {
-        const parsedDate = parseWithFormat(row[column], format);
+        const originalValue = row[column];
+        const parsedDate = parseWithFormat(originalValue, format);
+        
         if (parsedDate && isValidDate(parsedDate)) {
-          // تحويل إلى تنسيق ISO
-          fixedRow[column] = parsedDate.toISOString().split('T')[0];
+          // تحويل إلى تنسيق ISO مع الحفاظ على الوقت إذا كان موجوداً
+          const hasTime = format.format === 'Excel Serial' && String(originalValue).includes('.');
+          
+          if (hasTime) {
+            fixedRow[column] = parsedDate.toISOString();
+            if (index < 3) { // عرض أول 3 تحويلات فقط
+              console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleString('ar-SA')} (${format.label})`);
+            }
+          } else {
+            fixedRow[column] = parsedDate.toISOString().split('T')[0];
+            if (index < 3) {
+              console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleDateString('ar-SA')} (${format.label})`);
+            }
+          }
+        } else {
+          if (index < 3) {
+            console.warn(`⚠️ فشل تحويل ${column}: ${originalValue} باستخدام ${format.label}`);
+          }
         }
       }
     }
