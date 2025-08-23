@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ContractDocuments } from './ContractDocuments';
 import { InvoiceCard } from '@/components/finance/InvoiceCard';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
+import { LateFinesTab } from './LateFinesTab';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
@@ -228,9 +229,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4" dir="rtl">
+          <TabsList className="grid w-full grid-cols-5" dir="rtl">
             <TabsTrigger value="details">التفاصيل</TabsTrigger>
             <TabsTrigger value="invoices">الفواتير</TabsTrigger>
+            <TabsTrigger value="fines">الغرامات والتأخيرات</TabsTrigger>
             <TabsTrigger value="timeline">التاريخ</TabsTrigger>
             <TabsTrigger value="documents">المستندات</TabsTrigger>
           </TabsList>
@@ -624,6 +626,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="fines" className="space-y-4">
+            <LateFinesTab contract={contract} />
           </TabsContent>
 
           <TabsContent value="documents" className="space-y-4">

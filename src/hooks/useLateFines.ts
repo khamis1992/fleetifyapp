@@ -24,22 +24,22 @@ interface ContractFineCalculation {
 
 // hook لجلب إعدادات الغرامات
 export const useLateFineSettings = () => {
-  const { user, companyFilter } = useUnifiedCompanyAccess();
+  const { user, companyId } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['late-fine-settings', companyFilter?.company_id],
+    queryKey: ['late-fine-settings', companyId],
     queryFn: async () => {
-      if (!companyFilter?.company_id) throw new Error('Company ID not found');
+      if (!companyId) throw new Error('Company ID not found');
       
       // استخدام RPC function للوصول للبيانات
       const { data, error } = await supabase.rpc('get_late_fine_settings', {
-        p_company_id: companyFilter.company_id
+        p_company_id: companyId
       });
       
       if (error) throw error;
       return data?.[0] || null;
     },
-    enabled: !!user?.id && !!companyFilter?.company_id,
+    enabled: !!user?.id && !!companyId,
   });
 };
 
@@ -47,14 +47,14 @@ export const useLateFineSettings = () => {
 export const useUpdateLateFineSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { companyFilter } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
   
   return useMutation({
     mutationFn: async (settings: Omit<LateFineSettings, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
-      if (!companyFilter?.company_id) throw new Error('Company ID not found');
+      if (!companyId) throw new Error('Company ID not found');
       
       const { data, error } = await supabase.rpc('upsert_late_fine_settings', {
-        p_company_id: companyFilter.company_id,
+        p_company_id: companyId,
         p_fine_type: settings.fine_type,
         p_fine_rate: settings.fine_rate,
         p_grace_period_days: settings.grace_period_days,
@@ -132,15 +132,15 @@ export const calculateLateFine = (
 // hook لحساب الغرامات لجميع العقود المتأخرة
 export const useCalculateLateFines = () => {
   const { toast } = useToast();
-  const { companyFilter } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
   
   return useMutation({
     mutationFn: async () => {
-      if (!companyFilter?.company_id) throw new Error('Company ID not found');
+      if (!companyId) throw new Error('Company ID not found');
       
       // استدعاء Edge Function لحساب وتحديث الغرامات
       const { data, error } = await supabase.functions.invoke('calculate-late-fines', {
-        body: { company_id: companyFilter.company_id }
+        body: { company_id: companyId }
       });
       
       if (error) throw error;

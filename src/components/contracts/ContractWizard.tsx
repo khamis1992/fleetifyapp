@@ -13,12 +13,14 @@ import {
   FinancialStep, 
   ReviewStep 
 } from './ContractWizardSteps'
+import { LateFinesStep } from './LateFinesStep'
 
 const stepComponents = [
   BasicInfoStep,
   DatesStep,
   CustomerVehicleStep,
   FinancialStep,
+  LateFinesStep,
   ReviewStep
 ]
 
@@ -27,6 +29,7 @@ const stepTitles = [
   'التواريخ والمدة', 
   'العميل والمركبة',
   'التفاصيل المالية',
+  'إعدادات الغرامات',
   'المراجعة والإرسال'
 ]
 

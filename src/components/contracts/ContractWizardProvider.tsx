@@ -30,6 +30,13 @@ interface ContractWizardData {
   account_id: string
   cost_center_id: string
   
+  // Late Fines Settings
+  late_fines_enabled?: boolean
+  late_fine_type?: 'percentage' | 'fixed_amount'
+  late_fine_rate?: number
+  late_fine_grace_period?: number
+  late_fine_max_amount?: number
+  
   // Signatures
   customer_signature?: string
   company_signature?: string
@@ -107,7 +114,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   const [currentStep, setCurrentStep] = useState(0)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
-  const totalSteps = 5 // Basic Info, Customer/Vehicle, Dates, Financial, Review
+  const totalSteps = 6 // Basic Info, Dates, Customer/Vehicle, Financial, Late Fines, Review
 
   const template = useTemplateByType(data.contract_type || '')
   const { applyTemplate } = useApplyTemplate()
@@ -374,7 +381,11 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
           }
           break
           
-        case 4: // Review
+        case 4: // Late Fines Settings (optional step)
+          // No validation required - this is optional
+          break
+          
+        case 5: // Review
           // التحقق النهائي من جميع البيانات
           const requiredFields = [
             { field: 'customer_id', name: 'العميل' },
@@ -432,7 +443,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
         return hasCustomer
       case 3: // Financial
         return data.contract_amount > 0 && (data.monthly_amount > 0 || data.rental_days < 30)
-      case 4: // Review
+      case 4: // Late Fines Settings (optional)
+        return true // Always allow proceeding from this step
+      case 5: // Review
         return !!(data.customer_id && data.contract_amount > 0 && data.start_date && data.end_date)
       default:
         return true
