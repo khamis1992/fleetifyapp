@@ -30,6 +30,7 @@ import Treasury from "./finance/Treasury"
 import CostCenters from "./finance/CostCenters"
 import Invoices from "./finance/Invoices"
 import Payments from "./finance/Payments"
+import PaymentLinking from "./PaymentLinking"
 import Reports from "./finance/Reports"
 import FixedAssets from "./finance/FixedAssets"
 import Budgets from "./finance/Budgets"
@@ -94,6 +95,14 @@ const FinanceModules = () => {
       icon: CreditCard,
       path: "/finance/payments",
       color: "bg-gradient-to-br from-purple-500 to-purple-600"
+    },
+    {
+      title: "ربط المدفوعات",
+      titleEn: "Payment Linking",
+      description: "ربط المدفوعات بالعملاء وإنشاء الفواتير",
+      icon: CreditCard,
+      path: "/finance/payment-linking",
+      color: "bg-gradient-to-br from-rose-500 to-rose-600"
     },
     {
       title: "التقارير المالية",
@@ -396,6 +405,14 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.payments.view">
             <Payments />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="payment-linking" 
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <PaymentLinking />
           </ProtectedFinanceRoute>
         } 
       />

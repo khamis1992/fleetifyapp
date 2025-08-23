@@ -1,7 +1,7 @@
-import { PaymentLinkingManagement } from "@/components/finance/payment-linking/PaymentLinkingManagement";
+import { PaymentLinkingDashboard } from "@/components/finance/payment-linking/PaymentLinkingDashboard";
 
 const PaymentLinking = () => {
-  return <PaymentLinkingManagement />;
+  return <PaymentLinkingDashboard />;
 };
 
 export default PaymentLinking;
