@@ -16,13 +16,15 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
+import { PaymentImportDialog } from "@/components/finance/payments/PaymentImportDialog";
+import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,6 +34,7 @@ const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""
@@ -133,6 +136,14 @@ const Payments = () => {
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               استيراد CSV/XLSX
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => setIsBulkDeleteOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              حذف جميع المدفوعات
             </Button>
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -352,10 +363,15 @@ const Payments = () => {
         />
 
         {/* استيراد الدفعات من CSV/XLSX */}
-        <PaymentsCSVUpload
-          open={isImportOpen}
-          onOpenChange={setIsImportOpen}
-          onUploadComplete={() => {}}
+        <PaymentImportDialog 
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+        />
+        
+        <BulkDeletePaymentsDialog
+          isOpen={isBulkDeleteOpen}
+          onClose={() => setIsBulkDeleteOpen(false)}
+          totalPayments={payments?.length || 0}
         />
 
         {/* مكون معاينة تفاصيل الدفعة */}

@@ -333,3 +333,147 @@ export const useDeletePayment = () => {
     }
   });
 };
+
+interface BulkDeleteOptions {
+  onlyUnlinked?: boolean;
+  startDate?: string;
+  endDate?: string;
+  paymentType?: 'receipt' | 'payment';
+  paymentMethod?: string;
+}
+
+export const useBulkDeletePayments = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async (options: BulkDeleteOptions = {}) => {
+      if (!user?.profile?.company_id) {
+        throw new Error("Company ID is required");
+      }
+      
+      // Build query to get payments to delete
+      let query = supabase
+        .from("payments")
+        .select("*")
+        .eq("company_id", user.profile.company_id);
+      
+      if (options.onlyUnlinked) {
+        query = query.is("invoice_id", null).is("contract_id", null);
+      }
+      
+      if (options.startDate) {
+        query = query.gte("payment_date", options.startDate);
+      }
+      
+      if (options.endDate) {
+        query = query.lte("payment_date", options.endDate);
+      }
+      
+      if (options.paymentType) {
+        query = query.eq("payment_type", options.paymentType);
+      }
+      
+      if (options.paymentMethod) {
+        query = query.eq("payment_method", options.paymentMethod);
+      }
+      
+      const { data: paymentsToDelete, error: fetchError } = await query;
+      
+      if (fetchError) throw fetchError;
+      
+      if (!paymentsToDelete || paymentsToDelete.length === 0) {
+        return { deletedCount: 0, processedInvoices: 0 };
+      }
+      
+      let processedInvoices = 0;
+      const invoicesToUpdate = new Map();
+      
+      // Process linked invoices first
+      for (const payment of paymentsToDelete) {
+        if (payment.invoice_id) {
+          if (!invoicesToUpdate.has(payment.invoice_id)) {
+            const { data: invoice, error: invoiceError } = await supabase
+              .from("invoices")
+              .select("total_amount, paid_amount")
+              .eq("id", payment.invoice_id)
+              .single();
+              
+            if (!invoiceError && invoice) {
+              invoicesToUpdate.set(payment.invoice_id, {
+                ...invoice,
+                paymentsToReverse: []
+              });
+            }
+          }
+          
+          if (invoicesToUpdate.has(payment.invoice_id)) {
+            invoicesToUpdate.get(payment.invoice_id).paymentsToReverse.push(payment.amount);
+          }
+        }
+      }
+      
+      // Update invoices
+      for (const [invoiceId, invoiceData] of invoicesToUpdate) {
+        const totalToReverse = invoiceData.paymentsToReverse.reduce((sum: number, amount: number) => sum + amount, 0);
+        const newPaidAmount = Math.max(0, (invoiceData.paid_amount || 0) - totalToReverse);
+        const newBalanceDue = (invoiceData.total_amount || 0) - newPaidAmount;
+        
+        let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
+        if (newPaidAmount >= (invoiceData.total_amount || 0)) {
+          newPaymentStatus = 'paid';
+        } else if (newPaidAmount > 0) {
+          newPaymentStatus = 'partial';
+        } else {
+          newPaymentStatus = 'unpaid';
+        }
+        
+        await supabase
+          .from("invoices")
+          .update({
+            paid_amount: newPaidAmount,
+            balance_due: Math.max(0, newBalanceDue),
+            payment_status: newPaymentStatus
+          })
+          .eq("id", invoiceId);
+          
+        processedInvoices++;
+      }
+      
+      // Delete payments in batches
+      const batchSize = 100;
+      let deletedCount = 0;
+      
+      for (let i = 0; i < paymentsToDelete.length; i += batchSize) {
+        const batch = paymentsToDelete.slice(i, i + batchSize);
+        const ids = batch.map(p => p.id);
+        
+        const { error: deleteError } = await supabase
+          .from("payments")
+          .delete()
+          .in("id", ids)
+          .eq("company_id", user.profile.company_id);
+        
+        if (deleteError) throw deleteError;
+        deletedCount += batch.length;
+      }
+      
+      return { deletedCount, processedInvoices };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast({
+        title: "تم حذف المدفوعات بنجاح",
+        description: `تم حذف ${result.deletedCount} دفع وتحديث ${result.processedInvoices} فاتورة`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ في حذف المدفوعات",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+};
