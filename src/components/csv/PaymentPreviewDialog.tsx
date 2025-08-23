@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, Info, DollarSign } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { AlertTriangle, Info, DollarSign, FileText, CreditCard } from "lucide-react";
 import { formatNumber } from "@/utils/numberFormatter";
 
 interface PaymentPreviewItem {
@@ -36,7 +38,7 @@ interface PaymentPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: PaymentPreviewItem[];
-  onConfirm: (selectedItems: PaymentPreviewItem[]) => void;
+  onConfirm: (selectedItems: PaymentPreviewItem[], balanceHandling: 'ignore' | 'record_debt' | 'create_invoice') => void;
   onCancel: () => void;
   isProcessing: boolean;
 }
@@ -53,6 +55,7 @@ export function PaymentPreviewDialog({
     new Set(items.filter(item => !item.isZeroPayment).map((_, index) => index))
   );
   const [filterZeroPayments, setFilterZeroPayments] = useState(true);
+  const [balanceHandling, setBalanceHandling] = useState<'ignore' | 'record_debt' | 'create_invoice'>('ignore');
 
   const filteredItems = filterZeroPayments 
     ? items.filter(item => !item.isZeroPayment)
@@ -78,7 +81,7 @@ export function PaymentPreviewDialog({
 
   const handleConfirm = () => {
     const selected = filteredItems.filter((_, index) => selectedItems.has(index));
-    onConfirm(selected);
+    onConfirm(selected, balanceHandling);
   };
 
   const totalSelected = selectedItems.size;
@@ -90,6 +93,9 @@ export function PaymentPreviewDialog({
     .reduce((sum, item) => sum + (item.lateFineAmount || 0), 0);
 
   const itemsWithBalance = filteredItems.filter(item => item.hasBalance).length;
+  const totalRemainingBalance = filteredItems
+    .filter((_, index) => selectedItems.has(index))
+    .reduce((sum, item) => sum + (item.balance || 0), 0);
   const itemsWithFines = filteredItems.filter(item => item.lateFineAmount && item.lateFineAmount > 0).length;
   const zeroPayments = items.filter(item => item.isZeroPayment).length;
   const contractsLinked = filteredItems.filter(item => item.contractInfo).length;
@@ -150,20 +156,66 @@ export function PaymentPreviewDialog({
             </Card>
           </div>
 
-          {/* Warnings */}
+          {/* Balance Handling Options */}
           {itemsWithBalance > 0 && (
             <Card className="border-orange-200 bg-orange-50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm text-orange-800 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  تنبيه: وجود أرصدة متبقية
+                  معالجة الأرصدة المتبقية - إجمالي: {formatNumber(totalRemainingBalance)} د.ك
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 space-y-4">
                 <p className="text-sm text-orange-700">
-                  يوجد {itemsWithBalance} عنصر يحتوي على رصيد متبقي لم يتم دفعه. 
-                  سيتم تسجيل المبلغ المدفوع فقط وإهمال الرصيد المتبقي.
+                  يوجد {itemsWithBalance} عنصر يحتوي على رصيد متبقي لم يتم دفعه بإجمالي {formatNumber(totalRemainingBalance)} د.ك.
+                  اختر طريقة المعالجة:
                 </p>
+                
+                <RadioGroup 
+                  value={balanceHandling} 
+                  onValueChange={(value: 'ignore' | 'record_debt' | 'create_invoice') => setBalanceHandling(value)}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value="ignore" id="ignore" />
+                    <Label htmlFor="ignore" className="text-sm cursor-pointer flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      تجاهل الأرصدة المتبقية (الوضع الحالي)
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value="record_debt" id="record_debt" />
+                    <Label htmlFor="record_debt" className="text-sm cursor-pointer flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      تسجيل الأرصدة كديون على العملاء
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value="create_invoice" id="create_invoice" />
+                    <Label htmlFor="create_invoice" className="text-sm cursor-pointer flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      إنشاء فواتير للأرصدة المتبقية
+                    </Label>
+                  </div>
+                </RadioGroup>
+                
+                {balanceHandling === 'record_debt' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <p className="text-xs text-blue-700">
+                      سيتم تحديث رصيد العقود بالأرصدة المتبقية وتسجيلها كديون على العملاء.
+                    </p>
+                  </div>
+                )}
+                
+                {balanceHandling === 'create_invoice' && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <p className="text-xs text-green-700">
+                      سيتم إنشاء فواتير جديدة للأرصدة المتبقية مع ربطها بالعقود المناسبة.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -375,6 +427,11 @@ export function PaymentPreviewDialog({
               disabled={isProcessing || selectedItems.size === 0}
             >
               {isProcessing ? 'جاري الرفع...' : `رفع ${selectedItems.size} دفعة`}
+              {itemsWithBalance > 0 && balanceHandling !== 'ignore' && (
+                <span className="mr-2">
+                  + معالجة {itemsWithBalance} رصيد
+                </span>
+              )}
             </Button>
           </div>
         </div>

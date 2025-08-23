@@ -443,6 +443,7 @@ export function usePaymentsCSVUpload() {
       autoCompleteAmounts?: boolean; 
       dryRun?: boolean;
       previewMode?: boolean;
+      balanceHandling?: 'ignore' | 'record_debt' | 'create_invoice';
     }
   ): Promise<CSVUploadResults> => {
     const targetCompanyId = options?.targetCompanyId || companyId;
@@ -622,6 +623,74 @@ export function usePaymentsCSVUpload() {
           errors.push({ row: rowNumber, message: `فشل الحفظ: ${error.message}` });
           continue;
         }
+        // Handle balance processing based on user selection
+        const totalAmount = parseFloat(String(raw.total_amount || raw.amount || '0').replace(/[,\s]/g, '')) || amount;
+        const balance = parseFloat(String(raw.balance || '0').replace(/[,\s]/g, '')) || Math.max(0, totalAmount - amount);
+        
+        if (balance > 0 && options?.balanceHandling && options.balanceHandling !== 'ignore') {
+          if (options.balanceHandling === 'record_debt' && contract_id) {
+            // Update contract balance_due to include the remaining balance
+            try {
+              const { data: contract, error: contractErr } = await supabase
+                .from('contracts')
+                .select('balance_due, total_paid')
+                .eq('id', contract_id)
+                .single();
+              
+              if (!contractErr && contract) {
+                const newBalanceDue = (contract.balance_due || 0) + balance;
+                await supabase
+                  .from('contracts')
+                  .update({
+                    balance_due: newBalanceDue,
+                    payment_status: newBalanceDue > 0 ? 'partial' : 'paid',
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', contract_id);
+              }
+            } catch (error) {
+              console.error('خطأ في تحديث رصيد العقد:', error);
+            }
+          } else if (options.balanceHandling === 'create_invoice' && (customer_id || contract_id)) {
+            // Create invoice for remaining balance
+            try {
+              // Generate invoice number
+              const { data: lastInvoice } = await supabase
+                .from('invoices')
+                .select('invoice_number')
+                .eq('company_id', targetCompanyId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+              
+              let invoiceNumber = 'INV-0001';
+              if (lastInvoice && lastInvoice.length > 0) {
+                const lastNum = parseInt(lastInvoice[0].invoice_number.split('-')[1] || '0');
+                invoiceNumber = `INV-${String(lastNum + 1).padStart(4, '0')}`;
+              }
+              
+              await supabase
+                .from('invoices')
+                .insert({
+                  company_id: targetCompanyId,
+                  customer_id: customer_id,
+                  contract_id: contract_id,
+                  invoice_number: invoiceNumber,
+                  invoice_type: 'balance_due',
+                  invoice_date: new Date().toISOString().split('T')[0],
+                  due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+                  subtotal: balance,
+                  total_amount: balance,
+                  balance_due: balance,
+                  payment_status: 'unpaid',
+                  notes: `فاتورة للرصيد المتبقي من دفعة ${payment_number}`,
+                  created_by: user.id,
+                });
+            } catch (error) {
+              console.error('خطأ في إنشاء فاتورة للرصيد المتبقي:', error);
+            }
+          }
+        }
+
         // Update linked invoice totals if applicable (new inserts only)
         if (invoice_id && transaction_type === 'receipt') {
           const { data: invoice, error: invErr } = await supabase

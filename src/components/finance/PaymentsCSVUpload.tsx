@@ -36,11 +36,16 @@ export function PaymentsCSVUpload({ open, onOpenChange, onUploadComplete }: Paym
     return smartUploadPayments(data, options);
   };
 
-  const handleConfirmUpload = async (selectedItems: any[]) => {
+  const handleConfirmUpload = async (
+    selectedItems: any[], 
+    balanceHandling: 'ignore' | 'record_debt' | 'create_invoice'
+  ) => {
     setIsProcessing(true);
     try {
       const dataToUpload = selectedItems.map(item => item.data);
-      const result = await smartUploadPayments(dataToUpload);
+      const result = await smartUploadPayments(dataToUpload, { 
+        balanceHandling 
+      });
       setShowPreview(false);
       onUploadComplete();
       return result;
