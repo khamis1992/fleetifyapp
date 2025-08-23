@@ -1,6 +1,7 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 
 export interface PaymentAnalytics {
   total_receipts: number;
@@ -24,32 +25,30 @@ export interface PaymentAnalytics {
 }
 
 export const usePaymentAnalytics = (startDate?: string, endDate?: string) => {
-  const { user } = useAuth();
+  const { companyId, user } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: ['payment-analytics', user?.id, startDate, endDate],
+    queryKey: ['payment-analytics', companyId, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (!companyId) throw new Error('لم يتم العثور على الشركة');
 
-      // الحصول على company_id من profile المستخدم
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('لم يتم العثور على الشركة');
+      console.log('🔍 Fetching payment analytics for company:', companyId);
 
       const { data, error } = await supabase.rpc('get_payment_analytics', {
-        company_id_param: profile.company_id,
+        company_id_param: companyId,
         start_date_param: startDate || null,
         end_date_param: endDate || null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching payment analytics:', error);
+        throw error;
+      }
 
+      console.log('✅ Successfully fetched payment analytics:', data?.[0]);
       return data[0] as PaymentAnalytics;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!companyId,
   });
 };
