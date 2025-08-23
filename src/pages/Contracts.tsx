@@ -23,6 +23,7 @@ import { ContractCreationProgress } from "@/components/contracts/ContractCreatio
 import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog"
 import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog"
 import { ContractCSVUpload } from "@/components/contracts/ContractCSVUpload"
+import { LateFinesSettings } from "@/components/contracts/LateFinesSettings"
 
 // Hook imports
 import { useContractsData } from "@/hooks/useContractsData"
@@ -205,6 +206,7 @@ export default function Contracts() {
           <TabsTrigger value="suspended">المعلقة</TabsTrigger>
           <TabsTrigger value="expired">المنتهية</TabsTrigger>
           <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
+          <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -232,6 +234,10 @@ export default function Contracts() {
           onCancelContract={handleCancelContract}
           onDeleteContract={handleDeleteContract}
         />
+
+        <TabsContent value="late-fines">
+          <LateFinesSettings />
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
