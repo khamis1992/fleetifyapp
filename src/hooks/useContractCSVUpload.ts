@@ -12,7 +12,10 @@ interface CSVUploadResults {
   total: number
   successful: number
   failed: number
-  errors: Array<{ row: number; message: string }>
+  customersCreated?: number
+  contractsCreated?: number
+  errors: Array<{ row: number; message: string; customerName?: string }>
+  warnings?: Array<{ row: number; message: string; customerName?: string }>
 }
 
 export function useContractCSVUpload() {
@@ -67,41 +70,60 @@ export function useContractCSVUpload() {
       'terms'
     ]
 
-    const exampleData = [
-      'شركة الهدى للتجارة',
+    // أمثلة مبنية على البيانات المرفقة من المستخدم
+    const exampleData1 = [
+      'issam abdallah',
       '',
-      '+97450123456',
-      'KWT-1234',
+      '+96550123456',
+      '7036',
       '',
-      'CON-2025-001',
-      'monthly_rental',
-      '2025-01-01',
-      '2025-01-01',
-      '2025-12-31',
-      '6000',
-      '500',
-      // cost center (اختياري): اتركها فارغة للتعيين التلقائي
+      'LTO2024139',
+      'rent_to_own',
+      '2024-04-29',
+      '2024-04-29',
+      '2024-11-30',
+      '75600',
+      '2100',
       '',            // cost_center_id
       '',            // cost_center_code
       '',            // cost_center_name
-      'عقد إيجار شهري لمركبة تويوتا كامري',
+      'عقد إيجار منتهي بالتمليك',
       'يلتزم المستأجر بدفع الإيجار في موعده المحدد'
     ]
 
-    const exampleDataCancelled = [
-      'شركة مثال',
+    const exampleData2 = [
+      'MEHRAN TABIB TABIB HUSSAIN',
       '',
-      '+97455555555',
-      'KWT-5678',
+      '+96555555555',
+      '749762',
       '',
-      'CON-2025-002',
-      'monthly_rental',
-      '2025-02-01',
-      '2025-02-01',
-      '2025-12-31',
+      'LTO20249',
+      'rent_to_own',
+      '2023-11-26',
+      '2023-11-26',
+      '2026-11-26',
       '0',
       '0',
-      // cost center (اختياري)
+      '',            // cost_center_id
+      '',            // cost_center_code
+      '',            // cost_center_name
+      'عقد إيجار منتهي بالتمليك - نشط',
+      'يلتزم المستأجر بدفع الإيجار في موعده المحدد'
+    ]
+
+    const exampleData3 = [
+      'AHMED BEN DHAOU',
+      '',
+      '+96566666666',
+      '7071',
+      '',
+      'LTO2024153',
+      'rent_to_own',
+      '2024-03-12',
+      '2024-03-12',
+      '2027-06-01',
+      '0',
+      '0',
       '',            // cost_center_id
       '',            // cost_center_code
       '',            // cost_center_name
@@ -111,8 +133,9 @@ export function useContractCSVUpload() {
 
     const csvContent = [
       headers.join(','),
-      exampleData.join(','),
-      exampleDataCancelled.join(',')
+      exampleData1.join(','),
+      exampleData2.join(','),
+      exampleData3.join(',')
     ].join('\n')
 
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -157,6 +180,96 @@ export function useContractCSVUpload() {
   };
 
   const isUUID = (s?: string) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+
+  // دالة البحث عن العميل أو إنشاؤه تلقائياً
+  const findOrCreateCustomer = async (customerName: string, targetCompanyId: string): Promise<{ id: string; created: boolean; error?: string }> => {
+    try {
+      // تنظيف اسم العميل
+      const cleanName = customerName.trim()
+      if (!cleanName) {
+        return { id: '', created: false, error: 'اسم العميل فارغ' }
+      }
+
+      console.log(`🔍 البحث عن العميل: "${cleanName}" في الشركة ${targetCompanyId}`)
+      
+      // البحث عن العميل الموجود باستخدام البحث الذكي
+      const searchResult = await resolveCustomerIdByName(cleanName, targetCompanyId)
+      
+      if (searchResult.id) {
+        console.log(`✅ تم العثور على العميل الموجود: ${searchResult.id}`)
+        return { id: searchResult.id, created: false }
+      }
+
+      // إذا لم يوجد العميل، نقوم بإنشائه
+      console.log(`➕ إنشاء عميل جديد: "${cleanName}"`)
+      
+      // تحديد نوع العميل (فرد أم شركة)
+      const isCompany = cleanName.includes('شركة') || cleanName.includes('مؤسسة') || 
+                       cleanName.includes('Company') || cleanName.includes('Corp') ||
+                       cleanName.includes('LLC') || cleanName.includes('Ltd') ||
+                       cleanName.toUpperCase() === cleanName // إذا كان الاسم بأحرف كبيرة
+
+      let customerData: any = {
+        company_id: targetCompanyId,
+        is_active: true,
+        is_blacklisted: false,
+        credit_limit: 0,
+        city: 'Kuwait City',
+        country: 'Kuwait',
+        phone: '+965XXXXXXXX', // رقم وهمي - يجب تحديثه لاحقاً
+        created_by: user?.id
+      }
+
+      if (isCompany) {
+        customerData = {
+          ...customerData,
+          customer_type: 'corporate',
+          company_name: cleanName,
+          company_name_ar: cleanName,
+        }
+      } else {
+        // تقسيم الاسم إلى أول وأخير
+        const nameParts = cleanName.split(' ')
+        const firstName = nameParts[0] || cleanName
+        const lastName = nameParts.slice(1).join(' ') || 'غير محدد'
+
+        customerData = {
+          ...customerData,
+          customer_type: 'individual',
+          first_name: firstName,
+          last_name: lastName,
+          first_name_ar: firstName,
+          last_name_ar: lastName,
+        }
+      }
+
+      const { data: newCustomer, error: createError } = await supabase
+        .from('customers')
+        .insert([customerData])
+        .select('id')
+        .single()
+
+      if (createError) {
+        console.error(`❌ فشل في إنشاء العميل "${cleanName}":`, createError)
+        return { 
+          id: '', 
+          created: false, 
+          error: `فشل في إنشاء العميل "${cleanName}": ${createError.message}` 
+        }
+      }
+
+      console.log(`✅ تم إنشاء عميل جديد بنجاح: ${newCustomer.id}`)
+      return { id: newCustomer.id, created: true }
+
+    } catch (error: any) {
+      console.error(`❌ خطأ في معالجة العميل "${customerName}":`, error)
+      return { 
+        id: '', 
+        created: false, 
+        error: `خطأ في معالجة العميل "${customerName}": ${error.message}` 
+      }
+    }
+  };
 
   const resolveCostCenterId = async (
     inputs: { cost_center_id?: string; cost_center_code?: string; cost_center_name?: string },
@@ -349,40 +462,46 @@ export function useContractCSVUpload() {
         } else if (byPhone && byPhone.length > 1) {
           return { error: `السطر ${rowNum}: رقم الهاتف غير فريد داخل الشركة: ${cleanedPhone}` };
         } else {
-          // Not found by phone
-          if (autoCreateCustomers && user?.roles?.includes('super_admin')) {
-            const nameForCreate = String(rawName || 'عميل بدون اسم').trim() || 'عميل بدون اسم';
-            const { data: created, error: createErr } = await supabase
-              .from('customers')
-              .insert([
-                {
-                  company_id: companyId,
-                  customer_type: 'corporate',
-                  company_name: nameForCreate,
-                  phone: cleanedPhone,
-                  is_active: true,
-                  created_by: user?.id,
-                } as any
-              ])
-              .select('id')
-              .maybeSingle();
-            if (createErr || !created?.id) {
-              return { error: `السطر ${rowNum}: تعذر إنشاء العميل تلقائياً '${nameForCreate}' - ${createErr?.message || 'سبب غير معروف'}` };
+          // Not found by phone - try to create or find by name
+          if (rawName) {
+            if (autoCreateCustomers) {
+              // استخدام الدالة الجديدة للبحث أو الإنشاء
+              const result = await findOrCreateCustomer(String(rawName), companyId);
+              if (result.error) {
+                return { error: `السطر ${rowNum}: ${result.error}` };
+              }
+              out.customer_id = result.id;
+              // إضافة معلومة عن إنشاء عميل جديد للإحصائيات
+              if (result.created) {
+                out._customerCreated = true;
+              }
+            } else {
+              const resolved = await resolveCustomerIdByName(String(rawName), companyId);
+              if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
+              out.customer_id = resolved.id;
             }
-            out.customer_id = created.id;
-          } else if (rawName) {
-            const resolved = await resolveCustomerIdByName(String(rawName), companyId);
-            if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
-            out.customer_id = resolved.id;
           } else {
             // No way to resolve a customer
             // leave as is; validation will flag missing customer_id
           }
         }
       } else if (rawName) {
-        const resolved = await resolveCustomerIdByName(String(rawName), companyId);
-        if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
-        out.customer_id = resolved.id;
+        if (autoCreateCustomers) {
+          // استخدام الدالة الجديدة للبحث أو الإنشاء
+          const result = await findOrCreateCustomer(String(rawName), companyId);
+          if (result.error) {
+            return { error: `السطر ${rowNum}: ${result.error}` };
+          }
+          out.customer_id = result.id;
+          // إضافة معلومة عن إنشاء عميل جديد للإحصائيات
+          if (result.created) {
+            out._customerCreated = true;
+          }
+        } else {
+          const resolved = await resolveCustomerIdByName(String(rawName), companyId);
+          if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
+          out.customer_id = resolved.id;
+        }
       } else {
         // keep as is; validate will catch missing customer
       }
@@ -677,7 +796,10 @@ export function useContractCSVUpload() {
         total: data.length,
         successful: 0,
         failed: 0,
-        errors: []
+        customersCreated: 0,
+        contractsCreated: 0,
+        errors: [],
+        warnings: []
       }
 
       for (let i = 0; i < data.length; i++) {
@@ -686,15 +808,25 @@ export function useContractCSVUpload() {
         // Auto-complete missing fields (type, dates, amounts)
         const filledRow = autoCompleteContractFields({ ...originalRow });
 
-        // Preprocess and resolve IDs (customer/vehicle)
-        const pre = await preprocessAndResolveIds({ ...filledRow }, companyId, false);
+        // Preprocess and resolve IDs (customer/vehicle) - مع إمكانية إنشاء العملاء تلقائياً
+        const pre = await preprocessAndResolveIds({ ...filledRow }, companyId, true); // تفعيل إنشاء العملاء
         if (pre.error) {
           results.failed++;
-          results.errors.push({ row: originalRow.rowNumber || (i + 1), message: pre.error });
+          results.errors.push({ 
+            row: originalRow.rowNumber || (i + 1), 
+            message: pre.error,
+            customerName: filledRow.customer_name || filledRow.customer_id
+          });
           setProgress(Math.round(((i + 1) / data.length) * 100));
           continue;
         }
         const contractData: any = pre.data;
+
+        // تتبع إنشاء العملاء الجدد
+        if (contractData._customerCreated) {
+          results.customersCreated!++;
+          delete contractData._customerCreated; // إزالة المعلومة المؤقتة
+        }
 
         // Normalize contract type (Arabic/English synonyms)
         contractData.contract_type = normalizeContractType(contractData.contract_type);
@@ -793,11 +925,13 @@ export function useContractCSVUpload() {
             results.failed++;
             results.errors.push({
               row: contractData.rowNumber,
-              message: getFriendlyDbError(insertError.message)
+              message: getFriendlyDbError(insertError.message),
+              customerName: filledRow.customer_name || filledRow.customer_id
             });
           } else {
             console.log(`📝 [Contract CSV] Successfully inserted contract row ${contractData.rowNumber}`);
             results.successful++;
+            results.contractsCreated!++;
           }
         } catch (error: any) {
           console.error(`📝 [Contract CSV] Unexpected error for row ${contractData.rowNumber}:`, error);

@@ -80,8 +80,12 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
 
   const handleDownloadErrors = () => {
     if (!results?.errors?.length) return;
-    const headers = ['row', 'message'];
-    const rows = results.errors.map(e => [e.row, e.message]);
+    const headers = ['الصف', 'اسم العميل', 'رسالة الخطأ'];
+    const rows = results.errors.map(e => [
+      e.row.toString(),
+      e.customerName || 'غير محدد',
+      e.message
+    ]);
     const csv = [
       headers.join(','),
       ...rows.map(arr => arr.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
@@ -89,7 +93,7 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'contracts_upload_errors.csv';
+    link.download = 'contract_upload_errors.csv';
     link.click();
   }
 
@@ -315,51 +319,104 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
             </div>
           )}
 
-          {/* النتائج */}
+          {/* النتائج المحسنة */}
           {results && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <StatCardNumber value={results.successful} className="text-green-600" />
-                  <div className="text-sm text-green-700">تم بنجاح</div>
+            <div className="space-y-4">
+              {/* إحصائيات رئيسية */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                  <StatCardNumber value={results.contractsCreated || results.successful} className="text-green-600 text-xl font-bold" />
+                  <div className="text-xs text-green-700">عقود مُنشأة</div>
                 </div>
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <StatCardNumber value={results.failed} className="text-red-600" />
-                  <div className="text-sm text-red-700">فشل</div>
+                <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <StatCardNumber value={results.customersCreated || 0} className="text-blue-600 text-xl font-bold" />
+                  <div className="text-xs text-blue-700">عملاء جدد</div>
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <StatCardNumber value={results.total} className="text-blue-600" />
-                  <div className="text-sm text-blue-700">المجموع</div>
+                <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                  <StatCardNumber value={results.failed} className="text-red-600 text-xl font-bold" />
+                  <div className="text-xs text-red-700">أخطاء</div>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <StatCardNumber value={results.total} className="text-gray-600 text-xl font-bold" />
+                  <div className="text-xs text-gray-700">إجمالي الصفوف</div>
                 </div>
               </div>
 
+              {/* رسائل النجاح */}
+              {(results.contractsCreated || 0) > 0 && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>تم بنجاح!</strong> تم إنشاء {results.contractsCreated} عقد
+                    {(results.customersCreated || 0) > 0 && ` مع إنشاء ${results.customersCreated} عميل جديد`}.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* تحذيرات */}
+              {results.warnings && results.warnings.length > 0 && (
+                <Alert className="border-yellow-200 bg-yellow-50">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <strong>تحذيرات ({results.warnings.length}):</strong>
+                    <ScrollArea className="h-20 mt-2">
+                      <div className="space-y-1">
+                        {results.warnings.slice(0, 3).map((warning, index) => (
+                          <div key={index} className="text-sm">
+                            <Badge variant="outline" className="text-xs border-yellow-300">
+                              الصف {warning.row}
+                            </Badge>
+                            <span className="ml-2">{warning.message}</span>
+                          </div>
+                        ))}
+                        {results.warnings.length > 3 && (
+                          <div className="text-xs text-muted-foreground">
+                            و{results.warnings.length - 3} تحذيرات إضافية...
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </AlertDescription>
+                </Alert>
+              )}</div>
+
               {/* أخطاء مفصلة */}
               {results.errors && results.errors.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-red-900">الأخطاء:</h4>
-                    <Button size="sm" variant="outline" onClick={handleDownloadErrors}>
-                      تنزيل تقرير الأخطاء
-                    </Button>
-                  </div>
-                  <ScrollArea className="h-32 w-full border rounded-md p-2">
-                    <div className="space-y-1">
-                      {results.errors.slice(0, 3).map((error, index) => (
-                        <div key={index} className="text-sm">
-                          <Badge variant="destructive" className="text-xs">
-                            السطر {error.row}
-                          </Badge>
-                          <span className="ml-2 text-red-600">{error.message}</span>
-                        </div>
-                      ))}
-                      {results.errors.length > 3 && (
-                        <div className="text-xs text-muted-foreground mt-2">
-                          وعرض {results.errors.length - 3} أخطاء إضافية...
-                        </div>
-                      )}
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <strong>أخطاء ({results.errors.length}):</strong>
+                      <Button size="sm" variant="outline" onClick={handleDownloadErrors} className="text-xs">
+                        تنزيل تقرير الأخطاء
+                      </Button>
                     </div>
-                  </ScrollArea>
-                </div>
+                    <ScrollArea className="h-32 w-full">
+                      <div className="space-y-2">
+                        {results.errors.slice(0, 5).map((error, index) => (
+                          <div key={index} className="text-sm p-2 bg-white rounded border border-red-200">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="destructive" className="text-xs">
+                                الصف {error.row}
+                              </Badge>
+                              {error.customerName && (
+                                <Badge variant="outline" className="text-xs border-red-300">
+                                  {error.customerName}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-red-700">{error.message}</div>
+                          </div>
+                        ))}
+                        {results.errors.length > 5 && (
+                          <div className="text-xs text-muted-foreground text-center mt-2 p-2 bg-white rounded">
+                            و{results.errors.length - 5} أخطاء إضافية... (حمل التقرير الكامل)
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
           )}
@@ -385,20 +442,33 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
             </Button>
           </div>
 
-          {/* تعليمات */}
+          {/* تعليمات محسنة */}
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>ملاحظات مهمة:</strong>
-              <ul className="list-disc list-inside mt-1 space-y-1 text-sm">
-                <li>يجب أن يكون الملف بصيغة CSV</li>
-                <li>استخدم القالب المحدد لضمان التنسيق الصحيح</li>
-                <li>الحقول المطلوبة: customer_name أو customer_id + نوع العقد + تاريخ البداية + تاريخ النهاية + مبلغ العقد</li>
-                <li>النظام يتعرف تلقائياً على العميل من اسم العميل، وعلى المركبة من رقم اللوحة</li>
-                <li>يمكنك تحديد مركز التكلفة عبر: cost_center_id أو cost_center_code أو cost_center_name، وإذا تركتها فارغة سيتم التعيين تلقائياً حسب إعدادات العميل</li>
-                <li>أنواع العقود المتاحة: rental, daily_rental, weekly_rental, monthly_rental, yearly_rental, rent_to_own</li>
-                <li>يتم إنشاء العقود افتراضياً بحالة "مسودة" ما لم يحتوي الوصف على "cancelled" أو "ملغي" ففي هذه الحالة تُسجَّل "ملغي" تلقائياً</li>
-                <li>سيتم تخطي الصفوف التي تحتوي على أخطاء</li>
+              <strong>🚀 النظام المحسن - ميزات جديدة:</strong>
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <li><strong>إنشاء العملاء تلقائياً:</strong> إذا لم يوجد العميل، سيتم إنشاؤه تلقائياً من اسم العميل</li>
+                <li><strong>البحث الذكي:</strong> يبحث عن العملاء بالاسم العربي والإنجليزي</li>
+                <li><strong>تحديد نوع العميل:</strong> يحدد تلقائياً إذا كان العميل فرد أم شركة</li>
+                <li><strong>ربط المركبات:</strong> يربط المركبات تلقائياً من رقم اللوحة</li>
+                <li><strong>إحصائيات مفصلة:</strong> يعرض عدد العقود والعملاء المُنشأة</li>
+              </ul>
+              
+              <strong className="block mt-3 mb-1">📋 متطلبات الملف:</strong>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>صيغة CSV مع ترميز UTF-8</li>
+                <li>الحقول المطلوبة: customer_name + contract_type + start_date + end_date + contract_amount</li>
+                <li>أنواع العقود: rent_to_own, monthly_rental, yearly_rental, daily_rental, weekly_rental</li>
+                <li>التواريخ بصيغة YYYY-MM-DD (مثل: 2024-04-29)</li>
+                <li>المبالغ بالأرقام فقط (مثل: 75600)</li>
+              </ul>
+
+              <strong className="block mt-3 mb-1">💡 نصائح:</strong>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>استخدم القالب المحدث للحصول على أمثلة من بياناتك</li>
+                <li>العقود التي تحتوي على "cancelled" في الوصف ستُسجل كملغية</li>
+                <li>يمكن ترك حقول المركبة ومركز التكلفة فارغة للتعيين التلقائي</li>
               </ul>
             </AlertDescription>
           </Alert>
