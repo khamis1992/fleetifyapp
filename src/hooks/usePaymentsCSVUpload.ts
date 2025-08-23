@@ -299,6 +299,49 @@ export function usePaymentsCSVUpload() {
 
   const formatPaymentNumber = (n: number) => `PAY-${String(n).padStart(4, '0')}`;
 
+  // Helper functions for data analysis and validation
+  const analyzeDataStructure = (data: any[]) => {
+    if (!data || data.length === 0) return { isEmpty: true };
+    
+    const sampleRow = data[0];
+    const normalizedSample = normalizeCsvHeaders(sampleRow);
+    const detectedColumns = Object.keys(normalizedSample);
+    const requiredFields = ['payment_date', 'amount'];
+    
+    return {
+      isEmpty: false,
+      totalRows: data.length,
+      detectedColumns,
+      requiredFields,
+      missingRequired: requiredFields.filter(field => !detectedColumns.includes(field)),
+      hasPaymentDate: detectedColumns.includes('payment_date'),
+      hasAmount: detectedColumns.includes('amount') || detectedColumns.includes('amount_paid'),
+      columnMapping: detectedColumns.reduce((map, col) => {
+        map[col] = normalizedSample[col];
+        return map;
+      }, {} as Record<string, any>)
+    };
+  };
+
+  const hasRequiredPaymentFields = (row: any) => {
+    const hasDate = row.payment_date && String(row.payment_date).trim() !== '';
+    const hasAmount = (row.amount && parseNumber(row.amount) > 0) || 
+                     (row.amount_paid && parseNumber(row.amount_paid) > 0);
+    return hasDate && hasAmount;
+  };
+
+  const findMissingRequiredFields = (row: any) => {
+    const missing = [];
+    if (!row.payment_date || String(row.payment_date).trim() === '') {
+      missing.push('تاريخ الدفع (payment_date)');
+    }
+    if ((!row.amount || parseNumber(row.amount) <= 0) && 
+        (!row.amount_paid || parseNumber(row.amount_paid) <= 0)) {
+      missing.push('مبلغ الدفع (amount أو amount_paid)');
+    }
+    return missing;
+  };
+
   const analyzePaymentData = async (rows: any[], targetCompanyId?: string): Promise<PaymentPreviewItem[]> => {
     const companyIdToUse = targetCompanyId || companyId;
     const items: PaymentPreviewItem[] = [];
@@ -448,18 +491,47 @@ export function usePaymentsCSVUpload() {
   ): Promise<CSVUploadResults> => {
     const targetCompanyId = options?.targetCompanyId || companyId;
     
+    console.log('📊 بدء معالجة CSV:', {
+      rowsCount: rows.length,
+      targetCompanyId,
+      options
+    });
+    
     // تطبيق التحسينات على التواريخ قبل المعالجة
     const enhancedRows = enhancePaymentDataWithDates(rows);
+    
+    // تحليل مفصل للبيانات قبل المعالجة
+    const dataAnalysis = analyzeDataStructure(enhancedRows);
+    console.log('🔍 تحليل هيكل البيانات:', dataAnalysis);
     
     // If in preview mode, just return analyzed data
     if (options?.previewMode) {
       const previewData = await analyzePaymentData(enhancedRows, targetCompanyId);
+      
+      // إضافة تشخيص مفصل للبيانات المرفوضة
+      const rejectedRows = enhancedRows.filter((row, index) => {
+        const normalizedRow = normalizeCsvHeaders(row);
+        return !hasRequiredPaymentFields(normalizedRow);
+      });
+      
+      console.log('❌ الصفوف المرفوضة:', rejectedRows.length, 'من أصل', enhancedRows.length);
+      
+      if (rejectedRows.length > 0) {
+        console.log('🔍 أسباب رفض الصفوف:', rejectedRows.map(row => ({
+          rowNumber: row.rowNumber || 'غير محدد',
+          missingFields: findMissingRequiredFields(normalizeCsvHeaders(row))
+        })));
+      }
+      
       return {
         total: enhancedRows.length,
         successful: 0,
-        failed: 0,
+        failed: rejectedRows.length,
         skipped: 0,
-        errors: [],
+        errors: rejectedRows.map((row, index) => ({
+          row: row.rowNumber || index + 2,
+          message: `صف مرفوض: ${findMissingRequiredFields(normalizeCsvHeaders(row)).join(', ')}`
+        })),
         previewData
       };
     }

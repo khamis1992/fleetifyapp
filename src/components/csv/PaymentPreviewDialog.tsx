@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +56,20 @@ export function PaymentPreviewDialog({
   );
   const [filterZeroPayments, setFilterZeroPayments] = useState(true);
   const [balanceHandling, setBalanceHandling] = useState<'ignore' | 'record_debt' | 'create_invoice'>('ignore');
+
+  // Show diagnostic information if no valid items
+  React.useEffect(() => {
+    if (items.length === 0) {
+      console.log('⚠️ لا توجد عناصر في معاينة المدفوعات');
+    } else {
+      const validItems = items.filter(item => !item.isZeroPayment);
+      console.log(`✅ عناصر صحيحة: ${validItems.length} من أصل ${items.length}`);
+      
+      if (validItems.length === 0) {
+        console.log('❌ جميع العناصر لها مبالغ صفرية أو غير صحيحة');
+      }
+    }
+  }, [items]);
 
   const filteredItems = filterZeroPayments 
     ? items.filter(item => !item.isZeroPayment)
@@ -118,6 +132,69 @@ export function PaymentPreviewDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Error State - No Valid Data */}
+          {items.length === 0 && (
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader>
+                <CardTitle className="text-red-800 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  لا توجد بيانات صحيحة للمعاينة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-red-700">
+                    لم يتم العثور على أي بيانات صحيحة في الملف المرفوع. تأكد من:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                    <li>وجود عمود "payment_date" أو "تاريخ_الدفع" مع تواريخ صحيحة</li>
+                    <li>وجود عمود "amount" أو "amount_paid" أو "مبلغ_الدفع" مع قيم أكبر من صفر</li>
+                    <li>استخدام القالب الصحيح المحمل من النظام</li>
+                    <li>تنسيق التواريخ بشكل صحيح (مثل: 2025-01-15)</li>
+                  </ul>
+                  <div className="flex gap-2 mt-4">
+                    <Button variant="outline" size="sm" onClick={onCancel}>
+                      رجوع
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                      إعادة تحميل الصفحة
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* All Zero Payments Warning */}
+          {items.length > 0 && filteredItems.length === 0 && (
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardHeader>
+                <CardTitle className="text-yellow-800 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  جميع الدفعات لها مبالغ صفرية
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-yellow-700">
+                    تم اكتشاف {items.length} صف ولكن جميعها تحتوي على مبالغ دفع = 0. 
+                    تأكد من صحة البيانات في عمود المبلغ.
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="showZeroForced"
+                      checked={!filterZeroPayments}
+                      onCheckedChange={(checked) => setFilterZeroPayments(!checked)}
+                    />
+                    <label htmlFor="showZeroForced" className="text-sm text-yellow-700">
+                      عرض الدفعات الصفرية للمراجعة
+                    </label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card>
