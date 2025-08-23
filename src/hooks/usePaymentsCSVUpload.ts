@@ -72,6 +72,18 @@ export function usePaymentsCSVUpload() {
     late_fine_amount: 'number' as const,
     late_fine_handling: 'text' as const, // included | separate | waived
     late_fine_waiver_reason: 'text' as const,
+    
+    // حقول جديدة لدعم الجدول المرفوع
+    agreement_number: 'text' as const,        // رقم الاتفاقية
+    due_date: 'date' as const,               // تاريخ الاستحقاق
+    original_due_date: 'date' as const,      // تاريخ الاستحقاق الأصلي
+    late_fine_days_overdue: 'number' as const, // أيام التأخير
+    reconciliation_status: 'text' as const,  // حالة التسوية
+    payment_method: 'text' as const,         // طريقة الدفع
+    description: 'text' as const,            // وصف الدفعة
+    description_type: 'text' as const,       // نوع الوصف
+    type: 'text' as const,                   // نوع العملية (INCOME/EXPENSE)
+    payment_status: 'text' as const,         // حالة الدفع (completed, pending, etc.)
   };
 
   const paymentRequiredFields = ['payment_date', 'amount'];
@@ -135,9 +147,18 @@ export function usePaymentsCSVUpload() {
       'vendor_name',
       'invoice_number',
       'contract_number',
+      'agreement_number',
+      'due_date',
+      'original_due_date',
+      'late_fine_days_overdue',
       'late_fine_amount',
       'late_fine_handling',
       'late_fine_waiver_reason',
+      'reconciliation_status',
+      'description',
+      'description_type',
+      'type',
+      'payment_status',
       'notes'
     ];
 
@@ -145,19 +166,28 @@ export function usePaymentsCSVUpload() {
       'receipt',
       'cash',
       '2025-01-15',
-      '150.000',
-      '200.000',
-      '50.000',
+      '1780',
+      '1780',
+      '0',
       'REF-123',
       'PAY-0001',
       'شركة الهدى',
       '',
       'INV-2025-001',
       'CON-001',
-      '25.000',
-      'included',
+      'LTO2024177',
+      '2024-07-01',
+      '2024-07-01',
+      '0',
+      '0',
+      'none',
       '',
-      'قبض دفعة جزئية مع غرامة تأخير'
+      'completed',
+      'JULY RENT',
+      'INCOME',
+      'INCOME',
+      'completed',
+      'قبض إيجار شهر يوليو'
     ];
 
     const examplePayment = [
@@ -173,10 +203,19 @@ export function usePaymentsCSVUpload() {
       'مزود الخدمات الدولية',
       '',
       '',
-      '0',
-      'none',
       '',
-      'صرف كامل عبر حوالة بنكية'
+      '2025-01-20',
+      '2025-01-15',
+      '3',
+      '15.000',
+      'included',
+      'تأخير بسيط',
+      'completed',
+      'خدمات استشارية',
+      'EXPENSE',
+      'EXPENSE',
+      'completed',
+      'صرف كامل عبر حوالة بنكية مع غرامة تأخير'
     ];
 
     const csv = [headers.join(','), exampleReceipt.join(','), examplePayment.join(',')].join('\n');
@@ -250,36 +289,89 @@ export function usePaymentsCSVUpload() {
     return (data as any)?.id;
   };
 
+  const findContractByMultipleIdentifiers = async (
+    agreementNumber?: string,
+    contractNumber?: string,
+    targetCompanyId?: string
+  ): Promise<{
+    contract_id?: string;
+    contract_info?: any;
+    confidence?: number;
+  }> => {
+    if (!agreementNumber && !contractNumber) return {};
+    
+    // البحث برقم الاتفاقية أولاً (أولوية عالية)
+    if (agreementNumber) {
+      const { data: agreementData } = await supabase
+        .from('contracts')
+        .select('id, contract_number, contract_amount, balance_due, payment_status, days_overdue, late_fine_amount, total_paid, description')
+        .eq('company_id', targetCompanyId)
+        .or(`contract_number.eq.${agreementNumber},description.ilike.%${agreementNumber}%`)
+        .limit(5);
+      
+      if (agreementData && agreementData.length > 0) {
+        // ترتيب النتائج حسب دقة التطابق
+        const exactMatch = agreementData.find(c => c.contract_number === agreementNumber);
+        const bestMatch = exactMatch || agreementData[0];
+        
+        return {
+          contract_id: bestMatch.id,
+          confidence: exactMatch ? 1.0 : 0.8,
+          contract_info: {
+            contract_id: bestMatch.id,
+            contract_number: bestMatch.contract_number,
+            contract_amount: bestMatch.contract_amount,
+            balance_due: bestMatch.balance_due || 0,
+            payment_status: bestMatch.payment_status || 'unpaid',
+            days_overdue: bestMatch.days_overdue || 0,
+            late_fine_amount: bestMatch.late_fine_amount || 0,
+            total_paid: bestMatch.total_paid || 0
+          }
+        };
+      }
+    }
+    
+    // البحث برقم العقد التقليدي كبديل
+    if (contractNumber) {
+      const { data: contractData } = await supabase
+        .from('contracts')
+        .select('id, contract_number, contract_amount, balance_due, payment_status, days_overdue, late_fine_amount, total_paid')
+        .eq('company_id', targetCompanyId)
+        .eq('contract_number', contractNumber)
+        .limit(1)
+        .maybeSingle();
+      
+      if (contractData) {
+        return {
+          contract_id: contractData.id,
+          confidence: 0.95,
+          contract_info: {
+            contract_id: contractData.id,
+            contract_number: contractData.contract_number,
+            contract_amount: contractData.contract_amount,
+            balance_due: contractData.balance_due || 0,
+            payment_status: contractData.payment_status || 'unpaid',
+            days_overdue: contractData.days_overdue || 0,
+            late_fine_amount: contractData.late_fine_amount || 0,
+            total_paid: contractData.total_paid || 0
+          }
+        };
+      }
+    }
+    
+    return {};
+  };
+
+  // الحفاظ على الدالة القديمة للتوافق مع الكود الموجود
   const findContractId = async (contractNumber?: string, targetCompanyId?: string): Promise<{
     contract_id?: string;
     contract_info?: any;
   }> => {
-    if (!contractNumber) return {};
-    
-    const { data } = await supabase
-      .from('contracts')
-      .select('id, contract_number, contract_amount, balance_due, payment_status, days_overdue, late_fine_amount, total_paid')
-      .eq('company_id', targetCompanyId)
-      .eq('contract_number', contractNumber)
-      .limit(1)
-      .maybeSingle();
-    
-    if (data) {
-      return {
-        contract_id: data.id,
-        contract_info: {
-          contract_id: data.id,
-          contract_number: data.contract_number,
-          contract_amount: data.contract_amount,
-          balance_due: data.balance_due || 0,
-          payment_status: data.payment_status || 'unpaid',
-          days_overdue: data.days_overdue || 0,
-          late_fine_amount: data.late_fine_amount || 0,
-          total_paid: data.total_paid || 0
-        }
-      };
-    }
-    return {};
+    const result = await findContractByMultipleIdentifiers(contractNumber, contractNumber, targetCompanyId);
+    return {
+      contract_id: result.contract_id,
+      contract_info: result.contract_info
+    };
   };
 
   const getLastPaymentNumber = async (targetCompanyId: string): Promise<number> => {
@@ -379,13 +471,26 @@ export function usePaymentsCSVUpload() {
       
       const warnings: string[] = [];
       
-      // Look up contract info if contract_number is provided
+      // Look up contract info using enhanced search
       let contractInfo: any = undefined;
-      if (normalizedRow.contract_number && companyIdToUse) {
+      const agreementNumber = normalizedRow.agreement_number;
+      const contractNumber = normalizedRow.contract_number;
+      
+      if ((agreementNumber || contractNumber) && companyIdToUse) {
         try {
-          const { contract_info } = await findContractId(normalizedRow.contract_number, companyIdToUse);
+          const { contract_info, confidence } = await findContractByMultipleIdentifiers(
+            agreementNumber, 
+            contractNumber, 
+            companyIdToUse
+          );
+          
           if (contract_info) {
-            contractInfo = contract_info;
+            contractInfo = { ...contract_info, confidence };
+            
+            // Add confidence indicator to warnings
+            if (confidence && confidence < 1.0) {
+              warnings.push(`تطابق جزئي مع العقد (${Math.round(confidence * 100)}%): ${contract_info.contract_number}`);
+            }
             
             // Add contract-specific warnings
             if (finalPaidAmount > contract_info.balance_due && contract_info.balance_due > 0) {
@@ -399,11 +504,19 @@ export function usePaymentsCSVUpload() {
             if (contract_info.payment_status === 'paid') {
               warnings.push('العقد مسدد بالكامل');
             }
+            
+            // تحذيرات خاصة بأيام التأخير
+            const lateDaysFromData = parseNumber(normalizedRow.late_fine_days_overdue || 0);
+            if (lateDaysFromData > 0 && lateDaysFromData !== contract_info.days_overdue) {
+              warnings.push(`تضارب في أيام التأخير: البيانات (${lateDaysFromData}) vs العقد (${contract_info.days_overdue})`);
+            }
           } else {
-            warnings.push(`لم يتم العثور على العقد: ${normalizedRow.contract_number}`);
+            const searchTerm = agreementNumber || contractNumber;
+            warnings.push(`لم يتم العثور على العقد: ${searchTerm}`);
           }
         } catch (error) {
-          warnings.push(`خطأ في البحث عن العقد: ${normalizedRow.contract_number}`);
+          const searchTerm = agreementNumber || contractNumber;
+          warnings.push(`خطأ في البحث عن العقد: ${searchTerm}`);
         }
       }
       
@@ -578,9 +691,13 @@ export function usePaymentsCSVUpload() {
       const payment_method = transaction_type === 'receipt' ? 'received' : 'made';
       const payment_type: PayMethod = method || 'cash';
 
-      // Resolve relations
+      // Resolve relations using enhanced search
       const invoice_id = await findInvoiceId(raw.invoice_id || raw.invoice_number, targetCompanyId);
-      const { contract_id } = await findContractId(raw.contract_number, targetCompanyId);
+      const { contract_id } = await findContractByMultipleIdentifiers(
+        raw.agreement_number, 
+        raw.contract_number, 
+        targetCompanyId
+      );
       const customer_id = transaction_type === 'receipt'
         ? await findCustomerId(raw.customer_name, raw.customer_id, raw.customer_phone, targetCompanyId)
         : undefined;
@@ -675,7 +792,7 @@ export function usePaymentsCSVUpload() {
           payment_type,
           transaction_type,
           reference_number: raw.reference_number || null,
-          notes: raw.notes || null,
+          notes: raw.notes || raw.description || null,
           customer_id: customer_id || null,
           vendor_id: vendor_id || null,
           invoice_id: invoice_id || null,
@@ -683,12 +800,20 @@ export function usePaymentsCSVUpload() {
           currency: raw.currency || null,
           check_number: raw.check_number || null,
           bank_account: raw.bank_account || null,
-          payment_status: 'completed',
+          payment_status: raw.payment_status || 'completed',
           created_by: user.id,
           late_fine_amount: lateFineAmount,
           late_fine_status: lateFineStatus,
           late_fine_type: lateFineType,
           late_fine_waiver_reason: raw.late_fine_waiver_reason || null,
+          
+          // الحقول الجديدة المضافة
+          agreement_number: raw.agreement_number || null,
+          due_date: raw.due_date || null,
+          original_due_date: raw.original_due_date || null,
+          late_fine_days_overdue: parseNumber(raw.late_fine_days_overdue || 0) || null,
+          reconciliation_status: raw.reconciliation_status || 'pending',
+          description_type: raw.description_type || raw.type || null,
         });
         if (error) {
           failed++;
@@ -811,5 +936,6 @@ export function usePaymentsCSVUpload() {
     paymentFieldTypes,
     paymentRequiredFields,
     smartUploadPayments,
+    findContractByMultipleIdentifiers,
   };
 }
