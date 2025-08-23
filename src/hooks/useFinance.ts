@@ -842,15 +842,18 @@ export const useUpdateInvoice = () => {
 
 // Payments Hooks
 export const usePayments = (filters?: { method?: string; status?: string }) => {
-  const { user } = useAuth()
+  const { companyId, user } = useUnifiedCompanyAccess()
   
   return useQuery({
-    queryKey: ["payments", user?.profile?.company_id, filters],
+    queryKey: ["payments", companyId, filters],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User not authenticated');
+      if (!companyId) throw new Error('Company not found');
+
       let query = supabase
         .from("payments")
         .select("*")
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", companyId)
         .order("payment_date", { ascending: false })
       
       if (filters?.method) {
@@ -865,7 +868,7 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
       if (error) throw error
       return data as Payment[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!user?.id && !!companyId
   })
 }
 
