@@ -151,14 +151,16 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
             {/* Warning Messages */}
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="space-y-2">
-                <p className="font-semibold">تحذير شديد!</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>سيتم حذف جميع العقود نهائياً ولا يمكن التراجع</li>
-                  <li>سيتم حذف جميع البيانات المرتبطة (الفواتير، جداول الدفع، التقارير)</li>
-                  <li>هذه العملية قد تستغرق عدة دقائق</li>
-                  <li>تأكد من وجود نسخة احتياطية من البيانات</li>
-                </ul>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-semibold">تحذير شديد!</p>
+                  <div className="text-sm space-y-1">
+                    <div>• سيتم حذف جميع العقود نهائياً ولا يمكن التراجع</div>
+                    <div>• سيتم حذف جميع البيانات المرتبطة (الفواتير، جداول الدفع، التقارير)</div>
+                    <div>• هذه العملية قد تستغرق عدة دقائق</div>
+                    <div>• تأكد من وجود نسخة احتياطية من البيانات</div>
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
 
@@ -228,18 +230,20 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <p className="font-semibold mb-2">أخطاء العملية:</p>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {progress.errors.slice(0, 5).map((error, index) => (
-                      <div key={index} className="text-xs">
-                        {error.error}
-                      </div>
-                    ))}
-                    {progress.errors.length > 5 && (
-                      <div className="text-xs text-muted-foreground">
-                        و {progress.errors.length - 5} أخطاء أخرى...
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    <p className="font-semibold">أخطاء العملية:</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {progress.errors.slice(0, 5).map((error, index) => (
+                        <div key={index} className="text-xs">
+                          {error.error}
+                        </div>
+                      ))}
+                      {progress.errors.length > 5 && (
+                        <div className="text-xs text-muted-foreground">
+                          و {progress.errors.length - 5} أخطاء أخرى...
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </AlertDescription>
               </Alert>
