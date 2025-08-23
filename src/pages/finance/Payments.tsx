@@ -272,61 +272,61 @@ const Payments = () => {
                 ) : (
                   <div className="rounded-md border">
                     <Table>
-                       <TableHeader>
-                         <TableRow>
-                           <TableHead>الإجراءات</TableHead>
-                           <TableHead>رقم المرجع</TableHead>
-                           <TableHead>الحالة</TableHead>
-                           <TableHead>طريقة الدفع</TableHead>
-                           <TableHead>المبلغ</TableHead>
-                           <TableHead>التاريخ</TableHead>
-                           <TableHead>النوع</TableHead>
-                           <TableHead>رقم الدفع</TableHead>
-                         </TableRow>
-                       </TableHeader>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>رقم الدفع</TableHead>
+                            <TableHead>النوع</TableHead>
+                            <TableHead>التاريخ</TableHead>
+                            <TableHead>المبلغ</TableHead>
+                            <TableHead>طريقة الدفع</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead>رقم المرجع</TableHead>
+                            <TableHead>الإجراءات</TableHead>
+                          </TableRow>
+                        </TableHeader>
                       <TableBody>
                         {filteredPayments.map((payment) => (
-                           <TableRow key={payment.id}>
-                             <TableCell>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm"
-                                 onClick={() => {
-                                   setSelectedPayment(payment);
-                                   setIsPreviewDialogOpen(true);
-                                 }}
-                               >
-                                 <Eye className="h-4 w-4" />
-                               </Button>
-                             </TableCell>
-                             <TableCell className="text-muted-foreground">
-                               {payment.reference_number || '-'}
-                             </TableCell>
-                             <TableCell>
-                               <Badge className={getStatusColor(payment.payment_status)}>
-                                 {getStatusLabel(payment.payment_status)}
-                               </Badge>
-                             </TableCell>
-                             <TableCell>
-                               <Badge variant="outline">
-                                 {getMethodLabel(payment.payment_method)}
-                               </Badge>
-                             </TableCell>
-                              <TableCell className="font-mono">
-                                {formatCurrency(payment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                            <TableRow key={payment.id}>
+                              <TableCell className="font-medium">
+                                {payment.payment_number}
                               </TableCell>
-                             <TableCell>
-                               {new Date(payment.payment_date).toLocaleDateString('en-GB')}
-                             </TableCell>
-                             <TableCell>
-                               <Badge className={getTypeColor((payment as any).transaction_type)}>
-                                 {getTypeLabel((payment as any).transaction_type)}
-                               </Badge>
-                             </TableCell>
-                             <TableCell className="font-medium">
-                               {payment.payment_number}
-                             </TableCell>
-                           </TableRow>
+                              <TableCell>
+                                <Badge className={getTypeColor((payment as any).transaction_type)}>
+                                  {getTypeLabel((payment as any).transaction_type)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(payment.payment_date).toLocaleDateString('en-GB')}
+                              </TableCell>
+                               <TableCell className="font-mono">
+                                 {formatCurrency(payment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                               </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {getMethodLabel(payment.payment_method)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(payment.payment_status)}>
+                                  {getStatusLabel(payment.payment_status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {payment.reference_number || '-'}
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPayment(payment);
+                                    setIsPreviewDialogOpen(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
                          ))}
                       </TableBody>
                     </Table>
