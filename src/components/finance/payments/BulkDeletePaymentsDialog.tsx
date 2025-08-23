@@ -39,11 +39,11 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   
   // Preview query to count matching payments
   const previewFilters = {
-    ...(onlyUnlinked && { invoice_id: null, contract_id: null }),
+    ...(onlyUnlinked && { onlyUnlinked: true }),
     ...(startDate && { payment_date_gte: startDate }),
     ...(endDate && { payment_date_lte: endDate }),
-    ...(paymentType !== 'all' && { payment_type: paymentType }),
-    ...(paymentMethod !== 'all' && { payment_method: paymentMethod }),
+    ...(paymentType !== 'all' && { type: paymentType }),
+    ...(paymentMethod !== 'all' && { method: paymentMethod }),
   };
   
   const { data: previewPayments } = usePayments(previewFilters);

@@ -50,6 +50,9 @@ export const usePayments = (filters?: {
   type?: string;
   customer_id?: string;
   invoice_id?: string;
+  onlyUnlinked?: boolean;
+  payment_date_gte?: string;
+  payment_date_lte?: string;
 }) => {
   const { user } = useAuth();
   
@@ -96,6 +99,15 @@ export const usePayments = (filters?: {
       }
       if (filters?.invoice_id) {
         query = query.eq("invoice_id", filters.invoice_id);
+      }
+      if (filters?.onlyUnlinked) {
+        query = query.is("invoice_id", null).is("contract_id", null);
+      }
+      if (filters?.payment_date_gte) {
+        query = query.gte("payment_date", filters.payment_date_gte);
+      }
+      if (filters?.payment_date_lte) {
+        query = query.lte("payment_date", filters.payment_date_lte);
       }
       
       const { data, error } = await query;
