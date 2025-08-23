@@ -305,11 +305,34 @@ export function PaymentPreviewDialog({
                   تنبيه: وجود غرامات تأخير
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 space-y-4">
                 <p className="text-sm text-red-700">
                   يوجد {itemsWithFines} عنصر يحتوي على غرامات تأخير بإجمالي {formatNumber(totalLateFines)} د.ك. 
                   تأكد من طريقة معالجة الغرامات قبل الرفع.
                 </p>
+                
+                {/* شرح خيارات معالجة الغرامات */}
+                <div className="bg-white border border-red-200 rounded-md p-3">
+                  <h4 className="text-sm font-medium text-red-800 mb-2">خيارات معالجة الغرامات:</h4>
+                  <div className="space-y-2 text-xs text-red-700">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600">✅</span>
+                      <strong>included:</strong> الغرامة مدمجة مع مبلغ الدفعة الأساسي
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-orange-600">🔄</span>
+                      <strong>separate:</strong> ستنشأ دفعة منفصلة للغرامة
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-600">❌</span>
+                      <strong>waived:</strong> إعفاء من الغرامة (مع ذكر السبب)
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-red-600">⚠️</span>
+                      <strong>none أو فارغ:</strong> طريقة المعالجة غير محددة - يجب المراجعة
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -401,17 +424,19 @@ export function PaymentPreviewDialog({
                             <div className="text-xs">
                               <Badge 
                                 variant="outline" 
-                                className={`text-xs ${
-                                  item.lateFineType === 'included_with_payment' ? 'text-green-700 border-green-300' :
-                                  item.lateFineType === 'separate_payment' ? 'text-orange-700 border-orange-300' :
-                                  item.lateFineType === 'waived' ? 'text-blue-700 border-blue-300' :
-                                  'text-gray-700 border-gray-300'
-                                }`}
+                                                                  className={`text-xs ${
+                                    (item.lateFineType === 'included_with_payment' || item.lateFineType === 'included') ? 'text-green-700 border-green-300' :
+                                    (item.lateFineType === 'separate_payment' || item.lateFineType === 'separate') ? 'text-orange-700 border-orange-300' :
+                                    item.lateFineType === 'waived' ? 'text-blue-700 border-blue-300' :
+                                    'text-red-700 border-red-300'
+                                  }`}
                               >
-                                {item.lateFineType === 'included_with_payment' && 'مدمج مع الدفعة'}
-                                {item.lateFineType === 'separate_payment' && 'دفعة منفصلة'}
-                                {item.lateFineType === 'waived' && 'معفى'}
-                                {item.lateFineType === 'none' && 'غير محدد'}
+                                {item.lateFineType === 'included_with_payment' && '✅ مدمج مع الدفعة'}
+                                {item.lateFineType === 'included' && '✅ مدمج مع الدفعة'}
+                                {item.lateFineType === 'separate_payment' && '🔄 دفعة منفصلة'}
+                                {item.lateFineType === 'separate' && '🔄 دفعة منفصلة'}
+                                {item.lateFineType === 'waived' && '❌ معفى من الغرامة'}
+                                {(item.lateFineType === 'none' || !item.lateFineType) && '⚠️ طريقة المعالجة غير محددة'}
                               </Badge>
                             </div>
                             {item.lateFineStatus === 'waived' && item.lateFineWaiverReason && (

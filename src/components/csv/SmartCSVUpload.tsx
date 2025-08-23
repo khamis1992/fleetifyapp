@@ -525,6 +525,59 @@ export function SmartCSVUpload({
               </Card>
             )}
 
+            {entityType === 'payment' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">معالجة غرامات التأخير</CardTitle>
+                  <CardDescription>فهم خيارات معالجة الغرامات في ملف المدفوعات</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                    <h4 className="font-medium text-amber-800 mb-3">خيارات معالجة الغرامات المتاحة:</h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-start gap-3">
+                        <span className="text-green-600 text-lg">✅</span>
+                        <div>
+                          <strong className="text-green-700">included:</strong>
+                          <p className="text-amber-700 mt-1">الغرامة مدمجة مع مبلغ الدفعة الأساسي. لن يتم إنشاء دفعة منفصلة.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <span className="text-orange-600 text-lg">🔄</span>
+                        <div>
+                          <strong className="text-orange-700">separate:</strong>
+                          <p className="text-amber-700 mt-1">ستنشأ دفعة منفصلة للغرامة بالإضافة للدفعة الأساسية.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <span className="text-blue-600 text-lg">❌</span>
+                        <div>
+                          <strong className="text-blue-700">waived:</strong>
+                          <p className="text-amber-700 mt-1">إعفاء من الغرامة. يُفضل ذكر السبب في عمود الملاحظات.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <span className="text-red-600 text-lg">⚠️</span>
+                        <div>
+                          <strong className="text-red-700">فارغ أو none:</strong>
+                          <p className="text-amber-700 mt-1">طريقة المعالجة غير محددة - سيطلب النظام المراجعة قبل الرفع.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>نصيحة:</strong> تأكد من ملء عمود "late_fine_handling" بإحدى القيم المذكورة أعلاه لتجنب التحذيرات أثناء الرفع.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">الخطوة 3: تحليل وإصلاح</CardTitle>

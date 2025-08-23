@@ -218,7 +218,70 @@ export function usePaymentsCSVUpload() {
       'صرف كامل عبر حوالة بنكية مع غرامة تأخير'
     ];
 
-    const csv = [headers.join(','), exampleReceipt.join(','), examplePayment.join(',')].join('\n');
+    // إضافة أمثلة أخرى لتوضيح خيارات معالجة الغرامات
+    const examplePayment2 = [
+      'receipt',
+      'cash', 
+      '2025-01-19',
+      '500.000',
+      '500.000',
+      '0',
+      'CASH-123',
+      'LTO2024177',
+      '',
+      'شركة الخليج للتجارة',
+      '',
+      '',
+      '',
+      '2025-01-19',
+      '2025-01-15', 
+      '4',
+      '20.000',
+      'separate',
+      'تأخير في الدفع',
+      'completed',
+      'إيجار شهري',
+      'INCOME',
+      'INCOME', 
+      'completed',
+      'قبض نقدي مع غرامة تأخير منفصلة'
+    ];
+
+    const examplePayment3 = [
+      'receipt',
+      'check',
+      '2025-01-20', 
+      '300.000',
+      '300.000',
+      '0',
+      'CHK-456',
+      'LTO2024200',
+      '',
+      'مؤسسة النور',
+      '',
+      '',
+      '',
+      '2025-01-20',
+      '2025-01-18',
+      '2', 
+      '10.000',
+      'waived',
+      'عميل مميز - إعفاء',
+      'completed',
+      'إيجار أسبوعي',
+      'INCOME',
+      'INCOME',
+      'completed',
+      'قبض بشيك مع إعفاء من غرامة التأخير'
+    ];
+
+    const csv = [
+      headers.join(','), 
+      exampleReceipt.join(','), 
+      examplePayment.join(','),
+      examplePayment2.join(','),
+      examplePayment3.join(',')
+    ].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
