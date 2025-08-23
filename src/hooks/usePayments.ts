@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from '@/hooks/use-toast';
 
 export interface Payment {
@@ -55,11 +56,12 @@ export const usePayments = (filters?: {
   payment_date_lte?: string;
 }) => {
   const { user } = useAuth();
+  const { companyId: effectiveCompanyId } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ["payments", user?.profile?.company_id, filters],
+    queryKey: ["payments", effectiveCompanyId, filters],
     queryFn: async () => {
-      if (!user?.profile?.company_id) throw new Error("Company ID is required");
+      if (!effectiveCompanyId) throw new Error("Company ID is required");
       
       let query = supabase
         .from("payments")
@@ -82,7 +84,7 @@ export const usePayments = (filters?: {
             contract_number
           )
         `)
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", effectiveCompanyId)
         .order("payment_date", { ascending: false });
       
       if (filters?.method) {
@@ -115,7 +117,7 @@ export const usePayments = (filters?: {
       if (error) throw error;
       return data as Payment[];
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!effectiveCompanyId
   });
 };
 
@@ -358,28 +360,32 @@ interface BulkDeleteOptions {
 export const useBulkDeletePayments = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { companyId: effectiveCompanyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   
   return useMutation({
     mutationFn: async (options: BulkDeleteOptions = {}) => {
-      if (!user?.profile?.company_id) {
+      if (!effectiveCompanyId) {
         throw new Error("Company ID is required");
       }
       
       console.log("🔧 [BULK_DELETE] بدء عملية الحذف مع الخيارات:", options);
-      console.log("🔧 [BULK_DELETE] company_id من user.profile:", user.profile.company_id);
+      console.log("🔧 [BULK_DELETE] effective company_id:", effectiveCompanyId);
+      console.log("🔧 [BULK_DELETE] user.profile.company_id:", user?.profile?.company_id);
+      console.log("🔧 [BULK_DELETE] browsing mode:", { isBrowsingMode, browsedCompany: browsedCompany?.name });
       console.log("🔧 [BULK_DELETE] معلومات المستخدم:", {
-        userId: user.id,
-        email: user.email,
-        companyId: user.profile.company_id
+        userId: user?.id,
+        email: user?.email,
+        userCompanyId: user?.profile?.company_id,
+        effectiveCompanyId
       });
       
       // Build query to get payments to delete
       let query = supabase
         .from("payments")
         .select("*")
-        .eq("company_id", user.profile.company_id);
+        .eq("company_id", effectiveCompanyId);
       
-      console.log("🔧 [BULK_DELETE] استعلام أساسي مبني للشركة:", user.profile.company_id);
+      console.log("🔧 [BULK_DELETE] استعلام أساسي مبني للشركة:", effectiveCompanyId);
       
       // Handle deleteAll - ignore all filters when true
       if (options.deleteAll) {
@@ -444,13 +450,13 @@ export const useBulkDeletePayments = () => {
       
       if (!paymentsToDelete || paymentsToDelete.length === 0) {
         console.log("⚠️ [BULK_DELETE] لم يتم العثور على مدفوعات للحذف");
-        console.log("🔍 [BULK_DELETE] تحقق من company_id:", user.profile.company_id);
+        console.log("🔍 [BULK_DELETE] تحقق من effectiveCompanyId:", effectiveCompanyId);
         
         // Let's also check if there are ANY payments in the database for debugging
         const { data: allPayments, error: checkError } = await supabase
           .from("payments")
           .select("company_id, count")
-          .eq("company_id", user.profile.company_id);
+          .eq("company_id", effectiveCompanyId);
         
         console.log("🔍 [BULK_DELETE] فحص إجمالي المدفوعات للشركة:", {
           totalPayments: allPayments?.length || 0,
@@ -533,7 +539,7 @@ export const useBulkDeletePayments = () => {
           .from("payments")
           .delete({ count: 'exact' })
           .in("id", ids)
-          .eq("company_id", user.profile.company_id);
+          .eq("company_id", effectiveCompanyId);
         
         if (deleteError) {
           console.error(`❌ خطأ في حذف الدفعة ${batchNumber}:`, deleteError);

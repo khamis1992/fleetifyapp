@@ -16,6 +16,7 @@ import { useBulkDeletePayments, usePayments } from '@/hooks/usePayments';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface BulkDeletePaymentsDialogProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   const [showPreview, setShowPreview] = useState(false);
   
   const bulkDeleteMutation = useBulkDeletePayments();
+  const { browsedCompany, isBrowsingMode, companyId, hasGlobalAccess } = useUnifiedCompanyAccess();
   
   // Preview query to count matching payments
   const previewFilters = deleteAll ? {} : {
@@ -119,6 +121,17 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
           </DialogTitle>
           <DialogDescription>
             ⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المدفوعات نهائياً من النظام.
+            
+            {/* عرض الشركة المستهدفة */}
+            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded text-blue-800 dark:text-blue-200 text-sm">
+              <strong>الشركة المستهدفة:</strong> {browsedCompany?.name || 'شركتك'}
+              {isBrowsingMode && hasGlobalAccess && (
+                <span className="text-xs block mt-1 text-blue-600 dark:text-blue-300">
+                  (يتم العمل في وضع تصفح الشركات)
+                </span>
+              )}
+            </div>
+            
             {!onlyUnlinked && (
               <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded text-red-800 dark:text-red-200 text-sm">
                 <strong>تحذير:</strong> سيتم حذف جميع المدفوعات بما في ذلك المربوطة بالعقود والفواتير!
