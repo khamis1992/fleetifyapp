@@ -30,8 +30,8 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
   const [onlyUnlinked, setOnlyUnlinked] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [paymentType, setPaymentType] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<string>('');
+  const [paymentType, setPaymentType] = useState<string>('all');
+  const [paymentMethod, setPaymentMethod] = useState<string>('all');
   
   const bulkDeleteMutation = useBulkDeletePayments();
   
@@ -44,8 +44,8 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
       onlyUnlinked,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      paymentType: paymentType as 'receipt' | 'payment' || undefined,
-      paymentMethod: paymentMethod || undefined,
+      paymentType: paymentType === 'all' ? undefined : paymentType as 'receipt' | 'payment',
+      paymentMethod: paymentMethod === 'all' ? undefined : paymentMethod,
     }, {
       onSuccess: () => {
         onClose();
@@ -53,8 +53,8 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
         setOnlyUnlinked(true);
         setStartDate('');
         setEndDate('');
-        setPaymentType('');
-        setPaymentMethod('');
+        setPaymentType('all');
+        setPaymentMethod('all');
       }
     });
   };
@@ -128,7 +128,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                     <SelectValue placeholder="الكل" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">الكل</SelectItem>
+                    <SelectItem value="all">الكل</SelectItem>
                     <SelectItem value="receipt">إيصال استلام</SelectItem>
                     <SelectItem value="payment">سند صرف</SelectItem>
                   </SelectContent>
@@ -141,7 +141,7 @@ export const BulkDeletePaymentsDialog: React.FC<BulkDeletePaymentsDialogProps> =
                     <SelectValue placeholder="الكل" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">الكل</SelectItem>
+                    <SelectItem value="all">الكل</SelectItem>
                     <SelectItem value="cash">نقد</SelectItem>
                     <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
                     <SelectItem value="check">شيك</SelectItem>
