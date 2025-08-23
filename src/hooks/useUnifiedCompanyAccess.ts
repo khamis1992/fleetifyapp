@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyContext } from '@/contexts/CompanyContext';
@@ -20,7 +19,8 @@ export const useUnifiedCompanyAccess = () => {
   const { user, session, loading } = useAuth();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
-  return useMemo(() => {
+  // Always call useMemo with the same dependencies to ensure consistent hook order
+  const result = useMemo(() => {
     // Default return object for non-authenticated states
     const defaultReturn = {
       context: { companyId: null, isSystemLevel: false, isCompanyScoped: false },
@@ -172,6 +172,8 @@ export const useUnifiedCompanyAccess = () => {
       authError: null
     };
   }, [user, session, loading, isBrowsingMode, browsedCompany]);
+
+  return result;
 };
 
 /**
