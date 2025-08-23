@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyContext } from '@/contexts/CompanyContext';
@@ -19,58 +20,45 @@ export const useUnifiedCompanyAccess = () => {
   const { user, session, loading } = useAuth();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
   
-    return useMemo(() => {
+  return useMemo(() => {
+    // Default return object for non-authenticated states
+    const defaultReturn = {
+      context: { companyId: null, isSystemLevel: false, isCompanyScoped: false },
+      user: null,
+      companyId: null,
+      isSystemLevel: false,
+      isCompanyScoped: false,
+      hasGlobalAccess: false,
+      hasCompanyAdminAccess: false,
+      hasFullCompanyControl: false,
+      isBrowsingAsCompanyAdmin: false,
+      canManageCompanyAsAdmin: false,
+      filter: { company_id: undefined },
+      canAccessCompany: () => false,
+      canAccessMultipleCompanies: () => false,
+      validateCompanyAccess: () => { throw new Error('Access denied: User not authenticated') },
+      getQueryKey: () => [],
+      isBrowsingMode: false,
+      browsedCompany: null,
+      actualUserCompanyId: null,
+      isAuthenticating: false,
+      authError: 'User not authenticated'
+    };
+
     // First check authentication state
     if (loading) {
       console.log('🔧 [UNIFIED_COMPANY_ACCESS] Auth still loading...');
       return {
-        context: { companyId: null, isSystemLevel: false, isCompanyScoped: false },
-        user: null,
-        companyId: null,
-        isSystemLevel: false,
-        isCompanyScoped: false,
-        hasGlobalAccess: false,
-        hasCompanyAdminAccess: false,
-        hasFullCompanyControl: false,
-        isBrowsingAsCompanyAdmin: false,
-        canManageCompanyAsAdmin: false,
-        filter: { company_id: undefined },
-        canAccessCompany: () => false,
-        canAccessMultipleCompanies: () => false,
-        validateCompanyAccess: () => { throw new Error('Authentication required') },
-        getQueryKey: () => [],
-        isBrowsingMode: false,
-        browsedCompany: null,
-        actualUserCompanyId: null,
+        ...defaultReturn,
         isAuthenticating: true,
-        authError: null
+        authError: null,
+        validateCompanyAccess: () => { throw new Error('Authentication required') }
       };
     }
 
     if (!user || !session) {
       console.log('❌ [UNIFIED_COMPANY_ACCESS] No authenticated user or session');
-      return {
-        context: { companyId: null, isSystemLevel: false, isCompanyScoped: false },
-        user: null,
-        companyId: null,
-        isSystemLevel: false,
-        isCompanyScoped: false,
-        hasGlobalAccess: false,
-        hasCompanyAdminAccess: false,
-        hasFullCompanyControl: false,
-        isBrowsingAsCompanyAdmin: false,
-        canManageCompanyAsAdmin: false,
-        filter: { company_id: undefined },
-        canAccessCompany: () => false,
-        canAccessMultipleCompanies: () => false,
-        validateCompanyAccess: () => { throw new Error('Access denied: User not authenticated') },
-        getQueryKey: () => [],
-        isBrowsingMode: false,
-        browsedCompany: null,
-        actualUserCompanyId: null,
-        isAuthenticating: false,
-        authError: 'User not authenticated'
-      };
+      return defaultReturn;
     }
 
     // Extract company_id safely - try multiple sources
@@ -183,7 +171,7 @@ export const useUnifiedCompanyAccess = () => {
       isAuthenticating: false,
       authError: null
     };
-  }, [user, isBrowsingMode, browsedCompany]);
+  }, [user, session, loading, isBrowsingMode, browsedCompany]);
 };
 
 /**
