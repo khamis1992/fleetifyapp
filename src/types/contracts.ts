@@ -17,6 +17,12 @@ export interface Contract {
   created_by: string
   cost_center_id?: string | null
   journal_entry_id?: string | null
+  total_paid?: number
+  balance_due?: number
+  payment_status?: 'unpaid' | 'partial' | 'paid' | 'overdue'
+  last_payment_date?: string | null
+  late_fine_amount?: number
+  days_overdue?: number
   created_at: string
   updated_at: string
 }

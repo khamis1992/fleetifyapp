@@ -14,6 +14,15 @@ interface PaymentPreviewItem {
   hasBalance: boolean;
   isZeroPayment: boolean;
   warnings: string[];
+  contractInfo?: {
+    contract_id: string;
+    contract_number: string;
+    contract_amount: number;
+    balance_due: number;
+    payment_status: string;
+    days_overdue?: number;
+    late_fine_amount?: number;
+  };
 }
 
 interface CSVUploadResults {
@@ -179,6 +188,38 @@ export function usePaymentsCSVUpload() {
     return (data as any)?.id;
   };
 
+  const findContractId = async (contractNumber?: string, targetCompanyId?: string): Promise<{
+    contract_id?: string;
+    contract_info?: any;
+  }> => {
+    if (!contractNumber) return {};
+    
+    const { data } = await supabase
+      .from('contracts')
+      .select('id, contract_number, contract_amount, balance_due, payment_status, days_overdue, late_fine_amount, total_paid')
+      .eq('company_id', targetCompanyId)
+      .eq('contract_number', contractNumber)
+      .limit(1)
+      .maybeSingle();
+    
+    if (data) {
+      return {
+        contract_id: data.id,
+        contract_info: {
+          contract_id: data.id,
+          contract_number: data.contract_number,
+          contract_amount: data.contract_amount,
+          balance_due: data.balance_due || 0,
+          payment_status: data.payment_status || 'unpaid',
+          days_overdue: data.days_overdue || 0,
+          late_fine_amount: data.late_fine_amount || 0,
+          total_paid: data.total_paid || 0
+        }
+      };
+    }
+    return {};
+  };
+
   const getLastPaymentNumber = async (targetCompanyId: string): Promise<number> => {
     const { data } = await supabase
       .from('payments')
@@ -196,8 +237,12 @@ export function usePaymentsCSVUpload() {
 
   const formatPaymentNumber = (n: number) => `PAY-${String(n).padStart(4, '0')}`;
 
-  const analyzePaymentData = (rows: any[]): PaymentPreviewItem[] => {
-    return rows.map((row, index) => {
+  const analyzePaymentData = async (rows: any[], targetCompanyId?: string): Promise<PaymentPreviewItem[]> => {
+    const companyIdToUse = targetCompanyId || companyId;
+    const items: PaymentPreviewItem[] = [];
+    
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
       const normalizedRow = normalizeCsvHeaders(row);
       
       // Parse amounts
@@ -228,6 +273,34 @@ export function usePaymentsCSVUpload() {
       
       const warnings: string[] = [];
       
+      // Look up contract info if contract_number is provided
+      let contractInfo: any = undefined;
+      if (normalizedRow.contract_number && companyIdToUse) {
+        try {
+          const { contract_info } = await findContractId(normalizedRow.contract_number, companyIdToUse);
+          if (contract_info) {
+            contractInfo = contract_info;
+            
+            // Add contract-specific warnings
+            if (finalPaidAmount > contract_info.balance_due && contract_info.balance_due > 0) {
+              warnings.push(`المبلغ المدفوع (${finalPaidAmount}) أكبر من رصيد العقد (${contract_info.balance_due})`);
+            }
+            
+            if (contract_info.days_overdue > 0) {
+              warnings.push(`العقد متأخر ${contract_info.days_overdue} يوم - غرامة: ${contract_info.late_fine_amount || 0}`);
+            }
+            
+            if (contract_info.payment_status === 'paid') {
+              warnings.push('العقد مسدد بالكامل');
+            }
+          } else {
+            warnings.push(`لم يتم العثور على العقد: ${normalizedRow.contract_number}`);
+          }
+        } catch (error) {
+          warnings.push(`خطأ في البحث عن العقد: ${normalizedRow.contract_number}`);
+        }
+      }
+      
       // Validation warnings
       if (finalPaidAmount > totalAmount && totalAmount > 0) {
         warnings.push('المبلغ المدفوع أكبر من المبلغ الإجمالي');
@@ -241,7 +314,7 @@ export function usePaymentsCSVUpload() {
         warnings.push('مبلغ مدفوع صفر أو سالب');
       }
       
-      return {
+      items.push({
         rowNumber: row.rowNumber || index + 2,
         data: { ...normalizedRow, amount: finalPaidAmount },
         paidAmount: finalPaidAmount,
@@ -249,9 +322,12 @@ export function usePaymentsCSVUpload() {
         balance: finalBalance > 0 ? finalBalance : undefined,
         hasBalance: finalBalance > 0,
         isZeroPayment: finalPaidAmount <= 0,
-        warnings
-      };
-    });
+        warnings,
+        contractInfo
+      });
+    }
+    
+    return items;
   };
 
   const smartUploadPayments = async (
@@ -267,19 +343,20 @@ export function usePaymentsCSVUpload() {
       previewMode?: boolean;
     }
   ): Promise<CSVUploadResults> => {
+    const targetCompanyId = options?.targetCompanyId || companyId;
+    
     // If in preview mode, just return analyzed data
     if (options?.previewMode) {
+      const previewData = await analyzePaymentData(rows, targetCompanyId);
       return {
         total: rows.length,
         successful: 0,
         failed: 0,
         skipped: 0,
         errors: [],
-        previewData: analyzePaymentData(rows)
+        previewData
       };
     }
-
-    const targetCompanyId = options?.targetCompanyId || companyId;
     if (!user?.id || !targetCompanyId) {
       toast.error('لا يمكن الرفع بدون مستخدم وشركة');
       return { total: 0, successful: 0, failed: 0, skipped: 0, errors: [{ row: 0, message: 'بيانات المستخدم/الشركة غير مكتملة' }] };
@@ -325,6 +402,7 @@ export function usePaymentsCSVUpload() {
 
       // Resolve relations
       const invoice_id = await findInvoiceId(raw.invoice_id || raw.invoice_number, targetCompanyId);
+      const { contract_id } = await findContractId(raw.contract_number, targetCompanyId);
       const customer_id = transaction_type === 'receipt'
         ? await findCustomerId(raw.customer_name, raw.customer_id, raw.customer_phone, targetCompanyId)
         : undefined;
@@ -362,6 +440,7 @@ export function usePaymentsCSVUpload() {
                 customer_id: customer_id || null,
                 vendor_id: vendor_id || null,
                 invoice_id: invoice_id || null,
+                contract_id: contract_id || null,
                 currency: raw.currency || null,
                 check_number: raw.check_number || null,
                 bank_account: raw.bank_account || null,
@@ -391,6 +470,7 @@ export function usePaymentsCSVUpload() {
           customer_id: customer_id || null,
           vendor_id: vendor_id || null,
           invoice_id: invoice_id || null,
+          contract_id: contract_id || null,
           currency: raw.currency || null,
           check_number: raw.check_number || null,
           bank_account: raw.bank_account || null,

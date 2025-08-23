@@ -2127,6 +2127,7 @@ export type Database = {
         Row: {
           account_id: string | null
           auto_renew_enabled: boolean | null
+          balance_due: number | null
           company_id: string
           contract_amount: number
           contract_date: string
@@ -2136,19 +2137,24 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string
+          days_overdue: number | null
           description: string | null
           end_date: string
           expired_at: string | null
           id: string
           journal_entry_id: string | null
           last_payment_check_date: string | null
+          last_payment_date: string | null
           last_renewal_check: string | null
+          late_fine_amount: number | null
           monthly_amount: number
+          payment_status: string | null
           renewal_terms: Json | null
           start_date: string
           status: string
           suspension_reason: string | null
           terms: string | null
+          total_paid: number | null
           updated_at: string
           vehicle_id: string | null
           vehicle_returned: boolean | null
@@ -2156,6 +2162,7 @@ export type Database = {
         Insert: {
           account_id?: string | null
           auto_renew_enabled?: boolean | null
+          balance_due?: number | null
           company_id: string
           contract_amount?: number
           contract_date: string
@@ -2165,19 +2172,24 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id: string
+          days_overdue?: number | null
           description?: string | null
           end_date: string
           expired_at?: string | null
           id?: string
           journal_entry_id?: string | null
           last_payment_check_date?: string | null
+          last_payment_date?: string | null
           last_renewal_check?: string | null
+          late_fine_amount?: number | null
           monthly_amount?: number
+          payment_status?: string | null
           renewal_terms?: Json | null
           start_date: string
           status?: string
           suspension_reason?: string | null
           terms?: string | null
+          total_paid?: number | null
           updated_at?: string
           vehicle_id?: string | null
           vehicle_returned?: boolean | null
@@ -2185,6 +2197,7 @@ export type Database = {
         Update: {
           account_id?: string | null
           auto_renew_enabled?: boolean | null
+          balance_due?: number | null
           company_id?: string
           contract_amount?: number
           contract_date?: string
@@ -2194,19 +2207,24 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          days_overdue?: number | null
           description?: string | null
           end_date?: string
           expired_at?: string | null
           id?: string
           journal_entry_id?: string | null
           last_payment_check_date?: string | null
+          last_payment_date?: string | null
           last_renewal_check?: string | null
+          late_fine_amount?: number | null
           monthly_amount?: number
+          payment_status?: string | null
           renewal_terms?: Json | null
           start_date?: string
           status?: string
           suspension_reason?: string | null
           terms?: string | null
+          total_paid?: number | null
           updated_at?: string
           vehicle_id?: string | null
           vehicle_returned?: boolean | null
@@ -9463,6 +9481,10 @@ export type Database = {
       }
       calculate_account_level_from_code: {
         Args: { account_code_param: string }
+        Returns: number
+      }
+      calculate_contract_late_fees: {
+        Args: Record<PropertyKey, never>
         Returns: number
       }
       calculate_customer_outstanding_balance: {

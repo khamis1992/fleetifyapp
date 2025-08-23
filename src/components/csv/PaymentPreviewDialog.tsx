@@ -17,6 +17,15 @@ interface PaymentPreviewItem {
   hasBalance: boolean;
   isZeroPayment: boolean;
   warnings: string[];
+  contractInfo?: {
+    contract_id: string;
+    contract_number: string;
+    contract_amount: number;
+    balance_due: number;
+    payment_status: string;
+    days_overdue?: number;
+    late_fine_amount?: number;
+  };
 }
 
 interface PaymentPreviewDialogProps {
@@ -75,6 +84,11 @@ export function PaymentPreviewDialog({
 
   const itemsWithBalance = filteredItems.filter(item => item.hasBalance).length;
   const zeroPayments = items.filter(item => item.isZeroPayment).length;
+  const contractsLinked = filteredItems.filter(item => item.contractInfo).length;
+  const overdueContracts = filteredItems.filter(item => 
+    item.contractInfo?.payment_status === 'overdue' || 
+    (item.contractInfo?.days_overdue && item.contractInfo.days_overdue > 0)
+  ).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,14 +122,14 @@ export function PaymentPreviewDialog({
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-orange-600">{itemsWithBalance}</div>
-                <p className="text-xs text-muted-foreground">عناصر بها رصيد متبقي</p>
+                <div className="text-2xl font-bold text-purple-600">{contractsLinked}</div>
+                <p className="text-xs text-muted-foreground">عقود مربوطة</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-gray-600">{zeroPayments}</div>
-                <p className="text-xs text-muted-foreground">دفعات صفرية</p>
+                <div className="text-2xl font-bold text-red-600">{overdueContracts}</div>
+                <p className="text-xs text-muted-foreground">عقود متأخرة</p>
               </CardContent>
             </Card>
           </div>
@@ -192,8 +206,7 @@ export function PaymentPreviewDialog({
                     <TableHead>الصف</TableHead>
                     <TableHead>العميل</TableHead>
                     <TableHead>المبلغ المدفوع</TableHead>
-                    <TableHead>المبلغ الإجمالي</TableHead>
-                    <TableHead>الرصيد المتبقي</TableHead>
+                    <TableHead>معلومات العقد</TableHead>
                     <TableHead>طريقة الدفع</TableHead>
                     <TableHead>التاريخ</TableHead>
                     <TableHead>تحذيرات</TableHead>
@@ -217,14 +230,40 @@ export function PaymentPreviewDialog({
                         </span>
                       </TableCell>
                       <TableCell>
-                        {item.totalAmount !== undefined ? formatNumber(item.totalAmount) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {item.hasBalance && item.balance !== undefined ? (
-                          <Badge variant="outline" className="text-orange-600 border-orange-300">
-                            {formatNumber(item.balance)}
-                          </Badge>
-                        ) : '-'}
+                        {item.contractInfo ? (
+                          <div className="space-y-1 text-xs">
+                            <div className="font-medium text-blue-600">
+                              {item.contractInfo.contract_number}
+                            </div>
+                            <div className="text-muted-foreground">
+                              رصيد: {formatNumber(item.contractInfo.balance_due)}
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                item.contractInfo.payment_status === 'paid' ? 'text-green-700 border-green-300' :
+                                item.contractInfo.payment_status === 'overdue' ? 'text-red-700 border-red-300' :
+                                item.contractInfo.payment_status === 'partial' ? 'text-orange-700 border-orange-300' :
+                                'text-gray-700 border-gray-300'
+                              }`}
+                            >
+                              {item.contractInfo.payment_status === 'paid' ? 'مسدد' :
+                               item.contractInfo.payment_status === 'overdue' ? 'متأخر' :
+                               item.contractInfo.payment_status === 'partial' ? 'جزئي' : 'غير مسدد'}
+                            </Badge>
+                            {item.contractInfo.days_overdue && item.contractInfo.days_overdue > 0 && (
+                              <div className="text-xs text-red-600">
+                                متأخر {item.contractInfo.days_overdue} يوم
+                              </div>
+                            )}
+                          </div>
+                        ) : item.data.contract_number ? (
+                          <div className="text-xs text-red-600">
+                            العقد غير موجود: {item.data.contract_number}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
                       </TableCell>
                       <TableCell>{item.data.payment_method || '-'}</TableCell>
                       <TableCell>{item.data.payment_date || '-'}</TableCell>
