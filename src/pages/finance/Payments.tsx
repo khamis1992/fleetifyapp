@@ -17,6 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -123,6 +124,12 @@ const Payments = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/finance/payment-linking">
+                <CreditCard className="h-4 w-4 mr-2" />
+                ربط المدفوعات
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               استيراد CSV/XLSX
