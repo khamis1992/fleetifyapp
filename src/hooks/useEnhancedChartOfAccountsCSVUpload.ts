@@ -141,36 +141,56 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     });
 
     // إنشاء العلاقات الهرمية
-    processed.forEach(account => {
-      const accountCode = account.account_code;
+    /**
+     * البحث عن الحساب الأب بناءً على المستوى ورقم الحساب
+     */
+    const findParentAccount = (account: ProcessedAccountData, accountMap: Map<string, ProcessedAccountData>): string => {
+      const { account_code, account_level } = account;
       
-      // البحث عن الحساب الأب
-      let parentCode = '';
+      if (!account_level || account_level <= 1) {
+        return ''; // الحسابات من المستوى 1 ليس لها آباء
+      }
       
-      // للحسابات الهرمية مثل 1, 11, 111, 1111
-      if (accountCode.length > 1) {
-        // جرب الأكواد الأقصر تدريجياً
-        for (let len = accountCode.length - 1; len >= 1; len--) {
-          const potentialParent = accountCode.substring(0, len);
-          if (accountMap.has(potentialParent)) {
-            parentCode = potentialParent;
-            break;
-          }
+      const targetParentLevel = account_level - 1;
+      let bestParent = '';
+      let bestParentLength = 0;
+      
+      console.log(`🔍 [HIERARCHY] Looking for parent of ${account_code} (level ${account_level}), target parent level: ${targetParentLevel}`);
+      
+      // ابحث عن جميع الحسابات المحتملة كآباء
+      for (const [parentCode, parentAccount] of accountMap) {
+        // يجب أن يكون الأب بمستوى أقل بـ 1
+        if (parentAccount.account_level !== targetParentLevel) continue;
+        
+        // يجب أن يكون رقم الحساب الأب بداية رقم الحساب الفرعي
+        if (!account_code.startsWith(parentCode)) continue;
+        
+        // اختر الأب الأطول (الأكثر تحديداً)
+        if (parentCode.length > bestParentLength) {
+          bestParent = parentCode;
+          bestParentLength = parentCode.length;
+          console.log(`🔍 [HIERARCHY] Found potential parent ${parentCode} (level ${parentAccount.account_level}) for ${account_code}`);
         }
       }
+      
+      return bestParent;
+    };
 
+    // إنشاء العلاقات الهرمية - المنطق المحسن
+    processed.forEach(account => {
+      const parentCode = findParentAccount(account, accountMap);
+      
       if (parentCode) {
         account.parent_account_code = parentCode;
-        console.log(`🔍 [HIERARCHY] Found parent ${parentCode} for ${accountCode}`);
-      } else if (accountCode.length > 1) {
+        console.log(`✅ [HIERARCHY] Successfully linked ${account.account_code} to parent ${parentCode}`);
+      } else if (account.account_level && account.account_level > 1) {
         // إذا لم يتم العثور على الأب المطلوب
-        const expectedParent = accountCode.substring(0, accountCode.length - 1);
         errors.push({
-          accountCode,
-          message: `لم يتم العثور على الحساب الأب المتوقع: ${expectedParent}`,
+          accountCode: account.account_code,
+          message: `لم يتم العثور على الحساب الأب للمستوى ${account.account_level - 1}`,
           rowNumber: account._rowNumber || 0
         });
-        console.warn(`🔍 [HIERARCHY] Missing parent ${expectedParent} for ${accountCode}`);
+        console.warn(`❌ [HIERARCHY] Missing parent for ${account.account_code} (level ${account.account_level})`);
       }
     });
 
