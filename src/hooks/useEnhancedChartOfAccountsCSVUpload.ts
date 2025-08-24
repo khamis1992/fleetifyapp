@@ -65,7 +65,15 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       const accountCode = (row['رقم الحساب'] || row['account_code'] || '').toString().trim();
       const accountName = row['الوصف بالإنجليزي'] || row['account_name'] || '';
       const accountNameAr = row['الوصف'] || row['account_name_ar'] || '';
-      const level = parseInt(row['المستوى'] || row['account_level'] || '1');
+      const level = parseInt(row['المستوى'] || row['account_level'] || '1') || 1;
+      
+      // تسجيل لتصحيح الأخطاء
+      console.log(`🔍 [LEVEL_DEBUG] Account ${accountCode}:`, {
+        rawLevel: row['المستوى'] || row['account_level'],
+        parsedLevel: level,
+        accountName: accountNameAr || accountName,
+        rowData: row
+      });
       
       if (!accountCode) {
         errors.push({
@@ -123,7 +131,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         account_name_ar: accountNameAr || accountName,
         account_type: accountType,
         balance_type: balanceType,
-        account_level: level,
+        account_level: level || 1,
         is_header: level <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
         description: `${accountNameAr || accountName} - ${accountName || accountNameAr}`,
         _rowNumber: row._rowNumber || index + 2
@@ -131,6 +139,9 @@ export function useEnhancedChartOfAccountsCSVUpload() {
 
       processed.push(processedAccount);
       accountMap.set(accountCode, processedAccount);
+      
+      // تسجيل إضافي للتأكد من حفظ المستوى
+      console.log(`✅ [PROCESSED] Saved account ${accountCode} with level ${processedAccount.account_level}`);
     });
 
     // ترتيب الحسابات حسب رقم الحساب
