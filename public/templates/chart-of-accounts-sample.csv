@@ -1,0 +1,55 @@
+المستوى,رقم الحساب,الوصف,الوصف بالإنجليزي
+1,1,الأصول,Assets
+2,11,الأصول المتداولة,Current Assets
+3,111,النقدية وما يعادلها,Cash and Cash Equivalents
+4,1101,النقدية,Cash
+5,11101,الصندوق الرئيسي,Main Cash Fund
+5,11102,عهدة نقدية دائمة,Permanent Cash Custody
+5,11103,عهدة نقدية مؤقتة,Temporary Cash Custody
+3,112,البنوك,Banks
+4,11201,بنوك محلية بالدينار الكويتي,Local Banks in Kuwaiti Dinar (KWD)
+5,1120101,حساب البنك التجاري حساب رقم,CBK Account No
+5,1120102,حساب بنك بيت التمويل حساب رقم,KFH Account No
+3,113,العملاء التجاريين,Trade Receivables
+4,11301,عملاء تجاريون شركات,Trade Customers - Companies
+5,1130101,عملاء تجاريين شركات,Trade Customer - Company
+2,12,الأصول الثابتة,Fixed Assets
+3,121,المباني والمنشآت,Buildings and Structures
+4,1211,مباني إدارية,Administrative Buildings
+4,1212,مستودعات,Warehouses
+3,122,المعدات والآلات,Equipment and Machinery
+4,1221,معدات النقل,Transportation Equipment
+4,1222,معدات المكاتب,Office Equipment
+1,2,الخصوم,Liabilities
+2,21,الخصوم المتداولة,Current Liabilities
+3,211,الموردين التجاريين,Trade Payables
+4,2111,موردين محليين,Local Suppliers
+4,2112,موردين خارجيين,Foreign Suppliers
+3,212,المستحقات والمخصصات,Accruals and Provisions
+4,2121,رواتب مستحقة,Accrued Salaries
+4,2122,إجازات مستحقة,Accrued Vacation
+1,3,حقوق الملكية,Equity
+2,31,رأس المال,Capital
+3,311,رأس المال المدفوع,Paid-up Capital
+2,32,الأرباح المحتجزة,Retained Earnings
+3,321,أرباح العام الحالي,Current Year Profits
+3,322,أرباح السنوات السابقة,Previous Years Profits
+1,4,الإيرادات,Revenue
+2,41,إيرادات التشغيل,Operating Revenue
+3,411,إيرادات المبيعات,Sales Revenue
+4,4111,مبيعات محلية,Local Sales
+4,4112,مبيعات تصدير,Export Sales
+3,412,إيرادات الخدمات,Service Revenue
+4,4121,إيرادات الصيانة,Maintenance Revenue
+4,4122,إيرادات الاستشارات,Consulting Revenue
+1,5,المصروفات,Expenses
+2,51,مصروفات التشغيل,Operating Expenses
+3,511,تكلفة البضاعة المباعة,Cost of Goods Sold
+4,5111,تكلفة المواد الخام,Raw Materials Cost
+4,5112,تكلفة العمالة المباشرة,Direct Labor Cost
+3,512,المصروفات الإدارية,Administrative Expenses
+4,5121,رواتب الإدارة,Management Salaries
+4,5122,مصروفات المكاتب,Office Expenses
+3,513,مصروفات البيع والتسويق,Sales and Marketing Expenses
+4,5131,رواتب المبيعات,Sales Salaries
+4,5132,مصروفات الإعلان,Advertising Expenses
