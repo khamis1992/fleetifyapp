@@ -26,6 +26,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
+import { AccountsTreeView } from './AccountsTreeView';
 interface AccountFormData {
   account_code: string;
   account_name: string;
@@ -313,10 +314,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <span>قائمة الحسابات</span>
             <Layers className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="tree" className="flex items-center gap-2">
+            <span>شجرة الحسابات</span>
+            <Folder className="h-4 w-4" />
           </TabsTrigger>
           <TabsTrigger value="visualization" className="flex items-center gap-2">
             <span>العرض التفاعلي</span>
@@ -449,6 +454,50 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tree Tab */}
+        <TabsContent value="tree" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
+                <span>إضافة حساب جديد</span>
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button 
+                onClick={() => setShowCSVUpload(true)} 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <span>استيراد من ملف</span>
+                <Upload className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Tree View */}
+          <AccountsTreeView
+            accounts={allAccounts || []}
+            onViewAccount={(account) => {
+              setViewingAccount(account);
+              setShowViewDialog(true);
+            }}
+            onEditAccount={(account) => {
+              setEditingAccount(account);
+              setShowEditDialog(true);
+            }}
+            onDeleteAccount={(account) => {
+              setEditingAccount(account);
+              setShowDeleteDialog(true);
+            }}
+            onAddChildAccount={(parentAccount) => {
+              setFormData({
+                ...formData,
+                parent_account_id: parentAccount.id
+              });
+              setShowSmartWizard(true);
+            }}
+          />
         </TabsContent>
 
 
