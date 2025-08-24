@@ -16,7 +16,6 @@ import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
 import { AccountStatementDialog } from './AccountStatementDialog';
-import { ParentAccountSelector } from './ParentAccountSelector';
 import { ChartValidationPanel } from './charts/ChartValidationPanel';
 import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';

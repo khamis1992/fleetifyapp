@@ -6,10 +6,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronDown, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { wouldCreateCircularReference } from '@/utils/accountHierarchy';
 
 interface ParentAccountSelectorProps {
   value?: string;
   onValueChange: (value: string) => void;
+  currentAccountId?: string; // ID of current account to prevent circular refs
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -18,6 +20,7 @@ interface ParentAccountSelectorProps {
 export const ParentAccountSelector: React.FC<ParentAccountSelectorProps> = ({
   value,
   onValueChange,
+  currentAccountId,
   placeholder = "اختر الحساب الأب (اختياري)",
   disabled = false,
   className
@@ -25,9 +28,11 @@ export const ParentAccountSelector: React.FC<ParentAccountSelectorProps> = ({
   const { data: accounts, isLoading } = useChartOfAccounts();
   const [open, setOpen] = React.useState(false);
 
-  // Filter to show only header accounts (parent accounts)
+  // Filter to show all active accounts as potential parents with hierarchy validation
   const parentAccounts = accounts?.filter(account => 
-    account.is_header && account.is_active
+    account.is_active && 
+    (!currentAccountId || account.id !== currentAccountId) && // Prevent selecting self as parent
+    (!currentAccountId || !wouldCreateCircularReference(currentAccountId, account.id, accounts)) // Prevent circular refs
   ) || [];
 
   const selectedAccount = parentAccounts.find(account => account.id === value);
@@ -55,10 +60,13 @@ export const ParentAccountSelector: React.FC<ParentAccountSelectorProps> = ({
                 <span>{selectedAccount.account_name_ar || selectedAccount.account_name}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                  <Layers className="h-3 w-3 mr-1" />
-                  {selectedAccount.account_level || 1}
-                </Badge>
+                 <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                   <Layers className="h-3 w-3 mr-1" />
+                   مستوى {selectedAccount.account_level || 1}
+                 </Badge>
+                 <Badge variant={selectedAccount.is_header ? "default" : "outline"} className="h-5 px-1.5 text-xs">
+                   {selectedAccount.is_header ? "رئيسي" : "فرعي"}
+                 </Badge>
               </div>
             </div>
           ) : (
@@ -91,10 +99,13 @@ export const ParentAccountSelector: React.FC<ParentAccountSelectorProps> = ({
                     <span>{account.account_name_ar || account.account_name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="h-5 px-1.5 text-xs">
-                      <Layers className="h-3 w-3 mr-1" />
-                      المستوى {account.account_level || 1}
-                    </Badge>
+                     <Badge variant="outline" className="h-5 px-1.5 text-xs">
+                       <Layers className="h-3 w-3 mr-1" />
+                       مستوى {account.account_level || 1}
+                     </Badge>
+                     <Badge variant={account.is_header ? "default" : "secondary"} className="h-5 px-1.5 text-xs">
+                       {account.is_header ? "رئيسي" : "فرعي"}
+                     </Badge>
                     <Badge variant="secondary" className="h-5 px-1.5 text-xs">
                       {account.account_type === 'assets' && 'أصول'}
                       {account.account_type === 'liabilities' && 'خصوم'}

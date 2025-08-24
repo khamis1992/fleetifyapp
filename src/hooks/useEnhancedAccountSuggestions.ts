@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
 import { supabase } from '@/integrations/supabase/client';
+import { wouldCreateCircularReference, buildAccountPath } from '@/utils/accountHierarchy';
 
 export interface EnhancedSuggestion {
   id: string;
@@ -121,8 +122,8 @@ export const useEnhancedAccountSuggestions = () => {
     
     let score = 0;
     
-    // Header accounts are used more frequently
-    if (account.is_header) score += 0.3;
+    // Header accounts are used more frequently as parents
+    if (account.is_header) score += 0.2;
     
     // Active accounts get higher scores
     if (account.is_active) score += 0.4;
@@ -183,11 +184,11 @@ export const useEnhancedAccountSuggestions = () => {
       // 1. AI Analysis
       const aiAnalysis = await analyzeAccountWithAI(accountName, accountType);
       
-      // 2. Filter potential parent accounts
+      // 2. Filter potential parent accounts - all active accounts are now potential parents
       const potentialParents = accounts.filter(acc => 
         (!accountId || acc.id !== accountId) && // Skip self only if accountId exists
         acc.is_active && 
-        (!accountId || !wouldCreateCycle(accountId, acc.id, accounts)) // Check cycles only if accountId exists
+        (!accountId || !wouldCreateCircularReference(accountId, acc.id, accounts)) // Check cycles only if accountId exists
       );
       
       // 3. Generate suggestions based on different strategies
@@ -310,19 +311,7 @@ export const useEnhancedAccountSuggestions = () => {
   };
 };
 
-// Helper functions
-const wouldCreateCycle = (accountId: string, newParentId: string, accounts: any[]): boolean => {
-  let current = accounts.find(acc => acc.id === newParentId);
-  const visited = new Set([accountId]);
-  
-  while (current && current.parent_account_id) {
-    if (visited.has(current.parent_account_id)) return true;
-    visited.add(current.parent_account_id);
-    current = accounts.find(acc => acc.id === current.parent_account_id);
-  }
-  
-  return false;
-};
+// Helper functions - wouldCreateCycle moved to utils/accountHierarchy.ts
 
 const checkTypeCompatibility = (childType?: string, parentType?: string): boolean => {
   if (!childType || !parentType) return true;
@@ -338,15 +327,4 @@ const checkTypeCompatibility = (childType?: string, parentType?: string): boolea
   return compatibilityRules[childType]?.includes(parentType) ?? true;
 };
 
-const buildAccountPath = (accountId: string, accounts: any[]): string[] => {
-  const path: string[] = [];
-  let current = accounts.find(acc => acc.id === accountId);
-  
-  while (current) {
-    path.unshift(current.account_name_ar || current.account_name || current.account_code);
-    if (!current.parent_account_id) break;
-    current = accounts.find(acc => acc.id === current.parent_account_id);
-  }
-  
-  return path;
-};
+// buildAccountPath moved to utils/accountHierarchy.ts - use import instead
