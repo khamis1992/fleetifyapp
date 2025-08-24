@@ -123,7 +123,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         account_name_ar: accountNameAr || accountName,
         account_type: accountType,
         balance_type: balanceType,
-        account_level: level || accountCode.length,
+        account_level: level,
         is_header: level <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
         description: `${accountNameAr || accountName} - ${accountName || accountNameAr}`,
         _rowNumber: row._rowNumber || index + 2
