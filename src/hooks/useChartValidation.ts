@@ -98,7 +98,7 @@ export const useFixChartHierarchy = () => {
       validateCompanyAccess(companyId);
 
       const { data, error } = await supabase.rpc("fix_chart_hierarchy", {
-        company_id_param: companyId,
+        target_company_id: companyId,
       });
 
       if (error) throw new Error(`فشل في إصلاح دليل الحسابات: ${error.message}`);
