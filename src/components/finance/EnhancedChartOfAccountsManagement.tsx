@@ -583,15 +583,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Simple Delete All Accounts Dialog */}
       <SimpleDeleteAllAccountsDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog} onSuccess={() => {
-      setShowDeleteAllDialog(false);
-    }} />
+        setShowDeleteAllDialog(false);
+      }} />
 
       {/* CSV Upload Dialog */}
       <ChartOfAccountsCSVUpload 
         open={showCSVUpload}
         onOpenChange={setShowCSVUpload}
         onUploadComplete={() => {
-          // Refresh the accounts data
+          setShowCSVUpload(false);
+          // The data will refresh automatically due to query invalidation
         }}
       />
     </div>;
