@@ -112,7 +112,26 @@ export function SmartCSVUpload({
 
   const parseCSV = (csvText: string): any[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-    const rows = (parsed.data as any[]).filter(Boolean).map((row) => normalizeCsvHeaders(row, entityType));
+    
+    console.log('🔍 [CSV DEBUG] Raw headers before normalization:', parsed.meta?.fields);
+    console.log('🔍 [CSV DEBUG] Entity type:', entityType);
+    
+    const rows = (parsed.data as any[]).filter(Boolean).map((row, idx) => {
+      const originalRow = row;
+      const normalizedRow = normalizeCsvHeaders(row, entityType);
+      
+      // Log first few rows for debugging
+      if (idx < 3) {
+        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} original keys:`, Object.keys(originalRow));
+        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} original:`, originalRow);
+        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} normalized keys:`, Object.keys(normalizedRow));
+        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} normalized:`, normalizedRow);
+        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} phone field:`, normalizedRow.phone);
+      }
+      
+      return normalizedRow;
+    });
+    
     return rows.map((row, index) => ({ ...row, rowNumber: index + 2 }));
   };
 
@@ -158,7 +177,20 @@ export function SmartCSVUpload({
       setRawHeaders(headers);
       setEditedRows(rawRows.map((row, index) => ({ ...row, rowNumber: index + 2 })));
 
-      const csvData = rawRows.map((row, index) => ({ ...normalizeCsvHeaders(row, entityType), rowNumber: index + 2 }));
+      const csvData = rawRows.map((row, index) => {
+        const normalized = normalizeCsvHeaders(row, entityType);
+        console.log(`🔍 [ANALYZE] Row ${index + 1} normalization:`, { 
+          original: row, 
+          normalized, 
+          phone: normalized.phone,
+          hasPhone: !!normalized.phone 
+        });
+        return { ...normalized, rowNumber: index + 2 };
+      });
+      
+      // Check required fields in normalized data
+      console.log('🔍 [ANALYZE] Required fields:', effectiveRequiredFields);
+      console.log('🔍 [ANALYZE] Sample normalized data (first 3 rows):', csvData.slice(0, 3));
       
       // إظهار محدد تنسيق التواريخ أولاً
       setPendingData(csvData);
@@ -175,7 +207,19 @@ export function SmartCSVUpload({
     setShowDateSelector(false);
     
     // تطبيق إصلاحات CSV التقليدية على البيانات المعالجة
+    console.log('🔍 [DATE] Processed data before fix:', processedData.slice(0, 3));
+    console.log('🔍 [DATE] Field types:', fieldTypes);
+    console.log('🔍 [DATE] Required fields:', effectiveRequiredFields);
+    
     const fixResults = CSVAutoFix.fixCSVData(processedData, fieldTypes, effectiveRequiredFields, 'qatar');
+    
+    console.log('🔍 [FIX] Fix results preview (first 3):', fixResults.slice(0, 3).map(f => ({
+      hasErrors: f.hasErrors,
+      fixes: f.fixes,
+      phoneField: f.originalData?.phone,
+      fixedPhoneField: f.fixedData?.phone
+    })));
+    
     setFixes(fixResults);
     setShowPreview(true);
     setActiveView('preview');
@@ -295,12 +339,26 @@ export function SmartCSVUpload({
         rowNumber: row?.rowNumber ?? idx + 2,
       }));
 
-      const dataToUpload = normalized.filter((r) =>
-        effectiveRequiredFields.every((f) => {
+      console.log('🔍 [TABLE] Normalized data preview (first 3):', normalized.slice(0, 3));
+      console.log('🔍 [TABLE] Required fields:', effectiveRequiredFields);
+      
+      const dataToUpload = normalized.filter((r, index) => {
+        const missingFields = effectiveRequiredFields.filter(f => {
           const v = r[f];
-          return !(v === undefined || v === null || String(v).trim() === '');
-        })
-      );
+          const isEmpty = v === undefined || v === null || String(v).trim() === '';
+          if (isEmpty && index < 3) {
+            console.log(`🔍 [TABLE] Row ${index + 1} missing field '${f}':`, v);
+          }
+          return isEmpty;
+        });
+        
+        if (missingFields.length > 0 && index < 3) {
+          console.log(`🔍 [TABLE] Row ${index + 1} excluded due to missing:`, missingFields);
+          console.log(`🔍 [TABLE] Row ${index + 1} data:`, r);
+        }
+        
+        return missingFields.length === 0;
+      });
 
       if (dataToUpload.length === 0) {
         toast.error("لا توجد صفوف مكتملة ال بيانات للرفع");

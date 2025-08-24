@@ -1,5 +1,8 @@
 export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'customer' | 'vehicle' | 'contract' | 'payment'): Record<string, any> => {
   if (!row || typeof row !== 'object') return row;
+  
+  console.log(`🔍 [NORMALIZE] Processing row for entityType: ${entityType}`);
+  console.log(`🔍 [NORMALIZE] Original row keys:`, Object.keys(row));
   const map: Record<string, string> = {
     // Arabic headers
     'اسم العميل': 'customer_name',
@@ -135,15 +138,28 @@ export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'cust
 
 
   const normalized: Record<string, any> = {};
+  const phoneKeys: string[] = [];
+  
   for (const [key, val] of Object.entries(row)) {
     const cleanedKey = key?.toString().trim();
     const lowerKey = cleanedKey.toLowerCase();
     const mapped = map[cleanedKey] || map[lowerKey] || cleanedKey;
+    
+    // Track phone-related keys for debugging
+    if (cleanedKey.includes('phone') || cleanedKey.includes('هاتف') || cleanedKey.includes('جوال') || cleanedKey.includes('تليفون')) {
+      phoneKeys.push(cleanedKey);
+    }
+    
     // Preserve both original and normalized keys for ambiguous fields like 'amount'
     normalized[mapped] = typeof val === 'string' ? val.trim() : val;
     if (mapped !== cleanedKey && (cleanedKey.toLowerCase() === 'amount' || cleanedKey === 'المبلغ')) {
       normalized['amount'] = typeof val === 'string' ? val.trim() : val;
     }
   }
+  
+  console.log(`🔍 [NORMALIZE] Phone-related keys found:`, phoneKeys);
+  console.log(`🔍 [NORMALIZE] Normalized keys:`, Object.keys(normalized));
+  console.log(`🔍 [NORMALIZE] Final phone field:`, normalized.phone);
+  
   return normalized;
 };

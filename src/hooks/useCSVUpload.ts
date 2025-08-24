@@ -143,12 +143,18 @@ export function useCSVUpload() {
   const validateCustomerData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
+    console.log(`🔍 [VALIDATE] Row ${rowNumber} validation data:`, data);
+    console.log(`🔍 [VALIDATE] Row ${rowNumber} available keys:`, Object.keys(data));
+    console.log(`🔍 [VALIDATE] Row ${rowNumber} phone field:`, data.phone);
+
     // التحقق من المطلوب
     if (!data.customer_type || !['individual', 'corporate'].includes(data.customer_type)) {
       errors.push('نوع العميل مطلوب ويجب أن يكون individual أو corporate')
     }
 
     if (!data.phone) {
+      console.log(`🔍 [VALIDATE] Row ${rowNumber} PHONE MISSING - phone field value:`, data.phone);
+      console.log(`🔍 [VALIDATE] Row ${rowNumber} All data:`, JSON.stringify(data, null, 2));
       errors.push('رقم الهاتف مطلوب')
     }
 
