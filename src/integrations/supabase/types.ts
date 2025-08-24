@@ -9826,6 +9826,10 @@ export type Database = {
         }
         Returns: Json
       }
+      comprehensive_hierarchy_check: {
+        Args: { target_company_id: string }
+        Returns: Json
+      }
       copy_default_accounts_to_company: {
         Args: { target_company_id: string }
         Returns: undefined
@@ -10215,7 +10219,7 @@ export type Database = {
         Returns: string
       }
       fix_chart_hierarchy: {
-        Args: { company_id_param: string }
+        Args: { target_company_id: string }
         Returns: Json
       }
       force_delete_all_accounts: {
@@ -10844,8 +10848,8 @@ export type Database = {
         }[]
       }
       recalculate_account_levels: {
-        Args: { company_id_param: string }
-        Returns: undefined
+        Args: { target_company_id: string }
+        Returns: number
       }
       recalculate_bank_balance: {
         Args: { bank_id_param: string }
