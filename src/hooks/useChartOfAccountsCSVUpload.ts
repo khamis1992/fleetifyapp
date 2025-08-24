@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { useQueryClient } from "@tanstack/react-query"
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
-import { normalizeCsvHeaders } from "@/utils/csv"
+import { normalizeCsvHeaders, processAccountsWithHierarchy } from "@/utils/csv"
+import Papa from "papaparse"
 
 interface ChartAccountCSVUploadResults {
   total: number
@@ -135,26 +136,43 @@ export function useChartOfAccountsCSVUpload() {
   }
 
   const parseCSV = (csvText: string): any[] => {
-    const lines = csvText.trim().split('\n')
-    if (lines.length < 2) return []
-
-    const headers = lines[0].split(',').map(header => 
-      header.replace(/"/g, '').trim()
-    )
-    
-    return lines.slice(1).map((line, index) => {
-      const values = line.split(',').map(value => 
-        value.replace(/"/g, '').trim()
-      )
+    try {
+      console.log('🔍 [CSV_PARSE] Starting CSV parsing...')
       
-      const row: any = {}
-      headers.forEach((header, i) => {
-        row[header] = values[i] || ''
+      // Use papaparse for better CSV handling
+      const parseResult = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (header: string) => header.trim(),
+        transform: (value: string) => value.trim()
       })
       
-      row._rowNumber = index + 2
-      return normalizeCsvHeaders(row, 'chart_account')
-    })
+      if (parseResult.errors.length > 0) {
+        console.warn('🔍 [CSV_PARSE] Papa parse errors:', parseResult.errors)
+      }
+      
+      if (!parseResult.data || parseResult.data.length === 0) {
+        console.warn('🔍 [CSV_PARSE] No data found in CSV')
+        return []
+      }
+      
+      console.log('🔍 [CSV_PARSE] Raw data count:', parseResult.data.length)
+      console.log('🔍 [CSV_PARSE] Sample headers:', Object.keys(parseResult.data[0] || {}))
+      
+      // Normalize headers and add row numbers
+      const normalizedData = parseResult.data.map((row: any, index: number) => {
+        const normalizedRow = normalizeCsvHeaders(row, 'chart_account')
+        normalizedRow._rowNumber = index + 2 // Account for header row
+        return normalizedRow
+      }).filter(row => row.account_code && row.account_code.trim() !== '') // Filter out empty rows
+      
+      console.log('🔍 [CSV_PARSE] Normalized data count:', normalizedData.length)
+      
+      return normalizedData
+    } catch (error) {
+      console.error('🔍 [CSV_PARSE] Parse error:', error)
+      throw new Error(`خطأ في تحليل ملف CSV: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`)
+    }
   }
 
   const validateAccountData = (data: any, rowNumber: number): { valid: boolean; errors: string[] } => {
@@ -217,12 +235,23 @@ export function useChartOfAccountsCSVUpload() {
     setResults(null)
 
     try {
+      console.log('🔍 [UPLOAD] Starting file upload process...')
+      console.log('🔍 [UPLOAD] File details:', { name: file.name, size: file.size, type: file.type })
+      
       const text = await file.text()
-      const data = parseCSV(text)
+      console.log('🔍 [UPLOAD] File text length:', text.length)
+      
+      let data = parseCSV(text)
+      console.log('🔍 [UPLOAD] Parsed data count:', data.length)
       
       if (data.length === 0) {
-        throw new Error('لا توجد بيانات في الملف')
+        throw new Error('لا توجد بيانات صالحة في الملف')
       }
+
+      // Process hierarchy relationships
+      console.log('🔍 [UPLOAD] Processing hierarchy...')
+      data = processAccountsWithHierarchy(data)
+      console.log('🔍 [UPLOAD] Hierarchy processing complete')
 
       const results: ChartAccountCSVUploadResults = {
         total: data.length,
@@ -243,125 +272,157 @@ export function useChartOfAccountsCSVUpload() {
         existingAccounts?.map(acc => [acc.account_code, acc.id]) || []
       )
 
-      // معالجة البيانات
-      for (let i = 0; i < data.length; i++) {
-        const rowData = data[i]
-        const rowNumber = rowData._rowNumber || i + 2
+      // معالجة البيانات in chunks to prevent freezing
+      const CHUNK_SIZE = 20
+      console.log('🔍 [UPLOAD] Processing in chunks of', CHUNK_SIZE)
+      
+      for (let chunkStart = 0; chunkStart < data.length; chunkStart += CHUNK_SIZE) {
+        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, data.length)
+        const chunk = data.slice(chunkStart, chunkEnd)
+        
+        console.log(`🔍 [UPLOAD] Processing chunk ${chunkStart + 1}-${chunkEnd}`)
+        
+        for (let i = 0; i < chunk.length; i++) {
+          const globalIndex = chunkStart + i
+          const rowData = chunk[i]
+          const rowNumber = rowData._rowNumber || globalIndex + 2
 
-        try {
-          setProgress((i / data.length) * 100)
+          try {
+            const progressPercent = ((globalIndex + 1) / data.length) * 100
+            setProgress(progressPercent)
+            
+            // Add small delay for UI responsiveness
+            if (globalIndex % 10 === 0) {
+              await new Promise(resolve => setTimeout(resolve, 1))
+            }
 
-          // التحقق من صحة البيانات
-          const validation = validateAccountData(rowData, rowNumber)
-          if (!validation.valid) {
+            // التحقق من صحة البيانات
+            const validation = validateAccountData(rowData, rowNumber)
+            if (!validation.valid) {
+              results.failed++
+              results.errors.push({
+                row: rowNumber,
+                message: validation.errors.join(', '),
+                account_code: rowData.account_code
+              })
+              console.warn(`🔍 [UPLOAD] Validation failed for row ${rowNumber}:`, validation.errors)
+              continue
+            }
+
+            // تحضير البيانات للإدراج
+            const accountData: ChartAccountFormData = {
+              account_code: rowData.account_code,
+              account_name: rowData.account_name,
+              account_name_ar: rowData.account_name_ar || rowData.account_name,
+              account_type: rowData.account_type,
+              account_subtype: rowData.account_subtype || null,
+              balance_type: rowData.balance_type,
+              description: rowData.description || null,
+              account_level: rowData.account_level ? parseInt(rowData.account_level) : undefined,
+              is_header: rowData.is_header ? 
+                ['true', '1', 'نعم'].includes(String(rowData.is_header).toLowerCase()) : false
+            }
+
+            // البحث عن الحساب الأب إذا تم تحديده
+            if (rowData.parent_account_code && rowData.parent_account_code.trim() !== '') {
+              const parentId = existingAccountsMap.get(rowData.parent_account_code)
+              if (parentId && parentId !== 'new') {
+                accountData.parent_account_id = parentId
+              } else {
+                // Skip parent validation for now - let the hierarchy processing handle it
+                console.warn(`🔍 [UPLOAD] Parent account ${rowData.parent_account_code} not found for ${rowData.account_code}`)
+              }
+            }
+
+            // التحقق من وجود الحساب مسبقاً
+            const existingAccountId = existingAccountsMap.get(rowData.account_code)
+            
+            if (existingAccountId && existingAccountId !== 'new') {
+              // تحديث الحساب الموجود
+              const { error } = await supabase
+                .from('chart_of_accounts')
+                .update(accountData)
+                .eq('id', existingAccountId)
+                .eq('company_id', companyId)
+
+              if (error) {
+                results.failed++
+                results.errors.push({
+                  row: rowNumber,
+                  message: `خطأ في تحديث الحساب: ${error.message}`,
+                  account_code: rowData.account_code
+                })
+                console.error(`🔍 [UPLOAD] Update error for ${rowData.account_code}:`, error)
+              } else {
+                results.updated++
+                console.log(`🔍 [UPLOAD] Updated account: ${rowData.account_code}`)
+              }
+            } else {
+              // إنشاء حساب جديد
+              const { data: newAccount, error } = await supabase
+                .from('chart_of_accounts')
+                .insert({
+                  ...accountData,
+                  company_id: companyId
+                })
+                .select('id')
+                .single()
+
+              if (error) {
+                results.failed++
+                results.errors.push({
+                  row: rowNumber,
+                  message: `خطأ في إنشاء الحساب: ${error.message}`,
+                  account_code: rowData.account_code
+                })
+                console.error(`🔍 [UPLOAD] Insert error for ${rowData.account_code}:`, error)
+              } else {
+                results.successful++
+                // إضافة الحساب الجديد إلى الخريطة مع معرفه الفعلي
+                existingAccountsMap.set(rowData.account_code, newAccount?.id || 'new')
+                console.log(`🔍 [UPLOAD] Created account: ${rowData.account_code}`)
+              }
+            }
+
+          } catch (error: any) {
             results.failed++
             results.errors.push({
               row: rowNumber,
-              message: validation.errors.join(', '),
+              message: `خطأ غير متوقع: ${error.message}`,
               account_code: rowData.account_code
             })
-            continue
+            console.error(`🔍 [UPLOAD] Unexpected error for row ${rowNumber}:`, error)
           }
-
-          // تحضير البيانات للإدراج
-          const accountData: ChartAccountFormData = {
-            account_code: rowData.account_code,
-            account_name: rowData.account_name,
-            account_name_ar: rowData.account_name_ar || rowData.account_name,
-            account_type: rowData.account_type,
-            account_subtype: rowData.account_subtype || null,
-            balance_type: rowData.balance_type,
-            description: rowData.description || null,
-            account_level: rowData.account_level ? parseInt(rowData.account_level) : undefined,
-            is_header: rowData.is_header ? 
-              ['true', '1', 'نعم'].includes(rowData.is_header.toLowerCase()) : false
-          }
-
-          // البحث عن الحساب الأب إذا تم تحديده
-          if (rowData.parent_account_code) {
-            const parentId = existingAccountsMap.get(rowData.parent_account_code)
-            if (parentId) {
-              accountData.parent_account_id = parentId
-            } else {
-              results.errors.push({
-                row: rowNumber,
-                message: `الحساب الأب ${rowData.parent_account_code} غير موجود`,
-                account_code: rowData.account_code
-              })
-              results.failed++
-              continue
-            }
-          }
-
-          // التحقق من وجود الحساب مسبقاً
-          const existingAccountId = existingAccountsMap.get(rowData.account_code)
-          
-          if (existingAccountId) {
-            // تحديث الحساب الموجود
-            const { error } = await supabase
-              .from('chart_of_accounts')
-              .update(accountData)
-              .eq('id', existingAccountId)
-              .eq('company_id', companyId)
-
-            if (error) {
-              results.failed++
-              results.errors.push({
-                row: rowNumber,
-                message: `خطأ في تحديث الحساب: ${error.message}`,
-                account_code: rowData.account_code
-              })
-            } else {
-              results.updated++
-            }
-          } else {
-            // إنشاء حساب جديد
-            const { error } = await supabase
-              .from('chart_of_accounts')
-              .insert({
-                ...accountData,
-                company_id: companyId
-              })
-
-            if (error) {
-              results.failed++
-              results.errors.push({
-                row: rowNumber,
-                message: `خطأ في إنشاء الحساب: ${error.message}`,
-                account_code: rowData.account_code
-              })
-            } else {
-              results.successful++
-              // إضافة الحساب الجديد إلى الخريطة
-              existingAccountsMap.set(rowData.account_code, 'new')
-            }
-          }
-
-        } catch (error: any) {
-          results.failed++
-          results.errors.push({
-            row: rowNumber,
-            message: `خطأ غير متوقع: ${error.message}`,
-            account_code: rowData.account_code
-          })
         }
+        
+        // Small delay between chunks to prevent UI freezing
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
 
       setProgress(100)
       setResults(results)
 
+      console.log('🔍 [UPLOAD] Final results:', results)
+
       // تحديث cache الاستعلامات
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] })
 
+      // Show success/error messages
       if (results.successful > 0 || results.updated > 0) {
-        toast.success(`تم رفع ${results.successful + results.updated} حساب بنجاح`)
+        const total = results.successful + results.updated
+        toast.success(`تم رفع ${total} حساب بنجاح (${results.successful} جديد، ${results.updated} محدث)`)
       }
 
       if (results.failed > 0) {
-        toast.error(`فشل في رفع ${results.failed} حساب`)
+        toast.error(`فشل في رفع ${results.failed} حساب. راجع تقرير الأخطاء للتفاصيل.`)
+      }
+
+      if (results.total === 0) {
+        toast.warning('لم يتم العثور على بيانات صالحة في الملف')
       }
 
     } catch (error: any) {
+      console.error('🔍 [UPLOAD] Fatal error:', error)
       toast.error(`خطأ في رفع الملف: ${error.message}`)
       setResults({
         total: 0,
@@ -373,6 +434,7 @@ export function useChartOfAccountsCSVUpload() {
       })
     } finally {
       setIsUploading(false)
+      setProgress(0)
     }
   }
 
@@ -386,8 +448,13 @@ export function useChartOfAccountsCSVUpload() {
     setResults(null)
 
     try {
+      console.log('🔍 [SMART_UPLOAD] Starting smart upload with', fixedData.length, 'records')
+      
+      // Process hierarchy for smart upload too
+      const processedData = processAccountsWithHierarchy(fixedData)
+      
       const results: ChartAccountCSVUploadResults = {
-        total: fixedData.length,
+        total: processedData.length,
         successful: 0,
         updated: 0,
         skipped: 0,
@@ -395,46 +462,69 @@ export function useChartOfAccountsCSVUpload() {
         errors: []
       }
 
-      // إدراج البيانات المصححة
-      for (let i = 0; i < fixedData.length; i++) {
-        const accountData = fixedData[i]
+      // إدراج البيانات المصححة in chunks
+      const CHUNK_SIZE = 20
+      for (let chunkStart = 0; chunkStart < processedData.length; chunkStart += CHUNK_SIZE) {
+        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, processedData.length)
+        const chunk = processedData.slice(chunkStart, chunkEnd)
         
-        try {
-          const { error } = await supabase
-            .from('chart_of_accounts')
-            .insert({
-              ...accountData,
-              company_id: companyId
-            })
+        for (let i = 0; i < chunk.length; i++) {
+          const globalIndex = chunkStart + i
+          const accountData = chunk[i]
+          
+          try {
+            const { error } = await supabase
+              .from('chart_of_accounts')
+              .insert({
+                ...accountData,
+                company_id: companyId
+              })
 
-          if (error) {
+            if (error) {
+              results.failed++
+              results.errors.push({
+                row: globalIndex + 1,
+                message: error.message,
+                account_code: accountData.account_code
+              })
+              console.error(`🔍 [SMART_UPLOAD] Error for ${accountData.account_code}:`, error)
+            } else {
+              results.successful++
+              console.log(`🔍 [SMART_UPLOAD] Created account: ${accountData.account_code}`)
+            }
+          } catch (error: any) {
             results.failed++
             results.errors.push({
-              row: i + 1,
+              row: globalIndex + 1,
               message: error.message,
               account_code: accountData.account_code
             })
-          } else {
-            results.successful++
+            console.error(`🔍 [SMART_UPLOAD] Unexpected error:`, error)
           }
-        } catch (error: any) {
-          results.failed++
-          results.errors.push({
-            row: i + 1,
-            message: error.message,
-            account_code: accountData.account_code
-          })
+          
+          // Small delay for UI responsiveness
+          if (globalIndex % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1))
+          }
         }
+        
+        // Delay between chunks
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
 
       setResults(results)
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] })
 
       if (results.successful > 0) {
-        toast.success(`تم رفع ${results.successful} حساب بنجاح`)
+        toast.success(`تم رفع ${results.successful} حساب بنجاح من خلال الرفع الذكي`)
+      }
+
+      if (results.failed > 0) {
+        toast.error(`فشل في رفع ${results.failed} حساب في الرفع الذكي`)
       }
 
     } catch (error: any) {
+      console.error('🔍 [SMART_UPLOAD] Fatal error:', error)
       toast.error(`خطأ في الرفع الذكي: ${error.message}`)
     } finally {
       setIsUploading(false)
