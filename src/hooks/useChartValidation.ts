@@ -42,8 +42,10 @@ interface ValidationResult {
 
 interface FixResult {
   success: boolean;
-  fixed_orphaned: number;
-  levels_recalculated: boolean;
+  orphaned_accounts_fixed: number;
+  level_corrections: number;
+  circular_references_fixed: number;
+  total_fixes: number;
 }
 
 interface ChartStatistics {
@@ -109,9 +111,22 @@ export const useFixChartHierarchy = () => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
       queryClient.invalidateQueries({ queryKey: ["chart-statistics", companyId] });
       
+      const fixSummary = [];
+      if (data.orphaned_accounts_fixed > 0) {
+        fixSummary.push(`${data.orphaned_accounts_fixed} حساب يتيم`);
+      }
+      if (data.level_corrections > 0) {
+        fixSummary.push(`${data.level_corrections} تصحيح مستوى`);
+      }
+      if (data.circular_references_fixed > 0) {
+        fixSummary.push(`${data.circular_references_fixed} مرجع دائري`);
+      }
+      
       toast({
         title: "تم إصلاح دليل الحسابات بنجاح",
-        description: `تم إصلاح ${data.fixed_orphaned} حساب يتيم وإعادة حساب المستويات`,
+        description: fixSummary.length > 0 
+          ? `تم إصلاح: ${fixSummary.join('، ')}`
+          : "تم التحقق من دليل الحسابات - لا توجد مشاكل للإصلاح",
       });
     },
     onError: (error: any) => {
