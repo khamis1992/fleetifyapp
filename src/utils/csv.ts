@@ -195,3 +195,202 @@ export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'cust
   
   return normalized;
 };
+
+export const normalizeCSVHeaders = normalizeCsvHeaders;
+
+export const detectFieldTypes = (rows: any[][], headers: string[]): Record<string, string> => {
+  const types: Record<string, string> = {};
+  
+  headers.forEach((header, colIndex) => {
+    const samples = rows.slice(0, 10).map(row => row[colIndex]).filter(val => val !== null && val !== undefined && val !== '');
+    
+    if (samples.length === 0) {
+      types[header] = 'text';
+      return;
+    }
+    
+    // Check for boolean values
+    if (samples.every(val => ['true', 'false', '1', '0', 'yes', 'no', 'نعم', 'لا'].includes(String(val).toLowerCase()))) {
+      types[header] = 'boolean';
+      return;
+    }
+    
+    // Check for numbers
+    if (samples.every(val => !isNaN(Number(val)) && val !== '')) {
+      types[header] = 'number';
+      return;
+    }
+    
+    // Check for dates
+    if (samples.some(val => !isNaN(Date.parse(String(val))))) {
+      types[header] = 'date';
+      return;
+    }
+    
+    // Check for emails
+    if (samples.some(val => String(val).includes('@'))) {
+      types[header] = 'email';
+      return;
+    }
+    
+    types[header] = 'text';
+  });
+  
+  return types;
+};
+
+export const cleanAndNormalizeData = (rows: any[][], headers: string[], fieldTypes: Record<string, any>): {
+  data: any[][];
+  errors: Array<{ row: number; column: string; message: string; value: any }>;
+  warnings: Array<{ row: number; column: string; message: string; value: any }>;
+} => {
+  const errors: Array<{ row: number; column: string; message: string; value: any }> = [];
+  const warnings: Array<{ row: number; column: string; message: string; value: any }> = [];
+  const cleanedData: any[][] = [];
+  
+  rows.forEach((row, rowIndex) => {
+    const cleanedRow: any[] = [];
+    
+    headers.forEach((header, colIndex) => {
+      let value = row[colIndex];
+      
+      // Clean whitespace
+      if (typeof value === 'string') {
+        value = value.trim();
+      }
+      
+      // Convert boolean values
+      if (fieldTypes[header]?.type === 'boolean') {
+        if (['true', '1', 'yes', 'نعم'].includes(String(value).toLowerCase())) {
+          value = true;
+        } else if (['false', '0', 'no', 'لا'].includes(String(value).toLowerCase())) {
+          value = false;
+        } else if (value === '') {
+          value = false;
+        } else {
+          warnings.push({
+            row: rowIndex + 1,
+            column: header,
+            message: 'قيمة منطقية غير صحيحة، تم تحويلها إلى false',
+            value
+          });
+          value = false;
+        }
+      }
+      
+      // Convert numbers
+      if (fieldTypes[header]?.type === 'number' && value !== '') {
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          errors.push({
+            row: rowIndex + 1,
+            column: header,
+            message: 'قيمة رقمية غير صحيحة',
+            value
+          });
+        } else {
+          value = numValue;
+        }
+      }
+      
+      cleanedRow.push(value);
+    });
+    
+    cleanedData.push(cleanedRow);
+  });
+  
+  return { data: cleanedData, errors, warnings };
+};
+
+export const generateTemplate = (headers: string[], exampleRows: string[][]): string => {
+  const csvContent = [
+    headers.join(','),
+    ...exampleRows.map(row => row.map(cell => `"${cell}"`).join(','))
+  ].join('\n');
+  
+  return csvContent;
+};
+
+// Chart of Accounts specific functions
+export const detectParentFromAccountCode = (accountCode: string): string => {
+  if (!accountCode || accountCode.length <= 1) return '';
+  
+  // Remove the last digit/character to get parent
+  // Example: 1110101 -> 111010, 11101 -> 1110
+  const parent = accountCode.slice(0, -1);
+  return parent;
+};
+
+export const calculateAccountLevel = (accountCode: string): number => {
+  if (!accountCode) return 1;
+  
+  // Calculate level based on code length
+  // Level 1: 1 digit (1)
+  // Level 2: 2 digits (11) 
+  // Level 3: 3-4 digits (111, 1110)
+  // Level 4: 5-6 digits (11101, 111010)
+  // Level 5: 7+ digits (1110101)
+  
+  const length = accountCode.length;
+  if (length === 1) return 1;
+  if (length === 2) return 2;
+  if (length <= 4) return 3;
+  if (length <= 6) return 4;
+  return 5;
+};
+
+export const validateAccountHierarchy = (accounts: Array<{ account_code: string; parent_account_code?: string }>): {
+  isValid: boolean;
+  issues: string[];
+  suggestions: string[];
+} => {
+  const issues: string[] = [];
+  const suggestions: string[] = [];
+  
+  // Check for missing parents
+  const accountCodes = new Set(accounts.map(acc => acc.account_code));
+  
+  accounts.forEach(account => {
+    const detectedParent = detectParentFromAccountCode(account.account_code);
+    
+    if (detectedParent && !accountCodes.has(detectedParent)) {
+      issues.push(`الحساب ${account.account_code} يحتاج إلى حساب أب ${detectedParent}`);
+      suggestions.push(`إنشاء حساب أب ${detectedParent} للحساب ${account.account_code}`);
+    }
+    
+    // Check if provided parent matches detected parent
+    if (account.parent_account_code && detectedParent && account.parent_account_code !== detectedParent) {
+      issues.push(`الحساب ${account.account_code}: الحساب الأب المحدد ${account.parent_account_code} لا يطابق المتوقع ${detectedParent}`);
+    }
+  });
+  
+  return {
+    isValid: issues.length === 0,
+    issues,
+    suggestions
+  };
+};
+
+export const processAccountsWithHierarchy = (accounts: Array<any>): Array<any> => {
+  const processedAccounts = accounts.map(account => {
+    // Auto-detect parent if not provided
+    if (!account.parent_account_code) {
+      account.parent_account_code = detectParentFromAccountCode(account.account_code);
+    }
+    
+    // Auto-calculate level if not provided
+    if (!account.account_level) {
+      account.account_level = calculateAccountLevel(account.account_code);
+    }
+    
+    return account;
+  });
+  
+  // Sort accounts by hierarchy (parents first)
+  return processedAccounts.sort((a, b) => {
+    const levelDiff = (a.account_level || 1) - (b.account_level || 1);
+    if (levelDiff !== 0) return levelDiff;
+    
+    return a.account_code.localeCompare(b.account_code);
+  });
+};

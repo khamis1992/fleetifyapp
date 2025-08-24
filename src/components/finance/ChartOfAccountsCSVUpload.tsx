@@ -43,6 +43,28 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
     fieldTypes
   } = useChartOfAccountsCSVUpload();
 
+  // Define proper field types for SmartCSVUpload
+  const smartFieldTypes = {
+    account_code: { type: 'text' as const, required: true },
+    account_name: { type: 'text' as const, required: true },
+    account_name_ar: { type: 'text' as const },
+    account_type: { 
+      type: 'select' as const, 
+      required: true,
+      options: ['assets', 'liabilities', 'equity', 'revenue', 'expenses']
+    },
+    account_subtype: { type: 'text' as const },
+    balance_type: { 
+      type: 'select' as const, 
+      required: true,
+      options: ['debit', 'credit']
+    },
+    parent_account_code: { type: 'text' as const },
+    account_level: { type: 'number' as const },
+    is_header: { type: 'boolean' as const },
+    description: { type: 'text' as const }
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -114,7 +136,7 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
             <SmartCSVUpload
               entityType="chart_account"
               onComplete={handleSmartUploadComplete}
-              fieldTypes={fieldTypes}
+              fieldTypes={smartFieldTypes}
               templateData={{
                 headers: [
                   'account_code',

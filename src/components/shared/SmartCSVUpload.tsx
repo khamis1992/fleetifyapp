@@ -23,7 +23,14 @@ import {
   Trash2,
   RotateCcw
 } from 'lucide-react';
-import { normalizeCSVHeaders, detectFieldTypes, cleanAndNormalizeData, generateTemplate } from '@/utils/csv';
+import { 
+  normalizeCSVHeaders, 
+  detectFieldTypes, 
+  cleanAndNormalizeData, 
+  generateTemplate,
+  processAccountsWithHierarchy,
+  validateAccountHierarchy 
+} from '@/utils/csv';
 
 export interface SmartCSVFieldType {
   type: 'text' | 'number' | 'boolean' | 'date' | 'email' | 'phone' | 'select';
@@ -249,7 +256,7 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
   const completeUpload = useCallback(() => {
     if (!parsedData) return;
     
-    const finalData = parsedData.rows.map(row => {
+    let finalData = parsedData.rows.map(row => {
       const mappedRow: Record<string, any> = {};
       
       columnMappings.forEach(mapping => {
@@ -264,9 +271,14 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
       return mappedRow;
     });
 
+    // Apply chart of accounts specific processing
+    if (entityType === 'chart_account') {
+      finalData = processAccountsWithHierarchy(finalData);
+    }
+
     onComplete(finalData);
     setCurrentStep('complete');
-  }, [parsedData, columnMappings, onComplete]);
+  }, [parsedData, columnMappings, onComplete, entityType]);
 
   // Download template
   const downloadTemplate = useCallback(() => {
