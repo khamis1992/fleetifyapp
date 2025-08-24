@@ -313,7 +313,7 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
             </div>
 
             <AccountsTreeView 
-              data={csvData}
+              data={processedData}
               hierarchyErrors={hierarchyErrors}
             />
           </TabsContent>

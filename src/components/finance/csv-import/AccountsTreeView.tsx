@@ -26,7 +26,7 @@ interface AccountNode {
 }
 
 interface AccountsTreeViewProps {
-  data: any[];
+  data: any[]; // البيانات المعالجة من الـ Hook
   hierarchyErrors?: Array<{ accountCode: string; message: string; rowNumber: number }>;
 }
 
@@ -45,27 +45,24 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
     return map;
   }, [hierarchyErrors]);
 
-  // Build tree structure from flat data
+  // Build tree structure from processed data
   const treeData = useMemo(() => {
     if (!data || data.length === 0) return [];
 
-    // Normalize data and create nodes
-    const nodes: AccountNode[] = data.map(row => {
-      const accountCode = row['رقم الحساب'] || row['account_code'] || '';
-      const accountName = row['الوصف بالإنجليزي'] || row['account_name'] || '';
-      const accountNameAr = row['الوصف'] || row['account_name_ar'] || '';
-      const level = parseInt(row['المستوى'] || row['account_level'] || '1');
-      const error = errorMap.get(accountCode);
+    // Create nodes from processed data
+    const nodes: AccountNode[] = data.map(account => {
+      const error = errorMap.get(account.account_code);
 
       return {
-        accountCode,
-        accountName,
-        accountNameAr,
-        level,
+        accountCode: account.account_code,
+        accountName: account.account_name,
+        accountNameAr: account.account_name_ar,
+        level: account.account_level,
+        parentCode: account.parent_account_code,
         children: [],
         hasError: !!error,
         errorMessage: error?.message,
-        rowNumber: error?.rowNumber || row._rowNumber
+        rowNumber: error?.rowNumber || account._rowNumber
       };
     });
 
@@ -76,7 +73,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       return aNum - bNum;
     });
 
-    // Build hierarchy by finding parent-child relationships
+    // Build hierarchy using the processed parent relationships
     const nodeMap = new Map<string, AccountNode>();
     nodes.forEach(node => {
       nodeMap.set(node.accountCode, node);
@@ -85,25 +82,9 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
     const rootNodes: AccountNode[] = [];
 
     nodes.forEach(node => {
-      // Find parent by checking if there's an account with a shorter code that this code starts with
-      let parentCode = '';
-      
-      // For hierarchical account codes like 1, 11, 111, 1111
-      if (node.accountCode.length > 1) {
-        // Try progressively shorter codes
-        for (let len = node.accountCode.length - 1; len >= 1; len--) {
-          const potentialParent = node.accountCode.substring(0, len);
-          if (nodeMap.has(potentialParent)) {
-            parentCode = potentialParent;
-            break;
-          }
-        }
-      }
-
-      if (parentCode && nodeMap.has(parentCode)) {
-        const parent = nodeMap.get(parentCode)!;
+      if (node.parentCode && nodeMap.has(node.parentCode)) {
+        const parent = nodeMap.get(node.parentCode)!;
         parent.children.push(node);
-        node.parentCode = parentCode;
       } else {
         rootNodes.push(node);
       }
@@ -234,6 +215,13 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           <Badge variant="secondary" className="text-xs">
             مستوى {node.level}
           </Badge>
+
+          {/* Parent Code (for debugging) */}
+          {node.parentCode && (
+            <Badge variant="outline" className="text-xs">
+              أب: {node.parentCode}
+            </Badge>
+          )}
         </div>
 
         {/* Error Message */}
