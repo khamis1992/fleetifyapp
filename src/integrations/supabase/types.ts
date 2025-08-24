@@ -5561,9 +5561,71 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_contract_linking_attempts: {
+        Row: {
+          attempted_contract_identifiers: Json | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          linking_confidence: number | null
+          linking_method: string | null
+          matching_contracts: Json | null
+          payment_id: string | null
+          selected_contract_id: string | null
+        }
+        Insert: {
+          attempted_contract_identifiers?: Json | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          linking_confidence?: number | null
+          linking_method?: string | null
+          matching_contracts?: Json | null
+          payment_id?: string | null
+          selected_contract_id?: string | null
+        }
+        Update: {
+          attempted_contract_identifiers?: Json | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          linking_confidence?: number | null
+          linking_method?: string | null
+          matching_contracts?: Json | null
+          payment_id?: string | null
+          selected_contract_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_contract_linking_attempts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_contract_linking_attempts_selected_contract_id_fkey"
+            columns: ["selected_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "payment_contract_linking_attempts_selected_contract_id_fkey"
+            columns: ["selected_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           account_id: string | null
+          agreement_number: string | null
           amount: number
           bank_account: string | null
           bank_id: string | null
@@ -5575,19 +5637,24 @@ export type Database = {
           created_by: string | null
           currency: string | null
           customer_id: string | null
+          description_type: string | null
+          due_date: string | null
           id: string
           invoice_id: string | null
           journal_entry_id: string | null
           late_fine_amount: number | null
+          late_fine_days_overdue: number | null
           late_fine_status: string | null
           late_fine_type: string | null
           late_fine_waiver_reason: string | null
           notes: string | null
+          original_due_date: string | null
           payment_date: string
           payment_method: string
           payment_number: string
           payment_status: string
           payment_type: string
+          reconciliation_status: string | null
           reference_number: string | null
           transaction_type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
@@ -5595,6 +5662,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          agreement_number?: string | null
           amount: number
           bank_account?: string | null
           bank_id?: string | null
@@ -5606,19 +5674,24 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           customer_id?: string | null
+          description_type?: string | null
+          due_date?: string | null
           id?: string
           invoice_id?: string | null
           journal_entry_id?: string | null
           late_fine_amount?: number | null
+          late_fine_days_overdue?: number | null
           late_fine_status?: string | null
           late_fine_type?: string | null
           late_fine_waiver_reason?: string | null
           notes?: string | null
+          original_due_date?: string | null
           payment_date: string
           payment_method: string
           payment_number: string
           payment_status?: string
           payment_type: string
+          reconciliation_status?: string | null
           reference_number?: string | null
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
@@ -5626,6 +5699,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          agreement_number?: string | null
           amount?: number
           bank_account?: string | null
           bank_id?: string | null
@@ -5637,19 +5711,24 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           customer_id?: string | null
+          description_type?: string | null
+          due_date?: string | null
           id?: string
           invoice_id?: string | null
           journal_entry_id?: string | null
           late_fine_amount?: number | null
+          late_fine_days_overdue?: number | null
           late_fine_status?: string | null
           late_fine_type?: string | null
           late_fine_waiver_reason?: string | null
           notes?: string | null
+          original_due_date?: string | null
           payment_date?: string
           payment_method?: string
           payment_number?: string
           payment_status?: string
           payment_type?: string
+          reconciliation_status?: string | null
           reference_number?: string | null
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
@@ -10114,6 +10193,19 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: string
       }
+      find_contract_by_identifiers: {
+        Args: {
+          p_agreement_number?: string
+          p_company_id: string
+          p_contract_number?: string
+          p_customer_id?: string
+        }
+        Returns: {
+          confidence: number
+          contract_id: string
+          contract_number: string
+        }[]
+      }
       find_receivable_account_fixed: {
         Args: { company_id_param: string }
         Returns: string
@@ -10530,6 +10622,15 @@ export type Database = {
           net_cash_flow: number
           total_payments: number
           total_receipts: number
+        }[]
+      }
+      get_payment_linking_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          linked_payments: number
+          linking_percentage: number
+          total_payments: number
+          unlinked_payments: number
         }[]
       }
       get_reporting_accounts: {
