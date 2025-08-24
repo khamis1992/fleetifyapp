@@ -328,9 +328,11 @@ export function useChartOfAccountsCSVUpload() {
               const parentId = existingAccountsMap.get(rowData.parent_account_code)
               if (parentId && parentId !== 'new') {
                 accountData.parent_account_id = parentId
+                accountData.parent_account_code = rowData.parent_account_code
               } else {
-                // Skip parent validation for now - let the hierarchy processing handle it
-                console.warn(`🔍 [UPLOAD] Parent account ${rowData.parent_account_code} not found for ${rowData.account_code}`)
+                // Store parent code for database trigger to handle
+                accountData.parent_account_code = rowData.parent_account_code
+                console.warn(`🔍 [UPLOAD] Parent account ${rowData.parent_account_code} will be resolved by trigger for ${rowData.account_code}`)
               }
             }
 
@@ -484,7 +486,7 @@ export function useChartOfAccountsCSVUpload() {
               results.failed++
               results.errors.push({
                 row: globalIndex + 1,
-                message: error.message,
+                message: `خطأ في إنشاء الحساب: ${error.message}`,
                 account_code: accountData.account_code
               })
               console.error(`🔍 [SMART_UPLOAD] Error for ${accountData.account_code}:`, error)
@@ -496,7 +498,7 @@ export function useChartOfAccountsCSVUpload() {
             results.failed++
             results.errors.push({
               row: globalIndex + 1,
-              message: error.message,
+              message: `خطأ غير متوقع: ${error.message}`,
               account_code: accountData.account_code
             })
             console.error(`🔍 [SMART_UPLOAD] Unexpected error:`, error)
