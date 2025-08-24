@@ -78,7 +78,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     account_type: 'assets',
     account_subtype: '',
     balance_type: 'debit',
-    parent_account_id: '',
+    parent_account_id: undefined, // تغيير من '' إلى undefined لتجنب خطأ UUID
     is_header: false,
     description: ''
   });
@@ -94,7 +94,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         account_type: 'assets',
         account_subtype: '',
         balance_type: 'debit',
-        parent_account_id: '',
+        parent_account_id: undefined, // تغيير من '' إلى undefined
         is_header: false,
         description: ''
       });

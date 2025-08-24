@@ -94,12 +94,29 @@ export const useCreateAccount = () => {
       
       validateCompanyAccess(companyId);
 
+      // تنظيف البيانات قبل الإرسال - تحويل القيم الفارغة إلى null
+      const cleanedAccount = {
+        ...account,
+        parent_account_id: account.parent_account_id && account.parent_account_id.trim() !== '' 
+          ? account.parent_account_id 
+          : null,
+        account_name_ar: account.account_name_ar && account.account_name_ar.trim() !== '' 
+          ? account.account_name_ar 
+          : null,
+        account_subtype: account.account_subtype && account.account_subtype.trim() !== '' 
+          ? account.account_subtype 
+          : null,
+        description: account.description && account.description.trim() !== '' 
+          ? account.description 
+          : null,
+        company_id: companyId,
+      };
+
+      console.log('🔧 [CREATE_ACCOUNT] البيانات المنظفة:', cleanedAccount);
+
       const { data, error } = await supabase
         .from("chart_of_accounts")
-        .insert({
-          ...account,
-          company_id: companyId,
-        })
+        .insert(cleanedAccount)
         .select()
         .single();
 
