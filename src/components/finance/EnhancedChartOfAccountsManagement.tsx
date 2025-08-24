@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -25,6 +25,7 @@ import SimpleDeleteAllAccountsDialog from './SimpleDeleteAllAccountsDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 interface AccountFormData {
   account_code: string;
   account_name: string;
@@ -54,6 +55,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [statementAccount, setStatementAccount] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('accounts');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
   const {
     data: allAccounts,
     isLoading: allAccountsLoading
@@ -338,6 +340,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 <span>إضافة حساب جديد</span>
                 <Plus className="h-4 w-4" />
               </Button>
+              <Button 
+                onClick={() => setShowCSVUpload(true)} 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <span>استيراد من ملف</span>
+                <Upload className="h-4 w-4" />
+              </Button>
             </div>
             
             {canDeleteAll && <Button variant="destructive" onClick={() => setShowDeleteAllDialog(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700">
@@ -575,5 +585,14 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       <SimpleDeleteAllAccountsDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog} onSuccess={() => {
       setShowDeleteAllDialog(false);
     }} />
+
+      {/* CSV Upload Dialog */}
+      <ChartOfAccountsCSVUpload 
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          // Refresh the accounts data
+        }}
+      />
     </div>;
 };

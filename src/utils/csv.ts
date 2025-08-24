@@ -1,4 +1,4 @@
-export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'customer' | 'vehicle' | 'contract' | 'payment'): Record<string, any> => {
+export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'customer' | 'vehicle' | 'contract' | 'payment' | 'chart_account'): Record<string, any> => {
   if (!row || typeof row !== 'object') return row;
   
   console.log(`🔍 [NORMALIZE] Processing row for entityType: ${entityType}`);
@@ -121,7 +121,7 @@ export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'cust
     'رقم المرجع': 'reference_number',
     'رقم الشيك': 'check_number',
     'حساب بنكي': 'bank_account',
-    'رقم الحساب': 'bank_account',
+    'رقم الحساب البنكي': 'bank_account',
     'العملة': 'currency',
     'رقم الفاتورة': 'invoice_number',
     'المورد': 'vendor_name',
@@ -134,6 +134,38 @@ export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'cust
     'expiry date': 'original_due_date',
     'expiration date': 'original_due_date',
     'maturity date': 'original_due_date',
+    
+    // Chart of accounts mappings
+    'رقم الحساب': 'account_code',
+    'كود الحساب': 'account_code',
+    'account number': 'account_code',
+    'account code': 'account_code',
+    'اسم الحساب': 'account_name',
+    'اسم الحساب بالإنجليزية': 'account_name',
+    'account name': 'account_name',
+    'اسم الحساب بالعربية': 'account_name_ar',
+    'اسم الحساب العربي': 'account_name_ar',
+    'account name arabic': 'account_name_ar',
+    'نوع الحساب': 'account_type',
+    'account type': 'account_type',
+    'النوع الفرعي': 'account_subtype',
+    'account subtype': 'account_subtype',
+    'نوع الرصيد': 'balance_type',
+    'balance type': 'balance_type',
+    'الحساب الأب': 'parent_account_code',
+    'رقم الحساب الأب': 'parent_account_code',
+    'parent account': 'parent_account_code',
+    'parent account code': 'parent_account_code',
+    'المستوى': 'account_level',
+    'مستوى الحساب': 'account_level',
+    'account level': 'account_level',
+    'level': 'account_level',
+    'حساب رئيسي': 'is_header',
+    'header account': 'is_header',
+    'is header': 'is_header',
+    'وصف الحساب': 'description',
+    'ملاحظات': 'description',
+    'account description': 'description',
   };
 
 
