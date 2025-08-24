@@ -54,7 +54,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [statementAccount, setStatementAccount] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('accounts');
+  const [activeTab, setActiveTab] = useState('tree');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const {
@@ -314,11 +314,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="accounts" className="flex items-center gap-2">
-            <span>قائمة الحسابات</span>
-            <Layers className="h-4 w-4" />
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tree" className="flex items-center gap-2">
             <span>شجرة الحسابات</span>
             <Folder className="h-4 w-4" />
@@ -337,124 +333,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Accounts Tab */}
-        <TabsContent value="accounts" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
-                <span>إضافة حساب جديد</span>
-                <Plus className="h-4 w-4" />
-              </Button>
-              <Button 
-                onClick={() => setShowCSVUpload(true)} 
-                variant="outline" 
-                className="flex items-center gap-2"
-              >
-                <span>استيراد من ملف</span>
-                <Upload className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {canDeleteAll && <Button variant="destructive" onClick={() => setShowDeleteAllDialog(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700">
-                <span>حذف جميع الحسابات</span>
-                <Skull className="h-4 w-4" />
-              </Button>}
-          </div>
-
-          {/* Enhanced Filters */}
-          <Card>
-            <CardContent className="pt-6" dir="rtl">
-              <div className="space-y-4">
-                {/* Toggle for inactive accounts */}
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Switch id="show-inactive" checked={showInactiveAccounts} onCheckedChange={setShowInactiveAccounts} />
-                    <Label htmlFor="show-inactive" className="text-sm font-medium">
-                      عرض الحسابات غير النشطة
-                    </Label>
-                  </div>
-                  <Badge variant="secondary">
-                    {allAccounts ? `${allAccounts.length} حساب` : '0 حساب'}
-                  </Badge>
-                </div>
-
-                <div className="flex gap-4 items-center">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="البحث في الحسابات..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pr-10 text-right" dir="rtl" />
-                    </div>
-                  </div>
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="تصفية حسب النوع" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="all">جميع الأنواع</SelectItem>
-                      <SelectItem value="assets">الأصول</SelectItem>
-                      <SelectItem value="liabilities">الخصوم</SelectItem>
-                      <SelectItem value="equity">حقوق الملكية</SelectItem>
-                      <SelectItem value="revenue">الإيرادات</SelectItem>
-                      <SelectItem value="expenses">المصروفات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterLevel} onValueChange={setFilterLevel}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="تصفية حسب المستوى" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="all">جميع المستويات</SelectItem>
-                      <SelectItem value="1">المستوى 1 - رئيسي</SelectItem>
-                      <SelectItem value="2">المستوى 2 - فرعي</SelectItem>
-                      <SelectItem value="3">المستوى 3 - تفصيلي</SelectItem>
-                      <SelectItem value="4">المستوى 4 - فرعي تفصيلي</SelectItem>
-                      <SelectItem value="5">المستوى 5 - نهائي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="تصفية حسب الحالة" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
-                      <SelectItem value="all">جميع الحالات</SelectItem>
-                      <SelectItem value="active">نشط فقط</SelectItem>
-                      <SelectItem value="inactive">غير نشط فقط</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* All Accounts */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-right">جميع الحسابات</CardTitle>
-              <CardDescription className="text-right">
-                عرض جميع الحسابات في دليل الحسابات مع بيان القواعد المطبقة
-              </CardDescription>
-            </CardHeader>
-            <CardContent dir="rtl">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">كود الحساب</TableHead>
-                    <TableHead className="text-right">اسم الحساب</TableHead>
-                    <TableHead className="text-center">نوع الحساب</TableHead>
-                    <TableHead className="text-center">المستوى</TableHead>
-                    <TableHead className="text-center">حالة المستوى</TableHead>
-                    <TableHead className="text-center">طبيعة الرصيد</TableHead>
-                    <TableHead className="text-center">الحالة</TableHead>
-                    <TableHead className="text-center">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {buildAccountTree(allAccounts || []).map(account => renderAccountRow(account)).flat()}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Tree Tab */}
         <TabsContent value="tree" className="space-y-6">
