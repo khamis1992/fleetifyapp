@@ -1,4 +1,4 @@
-export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, any> => {
+export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'customer' | 'vehicle' | 'contract' | 'payment'): Record<string, any> => {
   if (!row || typeof row !== 'object') return row;
   const map: Record<string, string> = {
     // Arabic headers
@@ -27,12 +27,12 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'كود مركز التكلفة': 'cost_center_code',
     'معرف مركز التكلفة': 'cost_center_id',
     'معرّف مركز التكلفة': 'cost_center_id',
-    'رقم الهاتف': 'customer_phone',
-    'الهاتف': 'customer_phone',
-    'الجوال': 'customer_phone',
-    'رقم الجوال': 'customer_phone',
-    'هاتف العميل': 'customer_phone',
-    'تليفون': 'customer_phone',
+    'رقم الهاتف': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'الهاتف': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'الجوال': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'رقم الجوال': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'هاتف العميل': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'تليفون': entityType === 'customer' ? 'phone' : 'customer_phone',
     'الوصف': 'description',
     'الشروط': 'terms',
     'البداية': 'start_date',
@@ -43,7 +43,7 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'القيمة': 'contract_amount',
     'السعر': 'monthly_amount',
     'السعر الشهري': 'monthly_amount',
-    'رقم هاتف العميل': 'customer_phone',
+    'رقم هاتف العميل': entityType === 'customer' ? 'phone' : 'customer_phone',
     'النوع': 'contract_type',
     'نوع': 'contract_type',
 
@@ -64,12 +64,12 @@ export const normalizeCsvHeaders = (row: Record<string, any>): Record<string, an
     'cost center name': 'cost_center_name',
     'cost center code': 'cost_center_code',
     'cost center id': 'cost_center_id',
-    'customer phone': 'customer_phone',
-    'phone': 'customer_phone',
-    'mobile': 'customer_phone',
-    'phone number': 'customer_phone',
-    'mobile number': 'customer_phone',
-    'customer mobile': 'customer_phone',
+    'customer phone': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'phone': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'mobile': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'phone number': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'mobile number': entityType === 'customer' ? 'phone' : 'customer_phone',
+    'customer mobile': entityType === 'customer' ? 'phone' : 'customer_phone',
     'description': 'description',
     'terms': 'terms',
     'start': 'start_date',

@@ -112,7 +112,7 @@ export function SmartCSVUpload({
 
   const parseCSV = (csvText: string): any[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-    const rows = (parsed.data as any[]).filter(Boolean).map((row) => normalizeCsvHeaders(row));
+    const rows = (parsed.data as any[]).filter(Boolean).map((row) => normalizeCsvHeaders(row, entityType));
     return rows.map((row, index) => ({ ...row, rowNumber: index + 2 }));
   };
 
@@ -158,7 +158,7 @@ export function SmartCSVUpload({
       setRawHeaders(headers);
       setEditedRows(rawRows.map((row, index) => ({ ...row, rowNumber: index + 2 })));
 
-      const csvData = rawRows.map((row, index) => ({ ...normalizeCsvHeaders(row), rowNumber: index + 2 }));
+      const csvData = rawRows.map((row, index) => ({ ...normalizeCsvHeaders(row, entityType), rowNumber: index + 2 }));
       
       // إظهار محدد تنسيق التواريخ أولاً
       setPendingData(csvData);
@@ -291,7 +291,7 @@ export function SmartCSVUpload({
 
     try {
       const normalized = editedRows.map((row, idx) => ({
-        ...normalizeCsvHeaders(row),
+        ...normalizeCsvHeaders(row, entityType),
         rowNumber: row?.rowNumber ?? idx + 2,
       }));
 
