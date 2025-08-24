@@ -60,7 +60,8 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
       setFileName(fileName);
       
       // معالجة البيانات وإنشاء التسلسل الهرمي
-      processCSVData(data);
+      const result = processCSVData(data);
+      console.log('🔍 [UPLOAD_DEBUG] Processed data result:', result);
       
       // الانتقال إلى تبويب المعاينة
       setActiveTab('preview');

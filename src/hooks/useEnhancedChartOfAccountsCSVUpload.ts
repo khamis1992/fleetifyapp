@@ -239,6 +239,13 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     // Process hierarchy
     const { processedData, hierarchyErrors } = processHierarchy(validData);
     
+    // تسجيل إضافي للتأكد من البيانات
+    console.log('🔍 [CSV_PROCESS] Final processed data:', processedData.map(acc => ({
+      account_code: acc.account_code,
+      account_level: acc.account_level,
+      parent_account_code: acc.parent_account_code
+    })));
+    
     setProcessedData(processedData);
     setHierarchyErrors(hierarchyErrors);
 
