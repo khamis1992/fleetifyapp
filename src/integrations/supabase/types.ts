@@ -1277,6 +1277,7 @@ export type Database = {
           is_default: boolean | null
           is_header: boolean | null
           is_system: boolean | null
+          parent_account_code: string | null
           parent_account_id: string | null
           sort_order: number | null
           updated_at: string
@@ -1298,6 +1299,7 @@ export type Database = {
           is_default?: boolean | null
           is_header?: boolean | null
           is_system?: boolean | null
+          parent_account_code?: string | null
           parent_account_id?: string | null
           sort_order?: number | null
           updated_at?: string
@@ -1319,6 +1321,7 @@ export type Database = {
           is_default?: boolean | null
           is_header?: boolean | null
           is_system?: boolean | null
+          parent_account_code?: string | null
           parent_account_id?: string | null
           sort_order?: number | null
           updated_at?: string
