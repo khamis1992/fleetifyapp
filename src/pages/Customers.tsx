@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Trash2 } from "lucide-react"
+import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Trash2, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,7 @@ import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDia
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
 import { CustomerDisplayName } from "@/components/customers/CustomerDisplayName"
+import { BulkDeleteCustomersDialog } from "@/components/customers/BulkDeleteCustomersDialog"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
@@ -30,6 +31,7 @@ export default function Customers() {
   const [invoiceCustomerId, setInvoiceCustomerId] = useState<string | null>(null)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [customerToDelete, setCustomerToDelete] = useState<any>(null)
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
   const [filters, setFilters] = useState({
     customer_type: undefined as 'individual' | 'corporate' | undefined,
     is_blacklisted: undefined as boolean | undefined,
@@ -155,6 +157,16 @@ export default function Customers() {
           </p>
         </div>
         <div className="flex gap-2">
+          {canDeleteCustomers && allCustomers.length > 0 && (
+            <Button 
+              onClick={() => setShowBulkDeleteDialog(true)}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash className="h-4 w-4" />
+              حذف جميع العملاء
+            </Button>
+          )}
           {isSuperAdmin && (
             <Button 
               onClick={() => setShowCSVUpload(true)}
@@ -557,6 +569,12 @@ export default function Customers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog حذف جميع العملاء */}
+      <BulkDeleteCustomersDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+      />
     </div>
   )
 }
