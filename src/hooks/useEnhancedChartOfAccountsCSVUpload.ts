@@ -265,6 +265,15 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       parent_account_code: acc.parent_account_code
     })));
     
+    // تسجيل قبل الحفظ
+    console.log('🔍 [CSV_PROCESS] About to save to state:', {
+      processedDataSample: processedData.slice(0, 3).map(acc => ({
+        account_code: acc.account_code,
+        account_level: acc.account_level,
+        parent_account_code: acc.parent_account_code
+      }))
+    });
+    
     setProcessedData(processedData);
     setHierarchyErrors(hierarchyErrors);
 
