@@ -73,8 +73,14 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         rawLevel: rawLevel,
         parsedLevel: level,
         accountName: accountNameAr || accountName,
+        allColumns: Object.keys(row),
         rowData: row
       });
+      
+      // تسجيل إضافي للمستوى
+      if (level > 1) {
+        console.log(`📊 [LEVEL_INFO] Account ${accountCode} has level ${level} - should have parent`);
+      }
       
       if (!accountCode) {
         errors.push({
