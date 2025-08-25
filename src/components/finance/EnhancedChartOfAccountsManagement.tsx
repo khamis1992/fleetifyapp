@@ -334,16 +334,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         <TabsContent value="tree" className="space-y-6">
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              {canDeleteAll && (
-                <Button 
-                  onClick={() => setShowDeleteAllDialog(true)} 
-                  variant="destructive" 
-                  className="flex items-center gap-2"
-                >
-                  <span>حذف جميع الحسابات</span>
-                  <Skull className="h-4 w-4" />
-                </Button>
-              )}
               <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
                 <span>إضافة حساب جديد</span>
                 <Plus className="h-4 w-4" />
@@ -356,6 +346,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 <span>استيراد من ملف</span>
                 <Upload className="h-4 w-4" />
               </Button>
+              {canDeleteAll && (
+                <Button 
+                  onClick={() => setShowDeleteAllDialog(true)} 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
+                >
+                  <span>حذف جميع الحسابات</span>
+                  <Skull className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
