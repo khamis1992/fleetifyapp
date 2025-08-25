@@ -314,7 +314,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="tree" className="flex items-center gap-2">
             <span>شجرة الحسابات</span>
             <Folder className="h-4 w-4" />
@@ -326,10 +326,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <span>القوالب</span>
             <Folder className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="validation" className="flex items-center gap-2">
-            <span>التحقق والإصلاح</span>
-            <CheckCircle className="h-4 w-4" />
           </TabsTrigger>
         </TabsList>
 
@@ -393,10 +389,6 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         </TabsContent>
 
 
-        {/* Validation Tab */}
-        <TabsContent value="validation">
-          <ChartValidationPanel />
-        </TabsContent>
 
         {/* Templates Tab */}
         <TabsContent value="templates">
