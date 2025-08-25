@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SimpleAccountDeleteDialog } from '@/components/finance/SimpleAccountDeleteDialog';
+import { SimpleAccountDeleteStub } from '@/components/finance/SimpleAccountDeleteStub';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -504,12 +504,12 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       setEditingAccount(null);
     }} />
 
-      {/* Simple Delete Account Dialog */}
-      <SimpleAccountDeleteDialog isOpen={showDeleteDialog} onClose={() => {
+      {/* Simple Delete Dialog - Temporarily disabled */}
+      {/* <SimpleAccountDeleteDialog isOpen={showDeleteDialog} onClose={() => {
       console.log('[DELETE_DIALOG] Simple dialog closing, clearing account...');
       setShowDeleteDialog(false);
       setEditingAccount(null);
-    }} accountId={editingAccount?.id || ''} accountName={editingAccount?.account_name || ''} accountCode={editingAccount?.account_code || ''} />
+    }} accountId={editingAccount?.id || ''} accountName={editingAccount?.account_name || ''} accountCode={editingAccount?.account_code || ''} /> */}
 
       {/* Professional Account Statement Dialog */}
       <ProfessionalAccountStatement 

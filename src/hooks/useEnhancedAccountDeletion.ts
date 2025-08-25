@@ -120,11 +120,46 @@ export const useAccountDeletionPreview = () => {
 
 // Legacy exports for backward compatibility - these will be deprecated
 export type DeletionAnalysis = any;
-export type DeletionOptions = EnhancedDeletionOptions;
-export const useAccountDeletionLog = () => ({ data: [], isLoading: false });
-export const useAnalyzeAccountDependencies = () => ({ mutate: () => {}, isPending: false });
-export const useComprehensiveAccountDeletion = useEnhancedAccountDeletion;
+export type DeletionOptions = {
+  force_delete?: boolean;
+  transfer_to_account_id?: string;
+  includeSystemAccounts?: boolean;
+  includeInactiveAccounts?: boolean;
+  forceCompleteReset?: boolean;
+  deletionReason?: string;
+};
+
+export const useAccountDeletionLog = () => ({ 
+  data: [], 
+  isLoading: false,
+  mutate: () => {},
+  isPending: false,
+  error: null
+});
+
+export const useAnalyzeAccountDependencies = () => ({ 
+  mutate: () => {}, 
+  isPending: false,
+  data: null,
+  error: null
+});
+
+export const useComprehensiveAccountDeletion = () => {
+  const enhancedMutation = useEnhancedAccountDeletion();
+  
+  return {
+    ...enhancedMutation,
+    analyzeAccount: () => {},
+    deleteAccount: enhancedMutation.mutate,
+    isAnalyzing: false,
+    isDeleting: enhancedMutation.isPending,
+    analysisData: null,
+    analysisError: null,
+    deletionError: enhancedMutation.error
+  };
+};
+
 export const formatDeletionConfirmation = () => '';
 export const determineDeletionStrategy = () => 'delete';
 export type AccountDeletionAnalysis = any;
-export type DeletionMode = 'delete' | 'deactivate';
+export type DeletionMode = 'delete' | 'deactivate' | 'soft' | 'transfer' | 'force';

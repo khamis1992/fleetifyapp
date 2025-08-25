@@ -398,7 +398,8 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
         </Table>
       </div>
       
-        <AccountDeleteConfirmDialog
+        {/* Temporarily disabled */}
+        {/* <AccountDeleteConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={(open) => {
             console.log('🔄 [DELETE_DIALOG] Dialog state changed:', {
@@ -410,7 +411,7 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
           }}
           account={accountToDelete}
           onSuccess={handleDeleteSuccess}
-        />
+        /> */}
     </>
   );
 };
