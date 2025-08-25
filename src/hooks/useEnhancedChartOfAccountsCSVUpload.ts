@@ -415,12 +415,30 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         existingAccounts?.map(acc => [acc.account_code, acc.id]) || []
       );
 
+      // ترتيب الحسابات بالترتيب الهرمي (الآباء قبل الأبناء)
+      const sortedData = [...dataToUpload].sort((a, b) => {
+        // ترتيب حسب المستوى أولاً (الآباء قبل الأبناء)
+        if (a.account_level !== b.account_level) {
+          return (a.account_level || 1) - (b.account_level || 1);
+        }
+        // ثم ترتيب حسب رقم الحساب
+        const aNum = parseFloat(a.account_code) || 0;
+        const bNum = parseFloat(b.account_code) || 0;
+        return aNum - bNum;
+      });
+
+      console.log('🔍 [UPLOAD] Sorted accounts by hierarchy:', sortedData.slice(0, 10).map(acc => ({
+        account_code: acc.account_code,
+        level: acc.account_level,
+        parent: acc.parent_account_code
+      })));
+
       // Process accounts in chunks
       const CHUNK_SIZE = 20;
       
-      for (let chunkStart = 0; chunkStart < dataToUpload.length; chunkStart += CHUNK_SIZE) {
-        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, dataToUpload.length);
-        const chunk = dataToUpload.slice(chunkStart, chunkEnd);
+      for (let chunkStart = 0; chunkStart < sortedData.length; chunkStart += CHUNK_SIZE) {
+        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, sortedData.length);
+        const chunk = sortedData.slice(chunkStart, chunkEnd);
         
         for (let i = 0; i < chunk.length; i++) {
           const globalIndex = chunkStart + i;
@@ -448,6 +466,15 @@ export function useEnhancedChartOfAccountsCSVUpload() {
               continue;
             }
 
+            // البحث عن معرف الحساب الأب
+            let parentAccountId = null;
+            if (accountData.parent_account_code) {
+              parentAccountId = existingAccountsMap.get(accountData.parent_account_code);
+              if (!parentAccountId) {
+                console.warn(`⚠️ [UPLOAD] Parent account ${accountData.parent_account_code} not found for ${accountData.account_code}`);
+              }
+            }
+
             // Prepare data for insertion
             const insertData = {
               account_code: accountData.account_code,
@@ -460,6 +487,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
               account_level: accountData.account_level,
               is_header: accountData.is_header,
               parent_account_code: accountData.parent_account_code,
+              parent_account_id: parentAccountId,
               company_id: companyId
             };
 
