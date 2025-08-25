@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { useQueryClient } from "@tanstack/react-query"
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess"
+// @ts-ignore
 import Papa from "papaparse"
 
 interface HierarchyError {
@@ -375,6 +376,80 @@ export function useEnhancedChartOfAccountsCSVUpload() {
   };
 
   /**
+   * ترتيب الحسابات بالترتيب الهرمي الصحيح (نفس ترتيب الشجرة)
+   */
+  const sortAccountsHierarchically = (accounts: ProcessedAccountData[]): ProcessedAccountData[] => {
+    // إنشاء خريطة للحسابات
+    const accountMap = new Map<string, ProcessedAccountData>();
+    accounts.forEach(acc => {
+      accountMap.set(acc.account_code, acc);
+    });
+
+    // إنشاء بنية الشجرة
+    const rootAccounts: ProcessedAccountData[] = [];
+    const childrenMap = new Map<string, ProcessedAccountData[]>();
+
+    accounts.forEach(account => {
+      if (!account.parent_account_code) {
+        // حساب جذر
+        rootAccounts.push(account);
+      } else {
+        // حساب فرعي
+        if (!childrenMap.has(account.parent_account_code)) {
+          childrenMap.set(account.parent_account_code, []);
+        }
+        childrenMap.get(account.parent_account_code)!.push(account);
+      }
+    });
+
+    // ترتيب الحسابات الجذرية حسب رقم الحساب
+    rootAccounts.sort((a, b) => {
+      const aNum = parseFloat(a.account_code) || 0;
+      const bNum = parseFloat(b.account_code) || 0;
+      return aNum - bNum;
+    });
+
+    // ترتيب الحسابات الفرعية لكل أب
+    childrenMap.forEach(children => {
+      children.sort((a, b) => {
+        const aNum = parseFloat(a.account_code) || 0;
+        const bNum = parseFloat(b.account_code) || 0;
+        return aNum - bNum;
+      });
+    });
+
+    // دالة لجمع الحسابات بالترتيب الهرمي
+    const collectAccountsInOrder = (account: ProcessedAccountData): ProcessedAccountData[] => {
+      const result = [account];
+      const children = childrenMap.get(account.account_code) || [];
+      
+      children.forEach(child => {
+        result.push(...collectAccountsInOrder(child));
+      });
+      
+      return result;
+    };
+
+    // جمع جميع الحسابات بالترتيب الهرمي
+    const sortedAccounts: ProcessedAccountData[] = [];
+    rootAccounts.forEach(rootAccount => {
+      sortedAccounts.push(...collectAccountsInOrder(rootAccount));
+    });
+
+    console.log('🔍 [HIERARCHY_SORT] Hierarchical sort complete:', {
+      originalCount: accounts.length,
+      sortedCount: sortedAccounts.length,
+      firstFew: sortedAccounts.slice(0, 10).map(acc => ({
+        code: acc.account_code,
+        level: acc.account_level,
+        parent: acc.parent_account_code
+      }))
+    });
+
+    return sortedAccounts;
+  };
+
+  /**
    * رفع الحسابات إلى قاعدة البيانات
    */
   const uploadAccounts = async (accountsData?: ProcessedAccountData[]) => {
@@ -415,22 +490,14 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         existingAccounts?.map(acc => [acc.account_code, acc.id]) || []
       );
 
-      // ترتيب الحسابات بالترتيب الهرمي (الآباء قبل الأبناء)
-      const sortedData = [...dataToUpload].sort((a, b) => {
-        // ترتيب حسب المستوى أولاً (الآباء قبل الأبناء)
-        if (a.account_level !== b.account_level) {
-          return (a.account_level || 1) - (b.account_level || 1);
-        }
-        // ثم ترتيب حسب رقم الحساب
-        const aNum = parseFloat(a.account_code) || 0;
-        const bNum = parseFloat(b.account_code) || 0;
-        return aNum - bNum;
-      });
+      // ترتيب الحسابات بالترتيب الهرمي الصحيح (نفس ترتيب الشجرة)
+      const sortedData = sortAccountsHierarchically(dataToUpload);
 
-      console.log('🔍 [UPLOAD] Sorted accounts by hierarchy:', sortedData.slice(0, 10).map(acc => ({
+      console.log('🔍 [UPLOAD] Accounts sorted in tree order for upload:', sortedData.slice(0, 15).map((acc, index) => ({
+        index: index + 1,
         account_code: acc.account_code,
         level: acc.account_level,
-        parent: acc.parent_account_code
+        parent: acc.parent_account_code || 'ROOT'
       })));
 
       // Process accounts in chunks
