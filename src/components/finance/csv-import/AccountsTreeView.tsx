@@ -48,6 +48,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
   // Build tree structure from processed data
   const treeData = useMemo(() => {
     console.log('🔍 [TREE_DEBUG] Building tree with data:', data);
+    console.log('🔍 [TREE_DEBUG] Data length:', data?.length);
     
     if (!data || data.length === 0) return [];
 
@@ -100,8 +101,10 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       if (node.parentCode && nodeMap.has(node.parentCode)) {
         const parent = nodeMap.get(node.parentCode)!;
         parent.children.push(node);
+        console.log(`🔍 [TREE_DEBUG] Linked ${node.accountCode} to parent ${node.parentCode}`);
       } else {
         rootNodes.push(node);
+        console.log(`🔍 [TREE_DEBUG] ${node.accountCode} is a root node (parent: ${node.parentCode})`);
       }
     });
 

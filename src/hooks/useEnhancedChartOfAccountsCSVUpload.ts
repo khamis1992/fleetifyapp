@@ -153,7 +153,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
 
     // إنشاء العلاقات الهرمية
     /**
-     * البحث عن الحساب الأب بناءً على المستوى ورقم الحساب
+     * البحث عن الحساب الأب بناءً على رقم الحساب
      */
     const findParentAccount = (account: ProcessedAccountData, accountMap: Map<string, ProcessedAccountData>): string => {
       const { account_code, account_level } = account;
@@ -162,19 +162,23 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         return ''; // الحسابات من المستوى 1 ليس لها آباء
       }
       
-      const targetParentLevel = account_level - 1;
+      console.log(`🔍 [HIERARCHY] Looking for parent of ${account_code} (level ${account_level})`);
+      
+      // ابحث عن الأب بناءً على رقم الحساب
+      // مثال: 1110101 يبحث عن 11101، و 11101 يبحث عن 111
       let bestParent = '';
       let bestParentLength = 0;
       
-      console.log(`🔍 [HIERARCHY] Looking for parent of ${account_code} (level ${account_level}), target parent level: ${targetParentLevel}`);
-      
       // ابحث عن جميع الحسابات المحتملة كآباء
       for (const [parentCode, parentAccount] of accountMap) {
-        // يجب أن يكون الأب بمستوى أقل بـ 1
-        if (parentAccount.account_level !== targetParentLevel) continue;
+        // تجاهل الحساب نفسه
+        if (parentCode === account_code) continue;
         
         // يجب أن يكون رقم الحساب الأب بداية رقم الحساب الفرعي
         if (!account_code.startsWith(parentCode)) continue;
+        
+        // يجب أن يكون الأب أقصر من الحساب الحالي
+        if (parentCode.length >= account_code.length) continue;
         
         // اختر الأب الأطول (الأكثر تحديداً)
         if (parentCode.length > bestParentLength) {
@@ -182,6 +186,12 @@ export function useEnhancedChartOfAccountsCSVUpload() {
           bestParentLength = parentCode.length;
           console.log(`🔍 [HIERARCHY] Found potential parent ${parentCode} (level ${parentAccount.account_level}) for ${account_code}`);
         }
+      }
+      
+      if (bestParent) {
+        console.log(`✅ [HIERARCHY] Selected parent ${bestParent} for ${account_code}`);
+      } else {
+        console.log(`❌ [HIERARCHY] No parent found for ${account_code}`);
       }
       
       return bestParent;
