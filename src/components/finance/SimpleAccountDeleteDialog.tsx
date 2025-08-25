@@ -161,7 +161,7 @@ export const SimpleAccountDeleteDialog: React.FC<SimpleAccountDeleteDialogProps>
             </div>
 
             {/* حالة التبعيات */}
-            {analysis.has_journal_entries || analysis.has_child_accounts ? (
+            {analysis.has_journal_entries || analysis.has_child_accounts || analysis.has_fixed_assets ? (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
@@ -172,6 +172,9 @@ export const SimpleAccountDeleteDialog: React.FC<SimpleAccountDeleteDialogProps>
                     )}
                     {analysis.has_child_accounts && (
                       <div>• {analysis.child_accounts_count} حساب فرعي</div>
+                    )}
+                    {analysis.has_fixed_assets && (
+                      <div>• {analysis.fixed_assets_count} أصل ثابت</div>
                     )}
                   </div>
                 </AlertDescription>
@@ -205,7 +208,7 @@ export const SimpleAccountDeleteDialog: React.FC<SimpleAccountDeleteDialogProps>
                   </p>
                 </div>
 
-                {(analysis.has_journal_entries || analysis.has_child_accounts) && (
+                {(analysis.has_journal_entries || analysis.has_child_accounts || analysis.has_fixed_assets) && (
                   <div 
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedMode === 'transfer' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200'
