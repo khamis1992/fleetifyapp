@@ -65,11 +65,12 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       const accountCode = (row['رقم الحساب'] || row['account_code'] || '').toString().trim();
       const accountName = row['الوصف بالإنجليزي'] || row['account_name'] || '';
       const accountNameAr = row['الوصف'] || row['account_name_ar'] || '';
-      const level = parseInt(row['المستوى'] || row['account_level'] || '1') || 1;
+      const rawLevel = row['المستوى'] || row['account_level'] || '1';
+      const level = parseInt(rawLevel) || 1;
       
       // تسجيل لتصحيح الأخطاء
       console.log(`🔍 [LEVEL_DEBUG] Account ${accountCode}:`, {
-        rawLevel: row['المستوى'] || row['account_level'],
+        rawLevel: rawLevel,
         parsedLevel: level,
         accountName: accountNameAr || accountName,
         rowData: row
@@ -153,7 +154,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
 
     // إنشاء العلاقات الهرمية
     /**
-     * البحث عن الحساب الأب بناءً على رقم الحساب
+     * البحث عن الحساب الأب بناءً على المستوى ورقم الحساب
      */
     const findParentAccount = (account: ProcessedAccountData, accountMap: Map<string, ProcessedAccountData>): string => {
       const { account_code, account_level } = account;
@@ -162,10 +163,10 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         return ''; // الحسابات من المستوى 1 ليس لها آباء
       }
       
-      console.log(`🔍 [HIERARCHY] Looking for parent of ${account_code} (level ${account_level})`);
+      const targetParentLevel = account_level - 1;
+      console.log(`🔍 [HIERARCHY] Looking for parent of ${account_code} (level ${account_level}), target parent level: ${targetParentLevel}`);
       
-      // ابحث عن الأب بناءً على رقم الحساب
-      // مثال: 1110101 يبحث عن 11101، و 11101 يبحث عن 111
+      // ابحث عن الأب بناءً على المستوى ورقم الحساب
       let bestParent = '';
       let bestParentLength = 0;
       
@@ -174,11 +175,11 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         // تجاهل الحساب نفسه
         if (parentCode === account_code) continue;
         
+        // يجب أن يكون الأب بمستوى أقل بـ 1
+        if (parentAccount.account_level !== targetParentLevel) continue;
+        
         // يجب أن يكون رقم الحساب الأب بداية رقم الحساب الفرعي
         if (!account_code.startsWith(parentCode)) continue;
-        
-        // يجب أن يكون الأب أقصر من الحساب الحالي
-        if (parentCode.length >= account_code.length) continue;
         
         // اختر الأب الأطول (الأكثر تحديداً)
         if (parentCode.length > bestParentLength) {
@@ -191,7 +192,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       if (bestParent) {
         console.log(`✅ [HIERARCHY] Selected parent ${bestParent} for ${account_code}`);
       } else {
-        console.log(`❌ [HIERARCHY] No parent found for ${account_code}`);
+        console.log(`❌ [HIERARCHY] No parent found for ${account_code} at level ${targetParentLevel}`);
       }
       
       return bestParent;
