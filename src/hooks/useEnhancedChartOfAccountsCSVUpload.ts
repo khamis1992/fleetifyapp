@@ -74,6 +74,8 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         parsedLevel: level,
         accountName: accountNameAr || accountName,
         allColumns: Object.keys(row),
+        levelColumn: row['المستوى'],
+        accountLevelColumn: row['account_level'],
         rowData: row
       });
       
