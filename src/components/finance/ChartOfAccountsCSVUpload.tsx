@@ -320,17 +320,6 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
               hierarchyErrors={hierarchyErrors}
             />
             
-            {/* تسجيل للتأكد من البيانات */}
-            {processedData.length > 0 && (
-              <div className="text-xs text-gray-500 mt-2">
-                <p>🔍 [DEBUG] Processed data sample:</p>
-                {processedData.slice(0, 5).map((acc, index) => (
-                  <p key={index}>
-                    {acc.account_code}: level {acc.account_level}, parent: {acc.parent_account_code || 'none'}
-                  </p>
-                ))}
-              </div>
-            )}
           </TabsContent>
 
           {/* Results Tab */}
