@@ -65,8 +65,21 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       const accountCode = (row['رقم الحساب'] || row['account_code'] || '').toString().trim();
       const accountName = row['الوصف بالإنجليزي'] || row['account_name'] || '';
       const accountNameAr = row['الوصف'] || row['account_name_ar'] || '';
-      const rawLevel = row['المستوى'] || row['account_level'] || '1';
+      // محاولة قراءة المستوى من أعمدة مختلفة
+      const rawLevel = row['المستوى'] || row['account_level'] || row['level'] || row['Level'] || row['مستوى'] || '1';
       const level = parseInt(rawLevel) || 1;
+      
+      // تسجيل إضافي لفهم المشكلة
+      console.log(`🔍 [LEVEL_DETAILED] Account ${accountCode}:`, {
+        'المستوى': row['المستوى'],
+        'account_level': row['account_level'], 
+        'level': row['level'],
+        'Level': row['Level'],
+        'مستوى': row['مستوى'],
+        rawLevel: rawLevel,
+        parsedLevel: level,
+        allKeys: Object.keys(row)
+      });
       
       // تسجيل لتصحيح الأخطاء
       console.log(`🔍 [LEVEL_DEBUG] Account ${accountCode}:`, {
