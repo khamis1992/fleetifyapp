@@ -188,33 +188,70 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       const targetParentLevel = account_level - 1;
       console.log(`🔍 [HIERARCHY] Looking for parent of ${account_code} (level ${account_level}), target parent level: ${targetParentLevel}`);
       
+      // تسجيل خاص للمستوى الرابع
+      if (account_level === 4) {
+        console.log(`🔍 [LEVEL_4_DEBUG] Processing Level 4 account: ${account_code}`);
+        console.log(`🔍 [LEVEL_4_DEBUG] Available accounts in map:`, Array.from(accountMap.keys()).sort());
+        console.log(`🔍 [LEVEL_4_DEBUG] Looking for parent at level 3 with code starting pattern`);
+      }
+      
       // ابحث عن الأب بناءً على المستوى ورقم الحساب
       let bestParent = '';
       let bestParentLength = 0;
       
       // ابحث عن جميع الحسابات المحتملة كآباء
       for (const [parentCode, parentAccount] of accountMap) {
+        // تسجيل مفصل للمستوى الرابع
+        if (account_level === 4) {
+          console.log(`🔍 [LEVEL_4_DEBUG] Checking potential parent: ${parentCode} (level ${parentAccount.account_level})`);
+        }
+        
         // تجاهل الحساب نفسه
-        if (parentCode === account_code) continue;
+        if (parentCode === account_code) {
+          if (account_level === 4) {
+            console.log(`🔍 [LEVEL_4_DEBUG] Skipping self: ${parentCode}`);
+          }
+          continue;
+        }
         
         // يجب أن يكون الأب بمستوى أقل بـ 1
-        if (parentAccount.account_level !== targetParentLevel) continue;
+        if (parentAccount.account_level !== targetParentLevel) {
+          if (account_level === 4) {
+            console.log(`🔍 [LEVEL_4_DEBUG] Level mismatch: ${parentCode} is level ${parentAccount.account_level}, need ${targetParentLevel}`);
+          }
+          continue;
+        }
         
         // يجب أن يكون رقم الحساب الأب بداية رقم الحساب الفرعي
-        if (!account_code.startsWith(parentCode)) continue;
+        if (!account_code.startsWith(parentCode)) {
+          if (account_level === 4) {
+            console.log(`🔍 [LEVEL_4_DEBUG] Code prefix mismatch: ${account_code} does not start with ${parentCode}`);
+          }
+          continue;
+        }
         
         // اختر الأب الأطول (الأكثر تحديداً)
         if (parentCode.length > bestParentLength) {
           bestParent = parentCode;
           bestParentLength = parentCode.length;
           console.log(`🔍 [HIERARCHY] Found potential parent ${parentCode} (level ${parentAccount.account_level}) for ${account_code}`);
+          
+          if (account_level === 4) {
+            console.log(`🔍 [LEVEL_4_DEBUG] ✅ MATCH FOUND! Parent: ${parentCode} for child: ${account_code}`);
+          }
         }
       }
       
       if (bestParent) {
         console.log(`✅ [HIERARCHY] Selected parent ${bestParent} for ${account_code}`);
+        if (account_level === 4) {
+          console.log(`🔍 [LEVEL_4_DEBUG] ✅ SUCCESS! Level 4 account ${account_code} linked to parent ${bestParent}`);
+        }
       } else {
         console.log(`❌ [HIERARCHY] No parent found for ${account_code} at level ${targetParentLevel}`);
+        if (account_level === 4) {
+          console.log(`🔍 [LEVEL_4_DEBUG] ❌ FAILED! Level 4 account ${account_code} has no parent at level ${targetParentLevel}`);
+        }
       }
       
       return bestParent;
@@ -539,6 +576,17 @@ export function useEnhancedChartOfAccountsCSVUpload() {
               parentAccountId = existingAccountsMap.get(accountData.parent_account_code);
               if (!parentAccountId) {
                 console.warn(`⚠️ [UPLOAD] Parent account ${accountData.parent_account_code} not found for ${accountData.account_code}`);
+                
+                // تسجيل خاص للمستوى الرابع
+                if (accountData.account_level === 4) {
+                  console.error(`🔍 [LEVEL_4_UPLOAD] ❌ CRITICAL: Level 4 account ${accountData.account_code} cannot find parent ${accountData.parent_account_code}`);
+                  console.error(`🔍 [LEVEL_4_UPLOAD] Available parent IDs:`, Array.from(existingAccountsMap.keys()).filter(code => code.length < accountData.account_code.length));
+                }
+              } else {
+                // تسجيل نجاح للمستوى الرابع
+                if (accountData.account_level === 4) {
+                  console.log(`🔍 [LEVEL_4_UPLOAD] ✅ Level 4 account ${accountData.account_code} found parent ID: ${parentAccountId} for parent code: ${accountData.parent_account_code}`);
+                }
               }
             }
 
@@ -557,6 +605,17 @@ export function useEnhancedChartOfAccountsCSVUpload() {
               parent_account_id: parentAccountId,
               company_id: companyId
             };
+
+            // تسجيل بيانات الإدراج للمستوى الرابع
+            if (accountData.account_level === 4) {
+              console.log(`🔍 [LEVEL_4_UPLOAD] Preparing to insert Level 4 account:`, {
+                account_code: insertData.account_code,
+                account_level: insertData.account_level,
+                parent_account_code: insertData.parent_account_code,
+                parent_account_id: insertData.parent_account_id,
+                hasParentId: !!insertData.parent_account_id
+              });
+            }
 
             // Check if account exists
             const existingAccountId = existingAccountsMap.get(accountData.account_code);

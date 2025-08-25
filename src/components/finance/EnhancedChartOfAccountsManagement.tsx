@@ -70,6 +70,85 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
 
+  // دالة لتوليد رقم الحساب الفرعي التالي
+  const generateNextChildAccountCode = (parentAccount: any, allAccounts: any[]): string => {
+    const parentCode = parentAccount.account_code;
+    const parentLevel = parentAccount.account_level || 1;
+    const childLevel = parentLevel + 1;
+    
+    // البحث عن جميع الحسابات الفرعية للأب
+    const childAccounts = allAccounts.filter(acc => 
+      acc.parent_account_id === parentAccount.id && 
+      acc.account_code.startsWith(parentCode)
+    );
+    
+    // إذا لم توجد حسابات فرعية، ابدأ بـ 01
+    if (childAccounts.length === 0) {
+      return `${parentCode}01`;
+    }
+    
+    // البحث عن أعلى رقم فرعي
+    let maxChildNumber = 0;
+    childAccounts.forEach(child => {
+      const childCode = child.account_code;
+      if (childCode.startsWith(parentCode) && childCode.length > parentCode.length) {
+        const suffix = childCode.substring(parentCode.length);
+        const childNumber = parseInt(suffix);
+        if (!isNaN(childNumber) && childNumber > maxChildNumber) {
+          maxChildNumber = childNumber;
+        }
+      }
+    });
+    
+    // إنشاء الرقم التالي
+    const nextNumber = maxChildNumber + 1;
+    const paddedNumber = nextNumber.toString().padStart(2, '0');
+    return `${parentCode}${paddedNumber}`;
+  };
+
+  // دالة لإضافة حساب فرعي مباشرة
+  const handleAddChildAccount = async (parentAccount: any) => {
+    if (!allAccounts) return;
+    
+    try {
+      // توليد رقم الحساب الفرعي التالي
+      const childAccountCode = generateNextChildAccountCode(parentAccount, allAccounts);
+      const childLevel = (parentAccount.account_level || 1) + 1;
+      
+      // إنشاء بيانات الحساب الفرعي
+      const childAccountData: AccountFormData = {
+        account_code: childAccountCode,
+        account_name: `حساب فرعي ${childAccountCode}`,
+        account_name_ar: `حساب فرعي ${childAccountCode}`,
+        account_type: parentAccount.account_type,
+        balance_type: parentAccount.balance_type,
+        parent_account_id: parentAccount.id,
+        is_header: childLevel <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
+        description: `حساب فرعي تحت ${parentAccount.account_name || parentAccount.account_name_ar}`
+      };
+      
+      // إنشاء الحساب
+      await createAccount.mutateAsync(childAccountData);
+      
+      // إظهار رسالة نجاح
+      toast({
+        title: "تم إنشاء الحساب الفرعي بنجاح",
+        description: `تم إنشاء الحساب ${childAccountCode} تحت ${parentAccount.account_code}`,
+      });
+      
+      // توسيع العقدة الأب لإظهار الحساب الجديد
+      setExpandedNodes(prev => new Set([...prev, parentAccount.id]));
+      
+    } catch (error: any) {
+      console.error('خطأ في إنشاء الحساب الفرعي:', error);
+      toast({
+        title: "خطأ في إنشاء الحساب الفرعي",
+        description: error.message || "حدث خطأ غير متوقع",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Check if user can delete all accounts (super admin only)
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const canDeleteAll = isSuperAdmin;
@@ -374,13 +453,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               setEditingAccount(account);
               setShowDeleteDialog(true);
             }}
-            onAddChildAccount={(parentAccount) => {
-              setFormData({
-                ...formData,
-                parent_account_id: parentAccount.id
-              });
-              setShowSmartWizard(true);
-            }}
+            onAddChildAccount={handleAddChildAccount}
             onViewStatement={(account) => {
               setStatementAccount(account);
               setShowStatementDialog(true);
