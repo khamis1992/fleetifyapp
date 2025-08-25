@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 export interface EnhancedDeletionOptions {
   includeSystemAccounts: boolean;
@@ -42,11 +43,16 @@ export interface EnhancedDeletionResult {
 export const useEnhancedAccountDeletion = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (options: EnhancedDeletionOptions): Promise<EnhancedDeletionResult> => {
+      if (!companyId) {
+        throw new Error('لم يتم العثور على معرف الشركة');
+      }
+
       const { data, error } = await supabase.rpc('enhanced_complete_account_deletion', {
-        target_company_id: undefined, // Will be determined by RLS
+        target_company_id: companyId,
         include_system_accounts: options.includeSystemAccounts,
         include_inactive_accounts: options.includeInactiveAccounts,
         force_complete_reset: options.forceCompleteReset,
@@ -101,10 +107,16 @@ export const useEnhancedAccountDeletion = () => {
 };
 
 export const useAccountDeletionPreview = () => {
+  const { companyId } = useUnifiedCompanyAccess();
+  
   return useMutation({
     mutationFn: async (options: Partial<EnhancedDeletionOptions>) => {
+      if (!companyId) {
+        throw new Error('لم يتم العثور على معرف الشركة');
+      }
+
       const { data, error } = await supabase.rpc('get_enhanced_accounts_deletion_preview', {
-        target_company_id: undefined, // Will be determined by RLS
+        target_company_id: companyId,
         force_delete_system: options.includeSystemAccounts || false
       });
 
