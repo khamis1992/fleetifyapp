@@ -12,7 +12,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  Plus
+  Plus,
+  BarChart3
 } from 'lucide-react';
 
 interface AccountNode {
@@ -36,6 +37,7 @@ interface AccountsTreeViewProps {
   onEditAccount?: (account: any) => void;
   onDeleteAccount?: (account: any) => void;
   onAddChildAccount?: (parentAccount: any) => void;
+  onViewStatement?: (account: any) => void;
 }
 
 export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
@@ -43,7 +45,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
   onViewAccount,
   onEditAccount,
   onDeleteAccount,
-  onAddChildAccount
+  onAddChildAccount,
+  onViewStatement
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -243,6 +246,21 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 title="معاينة"
               >
                 <Eye className="h-3 w-3" />
+              </Button>
+            )}
+            
+            {onViewStatement && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewStatement(node);
+                }}
+                title="كشف الحساب"
+              >
+                <BarChart3 className="h-3 w-3" />
               </Button>
             )}
             

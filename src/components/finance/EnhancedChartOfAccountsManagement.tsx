@@ -10,12 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3 } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
 import { AccountChangeHistory } from './AccountChangeHistory';
-import { AccountStatementDialog } from './AccountStatementDialog';
+import { ProfessionalAccountStatement } from './ProfessionalAccountStatement';
 import { ChartValidationPanel } from './charts/ChartValidationPanel';
 import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
 import { AccountTemplateManager } from './charts/AccountTemplateManager';
@@ -209,11 +209,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           }} title="معاينة">
               <Eye className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700" onClick={() => {
             setStatementAccount(account);
             setShowStatementDialog(true);
-          }} title="كشف حساب">
-              <FileText className="h-4 w-4" />
+          }} title="كشف حساب احترافي">
+              <BarChart3 className="h-4 w-4" />
             </Button>
             <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
             setEditingAccount(account);
@@ -385,6 +385,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               });
               setShowSmartWizard(true);
             }}
+            onViewStatement={(account) => {
+              setStatementAccount(account);
+              setShowStatementDialog(true);
+            }}
           />
         </TabsContent>
 
@@ -515,8 +519,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       setEditingAccount(null);
     }} accountId={editingAccount?.id || ''} accountName={editingAccount?.account_name || ''} accountCode={editingAccount?.account_code || ''} />
 
-      {/* Account Statement Dialog */}
-      <AccountStatementDialog open={showStatementDialog} onOpenChange={setShowStatementDialog} accountId={statementAccount?.id} accountCode={statementAccount?.account_code} accountName={statementAccount?.account_name_ar || statementAccount?.account_name} />
+      {/* Professional Account Statement Dialog */}
+      <ProfessionalAccountStatement 
+        open={showStatementDialog} 
+        onOpenChange={setShowStatementDialog} 
+        accountId={statementAccount?.id} 
+        accountCode={statementAccount?.account_code} 
+        accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
+        accountType={statementAccount?.account_type}
+        balanceType={statementAccount?.balance_type}
+      />
 
       {/* Simple Delete All Accounts Dialog */}
       <SimpleDeleteAllAccountsDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog} onSuccess={() => {
