@@ -60,7 +60,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       console.log(`🔍 [TREE_DEBUG] Processing account ${account.account_code}:`, {
         account_level: account.account_level,
         parent_account_code: account.parent_account_code,
-        account_name: account.account_name_ar || account.account_name
+        account_name: account.account_name_ar || account.account_name,
+        fullAccount: account
       });
 
       return {
