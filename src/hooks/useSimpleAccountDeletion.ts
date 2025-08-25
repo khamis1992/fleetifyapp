@@ -16,8 +16,10 @@ export interface SimpleAccountAnalysis {
   };
   has_journal_entries: boolean;
   has_child_accounts: boolean;
+  has_fixed_assets: boolean;
   journal_entries_count: number;
   child_accounts_count: number;
+  fixed_assets_count: number;
   can_delete_safely: boolean;
   error?: string;
 }
@@ -68,8 +70,19 @@ export const useSimpleAccountAnalysis = () => {
         console.warn('تحذير في فحص الحسابات الفرعية:', childError);
       }
       
+      // فحص الأصول الثابتة المرتبطة
+      const { count: assetsCount, error: assetsError } = await supabase
+        .from('fixed_assets')
+        .select('*', { count: 'exact', head: true })
+        .or(`asset_account_id.eq.${accountId},depreciation_account_id.eq.${accountId}`);
+      
+      if (assetsError) {
+        console.warn('تحذير في فحص الأصول الثابتة:', assetsError);
+      }
+      
       const hasJournalEntries = (journalCount || 0) > 0;
       const hasChildAccounts = (childCount || 0) > 0;
+      const hasFixedAssets = (assetsCount || 0) > 0;
       
       return {
         success: true,
@@ -82,9 +95,11 @@ export const useSimpleAccountAnalysis = () => {
         },
         has_journal_entries: hasJournalEntries,
         has_child_accounts: hasChildAccounts,
+        has_fixed_assets: hasFixedAssets,
         journal_entries_count: journalCount || 0,
         child_accounts_count: childCount || 0,
-        can_delete_safely: !hasJournalEntries && !hasChildAccounts && !account.is_system
+        fixed_assets_count: assetsCount || 0,
+        can_delete_safely: !hasJournalEntries && !hasChildAccounts && !hasFixedAssets && !account.is_system
       };
     },
     onError: (error) => {
@@ -144,7 +159,7 @@ export const useSimpleAccountDeletion = () => {
             message = `تم إلغاء تفعيل الحساب ${account.account_code} بنجاح`;
             break;
             
-          case 'transfer':
+           case 'transfer':
             // نقل البيانات ثم حذف
             if (!transferToAccountId) {
               throw new Error('الحساب البديل مطلوب');
@@ -159,6 +174,17 @@ export const useSimpleAccountDeletion = () => {
             if (transferError) {
               console.warn('تحذير في نقل القيود:', transferError);
             }
+            
+            // نقل الأصول الثابتة
+            await supabase
+              .from('fixed_assets')
+              .update({ asset_account_id: transferToAccountId })
+              .eq('asset_account_id', accountId);
+              
+            await supabase
+              .from('fixed_assets')
+              .update({ depreciation_account_id: transferToAccountId })
+              .eq('depreciation_account_id', accountId);
             
             // إلغاء تفعيل الحسابات الفرعية
             await supabase
@@ -184,6 +210,17 @@ export const useSimpleAccountDeletion = () => {
               .from('journal_entry_lines')
               .delete()
               .eq('account_id', accountId);
+            
+            // تنظيف الأصول الثابتة (تعيين NULL)
+            await supabase
+              .from('fixed_assets')
+              .update({ asset_account_id: null })
+              .eq('asset_account_id', accountId);
+              
+            await supabase
+              .from('fixed_assets')
+              .update({ depreciation_account_id: null })
+              .eq('depreciation_account_id', accountId);
             
             // إلغاء تفعيل الحسابات الفرعية
             await supabase
