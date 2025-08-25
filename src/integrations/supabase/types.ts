@@ -10176,6 +10176,16 @@ export type Database = {
         }
         Returns: Json
       }
+      enhanced_complete_account_deletion: {
+        Args: {
+          deletion_reason?: string
+          force_complete_reset?: boolean
+          include_inactive_accounts?: boolean
+          include_system_accounts?: boolean
+          target_company_id: string
+        }
+        Returns: Json
+      }
       ensure_essential_account_mappings: {
         Args: { company_id_param: string }
         Returns: Json
