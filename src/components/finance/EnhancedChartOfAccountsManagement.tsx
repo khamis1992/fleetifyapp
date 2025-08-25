@@ -350,6 +350,16 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                 <span>استيراد من ملف</span>
                 <Upload className="h-4 w-4" />
               </Button>
+              {canDeleteAll && (
+                <Button 
+                  onClick={() => setShowDeleteAllDialog(true)} 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
+                >
+                  <span>حذف جميع الحسابات</span>
+                  <Skull className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
