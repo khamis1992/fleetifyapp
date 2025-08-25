@@ -165,6 +165,11 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       
       // تسجيل إضافي للتأكد من حفظ المستوى
       console.log(`✅ [PROCESSED] Saved account ${accountCode} with level ${processedAccount.account_level}`);
+      
+      // تسجيل خاص لجميع المستويات لفهم التوزيع
+      if (processedAccount.account_level >= 4) {
+        console.log(`🔍 [LEVEL_ANALYSIS] Level ${processedAccount.account_level} account: ${accountCode}`);
+      }
     });
 
     // ترتيب الحسابات حسب رقم الحساب
@@ -275,9 +280,32 @@ export function useEnhancedChartOfAccountsCSVUpload() {
       }
     });
 
+    // تحليل توزيع المستويات
+    const levelDistribution = new Map<number, number>();
+    const levelAccounts = new Map<number, string[]>();
+    
+    processed.forEach(account => {
+      const level = account.account_level || 1;
+      levelDistribution.set(level, (levelDistribution.get(level) || 0) + 1);
+      
+      if (!levelAccounts.has(level)) {
+        levelAccounts.set(level, []);
+      }
+      levelAccounts.get(level)!.push(account.account_code);
+    });
+    
     console.log('🔍 [HIERARCHY] Processing complete:', {
       processed: processed.length,
-      errors: errors.length
+      errors: errors.length,
+      levelDistribution: Object.fromEntries(levelDistribution),
+    });
+    
+    // عرض تفصيلي للمستويات 4 و 5
+    [4, 5].forEach(level => {
+      const accounts = levelAccounts.get(level) || [];
+      if (accounts.length > 0) {
+        console.log(`🔍 [LEVEL_ANALYSIS] Level ${level} accounts (${accounts.length}):`, accounts.sort());
+      }
     });
 
     return { processedData: processed, hierarchyErrors: errors };
@@ -653,9 +681,19 @@ export function useEnhancedChartOfAccountsCSVUpload() {
                   message: `خطأ في إنشاء الحساب: ${error.message}`,
                   account_code: accountData.account_code
                 });
+                
+                // تسجيل خاص لأخطاء المستوى الرابع
+                if (accountData.account_level === 4) {
+                  console.error(`🔍 [LEVEL_4_UPLOAD] ❌ FAILED to insert Level 4 account ${accountData.account_code}:`, error);
+                }
               } else {
                 results.successful++;
                 existingAccountsMap.set(accountData.account_code, newAccount?.id || 'new');
+                
+                // تسجيل نجاح المستوى الرابع
+                if (accountData.account_level === 4) {
+                  console.log(`🔍 [LEVEL_4_UPLOAD] ✅ Successfully inserted Level 4 account ${accountData.account_code} with ID: ${newAccount?.id}`);
+                }
               }
             }
 
@@ -678,6 +716,31 @@ export function useEnhancedChartOfAccountsCSVUpload() {
 
       // Update query cache
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+
+      // تحليل النتائج حسب المستوى
+      const savedAccountsByLevel = new Map<number, number>();
+      sortedData.forEach(account => {
+        const level = account.account_level || 1;
+        savedAccountsByLevel.set(level, (savedAccountsByLevel.get(level) || 0) + 1);
+      });
+      
+      console.log('🔍 [UPLOAD_ANALYSIS] Accounts processed by level:', Object.fromEntries(savedAccountsByLevel));
+      console.log('🔍 [UPLOAD_ANALYSIS] Upload results:', {
+        successful: results.successful,
+        updated: results.updated,
+        failed: results.failed,
+        total: results.total
+      });
+      
+      // تحليل خاص للمستوى الرابع
+      const level4Attempted = sortedData.filter(acc => acc.account_level === 4).length;
+      const level5Attempted = sortedData.filter(acc => acc.account_level === 5).length;
+      console.log('🔍 [UPLOAD_ANALYSIS] Level 4 & 5 Analysis:', {
+        level4Attempted,
+        level5Attempted,
+        level4InSavedByLevel: savedAccountsByLevel.get(4) || 0,
+        level5InSavedByLevel: savedAccountsByLevel.get(5) || 0
+      });
 
       // Show success/error messages
       if (results.successful > 0 || results.updated > 0) {
