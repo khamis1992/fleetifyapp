@@ -259,6 +259,12 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     setProcessedData(processedData);
     setHierarchyErrors(hierarchyErrors);
 
+    // تسجيل إضافي للتأكد من حفظ البيانات
+    console.log('🔍 [CSV_PROCESS] Data saved to state:', {
+      processedDataLength: processedData.length,
+      hierarchyErrorsLength: hierarchyErrors.length
+    });
+
     return { data: processedData, hierarchyErrors };
   };
 
