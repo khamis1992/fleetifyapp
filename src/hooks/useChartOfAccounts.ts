@@ -59,7 +59,28 @@ export const useChartOfAccounts = (includeInactive: boolean = false) => {
         console.log('[CHART_OF_ACCOUNTS] Fetched accounts count:', data?.length || 0);
         console.log('[CHART_OF_ACCOUNTS] Active accounts:', data?.filter(acc => acc.is_active)?.length || 0);
         console.log('[CHART_OF_ACCOUNTS] Inactive accounts:', data?.filter(acc => !acc.is_active)?.length || 0);
-        console.log('[CHART_OF_ACCOUNTS] Sample accounts:', data?.slice(0, 3)?.map(acc => ({ code: acc.account_code, name: acc.account_name, active: acc.is_active })));
+        
+        // تحليل المستويات
+        const levelDistribution = new Map<number, number>();
+        data?.forEach(acc => {
+          const level = acc.account_level || 1;
+          levelDistribution.set(level, (levelDistribution.get(level) || 0) + 1);
+        });
+        console.log('[CHART_OF_ACCOUNTS] Level distribution:', Object.fromEntries(levelDistribution));
+        
+        // عرض حسابات المستوى 4 المحملة
+        const level4Accounts = data?.filter(acc => acc.account_level === 4) || [];
+        console.log('[CHART_OF_ACCOUNTS] Level 4 accounts found:', level4Accounts.length);
+        if (level4Accounts.length > 0) {
+          console.log('[CHART_OF_ACCOUNTS] Level 4 accounts:', level4Accounts.map(acc => ({
+            code: acc.account_code,
+            name: acc.account_name,
+            parent_id: acc.parent_account_id,
+            active: acc.is_active
+          })));
+        }
+        
+        console.log('[CHART_OF_ACCOUNTS] Sample accounts:', data?.slice(0, 3)?.map(acc => ({ code: acc.account_code, name: acc.account_name, level: acc.account_level, active: acc.is_active })));
         
         return (data || []) as ChartOfAccount[];
       } catch (error) {

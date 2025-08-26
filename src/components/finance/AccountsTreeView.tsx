@@ -52,7 +52,32 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
 
   // Build tree structure from accounts data
   const treeData = useMemo(() => {
-    if (!accounts || accounts.length === 0) return [];
+    console.log('🔍 [MAIN_TREE_DEBUG] Building tree with accounts:', accounts?.length || 0);
+    
+    if (!accounts || accounts.length === 0) {
+      console.log('🔍 [MAIN_TREE_DEBUG] No accounts data provided');
+      return [];
+    }
+    
+    // تحليل المستويات في البيانات المستلمة
+    const levelDistribution = new Map<number, number>();
+    accounts.forEach(acc => {
+      const level = acc.account_level || 1;
+      levelDistribution.set(level, (levelDistribution.get(level) || 0) + 1);
+    });
+    console.log('🔍 [MAIN_TREE_DEBUG] Level distribution in received data:', Object.fromEntries(levelDistribution));
+    
+    // عرض حسابات المستوى 4
+    const level4Accounts = accounts.filter(acc => acc.account_level === 4);
+    console.log('🔍 [MAIN_TREE_DEBUG] Level 4 accounts in tree data:', level4Accounts.length);
+    if (level4Accounts.length > 0) {
+      console.log('🔍 [MAIN_TREE_DEBUG] Level 4 accounts details:', level4Accounts.map(acc => ({
+        code: acc.account_code,
+        name: acc.account_name,
+        parent_id: acc.parent_account_id,
+        active: acc.is_active
+      })));
+    }
 
     // Create nodes from accounts data
     const nodes: AccountNode[] = accounts.map(account => ({
