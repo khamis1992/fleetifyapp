@@ -6,27 +6,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { VehicleForm } from "@/components/fleet/VehicleForm"
-import { VehicleCard } from "@/components/fleet/VehicleCard"
+import { VehicleFilters } from "@/components/fleet/VehicleFilters"
+import { VehicleGrid } from "@/components/fleet/VehicleGrid"
 import { VehicleGroupManagement } from "@/components/fleet/VehicleGroupManagement"
 import { VehicleCSVUpload } from "@/components/fleet/VehicleCSVUpload"
-import { useVehicles } from "@/hooks/useVehicles"
+import { useVehiclesPaginated, VehicleFilters as IVehicleFilters } from "@/hooks/useVehiclesPaginated"
+import { useFleetStatus } from "@/hooks/useFleetStatus"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function Fleet() {
   const [showVehicleForm, setShowVehicleForm] = useState(false)
-  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
   const [showGroupManagement, setShowGroupManagement] = useState(false)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [filters, setFilters] = useState<IVehicleFilters>({})
   
   const { user } = useAuth()
-  const { data: vehicles, isLoading: vehiclesLoading } = useVehicles()
+  const { data: fleetStatus, isLoading: statusLoading } = useFleetStatus()
+  const { data: vehiclesData, isLoading: vehiclesLoading, error } = useVehiclesPaginated(
+    currentPage,
+    pageSize,
+    filters
+  )
 
-  const availableVehicles = vehicles?.filter(v => v.status === 'available') || []
-  const rentedVehicles = vehicles?.filter(v => v.status === 'rented') || []
-  const maintenanceVehicles = vehicles?.filter(v => v.status === 'maintenance') || []
-  const outOfServiceVehicles = vehicles?.filter(v => !['available', 'rented', 'maintenance'].includes(String(v.status))) || []
+  // Count active filters
+  const activeFiltersCount = Object.values(filters).filter(value => 
+    value !== undefined && value !== '' && value !== 'all' && value !== false
+  ).length
 
-  if (vehiclesLoading) {
+  const handleFiltersChange = (newFilters: IVehicleFilters) => {
+    setFilters(newFilters)
+    setCurrentPage(1) // Reset to first page when filters change
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize)
+    setCurrentPage(1) // Reset to first page when page size changes
+  }
+
+  if (statusLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -88,7 +107,7 @@ export default function Fleet() {
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{availableVehicles.length}</div>
+            <div className="text-2xl font-bold text-green-600">{fleetStatus?.available || 0}</div>
             <p className="text-xs text-muted-foreground">
               جاهزة للإيجار
             </p>
@@ -101,7 +120,7 @@ export default function Fleet() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{rentedVehicles.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{fleetStatus?.rented || 0}</div>
             <p className="text-xs text-muted-foreground">
               حالياً تحت العقد
             </p>
@@ -114,7 +133,7 @@ export default function Fleet() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{maintenanceVehicles.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{fleetStatus?.maintenance || 0}</div>
             <p className="text-xs text-muted-foreground">
               يتم صيانتها
             </p>
@@ -127,7 +146,7 @@ export default function Fleet() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{outOfServiceVehicles.length}</div>
+            <div className="text-2xl font-bold text-red-600">{fleetStatus?.outOfService || 0}</div>
             <p className="text-xs text-muted-foreground">
               تحتاج لإنتباه
             </p>
@@ -135,48 +154,26 @@ export default function Fleet() {
         </Card>
       </div>
 
-      {/* Vehicle Status Filter */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={selectedVehicle === null ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedVehicle(null)}
-        >
-          الكل ({vehicles?.length || 0})
-        </Button>
-        <Button
-          variant={selectedVehicle === "available" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedVehicle("available")}
-        >
-          متاحة ({availableVehicles.length})
-        </Button>
-        <Button
-          variant={selectedVehicle === "rented" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedVehicle("rented")}
-        >
-          مؤجرة ({rentedVehicles.length})
-        </Button>
-        <Button
-          variant={selectedVehicle === "maintenance" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedVehicle("maintenance")}
-        >
-          قيد الصيانة ({maintenanceVehicles.length})
-        </Button>
-      </div>
+      {/* Vehicle Filters */}
+      <VehicleFilters
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        activeFiltersCount={activeFiltersCount}
+      />
 
-      {/* Vehicle Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {vehicles
-          ?.filter(vehicle => !selectedVehicle || vehicle.status === selectedVehicle)
-          ?.map((vehicle) => (
-            <VehicleCard key={vehicle.id} vehicle={vehicle} />
-          ))}
-      </div>
+      {/* Vehicle Grid with Pagination */}
+      <VehicleGrid
+        data={vehiclesData || { data: [], count: 0, totalPages: 0, currentPage: 1 }}
+        isLoading={vehiclesLoading}
+        error={error}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        pageSize={pageSize}
+        onPageSizeChange={handlePageSizeChange}
+      />
 
-      {vehicles?.length === 0 && (
+      {/* Empty State */}
+      {!vehiclesLoading && (!vehiclesData?.data.length && !activeFiltersCount) && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Car className="h-12 w-12 text-muted-foreground mb-4" />
