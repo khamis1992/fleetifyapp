@@ -214,7 +214,7 @@ export const DemoDataGenerator: React.FC = () => {
           subtotal: amount,
           tax_amount: amount * 0.05, // ضريبة 5%
           total_amount: amount * 1.05,
-          status: Math.random() > 0.3 ? 'paid' : 'pending',
+          status: Math.random() > 0.3 ? 'sent' : 'draft',
           invoice_type: 'sales',
           notes: `فاتورة مبيعات رقم ${i + 1}`
         });
@@ -247,7 +247,7 @@ export const DemoDataGenerator: React.FC = () => {
           subtotal: amount,
           tax_amount: 0, // بدون ضريبة على المشتريات
           total_amount: amount,
-          status: Math.random() > 0.4 ? 'paid' : 'pending',
+          status: Math.random() > 0.4 ? 'sent' : 'draft',
           invoice_type: 'purchase',
           notes: `فاتورة مشتريات رقم ${i + 1}`
         });
