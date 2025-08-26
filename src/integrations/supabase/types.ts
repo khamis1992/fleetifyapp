@@ -7602,6 +7602,84 @@ export type Database = {
           },
         ]
       }
+      traffic_violations: {
+        Row: {
+          company_id: string
+          created_at: string
+          fine_amount: number
+          id: string
+          issuing_authority: string | null
+          location: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          vehicle_id: string
+          violation_date: string
+          violation_description: string | null
+          violation_number: string
+          violation_time: string | null
+          violation_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          fine_amount?: number
+          id?: string
+          issuing_authority?: string | null
+          location?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          vehicle_id: string
+          violation_date: string
+          violation_description?: string | null
+          violation_number: string
+          violation_time?: string | null
+          violation_type: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          fine_amount?: number
+          id?: string
+          issuing_authority?: string | null
+          location?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          vehicle_id?: string
+          violation_date?: string
+          violation_description?: string | null
+          violation_number?: string
+          violation_time?: string | null
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_violations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "traffic_violations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
