@@ -25,6 +25,8 @@ import { EnhancedDeleteAllAccountsDialog } from './EnhancedDeleteAllAccountsDial
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { supabase } from '@/integrations/supabase/client';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 import { DemoDataGenerator } from './DemoDataGenerator';
 import { AccountsTreeView } from './AccountsTreeView';
@@ -58,6 +60,39 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('tree');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  
+  // Check if user is in System Company
+  const { user: authUser } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
+  const [isSystemCompany, setIsSystemCompany] = useState<boolean>(false);
+  
+  React.useEffect(() => {
+    const checkCompanyType = async () => {
+      if (!companyId) return;
+
+      try {
+        const { data: companyData, error } = await supabase
+          .from('companies')
+          .select('name, name_ar')
+          .eq('id', companyId)
+          .single();
+
+        if (error) throw error;
+
+        const isSystem = companyData?.name === 'System Company' || 
+                        companyData?.name_ar === 'شركة النظام' ||
+                        companyData?.name?.toLowerCase().includes('system') ||
+                        companyData?.name_ar?.includes('النظام');
+
+        setIsSystemCompany(isSystem);
+      } catch (error) {
+        console.error('خطأ في التحقق من نوع الشركة:', error);
+        setIsSystemCompany(false);
+      }
+    };
+
+    checkCompanyType();
+  }, [companyId]);
   const {
     data: allAccounts,
     isLoading: allAccountsLoading
@@ -434,7 +469,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={`grid w-full ${isSystemCompany ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <TabsTrigger value="tree" className="flex items-center gap-2">
             <span>شجرة الحسابات</span>
             <Folder className="h-4 w-4" />
@@ -447,10 +482,12 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <span>القوالب</span>
             <Folder className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="demo-data" className="flex items-center gap-2">
-            <span>بيانات تجريبية</span>
-            <Database className="h-4 w-4" />
-          </TabsTrigger>
+          {isSystemCompany && (
+            <TabsTrigger value="demo-data" className="flex items-center gap-2">
+              <span>بيانات تجريبية</span>
+              <Database className="h-4 w-4" />
+            </TabsTrigger>
+          )}
         </TabsList>
 
 
@@ -519,10 +556,12 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <EnhancedAccountsVisualization />
         </TabsContent>
 
-        {/* Demo Data Tab */}
-        <TabsContent value="demo-data">
-          <DemoDataGenerator />
-        </TabsContent>
+        {/* Demo Data Tab - Only for System Company */}
+        {isSystemCompany && (
+          <TabsContent value="demo-data">
+            <DemoDataGenerator />
+          </TabsContent>
+        )}
 
       </Tabs>
 
