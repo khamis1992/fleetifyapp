@@ -438,6 +438,49 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             </div>
           </div>
 
+          {/* Debug: إحصائيات الحسابات */}
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold mb-2 text-blue-800">📊 إحصائيات الحسابات المحملة:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+              <div className="text-center">
+                <div className="font-bold text-lg text-blue-600">
+                  {allAccounts?.length || 0}
+                </div>
+                <div className="text-gray-600">إجمالي</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-green-600">
+                  {allAccounts?.filter(acc => acc.account_level === 1).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 1</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-yellow-600">
+                  {allAccounts?.filter(acc => acc.account_level === 2).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 2</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-orange-600">
+                  {allAccounts?.filter(acc => acc.account_level === 3).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 3</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-red-600">
+                  {allAccounts?.filter(acc => acc.account_level === 4).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 4</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-purple-600">
+                  {allAccounts?.filter(acc => acc.account_level === 5).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 5</div>
+              </div>
+            </div>
+          </div>
+
           {/* Tree View */}
           <AccountsTreeView
             accounts={allAccounts || []}
