@@ -127,13 +127,6 @@ export type Database = {
             referencedRelation: "chart_of_accounts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "account_deletion_log_transfer_to_account_id_fkey"
-            columns: ["transfer_to_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
         ]
       }
       account_mappings: {
@@ -176,13 +169,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "account_mappings_chart_of_accounts_id_fkey"
-            columns: ["chart_of_accounts_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "account_mappings_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
@@ -194,50 +180,6 @@ export type Database = {
             columns: ["default_account_type_id"]
             isOneToOne: false
             referencedRelation: "default_account_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      account_movement_settings: {
-        Row: {
-          approval_threshold: number | null
-          auto_create_movements: boolean | null
-          company_id: string
-          created_at: string | null
-          default_movement_type: string | null
-          id: string
-          is_active: boolean | null
-          require_approval: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          approval_threshold?: number | null
-          auto_create_movements?: boolean | null
-          company_id: string
-          created_at?: string | null
-          default_movement_type?: string | null
-          id?: string
-          is_active?: boolean | null
-          require_approval?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          approval_threshold?: number | null
-          auto_create_movements?: boolean | null
-          company_id?: string
-          created_at?: string | null
-          default_movement_type?: string | null
-          id?: string
-          is_active?: boolean | null
-          require_approval?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "account_movement_settings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1247,13 +1189,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "budget_items_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "budget_items_budget_id_fkey"
             columns: ["budget_id"]
             isOneToOne: false
@@ -1333,9 +1268,6 @@ export type Database = {
           account_subtype: string | null
           account_type: string
           balance_type: string
-          can_link_customers: boolean | null
-          can_link_employees: boolean | null
-          can_link_vendors: boolean | null
           company_id: string
           created_at: string
           current_balance: number | null
@@ -1358,9 +1290,6 @@ export type Database = {
           account_subtype?: string | null
           account_type: string
           balance_type: string
-          can_link_customers?: boolean | null
-          can_link_employees?: boolean | null
-          can_link_vendors?: boolean | null
           company_id: string
           created_at?: string
           current_balance?: number | null
@@ -1383,9 +1312,6 @@ export type Database = {
           account_subtype?: string | null
           account_type?: string
           balance_type?: string
-          can_link_customers?: boolean | null
-          can_link_employees?: boolean | null
-          can_link_vendors?: boolean | null
           company_id?: string
           created_at?: string
           current_balance?: number | null
@@ -1406,13 +1332,6 @@ export type Database = {
             columns: ["parent_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chart_of_accounts_parent_account_id_fkey"
-            columns: ["parent_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -2112,13 +2031,6 @@ export type Database = {
             referencedRelation: "chart_of_accounts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_contract_templates_account"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
         ]
       }
       contract_vehicle_returns: {
@@ -2326,13 +2238,6 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contracts_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -3281,13 +3186,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_essential_mappings_account"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_essential_mappings_company"
             columns: ["company_id"]
             isOneToOne: false
@@ -3417,24 +3315,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fixed_assets_asset_account_id_fkey"
-            columns: ["asset_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fixed_assets_depreciation_account_id_fkey"
             columns: ["depreciation_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixed_assets_depreciation_account_id_fkey"
-            columns: ["depreciation_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -3810,13 +3694,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "invoice_items_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "invoice_items_cost_center_id_fkey"
             columns: ["cost_center_id"]
             isOneToOne: false
@@ -4113,13 +3990,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_journal_entry_lines_account"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_journal_entry_lines_asset"
             columns: ["asset_id"]
             isOneToOne: false
@@ -4145,13 +4015,6 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "journal_entry_lines_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -4972,24 +4835,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "legal_case_account_mappings_client_retainer_liability_acco_fkey"
-            columns: ["client_retainer_liability_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "legal_case_account_mappings_consultation_revenue_account_i_fkey"
             columns: ["consultation_revenue_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "legal_case_account_mappings_consultation_revenue_account_i_fkey"
-            columns: ["consultation_revenue_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -5000,24 +4849,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "legal_case_account_mappings_court_fees_expense_account_id_fkey"
-            columns: ["court_fees_expense_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "legal_case_account_mappings_expert_witness_expense_account_fkey"
             columns: ["expert_witness_expense_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "legal_case_account_mappings_expert_witness_expense_account_fkey"
-            columns: ["expert_witness_expense_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -5028,24 +4863,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "legal_case_account_mappings_legal_expenses_account_id_fkey"
-            columns: ["legal_expenses_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "legal_case_account_mappings_legal_fees_receivable_account__fkey"
             columns: ["legal_fees_receivable_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "legal_case_account_mappings_legal_fees_receivable_account__fkey"
-            columns: ["legal_fees_receivable_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -5056,24 +4877,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "legal_case_account_mappings_legal_fees_revenue_account_id_fkey"
-            columns: ["legal_fees_revenue_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "legal_case_account_mappings_legal_research_expense_account_fkey"
             columns: ["legal_research_expense_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "legal_case_account_mappings_legal_research_expense_account_fkey"
-            columns: ["legal_research_expense_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -5084,24 +4891,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "legal_case_account_mappings_settlements_expense_account_id_fkey"
-            columns: ["settlements_expense_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "legal_case_account_mappings_settlements_payable_account_id_fkey"
             columns: ["settlements_payable_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "legal_case_account_mappings_settlements_payable_account_id_fkey"
-            columns: ["settlements_payable_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -5655,24 +5448,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "maintenance_account_mappings_asset_account_id_fkey"
-            columns: ["asset_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "maintenance_account_mappings_expense_account_id_fkey"
             columns: ["expense_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "maintenance_account_mappings_expense_account_id_fkey"
-            columns: ["expense_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -5978,13 +5757,6 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -8889,13 +8661,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "vehicle_maintenance_expense_account_id_fkey"
-            columns: ["expense_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "vehicle_maintenance_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -9543,13 +9308,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_vendor_accounts_account"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_vendor_accounts_vendor"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -9816,119 +9574,6 @@ export type Database = {
           tax_amount: number | null
         }
         Relationships: []
-      }
-      v_account_linking_stats: {
-        Row: {
-          company_id: string | null
-          customer_linkable: number | null
-          detail_accounts: number | null
-          employee_linkable: number | null
-          header_accounts: number | null
-          system_accounts: number | null
-          total_accounts: number | null
-          total_linkable: number | null
-          vendor_linkable: number | null
-        }
-        Relationships: []
-      }
-      v_linkable_accounts: {
-        Row: {
-          account_code: string | null
-          account_level: number | null
-          account_name: string | null
-          account_name_ar: string | null
-          account_subtype: string | null
-          account_type: string | null
-          balance_type: string | null
-          can_link_customers: boolean | null
-          can_link_employees: boolean | null
-          can_link_vendors: boolean | null
-          company_id: string | null
-          created_at: string | null
-          current_balance: number | null
-          description: string | null
-          id: string | null
-          is_active: boolean | null
-          is_default: boolean | null
-          is_header: boolean | null
-          is_system: boolean | null
-          link_count: number | null
-          parent_account_code: string | null
-          parent_account_id: string | null
-          primary_link_type: string | null
-          sort_order: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          account_code?: string | null
-          account_level?: number | null
-          account_name?: string | null
-          account_name_ar?: string | null
-          account_subtype?: string | null
-          account_type?: string | null
-          balance_type?: string | null
-          can_link_customers?: boolean | null
-          can_link_employees?: boolean | null
-          can_link_vendors?: boolean | null
-          company_id?: string | null
-          created_at?: string | null
-          current_balance?: number | null
-          description?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          is_default?: boolean | null
-          is_header?: boolean | null
-          is_system?: boolean | null
-          link_count?: never
-          parent_account_code?: string | null
-          parent_account_id?: string | null
-          primary_link_type?: never
-          sort_order?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          account_code?: string | null
-          account_level?: number | null
-          account_name?: string | null
-          account_name_ar?: string | null
-          account_subtype?: string | null
-          account_type?: string | null
-          balance_type?: string | null
-          can_link_customers?: boolean | null
-          can_link_employees?: boolean | null
-          can_link_vendors?: boolean | null
-          company_id?: string | null
-          created_at?: string | null
-          current_balance?: number | null
-          description?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          is_default?: boolean | null
-          is_header?: boolean | null
-          is_system?: boolean | null
-          link_count?: never
-          parent_account_code?: string | null
-          parent_account_id?: string | null
-          primary_link_type?: never
-          sort_order?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chart_of_accounts_parent_account_id_fkey"
-            columns: ["parent_account_id"]
-            isOneToOne: false
-            referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chart_of_accounts_parent_account_id_fkey"
-            columns: ["parent_account_id"]
-            isOneToOne: false
-            referencedRelation: "v_linkable_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
@@ -10966,19 +10611,6 @@ export type Database = {
           company_id_param: string
         }
         Returns: string
-      }
-      get_linkable_accounts: {
-        Args: { p_company_id: string; p_link_type?: string }
-        Returns: {
-          account_code: string
-          account_level: number
-          account_name: string
-          account_name_ar: string
-          can_link_customers: boolean
-          can_link_employees: boolean
-          can_link_vendors: boolean
-          id: string
-        }[]
       }
       get_maintenance_cost_center: {
         Args: { company_id_param: string }

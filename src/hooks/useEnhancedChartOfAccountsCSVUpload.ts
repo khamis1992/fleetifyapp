@@ -155,7 +155,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         account_type: accountType,
         balance_type: balanceType,
         account_level: level || 1,
-        is_header: level <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية (لا تقبل حركات مباشرة)
+        is_header: level <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
         description: `${accountNameAr || accountName} - ${accountName || accountNameAr}`,
         _rowNumber: row._rowNumber || index + 2
       };
