@@ -326,7 +326,21 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 className="h-6 w-6 p-0"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEditAccount(node);
+                  // Convert AccountNode to ChartOfAccount format
+                  const convertedAccount = {
+                    id: node.id,
+                    account_code: node.accountCode,
+                    account_name: node.accountName,
+                    account_name_ar: node.accountNameAr,
+                    account_type: node.accountType,
+                    balance_type: node.balanceType,
+                    account_level: node.level,
+                    parent_account_id: node.parentId,
+                    is_header: node.isHeader,
+                    is_active: node.isActive,
+                    is_system: node.isSystem
+                  };
+                  onEditAccount(convertedAccount);
                 }}
                 title="تعديل"
               >
