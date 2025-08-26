@@ -149,15 +149,13 @@ export const DemoDataGenerator: React.FC = () => {
         const { data, error } = await supabase
           .from('customers')
           .insert({
-            customer_code: `C${String(i + 1).padStart(3, '0')}`,
-            customer_name: customer.name,
-            customer_name_ar: customer.name_ar,
+            company_name: customer.name,
+            company_name_ar: customer.name_ar,
             email: customer.email,
             phone: customer.phone,
             company_id: companyId,
             customer_type: 'corporate',
             is_active: true,
-            current_balance: 0,
             credit_limit: 10000
           })
           .select('id')
