@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,12 +17,25 @@ export const AccountMovementSettings = () => {
   const updateSettings = useUpdateAccountMovementSettings();
   
   const [formData, setFormData] = useState({
-    auto_create_movements: settings?.auto_create_movements ?? true,
-    default_movement_type: settings?.default_movement_type || 'journal_entry',
-    require_approval: settings?.require_approval ?? false,
-    approval_threshold: settings?.approval_threshold || 1000,
-    is_active: settings?.is_active ?? true,
+    auto_create_movements: true,
+    default_movement_type: 'journal_entry',
+    require_approval: false,
+    approval_threshold: 1000,
+    is_active: true,
   });
+
+  // Update form data when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        auto_create_movements: settings.auto_create_movements,
+        default_movement_type: settings.default_movement_type || 'journal_entry',
+        require_approval: settings.require_approval,
+        approval_threshold: settings.approval_threshold || 1000,
+        is_active: settings.is_active,
+      });
+    }
+  }, [settings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

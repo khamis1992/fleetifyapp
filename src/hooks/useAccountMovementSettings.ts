@@ -36,11 +36,15 @@ export const useAccountMovementSettings = () => {
 
       // Return default settings if none exist
       return data || {
+        id: '',
+        company_id: companyId,
         auto_create_movements: true,
         default_movement_type: 'journal_entry',
         require_approval: false,
         approval_threshold: 1000,
         is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
     },
     enabled: !!companyId,
