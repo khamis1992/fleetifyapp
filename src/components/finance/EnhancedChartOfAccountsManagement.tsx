@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3, Database } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -26,6 +26,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
+import { DemoDataGenerator } from './DemoDataGenerator';
 import { AccountsTreeView } from './AccountsTreeView';
 interface AccountFormData {
   account_code: string;
@@ -433,7 +434,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tree" className="flex items-center gap-2">
             <span>شجرة الحسابات</span>
             <Folder className="h-4 w-4" />
@@ -445,6 +446,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <span>القوالب</span>
             <Folder className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="demo-data" className="flex items-center gap-2">
+            <span>بيانات تجريبية</span>
+            <Database className="h-4 w-4" />
           </TabsTrigger>
         </TabsList>
 
@@ -512,6 +517,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         {/* Visualization Tab */}
         <TabsContent value="visualization">
           <EnhancedAccountsVisualization />
+        </TabsContent>
+
+        {/* Demo Data Tab */}
+        <TabsContent value="demo-data">
+          <DemoDataGenerator />
         </TabsContent>
 
       </Tabs>
