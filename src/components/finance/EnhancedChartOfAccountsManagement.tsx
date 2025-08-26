@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3, Database } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3, Database, Settings } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -29,6 +29,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 import { DemoDataGenerator } from './DemoDataGenerator';
+import { AccountMovementSettings } from './AccountMovementSettings';
 import { AccountsTreeView } from './AccountsTreeView';
 interface AccountFormData {
   account_code: string;
@@ -492,6 +493,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
               <Database className="h-4 w-4" />
             </TabsTrigger>
           )}
+          <TabsTrigger value="movement-settings" className="flex items-center gap-2">
+            <span>إعدادات الحركة</span>
+            <Settings className="h-4 w-4" />
+          </TabsTrigger>
         </TabsList>
 
 
@@ -566,6 +571,11 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
             <DemoDataGenerator />
           </TabsContent>
         )}
+
+        {/* Movement Settings Tab */}
+        <TabsContent value="movement-settings">
+          <AccountMovementSettings />
+        </TabsContent>
 
       </Tabs>
 

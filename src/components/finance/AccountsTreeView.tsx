@@ -15,7 +15,12 @@ import {
   Trash2,
   Plus,
   BarChart3,
-  Search
+  Search,
+  Users,
+  Building,
+  UserCheck,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 interface AccountNode {
@@ -286,6 +291,27 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           <Badge variant={node.isActive ? 'default' : 'destructive'} className="text-xs">
             {node.isActive ? 'نشط' : 'غير نشط'}
           </Badge>
+
+          {/* Movement Status Badge */}
+          <Badge 
+            variant={node.level >= 4 ? 'default' : 'secondary'} 
+            className="text-xs"
+          >
+            {node.level >= 4 ? 'تفصيلي' : 'رئيسي'}
+          </Badge>
+
+          {/* Link Indicators */}
+          <div className="flex items-center gap-1">
+            {node.accountCode.startsWith('113') || node.accountCode.startsWith('114') ? (
+              <Users className="h-3 w-3 text-blue-500" title="يمكن ربطه بالعملاء" />
+            ) : null}
+            {node.accountCode.startsWith('213') || node.accountCode.startsWith('214') ? (
+              <Building className="h-3 w-3 text-green-500" title="يمكن ربطه بالموردين" />
+            ) : null}
+            {node.accountCode.startsWith('215') || node.accountCode.startsWith('216') ? (
+              <UserCheck className="h-3 w-3 text-purple-500" title="يمكن ربطه بالموظفين" />
+            ) : null}
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1">
