@@ -68,88 +68,86 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const { data: vehicles = [] } = useVehicles();
 
-  // محاكاة استخراج البيانات من PDF
-  const simulateDataExtraction = (file: File): Promise<ExtractedViolation[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // بيانات تجريبية مستخرجة من PDF (مطابقة للصورة المرسلة)
-        const mockViolations: ExtractedViolation[] = [
-          {
-            id: '1',
-            violationNumber: '3301762892',
-            date: '2025-08-07',
-            time: '18:06',
-            plateNumber: '008/يونيو/058',
-            location: 'منطقة 91 الشارع 490',
-            authority: 'تجاوز الحد الأقصى للسرعة (المادة 53)',
-            fineAmount: 500.0,
-            points: 0,
-            violationType: 'تجاوز السرعة',
-            status: 'extracted',
-            errors: []
-          },
-          {
-            id: '2',
-            violationNumber: '3301756591',
-            date: '2025-08-08',
-            time: '01:43',
-            plateNumber: '008/يونيو/209',
-            location: 'منطقة 57 الشارع 340',
-            authority: 'تجاوز الحد الأقصى للسرعة (المادة 53)',
-            fineAmount: 500.0,
-            points: 0,
-            violationType: 'تجاوز السرعة',
-            status: 'extracted',
-            errors: []
-          },
-          {
-            id: '3',
-            violationNumber: '3301750123',
-            date: '2025-08-09',
-            time: '14:30',
-            plateNumber: '123/مارس/456',
-            location: 'منطقة 45 الشارع 200',
-            authority: 'عدم ربط حزام الأمان (المادة 42)',
-            fineAmount: 75.0,
-            points: 2,
-            violationType: 'مخالفة أمان',
-            status: 'extracted',
-            errors: []
-          }
-        ];
+  // استخراج البيانات الفعلي من PDF باستخدام OpenAI Vision API
+  const extractDataFromPDF = async (file: File): Promise<ExtractedViolation[]> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-        // محاولة ربط المخالفات بالمركبات
-        const processedViolations = mockViolations.map(violation => {
-          // البحث عن المركبة بأرقام اللوحة المختلفة
-          const plateNumbers = violation.plateNumber.split('/');
-          const matchedVehicle = vehicles.find(v => {
-            if (!v.plate_number) return false;
-            
-            // البحث في أجزاء رقم اللوحة
-            return plateNumbers.some(part => 
-              v.plate_number?.includes(part) || 
-              v.plate_number?.toLowerCase().includes(part.toLowerCase())
-            );
-          });
+      const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
+        body: formData
+      });
 
-          if (matchedVehicle) {
-            return {
-              ...violation,
-              vehicleId: matchedVehicle.id,
-              status: 'matched' as const
-            };
-          } else {
-            return {
-              ...violation,
-              status: 'error' as const,
-              errors: ['لم يتم العثور على مركبة مطابقة لرقم اللوحة']
-            };
-          }
+      if (error) {
+        console.error('Error calling extract-traffic-violations function:', error);
+        throw new Error(error.message || 'فشل في استخراج البيانات من الملف');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'فشل في استخراج البيانات من الملف');
+      }
+
+      // تحويل البيانات المستخرجة إلى التنسيق المطلوب
+      const extractedViolations: ExtractedViolation[] = data.violations.map((violation: any, index: number) => ({
+        id: `extracted_${index + 1}`,
+        violationNumber: violation.violation_number || '',
+        date: violation.date || '',
+        time: violation.time || '',
+        plateNumber: violation.plate_number || '',
+        location: violation.location || '',
+        authority: violation.issuing_authority || '',
+        fineAmount: violation.fine_amount || 0,
+        points: 0, // سيتم تحديده لاحقاً حسب نوع المخالفة
+        violationType: violation.violation_type || '',
+        status: 'extracted' as const,
+        errors: []
+      }));
+
+      // محاولة ربط المخالفات بالمركبات
+      const processedViolations = extractedViolations.map(violation => {
+        if (!violation.plateNumber) {
+          return {
+            ...violation,
+            status: 'error' as const,
+            errors: ['رقم اللوحة غير موجود']
+          };
+        }
+
+        // البحث عن المركبة بأرقام اللوحة المختلفة
+        const plateNumbers = violation.plateNumber.split(/[\/\-\s]+/);
+        const matchedVehicle = vehicles.find(v => {
+          if (!v.plate_number) return false;
+          
+          // البحث في أجزاء رقم اللوحة
+          return plateNumbers.some(part => 
+            part.trim() && (
+              v.plate_number?.includes(part.trim()) || 
+              v.plate_number?.toLowerCase().includes(part.trim().toLowerCase())
+            )
+          ) || v.plate_number === violation.plateNumber;
         });
 
-        resolve(processedViolations);
-      }, 2000);
-    });
+        if (matchedVehicle) {
+          return {
+            ...violation,
+            vehicleId: matchedVehicle.id,
+            status: 'matched' as const
+          };
+        } else {
+          return {
+            ...violation,
+            status: 'error' as const,
+            errors: ['لم يتم العثور على مركبة مطابقة لرقم اللوحة: ' + violation.plateNumber]
+          };
+        }
+      });
+
+      return processedViolations;
+
+    } catch (error: any) {
+      console.error('Error extracting data from PDF:', error);
+      throw error;
+    }
   };
 
   // معالجة الملفات المرفوعة
@@ -168,8 +166,18 @@ export const TrafficViolationPDFImport: React.FC = () => {
       let allViolations: ExtractedViolation[] = [];
 
       for (const file of uploadedFiles) {
-        const extractedViolations = await simulateDataExtraction(file);
-        allViolations = [...allViolations, ...extractedViolations];
+        try {
+          const extractedViolations = await extractDataFromPDF(file);
+          allViolations = [...allViolations, ...extractedViolations];
+        } catch (error: any) {
+          // في حالة فشل استخراج بيانات ملف معين، أضف خطأ ولكن لا توقف المعالجة
+          console.error(`فشل في معالجة الملف ${file.name}:`, error);
+          toast({
+            title: "تحذير",
+            description: `فشل في معالجة الملف ${file.name}: ${error.message}`,
+            variant: "destructive"
+          });
+        }
       }
 
       const result: ProcessingResult = {
