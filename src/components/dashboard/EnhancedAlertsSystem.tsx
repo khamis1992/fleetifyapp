@@ -38,6 +38,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
   compact = false 
 }) => {
   const { toast } = useToast();
+  const { formatCurrency } = useCurrencyFormatter();
   const [soundEnabled, setSoundEnabled] = useState(() => 
     localStorage.getItem('alertSoundEnabled') !== 'false'
   );
@@ -166,7 +167,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
                         <Badge variant="outline">العدد: {alert.count}</Badge>
                       )}
                       {alert.amount && (
-                        <Badge variant="outline">المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Badge>
+                        <Badge variant="outline">المبلغ: {formatCurrency(alert.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Badge>
                       )}
                     </div>
                   )}
@@ -217,7 +218,7 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
                     تجاوز: {alert.current_percentage.toFixed(1)}%
                   </Badge>
                   <Badge variant="outline">
-                    المبلغ: {useCurrencyFormatter().formatCurrency(alert.amount_exceeded, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    المبلغ: {formatCurrency(alert.amount_exceeded, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </Badge>
                 </div>
               </div>
