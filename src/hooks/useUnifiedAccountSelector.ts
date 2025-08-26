@@ -16,7 +16,7 @@ export interface UnifiedAccount {
 }
 
 export interface UnifiedAccountSelectorOptions {
-  filterLevel?: 'level_4_5' | 'level_5_6' | 'all_allowed';
+  filterLevel?: 'level_4' | 'level_4_5' | 'level_5_6' | 'all_allowed';
   includeUnavailable?: boolean;
 }
 
@@ -83,6 +83,8 @@ export const useUnifiedAccountSelector = (options: UnifiedAccountSelectorOptions
 
           // Apply level filtering
           switch (filterLevel) {
+            case 'level_4':
+              return account.account_level === 4;
             case 'level_4_5':
               return account.account_level >= 4 && account.account_level <= 5;
             case 'level_5_6':

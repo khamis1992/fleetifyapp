@@ -8,7 +8,7 @@ interface EnhancedAccountSelectorProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  filterLevel?: 'level_4_5' | 'level_5_6' | 'all_allowed';
+  filterLevel?: 'level_4' | 'level_4_5' | 'level_5_6' | 'all_allowed';
   accountTypeFilter?: (account: UnifiedAccount) => boolean;
   showAccountType?: boolean;
   showParentAccount?: boolean;
