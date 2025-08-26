@@ -18,7 +18,8 @@ import {
   Calendar,
   DollarSign,
   Hash,
-  Building
+  Building,
+  Eye
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
@@ -122,12 +123,12 @@ export const TrafficViolationPDFImport: React.FC = () => {
           // البحث عن المركبة بأرقام اللوحة المختلفة
           const plateNumbers = violation.plateNumber.split('/');
           const matchedVehicle = vehicles.find(v => {
-            if (!v.license_plate) return false;
+            if (!v.plate_number) return false;
             
             // البحث في أجزاء رقم اللوحة
             return plateNumbers.some(part => 
-              v.license_plate?.includes(part) || 
-              v.license_plate?.toLowerCase().includes(part.toLowerCase())
+              v.plate_number?.includes(part) || 
+              v.plate_number?.toLowerCase().includes(part.toLowerCase())
             );
           });
 
