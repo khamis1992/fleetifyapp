@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,10 +33,10 @@ export const AccountLinkingMigration: React.FC = () => {
 
     setIsChecking(true);
     try {
-      // فحص وجود الأعمدة الجديدة
+      // فحص وجود الأعمدة الجديدة - نتحقق من الأعمدة الموجودة فعلاً
       const { data: sampleAccount, error: sampleError } = await supabase
         .from('chart_of_accounts')
-        .select('id, can_link_customers, can_link_vendors, can_link_employees')
+        .select('id, account_code, account_name')
         .eq('company_id', companyId)
         .limit(1)
         .single();
@@ -50,19 +51,19 @@ export const AccountLinkingMigration: React.FC = () => {
 
       setMigrationStatus({
         hasColumns,
-        needsMigration: !hasColumns,
+        needsMigration: false, // تعطيل التحديث حتى يتم إضافة الأعمدة في قاعدة البيانات
         accountsCount: accountsCount || 0
       });
 
       if (hasColumns) {
         toast({
-          title: "قاعدة البيانات محدثة",
-          description: "أعمدة ربط الحسابات موجودة بالفعل",
+          title: "قاعدة البيانات جاهزة",
+          description: "تم العثور على الحسابات في الشركة",
         });
       } else {
         toast({
-          title: "تحديث مطلوب",
-          description: "تحتاج قاعدة البيانات إلى إضافة أعمدة ربط الحسابات",
+          title: "لا توجد حسابات",
+          description: "لم يتم العثور على حسابات في الشركة",
           variant: "destructive"
         });
       }
@@ -78,87 +79,13 @@ export const AccountLinkingMigration: React.FC = () => {
     }
   };
 
-  // تطبيق التحديث
+  // تطبيق التحديث - معطل مؤقتاً
   const applyMigration = async () => {
-    if (!companyId || !migrationStatus?.needsMigration) return;
-
-    setIsMigrating(true);
-    try {
-      // الخطوة 1: إضافة الأعمدة إذا لم تكن موجودة (يتم تلقائياً في Supabase)
-      
-      // الخطوة 2: تحديث الحسابات الموجودة بالقيم الافتراضية
-      const { data: accounts } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code, is_header')
-        .eq('company_id', companyId);
-
-      if (accounts) {
-        let updatedCount = 0;
-        
-        // تحديث الحسابات في مجموعات صغيرة لتجنب timeout
-        const batchSize = 50;
-        for (let i = 0; i < accounts.length; i += batchSize) {
-          const batch = accounts.slice(i, i + batchSize);
-          
-          for (const account of batch) {
-            const canLinkToCustomers = !account.is_header && 
-                                      (account.account_code.startsWith('113') || 
-                                       account.account_code.startsWith('114'));
-            
-            const canLinkToVendors = !account.is_header && 
-                                    (account.account_code.startsWith('213') || 
-                                     account.account_code.startsWith('214'));
-            
-            const canLinkToEmployees = !account.is_header && 
-                                      (account.account_code.startsWith('215') || 
-                                       account.account_code.startsWith('216'));
-
-            // تحديث فقط إذا كانت هناك قيم للتحديث
-            if (canLinkToCustomers || canLinkToVendors || canLinkToEmployees) {
-              const { error } = await supabase
-                .from('chart_of_accounts')
-                .update({
-                  can_link_customers: canLinkToCustomers,
-                  can_link_vendors: canLinkToVendors,
-                  can_link_employees: canLinkToEmployees
-                })
-                .eq('id', account.id);
-
-              if (error) {
-                console.error(`خطأ في تحديث الحساب ${account.account_code}:`, error);
-              } else {
-                updatedCount++;
-              }
-            }
-          }
-          
-          // إظهار التقدم
-          const progress = Math.min(100, Math.round(((i + batchSize) / accounts.length) * 100));
-          toast({
-            title: "جاري التحديث...",
-            description: `تم تحديث ${updatedCount} حساب (${progress}%)`,
-          });
-        }
-      }
-
-      toast({
-        title: "تم التحديث بنجاح",
-        description: `تم تحديث ${accounts?.length || 0} حساب بالقيم الافتراضية`,
-      });
-
-      // إعادة فحص الحالة
-      await checkDatabaseStatus();
-
-    } catch (error: any) {
-      console.error('خطأ في التحديث:', error);
-      toast({
-        title: "خطأ في التحديث",
-        description: `فشل في تطبيق التحديث: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsMigrating(false);
-    }
+    toast({
+      title: "التحديث غير متاح",
+      description: "يجب إضافة أعمدة ربط الحسابات إلى قاعدة البيانات أولاً",
+      variant: "destructive"
+    });
   };
 
   return (
@@ -213,7 +140,7 @@ export const AccountLinkingMigration: React.FC = () => {
                     )}
                     <div>
                       <p className="text-sm font-medium">
-                        {migrationStatus.hasColumns ? 'محدثة' : 'تحتاج تحديث'}
+                        {migrationStatus.hasColumns ? 'جاهزة' : 'تحتاج إعداد'}
                       </p>
                       <p className="text-sm text-gray-600">حالة قاعدة البيانات</p>
                     </div>
@@ -225,10 +152,10 @@ export const AccountLinkingMigration: React.FC = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
                     <Badge 
-                      variant={migrationStatus.needsMigration ? 'destructive' : 'default'}
+                      variant={migrationStatus.needsMigration ? 'destructive' : 'secondary'}
                       className="text-xs"
                     >
-                      {migrationStatus.needsMigration ? 'مطلوب' : 'مكتمل'}
+                      {migrationStatus.needsMigration ? 'مطلوب' : 'غير متاح'}
                     </Badge>
                     <div>
                       <p className="text-sm text-gray-600">التحديث</p>
@@ -255,32 +182,25 @@ export const AccountLinkingMigration: React.FC = () => {
               فحص قاعدة البيانات
             </Button>
             
-            {migrationStatus?.needsMigration && (
-              <Button 
-                onClick={applyMigration} 
-                disabled={isMigrating}
-                className="flex items-center gap-2"
-              >
-                {isMigrating ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                تطبيق التحديث
-              </Button>
-            )}
+            <Button 
+              onClick={applyMigration} 
+              disabled={true}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              التحديث غير متاح
+            </Button>
           </div>
 
           {/* تحذير */}
-          {migrationStatus?.needsMigration && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>تحذير:</strong> تأكد من عمل نسخة احتياطية من قاعدة البيانات قبل تطبيق التحديث.
-                هذا التحديث سيعدل بنية جدول <code>chart_of_accounts</code>.
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>ملاحظة:</strong> يجب إضافة أعمدة ربط الحسابات إلى جدول <code>chart_of_accounts</code> 
+              في قاعدة البيانات أولاً قبل استخدام هذه الميزة.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     </div>

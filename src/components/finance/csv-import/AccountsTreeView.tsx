@@ -225,7 +225,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           {/* Status Icon */}
           <div className="flex items-center gap-1">
             {node.hasError ? (
-              <div className="flex items-center gap-1" title={node.errorMessage}>
+              <div className="flex items-center gap-1">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
                 <span className="text-xs text-red-600">خطأ</span>
               </div>
