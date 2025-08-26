@@ -110,6 +110,25 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const handleAddChildAccount = async (parentAccount: any) => {
     if (!allAccounts) return;
     
+    // التحقق من صحة بيانات الحساب الأب
+    if (!parentAccount.account_type) {
+      toast({
+        title: "خطأ في بيانات الحساب الأب",
+        description: "نوع الحساب الأب غير محدد. يرجى التحقق من بيانات الحساب.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!parentAccount.balance_type) {
+      toast({
+        title: "خطأ في بيانات الحساب الأب", 
+        description: "نوع الرصيد للحساب الأب غير محدد. يرجى التحقق من بيانات الحساب.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       // توليد رقم الحساب الفرعي التالي
       const childAccountCode = generateNextChildAccountCode(parentAccount, allAccounts);
@@ -120,8 +139,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         account_code: childAccountCode,
         account_name: `حساب فرعي ${childAccountCode}`,
         account_name_ar: `حساب فرعي ${childAccountCode}`,
-        account_type: parentAccount.account_type,
-        balance_type: parentAccount.balance_type,
+        account_type: parentAccount.account_type, // الآن محمي من قيم null
+        balance_type: parentAccount.balance_type, // الآن محمي من قيم null
         parent_account_id: parentAccount.id,
         is_header: childLevel <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
         description: `حساب فرعي تحت ${parentAccount.account_name || parentAccount.account_name_ar}`
