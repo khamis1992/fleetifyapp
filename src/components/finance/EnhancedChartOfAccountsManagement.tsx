@@ -72,8 +72,8 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
   // دالة لتوليد رقم الحساب الفرعي التالي
   const generateNextChildAccountCode = (parentAccount: any, allAccounts: any[]): string => {
-    const parentCode = parentAccount.account_code;
-    const parentLevel = parentAccount.account_level || 1;
+    const parentCode = parentAccount.account_code || parentAccount.accountCode;
+    const parentLevel = parentAccount.account_level || parentAccount.level || 1;
     const childLevel = parentLevel + 1;
     
     // البحث عن جميع الحسابات الفرعية للأب
@@ -110,8 +110,29 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const handleAddChildAccount = async (parentAccount: any) => {
     if (!allAccounts) return;
     
+    // التحقق من نوع البيانات القادمة من AccountsTreeView
+    const accountData = parentAccount.accountType ? {
+      // البيانات قادمة من AccountsTreeView (node)
+      id: parentAccount.id,
+      account_code: parentAccount.accountCode,
+      account_name: parentAccount.accountName,
+      account_name_ar: parentAccount.accountNameAr,
+      account_type: parentAccount.accountType,
+      balance_type: parentAccount.balanceType,
+      account_level: parentAccount.level
+    } : {
+      // البيانات قادمة من الجدول مباشرة
+      id: parentAccount.id,
+      account_code: parentAccount.account_code,
+      account_name: parentAccount.account_name,
+      account_name_ar: parentAccount.account_name_ar,
+      account_type: parentAccount.account_type,
+      balance_type: parentAccount.balance_type,
+      account_level: parentAccount.account_level
+    };
+    
     // التحقق من صحة بيانات الحساب الأب
-    if (!parentAccount.account_type) {
+    if (!accountData.account_type) {
       toast({
         title: "خطأ في بيانات الحساب الأب",
         description: "نوع الحساب الأب غير محدد. يرجى التحقق من بيانات الحساب.",
@@ -120,7 +141,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       return;
     }
 
-    if (!parentAccount.balance_type) {
+    if (!accountData.balance_type) {
       toast({
         title: "خطأ في بيانات الحساب الأب", 
         description: "نوع الرصيد للحساب الأب غير محدد. يرجى التحقق من بيانات الحساب.",
@@ -131,19 +152,19 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     
     try {
       // توليد رقم الحساب الفرعي التالي
-      const childAccountCode = generateNextChildAccountCode(parentAccount, allAccounts);
-      const childLevel = (parentAccount.account_level || 1) + 1;
+      const childAccountCode = generateNextChildAccountCode(accountData, allAccounts);
+      const childLevel = (accountData.account_level || 1) + 1;
       
       // إنشاء بيانات الحساب الفرعي
       const childAccountData: AccountFormData = {
         account_code: childAccountCode,
         account_name: `حساب فرعي ${childAccountCode}`,
         account_name_ar: `حساب فرعي ${childAccountCode}`,
-        account_type: parentAccount.account_type, // الآن محمي من قيم null
-        balance_type: parentAccount.balance_type, // الآن محمي من قيم null
-        parent_account_id: parentAccount.id,
+        account_type: accountData.account_type,
+        balance_type: accountData.balance_type,
+        parent_account_id: accountData.id,
         is_header: childLevel <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
-        description: `حساب فرعي تحت ${parentAccount.account_name || parentAccount.account_name_ar}`
+        description: `حساب فرعي تحت ${accountData.account_name || accountData.account_name_ar}`
       };
       
       // إنشاء الحساب
