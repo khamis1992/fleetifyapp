@@ -157,27 +157,130 @@ export const useMaintenanceFinancialData = () => {
   });
 };
 
-// Process Vehicle Depreciation
+// Validate depreciation prerequisites
+export const useValidateDepreciationData = () => {
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: ["validate-depreciation", companyId],
+    queryFn: async () => {
+      console.log("🔍 فحص بيانات الاستهلاك للشركة:", companyId);
+      
+      // Check active vehicles
+      const { data: vehicles, error: vehiclesError } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, purchase_cost, depreciation_rate, accumulated_depreciation")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+      if (vehiclesError) {
+        console.error("❌ خطأ في استعلام المركبات:", vehiclesError);
+        throw vehiclesError;
+      }
+
+      console.log(`📊 تم العثور على ${vehicles?.length || 0} مركبة نشطة`);
+
+      const validationResult = {
+        hasActiveVehicles: vehicles && vehicles.length > 0,
+        vehicleCount: vehicles?.length || 0,
+        vehiclesWithoutDepreciationRate: vehicles?.filter(v => !v.depreciation_rate).length || 0,
+        vehiclesWithoutPurchaseCost: vehicles?.filter(v => !v.purchase_cost).length || 0,
+        vehicles: vehicles || []
+      };
+
+      console.log("📋 نتائج التحقق:", validationResult);
+      return validationResult;
+    },
+    enabled: !!companyId,
+  });
+};
+
+// Process Vehicle Depreciation with enhanced error handling
 export const useProcessVehicleDepreciation = () => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (depreciationDate?: string): Promise<DepreciationResult[]> => {
-      const { data, error } = await supabase.rpc("process_vehicle_depreciation_monthly", {
-        company_id_param: companyId,
-        depreciation_date_param: depreciationDate || new Date().toISOString().split('T')[0]
+      const dateParam = depreciationDate || new Date().toISOString().split('T')[0];
+      
+      console.log("🚀 بدء معالجة الاستهلاك...", {
+        companyId,
+        depreciationDate: dateParam
       });
 
-      if (error) throw error;
-      return data || [];
+      // First validate prerequisites
+      const { data: vehicles, error: validationError } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, purchase_cost, depreciation_rate")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+      if (validationError) {
+        console.error("❌ خطأ في التحقق من المركبات:", validationError);
+        throw new Error(`فشل في التحقق من بيانات المركبات: ${validationError.message}`);
+      }
+
+      if (!vehicles || vehicles.length === 0) {
+        console.warn("⚠️ لا توجد مركبات نشطة");
+        throw new Error("لا توجد مركبات نشطة لمعالجة الاستهلاك");
+      }
+
+      const vehiclesWithoutData = vehicles.filter(v => !v.purchase_cost || !v.depreciation_rate);
+      if (vehiclesWithoutData.length > 0) {
+        console.warn("⚠️ مركبات تفتقر لبيانات الاستهلاك:", vehiclesWithoutData);
+        throw new Error(`${vehiclesWithoutData.length} مركبة تفتقر لبيانات سعر الشراء أو معدل الاستهلاك`);
+      }
+
+      console.log(`✅ تم التحقق من ${vehicles.length} مركبة، جاهزة للمعالجة`);
+
+      // Process depreciation
+      try {
+        const { data, error } = await supabase.rpc("process_vehicle_depreciation_monthly", {
+          company_id_param: companyId,
+          depreciation_date_param: dateParam
+        });
+
+        if (error) {
+          console.error("❌ خطأ في معالجة الاستهلاك:", error);
+          
+          // Try fallback to edge function if RPC fails
+          console.log("🔄 محاولة استخدام Edge Function كبديل...");
+          const fallbackResult = await supabase.functions.invoke('process-monthly-depreciation', {
+            body: { 
+              company_id: companyId, 
+              depreciation_date: dateParam 
+            }
+          });
+          
+          if (fallbackResult.error) {
+            console.error("❌ فشل Edge Function أيضاً:", fallbackResult.error);
+            throw new Error(`فشل في معالجة الاستهلاك: ${error.message}. فشل البديل أيضاً: ${fallbackResult.error.message}`);
+          }
+          
+          console.log("✅ نجح Edge Function");
+          return fallbackResult.data?.results || [];
+        }
+
+        console.log("✅ تمت معالجة الاستهلاك بنجاح:", data);
+        return data || [];
+        
+      } catch (dbError: any) {
+        console.error("❌ خطأ في قاعدة البيانات:", dbError);
+        throw new Error(`خطأ في معالجة الاستهلاك: ${dbError.message}`);
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log(`🎉 تم معالجة استهلاك ${data.length} مركبة بنجاح`);
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ["fleet-financial-overview"] });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["validate-depreciation"] });
     },
+    onError: (error) => {
+      console.error("💥 فشل في معالجة الاستهلاك:", error);
+    }
   });
 };
 

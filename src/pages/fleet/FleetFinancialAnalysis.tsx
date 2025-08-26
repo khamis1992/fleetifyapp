@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -11,37 +12,53 @@ import {
   Wrench,
   Calculator,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  RefreshCw,
+  Search,
+  Info,
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react";
 import { 
   useFleetFinancialOverview, 
   useMaintenanceFinancialData, 
   useFleetFinancialSummary,
   useProcessVehicleDepreciation,
-  useUpdateVehicleCosts
+  useUpdateVehicleCosts,
+  useValidateDepreciationData
 } from "@/hooks/useFleetFinancialAnalytics";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 const FleetFinancialAnalysis = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   const { data: financialOverview, isLoading: overviewLoading } = useFleetFinancialOverview();
   const { data: maintenanceData, isLoading: maintenanceLoading } = useMaintenanceFinancialData();
   const { data: summary, isLoading: summaryLoading } = useFleetFinancialSummary();
+  const { data: validationData, isLoading: isValidationLoading } = useValidateDepreciationData();
   
   const processDepreciation = useProcessVehicleDepreciation();
   const updateVehicleCosts = useUpdateVehicleCosts();
   const { formatCurrency } = useCurrencyFormatter();
 
-
   const handleProcessDepreciation = async () => {
     try {
       const result = await processDepreciation.mutateAsync(new Date().toISOString().split('T')[0]);
-      toast.success(`تم معالجة الاستهلاك لـ ${result.length} مركبة`);
-    } catch (error) {
-      toast.error("فشل في معالجة الاستهلاك");
+      toast.success(`تم معالجة الاستهلاك لـ ${result.length} مركبة`, {
+        description: "تم تحديث قيم الاستهلاك بنجاح"
+      });
+    } catch (error: any) {
+      console.error("خطأ في معالجة الاستهلاك:", error);
+      toast.error("فشل في معالجة الاستهلاك", {
+        description: error.message || "حدث خطأ غير متوقع"
+      });
     }
+  };
+
+  const handleDiagnostics = () => {
+    setShowDiagnostics(!showDiagnostics);
   };
 
   const handleUpdateCosts = async (vehicleId: string) => {
@@ -66,15 +83,96 @@ const FleetFinancialAnalysis = () => {
         </div>
         <div className="flex gap-2">
           <Button
+            onClick={handleDiagnostics}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            فحص البيانات
+          </Button>
+          <Button
             onClick={handleProcessDepreciation}
-            disabled={processDepreciation.isPending}
+            disabled={processDepreciation.isPending || !validationData?.hasActiveVehicles}
             variant="outline"
           >
-            <Calculator className="w-4 h-4 mr-2" />
-            معالجة الاستهلاك
+            {processDepreciation.isPending ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Calculator className="w-4 h-4 mr-2" />
+            )}
+            {processDepreciation.isPending ? "جاري المعالجة..." : "معالجة الاستهلاك"}
           </Button>
         </div>
       </div>
+
+      {/* Diagnostics Section */}
+      {showDiagnostics && validationData && (
+        <Alert className="mb-6">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-3">
+              <h4 className="font-semibold">نتائج فحص البيانات:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center gap-2">
+                  {validationData.hasActiveVehicles ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className="text-sm">المركبات النشطة: {validationData.vehicleCount}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {validationData.vehiclesWithoutDepreciationRate === 0 ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                  )}
+                  <span className="text-sm">بدون معدل استهلاك: {validationData.vehiclesWithoutDepreciationRate}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {validationData.vehiclesWithoutPurchaseCost === 0 ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                  )}
+                  <span className="text-sm">بدون سعر شراء: {validationData.vehiclesWithoutPurchaseCost}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {validationData.hasActiveVehicles && 
+                   validationData.vehiclesWithoutDepreciationRate === 0 && 
+                   validationData.vehiclesWithoutPurchaseCost === 0 ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span className="text-sm text-green-600">جاهز للمعالجة</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm text-amber-600">يحتاج مراجعة</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Error Display */}
+      {processDepreciation.error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <h4 className="font-semibold">فشل في معالجة الاستهلاك:</h4>
+              <p>{processDepreciation.error.message}</p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
