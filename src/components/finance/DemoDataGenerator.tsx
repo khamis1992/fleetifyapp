@@ -54,8 +54,12 @@ export const DemoDataGenerator: React.FC = () => {
 
         const isSystem = companyData?.name === 'System Company' || 
                         companyData?.name_ar === 'شركة النظام' ||
+                        companyData?.name === 'إدارة النظام' ||
+                        companyData?.name_ar === 'System Administration' ||
                         companyData?.name?.toLowerCase().includes('system') ||
-                        companyData?.name_ar?.includes('النظام');
+                        companyData?.name?.toLowerCase().includes('administration') ||
+                        companyData?.name_ar?.includes('النظام') ||
+                        companyData?.name_ar?.includes('إدارة');
 
         setIsSystemCompany(isSystem);
         setCompanyName(companyData?.name_ar || companyData?.name || 'غير محدد');
@@ -115,8 +119,12 @@ export const DemoDataGenerator: React.FC = () => {
     // التحقق من أن اسم الشركة هو "شركة النظام" أو "System Company"
     const isSystemCompany = companyData?.name === 'System Company' || 
                            companyData?.name_ar === 'شركة النظام' ||
+                           companyData?.name === 'إدارة النظام' ||
+                           companyData?.name_ar === 'System Administration' ||
                            companyData?.name?.toLowerCase().includes('system') ||
-                           companyData?.name_ar?.includes('النظام');
+                           companyData?.name?.toLowerCase().includes('administration') ||
+                           companyData?.name_ar?.includes('النظام') ||
+                           companyData?.name_ar?.includes('إدارة');
 
     if (!isSystemCompany) {
       toast({
@@ -346,8 +354,12 @@ export const DemoDataGenerator: React.FC = () => {
 
     const isSystemCompany = companyData?.name === 'System Company' || 
                            companyData?.name_ar === 'شركة النظام' ||
+                           companyData?.name === 'إدارة النظام' ||
+                           companyData?.name_ar === 'System Administration' ||
                            companyData?.name?.toLowerCase().includes('system') ||
-                           companyData?.name_ar?.includes('النظام');
+                           companyData?.name?.toLowerCase().includes('administration') ||
+                           companyData?.name_ar?.includes('النظام') ||
+                           companyData?.name_ar?.includes('إدارة');
 
     if (!isSystemCompany) {
       toast({

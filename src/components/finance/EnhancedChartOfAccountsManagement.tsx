@@ -81,8 +81,12 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
 
         const isSystem = companyData?.name === 'System Company' || 
                         companyData?.name_ar === 'شركة النظام' ||
+                        companyData?.name === 'إدارة النظام' ||
+                        companyData?.name_ar === 'System Administration' ||
                         companyData?.name?.toLowerCase().includes('system') ||
-                        companyData?.name_ar?.includes('النظام');
+                        companyData?.name?.toLowerCase().includes('administration') ||
+                        companyData?.name_ar?.includes('النظام') ||
+                        companyData?.name_ar?.includes('إدارة');
 
         setIsSystemCompany(isSystem);
       } catch (error) {
