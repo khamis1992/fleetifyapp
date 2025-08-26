@@ -10898,6 +10898,10 @@ export type Database = {
         Args: { payment_id_param: string }
         Returns: string
       }
+      safe_cleanup_account_references: {
+        Args: { target_account_id: string }
+        Returns: Json
+      }
       scheduled_contract_maintenance: {
         Args: Record<PropertyKey, never>
         Returns: undefined
