@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -13,7 +14,8 @@ import {
   Edit,
   Trash2,
   Plus,
-  BarChart3
+  BarChart3,
+  Search
 } from 'lucide-react';
 
 interface AccountNode {
@@ -49,12 +51,32 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
   onViewStatement
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Build tree structure from accounts data
-  const treeData = useMemo(() => {
-    console.log('🔍 [MAIN_TREE_DEBUG] Building tree with accounts:', accounts?.length || 0);
+  // Filter accounts based on search term
+  const filteredAccounts = useMemo(() => {
+    if (!accounts || accounts.length === 0) return [];
     
-    if (!accounts || accounts.length === 0) {
+    if (!searchTerm) return accounts;
+    
+    return accounts.filter(account => {
+      const accountName = account.account_name || '';
+      const accountNameAr = account.account_name_ar || '';
+      const accountCode = account.account_code || '';
+      
+      return (
+        accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        accountNameAr.includes(searchTerm) ||
+        accountCode.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [accounts, searchTerm]);
+
+  // Build tree structure from filtered accounts data
+  const treeData = useMemo(() => {
+    console.log('🔍 [MAIN_TREE_DEBUG] Building tree with accounts:', filteredAccounts?.length || 0);
+    
+    if (!filteredAccounts || filteredAccounts.length === 0) {
       console.log('🔍 [MAIN_TREE_DEBUG] No accounts data provided');
       return [];
     }
@@ -79,8 +101,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       })));
     }
 
-    // Create nodes from accounts data
-    const nodes: AccountNode[] = accounts.map(account => ({
+    // Create nodes from filtered accounts data
+    const nodes: AccountNode[] = filteredAccounts.map(account => ({
       id: account.id,
       accountCode: account.account_code,
       accountName: account.account_name,
@@ -141,7 +163,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
 
     sortChildren(rootNodes);
     return rootNodes;
-  }, [accounts]);
+  }, [filteredAccounts]);
 
   const toggleExpanded = (accountId: string) => {
     setExpandedNodes(prev => {
@@ -415,6 +437,19 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
               إجمالي: {totalNodes}
             </Badge>
           </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="البحث في الحسابات (الاسم، الرمز، أو رقم الحساب)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 text-right"
+            dir="rtl"
+          />
         </div>
 
         {/* Tree */}
