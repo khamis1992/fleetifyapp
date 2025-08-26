@@ -61,59 +61,74 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
   const [filterType, setFilterType] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - في التطبيق الحقيقي، ستأتي من API
-  const mockTransactions: Transaction[] = [
-    {
-      id: '1',
-      date: '2024-01-15',
-      description: 'رصيد افتتاحي',
-      reference: 'OP-001',
-      debit: 50000,
-      credit: 0,
-      balance: 50000,
-      type: 'debit'
-    },
-    {
-      id: '2',
-      date: '2024-01-16',
-      description: 'إيداع نقدي من العميل أحمد محمد',
-      reference: 'REC-001',
-      debit: 15000,
-      credit: 0,
-      balance: 65000,
-      type: 'debit'
-    },
-    {
-      id: '3',
-      date: '2024-01-17',
-      description: 'دفع فاتورة كهرباء',
-      reference: 'PAY-001',
-      debit: 0,
-      credit: 2500,
-      balance: 62500,
-      type: 'credit'
-    },
-    {
-      id: '4',
-      date: '2024-01-18',
-      description: 'تحويل بنكي من حساب التوفير',
-      reference: 'TRF-001',
-      debit: 25000,
-      credit: 0,
-      balance: 87500,
-      type: 'debit'
-    },
-    {
-      id: '5',
-      date: '2024-01-19',
-      description: 'دفع راتب موظف',
-      reference: 'SAL-001',
-      debit: 0,
-      credit: 8000,
-      balance: 79500,
-      type: 'credit'
+  // تحديد البيانات بناءً على الحساب المختار
+  const getAccountSpecificData = (): Transaction[] => {
+    // إذا لم يتم تحديد حساب، أرجع قائمة فارغة
+    if (!accountId || !accountCode) {
+      return [];
     }
-  ];
+
+    // بيانات مخصصة حسب نوع الحساب
+    const baseTransactions: Transaction[] = [];
+    
+    // إضافة رصيد افتتاحي
+    baseTransactions.push({
+      id: '1',
+      date: '2024-01-01',
+      description: `رصيد افتتاحي للحساب ${accountCode} - ${accountName}`,
+      reference: 'OP-001',
+      debit: balanceType === 'debit' ? 10000 : 0,
+      credit: balanceType === 'credit' ? 10000 : 0,
+      balance: balanceType === 'debit' ? 10000 : -10000,
+      type: balanceType
+    });
+
+    // إضافة حركات مخصصة حسب نوع الحساب
+    if (accountType === 'assets') {
+      // حسابات الأصول
+      if (accountCode?.startsWith('111')) {
+        // حسابات النقدية
+        baseTransactions.push({
+          id: '2',
+          date: '2024-01-15',
+          description: `إيداع نقدي في حساب ${accountName}`,
+          reference: 'REC-001',
+          debit: 5000,
+          credit: 0,
+          balance: 15000,
+          type: 'debit'
+        });
+      } else if (accountCode?.startsWith('112')) {
+        // حسابات البنوك
+        baseTransactions.push({
+          id: '2',
+          date: '2024-01-15',
+          description: `تحويل بنكي إلى حساب ${accountName}`,
+          reference: 'TRF-001',
+          debit: 25000,
+          credit: 0,
+          balance: 35000,
+          type: 'debit'
+        });
+      }
+    } else if (accountType === 'expenses') {
+      // حسابات المصروفات
+      baseTransactions.push({
+        id: '2',
+        date: '2024-01-15',
+        description: `مصروف مسجل في حساب ${accountName}`,
+        reference: 'EXP-001',
+        debit: 3000,
+        credit: 0,
+        balance: 13000,
+        type: 'debit'
+      });
+    }
+
+    return baseTransactions;
+  };
+
+  const mockTransactions: Transaction[] = getAccountSpecificData();
 
   const filteredTransactions = useMemo(() => {
     return mockTransactions.filter(transaction => {
@@ -193,7 +208,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
         <DialogHeader className="print:hidden">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <BarChart3 className="h-6 w-6" />
-            كشف حساب احترافي
+            كشف حساب: {accountCode} - {accountName}
           </DialogTitle>
         </DialogHeader>
 
@@ -204,6 +219,27 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
             <p className="text-gray-600">كشف حساب تفصيلي</p>
             <p className="text-sm text-gray-500">تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
           </div>
+
+          {/* رسالة عدم تحديد حساب */}
+          {(!accountId || !accountCode) && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <FileText className="h-12 w-12 text-gray-400" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700">لم يتم تحديد حساب</h3>
+                    <p className="text-gray-500 mt-2">
+                      يرجى اختيار حساب من شجرة الحسابات لعرض كشف الحساب المخصص له
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* المحتوى الرئيسي - يظهر فقط عند تحديد حساب */}
+          {accountId && accountCode && (
+            <>
 
           {/* Account Information */}
           <Card>
@@ -462,6 +498,9 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
             <p>تم إنشاء هذا التقرير بواسطة نظام إدارة الحسابات</p>
             <p>جميع المبالغ بالدينار الكويتي (د.ك)</p>
           </div>
+          
+          </>
+          )}
         </div>
 
         {/* Close Button - مخفي في الطباعة */}
