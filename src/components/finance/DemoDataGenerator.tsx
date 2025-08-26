@@ -143,9 +143,29 @@ export const DemoDataGenerator: React.FC = () => {
       setCurrentStep('إضافة العملاء...');
       setProgress(10);
       
+      // التحقق من العملاء الموجودين
+      const { data: existingCustomers, error: existingCustomersError } = await supabase
+        .from('customers')
+        .select('id, company_name')
+        .eq('company_id', companyId);
+      
+      if (existingCustomersError) throw existingCustomersError;
+      
+      const existingCustomerNames = new Set(existingCustomers?.map(c => c.company_name) || []);
       const customerIds: string[] = [];
+      
+      // إضافة معرفات العملاء الموجودين
+      existingCustomers?.forEach(customer => customerIds.push(customer.id));
+      
+      let newCustomersCount = 0;
       for (let i = 0; i < demoCustomers.length; i++) {
         const customer = demoCustomers[i];
+        
+        // تخطي العميل إذا كان موجوداً بالفعل
+        if (existingCustomerNames.has(customer.name)) {
+          continue;
+        }
+        
         const { data, error } = await supabase
           .from('customers')
           .insert({
@@ -162,7 +182,16 @@ export const DemoDataGenerator: React.FC = () => {
           .single();
           
         if (error) throw error;
-        if (data) customerIds.push(data.id);
+        if (data) {
+          customerIds.push(data.id);
+          newCustomersCount++;
+        }
+      }
+      
+      if (newCustomersCount === 0 && existingCustomers?.length > 0) {
+        setCurrentStep(`تم تخطي العملاء (${existingCustomers.length} موجود بالفعل)`);
+      } else {
+        setCurrentStep(`تم إضافة ${newCustomersCount} عميل جديد`);
       }
       
       setProgress(20);
@@ -170,13 +199,35 @@ export const DemoDataGenerator: React.FC = () => {
       // الخطوة 2: إضافة الموردين
       setCurrentStep('إضافة الموردين...');
       
+      // التحقق من الموردين الموجودين
+      const { data: existingVendors, error: existingVendorsError } = await supabase
+        .from('vendors')
+        .select('id, vendor_name, vendor_code')
+        .eq('company_id', companyId);
+      
+      if (existingVendorsError) throw existingVendorsError;
+      
+      const existingVendorNames = new Set(existingVendors?.map(v => v.vendor_name) || []);
+      const existingVendorCodes = new Set(existingVendors?.map(v => v.vendor_code) || []);
       const vendorIds: string[] = [];
+      
+      // إضافة معرفات الموردين الموجودين
+      existingVendors?.forEach(vendor => vendorIds.push(vendor.id));
+      
+      let newVendorsCount = 0;
       for (let i = 0; i < demoVendors.length; i++) {
         const vendor = demoVendors[i];
+        const vendorCode = `V${String(i + 1).padStart(3, '0')}`;
+        
+        // تخطي المورد إذا كان موجوداً بالفعل (بالاسم أو الكود)
+        if (existingVendorNames.has(vendor.name) || existingVendorCodes.has(vendorCode)) {
+          continue;
+        }
+        
         const { data, error } = await supabase
           .from('vendors')
           .insert({
-            vendor_code: `V${String(i + 1).padStart(3, '0')}`,
+            vendor_code: vendorCode,
             vendor_name: vendor.name,
             vendor_name_ar: vendor.name_ar,
             email: vendor.email,
@@ -190,7 +241,16 @@ export const DemoDataGenerator: React.FC = () => {
           .single();
           
         if (error) throw error;
-        if (data) vendorIds.push(data.id);
+        if (data) {
+          vendorIds.push(data.id);
+          newVendorsCount++;
+        }
+      }
+      
+      if (newVendorsCount === 0 && existingVendors?.length > 0) {
+        setCurrentStep(`تم تخطي الموردين (${existingVendors.length} موجود بالفعل)`);
+      } else {
+        setCurrentStep(`تم إضافة ${newVendorsCount} مورد جديد`);
       }
       
       setProgress(40);
