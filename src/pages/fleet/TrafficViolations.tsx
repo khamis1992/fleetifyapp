@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock, CreditCard } from 'lucide-react';
+import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock, CreditCard, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrafficViolationForm } from '@/components/fleet/TrafficViolationForm';
 import { TrafficViolationPaymentsDialog } from '@/components/fleet/TrafficViolationPaymentsDialog';
+import { TrafficViolationPDFImport } from '@/components/fleet/TrafficViolationPDFImport';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useTrafficViolations, TrafficViolation } from '@/hooks/useTrafficViolations';
 import { format } from 'date-fns';
@@ -111,8 +113,22 @@ export default function TrafficViolations() {
         onOpenChange={setIsPaymentsDialogOpen}
       />
 
-      {/* الإحصائيات */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* التابات الرئيسية */}
+      <Tabs defaultValue="list" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            قائمة المخالفات
+          </TabsTrigger>
+          <TabsTrigger value="import" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            استيراد PDF
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="space-y-6">
+          {/* الإحصائيات */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي المخالفات</CardTitle>
@@ -282,6 +298,12 @@ export default function TrafficViolations() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="import">
+          <TrafficViolationPDFImport />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
