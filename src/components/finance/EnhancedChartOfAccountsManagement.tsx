@@ -102,8 +102,8 @@ export const EnhancedChartOfAccountsManagement = () => {
   const filteredAccounts = useMemo(() => {
     return accounts.data?.filter(account => {
       const matchesSearch = account.account_code.includes(searchTerm) || account.account_name.includes(searchTerm);
-      const matchesType = selectedType === 'all' || account.type === selectedType;
-      const matchesLevel = selectedLevel === 'all' || account.level === selectedLevel;
+      const matchesType = selectedType === 'all' || account.account_type === selectedType;
+      const matchesLevel = selectedLevel === 'all' || account.account_level?.toString() === selectedLevel;
       const matchesActive = showInactive || account.is_active;
       return matchesSearch && matchesType && matchesLevel && matchesActive;
     }) || [];
@@ -319,13 +319,41 @@ export const EnhancedChartOfAccountsManagement = () => {
               ) : (
                 <div className="space-y-2">
                   {filteredAccounts.map((account) => (
-                    <AccountRow
-                      key={account.id}
-                      account={account}
-                      onEdit={setSelectedAccount}
-                      onDelete={(account) => deleteAccount.mutate(account.id)}
-                      isDeleting={deleteAccount.isPending}
-                    />
+                    <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                            {account.account_code}
+                          </code>
+                          <div>
+                            <div className="font-medium">{account.account_name}</div>
+                          </div>
+                          <Badge variant={account.is_active ? "default" : "secondary"}>
+                            {account.is_active ? 'نشط' : 'غير نشط'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAccount(account);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteAccount.mutate(account.id)}
+                          disabled={deleteAccount.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -356,11 +384,36 @@ export const EnhancedChartOfAccountsManagement = () => {
               </Button>
 
               {validation.data && (
-                <ValidationResults
-                  validation={validation.data}
-                  onFix={() => fixHierarchy.mutate()}
-                  isFixing={fixHierarchy.isPending}
-                />
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">نتائج الفحص</h4>
+                      <div className="flex items-center gap-2">
+                        {validation.data.is_valid ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                        )}
+                        <span className={validation.data.is_valid ? "text-green-600" : "text-red-600"}>
+                          {validation.data.is_valid ? 'دليل الحسابات صحيح' : `تم العثور على ${validation.data.total_issues} مشكلة`}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {!validation.data.is_valid && (
+                      <div>
+                        <Button
+                          onClick={() => fixHierarchy.mutate()}
+                          disabled={fixHierarchy.isPending}
+                          className="gap-2"
+                        >
+                          <Settings className="h-4 w-4" />
+                          {fixHierarchy.isPending ? 'جاري الإصلاح...' : 'إصلاح تلقائي'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -377,7 +430,47 @@ export const EnhancedChartOfAccountsManagement = () => {
             </CardHeader>
             <CardContent>
               {statistics.data && (
-                <StatisticsDisplay statistics={statistics.data} />
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">إحصائيات عامة</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>إجمالي الحسابات:</span>
+                        <span className="font-semibold">{statistics.data.total_accounts}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>الحسابات النشطة:</span>
+                        <span className="font-semibold text-green-600">{statistics.data.active_accounts}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>الحسابات غير النشطة:</span>
+                        <span className="font-semibold text-red-600">{statistics.data.inactive_accounts}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">تفاصيل الهيكل</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>الحد الأقصى للعمق:</span>
+                        <span className="font-semibold">{statistics.data.max_depth}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>متوسط العمق:</span>
+                        <span className="font-semibold">{statistics.data.avg_depth?.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>الحسابات الرئيسية:</span>
+                        <span className="font-semibold">{statistics.data.header_accounts}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>الحسابات التفصيلية:</span>
+                        <span className="font-semibold">{statistics.data.detail_accounts}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -458,39 +551,9 @@ export const EnhancedChartOfAccountsManagement = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Create Account Dialog */}
-      <CreateAccountDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSubmit={handleCreateAccount}
-        isSubmitting={createAccount.isPending}
-      />
-
-      {/* Edit Account Dialog */}
-      {selectedAccount && (
-        <EditAccountDialog
-          open={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          account={selectedAccount}
-          onSubmit={handleEditAccount}
-          isSubmitting={updateAccount.isPending}
-        />
-      )}
-
-      {/* Enhanced Bulk Delete Dialog */}
-      <EnhancedBulkDeleteDialog
-        open={isBulkDeleteOpen}
-        onOpenChange={setIsBulkDeleteOpen}
-        options={bulkDeletionOptions}
-        onOptionsChange={setBulkDeletionOptions}
-        onConfirm={handleBulkDelete}
-        isDeleting={bulkDelete.isPending}
-        preview={deletionPreview}
-        onPreview={handleDeletionPreview}
-        isLoadingPreview={deletionPreviewMutation.isPending}
-        confirmationText={deletionConfirmText}
-        onConfirmationTextChange={setDeletionConfirmText}
-      />
+      {/* TODO: Add Create Account Dialog */}
+      {/* TODO: Add Edit Account Dialog */}
+      {/* TODO: Add Enhanced Bulk Delete Dialog */}
     </div>
   );
 };
