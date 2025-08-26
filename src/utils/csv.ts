@@ -324,19 +324,21 @@ export const detectParentFromAccountCode = (accountCode: string): string => {
 export const calculateAccountLevel = (accountCode: string): number => {
   if (!accountCode) return 1;
   
-  // Calculate level based on code length
+  // Calculate level based on code length - FIXED to match database logic
   // Level 1: 1 digit (1)
   // Level 2: 2 digits (11) 
-  // Level 3: 3-4 digits (111, 1110)
-  // Level 4: 5-6 digits (11101, 111010)
-  // Level 5: 7+ digits (1110101)
+  // Level 3: 3 digits (111)
+  // Level 4: 4 digits (1110) ← FIXED: 4 digits = level 4
+  // Level 5: 5 digits (11101)
+  // Level 6: 6+ digits (111010+)
   
   const length = accountCode.length;
   if (length === 1) return 1;
   if (length === 2) return 2;
-  if (length <= 4) return 3;
-  if (length <= 6) return 4;
-  return 5;
+  if (length === 3) return 3;
+  if (length === 4) return 4; // ← FIXED: 4 digits = level 4
+  if (length === 5) return 5;
+  return Math.min(6, length); // Cap at level 6
 };
 
 export const validateAccountHierarchy = (accounts: Array<{ account_code: string; parent_account_code?: string }>): {
@@ -372,15 +374,23 @@ export const validateAccountHierarchy = (accounts: Array<{ account_code: string;
 };
 
 export const processAccountsWithHierarchy = (accounts: Array<any>): Array<any> => {
-  const processedAccounts = accounts.map(account => {
+  console.log(`🔍 [PROCESS_HIERARCHY] Processing ${accounts.length} accounts`);
+  
+  const processedAccounts = accounts.map((account, index) => {
     // Auto-detect parent if not provided
     if (!account.parent_account_code) {
       account.parent_account_code = detectParentFromAccountCode(account.account_code);
     }
     
-    // Auto-calculate level if not provided
-    if (!account.account_level) {
+    // FIXED: Prioritize CSV level over auto-calculation
+    if (!account.account_level || account.account_level === null || account.account_level === undefined) {
+      // Only auto-calculate if no level specified in CSV
       account.account_level = calculateAccountLevel(account.account_code);
+      console.log(`🔍 [PROCESS_HIERARCHY] Auto-calculated level ${account.account_level} for ${account.account_code}`);
+    } else {
+      // CSV level takes priority - convert to number if string
+      account.account_level = parseInt(account.account_level.toString());
+      console.log(`🔍 [PROCESS_HIERARCHY] Using CSV level ${account.account_level} for ${account.account_code}`);
     }
     
     return account;
