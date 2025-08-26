@@ -38,31 +38,31 @@ const FleetFinancialAnalysis = () => {
   const handleProcessDepreciation = async () => {
     try {
       const result = await processDepreciation.mutateAsync(new Date().toISOString().split('T')[0]);
-      toast.success(`Processed depreciation for ${result.length} vehicles`);
+      toast.success(`تم معالجة الاستهلاك لـ ${result.length} مركبة`);
     } catch (error) {
-      toast.error("Failed to process depreciation");
+      toast.error("فشل في معالجة الاستهلاك");
     }
   };
 
   const handleUpdateCosts = async (vehicleId: string) => {
     try {
       await updateVehicleCosts.mutateAsync(vehicleId);
-      toast.success("Vehicle costs updated successfully");
+      toast.success("تم تحديث تكاليف المركبة بنجاح");
     } catch (error) {
-      toast.error("Failed to update vehicle costs");
+      toast.error("فشل في تحديث تكاليف المركبة");
     }
   };
 
   if (overviewLoading || summaryLoading) {
-    return <div className="flex items-center justify-center h-64">Loading financial data...</div>;
+    return <div className="flex items-center justify-center h-64">جارٍ تحميل البيانات المالية...</div>;
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Fleet Financial Analysis</h1>
-          <p className="text-gray-600 dark:text-gray-400">Comprehensive financial overview of your fleet operations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">التحليل المالي للأسطول</h1>
+          <p className="text-gray-600 dark:text-gray-400">نظرة شاملة على الأوضاع المالية لعمليات أسطولك</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -71,7 +71,7 @@ const FleetFinancialAnalysis = () => {
             variant="outline"
           >
             <Calculator className="w-4 h-4 mr-2" />
-            Process Depreciation
+            معالجة الاستهلاك
           </Button>
         </div>
       </div>
@@ -80,52 +80,52 @@ const FleetFinancialAnalysis = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Fleet Value</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي قيمة الأسطول</CardTitle>
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalBookValue || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              Current book value after depreciation
+              القيمة الدفترية الحالية بعد الاستهلاك
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Operating Costs</CardTitle>
+            <CardTitle className="text-sm font-medium">تكاليف التشغيل</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalOperatingCost || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              Average per vehicle: {formatCurrency(summary?.averageOperatingCost || 0)}
+              متوسط لكل مركبة: {formatCurrency(summary?.averageOperatingCost || 0)}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Maintenance Costs</CardTitle>
+            <CardTitle className="text-sm font-medium">تكاليف الصيانة</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalMaintenanceCost || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              Total maintenance expenses
+              إجمالي مصروفات الصيانة
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Depreciation</CardTitle>
+            <CardTitle className="text-sm font-medium">الاستهلاك</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalAccumulatedDepreciation || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              Total accumulated depreciation
+              إجمالي الاستهلاك المتراكم
             </p>
           </CardContent>
         </Card>
@@ -134,17 +134,17 @@ const FleetFinancialAnalysis = () => {
       {/* Detailed Analysis */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">Fleet Overview</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance Financial</TabsTrigger>
-          <TabsTrigger value="profitability">Profitability Analysis</TabsTrigger>
+          <TabsTrigger value="overview">نظرة عامة على الأسطول</TabsTrigger>
+          <TabsTrigger value="maintenance">المالية الخاصة بالصيانة</TabsTrigger>
+          <TabsTrigger value="profitability">تحليل الربحية</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <Card>
             <CardHeader>
-              <CardTitle>Vehicle Financial Overview</CardTitle>
+              <CardTitle>النظرة المالية العامة للمركبات</CardTitle>
               <CardDescription>
-                Financial metrics for each vehicle in your fleet
+                المؤشرات المالية لكل مركبة في أسطولك
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -162,7 +162,7 @@ const FleetFinancialAnalysis = () => {
                       <div>
                         <h3 className="font-semibold">{vehicle.vehicle_number}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Book Value: {formatCurrency(vehicle.book_value)}
+                          القيمة الدفترية: {formatCurrency(vehicle.book_value)}
                         </p>
                       </div>
                     </div>
@@ -171,10 +171,13 @@ const FleetFinancialAnalysis = () => {
                         <div className="font-medium">
                           {formatCurrency(vehicle.total_operating_cost)}
                         </div>
-                        <div className="text-sm text-muted-foreground">Operating Cost</div>
+                        <div className="text-sm text-muted-foreground">تكلفة التشغيل</div>
                       </div>
                       <Badge variant={vehicle.vehicle_status === 'available' ? 'default' : 'secondary'}>
-                        {vehicle.vehicle_status}
+                        {vehicle.vehicle_status === 'available' ? 'متاحة' : 
+                         vehicle.vehicle_status === 'rented' ? 'مؤجرة' :
+                         vehicle.vehicle_status === 'maintenance' ? 'قيد الصيانة' :
+                         vehicle.vehicle_status}
                       </Badge>
                       <Button
                         variant="outline"
@@ -184,7 +187,7 @@ const FleetFinancialAnalysis = () => {
                           handleUpdateCosts(vehicle.vehicle_id);
                         }}
                       >
-                        Update Costs
+                        تحديث التكاليف
                       </Button>
                     </div>
                   </div>
@@ -197,14 +200,14 @@ const FleetFinancialAnalysis = () => {
         <TabsContent value="maintenance">
           <Card>
             <CardHeader>
-              <CardTitle>Maintenance Financial Integration</CardTitle>
+              <CardTitle>التكامل المالي للصيانة</CardTitle>
               <CardDescription>
-                Maintenance records and their accounting integration status
+                سجلات الصيانة وحالة التكامل المحاسبي
               </CardDescription>
             </CardHeader>
             <CardContent>
               {maintenanceLoading ? (
-                <div>Loading maintenance data...</div>
+                <div>جارٍ تحميل بيانات الصيانة...</div>
               ) : (
                 <div className="space-y-3">
                   {maintenanceData?.map((maintenance) => (
@@ -236,7 +239,7 @@ const FleetFinancialAnalysis = () => {
                           )}
                         </div>
                         <Badge variant={maintenance.journal_entry_id ? 'default' : 'destructive'}>
-                          {maintenance.journal_entry_id ? 'Integrated' : 'Pending'}
+                          {maintenance.journal_entry_id ? 'مدمج' : 'في الانتظار'}
                         </Badge>
                       </div>
                     </div>
@@ -250,9 +253,9 @@ const FleetFinancialAnalysis = () => {
         <TabsContent value="profitability">
           <Card>
             <CardHeader>
-              <CardTitle>Vehicle Profitability Analysis</CardTitle>
+              <CardTitle>تحليل ربحية المركبات</CardTitle>
               <CardDescription>
-                ROI and profitability metrics for each vehicle
+                مؤشرات العائد على الاستثمار والربحية لكل مركبة
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -267,20 +270,20 @@ const FleetFinancialAnalysis = () => {
                       <div>
                         <h3 className="font-semibold">{vehicle.vehicle_number}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Purchase Price: {formatCurrency(vehicle.purchase_price)}
+                          سعر الشراء: {formatCurrency(vehicle.purchase_price)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-6">
                       <div className="text-center">
                         <div className="font-medium">{formatCurrency(vehicle.net_profit)}</div>
-                        <div className="text-sm text-muted-foreground">Net Profit</div>
+                        <div className="text-sm text-muted-foreground">صافي الربح</div>
                       </div>
                       <div className="text-center">
                         <div className={`font-medium ${vehicle.roi_percentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {vehicle.roi_percentage.toFixed(2)}%
                         </div>
-                        <div className="text-sm text-muted-foreground">ROI</div>
+                        <div className="text-sm text-muted-foreground">العائد على الاستثمار</div>
                       </div>
                       <div className="flex items-center">
                         {vehicle.roi_percentage >= 0 ? (
