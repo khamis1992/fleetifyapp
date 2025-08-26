@@ -1,496 +1,657 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Search, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Filter, 
-  Download, 
-  Upload, 
-  RotateCcw, 
-  CheckCircle, 
-  AlertCircle, 
-  Info,
-  Eye,
-  EyeOff,
-  Database,
-  Zap,
-  Settings,
-  FileText,
-  BarChart3,
-  TrendingUp,
-  Users,
-  Building,
-  Calculator,
-  PieChart,
-  Target,
-  Layers
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { 
-  useChartOfAccounts, 
-  useCreateAccount, 
-  useUpdateAccount, 
-  useDeleteAccount, 
-  useCopyDefaultAccounts 
-} from '@/hooks/useChartOfAccounts';
-import { 
-  useChartValidation, 
-  useFixChartHierarchy, 
-  useChartStatistics 
-} from '@/hooks/useChartValidation';
-import {
-  useEnhancedAccountDeletion,
-  useAccountDeletionPreview,
-  type EnhancedDeletionOptions,
-  type EnhancedDeletionResult
-} from '@/hooks/useEnhancedAccountDeletion';
-import {
-  useDirectBulkAccountDeletion,
-  useDirectDeletionPreview,
-  type BulkDeletionResult
-} from '@/hooks/useDirectAccountDeletion';
-
-export const EnhancedChartOfAccountsManagement = () => {
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SimpleAccountDeleteStub } from '@/components/finance/SimpleAccountDeleteStub';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3 } from 'lucide-react';
+import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
+import { AccountLevelBadge } from './AccountLevelBadge';
+import { AccountBalanceHistory } from './AccountBalanceHistory';
+import { AccountChangeHistory } from './AccountChangeHistory';
+import { ProfessionalAccountStatement } from './ProfessionalAccountStatement';
+import { ChartValidationPanel } from './charts/ChartValidationPanel';
+import { SmartAccountWizardTab } from './charts/SmartAccountWizardTab';
+import { AccountTemplateManager } from './charts/AccountTemplateManager';
+import { EnhancedAccountsVisualization } from './charts/EnhancedAccountsVisualization';
+import { EnhancedAccountEditDialog } from './enhanced-editing/EnhancedAccountEditDialog';
+import { EnhancedDeleteAllAccountsDialog } from './EnhancedDeleteAllAccountsDialog';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
+import { AccountsTreeView } from './AccountsTreeView';
+interface AccountFormData {
+  account_code: string;
+  account_name: string;
+  account_name_ar?: string;
+  account_type: string;
+  account_subtype?: string;
+  balance_type: string;
+  parent_account_id?: string;
+  is_header: boolean;
+  description?: string;
+}
+export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [showInactive, setShowInactive] = useState(false);
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'code' | 'name' | 'level'>('code');
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
-  const [deletionPreview, setDeletionPreview] = useState<any>(null);
-  const [deletionConfirmText, setDeletionConfirmText] = useState('');
-  const [bulkDeletionOptions, setBulkDeletionOptions] = useState<EnhancedDeletionOptions>({
-    includeSystemAccounts: false,
-    includeInactiveAccounts: true,
-    forceCompleteReset: false,
-    deletionReason: 'Bulk deletion via management interface'
-  });
-
-  const { toast } = useToast();
-  const { companyId } = useUnifiedCompanyAccess();
-  
-  const statistics = useChartStatistics();
-  const validation = useChartValidation();
-  const fixHierarchy = useFixChartHierarchy();
-  const accounts = useChartOfAccounts();
-  const copyDefaultAccounts = useCopyDefaultAccounts();
+  const [filterType, setFilterType] = useState('all');
+  const [filterLevel, setFilterLevel] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('active'); // New filter for account status
+  const [showInactiveAccounts, setShowInactiveAccounts] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [viewingAccount, setViewingAccount] = useState<any>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [showStatementDialog, setShowStatementDialog] = useState(false);
+  const [statementAccount, setStatementAccount] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('tree');
+  const [showSmartWizard, setShowSmartWizard] = useState(false);
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const {
+    data: allAccounts,
+    isLoading: allAccountsLoading
+  } = useChartOfAccounts(showInactiveAccounts);
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
-  const deleteAccount = useDeleteAccount();
-  
-  const filteredAccounts = useMemo(() => {
-    return accounts.data?.filter(account => {
-      const matchesSearch = account.account_code.includes(searchTerm) || account.account_name.includes(searchTerm);
-      const matchesType = selectedType === 'all' || account.type === selectedType;
-      const matchesLevel = selectedLevel === 'all' || account.level === selectedLevel;
-      const matchesActive = showInactive || account.is_active;
-      return matchesSearch && matchesType && matchesLevel && matchesActive;
-    }) || [];
-  }, [accounts.data, searchTerm, selectedType, showInactive, selectedLevel]);
 
-  return (
-    <div className="container mx-auto py-6 space-y-6" dir="rtl">
+  // دالة لتوليد رقم الحساب الفرعي التالي
+  const generateNextChildAccountCode = (parentAccount: any, allAccounts: any[]): string => {
+    const parentCode = parentAccount.account_code;
+    const parentLevel = parentAccount.account_level || 1;
+    const childLevel = parentLevel + 1;
+    
+    // البحث عن جميع الحسابات الفرعية للأب
+    const childAccounts = allAccounts.filter(acc => 
+      acc.parent_account_id === parentAccount.id && 
+      acc.account_code.startsWith(parentCode)
+    );
+    
+    // إذا لم توجد حسابات فرعية، ابدأ بـ 01
+    if (childAccounts.length === 0) {
+      return `${parentCode}01`;
+    }
+    
+    // البحث عن أعلى رقم فرعي
+    let maxChildNumber = 0;
+    childAccounts.forEach(child => {
+      const childCode = child.account_code;
+      if (childCode.startsWith(parentCode) && childCode.length > parentCode.length) {
+        const suffix = childCode.substring(parentCode.length);
+        const childNumber = parseInt(suffix);
+        if (!isNaN(childNumber) && childNumber > maxChildNumber) {
+          maxChildNumber = childNumber;
+        }
+      }
+    });
+    
+    // إنشاء الرقم التالي
+    const nextNumber = maxChildNumber + 1;
+    const paddedNumber = nextNumber.toString().padStart(2, '0');
+    return `${parentCode}${paddedNumber}`;
+  };
+
+  // دالة لإضافة حساب فرعي مباشرة
+  const handleAddChildAccount = async (parentAccount: any) => {
+    if (!allAccounts) return;
+    
+    try {
+      // توليد رقم الحساب الفرعي التالي
+      const childAccountCode = generateNextChildAccountCode(parentAccount, allAccounts);
+      const childLevel = (parentAccount.account_level || 1) + 1;
+      
+      // إنشاء بيانات الحساب الفرعي
+      const childAccountData: AccountFormData = {
+        account_code: childAccountCode,
+        account_name: `حساب فرعي ${childAccountCode}`,
+        account_name_ar: `حساب فرعي ${childAccountCode}`,
+        account_type: parentAccount.account_type,
+        balance_type: parentAccount.balance_type,
+        parent_account_id: parentAccount.id,
+        is_header: childLevel <= 3, // الحسابات من المستوى 1-3 تعتبر رئيسية
+        description: `حساب فرعي تحت ${parentAccount.account_name || parentAccount.account_name_ar}`
+      };
+      
+      // إنشاء الحساب
+      await createAccount.mutateAsync(childAccountData);
+      
+      // إظهار رسالة نجاح
+      toast({
+        title: "تم إنشاء الحساب الفرعي بنجاح",
+        description: `تم إنشاء الحساب ${childAccountCode} تحت ${parentAccount.account_code}`,
+      });
+      
+      // توسيع العقدة الأب لإظهار الحساب الجديد
+      setExpandedNodes(prev => new Set([...prev, parentAccount.id]));
+      
+    } catch (error: any) {
+      console.error('خطأ في إنشاء الحساب الفرعي:', error);
+      toast({
+        title: "خطأ في إنشاء الحساب الفرعي",
+        description: error.message || "حدث خطأ غير متوقع",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Check if user can delete all accounts (super admin only)
+  const isSuperAdmin = user?.roles?.includes('super_admin');
+  const canDeleteAll = isSuperAdmin;
+  const [formData, setFormData] = useState<AccountFormData>({
+    account_code: '',
+    account_name: '',
+    account_name_ar: '',
+    account_type: 'assets',
+    account_subtype: '',
+    balance_type: 'debit',
+    parent_account_id: undefined, // تغيير من '' إلى undefined لتجنب خطأ UUID
+    is_header: false,
+    description: ''
+  });
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createAccount.mutateAsync(formData);
+      setShowForm(false);
+      setFormData({
+        account_code: '',
+        account_name: '',
+        account_name_ar: '',
+        account_type: 'assets',
+        account_subtype: '',
+        balance_type: 'debit',
+        parent_account_id: undefined, // تغيير من '' إلى undefined
+        is_header: false,
+        description: ''
+      });
+      toast({
+        title: "تم إنشاء الحساب بنجاح"
+      });
+    } catch (error) {
+      console.error('Error creating account:', error);
+      toast({
+        variant: "destructive",
+        title: "حدث خطأ في إنشاء الحساب"
+      });
+    }
+  };
+  const toggleNode = (accountId: string) => {
+    const newExpanded = new Set(expandedNodes);
+    if (newExpanded.has(accountId)) {
+      newExpanded.delete(accountId);
+    } else {
+      newExpanded.add(accountId);
+    }
+    setExpandedNodes(newExpanded);
+  };
+  const buildAccountTree = (accounts: any[]) => {
+    if (!accounts) return [];
+
+    // Filter accounts first
+    const filtered = filterAccounts(accounts);
+
+    // Group by parent-child relationship
+    const accountMap = new Map();
+    const rootAccounts: any[] = [];
+    filtered.forEach(account => {
+      accountMap.set(account.id, {
+        ...account,
+        children: []
+      });
+    });
+    filtered.forEach(account => {
+      if (account.parent_account_id && accountMap.has(account.parent_account_id)) {
+        accountMap.get(account.parent_account_id).children.push(accountMap.get(account.id));
+      } else {
+        rootAccounts.push(accountMap.get(account.id));
+      }
+    });
+    return rootAccounts;
+  };
+  const renderAccountRow = (account: any, level: number = 0): JSX.Element[] => {
+    // Handle undefined or null account
+    if (!account) {
+      console.warn('[RENDER_ACCOUNT_ROW] Account is undefined or null');
+      return [];
+    }
+    const hasChildren = account.children && account.children.length > 0;
+    const isExpanded = expandedNodes.has(account.id);
+    const paddingLeft = level * 24;
+
+    // Safe access to account properties with fallbacks
+    const accountCode = account.account_code || 'غير محدد';
+    const accountName = account.account_name_ar || account.account_name || 'غير محدد';
+    const accountType = account.account_type || 'غير محدد';
+    const accountLevel = account.account_level || 1;
+    const isHeader = account.is_header || false;
+    const balanceType = account.balance_type || 'debit';
+    const isActive = account.is_active !== undefined ? account.is_active : true;
+    const rows: JSX.Element[] = [<TableRow key={account.id || `row-${level}-${Date.now()}`} className={`${level > 0 ? "bg-muted/30" : ""} ${!isActive ? "opacity-60" : ""}`}>
+        <TableCell>
+          <div className="flex items-center" style={{
+          paddingLeft
+        }}>
+            {hasChildren ? <button onClick={() => toggleNode(account.id)} className="mr-2 p-1 hover:bg-accent rounded">
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button> : <div className="w-6 mr-2" />}
+            <span className="font-mono text-left">{accountCode}</span>
+            {!isActive && <Badge variant="destructive" className="mr-2 text-xs">غير نشط</Badge>}
+          </div>
+        </TableCell>
+        <TableCell className="text-right">{accountName}</TableCell>
+        <TableCell className="text-center">
+          <Badge variant="outline">
+            {getAccountTypeLabel(accountType)}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            <Badge variant="secondary" className="font-mono">
+              {accountLevel}
+            </Badge>
+          </div>
+        </TableCell>
+        <TableCell className="text-center">
+          <AccountLevelBadge accountLevel={accountLevel} isHeader={isHeader} />
+        </TableCell>
+        <TableCell className="text-center">
+          <Badge variant={balanceType === 'debit' ? 'default' : 'secondary'}>
+            {balanceType === 'debit' ? 'مدين' : 'دائن'}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <Badge variant={isActive ? 'default' : 'destructive'}>
+            {isActive ? 'نشط' : 'غير نشط'}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <div className="flex gap-2 justify-center">
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
+            setViewingAccount(account);
+            setShowViewDialog(true);
+          }} title="معاينة">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700" onClick={() => {
+            setStatementAccount(account);
+            setShowStatementDialog(true);
+          }} title="كشف حساب احترافي">
+              <BarChart3 className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => {
+            setEditingAccount(account);
+            setShowEditDialog(true);
+          }} title="تعديل متقدم">
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => {
+            console.log('[DELETE_BTN_CLICK] Starting deletion process for account:', {
+              accountId: account.id,
+              accountCode: account.account_code,
+              accountName: account.account_name,
+              isSystemAccount: account.is_system,
+              isActive: account.is_active,
+              parentId: account.parent_account_id
+            });
+            console.log('[DELETE_BTN_CLICK] User permissions:', {
+              userId: user?.id,
+              userRoles: user?.roles,
+              isSuperAdmin: isSuperAdmin,
+              canDeleteAll: canDeleteAll
+            });
+            setEditingAccount(account);
+            console.log('[DELETE_BTN_CLICK] Account set for deletion, opening dialog...');
+            setShowDeleteDialog(true);
+
+            // Verify states after setting
+            setTimeout(() => {
+              console.log('[DELETE_BTN_CLICK] States after setting:', {
+                showDeleteDialog: true,
+                // This should be true now
+                editingAccount: account
+              });
+            }, 100);
+          }} title="حذف">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>];
+
+    // Add children if expanded
+    if (hasChildren && isExpanded) {
+      account.children.forEach((child: any) => {
+        rows.push(...renderAccountRow(child, level + 1));
+      });
+    }
+    return rows;
+  };
+  const filterAccounts = (accounts: any[]) => {
+    if (!accounts || !Array.isArray(accounts)) {
+      console.warn('[FILTER_ACCOUNTS] Accounts is not a valid array:', accounts);
+      return [];
+    }
+    return accounts.filter(account => {
+      // Handle undefined account
+      if (!account) {
+        console.warn('[FILTER_ACCOUNTS] Found undefined account in array');
+        return false;
+      }
+
+      // Safe string operations with fallbacks
+      const accountName = account.account_name || '';
+      const accountCode = account.account_code || '';
+      const accountNameAr = account.account_name_ar || '';
+      const matchesSearch = searchTerm === '' || accountName.toLowerCase().includes(searchTerm.toLowerCase()) || accountCode.toLowerCase().includes(searchTerm.toLowerCase()) || accountNameAr.includes(searchTerm);
+      const matchesType = filterType === 'all' || account.account_type === filterType;
+      const matchesLevel = filterLevel === 'all' || account.account_level?.toString() === filterLevel;
+
+      // Status filter
+      const matchesStatus = filterStatus === 'all' || filterStatus === 'active' && account.is_active || filterStatus === 'inactive' && !account.is_active;
+      return matchesSearch && matchesType && matchesLevel && matchesStatus;
+    });
+  };
+  const getAccountTypeLabel = (type: string) => {
+    const types = {
+      assets: 'الأصول',
+      liabilities: 'الخصوم',
+      equity: 'حقوق الملكية',
+      revenue: 'الإيرادات',
+      expenses: 'المصروفات'
+    };
+    return types[type as keyof typeof types] || type;
+  };
+  if (allAccountsLoading) {
+    return <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>;
+  }
+  return <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">إدارة دليل الحسابات المحسن</h1>
-          <p className="text-muted-foreground">
-            إدارة شاملة لدليل الحسابات مع أدوات متقدمة للتحليل والصيانة
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            حساب جديد
-          </Button>
-          <Button variant="outline" onClick={() => copyDefaultAccounts.mutate()}>
-            <Database className="h-4 w-4 mr-2" />
-            نسخ الحسابات الافتراضية
-          </Button>
+      <div className="flex justify-between items-center" dir="rtl">
+        <div className="text-right">
+          <h2 className="text-2xl font-bold">دليل الحسابات </h2>
+          <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
         </div>
       </div>
 
-      {/* Statistics Dashboard */}
-      {statistics.data && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الحسابات</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.data.total_accounts}</div>
-              <p className="text-xs text-muted-foreground">
-                {statistics.data.active_accounts} نشط، {statistics.data.inactive_accounts} غير نشط
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الحد الأقصى للعمق</CardTitle>
-              <Layers className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.data.max_depth}</div>
-              <p className="text-xs text-muted-foreground">
-                متوسط العمق: {statistics.data.avg_depth?.toFixed(1)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الحسابات الرئيسية</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.data.header_accounts}</div>
-              <p className="text-xs text-muted-foreground">
-                حسابات تفصيلية: {statistics.data.detail_accounts}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">حالة التحقق</CardTitle>
-              {validation.data?.is_valid ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {validation.data?.is_valid ? 'صحيح' : 'يحتاج إصلاح'}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {validation.data?.total_issues || 0} مشكلة
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Validation Results */}
-      {validation.data && !validation.data.is_valid && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            تم العثور على {validation.data.total_issues} مشكلة في دليل الحسابات.
-            <Button 
-              variant="link" 
-              className="p-0 h-auto mr-2" 
-              onClick={() => fixHierarchy.mutate()}
-              disabled={fixHierarchy.isPending}
-            >
-              {fixHierarchy.isPending ? 'جاري الإصلاح...' : 'إصلاح تلقائي'}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Tabs defaultValue="accounts" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="accounts">الحسابات</TabsTrigger>
-          <TabsTrigger value="validation">التحقق والإصلاح</TabsTrigger>
-          <TabsTrigger value="statistics">الإحصائيات</TabsTrigger>
-          <TabsTrigger value="bulk-operations">العمليات المجمعة</TabsTrigger>
+      {/* Enhanced Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="tree" className="flex items-center gap-2">
+            <span>شجرة الحسابات</span>
+            <Folder className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="visualization" className="flex items-center gap-2">
+            <span>العرض التفاعلي</span>
+            <Eye className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <span>القوالب</span>
+            <Folder className="h-4 w-4" />
+          </TabsTrigger>
         </TabsList>
 
-        {/* Accounts Tab */}
-        <TabsContent value="accounts" className="space-y-4">
-          {/* Search and Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                البحث والتصفية
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <Label htmlFor="search">البحث</Label>
-                  <Input
-                    id="search"
-                    placeholder="بحث بالكود أو الاسم..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="type-filter">نوع الحساب</Label>
-                  <Select value={selectedType} onValueChange={setSelectedType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع الأنواع</SelectItem>
-                      <SelectItem value="assets">الأصول</SelectItem>
-                      <SelectItem value="liabilities">الخصوم</SelectItem>
-                      <SelectItem value="equity">حقوق الملكية</SelectItem>
-                      <SelectItem value="revenue">الإيرادات</SelectItem>
-                      <SelectItem value="expenses">المصروفات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div>
-                  <Label htmlFor="level-filter">المستوى</Label>
-                  <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع المستويات</SelectItem>
-                      <SelectItem value="1">المستوى 1</SelectItem>
-                      <SelectItem value="2">المستوى 2</SelectItem>
-                      <SelectItem value="3">المستوى 3</SelectItem>
-                      <SelectItem value="4">المستوى 4</SelectItem>
-                      <SelectItem value="5">المستوى 5</SelectItem>
-                      <SelectItem value="6">المستوى 6</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="sort-by">الترتيب حسب</Label>
-                  <Select value={sortBy} onValueChange={(value: 'code' | 'name' | 'level') => setSortBy(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="code">كود الحساب</SelectItem>
-                      <SelectItem value="name">اسم الحساب</SelectItem>
-                      <SelectItem value="level">مستوى الحساب</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <Switch
-                  id="show-inactive"
-                  checked={showInactive}
-                  onCheckedChange={setShowInactive}
-                />
-                <Label htmlFor="show-inactive">إظهار الحسابات غير النشطة</Label>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Accounts Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>دليل الحسابات ({filteredAccounts.length} حساب)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {accounts.isLoading ? (
-                <div className="text-center py-8">جاري التحميل...</div>
-              ) : filteredAccounts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد حسابات تطابق المعايير المحددة
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredAccounts.map((account) => (
-                    <AccountRow
-                      key={account.id}
-                      account={account}
-                      onEdit={setSelectedAccount}
-                      onDelete={(account) => deleteAccount.mutate(account.id)}
-                      isDeleting={deleteAccount.isPending}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Validation Tab */}
-        <TabsContent value="validation" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                التحقق من صحة دليل الحسابات
-              </CardTitle>
-              <CardDescription>
-                فحص وإصلاح مشاكل التسلسل الهرمي والبيانات في دليل الحسابات
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                onClick={() => validation.refetch()}
-                disabled={validation.isFetching}
-                className="gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                {validation.isFetching ? 'جاري الفحص...' : 'فحص دليل الحسابات'}
+        {/* Tree Tab */}
+        <TabsContent value="tree" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button onClick={() => setShowSmartWizard(true)} className="flex items-center gap-2">
+                <span>إضافة حساب جديد</span>
+                <Plus className="h-4 w-4" />
               </Button>
-
-              {validation.data && (
-                <ValidationResults
-                  validation={validation.data}
-                  onFix={() => fixHierarchy.mutate()}
-                  isFixing={fixHierarchy.isPending}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Statistics Tab */}
-        <TabsContent value="statistics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                إحصائيات دليل الحسابات
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {statistics.data && (
-                <StatisticsDisplay statistics={statistics.data} />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Bulk Operations Tab */}
-        <TabsContent value="bulk-operations" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-600">
-                <Zap className="h-5 w-5" />
-                العمليات المجمعة المتقدمة
-              </CardTitle>
-              <CardDescription className="text-red-600">
-                ⚠️ تحذير: هذه العمليات لا يمكن التراجع عنها. يرجى استخدامها بحذر شديد.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Bulk Delete Section */}
-              <div className="border-l-4 border-red-500 pl-4 bg-red-50 p-4 rounded">
-                <h3 className="font-semibold text-red-800 mb-2">حذف جميع الحسابات</h3>
-                <p className="text-sm text-red-700 mb-4">
-                  سيتم حذف أو إلغاء تفعيل جميع الحسابات في الشركة بناءً على حالة كل حساب.
-                </p>
-                
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Switch
-                      id="include-system"
-                      checked={bulkDeletionOptions.includeSystemAccounts}
-                      onCheckedChange={(checked) => 
-                        setBulkDeletionOptions(prev => ({ ...prev, includeSystemAccounts: checked }))
-                      }
-                    />
-                    <Label htmlFor="include-system" className="text-sm">
-                      تضمين الحسابات النظامية (خطر عالي)
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Switch
-                      id="include-inactive"
-                      checked={bulkDeletionOptions.includeInactiveAccounts}
-                      onCheckedChange={(checked) => 
-                        setBulkDeletionOptions(prev => ({ ...prev, includeInactiveAccounts: checked }))
-                      }
-                    />
-                    <Label htmlFor="include-inactive" className="text-sm">
-                      تضمين الحسابات غير النشطة
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Switch
-                      id="force-reset"
-                      checked={bulkDeletionOptions.forceCompleteReset}
-                      onCheckedChange={(checked) => 
-                        setBulkDeletionOptions(prev => ({ ...prev, forceCompleteReset: checked }))
-                      }
-                    />
-                    <Label htmlFor="force-reset" className="text-sm">
-                      فرض الإعادة التعيين الكاملة (خطر جداً عالي)
-                    </Label>
-                  </div>
-                </div>
-
-                <Button
-                  variant="destructive"
-                  onClick={() => setIsBulkDeleteOpen(true)}
-                  className="gap-2"
+              <Button 
+                onClick={() => setShowCSVUpload(true)} 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <span>استيراد من ملف</span>
+                <Upload className="h-4 w-4" />
+              </Button>
+              {canDeleteAll && (
+                <Button 
+                  onClick={() => setShowDeleteAllDialog(true)} 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  بدء عملية الحذف المجمع
+                  <span>حذف جميع الحسابات</span>
+                  <Skull className="h-4 w-4" />
                 </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Debug: إحصائيات الحسابات */}
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold mb-2 text-blue-800">📊 إحصائيات الحسابات المحملة:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+              <div className="text-center">
+                <div className="font-bold text-lg text-blue-600">
+                  {allAccounts?.length || 0}
+                </div>
+                <div className="text-gray-600">إجمالي</div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-center">
+                <div className="font-bold text-lg text-green-600">
+                  {allAccounts?.filter(acc => acc.account_level === 1).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 1</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-yellow-600">
+                  {allAccounts?.filter(acc => acc.account_level === 2).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 2</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-orange-600">
+                  {allAccounts?.filter(acc => acc.account_level === 3).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 3</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-red-600">
+                  {allAccounts?.filter(acc => acc.account_level === 4).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 4</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-lg text-purple-600">
+                  {allAccounts?.filter(acc => acc.account_level === 5).length || 0}
+                </div>
+                <div className="text-gray-600">مستوى 5</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tree View */}
+          <AccountsTreeView
+            accounts={allAccounts || []}
+            onViewAccount={(account) => {
+              setViewingAccount(account);
+              setShowViewDialog(true);
+            }}
+            onEditAccount={(account) => {
+              setEditingAccount(account);
+              setShowEditDialog(true);
+            }}
+            onDeleteAccount={(account) => {
+              setEditingAccount(account);
+              setShowDeleteDialog(true);
+            }}
+            onAddChildAccount={handleAddChildAccount}
+            onViewStatement={(account) => {
+              setStatementAccount(account);
+              setShowStatementDialog(true);
+            }}
+          />
         </TabsContent>
+
+
+
+        {/* Templates Tab */}
+        <TabsContent value="templates">
+          <AccountTemplateManager />
+        </TabsContent>
+
+        {/* Visualization Tab */}
+        <TabsContent value="visualization">
+          <EnhancedAccountsVisualization />
+        </TabsContent>
+
       </Tabs>
 
-      {/* Create Account Dialog */}
-      <CreateAccountDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSubmit={handleCreateAccount}
-        isSubmitting={createAccount.isPending}
+      {/* Smart Wizard Dialog */}
+      <Dialog open={showSmartWizard} onOpenChange={setShowSmartWizard}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">انشاء حساب جديد</DialogTitle>
+          </DialogHeader>
+          <SmartAccountWizardTab />
+        </DialogContent>
+      </Dialog>
+
+      {/* View Account Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">معاينة الحساب</DialogTitle>
+          </DialogHeader>
+          {viewingAccount && <div dir="rtl" className="w-full">
+            <Tabs defaultValue="info" className="w-full" dir="rtl">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info">معلومات الحساب</TabsTrigger>
+                <TabsTrigger value="history">سجل التغييرات</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info" className="space-y-4 text-right">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>رمز الحساب</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_code}</div>
+                  </div>
+                  <div>
+                    <Label>اسم الحساب</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_name}</div>
+                  </div>
+                  <div>
+                    <Label>اسم الحساب بالعربية</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_name_ar || '-'}</div>
+                  </div>
+                  <div>
+                    <Label>نوع الحساب</Label>
+                    <div className="p-2 bg-muted rounded">{getAccountTypeLabel(viewingAccount.account_type)}</div>
+                  </div>
+                  <div>
+                    <Label>طبيعة الرصيد</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'}</div>
+                  </div>
+                  <div>
+                    <Label>المستوى</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.account_level}</div>
+                  </div>
+                  <div>
+                    <Label>الحالة</Label>
+                    <div className="p-2 bg-muted rounded">
+                      <Badge variant={viewingAccount.is_active ? 'default' : 'destructive'}>
+                        {viewingAccount.is_active ? 'نشط' : 'غير نشط'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>حساب إجمالي</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.is_header ? 'نعم' : 'لا'}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <Label>الوصف</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.description || '-'}</div>
+                  </div>
+                  <div>
+                    <Label>الرصيد الحالي</Label>
+                    <div className="p-2 bg-muted rounded">{viewingAccount.current_balance?.toFixed(3) || '0.000'} د.ك</div>
+                  </div>
+                  <div>
+                    <Label>تاريخ الإنشاء</Label>
+                    <div className="p-2 bg-muted rounded">
+                      {new Date(viewingAccount.created_at).toLocaleDateString('en-GB', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="history">
+                <AccountChangeHistory account={viewingAccount} />
+              </TabsContent>
+              
+              <div className="flex justify-end mt-4">
+                <Button onClick={() => setShowViewDialog(false)}>
+                  إغلاق
+                </Button>
+              </div>
+            </Tabs>
+            </div>}
+        </DialogContent>
+      </Dialog>
+
+      {/* Enhanced Account Edit Dialog */}
+      <EnhancedAccountEditDialog open={showEditDialog} onOpenChange={setShowEditDialog} account={editingAccount} onSuccess={() => {
+      setShowEditDialog(false);
+      setEditingAccount(null);
+    }} />
+
+      {/* Simple Delete Dialog - Temporarily disabled */}
+      {/* <SimpleAccountDeleteDialog isOpen={showDeleteDialog} onClose={() => {
+      console.log('[DELETE_DIALOG] Simple dialog closing, clearing account...');
+      setShowDeleteDialog(false);
+      setEditingAccount(null);
+    }} accountId={editingAccount?.id || ''} accountName={editingAccount?.account_name || ''} accountCode={editingAccount?.account_code || ''} /> */}
+
+      {/* Professional Account Statement Dialog */}
+      <ProfessionalAccountStatement 
+        open={showStatementDialog} 
+        onOpenChange={setShowStatementDialog} 
+        accountId={statementAccount?.id} 
+        accountCode={statementAccount?.account_code} 
+        accountName={statementAccount?.account_name_ar || statementAccount?.account_name}
+        accountType={statementAccount?.account_type}
+        balanceType={statementAccount?.balance_type}
       />
 
-      {/* Edit Account Dialog */}
-      {selectedAccount && (
-        <EditAccountDialog
-          open={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          account={selectedAccount}
-          onSubmit={handleEditAccount}
-          isSubmitting={updateAccount.isPending}
-        />
-      )}
-
-      {/* Enhanced Bulk Delete Dialog */}
-      <EnhancedBulkDeleteDialog
-        open={isBulkDeleteOpen}
-        onOpenChange={setIsBulkDeleteOpen}
-        options={bulkDeletionOptions}
-        onOptionsChange={setBulkDeletionOptions}
-        onConfirm={handleBulkDelete}
-        isDeleting={bulkDelete.isPending}
-        preview={deletionPreview}
-        onPreview={handleDeletionPreview}
-        isLoadingPreview={deletionPreviewMutation.isPending}
-        confirmationText={deletionConfirmText}
-        onConfirmationTextChange={setDeletionConfirmText}
+      {/* Enhanced Delete All Accounts Dialog */}
+      <EnhancedDeleteAllAccountsDialog 
+        open={showDeleteAllDialog} 
+        onOpenChange={setShowDeleteAllDialog} 
       />
-    </div>
-  );
+
+      {/* CSV Upload Dialog */}
+      <ChartOfAccountsCSVUpload 
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          setShowCSVUpload(false);
+          // The data will refresh automatically due to query invalidation
+        }}
+      />
+    </div>;
 };
