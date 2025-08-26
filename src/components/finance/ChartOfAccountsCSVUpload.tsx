@@ -315,10 +315,41 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
               </div>
             </div>
 
-            <AccountsTreeView 
-              data={processedData}
-              hierarchyErrors={hierarchyErrors}
-            />
+                    <AccountsTreeView 
+          data={processedData} 
+          hierarchyErrors={hierarchyErrors}
+        />
+        
+        {/* Debug: عرض إحصائيات البيانات المُمررة للشجرة */}
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+          <h4 className="font-semibold mb-2">🔍 إحصائيات البيانات المُمررة للشجرة:</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <strong>إجمالي الحسابات:</strong> {processedData?.length || 0}
+            </div>
+            <div>
+              <strong>المستوى 1:</strong> {processedData?.filter(acc => acc.account_level === 1).length || 0}
+            </div>
+            <div>
+              <strong>المستوى 2:</strong> {processedData?.filter(acc => acc.account_level === 2).length || 0}
+            </div>
+            <div>
+              <strong>المستوى 3:</strong> {processedData?.filter(acc => acc.account_level === 3).length || 0}
+            </div>
+            <div>
+              <strong>المستوى 4:</strong> {processedData?.filter(acc => acc.account_level === 4).length || 0}
+            </div>
+            <div>
+              <strong>المستوى 5:</strong> {processedData?.filter(acc => acc.account_level === 5).length || 0}
+            </div>
+            <div>
+              <strong>بدون آباء:</strong> {processedData?.filter(acc => !acc.parent_account_code).length || 0}
+            </div>
+            <div>
+              <strong>مع أخطاء:</strong> {hierarchyErrors?.length || 0}
+            </div>
+          </div>
+        </div>
             
           </TabsContent>
 
