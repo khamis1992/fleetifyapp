@@ -528,7 +528,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         {...register('phone', { required: 'رقم الهاتف مطلوب' })} 
                         placeholder="+965 XXXXXXXX"
                         dir="ltr"
-                        className="text-right"
+                        className="text-left"
                       />
                       {errors.phone && (
                         <p className="text-sm text-red-600">{errors.phone.message}</p>
@@ -540,7 +540,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         {...register('alternative_phone')} 
                         placeholder="+965 XXXXXXXX"
                         dir="ltr"
-                        className="text-right"
+                        className="text-left"
                       />
                     </div>
                   </div>
@@ -805,7 +805,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                 type="button" 
                 variant="secondary" 
                 onClick={fillDummyData}
-                disabled={isLoading}
+                disabled={isSubmitting}
                 className="flex items-center gap-2"
               >
                 تعبئة بيانات تجريبية
@@ -817,15 +817,15 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 إلغاء
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || (isSuperAdmin && mode === 'create' && !selectedCompanyId)}
+                disabled={isSubmitting || (isSuperAdmin && mode === 'create' && !selectedCompanyId)}
               >
-                {isLoading && <LoadingSpinner size="sm" className="ml-2" />}
+                {isSubmitting && <LoadingSpinner size="sm" className="ml-2" />}
                 {mode === 'create' ? 'إضافة العميل' : 'حفظ التغييرات'}
               </Button>
             </div>

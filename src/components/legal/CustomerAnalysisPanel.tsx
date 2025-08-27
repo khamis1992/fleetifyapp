@@ -90,7 +90,7 @@ export const CustomerAnalysisPanel: React.FC<CustomerAnalysisPanelProps> = ({
             {customer.phone && (
               <div>
                 <label className="text-sm font-medium text-muted-foreground">رقم الهاتف</label>
-                <p>{customer.phone}</p>
+                <p dir="ltr">{customer.phone}</p>
               </div>
             )}
           </div>

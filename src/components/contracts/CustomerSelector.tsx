@@ -142,7 +142,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                         {getCustomerDisplayName(selectedCustomer)}
                       </span>
                       {selectedCustomer.phone && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground" dir="ltr">
                           {selectedCustomer.phone}
                         </span>
                       )}
@@ -234,7 +234,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                                   {getCustomerDisplayName(customer)}
                                 </span>
                                 <div className="flex gap-2 text-xs text-muted-foreground">
-                                  {customer.phone && <span>{customer.phone}</span>}
+                                  {customer.phone && <span dir="ltr">{customer.phone}</span>}
                                   {customer.email && <span>{customer.email}</span>}
                                 </div>
                               </div>

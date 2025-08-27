@@ -145,7 +145,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                         {getCustomerDisplayName(customer)}
                       </div>
                       {getCustomerSecondaryInfo(customer) && (
-                        <div className="text-xs text-muted-foreground truncate">
+                        <div className="text-xs text-muted-foreground truncate" dir="ltr">
                           {getCustomerSecondaryInfo(customer)}
                         </div>
                       )}
