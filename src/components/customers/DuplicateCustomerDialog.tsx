@@ -2,9 +2,10 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, User, Building2, Phone, Mail, CreditCard, FileText } from 'lucide-react';
+import { AlertTriangle, User, Building2, Phone, Mail, CreditCard, FileText, AlertCircle } from 'lucide-react';
 import { DuplicateCustomer } from '@/hooks/useCustomerDuplicateCheck';
 import { useNavigate } from 'react-router-dom';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface DuplicateCustomerDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export const DuplicateCustomerDialog: React.FC<DuplicateCustomerDialogProps> = (
   allowProceed = false
 }) => {
   const navigate = useNavigate();
+  const { companyId } = useUnifiedCompanyAccess();
 
   const handleViewCustomer = (customerId: string) => {
     navigate(`/customers/${customerId}`);
@@ -93,48 +95,97 @@ export const DuplicateCustomerDialog: React.FC<DuplicateCustomerDialogProps> = (
             تم العثور على {duplicates.length} عميل(عملاء) مشابه(ين) في النظام. يرجى مراجعة البيانات قبل المتابعة.
           </div>
 
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {duplicates.map((duplicate, index) => (
-              <div
-                key={`${duplicate.id}-${index}`}
-                className="border rounded-lg p-4 bg-muted/50"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {duplicate.customer_type === 'individual' ? (
-                      <User className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Building2 className="h-4 w-4 text-primary" />
-                    )}
-                    <span className="font-medium">{duplicate.name}</span>
-                  </div>
-                  <Badge variant={duplicate.customer_type === 'individual' ? 'default' : 'secondary'}>
-                    {duplicate.customer_type === 'individual' ? 'فرد' : 'شركة'}
-                  </Badge>
-                </div>
+          {/* معلومات تشخيصية */}
+          <div className="bg-info/10 border border-info/20 rounded-lg p-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertCircle className="h-3 w-3" />
+              معلومات تشخيصية
+            </div>
+            <div>معرف الشركة الحالية: {companyId}</div>
+          </div>
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                  {getFieldIcon(duplicate.duplicate_field)}
-                  <span>
-                    تطابق في {getFieldLabel(duplicate.duplicate_field)}: 
-                    <span className="font-medium text-foreground mr-1">
-                      {duplicate.duplicate_value}
-                    </span>
-                  </span>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewCustomer(duplicate.id)}
-                    className="flex-1"
-                  >
-                    عرض بيانات العميل
-                  </Button>
-                </div>
+          {/* فحص إذا كان هناك عملاء من شركات أخرى */}
+          {duplicates.some(d => d.company_id !== companyId) && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-destructive text-sm font-medium mb-1">
+                <AlertTriangle className="h-4 w-4" />
+                تحذير: عملاء من شركات أخرى
               </div>
-            ))}
+              <div className="text-sm text-muted-foreground">
+                تم العثور على عملاء من شركات أخرى في النتائج. هذا قد يشير إلى مشكلة في النظام.
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {duplicates.map((duplicate, index) => {
+              const isFromDifferentCompany = duplicate.company_id !== companyId;
+              
+              return (
+                <div
+                  key={`${duplicate.id}-${index}`}
+                  className={`border rounded-lg p-4 ${
+                    isFromDifferentCompany 
+                      ? 'bg-destructive/5 border-destructive/20' 
+                      : 'bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {duplicate.customer_type === 'individual' ? (
+                        <User className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Building2 className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="font-medium">{duplicate.name}</span>
+                      {isFromDifferentCompany && (
+                        <Badge variant="destructive" className="text-xs">
+                          شركة أخرى
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge variant={duplicate.customer_type === 'individual' ? 'default' : 'secondary'}>
+                      {duplicate.customer_type === 'individual' ? 'فرد' : 'شركة'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    {getFieldIcon(duplicate.duplicate_field)}
+                    <span>
+                      تطابق في {getFieldLabel(duplicate.duplicate_field)}: 
+                      <span className="font-medium text-foreground mr-1">
+                        {duplicate.duplicate_value}
+                      </span>
+                    </span>
+                  </div>
+
+                  {/* معلومات الشركة */}
+                  <div className="text-xs text-muted-foreground mb-3 space-y-1">
+                    <div>معرف الشركة: {duplicate.company_id}</div>
+                    {duplicate.company_name && (
+                      <div>اسم الشركة: {duplicate.company_name}</div>
+                    )}
+                    {isFromDifferentCompany && (
+                      <div className="text-destructive font-medium">
+                        ⚠️ هذا العميل ينتمي لشركة أخرى
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewCustomer(duplicate.id)}
+                      className="flex-1"
+                      disabled={isFromDifferentCompany}
+                    >
+                      {isFromDifferentCompany ? 'غير متاح' : 'عرض بيانات العميل'}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {allowProceed && (

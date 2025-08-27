@@ -8,6 +8,8 @@ export interface DuplicateCustomer {
   customer_type: string;
   duplicate_field: string;
   duplicate_value: string;
+  company_id: string;
+  company_name?: string;
 }
 
 export interface DuplicateCheckResult {
@@ -40,6 +42,15 @@ export const useCustomerDuplicateCheck = (
         throw new Error("No company access available");
       }
 
+      // إضافة logging للتشخيص
+      console.log('🔍 [DUPLICATE_CHECK] Searching with:', {
+        companyId,
+        customerType: customerData.customer_type,
+        nationalId: customerData.national_id,
+        phone: customerData.phone,
+        email: customerData.email
+      });
+
       const { data, error } = await supabase.rpc('check_duplicate_customer', {
         p_company_id: companyId,
         p_customer_type: customerData.customer_type,
@@ -57,7 +68,20 @@ export const useCustomerDuplicateCheck = (
         throw error;
       }
 
-      return data as unknown as DuplicateCheckResult;
+      // إضافة logging للنتائج
+      const result = data as any;
+      console.log('🔍 [DUPLICATE_CHECK] Results:', {
+        hasDuplicates: result?.has_duplicates,
+        count: result?.count,
+        duplicates: result?.duplicates?.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          companyId: d.company_id,
+          duplicateField: d.duplicate_field
+        }))
+      });
+
+      return result as DuplicateCheckResult;
     },
     enabled: enabled && !!companyId && (
       !!customerData.national_id || 
