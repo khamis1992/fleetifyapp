@@ -1,6 +1,7 @@
 export interface Customer {
   id: string;
   company_id: string;
+  customer_code?: string;
   customer_type: 'individual' | 'corporate';
   first_name?: string;
   last_name?: string;
@@ -42,6 +43,7 @@ export interface Customer {
 }
 
 export interface CustomerFormData {
+  customer_code?: string;
   customer_type: 'individual' | 'corporate';
   first_name?: string;
   last_name?: string;
@@ -73,7 +75,20 @@ export interface CustomerFilters {
   customer_type?: 'individual' | 'corporate';
   is_blacklisted?: boolean;
   search?: string;
+  customer_code?: string;
   includeInactive?: boolean;
   searchTerm?: string;
   limit?: number;
+}
+
+export interface CustomerAccountTransaction {
+  transaction_date: string;
+  transaction_type: 'payment' | 'invoice';
+  description: string;
+  reference_number: string;
+  debit_amount: number;
+  credit_amount: number;
+  running_balance: number;
+  transaction_id: string;
+  source_table: string;
 }

@@ -12,6 +12,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
     includeInactive = false, 
     searchTerm, 
     search,
+    customer_code,
     limit,
     customer_type,
     is_blacklisted 
@@ -26,7 +27,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
   });
   
   return useQuery({
-    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, limit, customer_type, is_blacklisted]),
+    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted]),
     queryFn: async (): Promise<EnhancedCustomer[]> => {
       if (!companyId) {
         throw new Error("No company access available");
@@ -56,8 +57,13 @@ export const useCustomers = (filters?: CustomerFilters) => {
           `last_name.ilike.%${searchText}%,` +
           `company_name.ilike.%${searchText}%,` +
           `phone.ilike.%${searchText}%,` +
-          `email.ilike.%${searchText}%`
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
         );
+      }
+
+      if (customer_code?.trim()) {
+        query = query.ilike('customer_code', `%${customer_code}%`);
       }
       
       if (limit) {

@@ -155,6 +155,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
       if (customer && mode === 'edit') {
         console.log('📝 Editing customer:', customer.id);
         reset({
+          customer_code: customer.customer_code || '',
           customer_type: customer.customer_type || 'individual',
           first_name: customer.first_name || '',
           last_name: customer.last_name || '',
@@ -428,6 +429,28 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                   <CardTitle>نوع العميل</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* عرض كود العميل في وضع التعديل */}
+                  {mode === 'edit' && customer?.customer_code && (
+                    <div className="space-y-2">
+                      <Label>كود العميل</Label>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          value={customer.customer_code}
+                          readOnly
+                          className="bg-muted font-mono text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigator.clipboard.writeText(customer.customer_code)}
+                        >
+                          نسخ
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>نوع العميل *</Label>
                     <Select 

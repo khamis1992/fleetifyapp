@@ -2690,6 +2690,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           credit_limit: number | null
+          customer_code: string | null
           customer_type: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth: string | null
           default_cost_center_id: string | null
@@ -2726,6 +2727,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           credit_limit?: number | null
+          customer_code?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth?: string | null
           default_cost_center_id?: string | null
@@ -2762,6 +2764,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           credit_limit?: number | null
+          customer_code?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type"] | null
           date_of_birth?: string | null
           default_cost_center_id?: string | null
@@ -10726,6 +10729,10 @@ export type Database = {
           total_paid: number
         }[]
       }
+      generate_customer_code: {
+        Args: { p_company_id: string; p_customer_type: string }
+        Returns: string
+      }
       generate_customer_statement_data: {
         Args: {
           company_id_param: string
@@ -10958,6 +10965,25 @@ export type Database = {
           net_amount: number
           total_credits: number
           total_debits: number
+        }[]
+      }
+      get_customer_account_statement_by_code: {
+        Args: {
+          p_company_id: string
+          p_customer_code: string
+          p_date_from?: string
+          p_date_to?: string
+        }
+        Returns: {
+          credit_amount: number
+          debit_amount: number
+          description: string
+          reference_number: string
+          running_balance: number
+          source_table: string
+          transaction_date: string
+          transaction_id: string
+          transaction_type: string
         }[]
       }
       get_customer_default_cost_center: {

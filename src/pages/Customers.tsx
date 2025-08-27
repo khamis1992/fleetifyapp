@@ -35,7 +35,8 @@ export default function Customers() {
   const [filters, setFilters] = useState({
     customer_type: undefined as 'individual' | 'corporate' | undefined,
     is_blacklisted: undefined as boolean | undefined,
-    search: ''
+    search: '',
+    customer_code: ''
   })
 
   const debouncedSearch = useDebounce(filters.search, 300)
@@ -105,7 +106,8 @@ export default function Customers() {
     setFilters({
       customer_type: undefined,
       is_blacklisted: undefined,
-      search: ''
+      search: '',
+      customer_code: ''
     })
   }
 
@@ -215,7 +217,7 @@ export default function Customers() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">البحث</label>
               <div className="relative">
@@ -230,6 +232,16 @@ export default function Customers() {
                   <LoadingSpinner size="sm" className="absolute right-3 top-3" />
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">كود العميل</label>
+              <Input
+                placeholder="CUST-24-IND-001"
+                value={filters.customer_code}
+                onChange={(e) => setFilters({ ...filters, customer_code: e.target.value })}
+                className="font-mono"
+              />
             </div>
             
             <div className="space-y-2">
@@ -350,12 +362,19 @@ export default function Customers() {
                         ) : (
                           <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
                         )}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 space-y-1">
                           <CustomerDisplayName 
                             customer={customer} 
                             showBadges={false}
                             className="font-semibold text-lg"
                           />
+                          {customer.customer_code && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                                {customer.customer_code}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         {customer.is_blacklisted && (
                           <Badge variant="destructive" className="flex-shrink-0">
