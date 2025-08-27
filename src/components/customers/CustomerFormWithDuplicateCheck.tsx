@@ -57,7 +57,7 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
   return (
     <div className="space-y-4">
       {showInlineWarning && duplicateCheck?.has_duplicates && (
-        <Alert className="border-warning/50 bg-warning/10">
+        <Alert className="border-warning/50 bg-warning/10 text-warning-foreground">
           <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertDescription className="text-warning-foreground">
             <div className="flex items-center justify-between">
