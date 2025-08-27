@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
+import { DateField } from "@/components/ui/date-field";
 import { Users, Building, Phone, MapPin, FileText, User, Shuffle } from "lucide-react";
 import { useSimpleUpdateCustomer } from "@/hooks/useSimpleUpdateCustomer";
 import { Customer, CustomerFormData } from "@/types/customer";
@@ -483,7 +484,11 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
                     <FormItem>
                       <FormLabel>انتهاء البطاقة المدنية</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <DateField
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="اختر تاريخ انتهاء البطاقة المدنية"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -522,7 +527,11 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
                     <FormItem>
                       <FormLabel>انتهاء رخصة القيادة</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <DateField
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="اختر تاريخ انتهاء رخصة القيادة"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -535,7 +544,11 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
                     <FormItem>
                       <FormLabel>تاريخ الميلاد</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <DateField
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="اختر تاريخ الميلاد"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
