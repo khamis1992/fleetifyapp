@@ -90,9 +90,54 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
       initialBalance: 0,
       country: 'Kuwait',
       credit_limit: 0,
-      ...customer,
     },
   });
+
+  // Reset form data when customer prop changes
+  useEffect(() => {
+    if (customer) {
+      console.log('Loading customer data for editing:', customer);
+      form.reset({
+        customer_type: customer.customer_type || 'individual',
+        first_name: customer.first_name || '',
+        last_name: customer.last_name || '',
+        first_name_ar: customer.first_name_ar || '',
+        last_name_ar: customer.last_name_ar || '',
+        company_name: customer.company_name || '',
+        company_name_ar: customer.company_name_ar || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        alternative_phone: customer.alternative_phone || '',
+        national_id: customer.national_id || '',
+        passport_number: customer.passport_number || '',
+        license_number: customer.license_number || '',
+        license_expiry: customer.license_expiry || '',
+        national_id_expiry: customer.national_id_expiry || '',
+        address: customer.address || '',
+        address_ar: customer.address_ar || '',
+        city: customer.city || '',
+        country: customer.country || 'Kuwait',
+        date_of_birth: customer.date_of_birth || '',
+        credit_limit: customer.credit_limit || 0,
+        emergency_contact_name: customer.emergency_contact_name || '',
+        emergency_contact_phone: customer.emergency_contact_phone || '',
+        notes: customer.notes || '',
+        accountIntegrationType: 'none', // Don't show financial section for existing customers
+        createFinancialAccount: false,
+        initialBalance: 0,
+      });
+    } else {
+      console.log('Resetting form for new customer');
+      form.reset({
+        customer_type: 'individual',
+        accountIntegrationType: 'select_existing',
+        createFinancialAccount: true,
+        initialBalance: 0,
+        country: 'Kuwait',
+        credit_limit: 0,
+      });
+    }
+  }, [customer, form]);
 
   const customerType = form.watch('customer_type');
   const accountIntegrationType = form.watch('accountIntegrationType');
