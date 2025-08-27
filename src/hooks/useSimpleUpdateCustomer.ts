@@ -10,14 +10,19 @@ export const useSimpleUpdateCustomer = () => {
     mutationFn: async ({ customerId, data }: { customerId: string; data: CustomerFormData }) => {
       console.log('🔄 Starting simple customer update:', { customerId, data });
       
-      // تنظيف البيانات بإزالة القيم غير المطلوبة
+      // تنظيف البيانات بحفظ القيم الفارغة كـ null
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([key, value]) => {
-          // إزالة القيم الفارغة والـ undefined
-          if (value === undefined || value === null) return false;
-          if (typeof value === 'string' && value.trim() === '') return false;
-          // احتفظ بالقيم المطلوبة
+          // إزالة القيم undefined فقط
+          if (value === undefined) return false;
+          // احتفظ بجميع القيم الأخرى (null, empty strings, 0, etc.)
           return true;
+        }).map(([key, value]) => {
+          // تحويل القيم الفارغة إلى null للحقول الاختيارية
+          if (typeof value === 'string' && value.trim() === '') {
+            return [key, null];
+          }
+          return [key, value];
         })
       );
 
@@ -41,10 +46,16 @@ export const useSimpleUpdateCustomer = () => {
       console.log('✅ Customer updated successfully:', updatedCustomer);
       return updatedCustomer;
     },
-    onSuccess: () => {
-      // إعادة تحميل البيانات
+    onSuccess: (updatedCustomer) => {
+      console.log('✅ Update successful, updated customer:', updatedCustomer);
+      // إعادة تحميل البيانات بطرق متعددة لضمان التحديث
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customer'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', updatedCustomer.id] });
+      
+      // تحديث cache مباشرة أيضاً
+      queryClient.setQueryData(['customer', updatedCustomer.id], updatedCustomer);
+      
       toast.success('تم تحديث بيانات العميل بنجاح');
     },
     onError: (error: any) => {
