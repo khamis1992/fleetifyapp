@@ -64,81 +64,123 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      customer_type: 'individual',
+      first_name: '',
+      last_name: '',
+      first_name_ar: '',
+      last_name_ar: '',
+      company_name: '',
+      company_name_ar: '',
+      email: '',
+      phone: '',
+      alternative_phone: '',
+      national_id: '',
+      passport_number: '',
+      license_number: '',
+      license_expiry: '',
+      national_id_expiry: '',
+      address: '',
+      address_ar: '',
+      city: '',
+      country: 'Kuwait',
+      date_of_birth: '',
+      credit_limit: 0,
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
+      notes: '',
+    }
   });
 
   // تحميل البيانات في النموذج عند تحميل بيانات العميل
   useEffect(() => {
-    if (customer) {
-      console.log('📝 [EditCustomerForm] Loading customer data:', customer);
-      console.log('🔍 [EditCustomerForm] Raw customer values:');
-      console.log('  national_id:', customer.national_id, '(type:', typeof customer.national_id, ')');
-      console.log('  phone:', customer.phone, '(type:', typeof customer.phone, ')');
-      console.log('  first_name_ar:', customer.first_name_ar, '(type:', typeof customer.first_name_ar, ')');
-      
-      // تنسيق البيانات مع معالجة دقيقة للقيم null/undefined
-      const formData: FormValues = {
-        customer_type: customer.customer_type || 'individual',
-        first_name: customer.first_name ?? '',
-        last_name: customer.last_name ?? '',
-        first_name_ar: customer.first_name_ar ?? '',
-        last_name_ar: customer.last_name_ar ?? '',
-        company_name: customer.company_name ?? '',
-        company_name_ar: customer.company_name_ar ?? '',
-        email: customer.email ?? '',
-        phone: customer.phone ?? '',
-        alternative_phone: customer.alternative_phone ?? '',
-        national_id: customer.national_id ?? '',
-        passport_number: customer.passport_number ?? '',
-        license_number: customer.license_number ?? '',
-        license_expiry: customer.license_expiry ?? '',
-        national_id_expiry: customer.national_id_expiry ?? '',
-        address: customer.address ?? '',
-        address_ar: customer.address_ar ?? '',
-        city: customer.city ?? '',
-        country: customer.country ?? 'Kuwait',
-        date_of_birth: customer.date_of_birth ?? '',
-        credit_limit: customer.credit_limit ?? 0,
-        emergency_contact_name: customer.emergency_contact_name ?? '',
-        emergency_contact_phone: customer.emergency_contact_phone ?? '',
-        notes: customer.notes ?? '',
-      };
-      
-      console.log('📝 [EditCustomerForm] Formatted form data:', formData);
-      console.log('🔍 [EditCustomerForm] Key field values after formatting:');
-      console.log('  national_id:', formData.national_id, '(type:', typeof formData.national_id, ')');
-      console.log('  phone:', formData.phone, '(type:', typeof formData.phone, ')');
-      console.log('  first_name_ar:', formData.first_name_ar, '(type:', typeof formData.first_name_ar, ')');
-      
-      // إعادة تعيين النموذج بالبيانات المنسقة
-      console.log('🔄 [EditCustomerForm] Calling form.reset with formData...');
-      form.reset(formData);
-      
-      // التحقق الفوري من القيم
-      const immediateValues = form.getValues();
-      console.log('⚡ [EditCustomerForm] Immediate values after reset:', immediateValues);
-      console.log('⚡ [EditCustomerForm] Immediate national_id:', immediateValues.national_id);
-      
-      // التحقق من أن البيانات تم تحميلها بشكل صحيح بعد reset
-      const timeoutId = setTimeout(() => {
+    if (!customer) return;
+
+    console.log('📝 [EditCustomerForm] Loading customer data:', customer);
+    console.log('🔍 [EditCustomerForm] Raw Arabic names:');
+    console.log('  first_name_ar:', customer.first_name_ar, '(type:', typeof customer.first_name_ar, ')');
+    console.log('  last_name_ar:', customer.last_name_ar, '(type:', typeof customer.last_name_ar, ')');
+    console.log('  company_name_ar:', customer.company_name_ar, '(type:', typeof customer.company_name_ar, ')');
+
+    // معالجة محسنة للبيانات مع ضمان تحويل null إلى string فارغ
+    const processValue = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim();
+    };
+
+    const processNumberValue = (value: any): number => {
+      if (value === null || value === undefined) return 0;
+      const num = Number(value);
+      return isNaN(num) ? 0 : num;
+    };
+
+    // تنسيق البيانات مع معالجة دقيقة للقيم null/undefined
+    const formData: FormValues = {
+      customer_type: customer.customer_type || 'individual',
+      first_name: processValue(customer.first_name),
+      last_name: processValue(customer.last_name),
+      first_name_ar: processValue(customer.first_name_ar),
+      last_name_ar: processValue(customer.last_name_ar),
+      company_name: processValue(customer.company_name),
+      company_name_ar: processValue(customer.company_name_ar),
+      email: processValue(customer.email),
+      phone: processValue(customer.phone),
+      alternative_phone: processValue(customer.alternative_phone),
+      national_id: processValue(customer.national_id),
+      passport_number: processValue(customer.passport_number),
+      license_number: processValue(customer.license_number),
+      license_expiry: processValue(customer.license_expiry),
+      national_id_expiry: processValue(customer.national_id_expiry),
+      address: processValue(customer.address),
+      address_ar: processValue(customer.address_ar),
+      city: processValue(customer.city),
+      country: processValue(customer.country) || 'Kuwait',
+      date_of_birth: processValue(customer.date_of_birth),
+      credit_limit: processNumberValue(customer.credit_limit),
+      emergency_contact_name: processValue(customer.emergency_contact_name),
+      emergency_contact_phone: processValue(customer.emergency_contact_phone),
+      notes: processValue(customer.notes),
+    };
+
+    console.log('📝 [EditCustomerForm] Processed form data:', formData);
+    console.log('🔍 [EditCustomerForm] Arabic fields after processing:');
+    console.log('  first_name_ar:', formData.first_name_ar, '(length:', formData.first_name_ar.length, ')');
+    console.log('  last_name_ar:', formData.last_name_ar, '(length:', formData.last_name_ar.length, ')');
+
+    // استخدام setTimeout لضمان أن DOM محدث قبل reset
+    setTimeout(() => {
+      console.log('🔄 [EditCustomerForm] Calling form.reset with processed data...');
+      form.reset(formData, {
+        keepDefaultValues: false,
+        keepValues: false,
+        keepErrors: false,
+        keepDirty: false,
+        keepIsSubmitted: false,
+        keepTouched: false,
+        keepIsValid: false,
+        keepSubmitCount: false
+      });
+
+      // التحقق الفوري من القيم بعد reset
+      setTimeout(() => {
         const currentValues = form.getValues();
-        console.log('✅ [EditCustomerForm] Current form values after timeout:', currentValues);
-        console.log('✅ [EditCustomerForm] Final national_id value:', currentValues.national_id);
+        console.log('✅ [EditCustomerForm] Final form values after reset:', currentValues);
+        console.log('✅ [EditCustomerForm] Arabic names verification:');
+        console.log('  first_name_ar:', currentValues.first_name_ar);
+        console.log('  last_name_ar:', currentValues.last_name_ar);
         
-        // التحقق من الحقول الفارغة
-        const emptyFields = Object.entries(currentValues).filter(([key, value]) => 
-          value === undefined || value === null || value === ''
-        );
-        if (emptyFields.length > 0) {
-          console.log('⚠️ [EditCustomerForm] Empty fields detected:', emptyFields.map(([key]) => key));
-        }
-        
-        // التحقق من حالة النموذج في React Hook Form
-        console.log('🔍 [EditCustomerForm] Form state:', form.formState);
-        console.log('🔍 [EditCustomerForm] Form defaultValues:', form.formState.defaultValues);
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
+        // فرض إعادة رسم الحقول بطريقة فردية إذا لزم الأمر
+        Object.entries(formData).forEach(([key, value]) => {
+          form.setValue(key as keyof FormValues, value, { 
+            shouldValidate: false, 
+            shouldDirty: false,
+            shouldTouch: false 
+          });
+        });
+
+        console.log('🔁 [EditCustomerForm] Individual setValue calls completed');
+      }, 50);
+    }, 10);
   }, [customer, form]);
 
   const customerType = form.watch('customer_type');
