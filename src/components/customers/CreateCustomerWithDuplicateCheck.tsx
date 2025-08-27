@@ -15,8 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { User, Phone, Calculator, LinkIcon, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { User, Phone, Calculator, LinkIcon, CheckCircle, ArrowRight, ArrowLeft, CalendarIcon, AlertTriangle } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const customerSchema = z.object({
   // Basic Information
@@ -27,8 +32,18 @@ const customerSchema = z.object({
   commercial_register: z.string().optional(),
   national_id: z.string().optional(),
   passport_number: z.string().optional(),
+  license_number: z.string().optional(),
   phone: z.string().min(1, 'رقم الهاتف مطلوب'),
   email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
+  date_of_birth: z.date().optional(),
+  national_id_expiry: z.date().refine(
+    (date) => !date || date > new Date(),
+    { message: 'تاريخ انتهاء البطاقة المدنية يجب أن يكون في المستقبل' }
+  ).optional(),
+  license_expiry: z.date().refine(
+    (date) => !date || date > new Date(),
+    { message: 'تاريخ انتهاء رخصة القيادة يجب أن يكون في المستقبل' }
+  ).optional(),
   
   // Accounting Settings
   accounting_classification: z.string().default('regular'),
@@ -47,7 +62,22 @@ const customerSchema = z.object({
     deposits: z.string().optional(),
     discounts: z.string().optional(),
   }).optional(),
-});
+}).refine(
+  (data) => {
+    // Validate that birth date is not in the future and not too old
+    if (data.date_of_birth) {
+      const today = new Date();
+      const birthDate = data.date_of_birth;
+      const age = today.getFullYear() - birthDate.getFullYear();
+      return birthDate <= today && age <= 120;
+    }
+    return true;
+  },
+  {
+    message: 'تاريخ الميلاد غير صحيح',
+    path: ['date_of_birth']
+  }
+);
 
 type CustomerFormData = z.infer<typeof customerSchema>;
 
@@ -79,6 +109,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       commercial_register: '',
       national_id: '',
       passport_number: '',
+      license_number: '',
       phone: '',
       email: '',
       accounting_classification: 'regular',
@@ -93,6 +124,20 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
+      // Check for expired documents
+      const expiredDocs = [];
+      if (data.national_id_expiry && data.national_id_expiry <= new Date()) {
+        expiredDocs.push('البطاقة المدنية');
+      }
+      if (data.license_expiry && data.license_expiry <= new Date()) {
+        expiredDocs.push('رخصة القيادة');
+      }
+
+      if (expiredDocs.length > 0) {
+        toast.error(`لا يمكن حفظ العميل: ${expiredDocs.join(' و ')} منتهية الصلاحية`);
+        return;
+      }
+
       // If there are duplicates and user hasn't forced creation, show error
       if (hasDuplicates && !forceCreate) {
         toast.error('يوجد عملاء مشابهين في النظام. يرجى مراجعة التحذيرات أعلاه.');
@@ -364,6 +409,124 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
 
                       <FormField
                         control={form.control}
+                        name="national_id_expiry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>تاريخ انتهاء البطاقة المدنية</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground",
+                                      field.value && field.value <= new Date() && "border-destructive text-destructive"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>اختر التاريخ</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date < new Date()}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {field.value && field.value <= new Date() && (
+                              <Alert className="border-destructive/50 bg-destructive/10">
+                                <AlertTriangle className="h-4 w-4 text-destructive" />
+                                <AlertDescription className="text-destructive">
+                                  البطاقة المدنية منتهية الصلاحية
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="license_number"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>رقم رخصة القيادة</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="أدخل رقم رخصة القيادة" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="license_expiry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>تاريخ انتهاء رخصة القيادة</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground",
+                                      field.value && field.value <= new Date() && "border-destructive text-destructive"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>اختر التاريخ</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date < new Date()}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {field.value && field.value <= new Date() && (
+                              <Alert className="border-destructive/50 bg-destructive/10">
+                                <AlertTriangle className="h-4 w-4 text-destructive" />
+                                <AlertDescription className="text-destructive">
+                                  رخصة القيادة منتهية الصلاحية
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
                         name="passport_number"
                         render={({ field }) => (
                           <FormItem>
@@ -371,6 +534,47 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                             <FormControl>
                               <Input {...field} placeholder="أدخل رقم الجواز" />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="date_of_birth"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>تاريخ الميلاد</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>اختر التاريخ</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
                             <FormMessage />
                           </FormItem>
                         )}
