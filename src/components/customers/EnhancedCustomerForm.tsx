@@ -518,7 +518,7 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                                      {...field} 
                                      type="tel" 
                                      placeholder="+965 XXXXXXXX" 
-                                     className="text-right h-12 text-base"
+                                     className="text-left h-12 text-base"
                                      dir="ltr"
                                    />
                                 </FormControl>
@@ -533,13 +533,13 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                               <FormItem>
                                 <FormLabel className="text-base font-medium text-right">رقم هاتف بديل</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="tel" 
-                                    placeholder="+965 XXXXXXXX" 
-                                    className="text-right h-12 text-base"
-                                    dir="ltr"
-                                  />
+                                   <Input 
+                                     {...field} 
+                                     type="tel" 
+                                     placeholder="+965 XXXXXXXX" 
+                                     className="text-left h-12 text-base"
+                                     dir="ltr"
+                                   />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -799,7 +799,51 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                             )}
                           />
                         </div>
-                      </div>
+                       </div>
+
+                       {/* جهة الاتصال للطوارئ */}
+                       <div className="space-y-6">
+                         <h3 className="text-xl font-semibold text-right">جهة الاتصال للطوارئ</h3>
+                         <div className="grid grid-cols-2 gap-6">
+                           <FormField
+                             control={form.control}
+                             name="emergency_contact_name"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel className="text-base font-medium text-right">اسم جهة الاتصال</FormLabel>
+                                 <FormControl>
+                                   <Input 
+                                     {...field} 
+                                     placeholder="ادخل اسم جهة الاتصال" 
+                                     className="text-right h-12 text-base"
+                                     dir="rtl"
+                                   />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <FormField
+                             control={form.control}
+                             name="emergency_contact_phone"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel className="text-base font-medium text-right">رقم هاتف الطوارئ</FormLabel>
+                                 <FormControl>
+                                   <Input 
+                                     {...field} 
+                                     type="tel" 
+                                     placeholder="+965 XXXXXXXX" 
+                                     className="text-left h-12 text-base"
+                                     dir="ltr"
+                                   />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                         </div>
+                       </div>
 
                       {/* ملاحظات إضافية */}
                       <div className="space-y-6">
