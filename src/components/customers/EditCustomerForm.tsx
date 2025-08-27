@@ -64,18 +64,15 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      customer_type: 'individual',
-      country: 'Kuwait',
-      credit_limit: 0,
-    },
   });
 
   // تحميل بيانات العميل عند تمرير العميل
   useEffect(() => {
     if (customer) {
       console.log('📝 Loading customer data:', customer);
-      form.reset({
+      
+      // تنسيق البيانات مع التعامل مع القيم الفارغة
+      const formData: FormValues = {
         customer_type: customer.customer_type || 'individual',
         first_name: customer.first_name || '',
         last_name: customer.last_name || '',
@@ -96,11 +93,22 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
         city: customer.city || '',
         country: customer.country || 'Kuwait',
         date_of_birth: customer.date_of_birth || '',
-        credit_limit: customer.credit_limit || 0,
+        credit_limit: customer.credit_limit ?? 0,
         emergency_contact_name: customer.emergency_contact_name || '',
         emergency_contact_phone: customer.emergency_contact_phone || '',
         notes: customer.notes || '',
-      });
+      };
+      
+      console.log('📝 Formatted form data:', formData);
+      
+      // إعادة تعيين النموذج بالبيانات المنسقة
+      form.reset(formData);
+      
+      // التحقق من أن البيانات تم تحميلها بشكل صحيح
+      setTimeout(() => {
+        const currentValues = form.getValues();
+        console.log('✅ Current form values after reset:', currentValues);
+      }, 100);
     }
   }, [customer, form]);
 
