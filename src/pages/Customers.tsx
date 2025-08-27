@@ -148,63 +148,6 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      {/* أزرار التشخيص المؤقتة */}
-      <Card className="bg-yellow-50 border-yellow-200">
-        <CardHeader>
-          <CardTitle className="text-yellow-800">أدوات التشخيص (مؤقتة)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                console.log('🔧 [DIAGNOSTIC] Current user context:', {
-                  user: user ? {
-                    id: user.id,
-                    email: user.email,
-                    roles: user.roles,
-                    company: user.company,
-                    profile: user.profile
-                  } : null,
-                  filters,
-                  customersData: customers?.slice(0, 3)
-                });
-                toast.info('تم طباعة معلومات السياق في وحدة التحكم');
-              }}
-            >
-              فحص السياق
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // Force reload data by invalidating cache
-                window.location.reload();
-              }}
-            >
-              إعادة تحميل القوية
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                console.log('🔧 [DIAGNOSTIC] Query state:', {
-                  isLoading,
-                  isFetching,
-                  error: error?.message,
-                  customersCount: customers?.length || 0,
-                  filters: debouncedFilters
-                });
-                toast.info('تم طباعة حالة الاستعلام في وحدة التحكم');
-              }}
-            >
-              فحص الاستعلام
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* رأس الصفحة */}
       <div className="flex justify-between items-center">
         <div>

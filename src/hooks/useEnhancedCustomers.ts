@@ -28,15 +28,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
   return useQuery({
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, limit, customer_type, is_blacklisted]),
     queryFn: async (): Promise<EnhancedCustomer[]> => {
-      console.log('📊 [useCustomers] Starting customer query with:', {
-        companyId,
-        isBrowsingMode,
-        browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-        filters: { includeInactive, searchTerm, search, limit, customer_type, is_blacklisted }
-      });
-      
       if (!companyId) {
-        console.error('❌ [useCustomers] No company ID available');
         throw new Error("No company access available");
       }
       
@@ -45,21 +37,16 @@ export const useCustomers = (filters?: CustomerFilters) => {
         .select('*')
         .eq('company_id', companyId);
       
-      console.log('🔍 [useCustomers] Base query setup with company_id:', companyId);
-      
       if (!includeInactive) {
         query = query.eq('is_active', true);
-        console.log('🔍 [useCustomers] Added is_active filter');
       }
       
       if (customer_type) {
         query = query.eq('customer_type', customer_type);
-        console.log('🔍 [useCustomers] Added customer_type filter:', customer_type);
       }
 
       if (is_blacklisted !== undefined) {
         query = query.eq('is_blacklisted', is_blacklisted);
-        console.log('🔍 [useCustomers] Added is_blacklisted filter:', is_blacklisted);
       }
       
       const searchText = searchTerm || search;
@@ -71,34 +58,18 @@ export const useCustomers = (filters?: CustomerFilters) => {
           `phone.ilike.%${searchText}%,` +
           `email.ilike.%${searchText}%`
         );
-        console.log('🔍 [useCustomers] Added search filter:', searchText);
       }
       
       if (limit) {
         query = query.limit(limit);
-        console.log('🔍 [useCustomers] Added limit:', limit);
       }
       
       query = query.order('created_at', { ascending: false });
-      console.log('🔍 [useCustomers] Added ordering by created_at desc');
       
       const { data, error } = await query;
       
-      console.log('📊 [useCustomers] Query result:', {
-        success: !error,
-        error: error?.message,
-        customerCount: data?.length || 0,
-        customers: data?.slice(0, 3).map(c => ({
-          id: c.id,
-          name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name,
-          customer_type: c.customer_type,
-          company_id: c.company_id,
-          created_at: c.created_at
-        })) || []
-      });
-      
       if (error) {
-        console.error('❌ [useCustomers] Query failed:', error);
+        console.error('Error fetching customers:', error);
         throw error;
       }
       
