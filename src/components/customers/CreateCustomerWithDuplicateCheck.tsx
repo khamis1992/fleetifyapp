@@ -191,7 +191,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">
           <User className="h-6 w-6" />
-          إنشاء عميل جديد - نظام محاسبي متقدم
+          إنشاء عميل جديد
         </CardTitle>
         
         {/* Progress Bar */}
