@@ -114,6 +114,25 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
       return isNaN(num) ? 0 : num;
     };
 
+    // معالجة خاصة للتواريخ
+    const processDateValue = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      const dateStr = String(value).trim();
+      if (!dateStr) return '';
+      
+      // إذا كان التاريخ بتنسيق ISO، حوله إلى YYYY-MM-DD
+      try {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        console.warn('⚠️ [EditCustomerForm] Invalid date format:', dateStr);
+      }
+      
+      return dateStr;
+    };
+
     // تنسيق البيانات مع معالجة دقيقة للقيم null/undefined
     const formData: FormValues = {
       customer_type: customer.customer_type || 'individual',
@@ -129,13 +148,13 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
       national_id: processValue(customer.national_id),
       passport_number: processValue(customer.passport_number),
       license_number: processValue(customer.license_number),
-      license_expiry: processValue(customer.license_expiry),
-      national_id_expiry: processValue(customer.national_id_expiry),
+      license_expiry: processDateValue(customer.license_expiry),
+      national_id_expiry: processDateValue(customer.national_id_expiry),
       address: processValue(customer.address),
       address_ar: processValue(customer.address_ar),
       city: processValue(customer.city),
       country: processValue(customer.country) || 'Kuwait',
-      date_of_birth: processValue(customer.date_of_birth),
+      date_of_birth: processDateValue(customer.date_of_birth),
       credit_limit: processNumberValue(customer.credit_limit),
       emergency_contact_name: processValue(customer.emergency_contact_name),
       emergency_contact_phone: processValue(customer.emergency_contact_phone),
@@ -146,6 +165,10 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
     console.log('🔍 [EditCustomerForm] Arabic fields after processing:');
     console.log('  first_name_ar:', formData.first_name_ar, '(length:', formData.first_name_ar.length, ')');
     console.log('  last_name_ar:', formData.last_name_ar, '(length:', formData.last_name_ar.length, ')');
+    console.log('🗓️ [EditCustomerForm] Date fields after processing:');
+    console.log('  license_expiry:', formData.license_expiry, '(raw:', customer.license_expiry, ')');
+    console.log('  national_id_expiry:', formData.national_id_expiry, '(raw:', customer.national_id_expiry, ')');
+    console.log('  date_of_birth:', formData.date_of_birth, '(raw:', customer.date_of_birth, ')');
 
     // استخدام setTimeout لضمان أن DOM محدث قبل reset
     setTimeout(() => {
@@ -168,6 +191,10 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
         console.log('✅ [EditCustomerForm] Arabic names verification:');
         console.log('  first_name_ar:', currentValues.first_name_ar);
         console.log('  last_name_ar:', currentValues.last_name_ar);
+        console.log('✅ [EditCustomerForm] Date fields verification:');
+        console.log('  license_expiry:', currentValues.license_expiry);
+        console.log('  national_id_expiry:', currentValues.national_id_expiry);
+        console.log('  date_of_birth:', currentValues.date_of_birth);
         
         // فرض إعادة رسم الحقول بطريقة فردية إذا لزم الأمر
         Object.entries(formData).forEach(([key, value]) => {
