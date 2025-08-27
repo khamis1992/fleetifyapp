@@ -178,7 +178,7 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>نوع العميل *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر نوع العميل" />
