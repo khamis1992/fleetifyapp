@@ -547,17 +547,6 @@ export function CustomerAccountSelector({
             </div>
           </div>}
 
-        {/* Debug Information */}
-        <details className="text-xs text-muted-foreground">
-          <summary className="cursor-pointer">معلومات المطور</summary>
-          <div className="mt-2 space-y-1">
-            <div>Customer ID: {customerId}</div>
-            <div>Available Accounts: {availableAccounts?.length || 0}</div>
-            <div>Linked Accounts: {linkedAccounts?.length || 0}</div>
-            <div>Available for Linking: {availableAccountsList.length}</div>
-            <div>Refresh Key: {refreshKey}</div>
-          </div>
-        </details>
       </CardContent>
     </Card>;
 }
