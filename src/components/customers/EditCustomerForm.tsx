@@ -66,10 +66,14 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
     resolver: zodResolver(formSchema),
   });
 
-  // تحميل بيانات العميل عند تمرير العميل
+  // تحميل البيانات في النموذج عند تحميل بيانات العميل
   useEffect(() => {
     if (customer) {
-      console.log('📝 Loading customer data:', customer);
+      console.log('📝 [EditCustomerForm] Loading customer data:', customer);
+      console.log('🔍 [EditCustomerForm] Raw customer values:');
+      console.log('  national_id:', customer.national_id, '(type:', typeof customer.national_id, ')');
+      console.log('  phone:', customer.phone, '(type:', typeof customer.phone, ')');
+      console.log('  first_name_ar:', customer.first_name_ar, '(type:', typeof customer.first_name_ar, ')');
       
       // تنسيق البيانات مع معالجة دقيقة للقيم null/undefined
       const formData: FormValues = {
@@ -99,28 +103,39 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
         notes: customer.notes ?? '',
       };
       
-      console.log('📝 Formatted form data:', formData);
-      console.log('🔍 Individual field values:');
-      Object.entries(formData).forEach(([key, value]) => {
-        console.log(`  ${key}: "${value}" (type: ${typeof value})`);
-      });
+      console.log('📝 [EditCustomerForm] Formatted form data:', formData);
+      console.log('🔍 [EditCustomerForm] Key field values after formatting:');
+      console.log('  national_id:', formData.national_id, '(type:', typeof formData.national_id, ')');
+      console.log('  phone:', formData.phone, '(type:', typeof formData.phone, ')');
+      console.log('  first_name_ar:', formData.first_name_ar, '(type:', typeof formData.first_name_ar, ')');
       
       // إعادة تعيين النموذج بالبيانات المنسقة
+      console.log('🔄 [EditCustomerForm] Calling form.reset with formData...');
       form.reset(formData);
+      
+      // التحقق الفوري من القيم
+      const immediateValues = form.getValues();
+      console.log('⚡ [EditCustomerForm] Immediate values after reset:', immediateValues);
+      console.log('⚡ [EditCustomerForm] Immediate national_id:', immediateValues.national_id);
       
       // التحقق من أن البيانات تم تحميلها بشكل صحيح بعد reset
       const timeoutId = setTimeout(() => {
         const currentValues = form.getValues();
-        console.log('✅ Current form values after reset:', currentValues);
+        console.log('✅ [EditCustomerForm] Current form values after timeout:', currentValues);
+        console.log('✅ [EditCustomerForm] Final national_id value:', currentValues.national_id);
         
         // التحقق من الحقول الفارغة
         const emptyFields = Object.entries(currentValues).filter(([key, value]) => 
           value === undefined || value === null || value === ''
         );
         if (emptyFields.length > 0) {
-          console.log('⚠️ Empty fields detected:', emptyFields);
+          console.log('⚠️ [EditCustomerForm] Empty fields detected:', emptyFields.map(([key]) => key));
         }
-      }, 50);
+        
+        // التحقق من حالة النموذج في React Hook Form
+        console.log('🔍 [EditCustomerForm] Form state:', form.formState);
+        console.log('🔍 [EditCustomerForm] Form defaultValues:', form.formState.defaultValues);
+      }, 100);
       
       return () => clearTimeout(timeoutId);
     }
@@ -158,6 +173,15 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
     form.setValue('country', 'الكويت');
   };
 
+  // وظيفة للتحقق من قيم النموذج الحالية (للتشخيص)
+  const debugFormValues = () => {
+    const values = form.getValues();
+    console.log('🔍 [DEBUG] Current form values:', values);
+    console.log('🔍 [DEBUG] Form state:', form.formState);
+    console.log('🔍 [DEBUG] Form defaultValues:', form.formState.defaultValues);
+    alert(`القيم الحالية:\nالرقم المدني: "${values.national_id}"\nالهاتف: "${values.phone}"\nالاسم: "${values.first_name_ar}"`);
+  };
+
   const isSubmitting = updateMutation.isPending;
 
   return (
@@ -173,13 +197,24 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
             تحديث معلومات العميل الأساسية
           </p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
-          {customer.customer_type === 'individual' ? (
-            <><Users className="h-4 w-4 mr-2" />فرد</>
-          ) : (
-            <><Building className="h-4 w-4 mr-2" />شركة</>
-          )}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-lg px-4 py-2">
+            {customer.customer_type === 'individual' ? (
+              <><Users className="h-4 w-4 mr-2" />فرد</>
+            ) : (
+              <><Building className="h-4 w-4 mr-2" />شركة</>
+            )}
+          </Badge>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={debugFormValues}
+            className="text-xs"
+          >
+            فحص القيم
+          </Button>
+        </div>
       </div>
 
       <Form {...form}>
