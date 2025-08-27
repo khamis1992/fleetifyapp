@@ -21,17 +21,6 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
     return `${customerData.first_name || ''} ${customerData.last_name || ''}`.trim() || 'العميل';
   };
 
-  const getClassificationLabel = (classification: string) => {
-    const labels = {
-      regular: 'عميل عادي',
-      vip: 'عميل VIP',
-      credit: 'عميل ائتماني',
-      cash: 'عميل نقدي',
-      wholesale: 'عميل جملة',
-      retail: 'عميل تجزئة'
-    };
-    return labels[classification as keyof typeof labels] || classification;
-  };
 
   const getPaymentTermsLabel = (terms: string) => {
     const labels = {
@@ -93,12 +82,6 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">نوع العميل:</span>
                 <span>{customerData.customer_type === 'individual' ? 'فرد' : 'شركة'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">التصنيف المحاسبي:</span>
-                <Badge variant="outline" className="text-xs">
-                  {getClassificationLabel(customerData.accounting_classification)}
-                </Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">العملة الأساسية:</span>

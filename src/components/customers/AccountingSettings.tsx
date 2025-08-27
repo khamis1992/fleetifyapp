@@ -33,37 +33,7 @@ export const AccountingSettings: React.FC<AccountingSettingsProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Customer Classification */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={control}
-            name="accounting_classification"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  التصنيف المحاسبي
-                </FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر التصنيف المحاسبي" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="regular">عميل عادي</SelectItem>
-                    <SelectItem value="vip">عميل VIP</SelectItem>
-                    <SelectItem value="credit">عميل ائتماني</SelectItem>
-                    <SelectItem value="cash">عميل نقدي</SelectItem>
-                    <SelectItem value="wholesale">عميل جملة</SelectItem>
-                    <SelectItem value="retail">عميل تجزئة</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
+        <div className="grid grid-cols-1 gap-6">
           <FormField
             control={control}
             name="initial_credit_limit"
