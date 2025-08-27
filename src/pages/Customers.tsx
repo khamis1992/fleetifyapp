@@ -378,7 +378,7 @@ export default function Customers() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleEditCustomer(customer)}
+                        onClick={() => navigate(`/edit-customer/${customer.id}`)}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         تعديل
