@@ -24,7 +24,7 @@ import { useAvailableCustomerAccounts, useCompanyAccountSettings } from "@/hooks
 import { UnifiedAccountSelector } from "@/components/ui/unified-account-selector";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
-import { CustomerAccountsManager } from "./CustomerAccountsManager";
+import { CustomerAccountTabs } from "./CustomerAccountTabs";
 
 interface CustomerFormProps {
   open: boolean;
@@ -738,8 +738,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
 
             {/* تبويب إدارة الحسابات المحاسبية المتقدم */}
             <TabsContent value="accounts" className="space-y-4">
-              {mode === 'edit' && customer ? (
-                <CustomerAccountsManager customer={customer} />
+        {mode === 'edit' && customer ? (
+                <CustomerAccountTabs customer={customer} />
               ) : (
                 <Card dir="rtl">
                   <CardHeader>

@@ -1,98 +1,117 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarIcon, FileDownIcon, PrinterIcon, SearchIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon, FileText, Download, Filter } from 'lucide-react';
 import { useCustomerAccountStatement } from '@/hooks/useCustomerAccountStatement';
+import { Customer } from '@/types/customer';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+// Utility function to format currency
+const formatCurrency = (amount: number, currency: string = 'KWD') => {
+  return new Intl.NumberFormat('ar-KW', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  }).format(amount);
+};
+
 interface CustomerAccountStatementProps {
-  customerCode?: string;
-  onCustomerCodeChange?: (code: string) => void;
+  customer: Customer;
 }
 
-export const CustomerAccountStatement = ({ 
-  customerCode: initialCustomerCode,
-  onCustomerCodeChange 
-}: CustomerAccountStatementProps) => {
-  const [customerCode, setCustomerCode] = useState(initialCustomerCode || '');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [showStatement, setShowStatement] = useState(false);
+export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> = ({ customer }) => {
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
 
-  const { data: transactions, isLoading, error } = useCustomerAccountStatement({
-    customerCode: showStatement ? customerCode : undefined,
-    dateFrom,
-    dateTo,
-    enabled: showStatement && !!customerCode
+  const { data: transactions = [], isLoading, refetch } = useCustomerAccountStatement({
+    customerCode: customer.customer_code,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    enabled: !!customer.customer_code
   });
 
-  const handleSearch = () => {
-    if (customerCode.trim()) {
-      setShowStatement(true);
-      onCustomerCodeChange?.(customerCode);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleExport = () => {
-    if (!transactions || transactions.length === 0) return;
-
-    const csvContent = [
-      ['التاريخ', 'النوع', 'الوصف', 'المرجع', 'مدين', 'دائن', 'الرصيد'].join(','),
-      ...transactions.map(transaction => [
-        transaction.transaction_date,
-        transaction.transaction_type === 'payment' ? 'دفعة' : 'فاتورة',
-        transaction.description,
-        transaction.reference_number,
-        transaction.debit_amount || '',
-        transaction.credit_amount || '',
-        transaction.running_balance
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `customer-statement-${customerCode}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // TODO: Implement export functionality
+    console.log('Export functionality to be implemented');
   };
 
-  const totalDebits = transactions?.reduce((sum, t) => sum + (t.debit_amount || 0), 0) || 0;
-  const totalCredits = transactions?.reduce((sum, t) => sum + (t.credit_amount || 0), 0) || 0;
-  const finalBalance = transactions?.[transactions.length - 1]?.running_balance || 0;
+  const getTransactionTypeBadge = (type: string) => {
+    const variants = {
+      'invoice': 'destructive',
+      'payment': 'default'
+    } as const;
 
-  return (
-    <div className="space-y-6">
-      {/* Search Section */}
+    const labels = {
+      'invoice': 'فاتورة',
+      'payment': 'دفعة'
+    };
+
+    return (
+      <Badge variant={variants[type as keyof typeof variants] || 'secondary'}>
+        {labels[type as keyof typeof labels] || type}
+      </Badge>
+    );
+  };
+
+  const totalDebit = transactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
+  const totalCredit = transactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
+  const netBalance = totalDebit - totalCredit;
+
+  if (isLoading) {
+    return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-primary">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
             كشف حساب العميل
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="customerCode">كود العميل</Label>
-              <Input
-                id="customerCode"
-                value={customerCode}
-                onChange={(e) => setCustomerCode(e.target.value)}
-                placeholder="CUST-24-IND-001"
-                className="font-mono"
-              />
-            </div>
+          <div className="text-center py-4">جارٍ تحميل كشف الحساب...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            كشف حساب العميل
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              فلترة
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={transactions.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              تصدير
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
             <div className="space-y-2">
               <Label htmlFor="dateFrom">من تاريخ</Label>
               <Input
@@ -113,131 +132,123 @@ export const CustomerAccountStatement = ({
             </div>
             <div className="flex items-end">
               <Button 
-                onClick={handleSearch}
+                onClick={() => refetch()}
                 className="w-full"
-                disabled={!customerCode.trim()}
               >
-                <SearchIcon className="w-4 h-4 mr-2" />
-                عرض الكشف
+                تطبيق الفلتر
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Statement Section */}
-      {showStatement && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg font-semibold">
-                كشف حساب العميل: {customerCode}
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handlePrint}>
-                  <PrinterIcon className="w-4 h-4 mr-2" />
-                  طباعة
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExport}>
-                  <FileDownIcon className="w-4 h-4 mr-2" />
-                  تصدير
-                </Button>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">إجمالي المدين</div>
+              <div className="text-2xl font-bold text-destructive">
+                {formatCurrency(totalDebit)}
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                جاري تحميل البيانات...
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">إجمالي الدائن</div>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(totalCredit)}
               </div>
-            ) : error ? (
-              <div className="text-center py-8 text-destructive">
-                خطأ في تحميل البيانات: {error.message}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">الرصيد الصافي</div>
+              <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-destructive' : 'text-green-600'}`}>
+                {formatCurrency(Math.abs(netBalance))}
               </div>
-            ) : !transactions || transactions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                لا توجد حركات مالية لهذا العميل في الفترة المحددة
+              <div className="text-xs text-muted-foreground">
+                {netBalance >= 0 ? 'مدين' : 'دائن'}
               </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Summary */}
-                <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground">إجمالي المدين</div>
-                    <div className="text-lg font-semibold text-destructive">
-                      {totalDebits.toFixed(3)} د.ك
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground">إجمالي الدائن</div>
-                    <div className="text-lg font-semibold text-green-600">
-                      {totalCredits.toFixed(3)} د.ك
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground">الرصيد النهائي</div>
-                    <div className={`text-lg font-semibold ${finalBalance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                      {finalBalance.toFixed(3)} د.ك
-                    </div>
-                  </div>
-                </div>
+            </CardContent>
+          </Card>
+        </div>
 
-                {/* Transactions Table */}
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">النوع</TableHead>
-                        <TableHead className="text-right">الوصف</TableHead>
-                        <TableHead className="text-right">المرجع</TableHead>
-                        <TableHead className="text-right">مدين</TableHead>
-                        <TableHead className="text-right">دائن</TableHead>
-                        <TableHead className="text-right">الرصيد</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {transactions.map((transaction, index) => (
-                        <TableRow key={`${transaction.transaction_id}-${index}`}>
-                          <TableCell>
-                            {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ar })}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              transaction.transaction_type === 'payment' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {transaction.transaction_type === 'payment' ? 'دفعة' : 'فاتورة'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {transaction.description}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {transaction.reference_number}
-                          </TableCell>
-                          <TableCell className="text-right text-destructive">
-                            {transaction.debit_amount ? `${transaction.debit_amount.toFixed(3)} د.ك` : '-'}
-                          </TableCell>
-                          <TableCell className="text-right text-green-600">
-                            {transaction.credit_amount ? `${transaction.credit_amount.toFixed(3)} د.ك` : '-'}
-                          </TableCell>
-                          <TableCell className={`text-right font-medium ${
-                            transaction.running_balance >= 0 ? 'text-green-600' : 'text-destructive'
-                          }`}>
-                            {transaction.running_balance.toFixed(3)} د.ك
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        {/* Transactions Table */}
+        {transactions.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>لا توجد معاملات في الفترة المحددة</p>
+            <p className="text-sm mt-2">
+              جرب تغيير فترة البحث أو إزالة الفلاتر
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>الوصف</TableHead>
+                  <TableHead>رقم المرجع</TableHead>
+                  <TableHead>مدين</TableHead>
+                  <TableHead>دائن</TableHead>
+                  <TableHead>الرصيد الجاري</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((transaction, index) => (
+                  <TableRow key={`${transaction.transaction_id}-${index}`}>
+                    <TableCell>
+                      {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', {
+                        locale: ar
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {getTransactionTypeBadge(transaction.transaction_type)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs truncate" title={transaction.description}>
+                        {transaction.description}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-sm bg-muted px-1 rounded">
+                        {transaction.reference_number}
+                      </code>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {transaction.debit_amount > 0 && (
+                        <span className="text-destructive font-medium">
+                          {formatCurrency(transaction.debit_amount)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {transaction.credit_amount > 0 && (
+                        <span className="text-green-600 font-medium">
+                          {formatCurrency(transaction.credit_amount)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      <span className={
+                        transaction.running_balance >= 0 
+                          ? 'text-destructive' 
+                          : 'text-green-600'
+                      }>
+                        {formatCurrency(Math.abs(transaction.running_balance))}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {transaction.running_balance >= 0 ? 'مدين' : 'دائن'}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
