@@ -224,6 +224,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
       national_id: `${290000000000 + randomId}`,
       passport_number: `K${String(randomId).padStart(7, '0')}`,
       license_number: `L${String(randomId).padStart(8, '0')}`,
+      license_expiry: '2026-12-31', // تاريخ انتهاء الرخصة
+      national_id_expiry: '2027-12-31', // تاريخ انتهاء البطاقة المدنية
       address: 'شارع الخليج العربي، قطعة 3، منزل 15',
       address_ar: 'شارع الخليج العربي، قطعة 3، منزل 15',
       city: 'Kuwait City',
@@ -250,6 +252,8 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
       national_id: '',
       passport_number: '',
       license_number: `CR${String(randomId).padStart(8, '0')}`,
+      license_expiry: '2026-12-31', // تاريخ انتهاء الرخصة التجارية
+      national_id_expiry: '', // فارغ للشركات
       address: 'شارع أحمد الجابر، برج التجارة، الطابق العاشر، مكتب 1005',
       address_ar: 'شارع أحمد الجابر، برج التجارة، الطابق العاشر، مكتب 1005',
       city: 'Kuwait City',
