@@ -239,7 +239,19 @@ export const useDeleteCustomer = () => {
           console.error('Error deleting invoices:', invoicesError);
         }
 
-        // 7. حذف العقود
+        // 7. حذف عروض الأسعار المرتبطة بالعميل
+        console.log('🗑️ Deleting quotations...');
+        const { error: quotationsError } = await supabase
+          .from('quotations')
+          .delete()
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+        
+        if (quotationsError) {
+          console.error('Error deleting quotations:', quotationsError);
+        }
+
+        // 8. حذف العقود
         console.log('🗑️ Deleting contracts...');
         const { error: contractsError } = await supabase
           .from('contracts')
@@ -251,7 +263,7 @@ export const useDeleteCustomer = () => {
           console.error('Error deleting contracts:', contractsError);
         }
 
-        // 8. حذف الملاحظات المرتبطة بالعميل
+        // 9. حذف الملاحظات المرتبطة بالعميل
         console.log('🗑️ Deleting customer notes...');
         const { error: notesError } = await supabase
           .from('customer_notes')
@@ -263,7 +275,7 @@ export const useDeleteCustomer = () => {
           console.error('Error deleting notes:', notesError);
         }
 
-        // 9. حذف العميل نفسه
+        // 10. حذف العميل نفسه
         console.log('🗑️ Deleting customer...');
         const { error: customerError } = await supabase
           .from('customers')
@@ -289,6 +301,7 @@ export const useDeleteCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
       toast.success('تم حذف العميل وجميع البيانات المرتبطة به بنجاح');
     },
     onError: (error) => {

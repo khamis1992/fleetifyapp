@@ -118,7 +118,17 @@ export const useBulkDeleteCustomers = () => {
         }
       }
 
-      // 4. Delete contracts
+      // 4. Delete quotations
+      const { error: quotationsError } = await supabase
+        .from('quotations')
+        .delete()
+        .eq('customer_id', customerId);
+      
+      if (quotationsError) {
+        console.warn(`Warning deleting quotations for customer ${customerId}:`, quotationsError);
+      }
+
+      // 5. Delete contracts
       const { error: contractsError } = await supabase
         .from('contracts')
         .delete()
@@ -128,7 +138,7 @@ export const useBulkDeleteCustomers = () => {
         console.warn(`Warning deleting contracts for customer ${customerId}:`, contractsError);
       }
 
-      // 5. Delete customer notes (if table exists)
+      // 6. Delete customer notes (if table exists)
       const { error: notesError } = await supabase
         .from('customer_notes')
         .delete()
@@ -138,7 +148,7 @@ export const useBulkDeleteCustomers = () => {
         console.warn(`Warning deleting customer notes for customer ${customerId}:`, notesError);
       }
 
-      // 6. Finally delete the customer
+      // 7. Finally delete the customer
       const { error: customerError } = await supabase
         .from('customers')
         .delete()
@@ -273,6 +283,7 @@ export const useBulkDeleteCustomers = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-statistics'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
       
       if (result.failed === 0) {
         toast.success(`تم حذف جميع العملاء بنجاح (${result.deleted} عميل)`);
