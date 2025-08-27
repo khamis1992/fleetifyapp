@@ -70,16 +70,38 @@ export const useCustomerDuplicateCheck = (
 
       // إضافة logging للنتائج
       const result = data as any;
-      console.log('🔍 [DUPLICATE_CHECK] Results:', {
-        hasDuplicates: result?.has_duplicates,
-        count: result?.count,
-        duplicates: result?.duplicates?.map((d: any) => ({
-          id: d.id,
-          name: d.name,
-          companyId: d.company_id,
-          duplicateField: d.duplicate_field
-        }))
-      });
+      
+      // تصفية العملاء من الشركات الأخرى
+      if (result && result.duplicates) {
+        const filteredDuplicates = result.duplicates.filter((d: any) => d.company_id === companyId);
+        
+        console.log('🔍 [DUPLICATE_CHECK] Original Results:', {
+          hasDuplicates: result?.has_duplicates,
+          count: result?.count,
+          totalDuplicates: result?.duplicates?.length || 0,
+          sameCompanyDuplicates: filteredDuplicates.length
+        });
+
+        // تحديث النتائج لتشمل فقط العملاء من نفس الشركة
+        const filteredResult = {
+          has_duplicates: filteredDuplicates.length > 0,
+          duplicates: filteredDuplicates,
+          count: filteredDuplicates.length
+        };
+
+        console.log('🔍 [DUPLICATE_CHECK] Filtered Results:', {
+          hasDuplicates: filteredResult.has_duplicates,
+          count: filteredResult.count,
+          duplicates: filteredResult.duplicates.map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            companyId: d.company_id,
+            duplicateField: d.duplicate_field
+          }))
+        });
+
+        return filteredResult as DuplicateCheckResult;
+      }
 
       return result as DuplicateCheckResult;
     },
