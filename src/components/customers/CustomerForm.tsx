@@ -533,6 +533,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         placeholder="+965 XXXXXXXX"
                         dir="ltr"
                         className="text-left"
+                        style={{ textAlign: 'left' }}
                       />
                       {errors.phone && (
                         <p className="text-sm text-red-600">{errors.phone.message}</p>
@@ -545,6 +546,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                         placeholder="+965 XXXXXXXX"
                         dir="ltr"
                         className="text-left"
+                        style={{ textAlign: 'left' }}
                       />
                     </div>
                   </div>
@@ -692,6 +694,7 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                        placeholder="+965 XXXXXXXX"
                        dir="ltr"
                        className="text-left"
+                       style={{ textAlign: 'left' }}
                      />
                    </div>
                  </div>
