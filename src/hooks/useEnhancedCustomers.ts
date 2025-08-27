@@ -154,67 +154,146 @@ export const useDeleteCustomer = () => {
 
   return useMutation({
     mutationFn: async (customerId: string) => {
+      console.log('🗑️ Starting delete process for customer:', customerId);
+      
       if (!companyId) {
         throw new Error("No company access available");
       }
 
-      // التحقق من وجود عقود مرتبطة بالعميل
-      const { data: contractsData, error: contractsError } = await supabase
-        .from('contracts')
-        .select('id')
-        .eq('customer_id', customerId)
-        .eq('company_id', companyId)
-        .limit(1);
+      try {
+        // حذف البيانات المرتبطة بالعميل بالترتيب الصحيح
+        
+        // 1. أولاً احصل على معرفات العقود المرتبطة بالعميل
+        console.log('🗑️ Getting related contract IDs...');
+        const { data: contractIds, error: contractIdsError } = await supabase
+          .from('contracts')
+          .select('id')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+        
+        if (contractIdsError) {
+          console.error('Error getting contract IDs:', contractIdsError);
+        }
 
-      if (contractsError) throw contractsError;
+        // 2. احصل على معرفات الفواتير المرتبطة بالعميل
+        console.log('🗑️ Getting related invoice IDs...');
+        const { data: invoiceIds, error: invoiceIdsError } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+        
+        if (invoiceIdsError) {
+          console.error('Error getting invoice IDs:', invoiceIdsError);
+        }
 
-      if (contractsData && contractsData.length > 0) {
-        throw new Error('لا يمكن حذف العميل لأنه مرتبط بعقود موجودة');
+        // 3. حذف جداول الدفع للعقود
+        if (contractIds && contractIds.length > 0) {
+          console.log('🗑️ Deleting payment schedules...');
+          const contractIdList = contractIds.map(c => c.id);
+          const { error: paymentSchedulesError } = await supabase
+            .from('contract_payment_schedules')
+            .delete()
+            .in('contract_id', contractIdList);
+          
+          if (paymentSchedulesError) {
+            console.error('Error deleting payment schedules:', paymentSchedulesError);
+          }
+        }
+
+        // 4. حذف عناصر الفواتير
+        if (invoiceIds && invoiceIds.length > 0) {
+          console.log('🗑️ Deleting invoice items...');
+          const invoiceIdList = invoiceIds.map(i => i.id);
+          const { error: invoiceItemsError } = await supabase
+            .from('invoice_items')
+            .delete()
+            .in('invoice_id', invoiceIdList);
+          
+          if (invoiceItemsError) {
+            console.error('Error deleting invoice items:', invoiceItemsError);
+          }
+        }
+
+        // 5. حذف المدفوعات المرتبطة بالعميل
+        console.log('🗑️ Deleting payments...');
+        const { error: paymentsError } = await supabase
+          .from('payments')
+          .delete()
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+        
+        if (paymentsError) {
+          console.error('Error deleting payments:', paymentsError);
+        }
+
+        // 6. حذف الفواتير
+        console.log('🗑️ Deleting invoices...');
+        const { error: invoicesError } = await supabase
+          .from('invoices')
+          .delete()
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+        
+        if (invoicesError) {
+          console.error('Error deleting invoices:', invoicesError);
+        }
+
+        // 7. حذف العقود
+        console.log('🗑️ Deleting contracts...');
+        const { error: contractsError } = await supabase
+          .from('contracts')
+          .delete()
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+        
+        if (contractsError) {
+          console.error('Error deleting contracts:', contractsError);
+        }
+
+        // 8. حذف الملاحظات المرتبطة بالعميل
+        console.log('🗑️ Deleting customer notes...');
+        const { error: notesError } = await supabase
+          .from('customer_notes')
+          .delete()
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId);
+
+        if (notesError) {
+          console.error('Error deleting notes:', notesError);
+        }
+
+        // 9. حذف العميل نفسه
+        console.log('🗑️ Deleting customer...');
+        const { error: customerError } = await supabase
+          .from('customers')
+          .delete()
+          .eq('id', customerId)
+          .eq('company_id', companyId);
+
+        if (customerError) {
+          console.error('Error deleting customer:', customerError);
+          throw customerError;
+        }
+
+        console.log('✅ Customer deleted successfully');
+        return { success: true };
+        
+      } catch (error) {
+        console.error('❌ Error in delete process:', error);
+        throw error;
       }
-
-      // التحقق من وجود فواتير مرتبطة بالعميل
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('id')
-        .eq('customer_id', customerId)
-        .eq('company_id', companyId)
-        .limit(1);
-
-      if (invoicesError) throw invoicesError;
-
-      if (invoicesData && invoicesData.length > 0) {
-        throw new Error('لا يمكن حذف العميل لأنه مرتبط بفواتير موجودة');
-      }
-
-      // حذف الملاحظات المرتبطة بالعميل أولاً
-      const { error: notesError } = await supabase
-        .from('customer_notes')
-        .delete()
-        .eq('customer_id', customerId)
-        .eq('company_id', companyId);
-
-      if (notesError) throw notesError;
-
-      // حذف العميل
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', customerId)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast.success('تم حذف العميل بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('تم حذف العميل وجميع البيانات المرتبطة به بنجاح');
     },
     onError: (error) => {
       console.error('Error deleting customer:', error);
-      if (error.message.includes('لا يمكن حذف العميل')) {
-        toast.error(error.message);
-      } else {
-        toast.error('حدث خطأ أثناء حذف العميل');
-      }
+      toast.error('حدث خطأ أثناء حذف العميل: ' + error.message);
     }
   });
 };

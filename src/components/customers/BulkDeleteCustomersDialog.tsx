@@ -107,7 +107,7 @@ export const BulkDeleteCustomersDialog: React.FC<BulkDeleteCustomersDialogProps>
       setConfirmationText('');
       resetProgress();
     }
-  }, [open, resetProgress]);
+  }, [open]);
 
   const handleConfirmDelete = async () => {
     if (!isConfirmationValid) return;
