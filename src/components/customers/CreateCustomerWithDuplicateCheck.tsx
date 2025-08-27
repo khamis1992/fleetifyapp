@@ -450,6 +450,17 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
 
               {/* Navigation Buttons */}
               <div className="flex justify-between items-center pt-6 border-t border-border/50">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={previousStep}
+                  disabled={currentStep === 'basic'}
+                  className="flex items-center gap-2"
+                >
+                  السابق
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+
                 <div className="flex gap-4">
                   <Button
                     type="button"
@@ -484,22 +495,11 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                       onClick={nextStep}
                       className="flex items-center gap-2"
                     >
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowLeft className="h-4 w-4" />
                       التالي
                     </Button>
                   )}
                 </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={previousStep}
-                  disabled={currentStep === 'basic'}
-                  className="flex items-center gap-2"
-                >
-                  السابق
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
               </div>
             </form>
           </Form>
