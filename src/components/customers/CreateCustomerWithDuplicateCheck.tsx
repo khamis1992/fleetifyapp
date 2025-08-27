@@ -450,7 +450,36 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
 
               {/* Navigation Buttons */}
               <div className="flex justify-between items-center pt-6 border-t border-border/50">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={previousStep}
+                  disabled={currentStep === 'basic'}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  السابق
+                </Button>
+
                 <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (onCancel) {
+                        onCancel();
+                      } else {
+                        form.reset();
+                        setCurrentStep('basic');
+                        setCompletedSteps([]);
+                        setForceCreate(false);
+                        setHasDuplicates(false);
+                      }
+                    }}
+                  >
+                    إلغاء
+                  </Button>
+
                   {currentStep === 'summary' ? (
                     <Button 
                       type="submit" 
@@ -470,36 +499,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   )}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (onCancel) {
-                        onCancel();
-                      } else {
-                        form.reset();
-                        setCurrentStep('basic');
-                        setCompletedSteps([]);
-                        setForceCreate(false);
-                        setHasDuplicates(false);
-                      }
-                    }}
-                  >
-                    إلغاء
-                  </Button>
                 </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={previousStep}
-                  disabled={currentStep === 'basic'}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  السابق
-                </Button>
               </div>
             </form>
           </Form>
