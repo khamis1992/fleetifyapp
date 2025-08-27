@@ -57,17 +57,17 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
   return (
     <div className="space-y-4">
       {showInlineWarning && duplicateCheck?.has_duplicates && (
-        <Alert className="border-warning/50 bg-warning/10 text-warning-foreground">
+        <Alert className="border-warning bg-warning/10">
           <AlertTriangle className="h-4 w-4 text-warning" />
-          <AlertDescription className="text-warning-foreground">
+          <AlertDescription className="text-foreground">
             <div className="flex items-center justify-between">
-              <span>
+              <span className="text-foreground font-medium">
                 تم العثور على {duplicateCheck.count} عميل(عملاء) مشابه(ين) في النظام
               </span>
               <button
                 type="button"
                 onClick={handleViewDuplicates}
-                className="text-sm underline hover:no-underline font-medium"
+                className="text-sm underline hover:no-underline font-medium text-primary hover:text-primary/80"
               >
                 عرض التفاصيل
               </button>
