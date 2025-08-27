@@ -15,6 +15,10 @@ import { Users, Building, Phone, MapPin, FileText, User, Shuffle } from "lucide-
 import { useSimpleUpdateCustomer } from "@/hooks/useSimpleUpdateCustomer";
 import { Customer, CustomerFormData } from "@/types/customer";
 import { toast } from "sonner";
+import { CustomerAccountSelector } from "@/components/finance/CustomerAccountSelector";
+import { useCustomerLinkedAccounts, useLinkAccountToCustomer, useUnlinkAccountFromCustomer } from "@/hooks/useCustomerAccounts";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { CreditCard, Link, Unlink } from "lucide-react";
 
 const formSchema = z.object({
   customer_type: z.enum(['individual', 'corporate']),
@@ -63,6 +67,15 @@ interface EditCustomerFormProps {
 export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomerFormProps) => {
   const updateMutation = useSimpleUpdateCustomer();
   const [formKey, setFormKey] = useState(0); // لإجبار إعادة رسم النموذج
+  
+  // Account management hooks
+  const { data: linkedAccounts, isLoading: accountsLoading } = useCustomerLinkedAccounts(customer.id);
+  const linkAccountMutation = useLinkAccountToCustomer();
+  const unlinkAccountMutation = useUnlinkAccountFromCustomer();
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  
+  // Get the current linked account (first one if multiple)
+  const currentAccount = linkedAccounts?.[0];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -229,6 +242,37 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
     console.log('🔍 [DEBUG] Form state:', form.formState);
     console.log('🔍 [DEBUG] Form defaultValues:', form.formState.defaultValues);
     alert(`القيم الحالية:\nالرقم المدني: "${values.national_id}"\nالهاتف: "${values.phone}"\nالاسم: "${values.first_name_ar}"`);
+  };
+
+  // Handle account linking/unlinking
+  const handleLinkAccount = () => {
+    if (!selectedAccountId) {
+      toast.error('يرجى اختيار حساب محاسبي');
+      return;
+    }
+    
+    linkAccountMutation.mutate({
+      customerId: customer.id,
+      accountId: selectedAccountId
+    }, {
+      onSuccess: () => {
+        setSelectedAccountId('');
+        toast.success('تم ربط الحساب المحاسبي بنجاح');
+      }
+    });
+  };
+
+  const handleUnlinkAccount = () => {
+    if (!currentAccount) return;
+    
+    unlinkAccountMutation.mutate({
+      customerId: customer.id,
+      customerAccountId: currentAccount.id
+    }, {
+      onSuccess: () => {
+        toast.success('تم إلغاء ربط الحساب المحاسبي');
+      }
+    });
   };
 
   const isSubmitting = updateMutation.isPending;
@@ -696,6 +740,118 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          {/* الحساب المحاسبي */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                الحساب المحاسبي
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {accountsLoading ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  <span>جاري تحميل الحساب المحاسبي...</span>
+                </div>
+              ) : currentAccount ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">الحساب المحاسبي الحالي</h4>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          <p><span className="font-medium">الرمز:</span> {currentAccount.chart_of_accounts.account_code}</p>
+                          <p><span className="font-medium">الاسم:</span> {currentAccount.chart_of_accounts.account_name_ar || currentAccount.chart_of_accounts.account_name}</p>
+                          <p><span className="font-medium">الرصيد:</span> {currentAccount.chart_of_accounts.current_balance?.toFixed(3) || '0.000'} د.ك</p>
+                        </div>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <Unlink className="h-4 w-4" />
+                            إلغاء الربط
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>إلغاء ربط الحساب المحاسبي</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هل أنت متأكد من إلغاء ربط الحساب المحاسبي "{currentAccount.chart_of_accounts.account_name_ar || currentAccount.chart_of_accounts.account_name}" من العميل؟
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleUnlinkAccount}
+                              disabled={unlinkAccountMutation.isPending}
+                            >
+                              {unlinkAccountMutation.isPending && <LoadingSpinner size="sm" className="ml-2" />}
+                              إلغاء الربط
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">تغيير الحساب المحاسبي</h4>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <CustomerAccountSelector
+                          value={selectedAccountId}
+                          onValueChange={setSelectedAccountId}
+                          placeholder="اختر حساب محاسبي جديد"
+                          accountType="receivable"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleLinkAccount}
+                        disabled={!selectedAccountId || linkAccountMutation.isPending}
+                        className="flex items-center gap-2"
+                      >
+                        {linkAccountMutation.isPending && <LoadingSpinner size="sm" />}
+                        <Link className="h-4 w-4" />
+                        تغيير الحساب
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-center text-muted-foreground py-8">
+                    <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>لا يوجد حساب محاسبي مرتبط بهذا العميل</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">ربط حساب محاسبي</h4>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <CustomerAccountSelector
+                          value={selectedAccountId}
+                          onValueChange={setSelectedAccountId}
+                          placeholder="اختر الحساب المحاسبي"
+                          accountType="receivable"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleLinkAccount}
+                        disabled={!selectedAccountId || linkAccountMutation.isPending}
+                        className="flex items-center gap-2"
+                      >
+                        {linkAccountMutation.isPending && <LoadingSpinner size="sm" />}
+                        <Link className="h-4 w-4" />
+                        ربط الحساب
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
