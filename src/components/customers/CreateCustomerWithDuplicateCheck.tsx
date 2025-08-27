@@ -47,14 +47,6 @@ const customerSchema = z.object({
   
   base_currency: z.string().default('KWD'),
   initial_credit_limit: z.number().optional(),
-  
-  // Account Linking
-  accounts: z.object({
-    receivables: z.string().optional(),
-    advances: z.string().optional(), 
-    deposits: z.string().optional(),
-    discounts: z.string().optional(),
-  }).optional(),
 }).refine(
   (data) => {
     // Validate that birth date is not in the future and not too old
