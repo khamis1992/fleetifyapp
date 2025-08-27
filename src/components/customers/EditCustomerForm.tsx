@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -61,6 +61,7 @@ interface EditCustomerFormProps {
 
 export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomerFormProps) => {
   const updateMutation = useSimpleUpdateCustomer();
+  const [formKey, setFormKey] = useState(0); // لإجبار إعادة رسم النموذج
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -170,44 +171,22 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
     console.log('  national_id_expiry:', formData.national_id_expiry, '(raw:', customer.national_id_expiry, ')');
     console.log('  date_of_birth:', formData.date_of_birth, '(raw:', customer.date_of_birth, ')');
 
-    // استخدام setTimeout لضمان أن DOM محدث قبل reset
-    setTimeout(() => {
-      console.log('🔄 [EditCustomerForm] Calling form.reset with processed data...');
-      form.reset(formData, {
-        keepDefaultValues: false,
-        keepValues: false,
-        keepErrors: false,
-        keepDirty: false,
-        keepIsSubmitted: false,
-        keepTouched: false,
-        keepIsValid: false,
-        keepSubmitCount: false
-      });
+    // إعادة تعيين النموذج مع إجبار re-render
+    form.reset(formData, {
+      keepDefaultValues: false,
+      keepValues: false,
+      keepErrors: false,
+      keepDirty: false,
+      keepIsSubmitted: false,
+      keepTouched: false,
+      keepIsValid: false,
+      keepSubmitCount: false
+    });
 
-      // التحقق الفوري من القيم بعد reset
-      setTimeout(() => {
-        const currentValues = form.getValues();
-        console.log('✅ [EditCustomerForm] Final form values after reset:', currentValues);
-        console.log('✅ [EditCustomerForm] Arabic names verification:');
-        console.log('  first_name_ar:', currentValues.first_name_ar);
-        console.log('  last_name_ar:', currentValues.last_name_ar);
-        console.log('✅ [EditCustomerForm] Date fields verification:');
-        console.log('  license_expiry:', currentValues.license_expiry);
-        console.log('  national_id_expiry:', currentValues.national_id_expiry);
-        console.log('  date_of_birth:', currentValues.date_of_birth);
-        
-        // فرض إعادة رسم الحقول بطريقة فردية إذا لزم الأمر
-        Object.entries(formData).forEach(([key, value]) => {
-          form.setValue(key as keyof FormValues, value, { 
-            shouldValidate: false, 
-            shouldDirty: false,
-            shouldTouch: false 
-          });
-        });
+    // إجبار إعادة رسم النموذج بتغيير المفتاح
+    setFormKey(prev => prev + 1);
 
-        console.log('🔁 [EditCustomerForm] Individual setValue calls completed');
-      }, 50);
-    }, 10);
+    console.log('🔄 [EditCustomerForm] Form reset completed with key:', formKey + 1);
   }, [customer, form]);
 
   const customerType = form.watch('customer_type');
@@ -286,7 +265,7 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
         </div>
       </div>
 
-      <Form {...form}>
+      <Form {...form} key={formKey}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* البيانات الأساسية */}
           <Card>
