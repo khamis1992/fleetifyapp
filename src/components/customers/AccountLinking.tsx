@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Control } from 'react-hook-form';
 import { LinkIcon, Eye, CheckCircle, AlertTriangle, Zap } from 'lucide-react';
-import { VendorAccountSelector } from '@/components/finance/VendorAccountSelector';
+import { EnhancedCustomerAccountSelector } from '@/components/finance/EnhancedCustomerAccountSelector';
 
 interface AccountLinkingProps {
   control: Control<any>;
@@ -129,10 +129,14 @@ export const AccountLinking: React.FC<AccountLinkingProps> = ({
                     render={({ field }) => (
                       <FormItem className="min-w-[250px]">
                         <FormControl>
-                          <VendorAccountSelector
+                          <EnhancedCustomerAccountSelector
                             value={field.value}
                             onValueChange={field.onChange}
+                            accountType={accountType.id as any}
                             placeholder="اختر الحساب المحاسبي"
+                            customerName={getCustomerDisplayName()}
+                            customerType={customerType as any}
+                            showPreview={true}
                           />
                         </FormControl>
                         <FormMessage />

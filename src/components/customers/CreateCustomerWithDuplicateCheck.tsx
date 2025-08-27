@@ -410,7 +410,12 @@ export const CreateCustomerWithDuplicateCheck: React.FC = () => {
 
               {/* Step 3: Accounting Settings */}
               {currentStep === 'accounting' && (
-                <AccountingSettings control={form.control} />
+                <AccountingSettings 
+                  control={form.control} 
+                  customerType={customerType}
+                  setValue={form.setValue}
+                  getValues={form.getValues}
+                />
               )}
 
               {/* Step 4: Account Linking */}
