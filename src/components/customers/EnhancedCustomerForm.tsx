@@ -188,6 +188,9 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
   }, [nationalIdExpiry]);
 
   const onSubmit = (values: FormValues) => {
+    console.log('🔄 Form submitted with values:', values);
+    console.log('👤 Customer prop:', customer);
+    
     if (customer) {
       // Update existing customer
       updateMutation.mutate(
@@ -950,7 +953,12 @@ export const EnhancedCustomerForm = ({ customer, onSuccess, onCancel, open = tru
                   <Button type="button" variant="outline" onClick={onCancel}>
                     إلغاء
                   </Button>
-                  <Button type="submit" disabled={isLoading} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={() => console.log('💾 Submit button clicked, isLoading:', isLoading)}
+                  >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {customer ? "تحديث العميل" : "إضافة العميل"}
                   </Button>
