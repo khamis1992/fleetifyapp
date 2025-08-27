@@ -2409,32 +2409,88 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_account_types: {
+        Row: {
+          account_category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          type_name: string
+          type_name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          account_category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          type_name: string
+          type_name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          account_category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          type_name?: string
+          type_name_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_accounts: {
         Row: {
           account_id: string
+          account_purpose: string | null
+          account_type_id: string | null
           company_id: string
           created_at: string
+          credit_limit: number | null
+          currency: string
           customer_id: string
           id: string
+          is_active: boolean
+          is_default: boolean
           updated_at: string
         }
         Insert: {
           account_id: string
+          account_purpose?: string | null
+          account_type_id?: string | null
           company_id: string
           created_at?: string
+          credit_limit?: number | null
+          currency?: string
           customer_id: string
           id?: string
+          is_active?: boolean
+          is_default?: boolean
           updated_at?: string
         }
         Update: {
           account_id?: string
+          account_purpose?: string | null
+          account_type_id?: string | null
           company_id?: string
           created_at?: string
+          credit_limit?: number | null
+          currency?: string
           customer_id?: string
           id?: string
+          is_active?: boolean
+          is_default?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_accounts_account_type_id_fkey"
+            columns: ["account_type_id"]
+            isOneToOne: false
+            referencedRelation: "customer_account_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_aging_analysis: {
         Row: {
@@ -10033,6 +10089,10 @@ export type Database = {
         Args: { company_id_param: string; hours_back?: number }
         Returns: Json
       }
+      auto_create_customer_accounts: {
+        Args: { p_company_id: string; p_customer_id: string }
+        Returns: number
+      }
       bulk_delete_company_accounts: {
         Args: {
           deletion_reason?: string
@@ -10985,6 +11045,10 @@ export type Database = {
           transaction_id: string
           transaction_type: string
         }[]
+      }
+      get_customer_default_account: {
+        Args: { p_account_type?: string; p_customer_id: string }
+        Returns: string
       }
       get_customer_default_cost_center: {
         Args: { customer_id_param: string }

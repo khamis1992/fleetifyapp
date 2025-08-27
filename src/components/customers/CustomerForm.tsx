@@ -24,6 +24,7 @@ import { useAvailableCustomerAccounts, useCompanyAccountSettings } from "@/hooks
 import { UnifiedAccountSelector } from "@/components/ui/unified-account-selector";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { CustomerAccountsManager } from "./CustomerAccountsManager";
 
 interface CustomerFormProps {
   open: boolean;
@@ -416,8 +417,9 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
           )}
 
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="accounting">الحسابات المحاسبية</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="accounts">الحسابات المحاسبية</TabsTrigger>
+              <TabsTrigger value="accounting">إعداد الحساب</TabsTrigger>
               <TabsTrigger value="additional">بيانات إضافية</TabsTrigger>
               <TabsTrigger value="contact">معلومات الاتصال</TabsTrigger>
               <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
@@ -734,7 +736,32 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
               </Card>
             </TabsContent>
 
-            {/* تبويب الحسابات المحاسبية */}
+            {/* تبويب إدارة الحسابات المحاسبية المتقدم */}
+            <TabsContent value="accounts" className="space-y-4">
+              {mode === 'edit' && customer ? (
+                <CustomerAccountsManager customer={customer} />
+              ) : (
+                <Card dir="rtl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      إدارة الحسابات المحاسبية
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Alert>
+                      <InfoIcon className="h-4 w-4" />
+                      <AlertDescription>
+                        سيكون بإمكانك إدارة الحسابات المحاسبية للعميل بعد إنشائه.
+                        سيتم إنشاء الحسابات الأساسية تلقائياً.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* تبويب إعداد الحساب الأساسي */}
             <TabsContent value="accounting" className="space-y-4">
               <Card dir="rtl">
                 <CardHeader>

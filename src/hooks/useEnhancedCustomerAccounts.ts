@@ -1,0 +1,214 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { CustomerAccount, CustomerAccountFormData } from '@/types/customerAccount';
+import { useToast } from '@/hooks/use-toast';
+
+// Fetch customer accounts with enhanced data
+export const useCustomerAccounts = (customerId: string) => {
+  return useQuery({
+    queryKey: ['customer-accounts', customerId],
+    queryFn: async (): Promise<CustomerAccount[]> => {
+      const { data, error } = await supabase
+        .from('customer_accounts')
+        .select(`
+          *,
+          account_type:customer_account_types(*),
+          account:chart_of_accounts(
+            id,
+            account_code,
+            account_name,
+            account_name_ar,
+            current_balance
+          )
+        `)
+        .eq('customer_id', customerId)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching customer accounts:', error);
+        throw error;
+      }
+
+      return (data || []) as unknown as CustomerAccount[];
+    },
+    enabled: !!customerId,
+  });
+};
+
+// Create new customer account
+export const useCreateCustomerAccount = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ customerId, accountData }: { 
+      customerId: string; 
+      accountData: CustomerAccountFormData 
+    }) => {
+      // If this is set as default, first unset other defaults of the same type
+      if (accountData.is_default) {
+        await supabase
+          .from('customer_accounts')
+          .update({ is_default: false })
+          .eq('customer_id', customerId)
+          .eq('account_type_id', accountData.account_type_id);
+      }
+
+      // Get the customer's company_id
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('company_id')
+        .eq('id', customerId)
+        .single();
+
+      if (!customer) throw new Error('Customer not found');
+
+      const { data, error } = await supabase
+        .from('customer_accounts')
+        .insert({
+          customer_id: customerId,
+          company_id: customer.company_id,
+          ...accountData,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, { customerId }) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerId] });
+      toast({
+        title: "تم إضافة الحساب المحاسبي",
+        description: "تم ربط الحساب المحاسبي بالعميل بنجاح",
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating customer account:', error);
+      toast({
+        title: "خطأ في إضافة الحساب",
+        description: "حدث خطأ أثناء إضافة الحساب المحاسبي",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Update customer account
+export const useUpdateCustomerAccount = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      accountId, 
+      customerId, 
+      accountData 
+    }: { 
+      accountId: string; 
+      customerId: string; 
+      accountData: Partial<CustomerAccountFormData> 
+    }) => {
+      // If this is set as default, first unset other defaults of the same type
+      if (accountData.is_default && accountData.account_type_id) {
+        await supabase
+          .from('customer_accounts')
+          .update({ is_default: false })
+          .eq('customer_id', customerId)
+          .eq('account_type_id', accountData.account_type_id)
+          .neq('id', accountId);
+      }
+
+      const { data, error } = await supabase
+        .from('customer_accounts')
+        .update(accountData)
+        .eq('id', accountId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, { customerId }) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerId] });
+      toast({
+        title: "تم تحديث الحساب المحاسبي",
+        description: "تم تحديث بيانات الحساب المحاسبي بنجاح",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating customer account:', error);
+      toast({
+        title: "خطأ في تحديث الحساب",
+        description: "حدث خطأ أثناء تحديث الحساب المحاسبي",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Delete customer account
+export const useDeleteCustomerAccount = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ accountId, customerId }: { accountId: string; customerId: string }) => {
+      const { error } = await supabase
+        .from('customer_accounts')
+        .update({ is_active: false })
+        .eq('id', accountId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { customerId }) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerId] });
+      toast({
+        title: "تم حذف الحساب المحاسبي",
+        description: "تم إلغاء ربط الحساب المحاسبي بالعميل",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting customer account:', error);
+      toast({
+        title: "خطأ في حذف الحساب",
+        description: "حدث خطأ أثناء حذف الحساب المحاسبي",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Auto-create customer accounts
+export const useAutoCreateCustomerAccounts = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ customerId, companyId }: { customerId: string; companyId: string }) => {
+      const { data, error } = await supabase.rpc('auto_create_customer_accounts', {
+        p_customer_id: customerId,
+        p_company_id: companyId,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (createdCount, { customerId }) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerId] });
+      toast({
+        title: "تم إنشاء الحسابات المحاسبية",
+        description: `تم إنشاء ${createdCount} حساب محاسبي للعميل تلقائياً`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error auto-creating customer accounts:', error);
+      toast({
+        title: "خطأ في إنشاء الحسابات",
+        description: "حدث خطأ أثناء إنشاء الحسابات المحاسبية التلقائية",
+        variant: "destructive",
+      });
+    },
+  });
+};
