@@ -379,7 +379,6 @@ export default function Customers() {
                         variant="outline" 
                         size="sm"
                         onClick={() => handleEditCustomer(customer)}
-                        disabled={!canAddCustomers}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         تعديل
