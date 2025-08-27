@@ -71,44 +71,58 @@ export const EditCustomerForm = ({ customer, onSuccess, onCancel }: EditCustomer
     if (customer) {
       console.log('📝 Loading customer data:', customer);
       
-      // تنسيق البيانات مع التعامل مع القيم الفارغة
+      // تنسيق البيانات مع معالجة دقيقة للقيم null/undefined
       const formData: FormValues = {
         customer_type: customer.customer_type || 'individual',
-        first_name: customer.first_name || '',
-        last_name: customer.last_name || '',
-        first_name_ar: customer.first_name_ar || '',
-        last_name_ar: customer.last_name_ar || '',
-        company_name: customer.company_name || '',
-        company_name_ar: customer.company_name_ar || '',
-        email: customer.email || '',
-        phone: customer.phone || '',
-        alternative_phone: customer.alternative_phone || '',
-        national_id: customer.national_id || '',
-        passport_number: customer.passport_number || '',
-        license_number: customer.license_number || '',
-        license_expiry: customer.license_expiry || '',
-        national_id_expiry: customer.national_id_expiry || '',
-        address: customer.address || '',
-        address_ar: customer.address_ar || '',
-        city: customer.city || '',
-        country: customer.country || 'Kuwait',
-        date_of_birth: customer.date_of_birth || '',
+        first_name: customer.first_name ?? '',
+        last_name: customer.last_name ?? '',
+        first_name_ar: customer.first_name_ar ?? '',
+        last_name_ar: customer.last_name_ar ?? '',
+        company_name: customer.company_name ?? '',
+        company_name_ar: customer.company_name_ar ?? '',
+        email: customer.email ?? '',
+        phone: customer.phone ?? '',
+        alternative_phone: customer.alternative_phone ?? '',
+        national_id: customer.national_id ?? '',
+        passport_number: customer.passport_number ?? '',
+        license_number: customer.license_number ?? '',
+        license_expiry: customer.license_expiry ?? '',
+        national_id_expiry: customer.national_id_expiry ?? '',
+        address: customer.address ?? '',
+        address_ar: customer.address_ar ?? '',
+        city: customer.city ?? '',
+        country: customer.country ?? 'Kuwait',
+        date_of_birth: customer.date_of_birth ?? '',
         credit_limit: customer.credit_limit ?? 0,
-        emergency_contact_name: customer.emergency_contact_name || '',
-        emergency_contact_phone: customer.emergency_contact_phone || '',
-        notes: customer.notes || '',
+        emergency_contact_name: customer.emergency_contact_name ?? '',
+        emergency_contact_phone: customer.emergency_contact_phone ?? '',
+        notes: customer.notes ?? '',
       };
       
       console.log('📝 Formatted form data:', formData);
+      console.log('🔍 Individual field values:');
+      Object.entries(formData).forEach(([key, value]) => {
+        console.log(`  ${key}: "${value}" (type: ${typeof value})`);
+      });
       
       // إعادة تعيين النموذج بالبيانات المنسقة
       form.reset(formData);
       
-      // التحقق من أن البيانات تم تحميلها بشكل صحيح
-      setTimeout(() => {
+      // التحقق من أن البيانات تم تحميلها بشكل صحيح بعد reset
+      const timeoutId = setTimeout(() => {
         const currentValues = form.getValues();
         console.log('✅ Current form values after reset:', currentValues);
-      }, 100);
+        
+        // التحقق من الحقول الفارغة
+        const emptyFields = Object.entries(currentValues).filter(([key, value]) => 
+          value === undefined || value === null || value === ''
+        );
+        if (emptyFields.length > 0) {
+          console.log('⚠️ Empty fields detected:', emptyFields);
+        }
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [customer, form]);
 
