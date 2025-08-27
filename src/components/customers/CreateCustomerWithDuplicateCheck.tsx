@@ -4,14 +4,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCreateCustomer } from '@/hooks/useEnhancedCustomers';
 import { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
+import { AccountingSettings } from './AccountingSettings';
+import { AccountLinking } from './AccountLinking';
+import { AccountingSummary } from './AccountingSummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { User, Phone, Calculator, LinkIcon, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const customerSchema = z.object({
+  // Basic Information
   customer_type: z.enum(['individual', 'company']),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
@@ -21,6 +29,24 @@ const customerSchema = z.object({
   passport_number: z.string().optional(),
   phone: z.string().min(1, 'رقم الهاتف مطلوب'),
   email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
+  
+  // Accounting Settings
+  accounting_classification: z.string().default('regular'),
+  base_currency: z.string().default('KWD'),
+  initial_credit_limit: z.number().optional(),
+  payment_terms: z.string().default('net_30'),
+  discount_group: z.string().optional(),
+  default_discount_percentage: z.number().optional(),
+  tax_exempt: z.string().default('no'),
+  risk_level: z.string().default('medium'),
+  
+  // Account Linking
+  accounts: z.object({
+    receivables: z.string().optional(),
+    advances: z.string().optional(), 
+    deposits: z.string().optional(),
+    discounts: z.string().optional(),
+  }).optional(),
 });
 
 type CustomerFormData = z.infer<typeof customerSchema>;
@@ -28,6 +54,8 @@ type CustomerFormData = z.infer<typeof customerSchema>;
 export const CreateCustomerWithDuplicateCheck: React.FC = () => {
   const [hasDuplicates, setHasDuplicates] = useState(false);
   const [forceCreate, setForceCreate] = useState(false);
+  const [currentStep, setCurrentStep] = useState('basic');
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   
   const createCustomer = useCreateCustomer();
   
@@ -43,6 +71,11 @@ export const CreateCustomerWithDuplicateCheck: React.FC = () => {
       passport_number: '',
       phone: '',
       email: '',
+      accounting_classification: 'regular',
+      base_currency: 'KWD',
+      payment_terms: 'net_30',
+      tax_exempt: 'no',
+      risk_level: 'medium',
     },
   });
 
@@ -85,11 +118,102 @@ export const CreateCustomerWithDuplicateCheck: React.FC = () => {
 
   const customerType = form.watch('customer_type');
 
+  const steps = [
+    { id: 'basic', label: 'البيانات الأساسية', icon: User },
+    { id: 'contact', label: 'معلومات الاتصال', icon: Phone },
+    { id: 'accounting', label: 'الإعدادات المحاسبية', icon: Calculator },
+    { id: 'linking', label: 'ربط الحسابات', icon: LinkIcon },
+    { id: 'summary', label: 'المراجعة والحفظ', icon: CheckCircle },
+  ];
+
+  const getStepProgress = () => {
+    const currentIndex = steps.findIndex(step => step.id === currentStep);
+    return ((currentIndex + 1) / steps.length) * 100;
+  };
+
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 'basic':
+        const basicValid = watchedValues.customer_type && 
+          (customerType === 'individual' ? watchedValues.first_name && watchedValues.last_name : watchedValues.company_name);
+        return !!basicValid;
+      case 'contact':
+        return !!watchedValues.phone;
+      case 'accounting':
+        return !!watchedValues.accounting_classification && !!watchedValues.base_currency;
+      case 'linking':
+        return true; // Optional step
+      default:
+        return true;
+    }
+  };
+
+  const nextStep = () => {
+    if (!validateCurrentStep()) {
+      toast.error('يرجى إكمال الحقول المطلوبة قبل المتابعة');
+      return;
+    }
+    
+    const currentIndex = steps.findIndex(step => step.id === currentStep);
+    if (currentIndex < steps.length - 1) {
+      const nextStepId = steps[currentIndex + 1].id;
+      setCurrentStep(nextStepId);
+      if (!completedSteps.includes(currentStep)) {
+        setCompletedSteps([...completedSteps, currentStep]);
+      }
+    }
+  };
+
+  const previousStep = () => {
+    const currentIndex = steps.findIndex(step => step.id === currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1].id);
+    }
+  };
+
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>إضافة عميل جديد</CardTitle>
+    <Card className="max-w-6xl mx-auto">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-6 w-6" />
+          إنشاء عميل جديد - نظام محاسبي متقدم
+        </CardTitle>
+        
+        {/* Progress Bar */}
+        <div className="space-y-2 mt-4">
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>التقدم: {Math.round(getStepProgress())}%</span>
+            <span>الخطوة {steps.findIndex(s => s.id === currentStep) + 1} من {steps.length}</span>
+          </div>
+          <Progress value={getStepProgress()} className="h-2" />
+        </div>
+
+        {/* Steps Navigation */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            const isActive = step.id === currentStep;
+            const isCompleted = completedSteps.includes(step.id);
+            const isAccessible = index === 0 || completedSteps.includes(steps[index - 1].id);
+            
+            return (
+              <Button
+                key={step.id}
+                variant={isActive ? "default" : isCompleted ? "secondary" : "outline"}
+                size="sm"
+                className={`flex items-center gap-2 ${!isAccessible ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => isAccessible && setCurrentStep(step.id)}
+                disabled={!isAccessible}
+              >
+                <Icon className="h-4 w-4" />
+                {step.label}
+                {isCompleted && <CheckCircle className="h-4 w-4" />}
+              </Button>
+            );
+          })}
+        </div>
       </CardHeader>
+
       <CardContent>
         <CustomerFormWithDuplicateCheck
           customerData={{
@@ -103,181 +227,255 @@ export const CreateCustomerWithDuplicateCheck: React.FC = () => {
           }}
           onDuplicateDetected={handleDuplicateDetected}
           onProceedWithDuplicates={handleProceedWithDuplicates}
-          enableRealTimeCheck={true}
+          enableRealTimeCheck={currentStep === 'basic' || currentStep === 'contact'}
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Customer Type */}
-              <FormField
-                control={form.control}
-                name="customer_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>نوع العميل</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر نوع العميل" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="individual">فرد</SelectItem>
-                        <SelectItem value="company">شركة</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
+              {/* Step 1: Basic Information */}
+              {currentStep === 'basic' && (
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      البيانات الأساسية
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Customer Type */}
+                    <FormField
+                      control={form.control}
+                      name="customer_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>نوع العميل *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="اختر نوع العميل" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="individual">فرد</SelectItem>
+                              <SelectItem value="company">شركة</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-              {/* Individual Fields */}
-              {customerType === 'individual' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="first_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الاسم الأول</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Individual Fields */}
+                    {customerType === 'individual' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="first_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>الاسم الأول *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="أدخل الاسم الأول" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                  <FormField
-                    control={form.control}
-                    name="last_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>اسم العائلة</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                        <FormField
+                          control={form.control}
+                          name="last_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>اسم العائلة *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="أدخل اسم العائلة" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     )}
-                  />
-                </div>
+
+                    {/* Company Fields */}
+                    {customerType === 'company' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="company_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>اسم الشركة *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="أدخل اسم الشركة" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="commercial_register"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>السجل التجاري</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="أدخل رقم السجل التجاري" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    {/* Identification */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="national_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>البطاقة المدنية</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="أدخل رقم البطاقة المدنية" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="passport_number"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>رقم الجواز</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="أدخل رقم الجواز" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* Company Fields */}
-              {customerType === 'company' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="company_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>اسم الشركة</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Step 2: Contact Information */}
+              {currentStep === 'contact' && (
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Phone className="h-5 w-5" />
+                      معلومات الاتصال
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>رقم الهاتف *</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="أدخل رقم الهاتف" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="commercial_register"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>السجل التجاري</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>البريد الإلكتروني</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="email" placeholder="أدخل البريد الإلكتروني" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* Identification */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="national_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>البطاقة المدنية</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Step 3: Accounting Settings */}
+              {currentStep === 'accounting' && (
+                <AccountingSettings control={form.control} />
+              )}
 
-                <FormField
+              {/* Step 4: Account Linking */}
+              {currentStep === 'linking' && (
+                <AccountLinking 
                   control={form.control}
-                  name="passport_number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>رقم الجواز</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  customerType={customerType}
+                  customerName={customerType === 'individual' ? `${watchedValues.first_name} ${watchedValues.last_name}` : undefined}
+                  companyName={customerType === 'company' ? watchedValues.company_name : undefined}
                 />
-              </div>
+              )}
 
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>رقم الهاتف *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Step 5: Summary */}
+              {currentStep === 'summary' && (
+                <AccountingSummary customerData={watchedValues} />
+              )}
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>البريد الإلكتروني</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="flex justify-end gap-4">
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center pt-6 border-t border-border/50">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    form.reset();
-                    setForceCreate(false);
-                    setHasDuplicates(false);
-                  }}
+                  onClick={previousStep}
+                  disabled={currentStep === 'basic'}
+                  className="flex items-center gap-2"
                 >
-                  إلغاء
+                  <ArrowLeft className="h-4 w-4" />
+                  السابق
                 </Button>
-                
-                <Button 
-                  type="submit" 
-                  disabled={createCustomer.isPending}
-                  className={hasDuplicates && !forceCreate ? 'bg-warning hover:bg-warning/90' : ''}
-                >
-                  {createCustomer.isPending ? 'جاري الحفظ...' : 'حفظ العميل'}
-                </Button>
+
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      form.reset();
+                      setCurrentStep('basic');
+                      setCompletedSteps([]);
+                      setForceCreate(false);
+                      setHasDuplicates(false);
+                    }}
+                  >
+                    إلغاء
+                  </Button>
+
+                  {currentStep === 'summary' ? (
+                    <Button 
+                      type="submit" 
+                      disabled={createCustomer.isPending}
+                      className={`flex items-center gap-2 ${hasDuplicates && !forceCreate ? 'bg-warning hover:bg-warning/90' : ''}`}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      {createCustomer.isPending ? 'جاري الحفظ...' : 'حفظ العميل'}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      className="flex items-center gap-2"
+                    >
+                      التالي
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </form>
           </Form>
