@@ -22,27 +22,6 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
   };
 
 
-  const getPaymentTermsLabel = (terms: string) => {
-    const labels = {
-      cash: 'نقداً',
-      net_15: '15 يوم',
-      net_30: '30 يوم',
-      net_45: '45 يوم',
-      net_60: '60 يوم',
-      net_90: '90 يوم'
-    };
-    return labels[terms as keyof typeof labels] || terms;
-  };
-
-  const getRiskLevelBadge = (level: string) => {
-    const badges = {
-      low: { label: 'منخفض', variant: 'default' as const, color: 'bg-success/10 text-success border-success/20' },
-      medium: { label: 'متوسط', variant: 'secondary' as const, color: 'bg-warning/10 text-warning border-warning/20' },
-      high: { label: 'عالي', variant: 'destructive' as const, color: 'bg-destructive/10 text-destructive border-destructive/20' },
-      critical: { label: 'حرج', variant: 'destructive' as const, color: 'bg-destructive/20 text-destructive border-destructive/30' }
-    };
-    return badges[level as keyof typeof badges] || badges.medium;
-  };
 
   const accountsToGenerate = [
     { name: 'ذمم مدينة - عملاء', code: '1210001', required: true },
@@ -97,16 +76,8 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
             </h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">حد الائتمان:</span>
+                <span className="text-muted-foreground">حد الائتمان المبدئي:</span>
                 <span>{customerData.initial_credit_limit || '0.00'} {customerData.base_currency || 'KWD'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">شروط الدفع:</span>
-                <span>{getPaymentTermsLabel(customerData.payment_terms)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">نسبة الخصم:</span>
-                <span>{customerData.default_discount_percentage || '0'}%</span>
               </div>
             </div>
           </div>
@@ -136,47 +107,6 @@ export const AccountingSummary: React.FC<AccountingSummaryProps> = ({
           </div>
         </div>
 
-        <Separator className="bg-border/50" />
-
-        {/* Risk Assessment */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            تقييم المخاطر والأمان
-          </h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">مستوى المخاطر:</span>
-                <Badge 
-                  className={getRiskLevelBadge(customerData.risk_level || 'medium').color}
-                >
-                  {getRiskLevelBadge(customerData.risk_level || 'medium').label}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">الإعفاء الضريبي:</span>
-                <span className="text-sm">
-                  {customerData.tax_exempt === 'no' ? 'غير معفى' : 
-                   customerData.tax_exempt === 'partial' ? 'إعفاء جزئي' : 
-                   customerData.tax_exempt === 'full' ? 'إعفاء كامل' : 'غير محدد'}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">مجموعة الخصم:</span>
-                <span className="text-sm">{customerData.discount_group || 'بدون خصم'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">تاريخ الإنشاء:</span>
-                <span className="text-sm">{new Date().toLocaleDateString('ar-SA')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Final Verification */}
         <Alert className="border-success/20 bg-success/5">

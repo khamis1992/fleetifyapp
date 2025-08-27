@@ -47,11 +47,6 @@ const customerSchema = z.object({
   
   base_currency: z.string().default('KWD'),
   initial_credit_limit: z.number().optional(),
-  payment_terms: z.string().default('net_30'),
-  discount_group: z.string().optional(),
-  default_discount_percentage: z.number().optional(),
-  tax_exempt: z.string().default('no'),
-  risk_level: z.string().default('medium'),
   
   // Account Linking
   accounts: z.object({
@@ -112,9 +107,6 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       email: '',
       
       base_currency: 'KWD',
-      payment_terms: 'net_30',
-      tax_exempt: 'no',
-      risk_level: 'medium',
     },
   });
 
