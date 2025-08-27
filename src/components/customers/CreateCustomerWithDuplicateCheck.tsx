@@ -51,7 +51,17 @@ const customerSchema = z.object({
 
 type CustomerFormData = z.infer<typeof customerSchema>;
 
-export const CreateCustomerWithDuplicateCheck: React.FC = () => {
+interface CreateCustomerWithDuplicateCheckProps {
+  editingCustomer?: any;
+  onSuccess?: (customer: any) => void;
+  onCancel?: () => void;
+}
+
+export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplicateCheckProps> = ({
+  editingCustomer,
+  onSuccess,
+  onCancel
+}) => {
   const [hasDuplicates, setHasDuplicates] = useState(false);
   const [forceCreate, setForceCreate] = useState(false);
   const [currentStep, setCurrentStep] = useState('basic');
@@ -89,15 +99,20 @@ export const CreateCustomerWithDuplicateCheck: React.FC = () => {
         return;
       }
 
-      await createCustomer.mutateAsync({
+      const result = await createCustomer.mutateAsync({
         ...data,
         force_create: forceCreate,
       });
 
-      toast.success('تم إنشاء العميل بنجاح');
-      form.reset();
-      setForceCreate(false);
-      setHasDuplicates(false);
+      toast.success(editingCustomer ? 'تم تحديث العميل بنجاح' : 'تم إنشاء العميل بنجاح');
+      
+      if (onSuccess) {
+        onSuccess(result);
+      } else {
+        form.reset();
+        setForceCreate(false);
+        setHasDuplicates(false);
+      }
     } catch (error: any) {
       console.error('Error creating customer:', error);
       toast.error(error.message || 'حدث خطأ أثناء إنشاء العميل');
@@ -451,11 +466,15 @@ export const CreateCustomerWithDuplicateCheck: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      form.reset();
-                      setCurrentStep('basic');
-                      setCompletedSteps([]);
-                      setForceCreate(false);
-                      setHasDuplicates(false);
+                      if (onCancel) {
+                        onCancel();
+                      } else {
+                        form.reset();
+                        setCurrentStep('basic');
+                        setCompletedSteps([]);
+                        setForceCreate(false);
+                        setHasDuplicates(false);
+                      }
                     }}
                   >
                     إلغاء

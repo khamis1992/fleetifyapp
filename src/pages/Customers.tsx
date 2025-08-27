@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { useCustomers, useToggleCustomerBlacklist, useDeleteCustomer } from "@/hooks/useEnhancedCustomers"
 import { useDebounce } from "@/hooks/useDebounce"
-import { EnhancedCustomerForm } from "@/components/customers/EnhancedCustomerForm"
+import { CreateCustomerDialog } from "@/components/customers/CreateCustomerDialog"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
@@ -478,7 +478,7 @@ export default function Customers() {
       </div>
 
       {/* نماذج الحوار */}
-      <EnhancedCustomerForm
+      <CreateCustomerDialog
         open={showCustomerForm}
         onOpenChange={(open) => {
           setShowCustomerForm(open)
@@ -486,7 +486,7 @@ export default function Customers() {
             setEditingCustomer(null)
           }
         }}
-        customer={editingCustomer}
+        editingCustomer={editingCustomer}
         onSuccess={(customer) => {
           console.log('✅ Customer saved successfully:', customer)
           setShowCustomerForm(false)
