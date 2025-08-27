@@ -672,18 +672,38 @@ export function CustomerForm({ open, onOpenChange, customer, mode, onSuccess }: 
                       min="0"
                       {...register('credit_limit', { valueAsNumber: true })} 
                       placeholder="0.000"
-                      dir="ltr"
-                    />
-                  </div>
+                     dir="ltr"
+                     className="text-left"
+                   />
+                 </div>
 
-                  <div className="space-y-2">
-                    <Label>ملاحظات</Label>
-                    <Textarea 
-                      {...register('notes')} 
-                      placeholder="أي ملاحظات إضافية..."
-                      rows={4}
-                    />
-                  </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <Label>اسم جهة الاتصال في حالات الطوارئ</Label>
+                     <Input 
+                       {...register('emergency_contact_name')} 
+                       placeholder="اسم الشخص للاتصال في حالات الطوارئ"
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <Label>هاتف جهة الاتصال في حالات الطوارئ</Label>
+                     <Input 
+                       {...register('emergency_contact_phone')} 
+                       placeholder="+965 XXXXXXXX"
+                       dir="ltr"
+                       className="text-left"
+                     />
+                   </div>
+                 </div>
+
+                 <div className="space-y-2">
+                   <Label>ملاحظات</Label>
+                   <Textarea 
+                     {...register('notes')} 
+                     placeholder="أي ملاحظات إضافية..."
+                     rows={4}
+                   />
+                 </div>
                 </CardContent>
               </Card>
             </TabsContent>
