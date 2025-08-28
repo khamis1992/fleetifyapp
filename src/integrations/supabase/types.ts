@@ -10090,7 +10090,7 @@ export type Database = {
         Returns: Json
       }
       auto_create_customer_accounts: {
-        Args: { p_company_id: string; p_customer_id: string }
+        Args: { company_id_param: string; customer_id_param: string }
         Returns: Json
       }
       bulk_delete_company_accounts: {

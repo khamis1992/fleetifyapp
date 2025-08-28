@@ -188,25 +188,36 @@ export const useAutoCreateCustomerAccounts = () => {
   return useMutation({
     mutationFn: async ({ customerId, companyId }: { customerId: string; companyId: string }) => {
       const { data, error } = await supabase.rpc('auto_create_customer_accounts', {
-        p_customer_id: customerId,
-        p_company_id: companyId,
+        customer_id_param: customerId,
+        company_id_param: companyId,
       });
 
       if (error) throw error;
       return data;
     },
-    onSuccess: (createdCount, { customerId }) => {
+    onSuccess: (result, { customerId }) => {
       queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerId] });
-      toast({
-        title: "تم إنشاء الحسابات المحاسبية",
-        description: `تم إنشاء ${createdCount} حساب محاسبي للعميل تلقائياً`,
-      });
+      
+      const resultData = result as any;
+      
+      if (resultData?.success) {
+        toast({
+          title: "تم إنشاء الحسابات المحاسبية",
+          description: resultData.message || `تم إنشاء ${resultData.created_accounts || 0} حساب محاسبي للعميل`,
+        });
+      } else {
+        toast({
+          title: "تنبيه",
+          description: resultData?.message || resultData?.error || "لا توجد حسابات جديدة لإنشائها",
+          variant: resultData?.error ? "destructive" : "default",
+        });
+      }
     },
     onError: (error) => {
       console.error('Error auto-creating customer accounts:', error);
       toast({
         title: "خطأ في إنشاء الحسابات",
-        description: "حدث خطأ أثناء إنشاء الحسابات المحاسبية التلقائية",
+        description: "حدث خطأ أثناء إنشاء الحسابات المحاسبية التلقائية. تأكد من إعداد حساب المقبوضات الافتراضي في إعدادات الشركة.",
         variant: "destructive",
       });
     },
