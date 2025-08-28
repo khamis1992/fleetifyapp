@@ -375,6 +375,21 @@ export const useCreateCustomer = () => {
       delete cleanData.selectedCompanyId;
       delete cleanData.force_create;
 
+      // توليد كود العميل إذا لم يكن موجوداً
+      if (!cleanData.customer_code) {
+        const { data: generatedCode, error: codeError } = await supabase.rpc('generate_customer_code', {
+          p_company_id: targetCompanyId,
+          p_customer_type: cleanData.customer_type
+        });
+
+        if (codeError) {
+          console.error('Error generating customer code:', codeError);
+          throw new Error('فشل في توليد كود العميل');
+        }
+
+        cleanData.customer_code = generatedCode;
+      }
+
       const { data: insertData, error } = await supabase
         .from('customers')
         .insert({
