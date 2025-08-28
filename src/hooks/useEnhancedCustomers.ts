@@ -390,6 +390,8 @@ export const useCreateCustomer = () => {
         cleanData.customer_code = generatedCode;
       }
 
+      console.log('🔍 Creating customer with data:', cleanData);
+      
       const { data: insertData, error } = await supabase
         .from('customers')
         .insert({
