@@ -39,16 +39,31 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
       duplicateCheck,
       hasDuplicates: duplicateCheck?.has_duplicates,
       count: duplicateCheck?.count,
-      customerData: debouncedCustomerData
+      customerData: debouncedCustomerData,
+      excludeCustomerId
     });
     
     if (duplicateCheck) {
-      setShowInlineWarning(duplicateCheck.has_duplicates);
+      // تأكد من أن التكرارات المكتشفة لا تتضمن العميل الحالي إذا كان في وضع التعديل
+      const validDuplicates = duplicateCheck.duplicates?.filter(duplicate => 
+        !excludeCustomerId || duplicate.id !== excludeCustomerId
+      ) || [];
+      
+      const hasValidDuplicates = validDuplicates.length > 0;
+      
+      console.log('🔄 [DUPLICATE_CHECK_UI] Filtered duplicates:', {
+        originalCount: duplicateCheck.duplicates?.length || 0,
+        validCount: validDuplicates.length,
+        hasValidDuplicates,
+        excludeCustomerId
+      });
+      
+      setShowInlineWarning(hasValidDuplicates);
       if (onDuplicateDetected) {
-        onDuplicateDetected(duplicateCheck.has_duplicates);
+        onDuplicateDetected(hasValidDuplicates);
       }
     }
-  }, [duplicateCheck, onDuplicateDetected, debouncedCustomerData]);
+  }, [duplicateCheck, onDuplicateDetected, debouncedCustomerData, excludeCustomerId]);
 
   const handleViewDuplicates = () => {
     setShowDuplicateDialog(true);
@@ -69,7 +84,7 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
           <AlertDescription className="text-foreground">
             <div className="flex items-center justify-between">
               <span className="text-foreground font-medium">
-                تم العثور على {duplicateCheck.count} عميل(عملاء) مشابه(ين) في النظام
+                تم العثور على {duplicateCheck.duplicates?.filter(d => !excludeCustomerId || d.id !== excludeCustomerId).length || 0} عميل(عملاء) مشابه(ين) في النظام
               </span>
               <button
                 type="button"
@@ -89,7 +104,7 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
         <DuplicateCustomerDialog
           open={showDuplicateDialog}
           onOpenChange={setShowDuplicateDialog}
-          duplicates={duplicateCheck.duplicates}
+          duplicates={duplicateCheck.duplicates?.filter(d => !excludeCustomerId || d.id !== excludeCustomerId) || []}
           onProceedAnyway={handleProceedAnyway}
           allowProceed={true}
         />

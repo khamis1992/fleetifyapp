@@ -47,7 +47,8 @@ export const useCustomerDuplicateCheck = (
         customerType: customerData.customer_type,
         nationalId: customerData.national_id,
         phone: customerData.phone,
-        email: customerData.email
+        email: customerData.email,
+        excludeCustomerId
       });
 
       const { data, error } = await supabase.rpc('check_duplicate_customer', {
@@ -70,18 +71,24 @@ export const useCustomerDuplicateCheck = (
       // إضافة logging للنتائج
       const result = data as any;
       
-      // تصفية العملاء من الشركات الأخرى
+      // تصفية العملاء من الشركات الأخرى وإزالة أي مراجع للعميل المستبعد
       if (result && result.duplicates) {
-        const filteredDuplicates = result.duplicates.filter((d: any) => d.company_id === companyId);
+        let filteredDuplicates = result.duplicates.filter((d: any) => d.company_id === companyId);
+        
+        // التأكد من عدم تضمين العميل المستبعد في النتائج
+        if (excludeCustomerId) {
+          filteredDuplicates = filteredDuplicates.filter((d: any) => d.id !== excludeCustomerId);
+        }
         
         console.log('🔍 [DUPLICATE_CHECK] Original Results:', {
           hasDuplicates: result?.has_duplicates,
           count: result?.count,
           totalDuplicates: result?.duplicates?.length || 0,
-          sameCompanyDuplicates: filteredDuplicates.length
+          sameCompanyDuplicates: filteredDuplicates.length,
+          excludeCustomerId
         });
 
-        // تحديث النتائج لتشمل فقط العملاء من نفس الشركة
+        // تحديث النتائج لتشمل فقط العملاء من نفس الشركة (باستثناء العميل المستبعد)
         const filteredResult = {
           has_duplicates: filteredDuplicates.length > 0,
           duplicates: filteredDuplicates,
