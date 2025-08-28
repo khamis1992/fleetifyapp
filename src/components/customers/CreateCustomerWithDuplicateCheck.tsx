@@ -19,7 +19,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { User, Phone, Calculator, LinkIcon, CheckCircle, ArrowRight, ArrowLeft, CalendarIcon, AlertTriangle } from 'lucide-react';
+import { User, Phone, Calculator, LinkIcon, CheckCircle, ArrowRight, ArrowLeft, CalendarIcon, AlertTriangle, TestTube } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -190,6 +190,99 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
 
   const customerType = form.watch('customer_type');
 
+  // Mock data generation functions
+  const generateMockIndividualData = () => {
+    const firstNames = ['محمد', 'أحمد', 'علي', 'فاطمة', 'عائشة', 'خديجة', 'يوسف', 'إبراهيم', 'مريم', 'زينب'];
+    const lastNames = ['الأحمد', 'المحمد', 'العلي', 'الخالدي', 'السالم', 'العثمان', 'الراشد', 'المطيري', 'العنزي', 'الشمري'];
+    
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const randomId = Math.floor(Math.random() * 999999999).toString().padStart(9, '0');
+    const randomPhone = '9' + Math.floor(Math.random() * 9999999).toString().padStart(7, '0');
+    
+    // Generate future expiry dates
+    const futureDate1 = new Date();
+    futureDate1.setFullYear(futureDate1.getFullYear() + 2);
+    
+    const futureDate2 = new Date();
+    futureDate2.setFullYear(futureDate2.getFullYear() + 3);
+    
+    // Generate past birth date
+    const birthDate = new Date();
+    birthDate.setFullYear(birthDate.getFullYear() - 30 - Math.floor(Math.random() * 20));
+    
+    return {
+      customer_type: 'individual' as const,
+      first_name: firstName,
+      last_name: lastName,
+      national_id: `2${randomId}`,
+      license_number: `L${Math.floor(Math.random() * 999999).toString().padStart(6, '0')}`,
+      passport_number: `P${Math.floor(Math.random() * 9999999).toString().padStart(7, '0')}`,
+      phone: randomPhone,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+      date_of_birth: birthDate,
+      national_id_expiry: futureDate1,
+      license_expiry: futureDate2,
+      credit_limit: Math.floor(Math.random() * 10000) + 1000,
+    };
+  };
+
+  const generateMockCorporateData = () => {
+    const companies = [
+      'شركة الخليج للتجارة',
+      'مؤسسة النور للمقاولات',
+      'شركة الأمل للاستثمار',
+      'مجموعة الفجر التجارية',
+      'شركة البحر للنقل',
+      'مؤسسة الضياء للتطوير',
+      'شركة الوادي للصناعات',
+      'مجموعة الشروق للخدمات',
+      'شركة الرياض للتقنية',
+      'مؤسسة القمة للاستشارات'
+    ];
+    
+    const company = companies[Math.floor(Math.random() * companies.length)];
+    const randomId = Math.floor(Math.random() * 999999999).toString().padStart(9, '0');
+    const randomPhone = '2' + Math.floor(Math.random() * 9999999).toString().padStart(7, '0');
+    
+    // Generate future expiry dates
+    const futureDate1 = new Date();
+    futureDate1.setFullYear(futureDate1.getFullYear() + 2);
+    
+    const futureDate2 = new Date();
+    futureDate2.setFullYear(futureDate2.getFullYear() + 3);
+    
+    return {
+      customer_type: 'corporate' as const,
+      company_name: company,
+      national_id: `3${randomId}`,
+      license_number: `C${Math.floor(Math.random() * 999999).toString().padStart(6, '0')}`,
+      passport_number: undefined,
+      phone: randomPhone,
+      email: `info@${company.split(' ')[1].toLowerCase()}.com`,
+      date_of_birth: undefined,
+      national_id_expiry: futureDate1,
+      license_expiry: futureDate2,
+      credit_limit: Math.floor(Math.random() * 50000) + 5000,
+      first_name: '',
+      last_name: '',
+    };
+  };
+
+  const fillMockData = () => {
+    const mockData = customerType === 'individual' ? generateMockIndividualData() : generateMockCorporateData();
+    
+    // Fill form with mock data
+    Object.keys(mockData).forEach(key => {
+      const value = mockData[key as keyof typeof mockData];
+      if (value !== undefined) {
+        form.setValue(key as keyof CustomerFormData, value);
+      }
+    });
+    
+    toast.success('تم ملء البيانات الوهمية بنجاح');
+  };
+
   const steps = [
     { id: 'basic', label: 'البيانات الأساسية', icon: User },
     { id: 'contact', label: 'معلومات الاتصال', icon: Phone },
@@ -307,10 +400,23 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
               {currentStep === 'basic' && (
                 <Card className="border-primary/20">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      البيانات الأساسية
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        البيانات الأساسية
+                      </CardTitle>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={fillMockData}
+                        className="flex items-center gap-2 text-xs"
+                        title="ملء بيانات وهمية لتسريع الاختبار"
+                      >
+                        <TestTube className="h-4 w-4" />
+                        بيانات وهمية
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Customer Type */}
