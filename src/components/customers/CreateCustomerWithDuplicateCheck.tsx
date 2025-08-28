@@ -100,6 +100,25 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
   const watchedValues = form.watch();
 
   const onSubmit = async (data: CustomerFormData) => {
+    console.log('🚀 [CUSTOMER_FORM] Starting customer submission with data:', {
+      customer_type: data.customer_type,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      company_name: data.company_name,
+      national_id: data.national_id,
+      passport_number: data.passport_number,
+      license_number: data.license_number,
+      phone: data.phone,
+      email: data.email,
+      date_of_birth: data.date_of_birth,
+      national_id_expiry: data.national_id_expiry,
+      license_expiry: data.license_expiry,
+      credit_limit: data.credit_limit,
+      force_create: forceCreate,
+      hasDuplicates,
+      editingCustomer: !!editingCustomer
+    });
+
     try {
       // Check for expired documents
       const expiredDocs = [];
@@ -111,32 +130,48 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       }
 
       if (expiredDocs.length > 0) {
+        console.error('❌ [CUSTOMER_FORM] Expired documents detected:', expiredDocs);
         toast.error(`لا يمكن حفظ العميل: ${expiredDocs.join(' و ')} منتهية الصلاحية`);
         return;
       }
 
       // If there are duplicates and user hasn't forced creation, show error
       if (hasDuplicates && !forceCreate) {
+        console.warn('⚠️ [CUSTOMER_FORM] Duplicates detected but not forced:', { hasDuplicates, forceCreate });
         toast.error('يوجد عملاء مشابهين في النظام. يرجى مراجعة التحذيرات أعلاه.');
         return;
       }
+
+      console.log('✅ [CUSTOMER_FORM] All validations passed, sending to createCustomer:', {
+        ...data,
+        force_create: forceCreate,
+      });
 
       const result = await createCustomer.mutateAsync({
         ...data,
         force_create: forceCreate,
       });
 
+      console.log('🎉 [CUSTOMER_FORM] Customer creation successful! Result:', result);
+      
       toast.success(editingCustomer ? 'تم تحديث العميل بنجاح' : 'تم إنشاء العميل بنجاح');
       
       if (onSuccess) {
+        console.log('📞 [CUSTOMER_FORM] Calling onSuccess callback with result:', result);
         onSuccess(result);
       } else {
+        console.log('🔄 [CUSTOMER_FORM] Resetting form state');
         form.reset();
         setForceCreate(false);
         setHasDuplicates(false);
       }
     } catch (error: any) {
-      console.error('Error creating customer:', error);
+      console.error('💥 [CUSTOMER_FORM] Error creating customer:', {
+        error,
+        message: error.message,
+        stack: error.stack,
+        originalData: data
+      });
       toast.error(error.message || 'حدث خطأ أثناء إنشاء العميل');
     }
   };

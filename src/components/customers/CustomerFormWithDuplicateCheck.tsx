@@ -35,13 +35,20 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
   );
 
   useEffect(() => {
+    console.log('🔄 [DUPLICATE_CHECK_UI] Duplicate check result changed:', {
+      duplicateCheck,
+      hasDuplicates: duplicateCheck?.has_duplicates,
+      count: duplicateCheck?.count,
+      customerData: debouncedCustomerData
+    });
+    
     if (duplicateCheck) {
       setShowInlineWarning(duplicateCheck.has_duplicates);
       if (onDuplicateDetected) {
         onDuplicateDetected(duplicateCheck.has_duplicates);
       }
     }
-  }, [duplicateCheck, onDuplicateDetected]);
+  }, [duplicateCheck, onDuplicateDetected, debouncedCustomerData]);
 
   const handleViewDuplicates = () => {
     setShowDuplicateDialog(true);
