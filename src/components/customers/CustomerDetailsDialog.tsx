@@ -20,6 +20,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { formatDateInGregorian } from "@/utils/dateFormatter";
 
 interface CustomerDetailsDialogProps {
   open: boolean;
@@ -193,12 +194,12 @@ export function CustomerDetailsDialog({
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>{customer.city}, {customer.country}</span>
                   </div>
-                  {customer.date_of_birth && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>تاريخ الميلاد: {new Date(customer.date_of_birth).toLocaleDateString('ar-SA')}</span>
-                    </div>
-                  )}
+                   {customer.date_of_birth && (
+                     <div className="flex items-center gap-2">
+                       <Calendar className="h-4 w-4 text-muted-foreground" />
+                       <span>تاريخ الميلاد: {formatDateInGregorian(customer.date_of_birth)}</span>
+                     </div>
+                   )}
                 </CardContent>
               </Card>
 
