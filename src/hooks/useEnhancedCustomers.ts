@@ -367,10 +367,18 @@ export const useCreateCustomer = () => {
         throw new Error(`يوجد عميل مشابه في النظام: ${duplicateInfo}`);
       }
 
+      // إزالة الحقول غير الموجودة في جدول customers
+      const cleanData = { ...data };
+      delete cleanData.commercial_register;
+      delete cleanData.base_currency;
+      delete cleanData.accounts;
+      delete cleanData.selectedCompanyId;
+      delete cleanData.force_create;
+
       const { data: insertData, error } = await supabase
         .from('customers')
         .insert({
-          ...data,
+          ...cleanData,
           company_id: targetCompanyId,
           is_active: true
         })
