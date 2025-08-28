@@ -421,6 +421,7 @@ export const useCreateCustomer = () => {
       }
 
       // التحقق من إعدادات إنشاء الحسابات التلقائية
+      let autoAccountCreationError: string | null = null;
       try {
         console.log('🔍 [useCreateCustomer] Checking company auto-account settings...');
         
@@ -432,6 +433,7 @@ export const useCreateCustomer = () => {
 
         if (settingsError) {
           console.warn('⚠️ [useCreateCustomer] Error fetching company settings:', settingsError);
+          autoAccountCreationError = 'فشل في جلب إعدادات الشركة';
         } else if (companySettings?.customer_account_settings) {
           const settings = companySettings.customer_account_settings as any;
           console.log('⚙️ [useCreateCustomer] Company settings found:', settings);
@@ -441,32 +443,52 @@ export const useCreateCustomer = () => {
             console.log('🔄 [useCreateCustomer] Auto-creating customer accounts...');
             
             const { data: accountsCreated, error: autoCreateError } = await supabase.rpc('auto_create_customer_accounts', {
-              p_customer_id: insertData.id, // Use insertData.id (the correct variable name)
+              p_customer_id: insertData.id,
               p_company_id: targetCompanyId,
             });
 
             if (autoCreateError) {
               console.error('💥 [useCreateCustomer] Error auto-creating customer accounts:', autoCreateError);
-              // لا نوقف العملية بسبب فشل إنشاء الحسابات، ولكن نسجل تحذيراً
+              autoAccountCreationError = `فشل في إنشاء الحسابات تلقائياً: ${autoCreateError.message || autoCreateError}`;
               console.warn('⚠️ [useCreateCustomer] Customer created successfully but auto-account creation failed');
             } else {
               console.log(`✅ [useCreateCustomer] Auto-created ${accountsCreated || 0} customer accounts`);
+              if (accountsCreated === 0) {
+                autoAccountCreationError = 'لم يتم إنشاء أي حسابات تلقائياً - تحقق من إعدادات الحسابات';
+              }
             }
           } else {
             console.log('ℹ️ [useCreateCustomer] Auto-create account is disabled');
+            autoAccountCreationError = 'الإنشاء التلقائي للحسابات معطل في إعدادات الشركة';
           }
         } else {
           console.log('ℹ️ [useCreateCustomer] No customer account settings found');
+          autoAccountCreationError = 'لم يتم العثور على إعدادات الحسابات للشركة';
         }
       } catch (autoAccountError) {
         console.error('💥 [useCreateCustomer] Error in auto-account creation process:', autoAccountError);
-        // لا نوقف العملية بسبب مشاكل في إنشاء الحسابات التلقائية
+        autoAccountCreationError = `خطأ في عملية إنشاء الحسابات: ${autoAccountError.message || autoAccountError}`;
       }
 
-      return insertData; // Return insertData (the correct variable name)
+      // إضافة معلومات عن حالة إنشاء الحسابات إلى البيانات المُرجعة
+      return {
+        ...insertData,
+        _autoAccountCreationError: autoAccountCreationError
+      };
     },
     onSuccess: (customerData) => {
       console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
+      
+      // إظهار رسالة نجاح مع تحذير إذا فشل إنشاء الحسابات
+      const hasAccountError = (customerData as any)?._autoAccountCreationError;
+      if (hasAccountError) {
+        toast.success('تم إنشاء العميل بنجاح', {
+          description: `لكن حدث خطأ في إنشاء الحسابات: ${hasAccountError}`,
+          duration: 8000,
+        });
+      } else {
+        toast.success('تم إنشاء العميل بنجاح مع الحسابات المحاسبية');
+      }
       
       // Invalidate relevant queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -475,7 +497,6 @@ export const useCreateCustomer = () => {
       
       console.log('🔄 [useCreateCustomer] Queries invalidated, UI should refresh');
       
-      toast.success('تم إنشاء العميل والحسابات المحاسبية بنجاح');
       return customerData;
     },
     onError: (error) => {

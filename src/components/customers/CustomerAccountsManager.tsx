@@ -47,10 +47,12 @@ export const CustomerAccountsManager: React.FC<CustomerAccountsManagerProps> = (
   };
 
   const handleAutoCreate = () => {
-    autoCreateMutation.mutate({ 
-      customerId: customer.id, 
-      companyId: customer.company_id 
-    });
+    if (confirm('هل تريد إنشاء الحسابات المحاسبية تلقائياً لهذا العميل؟')) {
+      autoCreateMutation.mutate({ 
+        customerId: customer.id, 
+        companyId: customer.company_id 
+      });
+    }
   };
 
   const handleFormClose = () => {
@@ -129,12 +131,42 @@ export const CustomerAccountsManager: React.FC<CustomerAccountsManagerProps> = (
       </CardHeader>
       <CardContent>
         {accounts.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground space-y-4">
             <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>لا توجد حسابات محاسبية مرتبطة بهذا العميل</p>
-            <p className="text-sm mt-2">
+            <p className="text-sm">
               يمكنك إضافة حساب جديد أو استخدام الإنشاء التلقائي لإنشاء الحسابات الأساسية
             </p>
+            <div className="flex justify-center gap-4 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleAutoCreate}
+                disabled={autoCreateMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                {autoCreateMutation.isPending ? 'جارِ الإنشاء...' : 'إنشاء تلقائي'}
+              </Button>
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    إضافة حساب يدوياً
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>إضافة حساب محاسبي جديد</DialogTitle>
+                  </DialogHeader>
+                  <CustomerAccountForm
+                    customer={customer}
+                    account={null}
+                    onSuccess={handleFormClose}
+                    onCancel={handleFormClose}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         ) : (
           <Table>
