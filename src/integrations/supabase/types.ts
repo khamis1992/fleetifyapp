@@ -10478,6 +10478,10 @@ export type Database = {
             }
         Returns: Json
       }
+      create_customer_financial_account: {
+        Args: { p_company_id: string; p_customer_id: string }
+        Returns: Json
+      }
       create_customer_financial_account_enhanced: {
         Args: { customer_id_param: string; user_id_param?: string }
         Returns: Json
