@@ -45,7 +45,6 @@ const customerSchema = z.object({
     { message: 'تاريخ انتهاء رخصة القيادة يجب أن يكون في المستقبل' }
   ).optional(),
   
-  base_currency: z.string().default('KWD'),
   initial_credit_limit: z.number().optional(),
 }).refine(
   (data) => {
@@ -97,8 +96,6 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       license_number: '',
       phone: '',
       email: '',
-      
-      base_currency: 'KWD',
     },
   });
 
@@ -182,7 +179,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       case 'contact':
         return !!watchedValues.phone;
       case 'accounting':
-        return !!watchedValues.base_currency;
+        return true; // Optional step
       case 'linking':
         return true; // Optional step
       default:
