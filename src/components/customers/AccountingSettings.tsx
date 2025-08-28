@@ -11,7 +11,7 @@ import { CreditLimitCalculator } from '@/components/finance/CreditLimitCalculato
 
 interface AccountingSettingsProps {
   control: Control<any>;
-  customerType?: 'individual' | 'company';
+  customerType?: 'individual' | 'corporate';
   setValue?: UseFormSetValue<any>;
   getValues?: UseFormGetValues<any>;
 }
@@ -36,7 +36,7 @@ export const AccountingSettings: React.FC<AccountingSettingsProps> = ({
         <div className="grid grid-cols-1 gap-6">
           <FormField
             control={control}
-            name="initial_credit_limit"
+            name="credit_limit"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center justify-between">
@@ -75,10 +75,10 @@ export const AccountingSettings: React.FC<AccountingSettingsProps> = ({
             <CreditLimitCalculator
               customerType={customerType}
               onCreditLimitCalculated={(amount) => {
-                if (setValue) setValue('initial_credit_limit', amount);
+                if (setValue) setValue('credit_limit', amount);
                 setShowCreditCalculator(false);
               }}
-              initialAmount={getValues ? getValues('initial_credit_limit') || 0 : 0}
+              initialAmount={getValues ? getValues('credit_limit') || 0 : 0}
             />
           </div>
         )}

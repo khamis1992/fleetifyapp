@@ -25,11 +25,10 @@ import { cn } from '@/lib/utils';
 
 const customerSchema = z.object({
   // Basic Information
-  customer_type: z.enum(['individual', 'company']),
+  customer_type: z.enum(['individual', 'corporate']),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
   company_name: z.string().optional(),
-  commercial_register: z.string().optional(),
   national_id: z.string().optional(),
   passport_number: z.string().optional(),
   license_number: z.string().optional(),
@@ -45,7 +44,7 @@ const customerSchema = z.object({
     { message: 'تاريخ انتهاء رخصة القيادة يجب أن يكون في المستقبل' }
   ).optional(),
   
-  initial_credit_limit: z.number().optional(),
+  credit_limit: z.number().optional(),
 }).refine(
   (data) => {
     // Validate that birth date is not in the future and not too old
@@ -90,7 +89,6 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
       first_name: '',
       last_name: '',
       company_name: '',
-      commercial_register: '',
       national_id: '',
       passport_number: '',
       license_number: '',
@@ -262,7 +260,6 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
             phone: watchedValues.phone,
             email: watchedValues.email,
             company_name: watchedValues.company_name,
-            commercial_register: watchedValues.commercial_register,
           }}
           onDuplicateDetected={handleDuplicateDetected}
           onProceedWithDuplicates={handleProceedWithDuplicates}
@@ -296,7 +293,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="individual">فرد</SelectItem>
-                              <SelectItem value="company">شركة</SelectItem>
+                              <SelectItem value="corporate">شركة</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -338,7 +335,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                     )}
 
                     {/* Company Fields */}
-                    {customerType === 'company' && (
+                    {customerType === 'corporate' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -354,19 +351,6 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                           )}
                         />
 
-                        <FormField
-                          control={form.control}
-                          name="commercial_register"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>السجل التجاري</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="أدخل رقم السجل التجاري" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     )}
 
@@ -622,7 +606,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
                   control={form.control}
                   customerType={customerType}
                   customerName={customerType === 'individual' ? `${watchedValues.first_name} ${watchedValues.last_name}` : undefined}
-                  companyName={customerType === 'company' ? watchedValues.company_name : undefined}
+                  companyName={customerType === 'corporate' ? watchedValues.company_name : undefined}
                 />
               )}
 

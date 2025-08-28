@@ -25,7 +25,6 @@ export interface CustomerData {
   phone?: string;
   email?: string;
   company_name?: string;
-  commercial_register?: string;
 }
 
 export const useCustomerDuplicateCheck = (
@@ -59,7 +58,7 @@ export const useCustomerDuplicateCheck = (
         p_phone: customerData.phone || null,
         p_email: customerData.email || null,
         p_company_name: customerData.company_name || null,
-        p_commercial_register: customerData.commercial_register || null,
+        p_commercial_register: null,
         p_exclude_customer_id: excludeCustomerId || null
       });
 
@@ -110,7 +109,7 @@ export const useCustomerDuplicateCheck = (
       !!customerData.passport_number || 
       !!customerData.phone || 
       !!customerData.email || 
-      (customerData.customer_type === 'company' && !!customerData.company_name && !!customerData.commercial_register)
+      (customerData.customer_type === 'corporate' && !!customerData.company_name)
     ),
     staleTime: 0, // Always fresh for duplicate checks
   });

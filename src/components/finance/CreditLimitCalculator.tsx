@@ -9,7 +9,7 @@ import { Calculator, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface CreditLimitCalculatorProps {
   onCreditLimitCalculated: (amount: number) => void;
-  customerType: 'individual' | 'company';
+  customerType: 'individual' | 'corporate';
   initialAmount?: number;
 }
 
@@ -145,7 +145,7 @@ export const CreditLimitCalculator: React.FC<CreditLimitCalculatorProps> = ({
         </div>
 
         {/* Business Type (for companies) */}
-        {customerType === 'company' && (
+        {customerType === 'corporate' && (
           <div>
             <label className="text-sm font-medium mb-2 block">نوع النشاط التجاري</label>
             <Select value={businessType} onValueChange={setBusinessType}>

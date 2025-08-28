@@ -351,7 +351,7 @@ export const useCreateCustomer = () => {
         p_phone: data.phone || null,
         p_email: data.email || null,
         p_company_name: data.company_name || null,
-        p_commercial_register: data.commercial_register || null
+        p_commercial_register: null
       });
 
       if (duplicateError) {

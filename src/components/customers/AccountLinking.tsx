@@ -26,14 +26,14 @@ export const AccountLinking: React.FC<AccountLinkingProps> = ({
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
 
   const getCustomerDisplayName = () => {
-    if (customerType === 'company') {
+    if (customerType === 'corporate') {
       return companyName || 'الشركة';
     }
     return customerName || 'العميل';
   };
 
   const generateAccountCode = (accountType: string) => {
-    const baseCode = customerType === 'company' ? '1210' : '1211';
+    const baseCode = customerType === 'corporate' ? '1210' : '1211';
     const suffix = Math.random().toString().slice(2, 5);
     return `${baseCode}${suffix}`;
   };
