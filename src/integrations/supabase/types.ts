@@ -10790,7 +10790,10 @@ export type Database = {
         }[]
       }
       generate_customer_code: {
-        Args: { p_company_id: string; p_customer_type: string }
+        Args: {
+          p_company_id: string
+          p_customer_type: Database["public"]["Enums"]["customer_type"]
+        }
         Returns: string
       }
       generate_customer_statement_data: {
