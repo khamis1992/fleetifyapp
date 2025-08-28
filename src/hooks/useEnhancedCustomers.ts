@@ -419,11 +419,49 @@ export const useCreateCustomer = () => {
         }
         throw error;
       }
+
+      // التحقق من إعدادات إنشاء الحسابات التلقائية
+      try {
+        const { data: companySettings, error: settingsError } = await supabase
+          .from('companies')
+          .select('customer_account_settings')
+          .eq('id', targetCompanyId)
+          .single();
+
+        if (settingsError) {
+          console.warn('Error fetching company settings:', settingsError);
+        } else if (companySettings?.customer_account_settings) {
+          const settings = companySettings.customer_account_settings as any;
+          
+          // إذا كان الإنشاء التلقائي مفعلاً، قم بإنشاء الحسابات
+          if (settings.auto_create_account) {
+            console.log('🔄 Auto-creating customer accounts...');
+            
+            const { data: accountsCreated, error: autoCreateError } = await supabase.rpc('auto_create_customer_accounts', {
+              p_customer_id: insertData.id,
+              p_company_id: targetCompanyId,
+            });
+
+            if (autoCreateError) {
+              console.error('Error auto-creating customer accounts:', autoCreateError);
+              // لا نوقف العملية بسبب فشل إنشاء الحسابات، ولكن نسجل تحذيراً
+              console.warn('Customer created successfully but auto-account creation failed');
+            } else {
+              console.log(`✅ Auto-created ${accountsCreated || 0} customer accounts`);
+            }
+          }
+        }
+      } catch (autoAccountError) {
+        console.error('Error in auto-account creation process:', autoAccountError);
+        // لا نوقف العملية بسبب مشاكل في إنشاء الحسابات التلقائية
+      }
+
       return insertData;
     },
     onSuccess: (customerData) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast.success('تم إنشاء العميل بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] });
+      toast.success('تم إنشاء العميل والحسابات المحاسبية بنجاح');
       return customerData;
     },
     onError: (error) => {
