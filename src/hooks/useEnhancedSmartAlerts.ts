@@ -63,7 +63,11 @@ export const useActiveAlerts = () => {
         .limit(50);
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        priority: item.priority as 'low' | 'medium' | 'high' | 'critical',
+        status: item.status as 'active' | 'acknowledged' | 'resolved' | 'dismissed'
+      }));
     },
     enabled: !!companyId,
     refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
@@ -94,7 +98,11 @@ export const useAlertsByPriority = (priority?: string) => {
         .limit(100);
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        priority: item.priority as 'low' | 'medium' | 'high' | 'critical',
+        status: item.status as 'active' | 'acknowledged' | 'resolved' | 'dismissed'
+      }));
     },
     enabled: !!companyId,
   });
@@ -132,7 +140,7 @@ export const useRunAlertsCheck = () => {
         .rpc('run_smart_alerts_check');
 
       if (error) throw error;
-      return data;
+      return data as unknown as AlertCheckResult;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['smart-alerts'] });

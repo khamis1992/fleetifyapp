@@ -204,7 +204,20 @@ export const usePaymentAllocations = (paymentId?: string) => {
             notes: '',
             created_by: null,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            customers: {
+              id: '1',
+              first_name: 'أحمد',
+              last_name: 'محمد',
+              company_name: null,
+              customer_type: 'individual' as const
+            },
+            contracts: {
+              id: '1',
+              contract_number: 'CNT-001',
+              contract_amount: 50000,
+              status: 'active'
+            }
           },
           payments: {
             id: paymentId,
