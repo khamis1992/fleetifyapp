@@ -494,6 +494,22 @@ export const useCreateCustomer = () => {
     onSuccess: (customerData) => {
       console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
       
+      // تحديث فوري للـ cache بإضافة العميل الجديد في المقدمة
+      queryClient.setQueryData(['customers', companyId], (oldData: EnhancedCustomer[] | undefined) => {
+        if (!oldData) return [customerData];
+        // التحقق من عدم وجود العميل مسبقاً لتجنب التكرار
+        const exists = oldData.some(customer => customer.id === customerData.id);
+        if (exists) return oldData;
+        return [customerData, ...oldData];
+      });
+      
+      // إعادة جلب البيانات لضمان التحديث الكامل
+      Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] }),
+        queryClient.invalidateQueries({ queryKey: ['enhanced-customers'] })
+      ]);
+      
       // إظهار رسالة نجاح مع تحذير إذا فشل إنشاء الحسابات
       const hasAccountError = (customerData as any)?._autoAccountCreationError;
       if (hasAccountError) {
@@ -505,12 +521,7 @@ export const useCreateCustomer = () => {
         toast.success('تم إنشاء العميل بنجاح مع الحسابات المحاسبية');
       }
       
-      // Invalidate relevant queries to refresh UI
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] });
-      queryClient.invalidateQueries({ queryKey: ['enhanced-customers'] });
-      
-      console.log('🔄 [useCreateCustomer] Queries invalidated, UI should refresh');
+      console.log('🔄 [useCreateCustomer] Cache updated and queries refreshed');
       
       return customerData;
     },

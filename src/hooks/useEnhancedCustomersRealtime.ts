@@ -26,15 +26,20 @@ export const useCustomersRealtime = () => {
         (payload) => {
           console.log('✅ Real-time: Customer inserted', payload.new);
           
-          // استخدام refetchQueries بدلاً من invalidateQueries لضمان التحديث الفوري
+          // تحديث فوري للـ cache
+          queryClient.setQueryData(['customers', companyId], (oldData: any[] | undefined) => {
+            if (!oldData) return [payload.new];
+            // التحقق من عدم وجود العميل مسبقاً لتجنب التكرار
+            const exists = oldData.some(customer => customer.id === payload.new.id);
+            if (exists) return oldData;
+            return [payload.new, ...oldData];
+          });
+          
+          // إعادة جلب البيانات كخطة احتياطية
           queryClient.refetchQueries({ queryKey: ['customers'] });
           
-          // إظهار رسالة للمستخدم
-          const customerName = payload.new.customer_type === 'individual' 
-            ? `${payload.new.first_name} ${payload.new.last_name}`
-            : payload.new.company_name;
-          
-          toast.success(`تم إضافة العميل "${customerName}" بنجاح`);
+          // عدم إظهار toast من Real-time لتجنب التكرار مع onSuccess
+          console.log('📡 Real-time update processed for customer:', payload.new.id);
         }
       )
       .on(
