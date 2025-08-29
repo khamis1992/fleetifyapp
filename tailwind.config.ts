@@ -19,11 +19,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				cairo: ['Cairo', 'sans-serif'],
-				tajawal: ['Tajawal', 'sans-serif'],
-				amiri: ['Amiri', 'serif'],
-				'noto-kufi': ['Noto Kufi Arabic', 'sans-serif'],
-				'reem-kufi': ['Reem Kufi', 'sans-serif'],
+				cairo: ['Cairo', 'system-ui', 'sans-serif'],
+				tajawal: ['Tajawal', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
