@@ -448,7 +448,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
         // If no vehicle selected or "none" selected, only require customer
         return hasCustomer
       case 3: // Financial
-        return data.contract_amount > 0 && (data.monthly_amount > 0 || data.rental_days < 30)
+        // يجب أن يكون مبلغ العقد أكبر من صفر، والمبلغ الشهري مطلوب فقط للعقود الطويلة المدى
+        return data.contract_amount > 0
       case 4: // Late Fines Settings (optional)
         return true // Always allow proceeding from this step
       case 5: // Review
