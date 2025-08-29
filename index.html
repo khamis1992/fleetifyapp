@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fleetify</title>
     
-    <!-- Critical resource hints for faster LCP -->
+    <!-- Critical resource hints for faster LCP and reduced dependency chains -->
+    <link rel="preconnect" href="https://qwhunliohlkkahbspfiu.supabase.co">
+    <link rel="dns-prefetch" href="https://qwhunliohlkkahbspfiu.supabase.co">
     <link rel="modulepreload" href="/src/main.tsx">
     <link rel="modulepreload" href="/src/App.tsx">
     <link rel="modulepreload" href="/src/pages/Index.tsx">
@@ -36,7 +38,7 @@
     <!-- Arabic Google Fonts with optimized loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" importance="high">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&display=swap"></noscript>
 
     <meta property="og:title" content="Fleetify" />
