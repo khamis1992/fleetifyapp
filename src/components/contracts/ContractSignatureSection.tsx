@@ -65,8 +65,13 @@ export const ContractSignatureSection: React.FC = () => {
         {!signatureEnabled && (
           <Alert className="border-amber-200 bg-amber-50">
             <Settings className="h-4 w-4" />
-            <AlertDescription>
-              خاصية التوقيع معطلة. العقد لن يتطلب توقيع الأطراف.
+            <AlertDescription className="space-y-2">
+              <div>
+                <strong>التوقيع الإلكتروني معطل.</strong> العقد لن يتطلب توقيع الأطراف إلكترونياً.
+              </div>
+              <div className="text-xs">
+                يمكن تفعيل التوقيع الإلكتروني من <strong>الإعدادات → إعدادات التوقيع الإلكتروني</strong>
+              </div>
             </AlertDescription>
           </Alert>
         )}
