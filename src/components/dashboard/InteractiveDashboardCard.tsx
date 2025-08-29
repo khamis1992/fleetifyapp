@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
 import { StatCardNumber } from '@/components/ui/NumberDisplay';
@@ -31,44 +31,60 @@ export function InteractiveDashboardCard({
 }: InteractiveDashboardCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [cachedRect, setCachedRect] = useState<DOMRect | null>(null);
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
+  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
+  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
 
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['12.5deg', '-12.5deg']);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-12.5deg', '12.5deg']);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+  // Cache the bounding rect on mount and resize to avoid forced reflows
+  const updateCachedRect = useCallback(() => {
+    if (ref.current) {
+      setCachedRect(ref.current.getBoundingClientRect());
+    }
+  }, []);
 
-    const rect = ref.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+  useEffect(() => {
+    updateCachedRect();
+    const handleResize = () => updateCachedRect();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateCachedRect]);
 
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cachedRect) return;
 
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
+    const mouseX = e.clientX - cachedRect.left;
+    const mouseY = e.clientY - cachedRect.top;
+
+    const xPct = mouseX / cachedRect.width - 0.5;
+    const yPct = mouseY / cachedRect.height - 0.5;
 
     x.set(xPct);
     y.set(yPct);
-  };
+  }, [cachedRect, x, y]);
 
-  const handleMouseLeave = () => {
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    updateCachedRect(); // Update rect when entering to ensure accuracy
+  }, [updateCachedRect]);
+
+  const handleMouseLeave = useCallback(() => {
     x.set(0);
     y.set(0);
     setIsHovered(false);
-  };
+  }, [x, y]);
 
   return (
     <motion.div
       ref={ref}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
         rotateY,
