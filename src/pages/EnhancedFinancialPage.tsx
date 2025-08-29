@@ -1,7 +1,7 @@
-import { EnhancedFinancialDashboard } from "@/components/finance/enhanced-dashboard/EnhancedFinancialDashboard";
+import { UnifiedFinancialDashboard } from "@/components/finance/UnifiedFinancialDashboard";
 
 const EnhancedFinancialPage = () => {
-  return <EnhancedFinancialDashboard companyId="current-company" />;
+  return <UnifiedFinancialDashboard />;
 };
 
 export default EnhancedFinancialPage;

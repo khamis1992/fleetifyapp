@@ -21,7 +21,7 @@ import {
   CheckCircle,
   MessageSquare
 } from 'lucide-react';
-import { SmartLegalAssistant } from './SmartLegalAssistant';
+import EnhancedLegalAIInterface_v2 from './EnhancedLegalAIInterface_v2';
 import { useLegalAI } from '@/hooks/useLegalAI';
 import { useAdvancedLegalAI } from '@/hooks/useAdvancedLegalAI';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -160,7 +160,7 @@ export const LegalAIDashboard: React.FC = () => {
           {/* Integrated Smart Legal Assistant */}
           <div className="grid grid-cols-1 gap-6">
             <div>
-              <SmartLegalAssistant />
+              <EnhancedLegalAIInterface_v2 />
             </div>
           </div>
 
