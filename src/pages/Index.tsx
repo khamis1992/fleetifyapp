@@ -5,15 +5,47 @@ import { Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { useDynamicLandingContent } from '@/hooks/useDynamicLandingContent';
 
-// Code split heavy components to reduce main thread blocking
-const AnimatedBackground = lazy(() => import('@/components/landing/AnimatedBackground').then(module => ({ default: module.AnimatedBackground })));
-const HeroSection = lazy(() => import('@/components/landing/HeroSection').then(module => ({ default: module.HeroSection })));
-const TrustedCompanies = lazy(() => import('@/components/landing/TrustedCompanies').then(module => ({ default: module.TrustedCompanies })));
-const FeatureShowcase = lazy(() => import('@/components/landing/FeatureShowcase').then(module => ({ default: module.FeatureShowcase })));
-const DashboardPreview = lazy(() => import('@/components/landing/DashboardPreview').then(module => ({ default: module.DashboardPreview })));
-const TestimonialsSection = lazy(() => import('@/components/landing/TestimonialsSection').then(module => ({ default: module.TestimonialsSection })));
-const CallToActionSection = lazy(() => import('@/components/landing/CallToActionSection').then(module => ({ default: module.CallToActionSection })));
-const ParallaxSection = lazy(() => import('@/components/landing/ParallaxSection').then(module => ({ default: module.ParallaxSection })));
+// Code split heavy components to reduce unused JavaScript on landing page load
+const AnimatedBackground = lazy(() => 
+  import('@/components/landing/AnimatedBackground').then(module => ({ 
+    default: module.AnimatedBackground 
+  }))
+);
+const HeroSection = lazy(() => 
+  import('@/components/landing/HeroSection').then(module => ({ 
+    default: module.HeroSection 
+  }))
+);
+const TrustedCompanies = lazy(() => 
+  import('@/components/landing/TrustedCompanies').then(module => ({ 
+    default: module.TrustedCompanies 
+  }))
+);
+const FeatureShowcase = lazy(() => 
+  import('@/components/landing/FeatureShowcase').then(module => ({ 
+    default: module.FeatureShowcase 
+  }))
+);
+const DashboardPreview = lazy(() => 
+  import('@/components/landing/DashboardPreview').then(module => ({ 
+    default: module.DashboardPreview 
+  }))
+);
+const TestimonialsSection = lazy(() => 
+  import('@/components/landing/TestimonialsSection').then(module => ({ 
+    default: module.TestimonialsSection 
+  }))
+);
+const CallToActionSection = lazy(() => 
+  import('@/components/landing/CallToActionSection').then(module => ({ 
+    default: module.CallToActionSection 
+  }))
+);
+const ParallaxSection = lazy(() => 
+  import('@/components/landing/ParallaxSection').then(module => ({ 
+    default: module.ParallaxSection 
+  }))
+);
 
 const Index = () => {
   const { user, loading } = useAuth();

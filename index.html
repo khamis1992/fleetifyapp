@@ -91,6 +91,31 @@
         </div>
       </div>
     </div>
+    <!-- Defer main JS bundle to reduce unused JavaScript on landing page -->
     <script type="module" src="/src/main.tsx" defer></script>
+    
+    <!-- Minimal landing page JavaScript -->
+    <script>
+      // Only load full app when user interacts or navigates beyond landing
+      let appLoaded = false;
+      
+      function loadFullApp() {
+        if (!appLoaded) {
+          appLoaded = true;
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = '/src/main.tsx';
+          document.head.appendChild(script);
+        }
+      }
+      
+      // Load full app on user interaction
+      document.addEventListener('click', loadFullApp, { once: true });
+      document.addEventListener('keydown', loadFullApp, { once: true });
+      document.addEventListener('scroll', loadFullApp, { once: true });
+      
+      // Auto-load after 3 seconds if no interaction
+      setTimeout(loadFullApp, 3000);
+    </script>
   </body>
 </html>
