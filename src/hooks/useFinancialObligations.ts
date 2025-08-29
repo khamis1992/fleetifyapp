@@ -40,7 +40,30 @@ export function useCustomerFinancialObligations(customerId?: string) {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      return data as FinancialObligationWithDetails[];
+      
+      // Process data to handle join failures
+      return (data || []).map(item => {
+        const processedItem = { ...item } as any;
+        
+        // Fix customers data
+        if (processedItem.customers && typeof processedItem.customers === 'object' && 'id' in processedItem.customers) {
+          processedItem.customers = {
+            ...processedItem.customers,
+            customer_type: processedItem.customers.customer_type === 'corporate' ? 'company' : processedItem.customers.customer_type
+          };
+        } else {
+          processedItem.customers = null;
+        }
+        
+        // Fix contracts data
+        if (processedItem.contracts && typeof processedItem.contracts === 'object' && 'id' in processedItem.contracts) {
+          processedItem.contracts = processedItem.contracts;
+        } else {
+          processedItem.contracts = null;
+        }
+        
+        return processedItem as FinancialObligationWithDetails;
+      });
     },
     enabled: !!user?.id && !!companyId && !!customerId,
   });
@@ -98,15 +121,37 @@ export function useCompanyFinancialObligations(filters?: {
 
       if (error) throw error;
       
-      let filteredData = data as FinancialObligationWithDetails[];
+      // Process data to handle join failures
+      const processedData = (data || []).map(item => {
+        const processedItem = { ...item } as any;
+        
+        // Fix customers data
+        if (processedItem.customers && typeof processedItem.customers === 'object' && 'id' in processedItem.customers) {
+          processedItem.customers = {
+            ...processedItem.customers,
+            customer_type: processedItem.customers.customer_type === 'corporate' ? 'company' : processedItem.customers.customer_type
+          };
+        } else {
+          processedItem.customers = null;
+        }
+        
+        // Fix contracts data
+        if (processedItem.contracts && typeof processedItem.contracts === 'object' && 'id' in processedItem.contracts) {
+          processedItem.contracts = processedItem.contracts;
+        } else {
+          processedItem.contracts = null;
+        }
+        
+        return processedItem as FinancialObligationWithDetails;
+      });
       
       if (filters?.customerType) {
-        filteredData = filteredData.filter(obligation => 
+        return processedData.filter(obligation => 
           obligation.customers?.customer_type === filters.customerType
         );
       }
       
-      return filteredData;
+      return processedData;
     },
     enabled: !!user?.id && !!companyId,
   });
@@ -142,7 +187,30 @@ export function useOverdueObligations() {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      return data as FinancialObligationWithDetails[];
+      
+      // Process data to handle join failures
+      return (data || []).map(item => {
+        const processedItem = { ...item } as any;
+        
+        // Fix customers data
+        if (processedItem.customers && typeof processedItem.customers === 'object' && 'id' in processedItem.customers) {
+          processedItem.customers = {
+            ...processedItem.customers,
+            customer_type: processedItem.customers.customer_type === 'corporate' ? 'company' : processedItem.customers.customer_type
+          };
+        } else {
+          processedItem.customers = null;
+        }
+        
+        // Fix contracts data
+        if (processedItem.contracts && typeof processedItem.contracts === 'object' && 'id' in processedItem.contracts) {
+          processedItem.contracts = processedItem.contracts;
+        } else {
+          processedItem.contracts = null;
+        }
+        
+        return processedItem as FinancialObligationWithDetails;
+      });
     },
     enabled: !!user?.id && !!companyId,
   });
