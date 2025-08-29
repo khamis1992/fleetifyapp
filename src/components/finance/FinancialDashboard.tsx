@@ -7,7 +7,8 @@ import { useFinancialDashboardStats } from '@/hooks/useCustomerFinancialBalances
 import { useCompanyCustomersBalances } from '@/hooks/useCustomerFinancialBalances';
 import { useOverdueObligations } from '@/hooks/useFinancialObligations';
 import { useUpdateObligationsStatus } from '@/hooks/useFinancialObligations';
-import { formatCurrency } from '@/lib/utils';
+// Utility function for currency formatting
+const formatCurrency = (amount: number) => `${amount.toFixed(3)} د.ك`;
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -52,7 +53,7 @@ export const FinancialDashboard: React.FC = () => {
   }
 
   const getStatusBadge = (amount: number) => {
-    if (amount === 0) return <Badge variant="success">مسدد</Badge>;
+    if (amount === 0) return <Badge variant="default">مسدد</Badge>;
     if (amount > 0) return <Badge variant="destructive">متأخر</Badge>;
     return <Badge variant="secondary">جيد</Badge>;
   };

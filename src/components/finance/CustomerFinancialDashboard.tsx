@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerFinancialSummary } from '@/hooks/useCustomerFinancialBalances';
 import { useRecalculateCustomerBalance } from '@/hooks/useCustomerFinancialBalances';
-import { formatCurrency } from '@/lib/utils';
+// Utility function for currency formatting
+const formatCurrency = (amount: number) => `${amount.toFixed(3)} د.ك`;
 import { Calendar, CreditCard, Clock, AlertTriangle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -48,8 +49,8 @@ export const CustomerFinancialDashboard: React.FC<CustomerFinancialDashboardProp
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: 'secondary',
-      partial: 'warning',
-      paid: 'success',
+      partial: 'secondary',
+      paid: 'default',
       overdue: 'destructive',
       cancelled: 'outline',
     } as const;
@@ -72,8 +73,8 @@ export const CustomerFinancialDashboard: React.FC<CustomerFinancialDashboardProp
   const getPriorityBadge = (priority: number) => {
     const variants = {
       1: 'destructive',
-      2: 'warning',
-      3: 'secondary',
+      2: 'secondary',
+      3: 'outline',
     } as const;
 
     const labels = {
@@ -240,7 +241,7 @@ export const CustomerFinancialDashboard: React.FC<CustomerFinancialDashboardProp
                   {contracts_balances.map((balance) => (
                     <div key={balance.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
-                        <p className="font-medium">عقد #{balance.contracts?.contract_number}</p>
+                        <p className="font-medium">رصيد مالي</p>
                         <p className="text-sm text-muted-foreground">
                           آخر تحديث: {format(new Date(balance.last_updated), 'dd/MM/yyyy', { locale: ar })}
                         </p>
