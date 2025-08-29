@@ -2639,6 +2639,159 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_financial_balances: {
+        Row: {
+          aging_30_days: number | null
+          aging_60_days: number | null
+          aging_90_days: number | null
+          aging_over_90_days: number | null
+          company_id: string
+          contract_id: string | null
+          created_at: string
+          credit_limit: number | null
+          current_amount: number
+          customer_id: string
+          days_overdue: number | null
+          future_amount: number
+          id: string
+          last_payment_amount: number | null
+          last_payment_date: string | null
+          last_updated: string
+          overdue_amount: number
+          remaining_balance: number
+          total_obligations: number
+          total_paid: number
+          updated_at: string
+        }
+        Insert: {
+          aging_30_days?: number | null
+          aging_60_days?: number | null
+          aging_90_days?: number | null
+          aging_over_90_days?: number | null
+          company_id: string
+          contract_id?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          current_amount?: number
+          customer_id: string
+          days_overdue?: number | null
+          future_amount?: number
+          id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
+          last_updated?: string
+          overdue_amount?: number
+          remaining_balance?: number
+          total_obligations?: number
+          total_paid?: number
+          updated_at?: string
+        }
+        Update: {
+          aging_30_days?: number | null
+          aging_60_days?: number | null
+          aging_90_days?: number | null
+          aging_over_90_days?: number | null
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          current_amount?: number
+          customer_id?: string
+          days_overdue?: number | null
+          future_amount?: number
+          id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
+          last_updated?: string
+          overdue_amount?: number
+          remaining_balance?: number
+          total_obligations?: number
+          total_paid?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_financial_obligations: {
+        Row: {
+          company_id: string
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          description: string | null
+          description_ar: string | null
+          discount_amount: number | null
+          due_date: string
+          due_notification_sent: boolean | null
+          id: string
+          installment_number: number | null
+          last_reminder_date: string | null
+          late_fee_amount: number | null
+          notes: string | null
+          obligation_number: string
+          obligation_type: string
+          original_amount: number
+          overdue_notification_sent: boolean | null
+          paid_amount: number
+          priority: number
+          remaining_amount: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          description?: string | null
+          description_ar?: string | null
+          discount_amount?: number | null
+          due_date: string
+          due_notification_sent?: boolean | null
+          id?: string
+          installment_number?: number | null
+          last_reminder_date?: string | null
+          late_fee_amount?: number | null
+          notes?: string | null
+          obligation_number: string
+          obligation_type?: string
+          original_amount?: number
+          overdue_notification_sent?: boolean | null
+          paid_amount?: number
+          priority?: number
+          remaining_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          description?: string | null
+          description_ar?: string | null
+          discount_amount?: number | null
+          due_date?: string
+          due_notification_sent?: boolean | null
+          id?: string
+          installment_number?: number | null
+          last_reminder_date?: string | null
+          late_fee_amount?: number | null
+          notes?: string | null
+          obligation_number?: string
+          obligation_type?: string
+          original_amount?: number
+          overdue_notification_sent?: boolean | null
+          paid_amount?: number
+          priority?: number
+          remaining_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_financial_summary: {
         Row: {
           average_days_to_pay: number | null
@@ -5909,7 +6062,10 @@ export type Database = {
         Row: {
           account_id: string | null
           agreement_number: string | null
+          allocation_details: Json | null
+          allocation_method: string | null
           amount: number
+          auto_allocated: boolean | null
           bank_account: string | null
           bank_id: string | null
           check_number: string | null
@@ -5931,10 +6087,12 @@ export type Database = {
           late_fine_type: string | null
           late_fine_waiver_reason: string | null
           notes: string | null
+          obligation_id: string | null
           original_due_date: string | null
           payment_date: string
           payment_method: string
           payment_number: string
+          payment_source: string | null
           payment_status: string
           payment_type: string
           reconciliation_status: string | null
@@ -5946,7 +6104,10 @@ export type Database = {
         Insert: {
           account_id?: string | null
           agreement_number?: string | null
+          allocation_details?: Json | null
+          allocation_method?: string | null
           amount: number
+          auto_allocated?: boolean | null
           bank_account?: string | null
           bank_id?: string | null
           check_number?: string | null
@@ -5968,10 +6129,12 @@ export type Database = {
           late_fine_type?: string | null
           late_fine_waiver_reason?: string | null
           notes?: string | null
+          obligation_id?: string | null
           original_due_date?: string | null
           payment_date: string
           payment_method: string
           payment_number: string
+          payment_source?: string | null
           payment_status?: string
           payment_type: string
           reconciliation_status?: string | null
@@ -5983,7 +6146,10 @@ export type Database = {
         Update: {
           account_id?: string | null
           agreement_number?: string | null
+          allocation_details?: Json | null
+          allocation_method?: string | null
           amount?: number
+          auto_allocated?: boolean | null
           bank_account?: string | null
           bank_id?: string | null
           check_number?: string | null
@@ -6005,10 +6171,12 @@ export type Database = {
           late_fine_type?: string | null
           late_fine_waiver_reason?: string | null
           notes?: string | null
+          obligation_id?: string | null
           original_due_date?: string | null
           payment_date?: string
           payment_method?: string
           payment_number?: string
+          payment_source?: string | null
           payment_status?: string
           payment_type?: string
           reconciliation_status?: string | null
@@ -10113,6 +10281,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      calculate_customer_financial_balance: {
+        Args: { contract_id_param?: string; customer_id_param: string }
+        Returns: undefined
+      }
       calculate_customer_outstanding_balance: {
         Args: { company_id_param: string; customer_id_param: string }
         Returns: {
@@ -11567,6 +11739,10 @@ export type Database = {
           permit_id_param: string
         }
         Returns: undefined
+      }
+      update_obligations_status: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       update_payment_schedule_status: {
         Args: Record<PropertyKey, never>
