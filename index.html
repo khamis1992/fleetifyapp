@@ -20,7 +20,7 @@
       * { box-sizing: border-box; }
       body { margin: 0; font-family: 'Cairo', sans-serif; direction: rtl; }
       
-      /* Critical hero styles */
+      /* Critical hero styles - show immediately for Speed Index */
       .hero-fallback {
         min-height: 80vh;
         display: flex;
@@ -28,8 +28,8 @@
         justify-content: center;
         background: linear-gradient(135deg, hsl(222.2, 84%, 4.9%) 0%, hsl(210, 40%, 8%) 100%);
         color: hsl(210, 40%, 98%);
-        opacity: 0;
-        animation: fadeOut 100ms ease-out 500ms forwards;
+        opacity: 1;
+        animation: fadeOut 200ms ease-out 800ms forwards;
       }
       
       /* Critical layout styles */
@@ -45,9 +45,15 @@
       p { font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem; margin-top: 0; }
       
       @keyframes fadeOut {
-        to { opacity: 0; pointer-events: none; }
+        to { opacity: 0; pointer-events: none; visibility: hidden; }
       }
       #root > div { position: relative; }
+      
+      /* Ensure immediate visibility */
+      .hero-fallback h1, .hero-fallback p { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
       
       /* Loading spinner */
       .animate-spin { animation: spin 1s linear infinite; }
