@@ -14,7 +14,8 @@ import {
   Lock,
   ChevronRight,
   Crown,
-  CreditCard
+  CreditCard,
+  FileSignature
 } from 'lucide-react';
 
 const Settings: React.FC = () => {
@@ -76,6 +77,13 @@ const Settings: React.FC = () => {
       description: "إدارة إعدادات الحسابات المحاسبية للعملاء",
       icon: CreditCard,
       action: () => navigate('/settings/customer-accounts'),
+      available: true
+    },
+    {
+      title: "إعدادات التوقيع الإلكتروني",
+      description: "تحكم في إعدادات التوقيع الإلكتروني للعقود والمستندات",
+      icon: FileSignature,
+      action: () => navigate('/settings/electronic-signature'),
       available: true
     }
   ];

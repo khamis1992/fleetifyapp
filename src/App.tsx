@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -60,6 +61,7 @@ import SuperAdminPayments from "./pages/super-admin/Payments";
 import SuperAdminReports from "./pages/super-admin/Reports";
 import LandingManagement from "./pages/super-admin/LandingManagement";
 import Reports from "./pages/Reports";
+import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSettings";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +106,11 @@ const App = () => (
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
               <Route path="settings/advanced" element={<AdvancedSettings />} />
+              <Route path="settings/electronic-signature" element={
+                <AdminRoute>
+                  <ElectronicSignatureSettings />
+                </AdminRoute>
+              } />
               <Route path="fleet" element={
                 <AdminRoute>
                   <Fleet />
@@ -277,6 +284,11 @@ const App = () => (
               <Route path="customers" element={<Customers />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="quotations" element={<Quotations />} />
+              <Route path="settings/electronic-signature" element={
+                <AdminRoute>
+                  <ElectronicSignatureSettings />
+                </AdminRoute>
+              } />
               <Route path="finance/*" element={<Finance />} />
               <Route path="hr/employees" element={
                 <AdminRoute>

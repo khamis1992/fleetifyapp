@@ -5,6 +5,7 @@ import { ContractPdfData } from '@/utils/contractPdfGenerator';
 import { formatDateInGregorian, formatDateForDocument } from '@/utils/dateFormatter';
 import { ContractVehicleConditionReport } from './ContractVehicleConditionReport';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useSignatureSettings } from '@/hooks/useSignatureSettings';
 
 interface ContractHtmlViewerProps {
   contractData: ContractPdfData;
@@ -30,6 +31,10 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
   className = "" 
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
+  const { data: signatureSettings } = useSignatureSettings();
+  
+  // Check if electronic signature is enabled
+  const isSignatureEnabled = signatureSettings?.electronic_signature_enabled ?? true;
   const handlePrint = () => {
     // اختيار فقط محتوى العقد للطباعة
     const printContent = document.getElementById('contract-print-content');
@@ -363,35 +368,51 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
             </div>
           )}
 
-          <div className="signature-section grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
-            <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
-              <div className="signature-label font-bold mb-3">توقيع العميل</div>
-              {contractData.customer_signature ? (
-                <img 
-                  src={contractData.customer_signature} 
-                  alt="توقيع العميل" 
-                  className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
-                />
-              ) : (
-                <div className="signature-line border-t-2 border-gray-800 w-48 mx-auto my-5"></div>
-              )}
-              <div className="text-sm text-gray-600">الطرف الأول</div>
+          
+          {/* Signature Section - Only show if electronic signature is enabled */}
+          {isSignatureEnabled && (
+            <div className="signature-section grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+              <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
+                <div className="signature-label font-bold mb-3">توقيع العميل</div>
+                {contractData.customer_signature ? (
+                  <img 
+                    src={contractData.customer_signature} 
+                    alt="توقيع العميل" 
+                    className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
+                  />
+                ) : (
+                  <div className="signature-line border-t-2 border-gray-800 w-48 mx-auto my-5"></div>
+                )}
+                <div className="text-sm text-gray-600">الطرف الأول</div>
+              </div>
+              
+              <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
+                <div className="signature-label font-bold mb-3">توقيع ممثل الشركة</div>
+                {contractData.company_signature ? (
+                  <img 
+                    src={contractData.company_signature} 
+                    alt="توقيع الشركة" 
+                    className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
+                  />
+                ) : (
+                  <div className="signature-line border-t-2 border-gray-800 w-48 mx-auto my-5"></div>
+                )}
+                <div className="text-sm text-gray-600">الطرف الثاني</div>
+              </div>
             </div>
-            
-            <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
-              <div className="signature-label font-bold mb-3">توقيع ممثل الشركة</div>
-              {contractData.company_signature ? (
-                <img 
-                  src={contractData.company_signature} 
-                  alt="توقيع الشركة" 
-                  className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
-                />
-              ) : (
-                <div className="signature-line border-t-2 border-gray-800 w-48 mx-auto my-5"></div>
-              )}
-              <div className="text-sm text-gray-600">الطرف الثاني</div>
+          )}
+
+          {/* Notice when signature is disabled */}
+          {!isSignatureEnabled && (
+            <div className="mt-10 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="text-center text-amber-800">
+                <div className="font-semibold mb-2">ملاحظة</div>
+                <div className="text-sm">
+                  التوقيع الإلكتروني معطل لهذا العقد. يمكن طباعة العقد والتوقيع عليه يدوياً.
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="footer mt-10 text-center text-sm text-gray-600 border-t border-gray-200 pt-5">
             تم إنشاء هذا العقد بتاريخ {contractData.created_date}
