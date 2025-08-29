@@ -10257,6 +10257,10 @@ export type Database = {
         Args: { company_id_param: string; hours_back?: number }
         Returns: Json
       }
+      apply_payment_allocation: {
+        Args: { allocations_param: Json; payment_id_param: string }
+        Returns: Json
+      }
       auto_create_customer_accounts: {
         Args: { company_id_param: string; customer_id_param: string }
         Returns: Json
@@ -10711,6 +10715,10 @@ export type Database = {
         Args: { maintenance_id_param: string }
         Returns: string
       }
+      create_obligations_from_payment_schedule: {
+        Args: { contract_id_param: string }
+        Returns: Json
+      }
       create_openai_edge_function: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -10811,6 +10819,10 @@ export type Database = {
           vendor_id_param: string
         }
         Returns: string
+      }
+      daily_obligations_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       decrypt_sensitive_data: {
         Args: { encrypted_data: string }
@@ -11677,6 +11689,14 @@ export type Database = {
           parent_account_id_param?: string
         }
         Returns: string
+      }
+      suggest_payment_allocation: {
+        Args: {
+          allocation_strategy_param?: string
+          customer_id_param: string
+          payment_amount_param: number
+        }
+        Returns: Json
       }
       sync_document_expiry_alerts: {
         Args: Record<PropertyKey, never>
