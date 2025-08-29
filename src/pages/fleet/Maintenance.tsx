@@ -10,7 +10,8 @@ import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus 
 import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
 import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
-import { useMaintenanceStats, useVehicleMaintenanceOptimized } from "@/hooks/useVehicleMaintenanceOptimized"
+import { useVehicleMaintenance } from "@/hooks/useVehicles"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -59,30 +60,16 @@ export default function Maintenance() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
   const [activeTab, setActiveTab] = useState("pending")
   
-  // Use optimized hooks
-  const { data: maintenanceStats, isLoading: statsLoading } = useMaintenanceStats()
+  const { data: maintenanceRecords, isLoading: maintenanceLoading } = useVehicleMaintenance()
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
-  
-  // Only load data for the active tab to improve performance
-  const { data: maintenanceData, isLoading: maintenanceLoading } = useVehicleMaintenanceOptimized(
-    undefined, // vehicleId
-    activeTab === 'all' ? undefined : activeTab, // status filter
-    50, // limit
-    0 // offset
-  )
+  const { formatCurrency } = useCurrencyFormatter()
 
-  // Memoize filtered data to prevent unnecessary recalculations
-  const { pendingMaintenance, inProgressMaintenance, completedMaintenance, cancelledMaintenance } = useMemo(() => {
-    const records = maintenanceData?.data || []
-    return {
-      pendingMaintenance: activeTab === 'pending' || activeTab === 'all' ? records.filter(m => m.status === 'pending') : [],
-      inProgressMaintenance: activeTab === 'in_progress' || activeTab === 'all' ? records.filter(m => m.status === 'in_progress') : [],
-      completedMaintenance: activeTab === 'completed' || activeTab === 'all' ? records.filter(m => m.status === 'completed') : [],
-      cancelledMaintenance: activeTab === 'cancelled' || activeTab === 'all' ? records.filter(m => m.status === 'cancelled') : []
-    }
-  }, [maintenanceData?.data, activeTab])
+  const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
+  const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
+  const completedMaintenance = maintenanceRecords?.filter(m => m.status === 'completed') || []
+  const cancelledMaintenance = maintenanceRecords?.filter(m => m.status === 'cancelled') || []
 
-  const isLoading = statsLoading || maintenanceLoading || alertsLoading
+  const isLoading = maintenanceLoading || alertsLoading
 
   if (isLoading) {
     return (
@@ -92,8 +79,7 @@ export default function Maintenance() {
     )
   }
 
-  // Get all records for the "all" tab
-  const allRecords = maintenanceData?.data || []
+  const allRecords = maintenanceRecords || []
 
   const MaintenanceTable = ({ records }: { records: any[] }) => (
     <Table>
@@ -144,11 +130,11 @@ export default function Maintenance() {
             <TableCell>
               <div>
                 {maintenance.actual_cost > 0 && (
-                  <div className="font-medium">{maintenance.actual_cost} د.ك</div>
+                  <div className="font-medium">{formatCurrency(maintenance.actual_cost)}</div>
                 )}
                 {maintenance.estimated_cost > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    المقدرة: {maintenance.estimated_cost} د.ك
+                    المقدرة: {formatCurrency(maintenance.estimated_cost)}
                   </div>
                 )}
               </div>
@@ -249,9 +235,9 @@ export default function Maintenance() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {completedMaintenance
-                .reduce((sum, m) => sum + (m.actual_cost || 0), 0)
-                .toFixed(2)} د.ك
+              {formatCurrency(
+                completedMaintenance.reduce((sum, m) => sum + (m.actual_cost || 0), 0)
+              )}
             </div>
           </CardContent>
         </Card>
