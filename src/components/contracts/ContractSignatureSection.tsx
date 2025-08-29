@@ -1,18 +1,30 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
 import { ContractSignature } from './ContractSignature'
 import { useContractWizard } from './ContractWizardProvider'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSignatureSettings } from '@/hooks/useSignatureSettings'
+import { ElectronicSignatureStatus } from './ElectronicSignatureStatus'
 import { Users, FileText, CheckCircle, Settings } from 'lucide-react'
 
 export const ContractSignatureSection: React.FC = () => {
   const { user } = useAuth()
   const { data, updateData } = useContractWizard()
+  const { data: signatureSettings, isLoading: settingsLoading } = useSignatureSettings()
   const [customerSignature, setCustomerSignature] = useState(data.customer_signature || '')
   const [companySignature, setCompanySignature] = useState(data.company_signature || '')
-  const [signatureEnabled, setSignatureEnabled] = useState(data.signature_enabled ?? true)
+  
+  // Use company settings instead of local state
+  const signatureEnabled = signatureSettings?.electronic_signature_enabled ?? true
+  const requireCustomerSignature = signatureSettings?.require_customer_signature ?? true
+  const requireCompanySignature = signatureSettings?.require_company_signature ?? true
+
+  // Update wizard data when settings change
+  useEffect(() => {
+    updateData({ signature_enabled: signatureEnabled })
+  }, [signatureEnabled, updateData])
 
   const handleCustomerSignature = (signatureData: string) => {
     setCustomerSignature(signatureData)
@@ -24,19 +36,9 @@ export const ContractSignatureSection: React.FC = () => {
     updateData({ company_signature: signatureData })
   }
 
-  const handleSignatureToggle = (enabled: boolean) => {
-    setSignatureEnabled(enabled)
-    updateData({ signature_enabled: enabled })
-    
-    // Clear signatures if disabled
-    if (!enabled) {
-      setCustomerSignature('')
-      setCompanySignature('')
-      updateData({ customer_signature: '', company_signature: '' })
-    }
-  }
-
-  const allSignaturesComplete = signatureEnabled && customerSignature && companySignature
+  const allSignaturesComplete = signatureEnabled && 
+    (!requireCustomerSignature || customerSignature) && 
+    (!requireCompanySignature || companySignature)
 
   return (
     <Card>
@@ -48,22 +50,17 @@ export const ContractSignatureSection: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Signature Toggle */}
-        <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">
-          <div className="flex items-center gap-3">
-            <Settings className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <h4 className="font-medium text-sm">تفعيل خاصية التوقيع</h4>
-              <p className="text-xs text-muted-foreground">
-                {signatureEnabled ? 'خاصية التوقيع مفعلة - يمكن التوقيع على العقد' : 'خاصية التوقيع معطلة - لن يتطلب العقد التوقيع'}
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={signatureEnabled}
-            onCheckedChange={handleSignatureToggle}
-          />
-        </div>
+        {/* Electronic Signature Status */}
+        <ElectronicSignatureStatus showDetails={true} />
+
+        {settingsLoading && (
+          <Alert>
+            <Settings className="h-4 w-4" />
+            <AlertDescription>
+              جار تحميل إعدادات التوقيع الإلكتروني...
+            </AlertDescription>
+          </Alert>
+        )}
 
         {!signatureEnabled && (
           <Alert className="border-amber-200 bg-amber-50">
@@ -86,26 +83,30 @@ export const ContractSignatureSection: React.FC = () => {
         {signatureEnabled && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Customer Signature */}
-            <ContractSignature
-              title="توقيع العميل"
-              signerName={data.customer_name || 'العميل'}
-              signerRole="الطرف الأول"
-              onSignature={handleCustomerSignature}
-              signature={customerSignature}
-              required={true}
-            />
+            {requireCustomerSignature && (
+              <ContractSignature
+                title="توقيع العميل"
+                signerName={data.customer_name || 'العميل'}
+                signerRole="الطرف الأول"
+                onSignature={handleCustomerSignature}
+                signature={customerSignature}
+                required={requireCustomerSignature}
+              />
+            )}
 
             {/* Company Representative Signature */}
-            <ContractSignature
-              title="توقيع الشركة"
-              signerName={user?.profile?.first_name && user?.profile?.last_name 
-                ? `${user.profile.first_name} ${user.profile.last_name}` 
-                : 'ممثل الشركة'}
-              signerRole="الطرف الثاني"
-              onSignature={handleCompanySignature}
-              signature={companySignature}
-              required={true}
-            />
+            {requireCompanySignature && (
+              <ContractSignature
+                title="توقيع الشركة"
+                signerName={user?.profile?.first_name && user?.profile?.last_name 
+                  ? `${user.profile.first_name} ${user.profile.last_name}` 
+                  : 'ممثل الشركة'}
+                signerRole="الطرف الثاني"
+                onSignature={handleCompanySignature}
+                signature={companySignature}
+                required={requireCompanySignature}
+              />
+            )}
           </div>
         )}
 

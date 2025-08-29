@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@/hooks/useContractTemplates'
+import { useSignatureSettings } from '@/hooks/useSignatureSettings'
 
 interface ContractWizardData {
   // Basic Info
@@ -118,6 +119,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   const template = useTemplateByType(data.contract_type || '')
   const { applyTemplate } = useApplyTemplate()
+  const { data: signatureSettings } = useSignatureSettings()
 
   // Auto-save timer
   useEffect(() => {
@@ -403,14 +405,18 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
             }
           }
           
-          // التحقق من التوقيعات إذا كانت مفعلة
-          if (data.signature_enabled !== false) { // Default to enabled if not specified
-            if (!data.customer_signature) {
-              toast.error('توقيع العميل مطلوب')
+          // التحقق من التوقيعات بناءً على إعدادات الشركة
+          const isSignatureEnabled = signatureSettings?.electronic_signature_enabled ?? true
+          const requireCustomerSig = signatureSettings?.require_customer_signature ?? true
+          const requireCompanySig = signatureSettings?.require_company_signature ?? true
+          
+          if (isSignatureEnabled) {
+            if (requireCustomerSig && !data.customer_signature) {
+              toast.error('توقيع العميل مطلوب حسب إعدادات الشركة')
               return false
             }
-            if (!data.company_signature) {
-              toast.error('توقيع الشركة مطلوب')
+            if (requireCompanySig && !data.company_signature) {
+              toast.error('توقيع الشركة مطلوب حسب إعدادات الشركة')
               return false
             }
           }
