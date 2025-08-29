@@ -2,50 +2,15 @@ import { motion } from 'framer-motion';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { AnimatedBackground } from '@/components/landing/AnimatedBackground';
+import { HeroSection } from '@/components/landing/HeroSection';
+import { TrustedCompanies } from '@/components/landing/TrustedCompanies';
+import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+import { DashboardPreview } from '@/components/landing/DashboardPreview';
+import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
+import { CallToActionSection } from '@/components/landing/CallToActionSection';
+import { ParallaxSection } from '@/components/landing/ParallaxSection';
 import { useDynamicLandingContent } from '@/hooks/useDynamicLandingContent';
-
-// Code split heavy components to reduce unused JavaScript on landing page load
-const AnimatedBackground = lazy(() => 
-  import('@/components/landing/AnimatedBackground').then(module => ({ 
-    default: module.AnimatedBackground 
-  }))
-);
-const HeroSection = lazy(() => 
-  import('@/components/landing/HeroSection').then(module => ({ 
-    default: module.HeroSection 
-  }))
-);
-const TrustedCompanies = lazy(() => 
-  import('@/components/landing/TrustedCompanies').then(module => ({ 
-    default: module.TrustedCompanies 
-  }))
-);
-const FeatureShowcase = lazy(() => 
-  import('@/components/landing/FeatureShowcase').then(module => ({ 
-    default: module.FeatureShowcase 
-  }))
-);
-const DashboardPreview = lazy(() => 
-  import('@/components/landing/DashboardPreview').then(module => ({ 
-    default: module.DashboardPreview 
-  }))
-);
-const TestimonialsSection = lazy(() => 
-  import('@/components/landing/TestimonialsSection').then(module => ({ 
-    default: module.TestimonialsSection 
-  }))
-);
-const CallToActionSection = lazy(() => 
-  import('@/components/landing/CallToActionSection').then(module => ({ 
-    default: module.CallToActionSection 
-  }))
-);
-const ParallaxSection = lazy(() => 
-  import('@/components/landing/ParallaxSection').then(module => ({ 
-    default: module.ParallaxSection 
-  }))
-);
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -65,38 +30,27 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Suspense fallback={<div className="min-h-screen bg-background" />}>
-        <AnimatedBackground />
-        <HeroSection />
-      </Suspense>
+      <AnimatedBackground />
       
-      <Suspense fallback={<div className="h-32" />}>
-        <ParallaxSection offset={30}>
-          <TrustedCompanies />
-        </ParallaxSection>
-      </Suspense>
+      <HeroSection />
       
-      <Suspense fallback={<div className="h-96" />}>
-        <ParallaxSection offset={50}>
-          <FeatureShowcase />
-        </ParallaxSection>
-      </Suspense>
+      <ParallaxSection offset={30}>
+        <TrustedCompanies />
+      </ParallaxSection>
       
-      <Suspense fallback={<div className="h-96" />}>
-        <ParallaxSection offset={-30}>
-          <DashboardPreview />
-        </ParallaxSection>
-      </Suspense>
+      <ParallaxSection offset={50}>
+        <FeatureShowcase />
+      </ParallaxSection>
       
-      <Suspense fallback={<div className="h-96" />}>
-        <ParallaxSection offset={40}>
-          <TestimonialsSection />
-        </ParallaxSection>
-      </Suspense>
+      <ParallaxSection offset={-30}>
+        <DashboardPreview />
+      </ParallaxSection>
       
-      <Suspense fallback={<div className="h-64" />}>
-        <CallToActionSection />
-      </Suspense>
+      <ParallaxSection offset={40}>
+        <TestimonialsSection />
+      </ParallaxSection>
+      
+      <CallToActionSection />
 
       {/* Footer */}
       <footer className="bg-muted/30 border-t border-border/50">

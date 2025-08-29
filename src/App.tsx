@@ -1,91 +1,67 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Suspense, lazy } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
-
-// Immediate imports for critical routes
+import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
+import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout";
+import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import SuperAdmin from "./pages/SuperAdmin";
+import Dashboard from "./pages/Dashboard";
+import SuperAdminDashboard from "./pages/super-admin/Dashboard";
+import SuperAdminCompanies from "./pages/super-admin/Companies";
+import SuperAdminUsers from "./pages/super-admin/Users";
+import SuperAdminSettings from "./pages/super-admin/Settings";
+import Finance from "./pages/Finance";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import AdvancedSettings from "./pages/AdvancedSettings";
+import SubscriptionPage from "./pages/SubscriptionPage";
 import ResetPassword from "./pages/ResetPassword";
 
-// Lazy load all heavy components to reduce main thread work
-const DashboardLayout = lazy(() => import("@/components/layouts/DashboardLayout").then(m => ({ default: m.DashboardLayout })));
-const SuperAdminLayout = lazy(() => import("@/components/layouts/SuperAdminLayout").then(m => ({ default: m.SuperAdminLayout })));
-const CompanyBrowserLayout = lazy(() => import("@/components/layouts/CompanyBrowserLayout").then(m => ({ default: m.CompanyBrowserLayout })));
-const ProtectedRoute = lazy(() => import("@/components/common/ProtectedRoute").then(m => ({ default: m.ProtectedRoute })));
-const AdminRoute = lazy(() => import("@/components/common/ProtectedRoute").then(m => ({ default: m.AdminRoute })));
-const SuperAdminRoute = lazy(() => import("@/components/common/ProtectedRoute").then(m => ({ default: m.SuperAdminRoute })));
+import BackupPage from "./pages/BackupPage";
+import AuditPage from "./pages/AuditPage";
+import Fleet from "./pages/Fleet";
+import NotFound from "./pages/NotFound";
+import Contracts from "./pages/Contracts";
+import Customers from "./pages/Customers";
+import EditCustomer from "./pages/EditCustomer";
+import Quotations from "./pages/Quotations";
+import QuotationApproval from "./pages/QuotationApproval";
+import Maintenance from "./pages/fleet/Maintenance";
+import TrafficViolations from "./pages/fleet/TrafficViolations";
+import TrafficViolationPayments from "./pages/fleet/TrafficViolationPayments";
+import FleetReports from "./pages/fleet/FleetReports";
+import DispatchPermits from "./pages/fleet/DispatchPermits";
+import { VehicleConditionCheck } from "./pages/fleet/VehicleConditionCheck";
+import FleetFinancialAnalysis from "./pages/fleet/FleetFinancialAnalysis";
+import VehicleInstallments from "./pages/VehicleInstallments";
+import Employees from "./pages/hr/Employees";
+import UserManagement from "./pages/hr/UserManagement";
+import Attendance from "./pages/hr/Attendance";
+import LeaveManagement from "./pages/hr/LeaveManagement";
+import LocationSettings from "./pages/hr/LocationSettings";
+import Payroll from "./pages/hr/Payroll";
+import HRReports from "./pages/hr/Reports";
+import HRSettings from "./pages/hr/Settings";
+import Legal from "./pages/Legal";
+import LegalAdvisor from "./pages/legal/LegalAdvisor";
+import CaseManagement from "./pages/legal/CaseManagement";
+import ApprovalSystem from "./pages/ApprovalSystem";
+import Support from "./pages/Support";
+import SupportTicketDetail from "./pages/SupportTicketDetail";
+import SuperAdminSupport from "./pages/super-admin/Support";
+import SuperAdminPayments from "./pages/super-admin/Payments";
+import SuperAdminReports from "./pages/super-admin/Reports";
+import LandingManagement from "./pages/super-admin/LandingManagement";
+import Reports from "./pages/Reports";
 
-// Lazy load all pages
-const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const SuperAdminDashboard = lazy(() => import("./pages/super-admin/Dashboard"));
-const SuperAdminCompanies = lazy(() => import("./pages/super-admin/Companies"));
-const SuperAdminUsers = lazy(() => import("./pages/super-admin/Users"));
-const SuperAdminSettings = lazy(() => import("./pages/super-admin/Settings"));
-const Finance = lazy(() => import("./pages/Finance"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Settings = lazy(() => import("./pages/Settings"));
-const AdvancedSettings = lazy(() => import("./pages/AdvancedSettings"));
-const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
-const BackupPage = lazy(() => import("./pages/BackupPage"));
-const AuditPage = lazy(() => import("./pages/AuditPage"));
-const Fleet = lazy(() => import("./pages/Fleet"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Contracts = lazy(() => import("./pages/Contracts"));
-const Customers = lazy(() => import("./pages/Customers"));
-const EditCustomer = lazy(() => import("./pages/EditCustomer"));
-const Quotations = lazy(() => import("./pages/Quotations"));
-const QuotationApproval = lazy(() => import("./pages/QuotationApproval"));
-const Maintenance = lazy(() => import("./pages/fleet/Maintenance"));
-const TrafficViolations = lazy(() => import("./pages/fleet/TrafficViolations"));
-const TrafficViolationPayments = lazy(() => import("./pages/fleet/TrafficViolationPayments"));
-const FleetReports = lazy(() => import("./pages/fleet/FleetReports"));
-const DispatchPermits = lazy(() => import("./pages/fleet/DispatchPermits"));
-const VehicleConditionCheck = lazy(() => import("./pages/fleet/VehicleConditionCheck").then(m => ({ default: m.VehicleConditionCheck })));
-const FleetFinancialAnalysis = lazy(() => import("./pages/fleet/FleetFinancialAnalysis"));
-const VehicleInstallments = lazy(() => import("./pages/VehicleInstallments"));
-const Employees = lazy(() => import("./pages/hr/Employees"));
-const UserManagement = lazy(() => import("./pages/hr/UserManagement"));
-const Attendance = lazy(() => import("./pages/hr/Attendance"));
-const LeaveManagement = lazy(() => import("./pages/hr/LeaveManagement"));
-const LocationSettings = lazy(() => import("./pages/hr/LocationSettings"));
-const Payroll = lazy(() => import("./pages/hr/Payroll"));
-const HRReports = lazy(() => import("./pages/hr/Reports"));
-const HRSettings = lazy(() => import("./pages/hr/Settings"));
-const Legal = lazy(() => import("./pages/Legal"));
-const LegalAdvisor = lazy(() => import("./pages/legal/LegalAdvisor"));
-const CaseManagement = lazy(() => import("./pages/legal/CaseManagement"));
-const ApprovalSystem = lazy(() => import("./pages/ApprovalSystem"));
-const Support = lazy(() => import("./pages/Support"));
-const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
-const SuperAdminSupport = lazy(() => import("./pages/super-admin/Support"));
-const SuperAdminPayments = lazy(() => import("./pages/super-admin/Payments"));
-const SuperAdminReports = lazy(() => import("./pages/super-admin/Reports"));
-const LandingManagement = lazy(() => import("./pages/super-admin/LandingManagement"));
-const Reports = lazy(() => import("./pages/Reports"));
-
-// Create query client with optimized defaults
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-});
-
-// Loading fallback component
-const PageLoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <LoadingSpinner size="lg" />
-  </div>
-);
+const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -96,46 +72,24 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <Routes>
-            {/* Critical routes - no lazy loading */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Lazy loaded routes */}
-            <Route path="/quotation-approval" element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <QuotationApproval />
-              </Suspense>
-            } />
-            <Route path="/super-admin" element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <SuperAdmin />
-              </Suspense>
-            } />
-            <Route path="/super-admin/*" element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <SuperAdminLayout />
-              </Suspense>
-            }>
-              <Route path="dashboard" element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <SuperAdminDashboard />
-                </Suspense>
-              } />
-              {/* Other super admin routes would be wrapped similarly */}
+            <Route path="/quotation-approval" element={<QuotationApproval />} />
+            <Route path="/super-admin" element={<SuperAdmin />} />
+            <Route path="/super-admin/*" element={<SuperAdminLayout />}>
+              <Route path="dashboard" element={<SuperAdminDashboard />} />
+              <Route path="companies" element={<SuperAdminCompanies />} />
+              <Route path="users" element={<SuperAdminUsers />} />
+              <Route path="support" element={<SuperAdminSupport />} />
+              <Route path="payments" element={<SuperAdminPayments />} />
+              <Route path="reports" element={<SuperAdminReports />} />
+              <Route path="landing-management" element={<LandingManagement />} />
+              <Route path="settings" element={<SuperAdminSettings />} />
             </Route>
-            <Route path="/*" element={
-              <Suspense fallback={<PageLoadingFallback />}>
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              </Suspense>
-            }>
-              <Route path="dashboard" element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <Dashboard />
-                </Suspense>
-              } />
+            <Route path="/*" element={<DashboardLayout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="subscription" element={<SubscriptionPage />} />
               
               <Route path="backup" element={
                 <SuperAdminRoute>

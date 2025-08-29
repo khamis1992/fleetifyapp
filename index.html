@@ -3,67 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>Fleetify - نظام إدارة الأسطول</title>
-    
-    <!-- Critical resource hints for faster LCP and reduced dependency chains -->
-    <link rel="preconnect" href="https://qwhunliohlkkahbspfiu.supabase.co">
-    <link rel="dns-prefetch" href="https://qwhunliohlkkahbspfiu.supabase.co">
-    <link rel="modulepreload" href="/src/main.tsx">
-    <link rel="modulepreload" href="/src/App.tsx">
-    <link rel="modulepreload" href="/src/pages/Index.tsx">
-    <link rel="dns-prefetch" href="//fonts.googleapis.com">
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    
-    <!-- Critical CSS for above-the-fold content -->
-    <style>
-      /* Reset and base styles */
-      * { box-sizing: border-box; }
-      body { margin: 0; font-family: 'Cairo', sans-serif; direction: rtl; }
-      
-      /* Critical hero styles - show immediately for Speed Index */
-      .hero-fallback {
-        min-height: 80vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, hsl(222.2, 84%, 4.9%) 0%, hsl(210, 40%, 8%) 100%);
-        color: hsl(210, 40%, 98%);
-        opacity: 1;
-        animation: fadeOut 200ms ease-out 800ms forwards;
-      }
-      
-      /* Critical layout styles */
-      .min-h-screen { min-height: 100vh; }
-      .flex { display: flex; }
-      .items-center { align-items: center; }
-      .justify-center { justify-content: center; }
-      .text-center { text-align: center; }
-      .bg-background { background-color: hsl(222.2, 84%, 4.9%); }
-      
-      /* Typography for hero */
-      h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1; margin-top: 0; }
-      p { font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem; margin-top: 0; }
-      
-      @keyframes fadeOut {
-        to { opacity: 0; pointer-events: none; visibility: hidden; }
-      }
-      #root > div { position: relative; }
-      
-      /* Ensure immediate visibility */
-      .hero-fallback h1, .hero-fallback p { 
-        opacity: 1; 
-        transform: translateY(0); 
-      }
-      
-      /* Loading spinner */
-      .animate-spin { animation: spin 1s linear infinite; }
-      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    </style>
-    
-    <!-- Non-blocking CSS loading to eliminate render blocking -->
-    <link rel="preload" href="/assets/index-DGg7bQqS.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/assets/index-DGg7bQqS.css"></noscript>
+    <title>Fleetify</title>
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
     <link rel="icon" href="/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
@@ -71,9 +11,8 @@
     <!-- Arabic Google Fonts with optimized loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Optimized Google Fonts loading - reduced to essential weights -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;600&display=swap"></noscript>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&display=swap"></noscript>
 
     <meta property="og:title" content="Fleetify" />
     <meta property="og:description" content="Lovable Generated Project" />
@@ -86,44 +25,7 @@
   </head>
 
   <body dir="rtl">
-    <div id="root">
-      <!-- Critical hero content for immediate LCP -->
-      <div class="hero-fallback">
-        <div style="text-align: center; max-width: 800px; padding: 0 1rem;">
-          <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1;">
-            منصة احترافية على مستوى المؤسسات
-          </h1>
-          <p style="font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem;">
-            حوّل عمليات شركتك التجارية
-          </p>
-        </div>
-      </div>
-    </div>
-    <!-- Defer main JS bundle to reduce unused JavaScript on landing page -->
-    <script type="module" src="/src/main.tsx" defer></script>
-    
-    <!-- Minimal landing page JavaScript -->
-    <script>
-      // Only load full app when user interacts or navigates beyond landing
-      let appLoaded = false;
-      
-      function loadFullApp() {
-        if (!appLoaded) {
-          appLoaded = true;
-          const script = document.createElement('script');
-          script.type = 'module';
-          script.src = '/src/main.tsx';
-          document.head.appendChild(script);
-        }
-      }
-      
-      // Load full app on user interaction
-      document.addEventListener('click', loadFullApp, { once: true });
-      document.addEventListener('keydown', loadFullApp, { once: true });
-      document.addEventListener('scroll', loadFullApp, { once: true });
-      
-      // Auto-load after 3 seconds if no interaction
-      setTimeout(loadFullApp, 3000);
-    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
