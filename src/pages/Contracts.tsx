@@ -14,6 +14,7 @@ import { ContractsTabsContent } from "@/components/contracts/ContractsTabsConten
 import { ContractWizard } from "@/components/contracts/ContractWizard"
 import { ContractTemplateManager } from "@/components/contracts/ContractTemplateManager"
 import { ContractRenewalDialog } from "@/components/contracts/ContractRenewalDialog"
+import { ContractJournalEntryStatus } from "@/components/contracts/ContractJournalEntryStatus"
 import { ContractStatusManagement } from "@/components/contracts/ContractStatusManagement"
 import { ContractDetailsDialog } from "@/components/contracts/ContractDetailsDialog"
 import { ContractSearchFilters } from "@/components/contracts/ContractSearchFilters"
@@ -190,6 +191,9 @@ export default function Contracts() {
         onShowCSVUpload={handleShowCSVUpload}
         onShowBulkDelete={handleShowBulkDelete}
       />
+
+      {/* Journal Entry Status Alert */}
+      <ContractJournalEntryStatus />
 
       {/* Statistics Cards */}
       <ContractsStatistics
