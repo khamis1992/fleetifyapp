@@ -143,8 +143,15 @@ export const useToggleCustomerBlacklist = () => {
 
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    onSuccess: async (_, variables) => {
+      console.log('✅ Customer blacklist toggle successful, updating cache');
+      
+      // استخدام refetchQueries للحصول على تحديث فوري
+      await queryClient.refetchQueries({ 
+        queryKey: ['customers'],
+        type: 'active' 
+      });
+      
       toast.success(variables.isBlacklisted ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
     },
     onError: (error) => {
@@ -302,12 +309,18 @@ export const useDeleteCustomer = () => {
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    onSuccess: async () => {
+      console.log('✅ Customer deletion successful, updating cache');
+      
+      // استخدام refetchQueries للحصول على تحديث فوري
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['contracts'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['invoices'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['payments'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['quotations'], type: 'active' })
+      ]);
+      
       toast.success('تم حذف العميل وجميع البيانات المرتبطة به بنجاح');
     },
     onError: (error) => {

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Trash2, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +20,8 @@ import { BulkDeleteCustomersDialog } from "@/components/customers/BulkDeleteCust
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
+import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
 
 export default function Customers() {
   const { user } = useAuth()
@@ -45,6 +47,9 @@ export default function Customers() {
   const { data: customers, isLoading, isFetching, error } = useCustomers(debouncedFilters)
   const toggleBlacklistMutation = useToggleCustomerBlacklist()
   const deleteCustomerMutation = useDeleteCustomer()
+  
+  // إعداد Real-time updates
+  useCustomersRealtime()
 
   // إحصائيات العملاء
   const allCustomers = customers || []
@@ -159,6 +164,7 @@ export default function Customers() {
           </p>
         </div>
         <div className="flex gap-2">
+          <CustomerRefreshButton />
           {canDeleteCustomers && allCustomers.length > 0 && (
             <Button 
               onClick={() => setShowBulkDeleteDialog(true)}

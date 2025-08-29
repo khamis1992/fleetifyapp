@@ -178,9 +178,14 @@ export const useCreateCustomer = () => {
       
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('🎉 Customer creation successful:', data);
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      
+      // استخدام refetchQueries للحصول على تحديث فوري
+      await queryClient.refetchQueries({ 
+        queryKey: ['customers'],
+        type: 'active' 
+      });
       
       const customerName = data.customer_type === 'individual' 
         ? `${data.first_name} ${data.last_name}`
@@ -248,10 +253,14 @@ export const useUpdateCustomer = () => {
       
       return updatedCustomer;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('🎉 Customer update successful:', data);
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customer', data.id] });
+      
+      // استخدام refetchQueries للحصول على تحديث فوري
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['customer', data.id], type: 'active' })
+      ]);
       
       const customerName = data.customer_type === 'individual' 
         ? `${data.first_name} ${data.last_name}`
@@ -291,8 +300,13 @@ export const useToggleCustomerBlacklist = () => {
 
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    onSuccess: async (_, variables) => {
+      // استخدام refetchQueries للحصول على تحديث فوري
+      await queryClient.refetchQueries({ 
+        queryKey: ['customers'],
+        type: 'active' 
+      });
+      
       toast.success(variables.isBlacklisted ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
     },
     onError: (error) => {
