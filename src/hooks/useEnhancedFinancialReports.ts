@@ -514,3 +514,35 @@ export const useExportAgingReport = () => {
     },
   });
 };
+
+// Main hook to use enhanced financial reports
+export const useEnhancedFinancialReports = (
+  reportType: string,
+  startDate?: string,
+  endDate?: string
+) => {
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: getQueryKey(['enhanced-financial-reports', reportType, startDate, endDate]),
+    queryFn: async () => {
+      if (!companyId) return null;
+
+      // Mock financial report data for now
+      return {
+        title: reportType === 'income_statement' ? 'Income Statement' : 
+               reportType === 'balance_sheet' ? 'Balance Sheet' : 'Trial Balance',
+        titleAr: reportType === 'income_statement' ? 'قائمة الدخل' : 
+                 reportType === 'balance_sheet' ? 'الميزانية العمومية' : 'ميزان المراجعة',
+        sections: [],
+        totalDebits: 0,
+        totalCredits: 0,
+        netIncome: 0,
+        totalAssets: 0,
+        totalLiabilities: 0,
+        totalEquity: 0
+      };
+    },
+    enabled: !!companyId && !!endDate,
+  });
+};
