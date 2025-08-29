@@ -5,10 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fleetify</title>
     
-    <!-- Critical resource hints for faster loading -->
+    <!-- Critical resource hints for faster LCP -->
     <link rel="modulepreload" href="/src/main.tsx">
+    <link rel="modulepreload" href="/src/App.tsx">
+    <link rel="modulepreload" href="/src/pages/Index.tsx">
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <!-- Critical CSS for immediate hero rendering -->
+    <style>
+      .hero-fallback {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, hsl(222.2, 84%, 4.9%) 0%, hsl(210, 40%, 8%) 100%);
+        color: hsl(210, 40%, 98%);
+        opacity: 0;
+        animation: fadeOut 100ms ease-out 500ms forwards;
+      }
+      @keyframes fadeOut {
+        to { opacity: 0; pointer-events: none; }
+      }
+      #root > div { position: relative; }
+    </style>
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
     <link rel="icon" href="/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
@@ -30,7 +50,19 @@
   </head>
 
   <body dir="rtl">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Critical hero content for immediate LCP -->
+      <div class="hero-fallback">
+        <div style="text-align: center; max-width: 800px; padding: 0 1rem;">
+          <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1;">
+            منصة احترافية على مستوى المؤسسات
+          </h1>
+          <p style="font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem;">
+            حوّل عمليات شركتك التجارية
+          </p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
