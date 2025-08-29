@@ -75,7 +75,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
       setConfirmationText('');
       resetProgress();
     }
-  }, [open, resetProgress]);
+  }, [open]);
 
   const handleConfirmDelete = async () => {
     if (!isConfirmationValid) return;

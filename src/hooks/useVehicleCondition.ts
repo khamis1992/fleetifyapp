@@ -204,6 +204,14 @@ export const useUpdateConditionReport = () => {
     mutationFn: async ({ id, updates }: { id: string; updates: UpdateConditionReportData }) => {
       console.log('Updating condition report:', id, updates);
       
+      // Get the current session to ensure authentication
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) {
+        throw new Error('يجب تسجيل الدخول لتحديث تقرير حالة المركبة');
+      }
+
+      console.log('Authenticated user:', session.session.user.id);
+      
       const { data, error } = await supabase
         .from('vehicle_condition_reports')
         .update({
@@ -216,7 +224,18 @@ export const useUpdateConditionReport = () => {
 
       if (error) {
         console.error('Error updating condition report:', error);
-        throw error;
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        
+        // Provide more specific error messages
+        if (error.message?.includes('permission denied') || error.code === '42501') {
+          throw new Error('غير مصرح لك بتحديث تقارير حالة المركبات. تحقق من صلاحياتك.');
+        } else if (error.message?.includes('row level security')) {
+          throw new Error('لا يمكنك تحديث هذا التقرير. تأكد من أنك مالك التقرير.');
+        } else if (error.message?.includes('foreign key') || error.code === '23503') {
+          throw new Error('بيانات غير صحيحة في التقرير');
+        }
+        
+        throw new Error(`فشل في تحديث تقرير حالة المركبة: ${error.message || 'خطأ غير محدد'}`);
       }
 
       console.log('Update successful:', data);
@@ -224,11 +243,12 @@ export const useUpdateConditionReport = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
-      toast.success('Vehicle condition report updated successfully');
+      toast.success('تم تحديث تقرير حالة المركبة بنجاح');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error updating condition report:', error);
-      toast.error('Failed to update condition report');
+      const errorMessage = error.message || 'فشل في تحديث تقرير حالة المركبة';
+      toast.error(errorMessage);
     },
   });
 };
