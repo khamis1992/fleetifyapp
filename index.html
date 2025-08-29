@@ -14,8 +14,13 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
     
-    <!-- Critical CSS for immediate hero rendering -->
+    <!-- Critical CSS for above-the-fold content -->
     <style>
+      /* Reset and base styles */
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: 'Cairo', sans-serif; direction: rtl; }
+      
+      /* Critical hero styles */
       .hero-fallback {
         min-height: 80vh;
         display: flex;
@@ -26,11 +31,32 @@
         opacity: 0;
         animation: fadeOut 100ms ease-out 500ms forwards;
       }
+      
+      /* Critical layout styles */
+      .min-h-screen { min-height: 100vh; }
+      .flex { display: flex; }
+      .items-center { align-items: center; }
+      .justify-center { justify-content: center; }
+      .text-center { text-align: center; }
+      .bg-background { background-color: hsl(222.2, 84%, 4.9%); }
+      
+      /* Typography for hero */
+      h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1; margin-top: 0; }
+      p { font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem; margin-top: 0; }
+      
       @keyframes fadeOut {
         to { opacity: 0; pointer-events: none; }
       }
       #root > div { position: relative; }
+      
+      /* Loading spinner */
+      .animate-spin { animation: spin 1s linear infinite; }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
+    
+    <!-- Defer main CSS bundle to reduce unused CSS on initial load -->
+    <link rel="preload" href="/assets/index-DGg7bQqS.css" as="style" onload="this.onload=null;this.rel='stylesheet'" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/assets/index-DGg7bQqS.css"></noscript>
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
     <link rel="icon" href="/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
