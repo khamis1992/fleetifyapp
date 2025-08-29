@@ -239,5 +239,6 @@ export interface FinancialObligationWithDetails extends FinancialObligation {
     id: string;
     contract_number: string;
     contract_amount: number;
+    status: string;
   } | null;
 }

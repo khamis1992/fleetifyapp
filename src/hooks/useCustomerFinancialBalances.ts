@@ -225,8 +225,18 @@ export function useCustomerFinancialSummary(customerId?: string) {
         customer_id: customerId,
         customer_name: customerName,
         customer_type: customer.customer_type === 'corporate' ? 'company' : customer.customer_type,
-        total_balance: totalBalance || {} as CustomerFinancialBalance,
-        contracts_balances: contractsBalances,
+        total_balance: {
+          ...totalBalance,
+          available_credit: (totalBalance?.credit_limit || 0) - (totalBalance?.remaining_balance || 0),
+          total_obligations: processedObligations.length,
+          last_updated: new Date().toISOString()
+        } as CustomerFinancialBalance,
+        contracts_balances: contractsBalances.map(balance => ({
+          ...balance,
+          available_credit: (balance.credit_limit || 0) - (balance.remaining_balance || 0),
+          total_obligations: 0,
+          last_updated: new Date().toISOString()
+        })) as CustomerFinancialBalance[],
         recent_obligations: processedObligations,
         payment_history_summary: {
           total_payments: totalPayments,

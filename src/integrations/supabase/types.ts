@@ -539,6 +539,56 @@ export type Database = {
         }
         Relationships: []
       }
+      api_access_tokens: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          permissions: Json
+          token_hash: string
+          token_name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          permissions?: Json
+          token_hash: string
+          token_name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          permissions?: Json
+          token_hash?: string
+          token_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_api_tokens_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_notifications: {
         Row: {
           id: string
@@ -899,6 +949,108 @@ export type Database = {
           severity?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      backup_configurations: {
+        Row: {
+          backup_name: string
+          backup_type: string
+          company_id: string
+          compression_enabled: boolean
+          created_at: string
+          created_by: string | null
+          encryption_enabled: boolean
+          id: string
+          is_active: boolean
+          last_backup_at: string | null
+          next_backup_at: string | null
+          retention_days: number
+          schedule_cron: string | null
+          tables_to_backup: string[]
+          updated_at: string
+        }
+        Insert: {
+          backup_name: string
+          backup_type: string
+          company_id: string
+          compression_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          encryption_enabled?: boolean
+          id?: string
+          is_active?: boolean
+          last_backup_at?: string | null
+          next_backup_at?: string | null
+          retention_days?: number
+          schedule_cron?: string | null
+          tables_to_backup?: string[]
+          updated_at?: string
+        }
+        Update: {
+          backup_name?: string
+          backup_type?: string
+          company_id?: string
+          compression_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          encryption_enabled?: boolean
+          id?: string
+          is_active?: boolean
+          last_backup_at?: string | null
+          next_backup_at?: string | null
+          retention_days?: number
+          schedule_cron?: string | null
+          tables_to_backup?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backup_execution_log: {
+        Row: {
+          backup_config_id: string
+          backup_location: string | null
+          backup_size_bytes: number | null
+          backup_type: string
+          company_id: string
+          duration_seconds: number | null
+          end_time: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          records_backed_up: number | null
+          start_time: string
+          status: string
+        }
+        Insert: {
+          backup_config_id: string
+          backup_location?: string | null
+          backup_size_bytes?: number | null
+          backup_type: string
+          company_id: string
+          duration_seconds?: number | null
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          records_backed_up?: number | null
+          start_time?: string
+          status?: string
+        }
+        Update: {
+          backup_config_id?: string
+          backup_location?: string | null
+          backup_size_bytes?: number | null
+          backup_type?: string
+          company_id?: string
+          duration_seconds?: number | null
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          records_backed_up?: number | null
+          start_time?: string
+          status?: string
         }
         Relationships: []
       }
@@ -2554,6 +2706,9 @@ export type Database = {
           last_statement_date: string | null
           next_statement_date: string | null
           overdue_amount: number | null
+          paid_obligations: number | null
+          pending_obligations: number | null
+          total_obligations: number | null
           updated_at: string
         }
         Insert: {
@@ -2572,6 +2727,9 @@ export type Database = {
           last_statement_date?: string | null
           next_statement_date?: string | null
           overdue_amount?: number | null
+          paid_obligations?: number | null
+          pending_obligations?: number | null
+          total_obligations?: number | null
           updated_at?: string
         }
         Update: {
@@ -2590,6 +2748,9 @@ export type Database = {
           last_statement_date?: string | null
           next_statement_date?: string | null
           overdue_amount?: number | null
+          paid_obligations?: number | null
+          pending_obligations?: number | null
+          total_obligations?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -3453,6 +3614,47 @@ export type Database = {
           },
         ]
       }
+      encryption_keys: {
+        Row: {
+          company_id: string
+          created_at: string
+          encrypted_key: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_name: string
+          key_purpose: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          encrypted_key: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name: string
+          key_purpose: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          encrypted_key?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name?: string
+          key_purpose?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_encryption_keys_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       essential_account_mappings: {
         Row: {
           account_id: string | null
@@ -3508,6 +3710,36 @@ export type Database = {
           },
         ]
       }
+      failed_login_attempts: {
+        Row: {
+          attempt_count: number
+          blocked_until: string | null
+          email: string | null
+          id: string
+          ip_address: unknown
+          last_attempt: string
+          user_agent: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          blocked_until?: string | null
+          email?: string | null
+          id?: string
+          ip_address: unknown
+          last_attempt?: string
+          user_agent?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          blocked_until?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: unknown
+          last_attempt?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       feature_gates: {
         Row: {
           created_at: string | null
@@ -3540,6 +3772,174 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      financial_audit_log: {
+        Row: {
+          changed_fields: string[] | null
+          company_id: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          operation: string
+          record_id: string | null
+          session_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          changed_fields?: string[] | null
+          company_id: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          operation: string
+          record_id?: string | null
+          session_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          changed_fields?: string[] | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          operation?: string
+          record_id?: string | null
+          session_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_financial_audit_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_obligations: {
+        Row: {
+          amount: number
+          company_id: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          days_overdue: number | null
+          description: string | null
+          due_date: string
+          id: string
+          invoice_id: string | null
+          journal_entry_id: string | null
+          notes: string | null
+          obligation_type: string
+          paid_amount: number | null
+          payment_method: string | null
+          reference_number: string | null
+          remaining_amount: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          company_id: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          days_overdue?: number | null
+          description?: string | null
+          due_date: string
+          id?: string
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          obligation_type: string
+          paid_amount?: number | null
+          payment_method?: string | null
+          reference_number?: string | null
+          remaining_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          days_overdue?: number | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          invoice_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          obligation_type?: string
+          paid_amount?: number | null
+          payment_method?: string | null
+          reference_number?: string | null
+          remaining_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_financial_obligations_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_financial_obligations_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "fk_financial_obligations_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_financial_obligations_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_financial_obligations_invoice"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_financial_obligations_journal"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fixed_assets: {
         Row: {
@@ -5997,6 +6397,70 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_allocations: {
+        Row: {
+          allocated_amount: number
+          allocation_date: string
+          allocation_strategy: string | null
+          allocation_type: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          obligation_id: string
+          payment_id: string
+        }
+        Insert: {
+          allocated_amount?: number
+          allocation_date?: string
+          allocation_strategy?: string | null
+          allocation_type?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          obligation_id: string
+          payment_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          allocation_date?: string
+          allocation_strategy?: string | null
+          allocation_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          obligation_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_payment_allocations_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_payment_allocations_obligation"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_payment_allocations_payment"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_contract_linking_attempts: {
         Row: {
           attempted_contract_identifiers: Json | null
@@ -6675,44 +7139,54 @@ export type Database = {
       }
       performance_metrics: {
         Row: {
+          cache_hit_ratio: number | null
           company_id: string | null
-          created_at: string | null
+          cpu_usage_percent: number | null
+          database_queries: number | null
+          error_count: number | null
+          execution_time_ms: number
           id: string
-          metric_name: string
-          metric_unit: string | null
-          metric_value: number
+          ip_address: unknown | null
+          memory_usage_mb: number | null
+          operation_name: string
           recorded_at: string | null
-          tags: Json | null
+          session_id: string | null
+          success_count: number | null
+          user_id: string | null
         }
         Insert: {
+          cache_hit_ratio?: number | null
           company_id?: string | null
-          created_at?: string | null
+          cpu_usage_percent?: number | null
+          database_queries?: number | null
+          error_count?: number | null
+          execution_time_ms: number
           id?: string
-          metric_name: string
-          metric_unit?: string | null
-          metric_value: number
+          ip_address?: unknown | null
+          memory_usage_mb?: number | null
+          operation_name: string
           recorded_at?: string | null
-          tags?: Json | null
+          session_id?: string | null
+          success_count?: number | null
+          user_id?: string | null
         }
         Update: {
+          cache_hit_ratio?: number | null
           company_id?: string | null
-          created_at?: string | null
+          cpu_usage_percent?: number | null
+          database_queries?: number | null
+          error_count?: number | null
+          execution_time_ms?: number
           id?: string
-          metric_name?: string
-          metric_unit?: string | null
-          metric_value?: number
+          ip_address?: unknown | null
+          memory_usage_mb?: number | null
+          operation_name?: string
           recorded_at?: string | null
-          tags?: Json | null
+          session_id?: string | null
+          success_count?: number | null
+          user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "performance_metrics_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       permission_change_requests: {
         Row: {
@@ -7243,6 +7717,115 @@ export type Database = {
           },
         ]
       }
+      smart_alerts_config: {
+        Row: {
+          alert_type: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_enabled: boolean
+          notification_settings: Json
+          trigger_conditions: Json
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          notification_settings?: Json
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          notification_settings?: Json
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_smart_alerts_config_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_alerts_log: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_data: Json | null
+          alert_message: string
+          alert_title: string
+          alert_type: string
+          company_id: string
+          created_at: string
+          id: string
+          notification_sent: boolean | null
+          notification_sent_at: string | null
+          priority: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_users: string[] | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_data?: Json | null
+          alert_message: string
+          alert_title: string
+          alert_type: string
+          company_id: string
+          created_at?: string
+          id?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_users?: string[] | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_data?: Json | null
+          alert_message?: string
+          alert_title?: string
+          alert_type?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_users?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_smart_alerts_log_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           billing_cycle: string
@@ -7658,6 +8241,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_monitoring: {
+        Row: {
+          company_id: string | null
+          id: string
+          metadata: Json | null
+          metric_category: string
+          metric_name: string
+          metric_unit: string | null
+          metric_value: number
+          recorded_at: string
+          status: string
+          threshold_critical: number | null
+          threshold_warning: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_category: string
+          metric_name: string
+          metric_unit?: string | null
+          metric_value: number
+          recorded_at?: string
+          status?: string
+          threshold_critical?: number | null
+          threshold_warning?: number | null
+        }
+        Update: {
+          company_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_category?: string
+          metric_name?: string
+          metric_unit?: string | null
+          metric_value?: number
+          recorded_at?: string
+          status?: string
+          threshold_critical?: number | null
+          threshold_warning?: number | null
+        }
+        Relationships: []
       }
       system_notifications: {
         Row: {
@@ -8132,6 +8757,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          company_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          last_activity: string
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_activity?: string
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_activity?: string
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_sessions_company"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -10011,6 +10683,125 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_configurations: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          events: string[]
+          headers: Json | null
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          name: string
+          retry_count: number | null
+          secret: string | null
+          timeout_seconds: number | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          name: string
+          retry_count?: number | null
+          secret?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          name?: string
+          retry_count?: number | null
+          secret?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_webhook_configurations_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_delivery_log: {
+        Row: {
+          attempt_count: number | null
+          company_id: string
+          created_at: string
+          delivered_at: string | null
+          delivery_status: string
+          event_type: string
+          id: string
+          next_retry_at: string | null
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          webhook_id: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          company_id: string
+          created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string
+          event_type: string
+          id?: string
+          next_retry_at?: string | null
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id: string
+        }
+        Update: {
+          attempt_count?: number | null
+          company_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string
+          event_type?: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_webhook_delivery_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_webhook_delivery_webhook"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflow_configurations: {
         Row: {
           auto_assign_enabled: boolean | null
@@ -10237,6 +11028,10 @@ export type Database = {
       }
     }
     Functions: {
+      acknowledge_alert: {
+        Args: { p_alert_id: string }
+        Returns: boolean
+      }
       add_vehicles_to_installment: {
         Args: {
           p_installment_id: string
@@ -10244,6 +11039,20 @@ export type Database = {
           p_vehicle_ids: string[]
         }
         Returns: undefined
+      }
+      allocate_payment_manual: {
+        Args: { p_allocations: Json; p_payment_id: string }
+        Returns: Json
+      }
+      allocate_payment_smart: {
+        Args: {
+          p_amount: number
+          p_company_id: string
+          p_customer_id: string
+          p_payment_id: string
+          p_strategy?: string
+        }
+        Returns: Json
       }
       analyze_account_deletion_enhanced: {
         Args: { account_id_param: string }
@@ -10285,6 +11094,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      calculate_customer_balance_from_obligations: {
+        Args: { p_company_id: string; p_customer_id: string }
+        Returns: {
+          credit_available: number
+          current_balance: number
+          days_overdue: number
+          overdue_amount: number
+          paid_amount: number
+          pending_amount: number
+          total_obligations: number
+        }[]
+      }
       calculate_customer_financial_balance: {
         Args: { contract_id_param?: string; customer_id_param: string }
         Returns: undefined
@@ -10297,6 +11118,10 @@ export type Database = {
           days_overdue: number
           overdue_amount: number
         }[]
+      }
+      calculate_days_overdue: {
+        Args: { p_due_date: string; p_status: string }
+        Returns: number
       }
       calculate_employee_salary: {
         Args: {
@@ -10384,6 +11209,10 @@ export type Database = {
           overdue_amount: number
         }[]
       }
+      check_credit_limit_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       check_customer_credit_status: {
         Args: { company_id_param: string; customer_id_param: string }
         Returns: {
@@ -10430,12 +11259,27 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: Json
       }
+      check_overdue_payment_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      check_payment_due_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       check_rate_limit: {
-        Args: {
-          max_attempts?: number
-          operation_type: string
-          window_minutes?: number
-        }
+        Args:
+          | {
+              max_attempts?: number
+              operation_type: string
+              window_minutes?: number
+            }
+          | {
+              p_limit?: number
+              p_operation: string
+              p_user_id: string
+              p_window_minutes?: number
+            }
         Returns: boolean
       }
       check_session_timeout: {
@@ -10472,6 +11316,14 @@ export type Database = {
         Args: { days_old?: number; target_company_id: string }
         Returns: number
       }
+      cleanup_monitoring_data: {
+        Args: { p_retention_days?: number }
+        Returns: Json
+      }
+      cleanup_old_audit_logs: {
+        Args: { p_retention_days?: number }
+        Returns: number
+      }
       cleanup_old_logs: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -10487,6 +11339,10 @@ export type Database = {
       cleanup_orphaned_contract_logs: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      clear_failed_login_attempts: {
+        Args: { p_email: string; p_ip_address: unknown }
+        Returns: undefined
       }
       column_exists: {
         Args: { column_name: string; table_name: string }
@@ -10557,6 +11413,10 @@ export type Database = {
           p_notes?: string
         }
         Returns: string
+      }
+      create_contract_financial_obligations: {
+        Args: { p_company_id: string; p_contract_id: string }
+        Returns: Json
       }
       create_contract_invoice: {
         Args: { contract_id_param: string; invoice_period?: string }
@@ -10664,6 +11524,14 @@ export type Database = {
       }
       create_customer_financial_account_fixed: {
         Args: { company_id_param: string; customer_id_param: string }
+        Returns: string
+      }
+      create_default_alert_configs: {
+        Args: { p_company_id: string }
+        Returns: undefined
+      }
+      create_default_backup_config: {
+        Args: { p_company_id: string }
         Returns: string
       }
       create_default_customer_accounts_fixed: {
@@ -10849,7 +11717,9 @@ export type Database = {
         Returns: undefined
       }
       encrypt_sensitive_data: {
-        Args: { data: string }
+        Args:
+          | { data: string }
+          | { p_company_id: string; p_data: string; p_key_name?: string }
         Returns: string
       }
       enhanced_bulk_delete_company_accounts: {
@@ -10873,6 +11743,10 @@ export type Database = {
       ensure_essential_account_mappings: {
         Args: { company_id_param: string }
         Returns: Json
+      }
+      execute_backup: {
+        Args: { p_backup_config_id: string }
+        Returns: string
       }
       export_ledger_data: {
         Args: {
@@ -10926,6 +11800,15 @@ export type Database = {
           target_company_id: string
         }
         Returns: Json
+      }
+      generate_api_token: {
+        Args: {
+          p_company_id: string
+          p_expires_at?: string
+          p_permissions?: Json
+          p_token_name: string
+        }
+        Returns: string
       }
       generate_approval_request_number: {
         Args: { company_id_param: string }
@@ -11050,6 +11933,14 @@ export type Database = {
       generate_secure_password: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_security_report: {
+        Args: {
+          p_company_id: string
+          p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: Json
       }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
@@ -11245,6 +12136,10 @@ export type Database = {
         Args: { customer_id_param: string }
         Returns: string
       }
+      get_customer_financial_summary: {
+        Args: { p_company_id: string; p_customer_id: string }
+        Returns: Json
+      }
       get_effective_company_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -11390,6 +12285,10 @@ export type Database = {
           parent_account_name: string
         }[]
       }
+      get_system_health_status: {
+        Args: { p_company_id?: string }
+        Returns: Json
+      }
       get_trial_balance: {
         Args: { as_of_date?: string; company_id_param: string }
         Returns: {
@@ -11401,6 +12300,23 @@ export type Database = {
           account_type: string
           credit_balance: number
           debit_balance: number
+        }[]
+      }
+      get_unpaid_obligations: {
+        Args: {
+          p_company_id: string
+          p_customer_id: string
+          p_strategy?: string
+        }
+        Returns: {
+          amount: number
+          contract_id: string
+          days_overdue: number
+          due_date: string
+          id: string
+          obligation_type: string
+          priority_score: number
+          remaining_amount: number
         }[]
       }
       get_user_company: {
@@ -11463,6 +12379,10 @@ export type Database = {
       }
       is_aggregate_account: {
         Args: { account_id_param: string }
+        Returns: boolean
+      }
+      is_login_blocked: {
+        Args: { p_email: string; p_ip_address: unknown }
         Returns: boolean
       }
       is_super_admin: {
@@ -11595,15 +12515,44 @@ export type Database = {
         Args: { bank_id_param: string }
         Returns: number
       }
+      record_failed_login: {
+        Args: { p_email: string; p_ip_address: unknown; p_user_agent?: string }
+        Returns: Json
+      }
       record_performance_metric: {
         Args: {
-          company_id_param: string
-          metric_name_param: string
-          metric_unit_param?: string
-          metric_value_param: number
-          tags_param?: Json
+          p_cache_hit_ratio?: number
+          p_company_id: string
+          p_cpu_usage_percent?: number
+          p_database_queries?: number
+          p_error_count?: number
+          p_execution_time_ms: number
+          p_memory_usage_mb?: number
+          p_operation_name: string
+          p_success_count?: number
         }
         Returns: string
+      }
+      record_performance_metric_simple: {
+        Args: { p_execution_time_ms: number; p_operation_name: string }
+        Returns: string
+      }
+      record_system_metric: {
+        Args: {
+          p_company_id: string
+          p_metadata?: Json
+          p_metric_category?: string
+          p_metric_name: string
+          p_metric_unit?: string
+          p_metric_value: number
+          p_threshold_critical?: number
+          p_threshold_warning?: number
+        }
+        Returns: string
+      }
+      refresh_all_customer_balances: {
+        Args: { p_company_id: string }
+        Returns: number
       }
       refresh_company_stats_cache: {
         Args: Record<PropertyKey, never>
@@ -11624,6 +12573,10 @@ export type Database = {
       reverse_payment_bank_transaction: {
         Args: { payment_id_param: string }
         Returns: string
+      }
+      run_smart_alerts_check: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       safe_cleanup_account_references: {
         Args: { target_account_id: string }
@@ -11714,6 +12667,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      trigger_webhook: {
+        Args: { p_company_id: string; p_event_type: string; p_payload: Json }
+        Returns: number
+      }
       update_account_balances_from_entries: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -11728,6 +12685,10 @@ export type Database = {
       }
       update_all_company_budgets: {
         Args: { company_id_param: string }
+        Returns: number
+      }
+      update_all_overdue_obligations: {
+        Args: Record<PropertyKey, never>
         Returns: number
       }
       update_approval_request_status: {
@@ -11748,6 +12709,14 @@ export type Database = {
       }
       update_customer_aging_analysis: {
         Args: { company_id_param: string; customer_id_param: string }
+        Returns: undefined
+      }
+      update_customer_aging_from_obligations: {
+        Args: { p_company_id: string; p_customer_id: string }
+        Returns: undefined
+      }
+      update_customer_balance_record: {
+        Args: { p_company_id: string; p_customer_id: string }
         Returns: undefined
       }
       update_dispatch_permit_status: {
@@ -11824,6 +12793,14 @@ export type Database = {
           status: string
         }[]
       }
+      validate_api_token: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          is_valid: boolean
+          permissions: Json
+        }[]
+      }
       validate_chart_hierarchy: {
         Args: { company_id_param: string }
         Returns: Json
@@ -11847,6 +12824,15 @@ export type Database = {
       validate_contract_realtime: {
         Args: { contract_data: Json }
         Returns: Json
+      }
+      validate_financial_permission: {
+        Args: {
+          p_company_id?: string
+          p_operation: string
+          p_resource: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       validate_password_strength: {
         Args: { password: string }

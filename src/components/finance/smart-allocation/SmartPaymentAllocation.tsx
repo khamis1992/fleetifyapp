@@ -53,12 +53,30 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
             allocation_notes: 'أولوية متوسطة - مستحق حالياً'
           }
         ],
-        allocation_strategy: 'oldest_first',
+        allocation_strategy: 'fifo',
         confidence_score: 0.95
       };
       
       setSuggestion(mockSuggestion);
-      setManualAllocations(mockSuggestion.suggested_allocations);
+      
+      // Convert to proper PaymentAllocation format
+      const formattedAllocations: PaymentAllocation[] = mockSuggestion.suggested_allocations.map((allocation, index) => ({
+        id: `allocation-${index}`,
+        company_id: 'mock-company',
+        payment_id: 'mock-payment',
+        obligation_id: allocation.obligation_id,
+        allocated_amount: allocation.allocated_amount,
+        remaining_amount: allocation.remaining_amount,
+        allocation_type: 'manual' as const,
+        allocation_strategy: 'fifo' as const,
+        allocation_date: new Date().toISOString().split('T')[0],
+        allocation_notes: allocation.allocation_notes,
+        notes: '',
+        created_by: null,
+        created_at: new Date().toISOString()
+      }));
+      
+      setManualAllocations(formattedAllocations);
     } catch (error) {
       toast({
         title: "خطأ في التوزيع الذكي",
@@ -84,29 +102,27 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
     return paymentAmount - getTotalAllocated();
   };
 
-  const getStrategyIcon = (strategy: string) => {
+  const getStrategyIcon = (strategy?: string) => {
     switch (strategy) {
-      case 'oldest_first':
+      case 'fifo':
         return <TrendingUp className="h-4 w-4" />;
-      case 'highest_priority':
+      case 'highest_interest':
         return <AlertCircle className="h-4 w-4" />;
-      case 'proportional':
+      case 'nearest_due':
         return <Calculator className="h-4 w-4" />;
       default:
         return <DollarSign className="h-4 w-4" />;
     }
   };
 
-  const getStrategyLabel = (strategy: string) => {
+  const getStrategyLabel = (strategy?: string) => {
     switch (strategy) {
-      case 'oldest_first':
+      case 'fifo':
         return 'الأقدم أولاً';
-      case 'highest_priority':
-        return 'الأولوية العالية';
-      case 'proportional':
-        return 'توزيع نسبي';
-      case 'contract_specific':
-        return 'حسب العقد';
+      case 'highest_interest':
+        return 'أعلى فائدة';
+      case 'nearest_due':
+        return 'أقرب استحقاق';
       default:
         return 'تلقائي';
     }
@@ -181,8 +197,8 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                 <Badge variant="secondary">
                   {getStrategyLabel(suggestion.allocation_strategy)}
                 </Badge>
-                <Badge variant={suggestion.confidence_score > 0.8 ? 'default' : 'secondary'}>
-                  دقة {Math.round(suggestion.confidence_score * 100)}%
+                <Badge variant={suggestion.confidence_score && suggestion.confidence_score > 0.8 ? 'default' : 'secondary'}>
+                  دقة {Math.round((suggestion.confidence_score || 0) * 100)}%
                 </Badge>
               </div>
             </CardTitle>
