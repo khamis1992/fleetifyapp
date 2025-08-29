@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
+import { useEssentialAccountMappings } from './useEssentialAccountMappings'
 import { createContractWithFallback } from '@/utils/contractJournalEntry'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { useCreateContractDocument } from './useContractDocuments'
@@ -48,6 +49,12 @@ export const useContractCreation = () => {
   const queryClient = useQueryClient()
   const { mutateAsync: createDocument } = useCreateContractDocument()
   const { saveDocuments, isProcessing: isDocumentSaving } = useContractDocumentSaving()
+  const { 
+    mappingStatus, 
+    hasMissingMappings, 
+    autoConfigureEssentialMappings,
+    isAutoConfiguring 
+  } = useEssentialAccountMappings()
   
   const [creationState, setCreationState] = useState<ContractCreationState>({
     currentStep: 0,
@@ -175,6 +182,30 @@ export const useContractCreation = () => {
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
 
         updateStepStatus('accounts', 'processing')
+        
+        // فحص الحسابات الأساسية المطلوبة
+        console.log('🔍 [CONTRACT_CREATION] فحص الحسابات الأساسية المطلوبة...')
+        if (hasMissingMappings) {
+          console.log('⚠️ [CONTRACT_CREATION] حسابات أساسية مفقودة:', mappingStatus?.errors)
+          
+          updateStepStatus('accounts', 'warning', 'حسابات أساسية مفقودة، جاري إنشاؤها...')
+          
+          try {
+            // إنشاء الحسابات الأساسية تلقائياً
+            console.log('🔧 [CONTRACT_CREATION] إنشاء الحسابات الأساسية تلقائياً...')
+            await autoConfigureEssentialMappings()
+            console.log('✅ [CONTRACT_CREATION] تم إنشاء الحسابات الأساسية بنجاح')
+            updateStepStatus('accounts', 'completed', undefined, ['تم إنشاء الحسابات الأساسية تلقائياً'])
+          } catch (accountError: any) {
+            console.error('❌ [CONTRACT_CREATION] فشل في إنشاء الحسابات الأساسية:', accountError)
+            const errorMessage = 'فشل في إنشاء الحسابات الأساسية المطلوبة للقيد المحاسبي'
+            updateStepStatus('accounts', 'failed', errorMessage)
+            throw new Error(errorMessage)
+          }
+        } else {
+          updateStepStatus('accounts', 'completed')
+        }
+
         updateStepStatus('creation', 'processing')
 
         // استخدام دالة إنشاء العقد الموحدة مع المعاملات المنفصلة مع fallback

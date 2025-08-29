@@ -30,6 +30,13 @@ export default function AutomaticAccountsSettings() {
 
   const getAccountTypeLabel = (accountType: string) => {
     const labels: Record<string, string> = {
+      'accounts_receivable': 'المدينون',
+      'rental_revenue': 'إيرادات الإيجار', 
+      'sales_revenue': 'إيرادات المبيعات',
+      'accounts_payable': 'الدائنون',
+      'cash': 'النقدية',
+      'bank': 'البنك',
+      'inventory': 'المخزون',
       'RECEIVABLES': 'حسابات القبض',
       'PAYABLES': 'حسابات الدفع',
       'CASH': 'النقد',
