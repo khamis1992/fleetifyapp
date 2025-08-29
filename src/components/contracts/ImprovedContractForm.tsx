@@ -22,6 +22,8 @@ import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { ContractCreationProgress } from './ContractCreationProgress'
 import { CustomerDisplayName } from '@/components/customers/CustomerDisplayName'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
+import { useSignatureSettings } from '@/hooks/useSignatureSettings'
+import { ElectronicSignatureStatus } from './ElectronicSignatureStatus'
 
 
 interface ImprovedContractFormProps {
@@ -80,6 +82,7 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts(companyId)
   const { validation, isValidating, validateContract, debouncedValidation } = useContractValidation()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
+  const { data: signatureSettings } = useSignatureSettings()
   
   // Enhanced validation hook
   const { 
@@ -562,6 +565,9 @@ export const ImprovedContractForm: React.FC<ImprovedContractFormProps> = ({
               </CardContent>
             </Card>
           </div>
+
+          {/* Electronic Signature Status */}
+          <ElectronicSignatureStatus className="mb-4" />
 
           {/* Contract Details */}
           <Card>

@@ -1742,6 +1742,50 @@ export type Database = {
         }
         Relationships: []
       }
+      company_signature_settings: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          electronic_signature_enabled: boolean
+          id: string
+          require_company_signature: boolean
+          require_customer_signature: boolean
+          settings: Json | null
+          signature_provider: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          electronic_signature_enabled?: boolean
+          id?: string
+          require_company_signature?: boolean
+          require_customer_signature?: boolean
+          settings?: Json | null
+          signature_provider?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          electronic_signature_enabled?: boolean
+          id?: string
+          require_company_signature?: boolean
+          require_customer_signature?: boolean
+          settings?: Json | null
+          signature_provider?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_signature_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_usage: {
         Row: {
           api_calls_count: number | null
@@ -12054,6 +12098,10 @@ export type Database = {
         }[]
       }
       get_chart_statistics: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
+      get_company_signature_settings: {
         Args: { company_id_param: string }
         Returns: Json
       }
