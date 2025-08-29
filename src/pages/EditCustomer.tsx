@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useCustomerById } from "@/hooks/useEnhancedCustomers";
-import { EditCustomerForm } from "@/components/customers/EditCustomerForm";
+import { CreateCustomerDialog } from "@/components/customers/CreateCustomerDialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -73,8 +73,10 @@ export default function EditCustomer() {
         </Button>
       </div>
 
-      <EditCustomerForm
-        customer={customer}
+      <CreateCustomerDialog
+        open={true}
+        onOpenChange={() => {}}
+        editingCustomer={customer}
         onSuccess={() => {
           navigate('/customers');
         }}
