@@ -70,22 +70,22 @@ export const CustomerFinancialDashboard: React.FC<CustomerFinancialDashboardProp
     );
   };
 
-  const getPriorityBadge = (priority: number) => {
+  const getPriorityBadge = (priority: string) => {
     const variants = {
-      1: 'destructive',
-      2: 'secondary',
-      3: 'outline',
+      high: 'destructive',
+      medium: 'secondary',
+      low: 'outline',
     } as const;
 
     const labels = {
-      1: 'عالي',
-      2: 'متوسط',
-      3: 'منخفض',
+      high: 'عالي',
+      medium: 'متوسط',
+      low: 'منخفض',
     };
 
     return (
-      <Badge variant={variants[priority as keyof typeof variants]}>
-        {labels[priority as keyof typeof labels]}
+      <Badge variant={variants[priority as keyof typeof variants] || 'secondary'}>
+        {labels[priority as keyof typeof labels] || priority}
       </Badge>
     );
   };
@@ -279,7 +279,7 @@ export const CustomerFinancialDashboard: React.FC<CustomerFinancialDashboardProp
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{obligation.obligation_number}</p>
                           {getStatusBadge(obligation.status)}
-                          {getPriorityBadge(obligation.priority)}
+                          {getPriorityBadge(obligation.priority || 'medium')}
                         </div>
                         <p className="text-sm text-muted-foreground">
                           استحقاق: {format(new Date(obligation.due_date), 'dd/MM/yyyy', { locale: ar })}

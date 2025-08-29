@@ -27,7 +27,12 @@ export const useCustomerObligations = (customerId?: string) => {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        original_amount: (item as any).original_amount || item.amount,
+        obligation_type: item.obligation_type as FinancialObligation['obligation_type'],
+        status: item.status as FinancialObligation['status']
+      }));
     },
     enabled: !!companyId && !!customerId,
   });
@@ -50,7 +55,12 @@ export const useContractObligations = (contractId?: string) => {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        original_amount: (item as any).original_amount || item.amount,
+        obligation_type: item.obligation_type as FinancialObligation['obligation_type'],
+        status: item.status as FinancialObligation['status']
+      }));
     },
     enabled: !!companyId && !!contractId,
   });
@@ -81,7 +91,8 @@ export const useOverdueObligations = () => {
           contracts (
             id,
             contract_number,
-            contract_type
+            contract_amount,
+            status
           )
         `)
         .eq('company_id', companyId)
@@ -90,7 +101,16 @@ export const useOverdueObligations = () => {
         .order('days_overdue', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        original_amount: (item as any).original_amount || item.amount,
+        obligation_type: item.obligation_type as FinancialObligation['obligation_type'],
+        status: item.status as FinancialObligation['status'],
+        customers: item.customers ? {
+          ...item.customers,
+          customer_type: (item.customers as any).customer_type === 'corporate' ? 'company' : (item.customers as any).customer_type
+        } : null
+      }));
     },
     enabled: !!companyId,
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
@@ -187,7 +207,7 @@ export const useSmartPaymentAllocation = () => {
         });
 
       if (error) throw error;
-      return data as SmartAllocationResult;
+      return data as unknown as SmartAllocationResult;
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ 
@@ -230,11 +250,11 @@ export const useManualPaymentAllocation = () => {
       const { data, error } = await supabase
         .rpc('allocate_payment_manual', {
           p_payment_id: paymentId,
-          p_allocations: allocations
+          p_allocations: allocations as any
         });
 
       if (error) throw error;
-      return data as SmartAllocationResult;
+      return data as unknown as SmartAllocationResult;
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ 
