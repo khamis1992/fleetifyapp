@@ -12671,6 +12671,10 @@ export type Database = {
           vehicle_plate: string
         }[]
       }
+      setup_essential_accounts_and_mappings: {
+        Args: { company_id_param: string }
+        Returns: Json
+      }
       simple_account_diagnosis: {
         Args: { target_company_id: string }
         Returns: Json
