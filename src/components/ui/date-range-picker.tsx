@@ -1,9 +1,6 @@
 import * as React from "react"
-import { addDays, format } from "date-fns"
-import { ar } from "date-fns/locale"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
-
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -15,14 +12,14 @@ import {
 
 interface DatePickerWithRangeProps {
   className?: string
-  date: DateRange | undefined
-  setDate: (date: DateRange | undefined) => void
+  date?: DateRange
+  onDateChange?: (date: DateRange | undefined) => void
 }
 
 export function DatePickerWithRange({
   className,
   date,
-  setDate,
+  onDateChange,
 }: DatePickerWithRangeProps) {
   return (
     <div className={cn("grid gap-2", className)}>
@@ -32,7 +29,7 @@ export function DatePickerWithRange({
             id="date"
             variant={"outline"}
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-[300px] justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
           >
@@ -40,11 +37,11 @@ export function DatePickerWithRange({
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y", { locale: ar })} -{" "}
-                  {format(date.to, "LLL dd, y", { locale: ar })}
+                  {date.from.toLocaleDateString("ar-SA")} -{" "}
+                  {date.to.toLocaleDateString("ar-SA")}
                 </>
               ) : (
-                format(date.from, "LLL dd, y", { locale: ar })
+                date.from.toLocaleDateString("ar-SA")
               )
             ) : (
               <span>اختر نطاق التاريخ</span>
@@ -57,7 +54,7 @@ export function DatePickerWithRange({
             mode="range"
             defaultMonth={date?.from}
             selected={date}
-            onSelect={setDate}
+            onSelect={onDateChange}
             numberOfMonths={2}
           />
         </PopoverContent>
