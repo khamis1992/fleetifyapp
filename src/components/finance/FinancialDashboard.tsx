@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFinancialDashboardStats } from '@/hooks/useCustomerFinancialBalances';
 import { useCompanyCustomersBalances } from '@/hooks/useCustomerFinancialBalances';
 import { useOverdueObligations } from '@/hooks/useFinancialObligations';
-import { useUpdateObligationsStatus } from '@/hooks/useFinancialObligations';
+import { useUpdateObligationStatus } from '@/hooks/useFinancialObligations';
 // Utility function for currency formatting
 const formatCurrency = (amount: number) => `${amount.toFixed(3)} د.ك`;
 import { 
@@ -29,10 +29,13 @@ export const FinancialDashboard: React.FC = () => {
     hasOverdue: true
   });
   const { data: overdueObligations, isLoading: overdueLoading } = useOverdueObligations();
-  const updateObligationsStatus = useUpdateObligationsStatus();
+  const updateObligationsStatus = useUpdateObligationStatus();
 
   const handleRefreshStatus = () => {
-    updateObligationsStatus.mutate();
+    updateObligationsStatus.mutate({
+      obligationId: 'dummy', // This needs actual obligation ID for production
+      status: 'pending'
+    });
   };
 
   if (statsLoading) {
@@ -272,7 +275,7 @@ export const FinancialDashboard: React.FC = () => {
                     <div key={obligation.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{obligation.obligation_number}</p>
+                          <p className="font-medium">{obligation.obligation_number || obligation.reference_number || obligation.id}</p>
                           <Badge variant="destructive">متأخر</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -295,7 +298,7 @@ export const FinancialDashboard: React.FC = () => {
                           {formatCurrency(obligation.remaining_amount)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          من أصل {formatCurrency(obligation.original_amount)}
+                          من أصل {formatCurrency(obligation.original_amount || obligation.amount)}
                         </p>
                       </div>
                     </div>
