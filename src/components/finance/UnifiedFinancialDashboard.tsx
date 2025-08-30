@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnhancedFinancialOverview } from "@/hooks/useEnhancedFinancialOverview";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { AdvancedFinancialReports } from "./AdvancedFinancialReports";
 import { PaymentAnalyticsCard } from "./PaymentAnalyticsCard";
 import { PayrollIntegrationCard } from "./PayrollIntegrationCard";
 import { PendingJournalEntriesManager } from "./PendingJournalEntriesManager";
+import { UnifiedPaymentForm } from "./UnifiedPaymentForm";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -82,6 +83,8 @@ const MetricCard = ({ title, value, change, description, icon, trend = 'neutral'
 export const UnifiedFinancialDashboard = () => {
   const { user } = useAuth();
   const companyId = user?.user_metadata?.company_id;
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentType, setPaymentType] = useState<'customer_payment' | 'vendor_payment'>('customer_payment');
   
   console.log('[UnifiedFinancialDashboard] Rendering with user:', user?.id, 'companyId:', companyId);
   
@@ -294,6 +297,43 @@ export const UnifiedFinancialDashboard = () => {
             <PayrollIntegrationCard />
             <PendingJournalEntriesManager />
           </div>
+          
+          {/* Quick Payment Actions */}
+          <div className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>إجراءات الدفع السريعة</CardTitle>
+                <CardDescription>
+                  إنشاء دفعات وإيصالات بسرعة
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  <Button 
+                    onClick={() => {
+                      setPaymentType('customer_payment');
+                      setShowPaymentForm(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    إيصال قبض
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setPaymentType('vendor_payment');
+                      setShowPaymentForm(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    إيصال صرف
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="reports">
@@ -319,6 +359,25 @@ export const UnifiedFinancialDashboard = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Unified Payment Form Integration */}
+      <UnifiedPaymentForm
+        open={showPaymentForm}
+        onOpenChange={setShowPaymentForm}
+        type={paymentType}
+        onSuccess={() => {
+          setShowPaymentForm(false);
+          // Refresh financial data
+          window.location.reload();
+        }}
+        onCancel={() => setShowPaymentForm(false)}
+        options={{
+          autoCreateJournalEntry: true,
+          requireApproval: false,
+          enableNotifications: true,
+          showJournalPreview: true
+        }}
+      />
     </div>
   );
 };

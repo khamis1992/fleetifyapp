@@ -1,5 +1,6 @@
 // النظام المالي الموحد - ملف التصدير الرئيسي
 export { UnifiedFinancialDashboard } from './UnifiedFinancialDashboard';
+export { UnifiedPaymentForm, PaymentForm } from './UnifiedPaymentForm';
 export { FinancialAlertsSystem } from './FinancialAlertsSystem';
 export { AdvancedFinancialReports } from './AdvancedFinancialReports';
 export { PaymentAnalyticsCard } from './PaymentAnalyticsCard';
@@ -12,7 +13,7 @@ export { ReceivablesReport } from './ReceivablesReport';
 export { InvoiceCard } from './InvoiceCard';
 export { PayInvoiceDialog } from './PayInvoiceDialog';
 export { JournalEntryForm } from './JournalEntryForm';
-export { PaymentForm } from './PaymentForm';
+export { PaymentForm } from './UnifiedPaymentForm';
 export { InvoiceForm } from './InvoiceForm';
 export { EnhancedChartOfAccountsManagement } from './EnhancedChartOfAccountsManagement';
 export { CustomerAccountSelector } from './CustomerAccountSelector';

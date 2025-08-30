@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { useCustomers, useToggleCustomerBlacklist, useDeleteCustomer } from "@/hooks/useEnhancedCustomers"
 import { useDebounce } from "@/hooks/useDebounce"
-import { CreateCustomerDialog } from "@/components/customers/CreateCustomerDialog"
+import { EnhancedCustomerDialog } from "@/components/customers/EnhancedCustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
@@ -401,32 +401,6 @@ export default function Customers() {
           Array.from({ length: 3 }).map((_, index) => (
             <CustomerSkeleton key={index} />
           ))
-        ) : !customers || customers.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">لا توجد عملاء</h3>
-                <p className="text-muted-foreground mb-4">
-                  {!user 
-                    ? "يجب تسجيل الدخول أولاً لعرض العملاء" 
-                    : "لم يتم العثور على عملاء. يمكنك إضافة عميل جديد."
-                  }
-                </p>
-                {!user ? (
-                  <Button onClick={() => navigate('/auth')} className="flex items-center gap-2">
-                    <LogIn className="h-4 w-4" />
-                    تسجيل الدخول
-                  </Button>
-                ) : canAddCustomers && (
-                  <Button onClick={() => setShowCustomerForm(true)} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    إضافة عميل جديد
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         ) : (
           customers?.map((customer) => (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
@@ -556,7 +530,7 @@ export default function Customers() {
       </div>
 
       {/* نماذج الحوار */}
-      <CreateCustomerDialog
+      <EnhancedCustomerDialog
         open={showCustomerForm}
         onOpenChange={(open) => {
           setShowCustomerForm(open)
@@ -576,6 +550,7 @@ export default function Customers() {
           setShowCustomerForm(false)
           setEditingCustomer(null)
         }}
+        context="standalone"
       />
       
       {/* Customer Details Dialog */}

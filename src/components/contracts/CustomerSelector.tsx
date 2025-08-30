@@ -11,7 +11,7 @@ import { Search, Plus, User, Building2, Check, ChevronsUpDown } from 'lucide-rea
 import { useCustomers } from '@/hooks/useEnhancedCustomers';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { CreateCustomerDialog } from '@/components/customers/CreateCustomerDialog';
+import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
 import { cn } from '@/lib/utils';
 import { Customer } from '@/types/customer';
 
@@ -290,11 +290,12 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       </div>
 
       {/* Customer Creation Dialog */}
-      <CreateCustomerDialog
+      <EnhancedCustomerDialog
         open={customerFormOpen}
         onOpenChange={setCustomerFormOpen}
         onSuccess={handleCustomerCreated}
         onCancel={() => setCustomerFormOpen(false)}
+        context="contract"
       />
     </>
   );
