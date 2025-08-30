@@ -69,7 +69,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   } = options;
 
   const [currentTab, setCurrentTab] = useState('details');
-  const [showJournalPreview, setShowJournalPreviewState] = useState(false);
+  const [showJournalPreviewDialog, setShowJournalPreviewDialog] = useState(false);
   const [journalPreview, setJournalPreview] = useState<PaymentJournalPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
@@ -163,6 +163,12 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
 
   // Generate journal preview
   const handleGeneratePreview = async () => {
+    if (showJournalPreviewDialog) {
+      // If preview is already showing, just close it
+      setShowJournalPreviewDialog(false);
+      return;
+    }
+
     if (watchedValues.amount <= 0) {
       toast.error('يرجى إدخال المبلغ أولاً');
       return;
@@ -172,7 +178,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
     try {
       const preview = await generateJournalPreview(watchedValues);
       setJournalPreview(preview);
-      setShowJournalPreviewState(true);
+      setShowJournalPreviewDialog(true);
     } catch (error) {
       console.error('Error generating preview:', error);
       toast.error('خطأ في إنشاء المعاينة');
@@ -668,8 +674,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                     disabled={isPreviewLoading || watchedValues.amount <= 0}
                     className="flex items-center gap-2"
                   >
-                    {showJournalPreviewState ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    {isPreviewLoading ? "جاري التحضير..." : showJournalPreviewState ? "إخفاء المعاينة" : "معاينة القيد"}
+                    {showJournalPreviewDialog ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {isPreviewLoading ? "جاري التحضير..." : showJournalPreviewDialog ? "إخفاء المعاينة" : "معاينة القيد"}
                   </Button>
                 )}
               </div>
@@ -689,6 +695,73 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
           </form>
         </Form>
       </DialogContent>
+      
+      {/* Journal Preview Dialog */}
+      {showJournalPreviewDialog && journalPreview && (
+        <Dialog open={showJournalPreviewDialog} onOpenChange={setShowJournalPreviewDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>معاينة القيد المحاسبي</DialogTitle>
+              <DialogDescription>
+                هذا عرض للقيد الذي سيتم إنشاؤه تلقائياً
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">رقم القيد:</span> {journalPreview.entry_number}
+                </div>
+                <div>
+                  <span className="font-medium">تاريخ القيد:</span> {journalPreview.entry_date}
+                </div>
+                <div className="col-span-2">
+                  <span className="font-medium">البيان:</span> {journalPreview.description}
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse border border-border">
+                  <thead>
+                    <tr className="bg-muted">
+                      <th className="border border-border p-2 text-right">رقم الحساب</th>
+                      <th className="border border-border p-2 text-right">اسم الحساب</th>
+                      <th className="border border-border p-2 text-right">البيان</th>
+                      <th className="border border-border p-2 text-right">مدين</th>
+                      <th className="border border-border p-2 text-right">دائن</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {journalPreview.lines.map((line, index) => (
+                      <tr key={index}>
+                        <td className="border border-border p-2">{line.account_code}</td>
+                        <td className="border border-border p-2">{line.account_name}</td>
+                        <td className="border border-border p-2">{line.description}</td>
+                        <td className="border border-border p-2 text-right">
+                          {line.debit_amount > 0 && `${line.debit_amount.toFixed(3)} ${watchedValues.currency}`}
+                        </td>
+                        <td className="border border-border p-2 text-right">
+                          {line.credit_amount > 0 && `${line.credit_amount.toFixed(3)} ${watchedValues.currency}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted font-medium">
+                      <td colSpan={3} className="border border-border p-2 text-right">الإجمالي:</td>
+                      <td className="border border-border p-2 text-right">
+                        {journalPreview.total_amount.toFixed(3)} {watchedValues.currency}
+                      </td>
+                      <td className="border border-border p-2 text-right">
+                        {journalPreview.total_amount.toFixed(3)} {watchedValues.currency}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 };
