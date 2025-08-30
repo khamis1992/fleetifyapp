@@ -191,22 +191,24 @@ export const useContractCreation = () => {
           updateStepStatus('accounts', 'warning', 'حسابات أساسية مفقودة، جاري إنشاؤها...')
           
           try {
-            // إنشاء الحسابات الأساسية تلقائياً
-            console.log('🔧 [CONTRACT_CREATION] إنشاء الحسابات الأساسية تلقائياً...')
+            // إنشاء الحسابات الأساسية وربطها تلقائياً
+            console.log('🔧 [CONTRACT_CREATION] إنشاء الحسابات الأساسية وربطها تلقائياً...')
             await autoConfigureEssentialMappings()
             
             // انتظار قصير للتأكد من تحديث البيانات
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            await new Promise(resolve => setTimeout(resolve, 2000))
             
-            console.log('✅ [CONTRACT_CREATION] تم إنشاء الحسابات الأساسية بنجاح')
-            updateStepStatus('accounts', 'completed', undefined, ['تم إنشاء الحسابات الأساسية تلقائياً'])
+            console.log('✅ [CONTRACT_CREATION] تم إنشاء الحسابات والربط بنجاح')
+            updateStepStatus('accounts', 'completed', undefined, ['تم إنشاء الحسابات الأساسية وربطها تلقائياً'])
           } catch (accountError: any) {
             console.error('❌ [CONTRACT_CREATION] فشل في إنشاء الحسابات الأساسية:', accountError)
-            const errorMessage = 'فشل في إنشاء الحسابات الأساسية المطلوبة للقيد المحاسبي'
-            updateStepStatus('accounts', 'failed', errorMessage)
-            throw new Error(errorMessage)
+            
+            // Try alternative approach - let the contract creation handle account creation
+            console.log('🔄 [CONTRACT_CREATION] محاولة الربط من خلال إنشاء العقد...')
+            updateStepStatus('accounts', 'warning', 'سيتم إنشاء الحسابات أثناء إنشاء العقد')
           }
         } else {
+          console.log('✅ [CONTRACT_CREATION] جميع الحسابات الأساسية موجودة')
           updateStepStatus('accounts', 'completed')
         }
 
@@ -223,10 +225,28 @@ export const useContractCreation = () => {
           console.log('❓ [CONTRACT_CREATION] محاولة تشخيص المشكلة...')
           console.log('❓ [CONTRACT_CREATION] بيانات العقد المرسلة:', inputContractData)
           
-          const errorMessage = `خطأ في قاعدة البيانات: ${createError.message}`
-          updateStepStatus('validation', 'failed', errorMessage)
-          updateStepStatus('accounts', 'failed', errorMessage)
-          updateStepStatus('creation', 'failed', errorMessage)
+          let errorMessage = `خطأ في قاعدة البيانات: ${createError.message}`
+          let failedStep = 'creation'
+          
+          // معالجة أخطاء المحاسبة المحددة
+          if (createError.message?.includes('account') || createError.message?.includes('mapping')) {
+            errorMessage = 'فشل في إنشاء القيد المحاسبي: ربط الحسابات غير مكتمل'
+            failedStep = 'verification'
+            updateStepStatus('validation', 'completed')
+            updateStepStatus('accounts', 'failed', 'ربط الحسابات غير مكتمل')
+            updateStepStatus('creation', 'failed', errorMessage)
+          } else if (createError.message?.includes('receivable') || createError.message?.includes('revenue')) {
+            errorMessage = 'فشل في إنشاء القيد المحاسبي: حسابات الإيرادات أو الذمم المدينة غير موجودة'
+            failedStep = 'verification'
+            updateStepStatus('validation', 'completed')
+            updateStepStatus('accounts', 'failed', 'حسابات المحاسبة مفقودة')
+            updateStepStatus('creation', 'failed', errorMessage)
+          } else {
+            updateStepStatus('validation', 'failed', errorMessage)
+            updateStepStatus('accounts', 'failed', errorMessage)
+            updateStepStatus('creation', 'failed', errorMessage)
+          }
+          
           updateStepStatus('activation', 'failed', errorMessage)
           updateStepStatus('verification', 'failed', errorMessage)
           updateStepStatus('finalization', 'failed', errorMessage)
@@ -439,13 +459,16 @@ export const useContractCreation = () => {
           toast.success('تم إنشاء العقد والقيد المحاسبي بنجاح')
         } else if (requiresManualEntry) {
           // فشل في إنشاء القيد المحاسبي - يحتاج تدخل يدوي
+          console.log('⚠️ [CONTRACT_CREATION] Contract created but journal entry requires manual creation')
+          
           updateStepStatus('activation', 'warning', 'فشل في إنشاء القيد المحاسبي بعد عدة محاولات')
-          updateStepStatus('verification', 'failed', 'يتطلب إنشاء قيد محاسبي يدوي')
+          updateStepStatus('verification', 'failed', 'يتطلب إنشاء قيد محاسبي يدوي - الرجاء إعداد ربط الحسابات في إعدادات الشركة')
           updateStepStatus('finalization', 'warning', 'تم إنشاء العقد ولكن يتطلب قيد محاسبي يدوي')
           
-          toast.warning('تم إنشاء العقد بنجاح ولكن يتطلب إنشاء قيد محاسبي يدوي', {
-            description: 'يرجى التواصل مع قسم المحاسبة لإنشاء القيد المحاسبي',
-            duration: 8000
+          // Show more specific error message
+          toast.error('يتطلب إعداد ربط الحسابات لإنشاء القيود المحاسبية تلقائياً', {
+            description: 'يرجى الذهاب إلى إعدادات الشركة وإعداد ربط الحسابات لحسابات الذمم والإيرادات',
+            duration: 10000
           })
         } else if (warnings.length > 0) {
           // تحذيرات في إنشاء القيد المحاسبي

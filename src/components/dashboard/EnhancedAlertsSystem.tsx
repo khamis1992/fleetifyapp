@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ import { useVehicleAlerts } from '@/hooks/useVehicleAlerts';
 import { useAcknowledgeBudgetAlert } from '@/hooks/useBudgetIntegration';
 import { useAcknowledgeVehicleAlert } from '@/hooks/useVehicleAlerts';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, UserNotification } from '@/hooks/useNotifications';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface EnhancedAlertsSystemProps {
@@ -39,6 +41,8 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
 }) => {
   const { toast } = useToast();
   const { formatCurrency } = useCurrencyFormatter();
+  const { getQueryKey } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
   const [soundEnabled, setSoundEnabled] = useState(() => 
     localStorage.getItem('alertSoundEnabled') !== 'false'
   );
@@ -98,35 +102,38 @@ export const EnhancedAlertsSystem: React.FC<EnhancedAlertsSystemProps> = ({
     }
   }, [highPriorityAlerts, soundEnabled]);
 
-  const handleDismissAlert = (alertId: string, type: 'smart' | 'budget' | 'vehicle' | 'notification') => {
+  const handleDismissAlert = async (alertId: string, type: 'smart' | 'budget' | 'vehicle' | 'notification') => {
     setDismissedAlerts(prev => [...prev, alertId]);
     
-    if (type === 'budget') {
-      acknowledgeBudget.mutate(alertId, {
-        onSuccess: () => {
-          toast({
-            title: "تم تأكيد التنبيه",
-            description: "تم تأكيد تنبيه الموازنة بنجاح"
-          });
-        }
-      });
-    } else if (type === 'vehicle') {
-      acknowledgeVehicle.mutate(alertId, {
-        onSuccess: () => {
-          toast({
-            title: "تم تأكيد التنبيه", 
-            description: "تم تأكيد تنبيه المركبة بنجاح"
-          });
-        }
-      });
-    } else if (type === 'notification') {
-      markNotificationAsRead.mutate(alertId, {
-        onSuccess: () => {
-          toast({
-            title: "تم قراءة الإشعار",
-            description: "تم وضع علامة على الإشعار كمقروء"
-          });
-        }
+    try {
+      if (type === 'budget') {
+        await acknowledgeBudget.mutateAsync(alertId);
+        toast({
+          title: "تم تأكيد التنبيه",
+          description: "تم تأكيد تنبيه الموازنة بنجاح"
+        });
+      } else if (type === 'vehicle') {
+        await acknowledgeVehicle.mutateAsync(alertId);
+        toast({
+          title: "تم تأكيد التنبيه", 
+          description: "تم تأكيد تنبيه المركبة بنجاح"
+        });
+      } else if (type === 'notification') {
+        await markNotificationAsRead.mutateAsync(alertId);
+        toast({
+          title: "تم قراءة الإشعار",
+          description: "تم وضع علامة على الإشعار كمقروء"
+        });
+      }
+      
+      // Force refresh of unified notification count
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['unified-notification-count']) });
+    } catch (error) {
+      console.error('Error dismissing alert:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تأكيد التنبيه",
+        variant: "destructive"
       });
     }
   };

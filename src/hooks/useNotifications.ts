@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 export interface UserNotification {
   id: string;
@@ -17,8 +18,10 @@ export interface UserNotification {
 }
 
 export const useNotifications = () => {
+  const { getQueryKey } = useUnifiedCompanyAccess();
+  
   return useQuery({
-    queryKey: ["notifications"],
+    queryKey: getQueryKey(["notifications"]),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_notifications")
@@ -32,8 +35,10 @@ export const useNotifications = () => {
 };
 
 export const useUnreadNotificationsCount = () => {
+  const { getQueryKey } = useUnifiedCompanyAccess();
+  
   return useQuery({
-    queryKey: ["notifications", "unread-count"],
+    queryKey: getQueryKey(["notifications", "unread-count"]),
     queryFn: async () => {
       const { count, error } = await supabase
         .from("user_notifications")
@@ -49,6 +54,7 @@ export const useUnreadNotificationsCount = () => {
 export const useMarkNotificationAsRead = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { getQueryKey } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async (notificationId: string) => {
@@ -63,6 +69,10 @@ export const useMarkNotificationAsRead = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidate multiple query keys for synchronization
+      queryClient.invalidateQueries({ queryKey: getQueryKey(["notifications"]) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(["notifications", "unread-count"]) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(["real-time-alerts"]) });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
     },
@@ -80,6 +90,7 @@ export const useMarkNotificationAsRead = () => {
 export const useMarkAllNotificationsAsRead = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { getQueryKey } = useUnifiedCompanyAccess();
 
   return useMutation({
     mutationFn: async () => {
@@ -94,6 +105,10 @@ export const useMarkAllNotificationsAsRead = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidate multiple query keys for synchronization
+      queryClient.invalidateQueries({ queryKey: getQueryKey(["notifications"]) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(["notifications", "unread-count"]) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(["real-time-alerts"]) });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
       toast({

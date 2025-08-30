@@ -83,8 +83,8 @@ export const CreateAccountsForExistingCustomers: React.FC = () => {
       
       try {
         const { data, error } = await supabase.rpc('auto_create_customer_accounts', {
-          customer_id_param: customer.id,
           company_id_param: companyId,
+          customer_id_param: customer.id,
         });
 
         if (error) throw error;

@@ -60,6 +60,70 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
   const [conditionItems, setConditionItems] = useState<ConditionItem[]>(defaultConditionItems);
   const [damagePoints, setDamagePoints] = useState<DamagePoint[]>([]);
 
+  // Smart notes generation based on damage points
+  const generateAutomaticNotes = (damages: DamagePoint[]) => {
+    if (damages.length === 0) {
+      return '';
+    }
+
+    const damagesByType = damages.reduce((acc, damage) => {
+      if (!acc[damage.severity]) {
+        acc[damage.severity] = [];
+      }
+      acc[damage.severity].push(damage.description);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    let automaticNotes = '🚗 تقرير الأضرار المسجلة:\n\n';
+
+    if (damagesByType.severe?.length > 0) {
+      automaticNotes += '🔴 أضرار خطيرة:\n';
+      damagesByType.severe.forEach((desc, index) => {
+        automaticNotes += `${index + 1}. ${desc}\n`;
+      });
+      automaticNotes += '\n';
+    }
+
+    if (damagesByType.moderate?.length > 0) {
+      automaticNotes += '🟡 أضرار متوسطة:\n';
+      damagesByType.moderate.forEach((desc, index) => {
+        automaticNotes += `${index + 1}. ${desc}\n`;
+      });
+      automaticNotes += '\n';
+    }
+
+    if (damagesByType.minor?.length > 0) {
+      automaticNotes += '🟢 أضرار بسيطة:\n';
+      damagesByType.minor.forEach((desc, index) => {
+        automaticNotes += `${index + 1}. ${desc}\n`;
+      });
+      automaticNotes += '\n';
+    }
+
+    automaticNotes += `📊 إجمالي الأضرار: ${damages.length}\n`;
+    automaticNotes += `📅 تاريخ الفحص: ${new Date().toLocaleDateString('ar-SA')}\n`;
+    automaticNotes += '\n⚠️ يُرجى مراجعة هذه الأضرار والتأكد من توثيقها قبل بداية العقد.';
+
+    return automaticNotes;
+  };
+
+  // Handle damage points change and auto-update notes
+  const handleDamagePointsChange = (newDamagePoints: DamagePoint[]) => {
+    setDamagePoints(newDamagePoints);
+    
+    // Generate automatic notes based on damage points
+    const autoNotes = generateAutomaticNotes(newDamagePoints);
+    
+    // If there are damage points, set automatic notes
+    // If no damage points, clear the automatic part but keep any manual notes
+    if (newDamagePoints.length > 0) {
+      setNotes(autoNotes);
+    } else {
+      // Clear automatic notes if no damage points
+      setNotes('');
+    }
+  };
+
   const createConditionReport = useCreateConditionReport();
   const updateConditionReport = useUpdateConditionReport();
   const createDocument = useCreateContractDocument();
@@ -334,7 +398,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
             {/* Vehicle Damage Diagram */}
                     <VehicleConditionDiagram 
                       damagePoints={damagePoints} 
-                      onDamagePointsChange={setDamagePoints}
+                      onDamagePointsChange={handleDamagePointsChange}
                       onExport={contractId ? async (imageBlob) => {
                         // This will be called when the report is saved
                         // The export will happen automatically
@@ -343,14 +407,32 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
 
             {/* General Notes */}
             <div>
-              <Label htmlFor="notes">ملاحظات عامة</Label>
+              <Label htmlFor="notes" className="flex items-center gap-2">
+                ملاحظات عامة
+                {damagePoints.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    🤖 تم إنشاؤها تلقائياً من كروكي المركبة
+                  </Badge>
+                )}
+              </Label>
               <Textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="أضف أي ملاحظات إضافية حول حالة المركبة..."
-                rows={4}
+                placeholder={
+                  damagePoints.length > 0 
+                    ? "تم إنشاء الملاحظات تلقائياً من الأضرار المحددة على الكروكي. يمكنك تعديلها أو إضافة المزيد..."
+                    : "أضف أي ملاحظات إضافية حول حالة المركبة..."
+                }
+                rows={Math.max(4, Math.min(8, Math.ceil(notes.length / 60)))}
+                className={damagePoints.length > 0 ? "border-blue-200 bg-blue-50/30" : ""}
               />
+              {damagePoints.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  تم توليد هذه الملاحظات تلقائياً بناءً على الأضرار المحددة في كروكي المركبة
+                </p>
+              )}
             </div>
 
             {/* Summary */}

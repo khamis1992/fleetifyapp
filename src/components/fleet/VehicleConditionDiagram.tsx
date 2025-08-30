@@ -349,6 +349,82 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
 }) => {
   const [severity, setSeverity] = useState<'minor' | 'moderate' | 'severe'>(point?.severity || 'minor');
   const [description, setDescription] = useState(point?.description || '');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Smart damage suggestions based on location on the vehicle
+  const getDamageSuggestions = () => {
+    if (!point) return [];
+    
+    const x = point.x;
+    const y = point.y;
+    
+    let suggestions: string[] = [];
+    
+    // Front area (x: 0-30%, y: 20-80%)
+    if (x >= 0 && x <= 30 && y >= 20 && y <= 80) {
+      suggestions = [
+        'خدش في المصد الأمامي',
+        'كسر في الضوء الأمامي',
+        'انبعاج في غطاء المحرك',
+        'خدش في الشبك الأمامي',
+        'تلف في رقم اللوحة الأمامية',
+        'تشقق في الزجاج الأمامي'
+      ];
+    }
+    // Rear area (x: 70-100%, y: 20-80%)
+    else if (x >= 70 && x <= 100 && y >= 20 && y <= 80) {
+      suggestions = [
+        'خدش في المصد الخلفي',
+        'كسر في الضوء الخلفي',
+        'انبعاج في صندوق الأمتعة',
+        'تلف في رقم اللوحة الخلفية',
+        'خدش في الباب الخلفي',
+        'تشقق في الزجاج الخلفي'
+      ];
+    }
+    // Left side (x: 30-70%, y: 0-40%)
+    else if (x >= 30 && x <= 70 && y >= 0 && y <= 40) {
+      suggestions = [
+        'خدش في الجانب الأيسر',
+        'انبعاج في باب السائق',
+        'كسر في مرآة الجانب الأيسر',
+        'خدش في النافذة الجانبية',
+        'تلف في مقبض الباب الأيسر',
+        'انبعاج في الرفرف الأيسر'
+      ];
+    }
+    // Right side (x: 30-70%, y: 60-100%)
+    else if (x >= 30 && x <= 70 && y >= 60 && y <= 100) {
+      suggestions = [
+        'خدش في الجانب الأيمن',
+        'انبعاج في باب الراكب',
+        'كسر في مرآة الجانب الأيمن',
+        'خدش في النافذة الجانبية',
+        'تلف في مقبض الباب الأيمن',
+        'انبعاج في الرفرف الأيمن'
+      ];
+    }
+    // Center area (roof, hood)
+    else {
+      suggestions = [
+        'خدش في السقف',
+        'انبعاج في السقف',
+        'تلف في فتحة السقف',
+        'خدش في غطاء المحرك',
+        'انبعاج في غطاء المحرك',
+        'صدأ في الجسم'
+      ];
+    }
+    
+    return suggestions;
+  };
+
+  const suggestions = getDamageSuggestions();
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setDescription(suggestion);
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,14 +455,52 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">وصف الضرر</label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">وصف الضرر</label>
+          {suggestions.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSuggestions(!showSuggestions)}
+              className="text-xs"
+            >
+              🤖 اقتراحات ذكية
+            </Button>
+          )}
+        </div>
+        
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="اكتب وصفاً مفصلاً للضرر..."
+          placeholder="اكتب وصفاً مفصلاً للضرر أو اختر من الاقتراحات الذكية..."
           rows={3}
           required
         />
+        
+        {/* Smart suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="border rounded-lg p-3 bg-gray-50 space-y-2">
+            <p className="text-xs text-gray-600 font-medium mb-2">
+              💡 اقتراحات بناءً على موقع الضرر:
+            </p>
+            <div className="grid grid-cols-1 gap-1">
+              {suggestions.map((suggestion, index) => (
+                <Button
+                  key={index}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-auto py-2 px-3 text-xs hover:bg-blue-50"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  <span className="text-blue-600 mr-2">•</span>
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 pt-4">

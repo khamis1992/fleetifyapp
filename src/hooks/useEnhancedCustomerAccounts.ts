@@ -188,8 +188,8 @@ export const useAutoCreateCustomerAccounts = () => {
   return useMutation({
     mutationFn: async ({ customerId, companyId }: { customerId: string; companyId: string }) => {
       const { data, error } = await supabase.rpc('auto_create_customer_accounts', {
-        customer_id_param: customerId,
         company_id_param: companyId,
+        customer_id_param: customerId,
       });
 
       if (error) throw error;

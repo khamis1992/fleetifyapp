@@ -16,7 +16,7 @@ import { User, Settings, LogOut, Bell, BellRing, ArrowLeft, Eye, Building2 } fro
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
-import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
+import { useUnifiedNotificationCount } from '@/hooks/useUnifiedNotificationCount';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const CompanyBrowserLayout: React.FC = () => {
@@ -24,7 +24,7 @@ export const CompanyBrowserLayout: React.FC = () => {
   const { browsedCompany, exitBrowseMode, isBrowsingMode } = useCompanyContext();
   const navigate = useNavigate();
   const [alertsOpen, setAlertsOpen] = useState(false);
-  const { totalAlerts, criticalAlerts } = useRealTimeAlerts();
+  const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();
 
   // Debug logging for browser layout
   console.log('🖥️ [COMPANY_BROWSER_LAYOUT] Rendering with state:', {

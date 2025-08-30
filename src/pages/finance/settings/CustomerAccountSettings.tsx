@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateAccountsForExistingCustomers } from '@/components/customers/CreateAccountsForExistingCustomers';
 import { FixCustomerAccounts } from '@/components/customers/FixCustomerAccounts';
+import { FixCustomerAccountsUtility } from '@/components/customers/FixCustomerAccountsUtility';
 import { Settings } from 'lucide-react';
 
 export const CustomerAccountSettings: React.FC = () => {
@@ -32,6 +33,8 @@ export const CustomerAccountSettings: React.FC = () => {
         </CardContent>
       </Card>
 
+      <FixCustomerAccountsUtility />
+      
       <CreateAccountsForExistingCustomers />
       
       <FixCustomerAccounts />

@@ -4,6 +4,8 @@ import { ContractCreationState, ContractCreationStep } from '@/hooks/useContract
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { ContractCreationErrorHandler } from './ContractCreationErrorHandler'
+import { useNavigate } from 'react-router-dom'
 
 interface ContractCreationProgressProps {
   creationState: ContractCreationState
@@ -16,11 +18,21 @@ export const ContractCreationProgress = ({
   onRetry, 
   onClose 
 }: ContractCreationProgressProps) => {
+  const navigate = useNavigate()
   const { steps, isProcessing, canRetry } = creationState
   
   const completedSteps = steps.filter(step => step.status === 'completed').length
   const failedSteps = steps.filter(step => step.status === 'failed').length
   const progress = (completedSteps / steps.length) * 100
+  
+  // Get the first error from failed steps for detailed error handling
+  const firstError = steps.find(step => step.status === 'failed')?.error
+  const errorObject = firstError ? { message: firstError } : null
+  
+  const handleNavigateToAccounts = () => {
+    navigate('/finance/account-mappings')
+    onClose?.()
+  }
   
   const getStepIcon = (step: ContractCreationStep) => {
     switch (step.status) {
@@ -131,7 +143,19 @@ export const ContractCreationProgress = ({
           )}
         </div>
         
-        {hasFailed && !isProcessing && (
+        {/* Enhanced Error Handling */}
+        {hasFailed && !isProcessing && errorObject && (
+          <div className="mt-4">
+            <ContractCreationErrorHandler 
+              error={errorObject}
+              onRetry={canRetry ? onRetry : undefined}
+              onNavigateToAccounts={handleNavigateToAccounts}
+              isRetrying={isProcessing}
+            />
+          </div>
+        )}
+        
+        {hasFailed && !isProcessing && !errorObject && (
           <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
             <p className="text-sm text-destructive font-medium mb-2">
               نصائح لحل المشكلة:

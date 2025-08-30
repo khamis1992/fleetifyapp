@@ -138,6 +138,10 @@ export const useRealTimeAlerts = () => {
             variant: newAlert.alert_type === 'budget_exceeded' ? 'destructive' : 'default',
           });
           queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+          // Also invalidate other notification-related queries for sync
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+          queryClient.invalidateQueries({ queryKey: getQueryKey(['budget-alerts']) });
         }
       )
       .on(
@@ -157,6 +161,10 @@ export const useRealTimeAlerts = () => {
             variant: newAlert.priority === 'high' ? 'destructive' : 'default',
           });
           queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+          // Also invalidate other notification-related queries for sync
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+          queryClient.invalidateQueries({ queryKey: getQueryKey(['vehicle-alerts']) });
         }
       )
       .on(
@@ -176,6 +184,10 @@ export const useRealTimeAlerts = () => {
             variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
           });
           queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+          // Also invalidate other notification-related queries for sync
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+          queryClient.invalidateQueries({ queryKey: getQueryKey(['user-notifications']) });
         }
       )
       .subscribe();
@@ -216,13 +228,14 @@ export const useRealTimeAlerts = () => {
           .eq('id', alertId);
       }
       
-      // Refresh alerts
+      // Refresh alerts - invalidate all related query keys for synchronization
       queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
-      
-      toast({
-        title: "تم تأكيد التنبيه",
-        description: "تم تأكيد التنبيه بنجاح"
-      });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['notifications']) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['budget-alerts']) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['vehicle-alerts']) });
     } catch (error) {
       console.error('Error dismissing alert:', error);
       toast({
@@ -257,8 +270,14 @@ export const useRealTimeAlerts = () => {
         .update({ is_read: true, read_at: new Date().toISOString() })
         .eq('is_read', false);
 
-      // Refresh alerts
+      // Refresh alerts - invalidate all related query keys for synchronization
       queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['notifications']) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['budget-alerts']) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['vehicle-alerts']) });
       
       toast({
         title: "تم تأكيد جميع التنبيهات",

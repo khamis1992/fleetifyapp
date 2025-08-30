@@ -17,7 +17,7 @@ import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
-import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
+import { useUnifiedNotificationCount } from '@/hooks/useUnifiedNotificationCount';
 import { motion, AnimatePresence } from 'framer-motion';
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 
@@ -26,7 +26,7 @@ export const DashboardLayout: React.FC = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [alertsOpen, setAlertsOpen] = useState(false);
-  const { totalAlerts, criticalAlerts } = useRealTimeAlerts();
+  const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();
 
   const handleSignOut = async () => {
     try {

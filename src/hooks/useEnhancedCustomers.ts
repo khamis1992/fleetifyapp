@@ -458,8 +458,8 @@ export const useCreateCustomer = () => {
             console.log('🔄 [useCreateCustomer] Auto-creating customer accounts...');
             
             const { data: accountsCreated, error: autoCreateError } = await supabase.rpc('auto_create_customer_accounts', {
-              customer_id_param: insertData.id,
               company_id_param: targetCompanyId,
+              customer_id_param: insertData.id,
             });
 
             if (autoCreateError) {

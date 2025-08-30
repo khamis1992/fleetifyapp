@@ -62,6 +62,76 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
     cost_estimate: undefined
   });
 
+  // Smart notes generation based on damage points
+  const generateAutomaticNotes = (damages: DamagePoint[], manualDamages: Damage[]) => {
+    const allDamages = [...damages, ...manualDamages.map(d => ({ severity: d.severity, description: d.description }))]
+    
+    if (allDamages.length === 0) {
+      return '';
+    }
+
+    const damagesByType = allDamages.reduce((acc, damage) => {
+      const severity = damage.severity === 'major' ? 'severe' : damage.severity;
+      if (!acc[severity]) {
+        acc[severity] = [];
+      }
+      acc[severity].push(damage.description);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    let automaticNotes = '🚗 تقرير إرجاع المركبة - الأضرار المسجلة:\n\n';
+
+    if (damagesByType.severe?.length > 0) {
+      automaticNotes += '🔴 أضرار خطيرة:\n';
+      damagesByType.severe.forEach((desc, index) => {
+        automaticNotes += `${index + 1}. ${desc}\n`;
+      });
+      automaticNotes += '\n';
+    }
+
+    if (damagesByType.moderate?.length > 0) {
+      automaticNotes += '🟡 أضرار متوسطة:\n';
+      damagesByType.moderate.forEach((desc, index) => {
+        automaticNotes += `${index + 1}. ${desc}\n`;
+      });
+      automaticNotes += '\n';
+    }
+
+    if (damagesByType.minor?.length > 0) {
+      automaticNotes += '🟢 أضرار بسيطة:\n';
+      damagesByType.minor.forEach((desc, index) => {
+        automaticNotes += `${index + 1}. ${desc}\n`;
+      });
+      automaticNotes += '\n';
+    }
+
+    automaticNotes += `📊 إجمالي الأضرار: ${allDamages.length}\n`;
+    automaticNotes += `📅 تاريخ الإرجاع: ${new Date().toLocaleDateString('ar-SA')}\n`;
+    automaticNotes += '\n⚠️ يُرجى مراجعة هذه الأضرار وتقدير التكلفة قبل إغلاق العقد.';
+
+    return automaticNotes;
+  };
+
+  // Update notes when damage points or manual damages change
+  const updateAutomaticNotes = () => {
+    const autoNotes = generateAutomaticNotes(damagePoints, damages);
+    setFormData(prev => ({ ...prev, notes: autoNotes }));
+  };
+
+  // Handle damage points change and auto-update notes
+  const handleDamagePointsChange = (newDamagePoints: DamagePoint[]) => {
+    setDamagePoints(newDamagePoints);
+    // Update automatic notes after damage points change
+    setTimeout(() => {
+      const autoNotes = generateAutomaticNotes(newDamagePoints, damages);
+      if (newDamagePoints.length > 0 || damages.length > 0) {
+        setFormData(prev => ({ ...prev, notes: autoNotes }));
+      } else {
+        setFormData(prev => ({ ...prev, notes: '' }));
+      }
+    }, 100);
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -86,18 +156,34 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 
   const addDamage = () => {
     if (newDamage.type && newDamage.description) {
-      setDamages([...damages, newDamage]);
+      const updatedDamages = [...damages, newDamage];
+      setDamages(updatedDamages);
       setNewDamage({
         type: '',
         description: '',
         severity: 'minor',
         cost_estimate: undefined
       });
+      // Update automatic notes after adding damage
+      setTimeout(() => {
+        const autoNotes = generateAutomaticNotes(damagePoints, updatedDamages);
+        setFormData(prev => ({ ...prev, notes: autoNotes }));
+      }, 100);
     }
   };
 
   const removeDamage = (index: number) => {
-    setDamages(damages.filter((_, i) => i !== index));
+    const updatedDamages = damages.filter((_, i) => i !== index);
+    setDamages(updatedDamages);
+    // Update automatic notes after removing damage
+    setTimeout(() => {
+      const autoNotes = generateAutomaticNotes(damagePoints, updatedDamages);
+      if (damagePoints.length > 0 || updatedDamages.length > 0) {
+        setFormData(prev => ({ ...prev, notes: autoNotes }));
+      } else {
+        setFormData(prev => ({ ...prev, notes: '' }));
+      }
+    }, 100);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -223,7 +309,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             <h4 className="font-medium mb-4">مجسم أضرار المركبة</h4>
           <VehicleConditionDiagram
             damagePoints={damagePoints}
-            onDamagePointsChange={setDamagePoints}
+            onDamagePointsChange={handleDamagePointsChange}
             readOnly={false}
             conditionReportId={contract.id} // Pass contract ID as placeholder for condition report
           />
@@ -337,15 +423,33 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       {/* Additional Notes */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">ملاحظات إضافية</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            ملاحظات إضافية
+            {(damagePoints.length > 0 || damages.length > 0) && (
+              <Badge variant="secondary" className="text-xs">
+                🤖 تم إنشاؤها تلقائياً من الأضرار
+              </Badge>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
-            placeholder="أي ملاحظات إضافية حول حالة المركبة أو عملية الإرجاع..."
+            placeholder={
+              (damagePoints.length > 0 || damages.length > 0)
+                ? "تم إنشاء الملاحظات تلقائياً من الأضرار المحددة. يمكنك تعديلها أو إضافة المزيد..."
+                : "أي ملاحظات إضافية حول حالة المركبة أو عملية الإرجاع..."
+            }
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={4}
+            rows={Math.max(4, Math.min(8, Math.ceil(formData.notes.length / 60)))}
+            className={(damagePoints.length > 0 || damages.length > 0) ? "border-blue-200 bg-blue-50/30" : ""}
           />
+          {(damagePoints.length > 0 || damages.length > 0) && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              تم توليد هذه الملاحظات تلقائياً بناءً على الأضرار المسجلة في كروكي المركبة والأضرار اليدوية
+            </p>
+          )}
         </CardContent>
       </Card>
 

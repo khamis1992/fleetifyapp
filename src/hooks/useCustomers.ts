@@ -181,8 +181,26 @@ export const useCreateCustomer = () => {
     onSuccess: async (data) => {
       console.log('🎉 Customer creation successful:', data);
       
-      // استخدام refetchQueries للحصول على تحديث فوري
-      await queryClient.refetchQueries({ 
+      // Update cache immediately with optimistic update
+      const companyId = data.company_id;
+      
+      // Update all customers queries for this company
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return [data];
+          
+          // Check if customer already exists to avoid duplicates
+          const exists = oldData.some((customer: any) => customer.id === data.id);
+          if (exists) return oldData;
+          
+          // Add new customer to the beginning of the list
+          return [data, ...oldData];
+        }
+      );
+      
+      // Also trigger refetch as a backup (but don't wait for it)
+      queryClient.refetchQueries({ 
         queryKey: ['customers'],
         type: 'active' 
       });
@@ -256,11 +274,25 @@ export const useUpdateCustomer = () => {
     onSuccess: async (data) => {
       console.log('🎉 Customer update successful:', data);
       
-      // استخدام refetchQueries للحصول على تحديث فوري
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['customer', data.id], type: 'active' })
-      ]);
+      // Update cache immediately with optimistic update
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return [data];
+          
+          // Update the existing customer in the list
+          return oldData.map((customer: any) => 
+            customer.id === data.id ? { ...customer, ...data } : customer
+          );
+        }
+      );
+      
+      // Update individual customer cache
+      queryClient.setQueryData(['customer', data.id], data);
+      
+      // Also trigger refetch as a backup (but don't wait for it)
+      queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' });
+      queryClient.refetchQueries({ queryKey: ['customer', data.id], type: 'active' });
       
       const customerName = data.customer_type === 'individual' 
         ? `${data.first_name} ${data.last_name}`
@@ -301,8 +333,27 @@ export const useToggleCustomerBlacklist = () => {
       if (error) throw error;
     },
     onSuccess: async (_, variables) => {
-      // استخدام refetchQueries للحصول على تحديث فوري
-      await queryClient.refetchQueries({ 
+      // Update cache immediately with optimistic update
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          // Update the existing customer in the list
+          return oldData.map((customer: any) => 
+            customer.id === variables.customerId 
+              ? { 
+                  ...customer, 
+                  is_blacklisted: variables.isBlacklisted,
+                  blacklist_reason: variables.isBlacklisted ? variables.reason : null
+                } 
+              : customer
+          );
+        }
+      );
+      
+      // Also trigger refetch as a backup (but don't wait for it)
+      queryClient.refetchQueries({ 
         queryKey: ['customers'],
         type: 'active' 
       });
