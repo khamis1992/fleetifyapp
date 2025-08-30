@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { useSignatureSettings } from '@/hooks/useSignatureSettings'
+import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
 
 interface ContractWizardData {
   // Basic Info
@@ -72,6 +73,10 @@ interface ContractWizardContextType {
   fillTestData: () => void
   validateCurrentStep: () => Promise<boolean>
   isValidating: boolean
+  hasDuplicates: boolean
+  setHasDuplicates: (hasDuplicates: boolean) => void
+  forceCreate: boolean
+  setForceCreate: (forceCreate: boolean) => void
 }
 
 const ContractWizardContext = createContext<ContractWizardContextType | null>(null)
@@ -115,6 +120,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   const [currentStep, setCurrentStep] = useState(0)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
+  const [hasDuplicates, setHasDuplicates] = useState(false)
+  const [forceCreate, setForceCreate] = useState(false)
   const totalSteps = 6 // Basic Info, Dates, Customer/Vehicle, Financial, Late Fines, Review
 
   const template = useTemplateByType(data.contract_type || '')
@@ -198,7 +205,13 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     }))
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
+    // Validate current step before proceeding
+    const isValid = await validateCurrentStep()
+    if (!isValid) {
+      return
+    }
+    
     if (currentStep < totalSteps - 1) {
       setCurrentStep(prev => prev + 1)
     }
@@ -217,29 +230,41 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   }
 
   const saveDraft = async () => {
-    if (!user?.id) return
+    if (!user) return
 
+    setIsAutoSaving(true)
     try {
-      setIsAutoSaving(true)
-      
-      // Store in localStorage for now (will implement DB storage later)
       const draftData = {
-        data: data,
-        current_step: currentStep,
-        last_saved_at: new Date().toISOString(),
-        user_id: user.id
+        ...data,
+        user_id: user.id,
+        last_saved_at: new Date().toISOString()
       }
 
-      localStorage.setItem(`contract_draft_${user.id}`, JSON.stringify(draftData))
-      
-      updateData({ 
-        last_saved_at: new Date().toISOString()
-      })
+      if (data.draft_id) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('contract_drafts')
+          .update(draftData)
+          .eq('id', data.draft_id)
+          .eq('user_id', user.id)
 
-      console.log('تم حفظ المسودة بنجاح في localStorage')
+        if (error) throw error
+      } else {
+        // Create new draft
+        const { data: newDraft, error } = await supabase
+          .from('contract_drafts')
+          .insert([draftData])
+          .select()
+          .single()
+
+        if (error) throw error
+        updateData({ draft_id: newDraft.id })
+      }
+
+      toast.success('تم حفظ المسودة تلقائياً')
     } catch (error) {
-      console.error('خطأ في حفظ المسودة:', error)
-      toast.error('خطأ في حفظ المسودة')
+      console.error('Error saving draft:', error)
+      toast.error('فشل في حفظ المسودة')
     } finally {
       setIsAutoSaving(false)
     }
@@ -247,32 +272,51 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   const loadDraft = async (draftId: string) => {
     try {
-      // Load from localStorage for now
-      const savedDraft = localStorage.getItem(`contract_draft_${user?.id}`)
-      if (!savedDraft) {
-        toast.error('لم يتم العثور على مسودة')
-        return
-      }
+      const { data: draft, error } = await supabase
+        .from('contract_drafts')
+        .select('*')
+        .eq('id', draftId)
+        .single()
 
-      const draft = JSON.parse(savedDraft)
-      setData(draft.data)
-      setCurrentStep(draft.current_step || 0)
-      toast.success('تم تحميل المسودة بنجاح')
+      if (error) throw error
+
+      if (draft) {
+        // Convert string dates back to Date objects
+        const processedDraft = {
+          ...draft,
+          contract_date: draft.contract_date,
+          start_date: draft.start_date,
+          end_date: draft.end_date,
+          is_draft: true
+        }
+
+        setData(processedDraft as ContractWizardData)
+        setCurrentStep(0)
+        toast.success('تم تحميل المسودة بنجاح')
+      }
     } catch (error) {
-      console.error('خطأ في تحميل المسودة:', error)
-      toast.error('خطأ في تحميل المسودة')
+      console.error('Error loading draft:', error)
+      toast.error('فشل في تحميل المسودة')
     }
   }
 
   const deleteDraft = async () => {
     try {
-      if (user?.id) {
-        localStorage.removeItem(`contract_draft_${user.id}`)
-        updateData({ draft_id: undefined })
+      if (data.draft_id) {
+        const { error } = await supabase
+          .from('contract_drafts')
+          .delete()
+          .eq('id', data.draft_id)
+
+        if (error) throw error
+
+        // Reset to default data
+        setData(defaultData)
+        setCurrentStep(0)
         toast.success('تم حذف المسودة')
       }
     } catch (error) {
-      console.error('خطأ في حذف المسودة:', error)
+      console.error('Error deleting draft:', error)
       toast.error('خطأ في حذف المسودة')
     }
   }
@@ -302,15 +346,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
             toast.error('يرجى تحديد تاريخ النهاية')
             return false
           }
-          // السماح بقيمة 0 في مدة الإيجار
-          if (data.rental_days < 0) {
-            toast.error('مدة الإيجار لا يمكن أن تكون سالبة')
-            return false
-          }
-          
-          // التحقق من أن تاريخ النهاية بعد تاريخ البداية
-          if (new Date(data.end_date) <= new Date(data.start_date)) {
-            toast.error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
+          if (data.rental_days <= 0) {
+            toast.error('عدد أيام الإيجار يجب أن يكون أكبر من صفر')
             return false
           }
           break
@@ -321,54 +358,10 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
             return false
           }
           
-          // التحقق من صحة العميل في الوقت الفعلي
-          try {
-            const { data: customerCheck, error } = await supabase
-              .rpc('check_customer_eligibility_realtime', {
-                customer_id_param: data.customer_id
-              })
-            
-            if (error) {
-              console.error('خطأ في التحقق من العميل:', error)
-              toast.error('خطأ في التحقق من صحة العميل')
-              return false
-            }
-            
-            const checkResult = customerCheck as any
-            if (!checkResult?.eligible) {
-              toast.error(`العميل غير مؤهل: ${checkResult?.reason || 'سبب غير معروف'}`)
-              return false
-            }
-          } catch (error) {
-            console.error('خطأ في التحقق من العميل:', error)
-            toast.warning('لا يمكن التحقق من صحة العميل، سيتم التحقق عند الإرسال')
-          }
-          
-          // التحقق من توفر المركبة إذا تم اختيارها
-          if (data.vehicle_id && data.vehicle_id !== 'none') {
-            try {
-              const { data: vehicleCheck, error } = await supabase
-                .rpc('check_vehicle_availability_realtime', {
-                  vehicle_id_param: data.vehicle_id,
-                  start_date_param: data.start_date,
-                  end_date_param: data.end_date
-                })
-              
-              if (error) {
-                console.error('خطأ في التحقق من المركبة:', error)
-                toast.error('خطأ في التحقق من توفر المركبة')
-                return false
-              }
-              
-              const checkResult = vehicleCheck as any
-              if (!checkResult?.available) {
-                toast.error(`المركبة غير متوفرة: ${checkResult?.reason || 'سبب غير معروف'}`)
-                return false
-              }
-            } catch (error) {
-              console.error('خطأ في التحقق من المركبة:', error)
-              toast.warning('لا يمكن التحقق من توفر المركبة، سيتم التحقق عند الإرسال')
-            }
+          // التحقق من تكرار البيانات قبل المتابعة
+          if (hasDuplicates && !forceCreate) {
+            toast.error('يوجد عقود مشابهة في النظام. يرجى مراجعة التحذيرات أعلاه والتحقق من البيانات المكررة قبل المتابعة.')
+            return false
           }
           break
           
@@ -420,6 +413,12 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
               return false
             }
           }
+          
+          // التحقق النهائي من تكرار البيانات
+          if (hasDuplicates && !forceCreate) {
+            toast.error('يوجد عقود مشابهة في النظام. يرجى مراجعة التحذيرات أعلاه والتحقق من البيانات المكررة قبل المتابعة. انقر على "عرض التفاصيل" لرؤية العقود المكررة.')
+            return false
+          }
           break
       }
       
@@ -440,6 +439,12 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 1: // Dates
         return !!(data.start_date && data.end_date && data.rental_days >= 0)
       case 2: // Customer/Vehicle
+        // Check for duplicates before allowing to proceed
+        if (hasDuplicates && !forceCreate) {
+          toast.error('يوجد عقود مشابهة في النظام. يرجى مراجعة التحذيرات أعلاه والتحقق من البيانات المكررة قبل المتابعة.')
+          return false
+        }
+        
         const hasCustomer = !!data.customer_id
         // If a vehicle is selected and it's not "none", require vehicle condition report
         if (data.vehicle_id && data.vehicle_id !== 'none') {
@@ -453,6 +458,11 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 4: // Late Fines Settings (optional)
         return true // Always allow proceeding from this step
       case 5: // Review
+        // Final check for duplicates
+        if (hasDuplicates && !forceCreate) {
+          toast.error('يوجد عقود مشابهة في النظام. يرجى مراجعة التحذيرات أعلاه والتحقق من البيانات المكررة قبل المتابعة.')
+          return false
+        }
         return !!(data.customer_id && data.contract_amount > 0 && data.start_date && data.end_date)
       default:
         return true
@@ -568,91 +578,40 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       
       console.log('📝 [CONTRACT_WIZARD] البيانات النهائية للإرسال:', finalData)
       
-      // Additional pre-submission validation
-      if (!finalData.customer_id) {
-        toast.error('معرف العميل مفقود - يرجى اختيار العميل مرة أخرى')
-        setCurrentStep(2)
-        return
-      }
-      
-      if (!finalData.contract_amount || finalData.contract_amount <= 0) {
-        toast.error('مبلغ العقد غير صحيح - يرجى تحديد مبلغ أكبر من صفر')
-        setCurrentStep(3)
-        return
-      }
-      
-      // انتظار اكتمال عملية قاعدة البيانات
+      // Wait for the actual database operation to complete
       const result = await onSubmit(finalData)
       
-      console.log('✅ [CONTRACT_WIZARD] تم إرسال العقد بنجاح:', result)
+      console.log('🎉 [CONTRACT_WIZARD] Contract submission completed! Result:', result)
       
-      // المتابعة مع التنظيف فقط إذا كان الإرسال ناجحاً
-      if (data.draft_id) {
-        await deleteDraft()
-      }
-      
-      // إعادة تعيين النموذج
+      // Reset form after successful submission
       setData(defaultData)
       setCurrentStep(0)
+      setHasDuplicates(false)
+      setForceCreate(false)
       
-      // إظهار رسالة النجاح فقط بعد نجاح عملية قاعدة البيانات
-      console.log('🎉 [CONTRACT_WIZARD] تم إنشاء العقد بنجاح')
+      return result
     } catch (error: any) {
-      console.error('❌ [CONTRACT_WIZARD] خطأ في إرسال العقد:', error)
-      console.error('❌ [CONTRACT_WIZARD] تفاصيل الخطأ:', {
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code
+      console.error('💥 [CONTRACT_WIZARD] Error submitting contract:', {
+        error,
+        message: error.message,
+        stack: error.stack,
+        originalData: data
       })
       
-      // تحسين رسائل الخطأ للمستخدم
-      let errorMessage = 'خطأ في إنشاء العقد'
-      let navigateToStep: number | null = null
-      
-      if (error?.message) {
-        if (error.message.includes('العميل مطلوب') || error.message.includes('customer')) {
-          errorMessage = 'يرجى اختيار العميل'
-          navigateToStep = 2
-        } else if (error.message.includes('مبلغ العقد مطلوب') || error.message.includes('amount')) {
-          errorMessage = 'يرجى إدخال مبلغ العقد'
-          navigateToStep = 3
-        } else if (error.message.includes('تواريخ العقد مطلوبة') || error.message.includes('date')) {
-          errorMessage = 'يرجى تحديد تواريخ العقد'
-          navigateToStep = 1
-        } else if (error.message.includes('نوع العقد مطلوب') || error.message.includes('contract_type')) {
-          errorMessage = 'يرجى اختيار نوع العقد'
-          navigateToStep = 0
-        } else if (error.message.includes('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')) {
-          errorMessage = 'تواريخ العقد غير صحيحة'
-          navigateToStep = 1
-        } else if (error.message.includes('المركبة غير متاحة') || error.message.includes('vehicle')) {
-          errorMessage = 'المركبة المحددة غير متاحة في التواريخ المطلوبة'
-          navigateToStep = 2
-        } else if (error.message.includes('محظور') || error.message.includes('blacklisted')) {
-          errorMessage = 'العميل المحدد محظور من النظام'
-          navigateToStep = 2
-        } else if (error.message.includes('condition_report') || error.message.includes('تقرير حالة')) {
-          errorMessage = 'خطأ في تقرير حالة المركبة - يرجى إعادة إنشاؤه'
-          navigateToStep = 2
-        } else {
-          errorMessage = error.message
-        }
+      // Display user-friendly error messages
+      if (error.message && error.message.includes('unique constraint')) {
+        toast.error('رقم العقد موجود مسبقاً، يرجى استخدام رقم مختلف')
+      } else if (error.message && error.message.includes('foreign key')) {
+        toast.error('يرجى التأكد من صحة بيانات العميل والمركبة')
+      } else {
+        toast.error(error.message || 'حدث خطأ أثناء إنشاء العقد')
       }
       
-      // Navigate to relevant step if specified
-      if (navigateToStep !== null) {
-        setCurrentStep(navigateToStep)
-      }
-      
-      toast.error(errorMessage, {
-        description: 'يرجى مراجعة البيانات والمحاولة مرة أخرى',
-        duration: 8000
-      })
+      throw error
     }
   }
 
-  const value: ContractWizardContextType = {
+  const contextValue: ContractWizardContextType = {
     data,
     currentStep,
     totalSteps,
@@ -668,11 +627,15 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     submitContract,
     fillTestData,
     validateCurrentStep,
-    isValidating
+    isValidating,
+    hasDuplicates,
+    setHasDuplicates,
+    forceCreate,
+    setForceCreate
   }
 
   return (
-    <ContractWizardContext.Provider value={value}>
+    <ContractWizardContext.Provider value={contextValue}>
       {children}
     </ContractWizardContext.Provider>
   )
@@ -685,4 +648,3 @@ export const useContractWizard = () => {
   }
   return context
 }
-

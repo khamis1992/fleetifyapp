@@ -39,6 +39,7 @@ import { getRateTypeLabel } from '@/hooks/useContractCalculations'
 import { CustomerSelector } from './CustomerSelector'
 import { useCustomer } from '@/hooks/useCustomers'
 import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelector'
+import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
 
 // Account Display Component
 const AccountDisplay: React.FC<{ data: any }> = ({ data }) => {
@@ -249,18 +250,17 @@ export const BasicInfoStep: React.FC = () => {
 // Step 2: Customer and Vehicle Selection
 export const CustomerVehicleStep: React.FC = () => {
   const { user } = useAuth()
-  const { data, updateData } = useContractWizard()
+  const { data, updateData, setHasDuplicates, setForceCreate } = useContractWizard()
   const { validation, isValidating, debouncedValidation } = useContractValidation()
   
   // Trigger validation when customer or vehicle changes
   React.useEffect(() => {
-    // Only validate if we have meaningful data to validate and contract amount is set
-    if ((data.customer_id || data.vehicle_id) && 
-        data.contract_amount && 
-        data.contract_amount > 0 && 
+    // Validate if we have meaningful data to validate (customer or vehicle)
+    if ((data.customer_id || data.vehicle_id || data.contract_number) && 
         data.start_date && 
         data.end_date) {
       debouncedValidation({
+        contract_number: data.contract_number,
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id,
         start_date: data.start_date,
@@ -269,8 +269,22 @@ export const CustomerVehicleStep: React.FC = () => {
         contract_type: data.contract_type
       })
     }
-  }, [data.customer_id, data.vehicle_id, data.start_date, data.end_date, data.contract_amount, debouncedValidation])
+  }, [data.customer_id, data.vehicle_id, data.contract_number, data.start_date, data.end_date, data.contract_type, debouncedValidation])
 
+  // Add a separate effect for contract number validation
+  React.useEffect(() => {
+    if (data.contract_number) {
+      debouncedValidation({
+        contract_number: data.contract_number,
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        contract_amount: data.contract_amount,
+        contract_type: data.contract_type
+      })
+    }
+  }, [data.contract_number, debouncedValidation])
 
   const companyId = useCurrentCompanyId()
   
@@ -297,97 +311,114 @@ export const CustomerVehicleStep: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter()
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          العميل والمركبة
-        </CardTitle>
-        <CardDescription>
-          اختر العميل والمركبة للعقد
-        </CardDescription>
-        {(data.start_date && data.end_date) ? (
-          <span className="text-green-600 text-sm">
-            ✓ عرض المركبات المتاحة للفترة المحددة ({data.start_date} إلى {data.end_date})
-          </span>
-        ) : (
-          <span className="text-yellow-600 text-sm">
-            💡 حدد التواريخ أولاً لعرض المركبات المتاحة فقط
-          </span>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Customer Selection with Search and Create */}
-          <CustomerSelector
-            value={data.customer_id}
-            onValueChange={(customerId) => updateData({ customer_id: customerId })}
-            placeholder="ابحث عن عميل أو أنشئ جديد..."
-            disabled={false}
-          />
-          
-          <div className="space-y-2">
-            <Label htmlFor="vehicle_id">المركبة</Label>
-            <VehicleSelector
-              vehicles={vehiclesToShow}
-              selectedVehicleId={data.vehicle_id === 'none' ? '' : data.vehicle_id}
-              onSelect={(vehicleId) => {
-                // Handle both vehicle selection and "no vehicle" option
-                const actualVehicleId = vehicleId || 'none';
-                updateData({ 
-                  vehicle_id: actualVehicleId,
-                  vehicle_condition_report_id: undefined 
-                });
-              }}
-              placeholder="ابحث عن المركبة أو اختر (اختياري)"
+    <ContractFormWithDuplicateCheck
+      contractData={{
+        contract_number: data.contract_number,
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date
+      }}
+      onDuplicateDetected={(hasDuplicates) => {
+        setHasDuplicates(hasDuplicates);
+      }}
+      onProceedWithDuplicates={() => {
+        setForceCreate(true);
+        setHasDuplicates(false);
+      }}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            العميل والمركبة
+          </CardTitle>
+          <CardDescription>
+            اختر العميل والمركبة للعقد
+          </CardDescription>
+          {(data.start_date && data.end_date) ? (
+            <span className="text-green-600 text-sm">
+              ✓ عرض المركبات المتاحة للفترة المحددة ({data.start_date} إلى {data.end_date})
+            </span>
+          ) : (
+            <span className="text-yellow-600 text-sm">
+              💡 حدد التواريخ أولاً لعرض المركبات المتاحة فقط
+            </span>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Customer Selection with Search and Create */}
+            <CustomerSelector
+              value={data.customer_id}
+              onValueChange={(customerId) => updateData({ customer_id: customerId })}
+              placeholder="ابحث عن عميل أو أنشئ جديد..."
               disabled={false}
-              isLoading={isLoadingVehicles}
-              error={null}
             />
-            {/* إضافة خيار "بدون مركبة" */}
-            {data.vehicle_id && data.vehicle_id !== 'none' && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => updateData({ 
-                  vehicle_id: 'none',
-                  vehicle_condition_report_id: undefined 
-                })}
-                className="text-muted-foreground"
-              >
-                إلغاء اختيار المركبة
-              </Button>
-            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="vehicle_id">المركبة</Label>
+              <VehicleSelector
+                vehicles={vehiclesToShow}
+                selectedVehicleId={data.vehicle_id === 'none' ? '' : data.vehicle_id}
+                onSelect={(vehicleId) => {
+                  // Handle both vehicle selection and "no vehicle" option
+                  const actualVehicleId = vehicleId || 'none';
+                  updateData({ 
+                    vehicle_id: actualVehicleId,
+                    vehicle_condition_report_id: undefined 
+                  });
+                }}
+                placeholder="ابحث عن المركبة أو اختر (اختياري)"
+                disabled={false}
+                isLoading={isLoadingVehicles}
+                error={null}
+              />
+              {/* إضافة خيار "بدون مركبة" */}
+              {data.vehicle_id && data.vehicle_id !== 'none' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateData({ 
+                    vehicle_id: 'none',
+                    vehicle_condition_report_id: undefined 
+                  })}
+                  className="text-muted-foreground"
+                >
+                  إلغاء اختيار المركبة
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Vehicle Condition Check */}
-        {data.vehicle_id && data.vehicle_id !== 'none' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">فحص حالة المركبة</h3>
-            <InteractiveVehicleInspectionForm 
-              vehicleId={data.vehicle_id}
-              contractId={undefined} // Will be set after contract creation
-              onComplete={(reportId) => {
-                console.log('Vehicle condition report created:', reportId);
-                // Save the condition report ID to enable Next button
-                updateData({ vehicle_condition_report_id: reportId });
-              }}
+          {/* Vehicle Condition Check */}
+          {data.vehicle_id && data.vehicle_id !== 'none' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">فحص حالة المركبة</h3>
+              <InteractiveVehicleInspectionForm 
+                vehicleId={data.vehicle_id}
+                contractId={undefined} // Will be set after contract creation
+                onComplete={(reportId) => {
+                  console.log('Vehicle condition report created:', reportId);
+                  // Save the condition report ID to enable Next button
+                  updateData({ vehicle_condition_report_id: reportId });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Proactive Alert System */}
+          <div className="mt-4">
+            <ProactiveAlertSystem 
+              validation={validation}
+              isValidating={isValidating}
+              showConflictDetails={true}
             />
           </div>
-        )}
-
-        {/* Proactive Alert System */}
-        <div className="mt-4">
-          <ProactiveAlertSystem 
-            validation={validation}
-            isValidating={isValidating}
-            showConflictDetails={true}
-          />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </ContractFormWithDuplicateCheck>
   )
 }
 
@@ -442,7 +473,7 @@ export const DatesStep: React.FC = () => {
           })
         }
       }
-      // للعقود الشهرية والمؤسسية: اجعل الأيام الإضافية 0 بشكل افتراضي
+      // للعقود الشهرية والمؤسسي: اجعل الأيام الإضافية 0 بشكل افتراضي
       else if (isMonthlyContract || isCorporateContract) {
         // إذا لم يتم تحديد أشهر بعد، قم بتعيين شهر واحد كحد أدنى
         if (data.rental_months === 0) {
@@ -1065,7 +1096,7 @@ export const FinancialStep: React.FC = () => {
 // Step 5: Review and Submit
 export const ReviewStep: React.FC = () => {
   const { user } = useAuth()
-  const { data, updateData } = useContractWizard()
+  const { data, updateData, hasDuplicates, setHasDuplicates, setForceCreate } = useContractWizard()
   const { validation, isValidating, validateContract } = useContractValidation()
   const { generateAllSuggestions } = useSmartSuggestions()
   const [suggestions, setSuggestions] = React.useState<any[]>([])
@@ -1135,93 +1166,110 @@ export const ReviewStep: React.FC = () => {
   }, [data.customer_id, data.contract_type, data.start_date, data.end_date, data.contract_amount])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5" />
-          مراجعة وإرسال
-        </CardTitle>
-        <CardDescription>
-          راجع بيانات العقد قبل الإرسال
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Data Validation and Auto-Correction */}
-        <ContractDataValidator 
-          data={data as any}
-          onDataCorrection={(corrections) => {
-            console.log('[REVIEW_STEP] Applying data corrections:', corrections)
-            updateData(corrections)
-          }}
-          onValidate={() => validateContract({
-            customer_id: data.customer_id,
-            vehicle_id: data.vehicle_id,
-            start_date: data.start_date,
-            end_date: data.end_date,
-            contract_amount: data.contract_amount,
-            contract_type: data.contract_type
-          })}
-          isValidating={isValidating}
-        />
+    <ContractFormWithDuplicateCheck
+      contractData={{
+        contract_number: data.contract_number,
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        start_date: data.start_date,
+        end_date: data.end_date
+      }}
+      onDuplicateDetected={(hasDuplicates) => {
+        setHasDuplicates(hasDuplicates);
+      }}
+      onProceedWithDuplicates={() => {
+        setForceCreate(true);
+        setHasDuplicates(false);
+      }}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            مراجعة وإرسال
+          </CardTitle>
+          <CardDescription>
+            راجع بيانات العقد قبل الإرسال
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Data Validation and Auto-Correction */}
+          <ContractDataValidator 
+            data={data as any}
+            onDataCorrection={(corrections) => {
+              console.log('[REVIEW_STEP] Applying data corrections:', corrections)
+              updateData(corrections)
+            }}
+            onValidate={() => validateContract({
+              customer_id: data.customer_id,
+              vehicle_id: data.vehicle_id,
+              start_date: data.start_date,
+              end_date: data.end_date,
+              contract_amount: data.contract_amount,
+              contract_type: data.contract_type
+            })}
+            isValidating={isValidating}
+          />
 
-        {/* Comprehensive Validation Summary */}
-        <ContractValidationSummary 
-          validation={validation}
-          contractData={{
-            ...data,
-            customer_name: customer?.customer_type === 'individual' 
-              ? `${customer.first_name} ${customer.last_name}`
-              : customer?.company_name
-          }}
-          isValidating={isValidating}
-        />
-
-
-        {/* Legacy Validation Status - keeping for backwards compatibility */}
-        {data._validation_status === 'invalid' && data._validation_errors?.length > 0 && (
-          <Alert className="border-destructive bg-destructive/5">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-1">
-                <p className="font-medium">يرجى إصلاح الأخطاء التالية:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  {data._validation_errors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Comprehensive Validation Summary */}
+          <ContractValidationSummary 
+            validation={validation}
+            contractData={{
+              ...data,
+              customer_name: customer?.customer_type === 'individual' 
+                ? `${customer.first_name} ${customer.last_name}`
+                : customer?.company_name
+            }}
+            isValidating={isValidating}
+          />
 
 
-        {/* Approval Information */}
-        {data._requires_approval && (
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <Clock className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-2">
-                <p className="font-medium">
-                  هذا العقد يتطلب موافقة نظراً لقيمته ({formatCurrency(data.contract_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})
-                </p>
-                <div className="text-sm space-y-1">
-                  <p className="font-medium">خطوات الموافقة المطلوبة:</p>
-                  {data._approval_steps?.map((step: any, index: number) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Clock className="h-3 w-3" />
-                      <span>{step.title}</span>
-                    </div>
-                  ))}
+          {/* Legacy Validation Status - keeping for backwards compatibility */}
+          {data._validation_status === 'invalid' && data._validation_errors?.length > 0 && (
+            <Alert className="border-destructive bg-destructive/5">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p className="font-medium">يرجى إصلاح الأخطاء التالية:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {data._validation_errors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+              </AlertDescription>
+            </Alert>
+          )}
 
 
-        {/* Contract Signatures */}
-        <ContractSignatureSection />
-      </CardContent>
-    </Card>
+          {/* Approval Information */}
+          {data._requires_approval && (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <Clock className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-medium">
+                    هذا العقد يتطلب موافقة نظراً لقيمته ({formatCurrency(data.contract_amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })})
+                  </p>
+                  <div className="text-sm space-y-1">
+                    <p className="font-medium">خطوات الموافقة المطلوبة:</p>
+                    {data._approval_steps?.map((step: any, index: number) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Clock className="h-3 w-3" />
+                        <span>{step.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+
+          {/* Contract Signatures */}
+          <ContractSignatureSection />
+        </CardContent>
+      </Card>
+    </ContractFormWithDuplicateCheck>
   )
 }
