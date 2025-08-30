@@ -42,28 +42,47 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
   const companyName = isBrowsingMode && browsedCompany ? browsedCompany.name : 'الشركة الحالية';
 
   // Get contracts count for the target company
-  const { data: contractsInfo, isLoading: isLoadingInfo } = useQuery({
+  const { data: contractsInfo, isLoading: isLoadingInfo, error: contractsError } = useQuery({
     queryKey: ['contracts-count', actualCompanyId],
     queryFn: async () => {
-      if (!actualCompanyId) return null;
+      if (!actualCompanyId) {
+        console.warn('🔍 [BULK_DELETE_CONTRACTS] No company ID provided');
+        return null;
+      }
+      
+      console.log('🔍 [BULK_DELETE_CONTRACTS] Querying contracts for company:', actualCompanyId);
       
       const { data, error } = await supabase
         .from('contracts')
         .select('id, contract_number, customer_id')
         .eq('company_id', actualCompanyId);
       
-      if (error) throw error;
+      console.log('🔍 [BULK_DELETE_CONTRACTS] Query result:', { 
+        data: data?.length || 0, 
+        error: error?.message,
+        actualCompanyId 
+      });
+      
+      if (error) {
+        console.error('🔍 [BULK_DELETE_CONTRACTS] Query error:', error);
+        throw error;
+      }
       
       // Count unique customers
       const uniqueCustomers = new Set(data?.map(c => c.customer_id) || []).size;
       
-      return {
+      const result = {
         total: data?.length || 0,
         uniqueCustomers,
         contracts: data || []
       };
+      
+      console.log('🔍 [BULK_DELETE_CONTRACTS] Final result:', result);
+      return result;
     },
-    enabled: open && !!actualCompanyId
+    enabled: open && !!actualCompanyId,
+    retry: 1,
+    staleTime: 0 // Always fetch fresh data
   });
 
   const requiredConfirmationText = 'حذف جميع العقود';
@@ -128,17 +147,36 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
                       <Clock className="h-4 w-4 animate-spin" />
                       <span className="text-sm">جاري تحميل معلومات العقود...</span>
                     </div>
+                   ) : contractsError ? (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        خطأ في تحميل العقود: {contractsError.message}
+                      </AlertDescription>
+                    </Alert>
                   ) : contractsInfo ? (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">عدد العقود:</span>
-                        <Badge variant="destructive">{contractsInfo.total} عقد</Badge>
+                    contractsInfo.total > 0 ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">عدد العقود:</span>
+                          <Badge variant="destructive">{contractsInfo.total} عقد</Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">عدد العملاء المرتبطين:</span>
+                          <Badge variant="outline">{contractsInfo.uniqueCustomers} عميل</Badge>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-4">
+                        <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          لا توجد عقود في هذه الشركة
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          لا يمكن تنفيذ عملية الحذف الجماعي
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">عدد العملاء المرتبطين:</span>
-                        <Badge variant="outline">{contractsInfo.uniqueCustomers} عميل</Badge>
-                      </div>
-                    </>
+                    )
                   ) : (
                     <div className="text-center text-muted-foreground">
                       لا توجد عقود للحذف
@@ -302,7 +340,12 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
               <Button
                 variant="destructive"
                 onClick={handleConfirmDelete}
-                disabled={!isConfirmationValid || isLoadingInfo || !contractsInfo?.total}
+                disabled={
+                  !isConfirmationValid || 
+                  isLoadingInfo || 
+                  !contractsInfo?.total || 
+                  !!contractsError
+                }
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 حذف جميع العقود
