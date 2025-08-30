@@ -54,15 +54,31 @@ npm run dev
 
 This project is built with:
 
+### Web Technologies:
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
 
+### Mobile Technologies:
+- Capacitor (for native mobile app generation)
+- Android SDK (for APK builds)
+- iOS SDK (for IPA builds)
+
 ## How can I deploy this project?
 
+### Web Deployment
 Simply open [Lovable](https://lovable.dev/projects/5ff0c8e1-2855-4929-a18d-792957ea202c) and click on Share -> Publish.
+
+### Mobile App Deployment
+To generate mobile apps (APK/IPA) from this React application:
+
+1. **Quick APK build**: `npm run build:apk`
+2. **Verify APK**: `npm run verify:apk`
+3. **Manual build**: See [MOBILE_BUILD_GUIDE.md](MOBILE_BUILD_GUIDE.md) for detailed instructions
+
+**APK Output Location**: `build/app/outputs/flutter-apk/app-release.apk`
 
 ## Can I connect a custom domain to my Lovable project?
 
