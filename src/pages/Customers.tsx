@@ -20,11 +20,12 @@ import { BulkDeleteCustomersDialog } from "@/components/customers/BulkDeleteCust
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
 import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
 
 export default function Customers() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const navigate = useNavigate()
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
@@ -153,6 +154,36 @@ export default function Customers() {
   
   const isSuperAdmin = user?.roles?.includes('super_admin')
 
+  // إذا كان التحميل جاري
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  // إذا لم يكن المستخدم مسجل دخول
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <LogIn className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">يتطلب تسجيل الدخول</h2>
+          <p className="text-muted-foreground mb-6">
+            يجب تسجيل الدخول لعرض وإدارة العملاء
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => navigate('/auth')} className="flex items-center gap-2">
+              <LogIn className="h-4 w-4" />
+              تسجيل الدخول
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* رأس الصفحة */}
@@ -209,7 +240,20 @@ export default function Customers() {
       {error && (
         <Alert variant="destructive">
           <AlertDescription>
-            حدث خطأ أثناء تحميل بيانات العملاء. يرجى المحاولة مرة أخرى.
+            حدث خطأ أثناء تحميل بيانات العملاء: {error.message || 'يرجى المحاولة مرة أخرى.'}
+            {!user && (
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/auth')}
+                  className="flex items-center gap-2"
+                >
+                  <LogIn className="h-3 w-3" />
+                  تسجيل الدخول
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -355,6 +399,32 @@ export default function Customers() {
           Array.from({ length: 3 }).map((_, index) => (
             <CustomerSkeleton key={index} />
           ))
+        ) : !customers || customers.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">لا توجد عملاء</h3>
+                <p className="text-muted-foreground mb-4">
+                  {!user 
+                    ? "يجب تسجيل الدخول أولاً لعرض العملاء" 
+                    : "لم يتم العثور على عملاء. يمكنك إضافة عميل جديد."
+                  }
+                </p>
+                {!user ? (
+                  <Button onClick={() => navigate('/auth')} className="flex items-center gap-2">
+                    <LogIn className="h-4 w-4" />
+                    تسجيل الدخول
+                  </Button>
+                ) : canAddCustomers && (
+                  <Button onClick={() => setShowCustomerForm(true)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    إضافة عميل جديد
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         ) : (
           customers?.map((customer) => (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
