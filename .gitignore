@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# Mobile app builds
+android/
+ios/
+build/*.apk
+build/*.ipa
+
+# But keep build directory structure and docs
+!build/app/outputs/flutter-apk/README.md
+
+# Capacitor
+.capacitor/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
