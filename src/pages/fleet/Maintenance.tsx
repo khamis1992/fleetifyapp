@@ -6,11 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react"
+import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus, Car, Settings } from "lucide-react"
 import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
 import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
+import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles"
+import { useVehicleStatusUpdate, useCompleteMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
 const statusColors = {
@@ -61,15 +63,40 @@ export default function Maintenance() {
   const [activeTab, setActiveTab] = useState("pending")
   
   const { data: maintenanceRecords, isLoading: maintenanceLoading } = useVehicleMaintenance()
+  const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles()
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
   const { formatCurrency } = useCurrencyFormatter()
+  const completeMaintenanceStatus = useCompleteMaintenanceStatus()
+  const vehicleStatusUpdate = useVehicleStatusUpdate()
 
   const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
   const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
   const completedMaintenance = maintenanceRecords?.filter(m => m.status === 'completed') || []
   const cancelledMaintenance = maintenanceRecords?.filter(m => m.status === 'cancelled') || []
 
-  const isLoading = maintenanceLoading || alertsLoading
+  const isLoading = maintenanceLoading || alertsLoading || maintenanceVehiclesLoading
+
+  // Handler to complete maintenance and return vehicle to fleet
+  const handleCompleteMaintenance = async (maintenanceId: string, vehicleId: string) => {
+    try {
+      await completeMaintenanceStatus.mutateAsync({ vehicleId, maintenanceId });
+    } catch (error) {
+      console.error('Failed to complete maintenance:', error);
+    }
+  };
+
+  // Handler to return vehicle to available status without completing maintenance record
+  const handleReturnVehicleToFleet = async (vehicleId: string) => {
+    try {
+      await vehicleStatusUpdate.mutateAsync({ 
+        vehicleId, 
+        newStatus: 'available',
+        reason: 'Returned to fleet from maintenance'
+      });
+    } catch (error) {
+      console.error('Failed to return vehicle to fleet:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -197,7 +224,19 @@ export default function Maintenance() {
       )}
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">قيد الصيانة</CardTitle>
+            <Car className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{maintenanceVehicles?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              مركبات في الصيانة
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">معلقة</CardTitle>
@@ -244,8 +283,11 @@ export default function Maintenance() {
       </div>
 
       {/* Maintenance Records */}
-      <Tabs defaultValue="pending" className="space-y-4">
+      <Tabs defaultValue="vehicles" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="vehicles">
+            مركبات قيد الصيانة ({maintenanceVehicles?.length || 0})
+          </TabsTrigger>
           <TabsTrigger value="pending">
             معلقة ({pendingMaintenance.length})
           </TabsTrigger>
@@ -259,6 +301,97 @@ export default function Maintenance() {
             الكل ({allRecords?.length || 0})
           </TabsTrigger>
         </TabsList>
+
+        {/* Vehicles Currently in Maintenance */}
+        <TabsContent value="vehicles" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Car className="h-5 w-5" />
+                المركبات قيد الصيانة
+              </CardTitle>
+              <CardDescription>
+                المركبات التي تم نقلها إلى قسم الصيانة ولا تظهر في قائمة الأسطول
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {maintenanceVehicles && maintenanceVehicles.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>رقم اللوحة</TableHead>
+                      <TableHead>المركبة</TableHead>
+                      <TableHead>المسافة</TableHead>
+                      <TableHead>آخر صيانة</TableHead>
+                      <TableHead className="w-[100px]">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {maintenanceVehicles.map((vehicle) => (
+                      <TableRow key={vehicle.id}>
+                        <TableCell className="font-medium">
+                          {vehicle.plate_number}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {vehicle.make} {vehicle.model}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              سنة: {vehicle.year}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {vehicle.current_mileage 
+                            ? `${vehicle.current_mileage.toLocaleString()} كم`
+                            : 'غير مسجلة'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {vehicle.last_maintenance_date 
+                            ? new Date(vehicle.last_maintenance_date).toLocaleDateString('en-GB')
+                            : 'لا يوجد سجل'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => setShowMaintenanceForm(true)}>
+                                <Settings className="h-4 w-4 mr-2" />
+                                جدولة صيانة
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleReturnVehicleToFleet(vehicle.id)}
+                                className="text-green-600"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                إرجاع للأسطول
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8">
+                  <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">لا توجد مركبات قيد الصيانة حالياً</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    عندما يتم تغيير حالة مركبة إلى "قيد الصيانة" ستظهر هنا
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="pending" className="space-y-4">
           <Card>

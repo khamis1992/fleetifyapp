@@ -22,7 +22,10 @@ export default function Fleet() {
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [filters, setFilters] = useState<IVehicleFilters>({})
+  const [filters, setFilters] = useState<IVehicleFilters>({
+    // Exclude vehicles in maintenance status from Fleet view by default
+    excludeMaintenanceStatus: true
+  })
   
   const { user } = useAuth()
   const { data: fleetStatus, isLoading: statusLoading } = useFleetStatus()

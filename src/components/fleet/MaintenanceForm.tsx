@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAvailableVehicles, useCreateVehicleMaintenance, VehicleMaintenance } from "@/hooks/useVehicles"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useAvailableVehiclesForMaintenance } from "@/hooks/useMaintenanceVehicles"
+import { useCreateVehicleMaintenance, VehicleMaintenance } from "@/hooks/useVehicles"
+import { useScheduleMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -21,9 +24,11 @@ interface MaintenanceFormProps {
 
 export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: MaintenanceFormProps) {
   const { user } = useAuth()
-  const { data: vehicles } = useAvailableVehicles()
+  const { data: vehicles } = useAvailableVehiclesForMaintenance()
   const { data: costCenters } = useCostCenters()
   const createMaintenance = useCreateVehicleMaintenance()
+  const scheduleMaintenanceStatus = useScheduleMaintenanceStatus()
+  const [moveToMaintenance, setMoveToMaintenance] = useState(true) // Auto-move vehicle to maintenance by default
   
   const form = useForm({
     defaultValues: {
@@ -77,7 +82,22 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         status: "pending" as const,
       }
 
-      await createMaintenance.mutateAsync(maintenanceData)
+      // Create maintenance record first
+      const maintenanceResult = await createMaintenance.mutateAsync(maintenanceData)
+      
+      // If user chose to move vehicle to maintenance status, update vehicle status
+      if (moveToMaintenance && data.vehicle_id) {
+        try {
+          await scheduleMaintenanceStatus.mutateAsync({ 
+            vehicleId: data.vehicle_id, 
+            maintenanceId: maintenanceResult.id 
+          });
+        } catch (statusError) {
+          console.warn('Failed to update vehicle status, but maintenance was created:', statusError);
+          // Don't fail the whole operation if status update fails
+        }
+      }
+      
       onOpenChange(false)
       form.reset()
     } catch (error) {
@@ -410,6 +430,29 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     </FormItem>
                   )}
                 />
+
+                {/* Fleet/Maintenance Integration Option */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="moveToMaintenance"
+                      checked={moveToMaintenance}
+                      onCheckedChange={(checked) => setMoveToMaintenance(checked as boolean)}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1">
+                      <label 
+                        htmlFor="moveToMaintenance" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        نقل المركبة إلى قسم الصيانة تلقائياً
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        عند تفعيل هذا الخيار، ستختفي المركبة من قائمة الأسطول وتظهر في قسم الصيانة حتى انتهاء الصيانة
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

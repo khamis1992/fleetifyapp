@@ -16,6 +16,7 @@ export interface VehicleFilters {
   transmission?: string;
   maintenanceDue?: boolean;
   insuranceExpiring?: boolean;
+  excludeMaintenanceStatus?: boolean; // New option to exclude maintenance vehicles from Fleet view
 }
 
 export interface PaginatedVehiclesResponse {
@@ -56,6 +57,11 @@ export const useVehiclesPaginated = (
       // Apply status filter
       if (filters.status && filters.status !== 'all') {
         query = query.eq('status', filters.status as VehicleStatus);
+      }
+      
+      // Exclude maintenance status vehicles if requested (for Fleet view)
+      if (filters.excludeMaintenanceStatus) {
+        query = query.neq('status', 'maintenance');
       }
 
       // Apply make filter
