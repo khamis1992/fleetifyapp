@@ -446,6 +446,7 @@ export const useCreateVehicle = () => {
       queryClient.invalidateQueries({ queryKey: ["available-vehicles", companyId] })
       queryClient.invalidateQueries({ queryKey: ["fleet-analytics"] })
       queryClient.invalidateQueries({ queryKey: ["fleet-status"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles-paginated"] })
       
       // Force a refetch to ensure data is updated immediately
       queryClient.refetchQueries({ queryKey: ["vehicles", companyId] })
@@ -489,6 +490,7 @@ export const useUpdateVehicle = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles-paginated"] })
       toast({
         title: "Success",
         description: "Vehicle updated successfully",
@@ -521,6 +523,7 @@ export const useDeleteVehicle = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicles-paginated"] })
       toast({
         title: "Success",
         description: "Vehicle deactivated successfully",

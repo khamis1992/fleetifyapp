@@ -472,11 +472,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       setAssetCodeInput("")
       onOpenChange(false)
       
-      // Force refetch vehicles data
-      setTimeout(() => {
-        console.log("🔄 [VEHICLE_FORM] Forcing data refresh...");
-        window.location.reload();
-      }, 1000);
+      // Show success message
+      toast({
+        title: "نجاح",
+        description: vehicle ? "تم تحديث المركبة بنجاح" : "تم إنشاء المركبة الجديدة بنجاح",
+      })
       
     } catch (error) {
       console.error("❌ [VEHICLE_FORM] Error saving vehicle:", error);

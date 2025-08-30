@@ -146,11 +146,8 @@ export const useToggleCustomerBlacklist = () => {
     onSuccess: async (_, variables) => {
       console.log('✅ Customer blacklist toggle successful, updating cache');
       
-      // استخدام refetchQueries للحصول على تحديث فوري
-      await queryClient.refetchQueries({ 
-        queryKey: ['customers'],
-        type: 'active' 
-      });
+      // استخدام invalidateQueries للحصول على تحديث فوري
+      await queryClient.invalidateQueries({ queryKey: ['customers'] });
       
       toast.success(variables.isBlacklisted ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
     },
@@ -312,13 +309,13 @@ export const useDeleteCustomer = () => {
     onSuccess: async () => {
       console.log('✅ Customer deletion successful, updating cache');
       
-      // استخدام refetchQueries للحصول على تحديث فوري
+      // استخدام invalidateQueries للحصول على تحديث فوري
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['contracts'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['invoices'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['payments'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['quotations'], type: 'active' })
+        queryClient.invalidateQueries({ queryKey: ['customers'] }),
+        queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['quotations'] })
       ]);
       
       toast.success('تم حذف العميل وجميع البيانات المرتبطة به بنجاح');
@@ -495,13 +492,7 @@ export const useCreateCustomer = () => {
       console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
       
       // تحديث فوري للـ cache بإضافة العميل الجديد في المقدمة
-      queryClient.setQueryData(['customers', companyId], (oldData: EnhancedCustomer[] | undefined) => {
-        if (!oldData) return [customerData];
-        // التحقق من عدم وجود العميل مسبقاً لتجنب التكرار
-        const exists = oldData.some(customer => customer.id === customerData.id);
-        if (exists) return oldData;
-        return [customerData, ...oldData];
-      });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       
       // إعادة جلب البيانات لضمان التحديث الكامل
       Promise.all([

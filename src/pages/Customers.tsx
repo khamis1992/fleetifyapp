@@ -23,10 +23,12 @@ import { useAuth } from "@/contexts/AuthContext"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
 import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function Customers() {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
@@ -567,6 +569,8 @@ export default function Customers() {
           console.log('✅ Customer saved successfully:', customer)
           setShowCustomerForm(false)
           setEditingCustomer(null)
+          // Refresh the customer list to show the newly created customer
+          queryClient.invalidateQueries({ queryKey: ['customers'] })
         }}
         onCancel={() => {
           setShowCustomerForm(false)

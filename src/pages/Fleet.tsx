@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -13,8 +13,10 @@ import { VehicleCSVUpload } from "@/components/fleet/VehicleCSVUpload"
 import { useVehiclesPaginated, VehicleFilters as IVehicleFilters } from "@/hooks/useVehiclesPaginated"
 import { useFleetStatus } from "@/hooks/useFleetStatus"
 import { useAuth } from "@/contexts/AuthContext"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function Fleet() {
+  const queryClient = useQueryClient()
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [showGroupManagement, setShowGroupManagement] = useState(false)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
@@ -43,6 +45,14 @@ export default function Fleet() {
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
     setCurrentPage(1) // Reset to first page when page size changes
+  }
+
+  const handleVehicleFormClose = (open: boolean) => {
+    setShowVehicleForm(open)
+    // If the form is being closed (not opened), invalidate the vehicles query to refresh the list
+    if (!open) {
+      queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] })
+    }
   }
 
   if (statusLoading) {
@@ -193,7 +203,7 @@ export default function Fleet() {
       {showVehicleForm && (
         <VehicleForm 
           open={showVehicleForm} 
-          onOpenChange={setShowVehicleForm}
+          onOpenChange={handleVehicleFormClose}
         />
       )}
 
@@ -203,7 +213,8 @@ export default function Fleet() {
         onOpenChange={setShowCSVUpload}
         onUploadComplete={() => {
           setShowCSVUpload(false)
-          // Refresh vehicle list - the query will automatically refetch
+          // Refresh vehicle list
+          queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] })
         }}
       />
     </div>
