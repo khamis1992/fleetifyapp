@@ -17,7 +17,9 @@ interface ContractWizardData {
   // Customer & Vehicle
   customer_id: string
   customer_name?: string
+  customer?: any
   vehicle_id: string
+  vehicle?: any
   vehicle_condition_report_id?: string
   
   // Dates & Duration
@@ -235,8 +237,10 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     setIsAutoSaving(true)
     try {
       const draftData = {
-        ...data,
-        user_id: user.id,
+        company_id: user.user_metadata?.company_id || '',
+        created_by: user.id,
+        current_step: currentStep,
+        data: data as any,
         last_saved_at: new Date().toISOString()
       }
 
@@ -246,14 +250,14 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
           .from('contract_drafts')
           .update(draftData)
           .eq('id', data.draft_id)
-          .eq('user_id', user.id)
+          .eq('created_by', user.id)
 
         if (error) throw error
       } else {
         // Create new draft
         const { data: newDraft, error } = await supabase
           .from('contract_drafts')
-          .insert([draftData])
+          .insert(draftData)
           .select()
           .single()
 
@@ -281,13 +285,13 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       if (error) throw error
 
       if (draft) {
-        // Convert string dates back to Date objects
+        // Convert draft data back to ContractWizardData
         const processedDraft = {
-          ...draft,
-          contract_date: draft.contract_date,
-          start_date: draft.start_date,
-          end_date: draft.end_date,
-          is_draft: true
+          ...defaultData,
+          ...(draft.data as any),
+          is_draft: true,
+          draft_id: draft.id,
+          last_saved_at: draft.last_saved_at
         }
 
         setData(processedDraft as ContractWizardData)

@@ -400,45 +400,47 @@ export const AIReportsAssistant: React.FC<AIReportsAssistantProps> = ({
               <div key={chart.id} className="h-64">
                 <h4 className="text-sm font-medium mb-2">{chart.title}</h4>
                 <ResponsiveContainer width="100%" height="100%">
-                  {chart.type === 'bar' && (
-                    <BarChart data={chart.data}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="revenue" fill="#0088FE" />
-                    </BarChart>
-                  )}
-                  {chart.type === 'line' && (
-                    <LineChart data={chart.data}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="revenue" stroke="#0088FE" strokeWidth={2} />
-                    </LineChart>
-                  )}
-                  {chart.type === 'pie' && (
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'الإيرادات', value: 60 },
-                          { name: 'المصروفات', value: 40 }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {[{ name: 'الإيرادات', value: 60 }, { name: 'المصروفات', value: 40 }].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  )}
+                  <div>
+                    {chart.type === 'bar' && (
+                      <BarChart data={chart.data}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="revenue" fill="#0088FE" />
+                      </BarChart>
+                    )}
+                    {chart.type === 'line' && (
+                      <LineChart data={chart.data}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="revenue" stroke="#0088FE" strokeWidth={2} />
+                      </LineChart>
+                    )}
+                    {chart.type === 'pie' && (
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'الإيرادات', value: 60 },
+                            { name: 'المصروفات', value: 40 }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {[{ name: 'الإيرادات', value: 60 }, { name: 'المصروفات', value: 40 }].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    )}
+                  </div>
                 </ResponsiveContainer>
               </div>
             ))}

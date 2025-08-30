@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 
 interface ContractFormData {
+  contract_number?: string
   customer_id: string
   vehicle_id?: string | null
   contract_type: string
@@ -11,7 +12,6 @@ interface ContractFormData {
   monthly_amount?: number
   description?: string | null
   terms?: string | null
-  contract_number?: string
   status?: string
   created_by?: string
   cost_center_id?: string | null

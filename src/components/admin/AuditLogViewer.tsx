@@ -234,7 +234,7 @@ export const AuditLogViewer: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">التاريخ</label>
-              <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+              <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
             </div>
           </div>
 

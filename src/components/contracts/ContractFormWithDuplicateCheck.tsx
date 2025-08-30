@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { DuplicateContract } from '@/hooks/useContractDuplicateCheck';
 import { useContractDuplicateCheck, ContractData } from '@/hooks/useContractDuplicateCheck';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, FileText, User, Calendar } from 'lucide-react';
