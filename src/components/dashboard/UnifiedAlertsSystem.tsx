@@ -88,7 +88,7 @@ export const UnifiedAlertsSystem: React.FC<UnifiedAlertsSystemProps> = ({
           oscillator.start();
           oscillator.stop(context.currentTime + 0.2);
         } catch (error) {
-          console.log('Could not play alert sound:', error);
+          // Silently handle audio error - not critical for functionality
         }
       };
       playSound();

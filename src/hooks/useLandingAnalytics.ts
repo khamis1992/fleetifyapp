@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useLandingAnalytics = ({ companyId, dateRange }: any) => {
   const [analytics, setAnalytics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('landing_analytics')
@@ -17,20 +17,24 @@ export const useLandingAnalytics = ({ companyId, dateRange }: any) => {
       if (error) throw error;
       setAnalytics(data || []);
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching analytics:', error);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
 
   const exportAnalytics = async ({ companyId, dateRange }: any) => {
-    // Mock export functionality
-    console.log('Exporting analytics for:', { companyId, dateRange });
+    // Export functionality would be implemented here
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Exporting analytics for:', { companyId, dateRange });
+    }
   };
 
   useEffect(() => {
     fetchAnalytics();
-  }, [companyId, dateRange]);
+  }, [fetchAnalytics]);
 
   return { analytics, loading, exportAnalytics };
 };

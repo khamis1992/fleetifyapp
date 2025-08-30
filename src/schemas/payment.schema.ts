@@ -36,7 +36,7 @@ export const invoicePaymentSchema = basePaymentSchema.extend({
   invoice_id: z.string().uuid('معرف الفاتورة غير صحيح'),
   customer_id: z.string().uuid().optional(),
   vendor_id: z.string().uuid().optional(),
-  type: z.enum(['receipt', 'payment']),
+  type: z.literal('invoice_payment'),
 });
 
 // Unified payment schema that handles all payment types
@@ -56,7 +56,7 @@ export const enhancedPaymentSchema = basePaymentSchema.extend({
   invoice_id: z.string().uuid().optional(),
   contract_id: z.string().uuid().optional(),
   purchase_order_id: z.string().uuid().optional(),
-  type: z.enum(['receipt', 'payment']),
+  type: z.enum(['receipt', 'payment', 'invoice_payment']),
   transaction_type: z.enum(['customer_payment', 'vendor_payment', 'invoice_payment']).optional(),
   payment_status: z.enum(['pending', 'completed', 'cancelled']).default('completed'),
 });

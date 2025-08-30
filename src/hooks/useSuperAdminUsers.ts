@@ -629,12 +629,16 @@ export const useSuperAdminUsers = () => {
       });
 
       if (functionError) {
-        console.error('Edge function error:', functionError);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Edge function error:', functionError);
+        }
         throw new Error(functionError.message || 'Failed to reset password');
       }
 
       if (!result?.success) {
-        console.error('Password reset failed:', result);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Password reset failed:', result);
+        }
         throw new Error(result?.error || 'Failed to reset password');
       }
 
@@ -645,7 +649,9 @@ export const useSuperAdminUsers = () => {
 
       return result;
     } catch (error: any) {
-      console.error('Error resetting password:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error resetting password:', error);
+      }
       
       let errorMessage = 'فشل في تغيير كلمة المرور';
       if (error.message?.includes('6 characters')) {

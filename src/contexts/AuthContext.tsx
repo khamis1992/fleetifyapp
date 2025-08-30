@@ -26,7 +26,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Session validation helper
   const validateSession = async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
-      console.log('📝 [AUTH_CONTEXT] No session to validate');
       return false;
     }
 

@@ -140,7 +140,10 @@ export const useSuperAdminData = () => {
 
       setCompanies(companiesWithCounts);
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      // Log error in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching companies:', error);
+      }
       toast({
         title: "Error",
         description: "Failed to load companies",
@@ -161,7 +164,9 @@ export const useSuperAdminData = () => {
 
       setSubscriptionPlans(data || []);
     } catch (error) {
-      console.error('Error fetching subscription plans:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching subscription plans:', error);
+      }
     }
   };
 

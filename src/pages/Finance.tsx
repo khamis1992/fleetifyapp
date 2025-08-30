@@ -295,16 +295,13 @@ const ProtectedFinanceRoute = ({ children, permission }: { children: React.React
 
   useEffect(() => {
     if (!user) {
-      console.log('[Finance] User not authenticated');
+      // User not authenticated - will redirect
     } else if (!user.profile?.company_id) {
-      console.log('[Finance] User missing company_id:', user);
       toast({
         title: "خطأ في البيانات",
         description: "لا توجد بيانات شركة مرتبطة بحسابك. يرجى التواصل مع المدير.",
         variant: "destructive",
       });
-    } else {
-      console.log('[Finance] User authenticated with company:', user.profile.company_id);
     }
   }, [user, toast]);
 

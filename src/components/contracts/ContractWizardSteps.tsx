@@ -288,12 +288,6 @@ export const CustomerVehicleStep: React.FC = () => {
 
   const companyId = useCurrentCompanyId()
   
-  console.log("🚗 [VehicleSelectionStep] Company context:", {
-    companyId,
-    startDate: data.start_date,
-    endDate: data.end_date
-  })
-  
   // Use date-range filtered vehicles if dates are available, otherwise fallback to all available vehicles
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesByDateRange({
     companyId,

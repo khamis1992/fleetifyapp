@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -68,9 +68,9 @@ export default function QuotationApproval() {
     }
 
     fetchQuotation()
-  }, [token])
+  }, [fetchQuotation])
 
-  const fetchQuotation = async () => {
+  const fetchQuotation = useCallback(async () => {
     try {
       const response = await fetch(
         `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval?token=${token}`
@@ -88,7 +88,7 @@ export default function QuotationApproval() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
 
   const handleApproval = async (action: 'approve' | 'reject') => {
     if (!token) return
