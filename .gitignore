@@ -15,7 +15,11 @@ dist-ssr
 # Mobile app builds
 android/
 ios/
-build/
+build/*.apk
+build/*.ipa
+
+# But keep build directory structure and docs
+!build/app/outputs/flutter-apk/README.md
 
 # Capacitor
 .capacitor/

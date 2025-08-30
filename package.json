@@ -18,7 +18,8 @@
     "mobile:open:android": "npx cap open android",
     "mobile:open:ios": "npx cap open ios",
     "build:apk": "./build-apk.sh",
-    "verify:apk": "./verify-build.sh"
+    "verify:apk": "./verify-build.sh",
+    "demo:apk": "./demo-apk-build.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
