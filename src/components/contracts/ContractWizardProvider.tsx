@@ -341,7 +341,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
           }
           break
           
-        case 1: // Dates
+          case 1: // Dates
           if (!data.start_date) {
             toast.error('يرجى تحديد تاريخ البداية')
             return false
@@ -350,8 +350,9 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
             toast.error('يرجى تحديد تاريخ النهاية')
             return false
           }
-          if (data.rental_days <= 0) {
-            toast.error('عدد أيام الإيجار يجب أن يكون أكبر من صفر')
+          const totalDays = (data.rental_months || 0) * 30 + data.rental_days
+          if (totalDays <= 0) {
+            toast.error('مدة العقد يجب أن تكون أكبر من صفر')
             return false
           }
           break
@@ -441,7 +442,8 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       case 0: // Basic Info
         return !!(data.contract_type && data.contract_date)
       case 1: // Dates
-        return !!(data.start_date && data.end_date && data.rental_days >= 0)
+        const totalContractDays = (data.rental_months || 0) * 30 + data.rental_days
+        return !!(data.start_date && data.end_date && totalContractDays > 0)
       case 2: // Customer/Vehicle
         // Check for duplicates before allowing to proceed
         if (hasDuplicates && !forceCreate) {

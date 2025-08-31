@@ -102,7 +102,11 @@ export const useVehicleOdometerHistory = (vehicleId?: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as UnifiedOdometerReading[];
+      return (data || []).map(item => ({
+        ...item,
+        is_verified: (item as any).is_verified ?? false,
+        updated_at: (item as any).updated_at || item.created_at
+      })) as UnifiedOdometerReading[];
     },
     enabled: !!vehicleId && !!user?.profile?.company_id,
   });

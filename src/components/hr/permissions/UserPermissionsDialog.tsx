@@ -249,6 +249,8 @@ export default function UserPermissionsDialog({
     super_admin: 'مدير النظام',
     company_admin: 'مدير الشركة',
     manager: 'مدير',
+    accountant: 'محاسب',
+    fleet_manager: 'مدير الأسطول',
     sales_agent: 'مندوب مبيعات',
     employee: 'موظف'
   };
