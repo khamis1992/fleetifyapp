@@ -5,13 +5,13 @@ import { useFeatureAccess } from './useFeatureAccess';
 
 // Define module permissions
 const MODULE_PERMISSIONS = {
-  fleet: 'fleet.read',
-  finance: 'finance.read', 
-  hr: 'hr.read',
-  contracts: 'contracts.read',
-  customers: 'customers.read',
-  legal: 'legal.read',
-  reports: 'reports.read'
+  fleet: 'fleet.vehicles.read',
+  finance: 'finance.view', 
+  hr: 'hr.employees.read',
+  contracts: 'operations.contracts.read',
+  customers: 'operations.customers.read',
+  legal: 'legal.cases.read',
+  reports: 'reports.financial.read'
 } as const;
 
 const ADMIN_PERMISSIONS = {

@@ -98,7 +98,10 @@ const SuperAdminUsers: React.FC = () => {
         {roleObj.role === 'super_admin' && 'مدير عام'}
         {roleObj.role === 'company_admin' && 'مدير شركة'}
         {roleObj.role === 'manager' && 'مدير'}
+        {roleObj.role === 'accountant' && 'محاسب'}
+        {roleObj.role === 'fleet_manager' && 'مدير الأسطول'}
         {roleObj.role === 'sales_agent' && 'موظف مبيعات'}
+        {roleObj.role === 'employee' && 'موظف'}
       </Badge>
     ));
   };
@@ -233,7 +236,10 @@ const SuperAdminUsers: React.FC = () => {
                 <SelectItem value="super_admin">مدير عام</SelectItem>
                 <SelectItem value="company_admin">مدير شركة</SelectItem>
                 <SelectItem value="manager">مدير</SelectItem>
+                <SelectItem value="accountant">محاسب</SelectItem>
+                <SelectItem value="fleet_manager">مدير الأسطول</SelectItem>
                 <SelectItem value="sales_agent">موظف مبيعات</SelectItem>
+                <SelectItem value="employee">موظف</SelectItem>
               </SelectContent>
             </Select>
           </div>

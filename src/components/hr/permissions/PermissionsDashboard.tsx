@@ -121,6 +121,8 @@ export default function PermissionsDashboard() {
       super_admin: 0,
       company_admin: 0,
       manager: 0,
+      accountant: 0,
+      fleet_manager: 0,
       sales_agent: 0,
       employee: 0
     };
@@ -164,6 +166,8 @@ export default function PermissionsDashboard() {
     super_admin: 'مدير النظام',
     company_admin: 'مدير الشركة',
     manager: 'مدير',
+    accountant: 'محاسب',
+    fleet_manager: 'مدير الأسطول',
     sales_agent: 'مندوب مبيعات',
     employee: 'موظف'
   };
@@ -173,6 +177,8 @@ export default function PermissionsDashboard() {
       super_admin: 'bg-red-500',
       company_admin: 'bg-orange-500',
       manager: 'bg-blue-500',
+      accountant: 'bg-emerald-500',
+      fleet_manager: 'bg-cyan-500',
       sales_agent: 'bg-green-500',
       employee: 'bg-gray-500'
     };

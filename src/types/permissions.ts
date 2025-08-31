@@ -1,6 +1,6 @@
 // Permission types and interfaces for the user management system
 
-export type UserRole = 'super_admin' | 'company_admin' | 'manager' | 'sales_agent' | 'employee';
+export type UserRole = 'super_admin' | 'company_admin' | 'manager' | 'accountant' | 'fleet_manager' | 'sales_agent' | 'employee';
 
 export interface Permission {
   id: string;
@@ -88,13 +88,22 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     order: 3
   },
   {
+    id: 'fleet',
+    name: 'Fleet Management',
+    nameAr: 'إدارة الأسطول',
+    description: 'Vehicle management, maintenance, tracking',
+    icon: 'Car',
+    color: 'cyan',
+    order: 4
+  },
+  {
     id: 'reports',
     name: 'Reports & Analytics',
     nameAr: 'التقارير والتحليلات',
     description: 'Generate and view reports',
     icon: 'BarChart3',
     color: 'orange',
-    order: 4
+    order: 5
   },
   {
     id: 'legal',
@@ -103,7 +112,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     description: 'Legal cases, documents, correspondence',
     icon: 'Scale',
     color: 'indigo',
-    order: 5
+    order: 6
   },
   {
     id: 'admin',
@@ -112,7 +121,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     description: 'System settings, user management',
     icon: 'Shield',
     color: 'red',
-    order: 6
+    order: 7
   }
 ];
 
@@ -369,6 +378,71 @@ export const PERMISSIONS: Permission[] = [
     level: 'write'
   },
 
+  // Fleet Management Permissions
+  {
+    id: 'fleet.vehicles.read',
+    name: 'View Vehicles',
+    description: 'View vehicle information and status',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'read'
+  },
+  {
+    id: 'fleet.vehicles.write',
+    name: 'Manage Vehicles',
+    description: 'Add, update, delete vehicles',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'write'
+  },
+  {
+    id: 'fleet.maintenance.read',
+    name: 'View Maintenance',
+    description: 'View vehicle maintenance records',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'read'
+  },
+  {
+    id: 'fleet.maintenance.write',
+    name: 'Manage Maintenance',
+    description: 'Schedule and manage vehicle maintenance',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'write'
+  },
+  {
+    id: 'fleet.dispatch.read',
+    name: 'View Dispatch',
+    description: 'View vehicle dispatch and assignments',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'read'
+  },
+  {
+    id: 'fleet.dispatch.write',
+    name: 'Manage Dispatch',
+    description: 'Assign and manage vehicle dispatch',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'write'
+  },
+  {
+    id: 'fleet.tracking.read',
+    name: 'View Vehicle Tracking',
+    description: 'View vehicle location and tracking data',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'read'
+  },
+  {
+    id: 'fleet.documents.read',
+    name: 'View Vehicle Documents',
+    description: 'View vehicle registration, insurance, permits',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'read'
+  },
+  {
+    id: 'fleet.documents.write',
+    name: 'Manage Vehicle Documents',
+    description: 'Upload and manage vehicle documents',
+    category: PERMISSION_CATEGORIES[3],
+    level: 'write'
+  },
+
   // Reports Permissions
   {
     id: 'reports.financial.read',
@@ -508,12 +582,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   super_admin: {
     role: 'super_admin',
     permissions: PERMISSIONS.map(p => p.id),
-    canAssignRoles: ['super_admin', 'company_admin', 'manager', 'sales_agent', 'employee']
+    canAssignRoles: ['super_admin', 'company_admin', 'manager', 'accountant', 'fleet_manager', 'sales_agent', 'employee']
   },
   company_admin: {
     role: 'company_admin',
     permissions: PERMISSIONS.map(p => p.id), // Company Admin has all permissions within their company scope
-    canAssignRoles: ['manager', 'sales_agent', 'employee'],
+    canAssignRoles: ['manager', 'accountant', 'fleet_manager', 'sales_agent', 'employee'],
     companyScoped: true
   },
   manager: {
@@ -524,6 +598,31 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       p.level !== 'admin'
     ).map(p => p.id),
     canAssignRoles: ['sales_agent', 'employee']
+  },
+  accountant: {
+    role: 'accountant',
+    permissions: PERMISSIONS.filter(p => 
+      p.id.includes('finance.') ||
+      p.id.includes('reports.financial') ||
+      p.id.includes('hr.payroll') ||
+      p.id.includes('operations.contracts.read') ||
+      p.id.includes('operations.customers.read') ||
+      p.id === 'attendance.clock_in'
+    ).map(p => p.id),
+    canAssignRoles: []
+  },
+  fleet_manager: {
+    role: 'fleet_manager',
+    permissions: PERMISSIONS.filter(p => 
+      p.id.includes('fleet.') ||
+      p.id.includes('operations.contracts.read') ||
+      p.id.includes('operations.customers.read') ||
+      p.id.includes('reports.operations') ||
+      p.id.includes('finance.invoices.read') ||
+      p.id.includes('finance.payments.read') ||
+      p.id === 'attendance.clock_in'
+    ).map(p => p.id),
+    canAssignRoles: ['employee']
   },
   sales_agent: {
     role: 'sales_agent',

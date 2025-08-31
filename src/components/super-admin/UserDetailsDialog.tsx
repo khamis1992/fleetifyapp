@@ -46,7 +46,10 @@ const roleOptions = [
   { id: 'super_admin', label: 'مدير عام', description: 'صلاحيات كاملة في النظام' },
   { id: 'company_admin', label: 'مدير شركة', description: 'صلاحيات إدارة كاملة للشركة' },
   { id: 'manager', label: 'مدير', description: 'صلاحيات إدارية محدودة' },
+  { id: 'accountant', label: 'محاسب', description: 'صلاحيات مالية ومحاسبية' },
+  { id: 'fleet_manager', label: 'مدير الأسطول', description: 'إدارة المركبات والصيانة' },
   { id: 'sales_agent', label: 'موظف مبيعات', description: 'صلاحيات المبيعات والعملاء' },
+  { id: 'employee', label: 'موظف', description: 'صلاحيات أساسية' },
 ];
 
 export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({

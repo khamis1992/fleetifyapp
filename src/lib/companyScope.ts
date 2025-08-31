@@ -126,9 +126,11 @@ export const canAssignRole = (
   
   // Other roles have limited assignment capabilities
   const assignableRoles: Record<UserRole, UserRole[]> = {
-    super_admin: ['super_admin', 'company_admin', 'manager', 'sales_agent', 'employee'],
-    company_admin: ['company_admin', 'manager', 'sales_agent', 'employee'],
+    super_admin: ['super_admin', 'company_admin', 'manager', 'accountant', 'fleet_manager', 'sales_agent', 'employee'],
+    company_admin: ['company_admin', 'manager', 'accountant', 'fleet_manager', 'sales_agent', 'employee'],
     manager: ['sales_agent', 'employee'],
+    accountant: [],
+    fleet_manager: ['employee'],
     sales_agent: [],
     employee: []
   };

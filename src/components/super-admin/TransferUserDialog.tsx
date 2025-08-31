@@ -51,6 +51,8 @@ interface TransferUserDialogProps {
 const ROLE_OPTIONS = [
   { value: 'company_admin', label: 'مدير الشركة' },
   { value: 'manager', label: 'مدير' },
+  { value: 'accountant', label: 'محاسب' },
+  { value: 'fleet_manager', label: 'مدير الأسطول' },
   { value: 'sales_agent', label: 'مندوب مبيعات' },
   { value: 'employee', label: 'موظف' }
 ];

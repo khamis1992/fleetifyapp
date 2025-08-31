@@ -230,6 +230,8 @@ export default function PermissionsMatrix({
                   super_admin: 'مدير النظام',
                   company_admin: 'مدير الشركة',
                   manager: 'مدير',
+                  accountant: 'محاسب',
+                  fleet_manager: 'مدير الأسطول',
                   sales_agent: 'مندوب مبيعات',
                   employee: 'موظف'
                 };
@@ -376,6 +378,8 @@ export default function PermissionsMatrix({
                                               super_admin: 'س',
                                               company_admin: 'ش',
                                               manager: 'م',
+                                              accountant: 'ح',
+                                              fleet_manager: 'أ',
                                               sales_agent: 'ب',
                                               employee: 'ع'
                                             };
@@ -423,6 +427,8 @@ export default function PermissionsMatrix({
                   super_admin: 'مدير النظام',
                   company_admin: 'مدير الشركة',
                   manager: 'مدير',
+                  accountant: 'محاسب',
+                  fleet_manager: 'مدير الأسطول',
                   sales_agent: 'مندوب مبيعات',
                   employee: 'موظف'
                 };

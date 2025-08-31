@@ -31,6 +31,8 @@ interface UserAccountFormProps {
 const availableRoles = [
   { value: 'company_admin', label: 'مدير الشركة', description: 'صلاحيات كاملة لإدارة الشركة' },
   { value: 'manager', label: 'مدير', description: 'صلاحيات إدارية محدودة' },
+  { value: 'accountant', label: 'محاسب', description: 'صلاحيات مالية ومحاسبية' },
+  { value: 'fleet_manager', label: 'مدير الأسطول', description: 'إدارة المركبات والصيانة' },
   { value: 'sales_agent', label: 'مندوب مبيعات', description: 'إدارة العملاء والمبيعات' },
   { value: 'employee', label: 'موظف', description: 'صلاحيات محدودة للاستعلام' },
 ];
