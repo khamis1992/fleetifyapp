@@ -11223,6 +11223,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_company_fixed: {
+        Args: { input_user_id: string }
+        Returns: string
+      }
       get_user_company_safe: {
         Args: { user_id_param?: string }
         Returns: string
