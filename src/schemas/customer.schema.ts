@@ -22,6 +22,7 @@ export const baseCustomerSchema = z.object({
 
 // Customer creation schema with enhanced validation
 export const createCustomerSchema = baseCustomerSchema.extend({
+  customer_code: z.string().optional(),
   force_create: z.boolean().default(false),
   context: z.enum(['standalone', 'contract', 'invoice', 'maintenance']).optional(),
 }).refine(

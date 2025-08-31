@@ -60,13 +60,28 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         await validateAccountBalance(validatedData);
       }
 
-      // Prepare payment data for database
+      // Prepare payment data for database 
       const paymentData = {
-        ...validatedData,
+        amount: validatedData.amount,
+        payment_number: validatedData.payment_number || await generatePaymentNumber(validatedData.type),
+        payment_date: validatedData.payment_date,
+        payment_method: validatedData.payment_method,
+        reference_number: validatedData.reference_number,
+        check_number: validatedData.check_number,
+        currency: validatedData.currency || 'KWD',
+        notes: validatedData.notes,
+        payment_type: validatedData.type,
+        payment_status: requireApproval ? 'pending' : 'completed',
         company_id: companyId,
         created_by: user?.id,
-        payment_number: validatedData.payment_number || await generatePaymentNumber(validatedData.type),
-        payment_status: requireApproval ? 'pending' : 'completed',
+        // Optional fields based on payment type
+        customer_id: validatedData.customer_id,
+        vendor_id: validatedData.vendor_id,
+        invoice_id: validatedData.invoice_id,
+        contract_id: validatedData.contract_id,
+        cost_center_id: validatedData.cost_center_id,
+        bank_id: validatedData.bank_id,
+        account_id: validatedData.account_id,
       };
 
       // Insert payment
@@ -99,7 +114,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
       
-      const paymentType = payment.type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف';
+      const paymentType = payment.payment_type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف';
       toast.success(`تم إنشاء ${paymentType} بنجاح`);
     },
     onError: (error: any) => {
@@ -130,9 +145,25 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error('لا يمكن تعديل دفعة مكتملة بدون صلاحية الموافقة');
       }
 
-      // Prepare update data
+      // Prepare update data - only include valid database fields
       const updateData = {
-        ...data,
+        amount: data.amount,
+        payment_number: data.payment_number,
+        payment_date: data.payment_date,
+        payment_method: data.payment_method,
+        reference_number: data.reference_number,
+        check_number: data.check_number,
+        currency: data.currency,
+        notes: data.notes,
+        payment_type: data.type,
+        payment_status: data.payment_status,
+        customer_id: data.customer_id,
+        vendor_id: data.vendor_id,
+        invoice_id: data.invoice_id,
+        contract_id: data.contract_id,
+        cost_center_id: data.cost_center_id,
+        bank_id: data.bank_id,
+        account_id: data.account_id,
         updated_at: new Date().toISOString(),
         updated_by: user?.id,
       };
@@ -388,16 +419,16 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     console.log('💰 Validating account balance for payment:', data.amount);
   };
 
-  const generatePaymentNumber = async (type: 'receipt' | 'payment'): Promise<string> => {
-    const prefix = type === 'receipt' ? 'REC' : 'PAY';
+  const generatePaymentNumber = async (type: 'receipt' | 'payment' | 'invoice_payment'): Promise<string> => {
+    const prefix = type === 'receipt' ? 'REC' : type === 'payment' ? 'PAY' : 'INV';
     const year = new Date().getFullYear().toString().slice(-2);
     
-    // Get the next sequence number
-    const { data, error } = await supabase.rpc('get_next_payment_number', {
-      p_company_id: companyId,
-      p_type: type,
-      p_year: year
-    });
+    // Get count of existing payments to generate next number
+    const { count, error } = await supabase
+      .from('payments')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('payment_type', type);
 
     if (error) {
       console.error('Error generating payment number:', error);
@@ -405,22 +436,17 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
     }
 
-    return data || `${prefix}-${year}-001`;
+    const nextNumber = (count || 0) + 1;
+    return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
   };
 
   const createJournalEntry = async (payment: any) => {
     try {
       console.log('📝 Creating journal entry for payment:', payment.id);
       
-      // This would create the actual journal entry
-      const { error } = await supabase.rpc('create_payment_journal_entry', {
-        p_payment_id: payment.id,
-        p_company_id: companyId
-      });
-
-      if (error) {
-        console.error('Error creating journal entry:', error);
-      }
+      // For now, just log the creation - implement actual journal entry logic later
+      // when the necessary database functions are available
+      console.log('Journal entry creation placeholder for payment:', payment.payment_number);
     } catch (error) {
       console.error('Error in createJournalEntry:', error);
     }
@@ -430,15 +456,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     try {
       console.log('🔄 Reversing journal entry for payment:', paymentId);
       
-      // This would reverse the journal entry
-      const { error } = await supabase.rpc('reverse_payment_journal_entry', {
-        p_payment_id: paymentId,
-        p_company_id: companyId
-      });
-
-      if (error) {
-        console.error('Error reversing journal entry:', error);
-      }
+      // For now, just log the reversal - implement actual reversal logic later
+      // when the necessary database functions are available
+      console.log('Journal entry reversal placeholder for payment ID:', paymentId);
     } catch (error) {
       console.error('Error in reverseJournalEntry:', error);
     }

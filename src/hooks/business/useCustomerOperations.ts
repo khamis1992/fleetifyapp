@@ -38,21 +38,34 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       if (enableDuplicateCheck && !validatedData.force_create) {
         const duplicateCheck = await checkForDuplicates(validatedData);
         if (duplicateCheck.has_duplicates) {
-          throw new Error(`يوجد عميل مشابه في النظام: ${duplicateCheck.duplicates.map(d => d.name).join(', ')}`);
+        const duplicateNames = duplicateCheck.duplicates.map(d => 
+          d.customer_type === 'individual' ? `${d.first_name} ${d.last_name}` : d.company_name
+        ).join(', ');
+        throw new Error(`يوجد عميل مشابه في النظام: ${duplicateNames}`);
         }
       }
 
       // Prepare data for database insertion
       const customerData = {
-        ...validatedData,
+        customer_type: validatedData.customer_type,
+        first_name: validatedData.first_name,
+        last_name: validatedData.last_name,
+        company_name: validatedData.company_name,
+        phone: validatedData.phone,
+        email: validatedData.email,
+        national_id: validatedData.national_id,
+        passport_number: validatedData.passport_number,
+        license_number: validatedData.license_number,
+        credit_limit: validatedData.credit_limit,
+        notes: validatedData.notes,
         company_id: companyId,
         created_by: user?.id,
         customer_code: validatedData.customer_code || await generateCustomerCode(),
+        // Convert dates to ISO strings for database
+        date_of_birth: validatedData.date_of_birth ? validatedData.date_of_birth.toISOString().split('T')[0] : undefined,
+        license_expiry: validatedData.license_expiry ? validatedData.license_expiry.toISOString().split('T')[0] : undefined,
+        national_id_expiry: validatedData.national_id_expiry ? validatedData.national_id_expiry.toISOString().split('T')[0] : undefined,
       };
-
-      // Remove fields not in database schema
-      delete customerData.force_create;
-      delete customerData.context;
 
       // Insert customer
       const { data: insertedCustomer, error } = await supabase
@@ -117,6 +130,10 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         ...validatedData,
         updated_at: new Date().toISOString(),
         updated_by: user?.id,
+        // Convert dates to ISO strings for database
+        date_of_birth: validatedData.date_of_birth ? validatedData.date_of_birth.toISOString().split('T')[0] : undefined,
+        license_expiry: validatedData.license_expiry ? validatedData.license_expiry.toISOString().split('T')[0] : undefined,
+        national_id_expiry: validatedData.national_id_expiry ? validatedData.national_id_expiry.toISOString().split('T')[0] : undefined,
       };
 
       // Remove ID from update data
@@ -163,13 +180,13 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         throw new Error('لا يمكن حذف العميل لوجود عقود نشطة أو فواتير غير مدفوعة');
       }
 
-      // Soft delete customer
+      // Soft delete customer (set inactive)
       const { error } = await supabase
         .from('customers')
         .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: user?.id,
+          is_active: false,
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id,
         })
         .eq('id', customerId)
         .eq('company_id', companyId);
@@ -235,35 +252,44 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
 
   // Helper functions
   const checkForDuplicates = async (customerData: CreateCustomerData) => {
-    const { data, error } = await supabase.rpc('check_customer_duplicates', {
-      p_company_id: companyId,
-      p_customer_type: customerData.customer_type,
-      p_national_id: customerData.national_id || null,
-      p_passport_number: customerData.passport_number || null,
-      p_phone: customerData.phone || null,
-      p_email: customerData.email || null,
-      p_company_name: customerData.company_name || null,
-      p_commercial_register: null
-    });
+    // Simple duplicate check using database query
+    const duplicateQuery = supabase
+      .from('customers')
+      .select('id, first_name, last_name, company_name, customer_type')
+      .eq('company_id', companyId);
+
+    if (customerData.national_id) {
+      duplicateQuery.eq('national_id', customerData.national_id);
+    } else if (customerData.passport_number) {
+      duplicateQuery.eq('passport_number', customerData.passport_number);
+    } else if (customerData.phone) {
+      duplicateQuery.eq('phone', customerData.phone);
+    } else {
+      return { has_duplicates: false, duplicates: [] };
+    }
+
+    const { data, error } = await duplicateQuery;
 
     if (error) {
       console.error('Error checking duplicates:', error);
       throw error;
     }
 
-    return data as { has_duplicates: boolean; duplicates: any[] };
+    return {
+      has_duplicates: (data && data.length > 0),
+      duplicates: data || []
+    };
   };
 
   const generateCustomerCode = async (): Promise<string> => {
     const prefix = 'CUST';
     const year = new Date().getFullYear().toString().slice(-2);
     
-    // Get the next sequence number
-    const { data, error } = await supabase.rpc('get_next_customer_code', {
-      p_company_id: companyId,
-      p_prefix: prefix,
-      p_year: year
-    });
+    // Get count of existing customers to generate next number
+    const { count, error } = await supabase
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId);
 
     if (error) {
       console.error('Error generating customer code:', error);
@@ -271,15 +297,16 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
     }
 
-    return data || `${prefix}-${year}-001`;
+    const nextNumber = (count || 0) + 1;
+    return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
   };
 
   const createCustomerAccounts = async (customerId: string) => {
     try {
-      // Create default accounts for the customer
-      const { error } = await supabase.rpc('create_customer_accounts', {
-        p_customer_id: customerId,
-        p_company_id: companyId
+      // Create default accounts for the customer using the available function
+      const { error } = await supabase.rpc('auto_create_customer_accounts', {
+        company_id_param: companyId,
+        customer_id_param: customerId
       });
 
       if (error) {
