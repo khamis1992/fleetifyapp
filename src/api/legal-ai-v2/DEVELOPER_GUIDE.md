@@ -1,109 +1,246 @@
-# دليل التطوير والصيانة - المستشار القانوني الذكي v2.0
+# React/TypeScript Application Developer Guide
 
-## نظرة عامة على البنية
+This document provides a comprehensive developer guide for the React/TypeScript application built on Lovable platform, focusing on type safety, database integration, and error prevention.
 
-### المكونات الأساسية
+## Project Overview
+
+### Technology Stack
+
+This application is built using:
+- **Frontend**: React 18 with TypeScript
+- **Styling**: Tailwind CSS with custom design system
+- **Database**: Supabase (PostgreSQL)
+- **Build Tool**: Vite
+- **Platform**: Lovable (automated deployment and development)
+- **State Management**: React hooks and context
+- **UI Components**: Custom components with shadcn/ui
+
+### Architecture Principles
+
+1. **Type Safety First**: Comprehensive TypeScript coverage
+2. **Database-Driven**: Supabase-first architecture with generated types
+3. **Component-Based**: Modular, reusable React components
+4. **Design System**: Consistent styling with semantic tokens
+5. **Error Prevention**: Proactive error handling and validation
+
+### Project Structure
 
 ```
-src/api/legal-ai-v2/
-├── enhanced_unified_legal_ai_system.py    # النظام الموحد الرئيسي
-├── arabic_query_processor.py              # معالج الاستفسارات العربية
-├── smart_query_engine.py                  # محرك الاستعلامات الذكي
-├── real_database_connector.py             # موصل قاعدة البيانات
-├── api_endpoints.py                       # نقاط النهاية للAPI
-├── requirements.txt                       # المتطلبات
-├── Dockerfile                             # إعدادات Docker
-├── docker-compose.yml                     # تكوين الخدمات
-└── tests/                                 # الاختبارات
-    ├── test_arabic_query_processor.py
-    ├── test_enhanced_unified_system.py
-    └── test_performance.py
+src/
+├── components/           # Reusable UI components
+│   ├── ui/              # Base UI components (shadcn/ui)
+│   ├── finance/         # Financial management components
+│   ├── legal/           # Legal case management
+│   └── shared/          # Shared business components
+├── hooks/               # Custom React hooks
+├── types/               # TypeScript type definitions
+├── integrations/        # External service integrations
+│   └── supabase/        # Supabase client and types
+├── pages/               # Application pages/routes
+├── lib/                 # Utility functions and configs
+├── assets/              # Static assets
+└── styles/              # Global styles and design system
+
+docs/                    # Documentation
+├── TYPE_SAFETY_GUIDE.md
+├── DATABASE_SCHEMA_GUIDE.md
+├── INTEGRATION_PATTERNS_GUIDE.md
+└── ERROR_PREVENTION_GUIDE.md
+
+scripts/                 # Development and validation scripts
+├── schema-validator.js
+└── type-checker.js
 ```
 
-## البنية التقنية
+## Development Environment Setup
 
-### 1. معالج الاستفسارات العربية (ArabicQueryProcessor)
+### Prerequisites
 
-**الوظائف الأساسية:**
-- تطبيع النص العربي
-- استخراج الكيانات (entities)
-- تصنيف نوع الاستفسار
-- تحديد نوع العملية المطلوبة
+- Node.js 18+ and npm
+- Supabase account and project
+- Git for version control
+- VS Code (recommended) with TypeScript extensions
 
-**الكلاسات والوظائف:**
-```python
-class ArabicQueryProcessor:
-    def normalize_text(self, text: str) -> str
-    def extract_entities(self, text: str) -> List[Tuple[str, str]]
-    def classify_query_type(self, text: str, entities: List) -> QueryType
-    def determine_action(self, text: str) -> QueryAction
-    def process_query(self, query: str) -> QueryResult
-```
-
-### 2. محرك الاستعلامات الذكي (SmartQueryEngine)
-
-**الوظائف الأساسية:**
-- تحويل الاستفسارات إلى SQL
-- تنفيذ الاستعلامات على قاعدة البيانات
-- معالجة النتائج وتنسيقها
-- إدارة التخزين المؤقت
-
-**الكلاسات والوظائف:**
-```python
-class SmartQueryEngine:
-    def build_sql_query(self, query_result: QueryResult) -> str
-    def execute_query(self, sql: str) -> Dict[str, Any]
-    def format_response(self, data: Dict, query_type: QueryType) -> str
-    def process_query(self, query: str) -> SmartQueryResponse
-```
-
-### 3. النظام الموحد المحسن (EnhancedUnifiedLegalAISystem)
-
-**الوظائف الأساسية:**
-- تنسيق العمل بين المكونات
-- تصنيف نية الاستفسار
-- معالجة الاستشارات القانونية
-- إدارة الاستجابات المختلطة
-
-## إعداد بيئة التطوير
-
-### 1. المتطلبات الأساسية
+### Getting Started
 
 ```bash
-# Python 3.11+
-python --version
+# Clone the repository
+git clone <repository-url>
+cd <project-directory>
 
-# قاعدة بيانات Supabase
-# Redis للتخزين المؤقت
-# Docker (اختياري)
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase credentials
+
+# Start development server
+npm run dev
 ```
 
-### 2. تثبيت المتطلبات
+### Environment Configuration
 
 ```bash
-# إنشاء بيئة افتراضية
-python -m venv legal_ai_env
-source legal_ai_env/bin/activate  # Linux/Mac
-# أو
-legal_ai_env\Scripts\activate     # Windows
+# .env file
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# تثبيت المتطلبات
-pip install -r requirements.txt
+# Development settings
+VITE_ENABLE_DEBUG=true
+VITE_API_BASE_URL=http://localhost:3000
 ```
 
-### 3. إعداد متغيرات البيئة
+## Type Safety and Development Standards
+
+### TypeScript Configuration
+
+Our `tsconfig.json` is configured for strict type checking:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
+  }
+}
+```
+
+### Database Type Integration
+
+Always use generated Supabase types:
+
+```typescript
+import { Database } from '@/integrations/supabase/types';
+
+// Extract table types
+type Customer = Database['public']['Tables']['customers']['Row'];
+type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
+type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
+
+// Use in components
+interface CustomerListProps {
+  customers: Customer[];
+  onUpdate: (customer: CustomerUpdate) => void;
+}
+```
+
+### Component Development Standards
+
+```typescript
+// Component structure
+interface ComponentProps {
+  // Required props first
+  data: Customer;
+  onAction: (id: string) => void;
+  
+  // Optional props last
+  className?: string;
+  variant?: 'default' | 'compact';
+}
+
+export function Component({ 
+  data, 
+  onAction, 
+  className,
+  variant = 'default' 
+}: ComponentProps) {
+  // Hooks at the top
+  const [loading, setLoading] = useState(false);
+  
+  // Event handlers
+  const handleClick = useCallback(() => {
+    onAction(data.id);
+  }, [onAction, data.id]);
+  
+  // Early returns for loading/error states
+  if (!data) {
+    return <div>Loading...</div>;
+  }
+  
+  return (
+    <div className={cn("base-styles", className)}>
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
+## Quality Assurance and Testing
+
+### Automated Quality Checks
+
+We've implemented comprehensive quality checks to prevent TypeScript errors and maintain code quality:
 
 ```bash
-# إنشاء ملف .env
-cat > .env << EOF
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_key
-REDIS_HOST=localhost
-REDIS_PORT=6379
-DEBUG=true
-HOST=0.0.0.0
-PORT=8000
-EOF
+# Run all quality checks
+npm run quality-check
+
+# Individual checks
+npm run type-check        # TypeScript compilation
+npm run validate-schema   # Database schema validation
+npm run check-types       # Custom type consistency checking
+npm run lint             # ESLint validation
+npm run test             # Unit tests
+```
+
+### Pre-commit Validation
+
+Before committing code, run:
+
+```bash
+npm run pre-commit
+```
+
+This runs:
+1. TypeScript type checking
+2. Schema validation
+3. Type consistency checks
+4. Linting
+5. Unit tests
+
+### Database Migration Workflow
+
+1. **Plan Changes**: Document required database changes
+2. **Create Migration**: Use Supabase migration tool
+3. **Update Types**: Regenerate TypeScript types
+4. **Update Code**: Modify application code to use new types
+5. **Test**: Run all quality checks
+6. **Deploy**: Deploy changes through Lovable platform
+
+### Testing Strategy
+
+```typescript
+// Example test structure
+describe('Customer Management', () => {
+  describe('useCustomers hook', () => {
+    it('should fetch customers successfully', async () => {
+      const { result } = renderHook(() => useCustomers('company-id'));
+      
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+      
+      expect(result.current.customers).toEqual(expect.any(Array));
+      expect(result.current.error).toBeNull();
+    });
+  });
+
+  describe('CustomerForm component', () => {
+    it('should validate required fields', async () => {
+      render(<CustomerForm />);
+      
+      fireEvent.click(screen.getByText('Submit'));
+      
+      await waitFor(() => {
+        expect(screen.getByText('First name is required')).toBeInTheDocument();
+      });
+    });
+  });
+});
 ```
 
 ## التطوير والتخصيص
