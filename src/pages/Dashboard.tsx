@@ -12,7 +12,6 @@ import EnhancedStatsCard from '@/components/dashboard/EnhancedStatsCard';
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -184,7 +183,6 @@ const Dashboard: React.FC = () => {
               loading={financialLoading} 
             />
             <DocumentExpiryAlerts />
-            <UnifiedAlertsSystem compact />
           </motion.div>
         </div>
       </div>

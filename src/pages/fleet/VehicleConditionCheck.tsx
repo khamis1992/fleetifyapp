@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
+import { UnifiedOdometerInput } from '@/components/fleet/UnifiedOdometerInput';
 import { ArrowLeft, Car, ClipboardCheck, Fuel, Gauge } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useUpdateOdometerForOperation } from '@/hooks/useUnifiedOdometerManagement';
 
 interface ConditionItem {
   id: string;
@@ -30,6 +32,7 @@ export const VehicleConditionCheck = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { updateForDispatchStart, updateForDispatchEnd } = useUpdateOdometerForOperation();
   
   const permitId = searchParams.get('permitId');
   const vehicleId = searchParams.get('vehicleId');
@@ -37,8 +40,8 @@ export const VehicleConditionCheck = () => {
   const inspectionType = searchParams.get('type') || 'pre_dispatch';
 
   const [overallCondition, setOverallCondition] = useState<string>('');
-  const [mileage, setMileage] = useState<string>('');
-  const [fuelLevel, setFuelLevel] = useState<string>('');
+  const [odometerReading, setOdometerReading] = useState<number>(0);
+  const [fuelLevel, setFuelLevel] = useState<number>(100);
   const [notes, setNotes] = useState<string>('');
   const [damagePoints, setDamagePoints] = useState<DamagePoint[]>([]);
   
@@ -85,15 +88,41 @@ export const VehicleConditionCheck = () => {
     }
   };
 
-  const handleSave = () => {
-    // Here you would typically save to the database
-    toast({
-      title: "تم حفظ تقرير الفحص",
-      description: "تم حفظ تقرير فحص حالة المركبة بنجاح",
-    });
-    
-    // Navigate back to dispatch permits
-    navigate('/fleet/dispatch-permits');
+  const handleSave = async () => {
+    try {
+      // Update the odometer reading in the unified system if we have the necessary data
+      if (permitId && vehicleId && odometerReading > 0) {
+        const odometerData = {
+          vehicle_id: vehicleId,
+          permit_id: permitId,
+          odometer_reading: odometerReading,
+          fuel_level_percentage: fuelLevel,
+          notes: `${inspectionType === 'pre_dispatch' ? 'Pre-dispatch' : 'Post-dispatch'} condition check`
+        };
+
+        if (inspectionType === 'pre_dispatch') {
+          await updateForDispatchStart(odometerData);
+        } else {
+          await updateForDispatchEnd(odometerData);
+        }
+      }
+
+      // Here you would typically save the condition report to the database
+      toast({
+        title: "تم حفظ تقرير الفحص",
+        description: "تم حفظ تقرير فحص حالة المركبة بنجاح",
+      });
+      
+      // Navigate back to dispatch permits
+      navigate('/fleet/dispatch-permits');
+    } catch (error) {
+      console.error('Error saving condition check:', error);
+      toast({
+        title: "خطأ في حفظ التقرير",
+        description: "حدث خطأ أثناء حفظ تقرير الفحص. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -129,54 +158,34 @@ export const VehicleConditionCheck = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">الحالة العامة</label>
-                    <Select value={overallCondition} onValueChange={setOverallCondition}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر الحالة العامة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="excellent">ممتاز</SelectItem>
-                        <SelectItem value="good">جيد</SelectItem>
-                        <SelectItem value="fair">متوسط</SelectItem>
-                        <SelectItem value="poor">ضعيف</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Gauge className="h-4 w-4" />
-                      العداد (كم)
-                    </label>
-                    <Input 
-                      type="number" 
-                      value={mileage} 
-                      onChange={(e) => setMileage(e.target.value)}
-                      placeholder="قراءة العداد"
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Fuel className="h-4 w-4" />
-                    مستوى الوقود (%)
-                  </label>
-                  <Select value={fuelLevel} onValueChange={setFuelLevel}>
+                  <label className="text-sm font-medium">الحالة العامة</label>
+                  <Select value={overallCondition} onValueChange={setOverallCondition}>
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر مستوى الوقود" />
+                      <SelectValue placeholder="اختر الحالة العامة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="full">ممتلئ (100%)</SelectItem>
-                      <SelectItem value="three_quarters">ثلاثة أرباع (75%)</SelectItem>
-                      <SelectItem value="half">نصف (50%)</SelectItem>
-                      <SelectItem value="quarter">ربع (25%)</SelectItem>
-                      <SelectItem value="empty">فارغ تقريباً (أقل من 25%)</SelectItem>
+                      <SelectItem value="excellent">ممتاز</SelectItem>
+                      <SelectItem value="good">جيد</SelectItem>
+                      <SelectItem value="fair">متوسط</SelectItem>
+                      <SelectItem value="poor">ضعيف</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Unified Odometer and Fuel Input */}
+                {vehicleId && (
+                  <UnifiedOdometerInput
+                    vehicleId={vehicleId}
+                    odometerValue={odometerReading}
+                    onOdometerChange={setOdometerReading}
+                    fuelLevel={fuelLevel}
+                    onFuelLevelChange={setFuelLevel}
+                    showCurrentReading={true}
+                    showFuelInput={true}
+                    required={false}
+                  />
+                )}
               </CardContent>
             </Card>
 

@@ -10,6 +10,8 @@ import { Trash2, Plus } from 'lucide-react';
 import { CreateContractVehicleReturnData } from '@/hooks/useContractVehicleReturn';
 import { useContractVehicle } from '@/hooks/useContractVehicle';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
+import { UnifiedOdometerInput } from '@/components/fleet/UnifiedOdometerInput';
+import { useUpdateOdometerForOperation } from '@/hooks/useUnifiedOdometerManagement';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface Damage {
@@ -42,6 +44,11 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
 }) => {
   const { data: vehicleData } = useContractVehicle(contract.vehicle_id);
   const { formatCurrency } = useCurrencyFormatter();
+  const { updateForContractEnd } = useUpdateOdometerForOperation();
+  
+  const [odometerReading, setOdometerReading] = useState<number>(0);
+  const [fuelLevel, setFuelLevel] = useState<number>(100);
+  
   const [formData, setFormData] = useState<CreateContractVehicleReturnData>({
     contract_id: contract.id,
     vehicle_id: contract.vehicle_id,
@@ -132,26 +139,62 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
     }, 100);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // جمع كل الأضرار من المجسم والإدخال اليدوي
-    const allDamages = [
-      ...damages,
-      ...damagePoints.map(point => ({
-        type: 'ضرر على المجسم',
-        description: point.description,
-        severity: point.severity === 'severe' ? 'major' as const : 
-                  point.severity === 'moderate' ? 'moderate' as const : 'minor' as const,
-        position: { x: point.x, y: point.y },
-        id: point.id
-      }))
-    ];
-    
-    onSubmit({
-      ...formData,
-      damages: allDamages
-    });
+    try {
+      // First update the odometer reading in the unified system if provided
+      if (odometerReading && odometerReading > 0) {
+        await updateForContractEnd({
+          vehicle_id: contract.vehicle_id,
+          contract_id: contract.id,
+          odometer_reading: odometerReading,
+          fuel_level_percentage: fuelLevel,
+          notes: 'Contract vehicle return'
+        });
+      }
+      
+      // جمع كل الأضرار من المجسم والإدخال اليدوي
+      const allDamages = [
+        ...damages,
+        ...damagePoints.map(point => ({
+          type: 'ضرر على المجسم',
+          description: point.description,
+          severity: point.severity === 'severe' ? 'major' as const : 
+                    point.severity === 'moderate' ? 'moderate' as const : 'minor' as const,
+          position: { x: point.x, y: point.y },
+          id: point.id
+        }))
+      ];
+      
+      onSubmit({
+        ...formData,
+        odometer_reading: odometerReading || undefined,
+        fuel_level: fuelLevel,
+        damages: allDamages
+      });
+    } catch (error) {
+      console.error('Error updating odometer:', error);
+      // Still proceed with form submission even if odometer update fails
+      const allDamages = [
+        ...damages,
+        ...damagePoints.map(point => ({
+          type: 'ضرر على المجسم',
+          description: point.description,
+          severity: point.severity === 'severe' ? 'major' as const : 
+                    point.severity === 'moderate' ? 'moderate' as const : 'minor' as const,
+          position: { x: point.x, y: point.y },
+          id: point.id
+        }))
+      ];
+      
+      onSubmit({
+        ...formData,
+        odometer_reading: odometerReading || undefined,
+        fuel_level: fuelLevel,
+        damages: allDamages
+      });
+    }
   };
 
   const addDamage = () => {
@@ -272,29 +315,17 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="fuel_level">مستوى الوقود (%)</Label>
-              <Input
-                id="fuel_level"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.fuel_level}
-                onChange={(e) => setFormData({ ...formData, fuel_level: Number(e.target.value) })}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="odometer_reading">قراءة العداد (كم)</Label>
-              <Input
-                id="odometer_reading"
-                type="number"
-                value={formData.odometer_reading || ''}
-                onChange={(e) => setFormData({ ...formData, odometer_reading: e.target.value ? Number(e.target.value) : undefined })}
-              />
-            </div>
-          </div>
+          {/* Unified Odometer and Fuel Input */}
+          <UnifiedOdometerInput
+            vehicleId={contract.vehicle_id}
+            odometerValue={odometerReading}
+            onOdometerChange={setOdometerReading}
+            fuelLevel={fuelLevel}
+            onFuelLevelChange={setFuelLevel}
+            showCurrentReading={true}
+            showFuelInput={true}
+            required={false}
+          />
         </CardContent>
       </Card>
 

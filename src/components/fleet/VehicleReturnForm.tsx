@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { UnifiedOdometerInput } from "./UnifiedOdometerInput";
 import { CalendarDays, MapPin, Gauge, Fuel, Car, ClipboardList, AlertTriangle, CheckCircle } from "lucide-react";
 import { useCreateVehicleReturn, useUpdateVehicleReturn, useVehicleReturnByPermit, type CreateVehicleReturnData } from "@/hooks/useVehicleReturn";
+import { useUpdateOdometerForOperation } from "@/hooks/useUnifiedOdometerManagement";
 
 const returnFormSchema = z.object({
   return_odometer_reading: z.number().min(0).optional(),
@@ -80,10 +82,13 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   onSuccess
 }) => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [odometerReading, setOdometerReading] = useState<number>(0);
+  const [fuelLevel, setFuelLevel] = useState<number>(100);
   
   const { data: existingReturn } = useVehicleReturnByPermit(permitId);
   const createReturn = useCreateVehicleReturn();
   const updateReturn = useUpdateVehicleReturn();
+  const { updateForDispatchEnd } = useUpdateOdometerForOperation();
 
   const form = useForm<ReturnFormData>({
     resolver: zodResolver(returnFormSchema),
@@ -110,23 +115,37 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         items_returned: existingReturn.items_returned,
       });
       setSelectedItems(existingReturn.items_returned);
+      setOdometerReading(existingReturn.return_odometer_reading || 0);
+      setFuelLevel(existingReturn.fuel_level_percentage);
     }
   }, [existingReturn, form]);
 
   const onSubmit = async (data: ReturnFormData) => {
-    const formData: CreateVehicleReturnData = {
-      dispatch_permit_id: permitId,
-      vehicle_id: vehicleId,
-      return_odometer_reading: data.return_odometer_reading,
-      fuel_level_percentage: data.fuel_level_percentage,
-      vehicle_condition: data.vehicle_condition,
-      damages_reported: data.damages_reported,
-      notes: data.notes,
-      return_location: data.return_location,
-      items_returned: selectedItems,
-    };
-
     try {
+      // First update the odometer reading in the unified system if odometer reading is provided
+      if (odometerReading && odometerReading > 0) {
+        await updateForDispatchEnd({
+          vehicle_id: vehicleId,
+          permit_id: permitId,
+          odometer_reading: odometerReading,
+          fuel_level_percentage: fuelLevel,
+          notes: 'Vehicle return - dispatch end'
+        });
+      }
+
+      // Then create/update the return form
+      const formData: CreateVehicleReturnData = {
+        dispatch_permit_id: permitId,
+        vehicle_id: vehicleId,
+        return_odometer_reading: odometerReading || undefined,
+        fuel_level_percentage: fuelLevel,
+        vehicle_condition: data.vehicle_condition,
+        damages_reported: data.damages_reported,
+        notes: data.notes,
+        return_location: data.return_location,
+        items_returned: selectedItems,
+      };
+
       if (existingReturn) {
         await updateReturn.mutateAsync({ id: existingReturn.id, data: formData });
       } else {
@@ -253,56 +272,18 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="return_odometer_reading"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4" />
-                      Odometer Reading (km)
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Enter current odometer reading"
-                        {...field}
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                        disabled={isReadOnly}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="fuel_level_percentage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Fuel className="h-4 w-4" />
-                      Fuel Level (%)
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0" 
-                        max="100"
-                        placeholder="Fuel level percentage"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        disabled={isReadOnly}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Unified Odometer and Fuel Input */}
+            <UnifiedOdometerInput
+              vehicleId={vehicleId}
+              odometerValue={odometerReading}
+              onOdometerChange={setOdometerReading}
+              fuelLevel={fuelLevel}
+              onFuelLevelChange={setFuelLevel}
+              showCurrentReading={true}
+              showFuelInput={true}
+              disabled={isReadOnly}
+              required={false}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField

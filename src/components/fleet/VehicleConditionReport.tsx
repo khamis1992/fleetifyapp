@@ -6,7 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { VehicleConditionDiagram } from './VehicleConditionDiagram';
+import { UnifiedOdometerInput } from './UnifiedOdometerInput';
 import { useUpdateConditionReport } from '@/hooks/useVehicleCondition';
+import { useUpdateOdometerForOperation } from '@/hooks/useUnifiedOdometerManagement';
 import type { VehicleConditionReport as VehicleConditionReportType, UpdateConditionReportData } from '@/hooks/useVehicleCondition';
 import { CheckCircle, AlertTriangle, X, FileText } from 'lucide-react';
 
@@ -33,6 +35,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
   });
 
   const updateMutation = useUpdateConditionReport();
+  const { updateForDispatchStart, updateForDispatchEnd } = useUpdateOdometerForOperation();
 
   const handleSave = async () => {
     console.log('Save button clicked!');
@@ -42,18 +45,36 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
     
     if (readonly) return;
 
-    const updateData: UpdateConditionReportData = {
-      overall_condition: formData.overall_condition,
-      mileage_reading: formData.mileage_reading,
-      fuel_level: formData.fuel_level,
-      notes: formData.notes,
-      damage_points: formData.damage_points,
-      status: formData.status
-    };
-
-    console.log('Update data:', updateData);
-    
     try {
+      // First update the odometer reading in the unified system
+      if (report.dispatch_permit_id && formData.mileage_reading) {
+        const odometerData = {
+          vehicle_id: report.vehicle_id,
+          permit_id: report.dispatch_permit_id,
+          odometer_reading: formData.mileage_reading,
+          fuel_level_percentage: formData.fuel_level,
+          notes: `${report.inspection_type === 'pre_dispatch' ? 'Pre-dispatch' : 'Post-dispatch'} condition report`
+        };
+
+        if (report.inspection_type === 'pre_dispatch') {
+          await updateForDispatchStart(odometerData);
+        } else if (report.inspection_type === 'post_dispatch') {
+          await updateForDispatchEnd(odometerData);
+        }
+      }
+
+      // Then update the condition report
+      const updateData: UpdateConditionReportData = {
+        overall_condition: formData.overall_condition,
+        mileage_reading: formData.mileage_reading,
+        fuel_level: formData.fuel_level,
+        notes: formData.notes,
+        damage_points: formData.damage_points,
+        status: formData.status
+      };
+
+      console.log('Update data:', updateData);
+      
       await updateMutation.mutateAsync({ id: report.id, updates: updateData });
       console.log('Save successful!');
       onStatusChange?.(formData.status);
@@ -125,31 +146,46 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <label className="text-sm font-medium">قراءة العداد</label>
-              <Input
-                type="number"
-                value={formData.mileage_reading}
-                onChange={(e) => setFormData({ ...formData, mileage_reading: parseInt(e.target.value) || 0 })}
-                disabled={readonly}
-                dir="ltr"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">مستوى الوقود (%)</label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.fuel_level}
-                onChange={(e) => setFormData({ ...formData, fuel_level: parseInt(e.target.value) || 0 })}
-                disabled={readonly}
-                dir="ltr"
-              />
-            </div>
           </div>
+
+          {/* Unified Odometer and Fuel Input */}
+          {!readonly && (
+            <UnifiedOdometerInput
+              vehicleId={report.vehicle_id}
+              odometerValue={formData.mileage_reading}
+              onOdometerChange={(value) => setFormData({ ...formData, mileage_reading: value })}
+              fuelLevel={formData.fuel_level}
+              onFuelLevelChange={(value) => setFormData({ ...formData, fuel_level: value })}
+              showCurrentReading={true}
+              showFuelInput={true}
+              disabled={readonly}
+              required={false}
+            />
+          )}
+
+          {/* Read-only display for approved reports */}
+          {readonly && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">قراءة العداد</h4>
+                <p className="text-lg font-medium">
+                  {formData.mileage_reading?.toLocaleString()} كم
+                </p>
+              </div>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">مستوى الوقود</h4>
+                <div className="flex items-center gap-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${formData.fuel_level || 0}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium min-w-[45px]">{formData.fuel_level}%</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {!readonly && (
             <div>

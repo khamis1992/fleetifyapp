@@ -80,6 +80,16 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
       if (error) {
         console.error('Error calling extract-traffic-violations function:', error);
+        
+        // Check for specific error types
+        if (error.message?.includes('OpenAI API key')) {
+          throw new Error('مفتاح OpenAI API غير مكون. يرجى التحقق من إعدادات النظام.');
+        } else if (error.message?.includes('model')) {
+          throw new Error('خطأ في نموذج الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.');
+        } else if (error.message?.includes('PDF')) {
+          throw new Error('فشل في معالجة ملف PDF. تأكد من أن الملف صالح وواضح.');
+        }
+        
         throw new Error(error.message || 'فشل في استخراج البيانات من الملف');
       }
 
@@ -334,6 +344,10 @@ export const TrafficViolationPDFImport: React.FC = () => {
           </CardTitle>
           <CardDescription>
             رفع ومعالجة ملفات PDF للمخالفات المرورية واستخراج البيانات تلقائياً
+            <br />
+            <span className="text-green-600 text-sm font-medium">
+              ✅ تم تحديث النظام لتحسين استخراج البيانات من ملفات PDF
+            </span>
           </CardDescription>
         </CardHeader>
         

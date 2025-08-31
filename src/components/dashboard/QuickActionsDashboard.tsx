@@ -219,30 +219,7 @@ const QuickActionsDashboard: React.FC = () => {
         </Card>
       </motion.div>
 
-      {/* Secondary Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <Card className="bg-card/30 backdrop-blur-sm border-border/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base text-muted-foreground">إجراءات إضافية</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {recentActions.map((action, index) => (
-                <ActionButton 
-                  key={action.id} 
-                  action={action} 
-                  index={index} 
-                  variant="compact"
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+
     </div>
   );
 };

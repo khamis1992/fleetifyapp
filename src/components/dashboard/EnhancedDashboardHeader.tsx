@@ -1,19 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Target, Zap, Eye, ArrowLeft, Calendar, Bell, Settings } from 'lucide-react';
+import { Target, Zap, Eye, ArrowLeft, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 interface EnhancedDashboardHeaderProps {
   isBrowsingMode?: boolean;
@@ -27,7 +17,6 @@ const EnhancedDashboardHeader: React.FC<EnhancedDashboardHeaderProps> = ({
   onExitBrowseMode
 }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -37,18 +26,12 @@ const EnhancedDashboardHeader: React.FC<EnhancedDashboardHeaderProps> = ({
   };
 
   const getCurrentDate = () => {
-    return new Intl.DateTimeFormat('ar-SA', {
+    return new Intl.DateTimeFormat('ar-EG', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     }).format(new Date());
-  };
-
-  const getInitials = () => {
-    const firstName = user?.profile?.first_name_ar || user?.profile?.first_name || '';
-    const lastName = user?.profile?.last_name_ar || user?.profile?.last_name || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -158,45 +141,6 @@ const EnhancedDashboardHeader: React.FC<EnhancedDashboardHeaderProps> = ({
               >
                 <Zap size={36} />
               </motion.div>
-              
-              {/* Quick Actions */}
-              <div className="flex flex-col gap-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10">
-                      <Bell size={16} className="ml-2" />
-                      الإشعارات
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    <DropdownMenuLabel>الإشعارات الحديثة</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <span className="text-sm text-muted-foreground">لا توجد إشعارات جديدة</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-10">
-                      <Avatar className="w-6 h-6 ml-2">
-                        <AvatarImage src={user?.profile?.avatar_url || ''} />
-                        <AvatarFallback className="text-xs">{getInitials()}</AvatarFallback>
-                      </Avatar>
-                      الملف الشخصي
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>حسابي</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/settings')}>
-                      <Settings className="ml-2 h-4 w-4" />
-                      الإعدادات
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
             </div>
           </div>
         </div>

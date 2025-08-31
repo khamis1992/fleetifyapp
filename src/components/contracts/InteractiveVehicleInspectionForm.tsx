@@ -10,6 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useContractVehicle } from '@/hooks/useContractVehicle';
 import { useCreateConditionReport } from '@/hooks/useVehicleCondition';
+import { useUpdateOdometerForOperation } from '@/hooks/useUnifiedOdometerManagement';
+import { UnifiedOdometerInput } from '@/components/fleet/UnifiedOdometerInput';
 import { Printer, Calendar, Clock, Eraser, Undo, X } from 'lucide-react';
 
 interface InteractiveVehicleInspectionFormProps {
@@ -42,13 +44,14 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState<'x'>('x');
   const [drawingHistory, setDrawingHistory] = useState<DrawingPoint[]>([]);
-  const [fuelLevel, setFuelLevel] = useState([50]);
-  const [mileage, setMileage] = useState('');
+  const [fuelLevel, setFuelLevel] = useState(50);
+  const [mileage, setMileage] = useState(0);
   const [additionalNotes, setAdditionalNotes] = useState('');
   // Signature states removed - using manual signing after print
 
   const { data: vehicle } = useContractVehicle(vehicleId);
   const createConditionReportMutation = useCreateConditionReport();
+  const { updateForContractStart } = useUpdateOdometerForOperation();
 
   const [accessories, setAccessories] = useState<AccessoryItem[]>([
     { id: 'spare_tire', name: 'Spare Tire', nameAr: 'إطار احتياطي', checked: false },
@@ -192,17 +195,11 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
       console.log('Starting save process for vehicle condition report...');
       console.log('Vehicle ID:', vehicleId);
       console.log('Contract ID:', contractId);
-      console.log('Raw mileage input:', mileage);
-      console.log('Raw fuel level:', fuelLevel);
+      console.log('Mileage:', mileage);
+      console.log('Fuel level:', fuelLevel);
       
       // Validation
-      const mileageValue = parseInt(mileage) || 0;
-      const fuelLevelValue = fuelLevel[0];
-
-      console.log('Parsed mileage value:', mileageValue);
-      console.log('Fuel level value:', fuelLevelValue);
-
-      if (!mileage.trim() || mileageValue <= 0) {
+      if (!mileage || mileage <= 0) {
         toast({
           title: "خطأ في البيانات",
           description: "يرجى إدخال قراءة عداد صحيحة أكبر من 0",
@@ -211,7 +208,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
         return;
       }
 
-      if (fuelLevelValue < 0 || fuelLevelValue > 100) {
+      if (fuelLevel < 0 || fuelLevel > 100) {
         toast({
           title: "خطأ في البيانات", 
           description: "يرجى إدخال مستوى وقود صحيح بين 0 و 100%",
@@ -229,10 +226,21 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
         return;
       }
 
+      // First, update the odometer reading in the unified system
+      if (contractId) {
+        await updateForContractStart({
+          vehicle_id: vehicleId,
+          contract_id: contractId,
+          odometer_reading: mileage,
+          fuel_level_percentage: fuelLevel,
+          notes: additionalNotes || 'قراءة العداد عند بداية العقد'
+        });
+      }
+
       const conditionData = {
         overall_condition: 'good' as const,
-        mileage_reading: mileageValue,
-        fuel_level: fuelLevelValue,
+        mileage_reading: mileage,
+        fuel_level: fuelLevel,
         notes: additionalNotes || '',
         condition_items: accessories.reduce((acc, item) => ({
           ...acc,
@@ -258,7 +266,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
       toast({
         title: "تم حفظ التقرير بنجاح",
-        description: "تم حفظ تقرير حالة المركبة بنجاح",
+        description: "تم حفظ تقرير حالة المركبة وتحديث العداد بنجاح",
       });
 
       onComplete?.(result.id);
@@ -405,50 +413,24 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
             </CardContent>
           </Card>
 
-          {/* Fuel Level and Mileage */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">مستوى الوقود</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Slider
-                    value={fuelLevel}
-                    onValueChange={setFuelLevel}
-                    max={100}
-                    step={5}
-                    className="w-full"
-                  />
-                  <div className="text-center">
-                    <span className="text-2xl font-bold">{fuelLevel[0]}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>فارغ</span>
-                    <span>ممتلئ</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">قراءة العداد</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Input
-                  type="number"
-                  placeholder="أدخل قراءة العداد"
-                  value={mileage}
-                  onChange={(e) => setMileage(e.target.value)}
-                  className="text-center text-xl"
-                />
-                <p className="text-sm text-muted-foreground mt-2 text-center">
-                  كيلومتر
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Unified Odometer and Fuel Input */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">قراءة العداد ومستوى الوقود</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UnifiedOdometerInput
+                vehicleId={vehicleId}
+                odometerValue={mileage}
+                onOdometerChange={setMileage}
+                fuelLevel={fuelLevel}
+                onFuelLevelChange={setFuelLevel}
+                showCurrentReading={true}
+                showFuelInput={true}
+                required={true}
+              />
+            </CardContent>
+          </Card>
 
           {/* Terms and Conditions */}
           <Card>

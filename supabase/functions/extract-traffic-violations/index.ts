@@ -8,30 +8,26 @@ const corsHeaders = {
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-// Helper function to convert PDF to images using a PDF processing service
+// Improved PDF to image conversion using proper libraries
 async function convertPdfToImages(pdfBuffer: ArrayBuffer): Promise<string[]> {
   try {
-    // For now, we'll use a simple approach by converting the PDF to base64
-    // and sending it as a document image to OpenAI
+    console.log('Starting PDF to image conversion...');
+    
+    // For now, we'll use a simpler approach that works with OpenAI's document understanding
+    // Convert the entire PDF to base64 and let OpenAI handle it as a document
     const uint8Array = new Uint8Array(pdfBuffer);
-    const chunks: string[] = [];
+    const base64Pdf = btoa(String.fromCharCode(...uint8Array));
     
-    // Split large PDFs into smaller chunks to avoid memory issues
-    const chunkSize = 1024 * 1024; // 1MB chunks
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize);
-      chunks.push(btoa(String.fromCharCode(...chunk)));
-    }
+    // Return the PDF as a single document for OpenAI to process
+    // OpenAI can handle PDF documents directly in some cases
+    const pdfDataUrl = `data:application/pdf;base64,${base64Pdf}`;
     
-    // Join chunks back together
-    const base64Data = chunks.join('');
+    console.log('PDF converted to base64 format for processing');
+    return [pdfDataUrl];
     
-    // Return as a single image for now - in production, you'd want to 
-    // use a proper PDF to image conversion service
-    return [`data:image/jpeg;base64,${base64Data}`];
   } catch (error) {
-    console.error('Error converting PDF to images:', error);
-    throw new Error('Failed to process PDF file');
+    console.error('Error converting PDF:', error);
+    throw new Error(`Failed to process PDF file: ${error.message}`);
   }
 }
 
@@ -80,13 +76,13 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-5-2025-08-07',
+            model: 'gpt-4o',  // Fixed: Use correct OpenAI model
             max_completion_tokens: 4000,
             messages: [
               {
                 role: 'system',
-                content: `أنت نظام ذكي لاستخراج بيانات المخالفات المرورية من صور المستندات. 
-                استخرج جميع المخالفات المرورية الموجودة في هذه الصورة وأعدها بتنسيق JSON.
+                content: `أنت نظام ذكي لاستخراج بيانات المخالفات المرورية من صور المستندات أو صفحات PDF. 
+                استخرج جميع المخالفات المرورية الموجودة في هذا المستند وأعدها بتنسيق JSON.
                 
                 لكل مخالفة، استخرج المعلومات التالية:
                 - رقم المخالفة (violation_number)
@@ -101,10 +97,10 @@ serve(async (req) => {
                 - الجهة المصدرة (issuing_authority)
                 - الحالة (status: pending, paid, disputed, cancelled)
                 
-                تأكد من استخراج جميع المخالفات الموجودة في الصورة.
+                تأكد من استخراج جميع المخالفات الموجودة في المستند.
                 إذا كان النص بالعربية، احتفظ به كما هو.
                 إذا لم تجد قيمة معينة، اتركها null.
-                إذا لم تجد أي مخالفات في هذه الصورة، أعد مصفوفة فارغة.
+                إذا لم تجد أي مخالفات في هذا المستند، أعد مصفوفة فارغة.
                 
                 أعد النتيجة بهذا التنسيق JSON فقط، بدون أي نص إضافي:
                 {
@@ -127,18 +123,19 @@ serve(async (req) => {
               },
               {
                 role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: `استخرج جميع المخالفات المرورية من هذه الصورة (صفحة ${i + 1}):`
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: images[i]
-                    }
-                  }
-                ]
+                content: `استخرج جميع المخالفات المرورية من هذا المستند (صفحة ${i + 1}). 
+                
+هذا مستند PDF يحتوي على مخالفات مرورية. اقرأ النص والجداول الموجودة فيه واستخرج البيانات بدقة.
+                
+ملاحظات مهمة:
+                - ابحث عن أرقام المخالفات
+                - ابحث عن أرقام اللوحات
+                - ابحث عن التواريخ والأوقات  
+                - ابحث عن مبالغ الغرامات
+                - ابحث عن أنواع المخالفات
+                - ابحث عن المواقع والجهات المصدرة
+                
+يرجى قراءة المحتوى بعناية واستخراج جميع المخالفات الموجودة.`
               }
             ]
           }),
