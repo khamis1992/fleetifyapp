@@ -1,22 +1,42 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  CreateContractData,
-  UpdateContractData,
-  ContractVehicleData,
-  ContractPaymentScheduleData,
-  createContractSchema,
-  updateContractSchema 
-} from '@/schemas/contract.schema';
 
 export interface ContractOperationsOptions {
   autoGenerateSchedule?: boolean;
   requireApproval?: boolean;
   enableNotifications?: boolean;
+  autoCreateJournalEntry?: boolean;
   createInvoices?: boolean;
+}
+
+interface CreateContractData {
+  customer_id: string;
+  vehicle_id?: string | null;
+  contract_number?: string;
+  contract_type: 'rental' | 'daily_rental' | 'weekly_rental' | 'monthly_rental' | 'yearly_rental' | 'rent_to_own';
+  contract_date?: string;
+  start_date: string | Date;
+  end_date: string | Date;
+  contract_amount: number;
+  monthly_amount?: number;
+  description?: string;
+  terms?: string;
+  cost_center_id?: string | null;
+  
+  // Legacy field mappings for backward compatibility
+  total_amount?: number;
+  notes?: string;
+  terms_and_conditions?: string;
+  vehicles?: any[];
+  payment_schedule?: any[];
+}
+
+interface UpdateContractData extends CreateContractData {
+  id: string;
+  status?: 'draft' | 'active' | 'expired' | 'suspended' | 'cancelled' | 'renewed';
 }
 
 export const useContractOperations = (options: ContractOperationsOptions = {}) => {
@@ -27,6 +47,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     autoGenerateSchedule = true,
     requireApproval = false,
     enableNotifications = true,
+    autoCreateJournalEntry = false,
     createInvoices = false
   } = options;
 
@@ -52,33 +73,34 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       }
 
       // Validate input data
-      const validatedData = createContractSchema.parse(data);
-
-      // Additional business validations
-      await validateContractData(validatedData);
-
-      // Check vehicle availability
-      await validateVehicleAvailability(validatedData.vehicles, validatedData.start_date, validatedData.end_date);
+      await validateContractData(data);
 
       // Generate contract number if not provided
-      const contractNumber = validatedData.contract_number || await generateContractNumber();
+      const contractNumber = data.contract_number || await generateContractNumber();
 
       // Prepare contract data
       const contractData = {
-        ...validatedData,
         contract_number: contractNumber,
         company_id: companyId,
-        created_by: user?.id,
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id || null,
+        contract_type: data.contract_type,
+        contract_date: data.contract_date || new Date().toISOString().split('T')[0],
+        start_date: typeof data.start_date === 'string' ? data.start_date : data.start_date.toISOString().split('T')[0],
+        end_date: typeof data.end_date === 'string' ? data.end_date : data.end_date.toISOString().split('T')[0],
+        contract_amount: data.total_amount || data.contract_amount || 0,
+        monthly_amount: data.monthly_amount || 0,
+        description: data.notes || data.description || null,
+        terms: data.terms_and_conditions || data.terms || null,
         status: requireApproval ? 'draft' : 'active',
+        created_by: user?.id || '',
+        cost_center_id: data.cost_center_id || null,
       };
-
-      // Remove nested arrays from main contract data
-      const { vehicles, payment_schedule, ...mainContractData } = contractData;
 
       // Insert main contract
       const { data: insertedContract, error } = await supabase
         .from('contracts')
-        .insert(mainContractData)
+        .insert(contractData)
         .select()
         .single();
 
@@ -89,21 +111,41 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
 
       console.log('✅ [useContractOperations] Contract created successfully:', insertedContract);
 
-      // Add vehicles to contract
-      if (vehicles && vehicles.length > 0) {
-        await addVehiclesToContract(insertedContract.id, vehicles, validatedData.start_date, validatedData.end_date);
+      // Handle vehicles if provided (store in contract.vehicle_id for single vehicle)
+      if (data.vehicles && data.vehicles.length > 0 && !data.vehicle_id) {
+        // For single vehicle contracts, update the vehicle_id
+        const firstVehicle = data.vehicles[0];
+        if (firstVehicle.vehicle_id) {
+          await supabase
+            .from('contracts')
+            .update({ vehicle_id: firstVehicle.vehicle_id })
+            .eq('id', insertedContract.id);
+        }
       }
 
-      // Generate payment schedule if enabled
-      if (autoGenerateSchedule) {
-        await generatePaymentSchedule(insertedContract, validatedData);
-      } else if (payment_schedule && payment_schedule.length > 0) {
-        await addPaymentSchedule(insertedContract.id, payment_schedule);
+      // Create payment schedule if provided
+      if (data.payment_schedule && data.payment_schedule.length > 0) {
+        await createPaymentSchedule(insertedContract.id, data.payment_schedule);
       }
 
-      // Post-creation operations
-      if (enableNotifications) {
-        await sendContractNotifications(insertedContract);
+      // Create initial journal entry if auto-create is enabled
+      if (autoCreateJournalEntry) {
+        try {
+          await createContractJournalEntry(insertedContract);
+        } catch (journalError) {
+          console.warn('⚠️ [useContractOperations] Journal entry creation failed:', journalError);
+          // Don't fail the contract creation if journal entry fails
+        }
+      }
+
+      // Create invoices if enabled
+      if (createInvoices) {
+        try {
+          await createContractInvoices(insertedContract);
+        } catch (invoiceError) {
+          console.warn('⚠️ [useContractOperations] Invoice creation failed:', invoiceError);
+          // Don't fail the contract creation if invoice creation fails
+        }
       }
 
       return insertedContract;
@@ -126,14 +168,11 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     mutationFn: async (data: UpdateContractData) => {
       console.log('🔄 [useContractOperations] Starting contract update:', data);
 
-      // Validate input data
-      const validatedData = updateContractSchema.parse(data);
-
       // Check if contract exists and user has permission
       const { data: existingContract, error: fetchError } = await supabase
         .from('contracts')
         .select('*')
-        .eq('id', validatedData.id)
+        .eq('id', data.id)
         .eq('company_id', companyId)
         .single();
 
@@ -148,19 +187,34 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
 
       // Prepare update data
       const updateData = {
-        ...validatedData,
+        contract_date: data.contract_date || new Date().toISOString().split('T')[0],
+        start_date: typeof data.start_date === 'string' ? data.start_date : data.start_date?.toISOString().split('T')[0],
+        end_date: typeof data.end_date === 'string' ? data.end_date : data.end_date?.toISOString().split('T')[0],
+        contract_amount: data.total_amount || data.contract_amount,
+        monthly_amount: data.monthly_amount,
+        description: data.notes || data.description,
+        terms: data.terms_and_conditions || data.terms,
+        contract_type: data.contract_type,
+        customer_id: data.customer_id,
+        vehicle_id: data.vehicle_id,
+        status: data.status,
+        cost_center_id: data.cost_center_id,
         updated_at: new Date().toISOString(),
         updated_by: user?.id,
       };
 
-      // Remove ID from update data
-      const { id, ...dataToUpdate } = updateData;
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
 
       // Update contract
       const { data: updatedContract, error } = await supabase
         .from('contracts')
-        .update(dataToUpdate)
-        .eq('id', validatedData.id)
+        .update(updateData)
+        .eq('id', data.id)
         .eq('company_id', companyId)
         .select()
         .single();
@@ -185,212 +239,116 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     }
   });
 
-  // Activate contract operation
-  const activateContract = useMutation({
-    mutationFn: async (contractId: string) => {
-      console.log('✅ [useContractOperations] Starting contract activation:', contractId);
-
-      // Get contract details
-      const { data: contract, error: fetchError } = await supabase
-        .from('contracts')
-        .select('*, contract_vehicles(*)')
-        .eq('id', contractId)
-        .eq('company_id', companyId)
-        .single();
-
-      if (fetchError || !contract) {
-        throw new Error('العقد غير موجود');
+  // Get contracts with related data
+  const getContracts = (filters?: { status?: string; customer_id?: string; vehicle_id?: string }) => useQuery({
+    queryKey: ['contracts', companyId, filters],
+    queryFn: async () => {
+      console.log('📋 [useContractOperations] Fetching contracts for company:', companyId);
+      
+      if (!companyId) {
+        throw new Error('Company ID is required');
       }
 
-      if (contract.status !== 'draft') {
-        throw new Error('العقد ليس في حالة مسودة');
+      let query = supabase
+        .from('contracts')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name_ar,
+            last_name_ar,
+            company_name_ar,
+            customer_type
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      // Apply filters
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.customer_id) {
+        query = query.eq('customer_id', filters.customer_id);
+      }
+      if (filters?.vehicle_id) {
+        query = query.eq('vehicle_id', filters.vehicle_id);
       }
 
-      // Validate contract can be activated
-      await validateContractActivation(contract);
-
-      // Update contract status to active
-      const { data: activatedContract, error } = await supabase
-        .from('contracts')
-        .update({
-          status: 'active',
-          activated_at: new Date().toISOString(),
-          activated_by: user?.id,
-        })
-        .eq('id', contractId)
-        .eq('company_id', companyId)
-        .select()
-        .single();
+      const { data, error } = await query;
 
       if (error) {
-        console.error('❌ [useContractOperations] Activation error:', error);
+        console.error('❌ [useContractOperations] Error fetching contracts:', error);
         throw error;
       }
 
-      // Update vehicle statuses to rented
-      await updateVehicleStatuses(contract.contract_vehicles, 'rented');
-
-      // Create initial invoices if enabled
-      if (createInvoices) {
-        await createContractInvoices(activatedContract);
-      }
-
-      console.log('✅ [useContractOperations] Contract activated successfully:', activatedContract);
-      return activatedContract;
+      console.log('✅ [useContractOperations] Fetched contracts:', data?.length || 0);
+      return data || [];
     },
-    onSuccess: (contract) => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      
-      toast.success('تم تفعيل العقد بنجاح');
-    },
-    onError: (error: any) => {
-      console.error('💥 [useContractOperations] Activate contract error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تفعيل العقد');
-    }
+    enabled: !!companyId
   });
 
-  // Terminate contract operation
-  const terminateContract = useMutation({
-    mutationFn: async ({ contractId, reason, returnDate }: { 
-      contractId: string; 
-      reason?: string; 
-      returnDate?: Date; 
-    }) => {
-      console.log('🔚 [useContractOperations] Starting contract termination:', { contractId, reason });
-
-      // Get contract details
-      const { data: contract, error: fetchError } = await supabase
+  // Get single contract
+  const getContract = (contractId: string) => useQuery({
+    queryKey: ['contract', contractId],
+    queryFn: async () => {
+      console.log('📄 [useContractOperations] Fetching contract:', contractId);
+      
+      const { data, error } = await supabase
         .from('contracts')
-        .select('*, contract_vehicles(*)')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name_ar,
+            last_name_ar,
+            company_name_ar,
+            customer_type,
+            phone,
+            email
+          )
+        `)
         .eq('id', contractId)
         .eq('company_id', companyId)
-        .single();
-
-      if (fetchError || !contract) {
-        throw new Error('العقد غير موجود');
-      }
-
-      if (contract.status !== 'active') {
-        throw new Error('العقد ليس نشطاً');
-      }
-
-      // Calculate termination costs/penalties
-      const terminationData = await calculateTerminationCosts(contract, returnDate);
-
-      // Update contract status
-      const { data: terminatedContract, error } = await supabase
-        .from('contracts')
-        .update({
-          status: 'cancelled',
-          terminated_at: new Date().toISOString(),
-          terminated_by: user?.id,
-          termination_reason: reason,
-          actual_end_date: returnDate || new Date(),
-          ...terminationData,
-        })
-        .eq('id', contractId)
-        .eq('company_id', companyId)
-        .select()
         .single();
 
       if (error) {
-        console.error('❌ [useContractOperations] Termination error:', error);
+        console.error('❌ [useContractOperations] Error fetching contract:', error);
         throw error;
       }
 
-      // Update vehicle statuses back to available
-      await updateVehicleStatuses(contract.contract_vehicles, 'available');
-
-      // Cancel future payment schedules
-      await cancelFuturePayments(contractId);
-
-      console.log('✅ [useContractOperations] Contract terminated successfully:', terminatedContract);
-      return terminatedContract;
+      console.log('✅ [useContractOperations] Fetched contract:', data);
+      return data;
     },
-    onSuccess: (contract) => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      
-      toast.success('تم إنهاء العقد بنجاح');
-    },
-    onError: (error: any) => {
-      console.error('💥 [useContractOperations] Terminate contract error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إنهاء العقد');
-    }
+    enabled: !!contractId && !!companyId
   });
 
-  // Renew contract operation
-  const renewContract = useMutation({
-    mutationFn: async ({ contractId, newEndDate, newRate }: { 
-      contractId: string; 
-      newEndDate: Date; 
-      newRate?: number; 
-    }) => {
-      console.log('🔄 [useContractOperations] Starting contract renewal:', { contractId, newEndDate });
+  // Contract calculations
+  const calculateContractTotals = (contract: any) => {
+    const contractAmount = contract.contract_amount || 0;
+    const totalPaid = contract.total_paid || 0;
+    const balanceDue = contractAmount - totalPaid;
+    
+    return {
+      contract_amount: contractAmount,
+      total_paid: totalPaid,
+      balance_due: balanceDue,
+      payment_percentage: contractAmount > 0 ? (totalPaid / contractAmount) * 100 : 0
+    };
+  };
 
-      // Get contract details
-      const { data: contract, error: fetchError } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('id', contractId)
-        .eq('company_id', companyId)
-        .single();
+  const isContractOverdue = (contract: any) => {
+    const endDate = new Date(contract.end_date);
+    const today = new Date();
+    return endDate < today && contract.status === 'active';
+  };
 
-      if (fetchError || !contract) {
-        throw new Error('العقد غير موجود');
-      }
-
-      if (contract.status !== 'active' && contract.status !== 'expired') {
-        throw new Error('لا يمكن تجديد هذا العقد');
-      }
-
-      // Calculate new total amount
-      const daysDiff = Math.ceil((newEndDate.getTime() - new Date(contract.end_date).getTime()) / (1000 * 60 * 60 * 24));
-      const extensionAmount = newRate ? newRate * daysDiff : (contract.total_amount / 
-        Math.ceil((new Date(contract.end_date).getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))) * daysDiff;
-
-      // Update contract
-      const { data: renewedContract, error } = await supabase
-        .from('contracts')
-        .update({
-          end_date: newEndDate.toISOString(),
-          total_amount: contract.total_amount + extensionAmount,
-          status: 'active',
-          renewed_at: new Date().toISOString(),
-          renewed_by: user?.id,
-        })
-        .eq('id', contractId)
-        .eq('company_id', companyId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ [useContractOperations] Renewal error:', error);
-        throw error;
-      }
-
-      // Generate additional payment schedule for extension period
-      if (autoGenerateSchedule) {
-        await generateExtensionPaymentSchedule(renewedContract, daysDiff, extensionAmount);
-      }
-
-      console.log('✅ [useContractOperations] Contract renewed successfully:', renewedContract);
-      return renewedContract;
-    },
-    onSuccess: (contract) => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
-      
-      toast.success('تم تجديد العقد بنجاح');
-    },
-    onError: (error: any) => {
-      console.error('💥 [useContractOperations] Renew contract error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تجديد العقد');
-    }
-  });
+  const getDaysUntilExpiry = (contract: any) => {
+    const endDate = new Date(contract.end_date);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
 
   // Helper functions
   const validateContractData = async (data: CreateContractData) => {
@@ -411,87 +369,58 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     }
 
     // Validate contract dates
-    if (data.start_date >= data.end_date) {
+    const startDate = typeof data.start_date === 'string' ? new Date(data.start_date) : data.start_date;
+    const endDate = typeof data.end_date === 'string' ? new Date(data.end_date) : data.end_date;
+    
+    if (startDate >= endDate) {
       throw new Error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
     }
 
-    if (data.start_date < new Date()) {
+    if (startDate < new Date()) {
       throw new Error('تاريخ البداية لا يمكن أن يكون في الماضي');
     }
-  };
-
-  const validateVehicleAvailability = async (vehicles: any[], startDate: Date, endDate: Date) => {
-    for (const vehicle of vehicles) {
-      const { data: conflicts } = await supabase
-        .from('contract_vehicles')
-        .select('id, contract_id')
-        .eq('vehicle_id', vehicle.vehicle_id)
-        .eq('status', 'active')
-        .or(`and(start_date.lte.${startDate.toISOString()},end_date.gte.${startDate.toISOString()}),and(start_date.lte.${endDate.toISOString()},end_date.gte.${endDate.toISOString()})`);
-
-      if (conflicts && conflicts.length > 0) {
-        throw new Error(`المركبة ${vehicle.vehicle_id} غير متاحة في الفترة المحددة`);
-      }
-    }
-  };
-
-  const validateContractActivation = async (contract: any) => {
-    // Check if all required documents are uploaded
-    // Check if customer is still valid
-    // Check if vehicles are still available
-    console.log('🔍 Validating contract activation for:', contract.id);
   };
 
   const generateContractNumber = async (): Promise<string> => {
     const prefix = 'CON';
     const year = new Date().getFullYear().toString().slice(-2);
     
-    const { data, error } = await supabase.rpc('get_next_contract_number', {
-      p_company_id: companyId,
-      p_year: year
-    });
+    try {
+      // Try to get existing contracts count for the year
+      const { count, error } = await supabase
+        .from('contracts')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .gte('contract_date', `${new Date().getFullYear()}-01-01`)
+        .lte('contract_date', `${new Date().getFullYear()}-12-31`);
 
-    if (error) {
+      if (error) {
+        console.error('Error getting contract count:', error);
+        return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
+      }
+
+      const nextNumber = (count || 0) + 1;
+      return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    } catch (error) {
       console.error('Error generating contract number:', error);
       return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
     }
-
-    return data || `${prefix}-${year}-001`;
   };
 
-  const addVehiclesToContract = async (contractId: string, vehicles: any[], startDate: Date, endDate: Date) => {
-    const vehicleData = vehicles.map(vehicle => ({
-      contract_id: contractId,
-      vehicle_id: vehicle.vehicle_id,
-      daily_rate: vehicle.daily_rate,
-      monthly_rate: vehicle.monthly_rate,
-      deposit_amount: vehicle.deposit_amount || 0,
-      start_date: startDate.toISOString(),
-      end_date: endDate.toISOString(),
-      status: 'active',
-    }));
-
-    const { error } = await supabase
-      .from('contract_vehicles')
-      .insert(vehicleData);
-
-    if (error) {
-      console.error('Error adding vehicles to contract:', error);
-      throw error;
-    }
-  };
-
-  const generatePaymentSchedule = async (contract: any, contractData: CreateContractData) => {
-    console.log('📅 Generating payment schedule for contract:', contract.id);
-    
-    // This would generate payment schedule based on payment terms
-    // Implementation depends on business rules
-  };
-
-  const addPaymentSchedule = async (contractId: string, schedule: ContractPaymentScheduleData[]) => {
+  const createPaymentSchedule = async (contractId: string, schedule: any[]) => {
     const scheduleData = schedule.map(item => ({
-      ...item,
       contract_id: contractId,
+      company_id: companyId,
+      amount: item.amount || 0,
+      due_date: typeof item.due_date === 'string' ? item.due_date : item.due_date?.toISOString().split('T')[0],
+      installment_number: item.installment_number || 1,
+      description: item.description || '',
+      status: 'pending',
+      is_paid: false,
+      is_deposit: item.is_deposit || false,
+      late_fee: item.late_fee || 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
 
     const { error } = await supabase
@@ -499,61 +428,34 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       .insert(scheduleData);
 
     if (error) {
-      console.error('Error adding payment schedule:', error);
+      console.error('Error creating payment schedule:', error);
       throw error;
     }
+
+    console.log('✅ Created payment schedule:', scheduleData);
   };
 
-  const updateVehicleStatuses = async (contractVehicles: any[], status: string) => {
-    for (const cv of contractVehicles) {
-      await supabase
-        .from('vehicles')
-        .update({ status })
-        .eq('id', cv.vehicle_id);
-    }
-  };
-
-  const calculateTerminationCosts = async (contract: any, returnDate?: Date) => {
-    // Calculate penalties, remaining charges, etc.
-    return {
-      termination_fee: 0,
-      early_termination_penalty: 0,
-    };
-  };
-
-  const cancelFuturePayments = async (contractId: string) => {
-    await supabase
-      .from('contract_payment_schedules')
-      .update({ status: 'cancelled' })
-      .eq('contract_id', contractId)
-      .eq('status', 'pending')
-      .gte('due_date', new Date().toISOString());
-  };
-
-  const generateExtensionPaymentSchedule = async (contract: any, days: number, amount: number) => {
-    console.log('📅 Generating extension payment schedule:', { days, amount });
+  const createContractJournalEntry = async (contract: any) => {
+    console.log('📄 Creating journal entry for contract:', contract.id);
+    // Journal entry creation logic here
   };
 
   const createContractInvoices = async (contract: any) => {
     console.log('📄 Creating contract invoices for:', contract.id);
-  };
-
-  const sendContractNotifications = async (contract: any) => {
-    console.log('📧 Sending contract notifications for:', contract.id);
+    // Invoice creation logic here
   };
 
   return {
     createContract,
     updateContract,
-    activateContract,
-    terminateContract,
-    renewContract,
+    getContracts,
+    getContract,
+    calculateContractTotals,
+    isContractOverdue,
+    getDaysUntilExpiry,
     // Expose loading states
     isCreating: createContract.isPending,
     isUpdating: updateContract.isPending,
-    isActivating: activateContract.isPending,
-    isTerminating: terminateContract.isPending,
-    isRenewing: renewContract.isPending,
     // Expose permissions
     canCreateContracts,
     canApproveContracts,
