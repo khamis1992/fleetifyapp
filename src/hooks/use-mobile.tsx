@@ -51,9 +51,9 @@ export function useResponsiveBreakpoint(): ResponsiveBreakpoint {
   })
 
   const [previousBreakpoint, setPreviousBreakpoint] = React.useState<{
-    isMobile: false,
-    isTablet: false,
-    isDesktop: false
+    isMobile: boolean,
+    isTablet: boolean,
+    isDesktop: boolean
   }>({
     isMobile: false,
     isTablet: false,

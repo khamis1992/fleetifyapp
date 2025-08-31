@@ -67,27 +67,27 @@ export default function QuotationApproval() {
       return
     }
 
-    fetchQuotation()
-  }, [fetchQuotation])
+    const fetchQuotation = async () => {
+      try {
+        const response = await fetch(
+          `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval?token=${token}`
+        )
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'فشل في جلب بيانات العرض')
+        }
 
-  const fetchQuotation = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/quotation-approval?token=${token}`
-      )
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل في جلب بيانات العرض')
+        setQuotation(data.quotation)
+      } catch (err: any) {
+        setError(err.message || 'حدث خطأ أثناء جلب بيانات العرض')
+      } finally {
+        setLoading(false)
       }
-
-      setQuotation(data.quotation)
-    } catch (err: any) {
-      setError(err.message || 'حدث خطأ أثناء جلب بيانات العرض')
-    } finally {
-      setLoading(false)
     }
+
+    fetchQuotation()
   }, [token])
 
   const handleApproval = async (action: 'approve' | 'reject') => {

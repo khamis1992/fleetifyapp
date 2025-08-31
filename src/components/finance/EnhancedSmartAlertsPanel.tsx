@@ -426,7 +426,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
                         {Object.entries(statistics.byType).map(([type, count]) => (
                           <div key={type} className="flex justify-between items-center">
                             <span>{getAlertTypeLabel(type)}</span>
-                            <span className="font-medium">{count}</span>
+                            <span className="font-medium">{String(count)}</span>
                           </div>
                         ))}
                       </div>

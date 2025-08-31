@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,79 +10,75 @@ export interface SignatureSettings {
   settings: Record<string, any>;
 }
 
+// Mock implementation since company_signature_settings table doesn't exist yet
 export const useSignatureSettings = () => {
   const { user } = useAuth();
   
   return useQuery({
     queryKey: ['signature-settings', user?.company],
     queryFn: async () => {
-      if (!user?.company) throw new Error('No company ID');
-      
-      const { data, error } = await supabase
-        .from('company_signature_settings')
-        .select('*')
-        .eq('company_id', user.company.id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      
-      // Return default settings if none found
-      if (!data) {
-        return {
-          electronic_signature_enabled: true,
-          require_customer_signature: true,
-          require_company_signature: true,
-          signature_provider: 'internal',
-          settings: {}
-        } as SignatureSettings;
-      }
-      
+      // Return default mock settings since table doesn't exist yet
       return {
-        electronic_signature_enabled: data.electronic_signature_enabled,
-        require_customer_signature: data.require_customer_signature,
-        require_company_signature: data.require_company_signature,
-        signature_provider: data.signature_provider,
-        settings: data.settings
+        electronic_signature_enabled: true,
+        require_customer_signature: true,
+        require_company_signature: true,
+        signature_provider: 'internal',
+        settings: {}
       } as SignatureSettings;
     },
-    enabled: !!user?.company,
+    enabled: false, // Disabled until table is created
   });
 };
 
 export const useUpdateSignatureSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
+  
   return useMutation({
-    mutationFn: async (settings: Partial<SignatureSettings>) => {
-      if (!user?.company) throw new Error('No company ID');
-
-      const { data, error } = await supabase
-        .from('company_signature_settings')
-        .upsert({
-          company_id: user.company.id,
-          ...settings,
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    mutationFn: async (newSettings: Partial<SignatureSettings>) => {
+      // Mock implementation
+      return newSettings;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['signature-settings'] });
       toast({
-        title: "تم تحديث إعدادات التوقيع",
-        description: "تم حفظ إعدادات التوقيع الإلكتروني بنجاح",
+        title: 'نجح التحديث',
+        description: 'تحديث إعدادات التوقيع غير مُفعل حالياً',
       });
     },
     onError: (error: any) => {
+      console.error('Error updating signature settings:', error);
       toast({
-        title: "خطأ في تحديث الإعدادات",
-        description: error.message || "فشل في تحديث إعدادات التوقيع الإلكتروني",
-        variant: "destructive",
+        title: 'خطأ في التحديث',
+        description: `خطأ في تحديث إعدادات التوقيع: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useCreateSignatureSettings = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (settings: SignatureSettings) => {
+      // Mock implementation
+      return settings;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['signature-settings'] });
+      toast({
+        title: 'نجح الإنشاء',
+        description: 'إنشاء إعدادات التوقيع غير مُفعل حالياً',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error creating signature settings:', error);
+      toast({
+        title: 'خطأ في الإنشاء',
+        description: `خطأ في إنشاء إعدادات التوقيع: ${error.message}`,
+        variant: 'destructive',
       });
     },
   });
