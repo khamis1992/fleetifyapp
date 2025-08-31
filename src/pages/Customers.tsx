@@ -214,9 +214,6 @@ export default function Customers() {
                 العودة لشركتي
               </Button>
             )}
-            <span className="text-xs text-muted-foreground">
-              Company ID: {companyId || 'غير متوفر'}
-            </span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -266,11 +263,6 @@ export default function Customers() {
         <Alert variant="destructive">
           <AlertDescription>
             حدث خطأ أثناء تحميل بيانات العملاء: {error.message || 'يرجى المحاولة مرة أخرى.'}
-            <div className="mt-2 text-xs font-mono bg-muted p-2 rounded">
-              Company ID: {companyId || 'غير متوفر'} | 
-              Browse Mode: {isBrowsingMode ? 'نعم' : 'لا'} | 
-              User Company: {user?.company?.name || 'غير محدد'}
-            </div>
             {!user && (
               <div className="mt-2">
                 <Button 
@@ -288,20 +280,11 @@ export default function Customers() {
         </Alert>
       )}
       
-      {/* تشخيص الشركة */}
+      {/* رسالة عدم وجود عملاء */}
       {!error && allCustomers.length === 0 && !isLoading && (
         <Alert>
           <AlertDescription>
             لا توجد عملاء في الشركة الحالية.
-            <div className="mt-2 text-xs font-mono bg-muted p-2 rounded">
-              <strong>معلومات التشخيص:</strong><br />
-              Company ID: {companyId || 'غير متوفر'}<br />
-              Browse Mode: {isBrowsingMode ? 'نعم' : 'لا'}<br />
-              Browsed Company: {browsedCompany ? `${browsedCompany.name} (${browsedCompany.id})` : 'لا يوجد'}<br />
-              User Company: {user?.company?.name || 'غير محدد'}<br />
-              System Level: {isSystemLevel ? 'نعم' : 'لا'}<br />
-              Has Full Control: {hasFullCompanyControl ? 'نعم' : 'لا'}
-            </div>
             {isBrowsingMode && browsedCompany?.id === user?.company?.id && (
               <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
                 ⚠️ تنبيه: أنت تتصفح شركتك الأصلية عبر وضع التصفح. 
