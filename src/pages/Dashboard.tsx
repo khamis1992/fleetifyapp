@@ -7,14 +7,15 @@ import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
-import ModernStatsCard from '@/components/dashboard/ModernStatsCard';
-import CleanActivityFeed from '@/components/dashboard/CleanActivityFeed';
+import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
+import EnhancedStatsCard from '@/components/dashboard/EnhancedStatsCard';
+import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
+import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { UnifiedAlertsSystem } from '@/components/dashboard/UnifiedAlertsSystem';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
-import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Eye, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const Dashboard: React.FC = () => {
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
+  const navigate = useNavigate();
 
   // Convert financial overview data to the format expected by SmartMetricsPanel
   const smartMetricsData = financialOverview ? {
@@ -38,6 +40,21 @@ const Dashboard: React.FC = () => {
     overduePayments: 0, // This would need to come from a different source
   } : undefined;
 
+  // Convert activities to enhanced format with fallback data
+  const enhancedActivities = recentActivities?.slice(0, 10).map((activity, index) => ({
+    id: activity.id || `activity-${index}`,
+    type: 'system' as const,
+    title: activity.description || 'نشاط جديد',
+    description: activity.description || 'لا يوجد وصف',
+    user: 'النظام',
+    timestamp: new Date(activity.created_at || new Date()),
+    status: 'info' as const,
+    metadata: {
+      'نوع العملية': activity.description || 'غير محدد',
+      'الوقت': new Date(activity.created_at || new Date()).toLocaleString('ar-SA')
+    }
+  })) || [];
+
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -46,7 +63,7 @@ const Dashboard: React.FC = () => {
     return "مساء الخير";
   };
 
-  // Modern stats configuration
+  // Enhanced stats configuration with actions
   const statsConfig = [
     {
       title: 'إجمالي المركبات',
@@ -54,7 +71,11 @@ const Dashboard: React.FC = () => {
       change: String(enhancedStats?.vehiclesChange || '+0%'),
       icon: Car,
       trend: 'up' as const,
-      description: 'مركبة في الأسطول'
+      description: 'مركبة في الأسطول',
+      subtitle: 'الأسطول الكامل',
+      actionText: 'إدارة الأسطول',
+      onAction: () => navigate('/fleet'),
+      gradient: true
     },
     {
       title: 'العملاء النشطين',
@@ -62,7 +83,10 @@ const Dashboard: React.FC = () => {
       change: String(enhancedStats?.customersChange || '+0%'),
       icon: Users,
       trend: 'up' as const,
-      description: 'عميل مسجل'
+      description: 'عميل مسجل',
+      subtitle: 'قاعدة العملاء',
+      actionText: 'إدارة العملاء',
+      onAction: () => navigate('/customers')
     },
     {
       title: 'العقود النشطة',
@@ -70,7 +94,10 @@ const Dashboard: React.FC = () => {
       change: String(enhancedStats?.contractsChange || '+0%'),
       icon: FileText,
       trend: 'neutral' as const,
-      description: 'عقد ساري المفعول'
+      description: 'عقد ساري المفعول',
+      subtitle: 'العقود الجارية',
+      actionText: 'إدارة العقود',
+      onAction: () => navigate('/contracts')
     },
     {
       title: 'الإيرادات الشهرية',
@@ -78,7 +105,11 @@ const Dashboard: React.FC = () => {
       change: String(enhancedStats?.revenueChange || '+0%'),
       icon: DollarSign,
       trend: 'up' as const,
-      description: 'هذا الشهر'
+      description: 'هذا الشهر',
+      subtitle: 'الأداء المالي',
+      actionText: 'التقارير المالية',
+      onAction: () => navigate('/finance'),
+      gradient: true
     }
   ];
 
@@ -86,95 +117,22 @@ const Dashboard: React.FC = () => {
     <>
       <ProfessionalBackground />
       <div className="relative z-10 space-y-8">
-        {/* Browse Mode Indicator */}
-        {isBrowsingMode && browsedCompany && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-warning/10 border border-warning/20 rounded-lg p-4 mb-6"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-warning/10 text-warning">
-                  <Eye size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-warning">
-                    وضع المشاهدة مفعل
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    تصفح بيانات: {browsedCompany.name_ar || browsedCompany.name}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exitBrowseMode}
-                className="h-8"
-              >
-                <ArrowLeft size={14} className="ml-1" />
-                العودة لشركتي
-              </Button>
-            </div>
-          </motion.div>
-        )}
+        {/* Enhanced Header */}
+        <EnhancedDashboardHeader
+          isBrowsingMode={isBrowsingMode}
+          browsedCompany={browsedCompany}
+          onExitBrowseMode={exitBrowseMode}
+        />
 
-        {/* Professional Hero Section */}
-        <motion.div 
+        {/* Enhanced Stats Grid */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-8">
-            <div className="flex items-center justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Target size={20} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-primary">لوحة التحكم المهنية</span>
-                    {isBrowsingMode && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Eye size={10} className="ml-1" />
-                        معاينة
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <h1 className="text-4xl font-bold text-foreground mb-2">
-                    {getGreeting()}, {user?.profile?.first_name_ar || user?.profile?.first_name || 'أهلاً وسهلاً'}
-                  </h1>
-                  <p className="text-lg text-muted-foreground">
-                    {isBrowsingMode && browsedCompany
-                      ? `نظرة عامة على أداء ${browsedCompany.name_ar || browsedCompany.name}`
-                      : 'نظرة عامة على أداء شركتك اليوم'
-                    }
-                  </p>
-                </div>
-              </div>
-              
-              <motion.div
-                className="hidden lg:block"
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              >
-                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                  <Zap size={32} />
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Modern Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsConfig.map((stat, index) => (
-            <ModernStatsCard
+            <EnhancedStatsCard
               key={stat.title}
               title={stat.title}
               value={stat.value}
@@ -182,26 +140,43 @@ const Dashboard: React.FC = () => {
               icon={stat.icon}
               trend={stat.trend}
               description={stat.description}
+              subtitle={stat.subtitle}
+              actionText={stat.actionText}
+              onAction={stat.onAction}
+              gradient={stat.gradient}
+              isLoading={statsLoading}
               index={index}
             />
           ))}
-        </div>
+        </motion.div>
+
+        {/* Quick Actions Panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <QuickActionsDashboard />
+        </motion.div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Activities */}
-          <div className="lg:col-span-2">
-            <CleanActivityFeed 
-              activities={recentActivities} 
-              loading={activitiesLoading} 
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Enhanced Activity Feed */}
+          <div className="xl:col-span-2">
+            <EnhancedActivityFeed
+              activities={enhancedActivities}
+              loading={activitiesLoading}
+              title="النشاطات الأخيرة"
+              onRefresh={() => window.location.reload()}
+              showFilters={true}
             />
           </div>
 
-          {/* Sidebar Performance Metrics and Alerts */}
+          {/* Enhanced Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
             className="space-y-6"
           >
             <SmartMetricsPanel 
