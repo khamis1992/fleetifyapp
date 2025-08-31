@@ -16,6 +16,7 @@ import {
 import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useEnhancedCustomers";
 import { CustomerInvoicesTab } from "./CustomerInvoicesTab";
 import { CustomerAccountSelector } from "./CustomerAccountSelector";
+import { CustomerAccountStatement } from "./CustomerAccountStatement";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -423,6 +424,11 @@ export function CustomerDetailsDialog({
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Professional Customer Account Statement */}
+            <div className="mt-6">
+              <CustomerAccountStatement customer={customer} />
             </div>
           </TabsContent>
 
