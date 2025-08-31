@@ -96,14 +96,14 @@ export const DemoDataGenerator: React.FC = () => {
 
   // بيانات المركبات الوهمية
   const demoVehicles = [
-    { make: 'Toyota', model: 'Camry', year: 2023, license_plate: 'ABC-123', color: 'أبيض' },
-    { make: 'Honda', model: 'Accord', year: 2022, license_plate: 'DEF-456', color: 'أسود' },
-    { make: 'Nissan', model: 'Altima', year: 2023, license_plate: 'GHI-789', color: 'فضي' },
-    { make: 'Hyundai', model: 'Elantra', year: 2022, license_plate: 'JKL-012', color: 'أزرق' },
-    { make: 'Kia', model: 'Optima', year: 2023, license_plate: 'MNO-345', color: 'أحمر' },
-    { make: 'Chevrolet', model: 'Malibu', year: 2022, license_plate: 'PQR-678', color: 'رمادي' },
-    { make: 'Ford', model: 'Fusion', year: 2023, license_plate: 'STU-901', color: 'أبيض' },
-    { make: 'Mazda', model: 'Mazda6', year: 2022, license_plate: 'VWX-234', color: 'أسود' }
+    { make: 'Toyota', model: 'Camry', year: 2023, plate_number: 'ABC-123', color: 'أبيض' },
+    { make: 'Honda', model: 'Accord', year: 2022, plate_number: 'DEF-456', color: 'أسود' },
+    { make: 'Nissan', model: 'Altima', year: 2023, plate_number: 'GHI-789', color: 'فضي' },
+    { make: 'Hyundai', model: 'Elantra', year: 2022, plate_number: 'JKL-012', color: 'أزرق' },
+    { make: 'Kia', model: 'Optima', year: 2023, plate_number: 'MNO-345', color: 'أحمر' },
+    { make: 'Chevrolet', model: 'Malibu', year: 2022, plate_number: 'PQR-678', color: 'رمادي' },
+    { make: 'Ford', model: 'Fusion', year: 2023, plate_number: 'STU-901', color: 'أبيض' },
+    { make: 'Mazda', model: 'Mazda6', year: 2022, plate_number: 'VWX-234', color: 'أسود' }
   ];
 
   // بيانات الحسابات البنكية الوهمية
@@ -284,12 +284,12 @@ export const DemoDataGenerator: React.FC = () => {
       
       const { data: existingVehicles, error: existingVehiclesError } = await supabase
         .from('vehicles')
-        .select('id, license_plate')
+        .select('id, plate_number')
         .eq('company_id', companyId);
       
       if (existingVehiclesError) throw existingVehiclesError;
       
-      const existingPlates = new Set(existingVehicles?.map(v => v.license_plate) || []);
+      const existingPlates = new Set(existingVehicles?.map(v => v.plate_number) || []);
       const vehicleIds: string[] = [];
       
       // إضافة معرفات المركبات الموجودة
@@ -300,7 +300,7 @@ export const DemoDataGenerator: React.FC = () => {
         const vehicle = demoVehicles[i];
         
         // تخطي المركبة إذا كانت موجودة بالفعل
-        if (existingPlates.has(vehicle.license_plate)) {
+        if (existingPlates.has(vehicle.plate_number)) {
           continue;
         }
         
@@ -311,7 +311,7 @@ export const DemoDataGenerator: React.FC = () => {
             make: vehicle.make,
             model: vehicle.model,
             year: vehicle.year,
-            license_plate: vehicle.license_plate,
+            plate_number: vehicle.plate_number,
             color: vehicle.color,
             status: 'available',
             is_active: true,
@@ -343,7 +343,7 @@ export const DemoDataGenerator: React.FC = () => {
       setCurrentStep('إضافة الحسابات البنكية...');
       
       const { data: existingBankAccounts, error: existingBankError } = await supabase
-        .from('bank_accounts')
+        .from('banks')
         .select('id, account_number')
         .eq('company_id', companyId);
       
@@ -365,7 +365,7 @@ export const DemoDataGenerator: React.FC = () => {
         }
         
         const { data, error } = await supabase
-          .from('bank_accounts')
+          .from('banks')
           .insert({
             company_id: companyId,
             bank_name: bankAccount.bank_name,
@@ -597,15 +597,8 @@ export const DemoDataGenerator: React.FC = () => {
         });
       }
       
-      if (financialTransactions.length > 0) {
-        const { error: transactionError } = await supabase
-          .from('financial_transactions')
-          .insert(financialTransactions);
-          
-        if (transactionError) {
-          console.log('تحذير: لم يتم إضافة المعاملات المالية (جدول غير موجود)');
-        }
-      }
+      // المعاملات المالية محذوفة (جدول غير موجود)
+      console.log('تحذير: لم يتم إضافة المعاملات المالية (جدول غير موجود)');
       
       setProgress(90);
 
@@ -768,12 +761,8 @@ export const DemoDataGenerator: React.FC = () => {
       // حذف المدفوعات أولاً
       await supabase.from('payments').delete().eq('company_id', companyId);
       
-      // حذف المعاملات المالية
-      try {
-        await supabase.from('financial_transactions').delete().eq('company_id', companyId);
-      } catch (error) {
-        console.log('تحذير: لم يتم حذف المعاملات المالية (جدول غير موجود)');
-      }
+      // حذف المعاملات المالية (محذوف - جدول غير موجود)
+      console.log('تحذير: لم يتم حذف المعاملات المالية (جدول غير موجود)');
       
       // حذف القيود المحاسبية
       await supabase.from('journal_entries').delete().eq('company_id', companyId);
@@ -788,7 +777,7 @@ export const DemoDataGenerator: React.FC = () => {
       await supabase.from('vehicles').delete().eq('company_id', companyId);
       
       // حذف الحسابات البنكية
-      await supabase.from('bank_accounts').delete().eq('company_id', companyId);
+      await supabase.from('banks').delete().eq('company_id', companyId);
       
       // حذف العملاء
       await supabase.from('customers').delete().eq('company_id', companyId);

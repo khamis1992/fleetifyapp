@@ -260,7 +260,6 @@ export const CustomerVehicleStep: React.FC = () => {
         data.start_date && 
         data.end_date) {
       debouncedValidation({
-        contract_number: data.contract_number,
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id,
         start_date: data.start_date,
@@ -275,7 +274,6 @@ export const CustomerVehicleStep: React.FC = () => {
   React.useEffect(() => {
     if (data.contract_number) {
       debouncedValidation({
-        contract_number: data.contract_number,
         customer_id: data.customer_id,
         vehicle_id: data.vehicle_id,
         start_date: data.start_date,
