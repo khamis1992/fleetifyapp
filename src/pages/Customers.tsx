@@ -302,6 +302,19 @@ export default function Customers() {
               System Level: {isSystemLevel ? 'نعم' : 'لا'}<br />
               Has Full Control: {hasFullCompanyControl ? 'نعم' : 'لا'}
             </div>
+            {isBrowsingMode && browsedCompany?.id === user?.company?.id && (
+              <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                ⚠️ تنبيه: أنت تتصفح شركتك الأصلية عبر وضع التصفح. 
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  onClick={exitBrowseMode}
+                  className="p-0 h-auto ml-2 text-yellow-800 underline"
+                >
+                  اضغط هنا للخروج من وضع التصفح
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}

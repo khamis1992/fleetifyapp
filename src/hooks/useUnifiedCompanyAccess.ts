@@ -99,14 +99,18 @@ export const useUnifiedCompanyAccess = () => {
     console.log('🔧 [UNIFIED_COMPANY_ACCESS] Browse mode details:', {
       isBrowsingMode,
       browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-      isSuperAdmin: rolesNormalized.includes('super_admin')
+      isSuperAdmin: rolesNormalized.includes('super_admin'),
+      isBrowsingOwnCompany: browsedCompany?.id === userCompanyId
     });
     
     // Store original user roles before modifying context
     const originalUserRoles = rolesNormalized;
     
-    if (isBrowsingMode && browsedCompany && rolesNormalized.includes('super_admin')) {
-      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Overriding context for browse mode');
+    // Special handling: super_admin browsing their own company should maintain system level access
+    const isBrowsingOwnCompany = isBrowsingMode && browsedCompany && browsedCompany.id === userCompanyId;
+    
+    if (isBrowsingMode && browsedCompany && rolesNormalized.includes('super_admin') && !isBrowsingOwnCompany) {
+      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Overriding context for browse mode (different company)');
       context = {
         ...context,
         companyId: browsedCompany.id,
@@ -119,6 +123,13 @@ export const useUnifiedCompanyAccess = () => {
         isSystemLevel: context.isSystemLevel,
         isCompanyScoped: context.isCompanyScoped
       });
+    } else if (isBrowsingOwnCompany) {
+      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Super admin browsing own company - maintaining system level access');
+      // Keep original context but update company ID to ensure consistency
+      context = {
+        ...context,
+        companyId: browsedCompany.id
+      };
     }
     
     const filter = getCompanyFilter(context);
