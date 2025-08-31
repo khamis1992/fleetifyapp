@@ -40,6 +40,7 @@ import type {
   ManualAllocationRequest,
   UnpaidObligation 
 } from '@/types/financial-obligations';
+import type { AllocationStrategy as HookAllocationStrategy, UnpaidObligation as HookUnpaidObligation } from '@/hooks/useFinancialObligations';
 import {
   ALLOCATION_STRATEGIES,
   OBLIGATION_TYPE_LABELS,
@@ -65,7 +66,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
   const [manualAllocations, setManualAllocations] = useState<ManualAllocationRequest[]>([]);
   const [selectedObligations, setSelectedObligations] = useState<Set<string>>(new Set());
 
-  const { data: unpaidObligations, isLoading } = useUnpaidObligations(customerId, selectedStrategy);
+  const { data: unpaidObligations, isLoading } = useUnpaidObligations(customerId, selectedStrategy as HookAllocationStrategy);
   const smartAllocationMutation = useSmartPaymentAllocation();
   const manualAllocationMutation = useManualPaymentAllocation();
 
@@ -95,7 +96,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
         paymentId,
         customerId,
         amount: paymentAmount,
-        strategy: selectedStrategy,
+        strategy: selectedStrategy as HookAllocationStrategy,
       });
       setIsOpen(false);
       onAllocationComplete?.();
@@ -156,7 +157,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
     selectedObs.forEach(obligation => {
       if (remainingAmount <= 0) return;
       
-      const allocationAmount = Math.min(remainingAmount, obligation.remaining_amount);
+      const allocationAmount = Math.min(remainingAmount, obligation.amount);
       const index = newAllocations.findIndex(a => a.obligation_id === obligation.id);
       
       if (index !== -1) {
@@ -181,12 +182,12 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
     if (!unpaidObligations) return [];
     
     let remainingAmount = paymentAmount;
-    const allocations: Array<{ obligation: UnpaidObligation; amount: number }> = [];
+    const allocations: Array<{ obligation: HookUnpaidObligation; amount: number }> = [];
     
     for (const obligation of unpaidObligations) {
       if (remainingAmount <= 0) break;
       
-      const allocationAmount = Math.min(remainingAmount, obligation.remaining_amount);
+      const allocationAmount = Math.min(remainingAmount, obligation.amount);
       allocations.push({ obligation, amount: allocationAmount });
       remainingAmount -= allocationAmount;
     }
@@ -253,7 +254,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                   <Label>إجمالي المبلغ المستحق</Label>
                   <div className="text-2xl font-bold text-orange-600">
                     {formatCurrency(
-                      unpaidObligations?.reduce((sum, o) => sum + o.remaining_amount, 0) || 0
+                      unpaidObligations?.reduce((sum, o) => sum + o.amount, 0) || 0
                     )}
                   </div>
                 </div>
@@ -338,7 +339,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                           <TableCell>
                             {OBLIGATION_TYPE_LABELS[obligation.obligation_type]}
                           </TableCell>
-                          <TableCell>{formatCurrency(obligation.remaining_amount)}</TableCell>
+                          <TableCell>{formatCurrency(obligation.amount)}</TableCell>
                           <TableCell>
                             {format(new Date(obligation.due_date), 'dd/MM/yyyy', { locale: ar })}
                           </TableCell>
@@ -427,7 +428,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                             <TableCell>
                               {OBLIGATION_TYPE_LABELS[obligation.obligation_type]}
                             </TableCell>
-                            <TableCell>{formatCurrency(obligation.remaining_amount)}</TableCell>
+                            <TableCell>{formatCurrency(obligation.amount)}</TableCell>
                             <TableCell>
                               {format(new Date(obligation.due_date), 'dd/MM/yyyy', { locale: ar })}
                             </TableCell>
@@ -436,7 +437,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                                 type="number"
                                 step="0.001"
                                 min="0"
-                                max={obligation.remaining_amount}
+                                max={obligation.amount}
                                 value={allocation?.amount || 0}
                                 onChange={(e) => updateManualAllocation(
                                   obligation.id,

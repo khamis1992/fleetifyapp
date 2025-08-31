@@ -5,29 +5,37 @@ import { toast } from 'sonner';
 export interface FinancialObligation {
   id: string;
   company_id: string;
-  contract_id?: string;
-  customer_id?: string;
-  vendor_id?: string;
-  obligation_type: 'payment' | 'receipt' | 'expense' | 'revenue';
+  contract_id: string;
+  customer_id: string;
+  obligation_type: 'installment' | 'deposit' | 'fee' | 'penalty' | 'insurance';
   amount: number;
   original_amount: number;
   due_date: string;
-  status: 'pending' | 'partial' | 'paid' | 'overdue' | 'cancelled';
-  description: string;
+  status: 'pending' | 'paid' | 'overdue' | 'partially_paid' | 'cancelled';
+  paid_amount: number;
+  remaining_amount: number;
+  days_overdue: number;
+  obligation_number?: string;
+  description?: string;
   reference_number?: string;
+  invoice_id?: string;
+  journal_entry_id?: string;
+  payment_method?: string;
+  notes?: string;
+  created_by?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface UnpaidObligation {
   id: string;
-  customer_name?: string;
-  vendor_name?: string;
+  contract_id: string;
+  obligation_type: string;
   amount: number;
   due_date: string;
+  remaining_amount: number;
   days_overdue: number;
-  obligation_type: string;
-  reference_number?: string;
+  priority_score: number;
 }
 
 export interface SmartAllocationResult {
@@ -45,7 +53,7 @@ export interface ManualAllocationRequest {
   amount: number;
 }
 
-export type AllocationStrategy = 'fifo' | 'lifo' | 'largest_first' | 'smallest_first';
+export type AllocationStrategy = 'fifo' | 'highest_interest' | 'nearest_due' | 'manual';
 
 // Mock implementation since financial_obligations table doesn't exist yet
 // These hooks return empty data and are disabled until the table is created

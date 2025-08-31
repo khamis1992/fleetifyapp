@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Edit, Eye, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useCustomerObligations, useUpdateObligationStatus } from '@/hooks/useFinancialObligations';
+import type { FinancialObligation as HookFinancialObligation } from '@/hooks/useFinancialObligations';
 import type { FinancialObligation } from '@/types/financial-obligations';
 import {
   OBLIGATION_TYPE_LABELS,
@@ -64,7 +65,7 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
     setSelectedObligation(obligation);
     setEditForm({
       status: obligation.status,
-      paidAmount: obligation.paid_amount.toString(),
+      paidAmount: (obligation.paid_amount || 0).toString(),
       notes: obligation.notes || '',
     });
     setIsEditDialogOpen(true);
@@ -107,7 +108,7 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
   };
 
   const getPriorityColor = (obligation: FinancialObligation) => {
-    if (obligation.status === 'overdue' && obligation.days_overdue > 30) {
+    if (obligation.status === 'overdue' && (obligation.days_overdue || 0) > 30) {
       return 'border-l-4 border-red-500';
     } else if (obligation.status === 'overdue') {
       return 'border-l-4 border-orange-500';
@@ -145,8 +146,8 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
 
   // حساب الإحصائيات
   const totalAmount = obligations.reduce((sum, o) => sum + o.amount, 0);
-  const totalPaid = obligations.reduce((sum, o) => sum + o.paid_amount, 0);
-  const totalRemaining = obligations.reduce((sum, o) => sum + o.remaining_amount, 0);
+  const totalPaid = obligations.reduce((sum, o) => sum + (o.paid_amount || 0), 0);
+  const totalRemaining = obligations.reduce((sum, o) => sum + (o.remaining_amount || o.amount), 0);
   const overdueCount = obligations.filter(o => o.status === 'overdue').length;
 
   return (
@@ -207,10 +208,10 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
                     {format(new Date(obligation.due_date), 'dd/MM/yyyy', { locale: ar })}
                   </TableCell>
                   <TableCell className="text-green-600">
-                    {formatCurrency(obligation.paid_amount)}
+                    {formatCurrency(obligation.paid_amount || 0)}
                   </TableCell>
                   <TableCell className="text-orange-600">
-                    {formatCurrency(obligation.remaining_amount)}
+                    {formatCurrency(obligation.remaining_amount || obligation.amount)}
                   </TableCell>
                   <TableCell>
                     <Badge className={OBLIGATION_STATUS_COLORS[obligation.status]}>
@@ -218,7 +219,7 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {obligation.days_overdue > 0 && (
+                    {(obligation.days_overdue || 0) > 0 && (
                       <span className="text-red-600 font-medium">
                         {obligation.days_overdue} يوم
                       </span>
@@ -262,13 +263,13 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
                                 <div>
                                   <Label>المبلغ المدفوع</Label>
                                   <div className="mt-1 font-medium text-green-600">
-                                    {formatCurrency(obligation.paid_amount)}
+                                    {formatCurrency(obligation.paid_amount || 0)}
                                   </div>
                                 </div>
                                 <div>
                                   <Label>المبلغ المتبقي</Label>
                                   <div className="mt-1 font-medium text-orange-600">
-                                    {formatCurrency(obligation.remaining_amount)}
+                                    {formatCurrency(obligation.remaining_amount || obligation.amount)}
                                   </div>
                                 </div>
                                 <div>
