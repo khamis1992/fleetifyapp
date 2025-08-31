@@ -209,7 +209,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       'journal_debit': 'قيد مدين',
       'journal_credit': 'قيد دائن',
       'opening_balance': 'رصيد افتتاحي'
-    };
+    } as const;
 
     return (
       <Badge variant={variants[type as keyof typeof variants] || 'secondary'}>
@@ -477,11 +477,20 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                   </TableHeader>
                   <TableBody>
                     {transactions.map((transaction, index) => (
+                         className={`hover:bg-muted/50 ${
+                           (transaction.transaction_type as string) === 'opening_balance' ? 'bg-blue-50 font-medium' : ''
+                         }`}
+>>>>>>> 7e798f344cf2ab3d73b7897a0e931c2709a08047
                       <TableRow 
                         key={`${transaction.transaction_id}-${index}`}
                         className={`hover:bg-muted/50 ${
                           transaction.transaction_type === 'opening_balance' ? 'bg-accent/10 font-medium' : ''
                         }`}
+=======
+                         className={`hover:bg-muted/50 ${
+                           (transaction.transaction_type as string) === 'opening_balance' ? 'bg-blue-50 font-medium' : ''
+                         }`}
+>>>>>>> 7e798f344cf2ab3d73b7897a0e931c2709a08047
                       >
                         <TableCell className="font-medium">
                           {formatDate(transaction.transaction_date)}

@@ -73,6 +73,7 @@ export const useCustomerDuplicateCheck = (
       
       // تصفية العملاء من الشركات الأخرى وإزالة أي مراجع للعميل المستبعد
       if (result && result.duplicates) {
+        // تصفية العملاء لتشمل فقط العملاء من نفس الشركة
         let filteredDuplicates = result.duplicates.filter((d: any) => d.company_id === companyId);
         
         // التأكد من عدم تضمين العميل المستبعد في النتائج
