@@ -209,7 +209,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       'journal_debit': 'قيد مدين',
       'journal_credit': 'قيد دائن',
       'opening_balance': 'رصيد افتتاحي'
-    };
+    } as const;
 
     return (
       <Badge variant={variants[type as keyof typeof variants] || 'secondary'}>
@@ -479,9 +479,9 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                     {transactions.map((transaction, index) => (
                       <TableRow 
                         key={`${transaction.transaction_id}-${index}`}
-                        className={`hover:bg-muted/50 ${
-                          transaction.transaction_type === 'opening_balance' ? 'bg-blue-50 font-medium' : ''
-                        }`}
+                         className={`hover:bg-muted/50 ${
+                           (transaction.transaction_type as string) === 'opening_balance' ? 'bg-blue-50 font-medium' : ''
+                         }`}
                       >
                         <TableCell className="font-medium">
                           {formatDate(transaction.transaction_date)}
