@@ -31,8 +31,13 @@ import {
   ArrowRight,
   ArrowLeft,
   Calculator,
-  LinkIcon
+  LinkIcon,
+  CalendarIcon
 } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
 import { AccountingSettings } from './AccountingSettings';
 import { AccountLinking } from './AccountLinking';
@@ -95,6 +100,14 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
   const watchedValues = form.watch();
   const customerType = form.watch('customer_type');
+  const nationalId = form.watch('national_id');
+
+  // Auto-fill license number when national ID changes
+  useEffect(() => {
+    if (nationalId && customerType === 'individual') {
+      form.setValue('license_number', nationalId);
+    }
+  }, [nationalId, customerType, form]);
 
   // Steps configuration
   const steps = [
@@ -417,7 +430,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                 />
               )}
 
-              {/* Identification */}
+              {/* Identification and Documents */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -435,6 +448,63 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
                 <FormField
                   control={form.control}
+                  name="national_id_expiry"
+                  render={({ field }) => {
+                    const isExpired = field.value && field.value <= new Date();
+                    return (
+                      <FormItem>
+                        <FormLabel className={isExpired ? "text-destructive" : ""}>
+                          تاريخ انتهاء البطاقة المدنية
+                          {isExpired && <AlertTriangle className="inline h-4 w-4 ml-1" />}
+                        </FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground",
+                                  isExpired && "border-destructive text-destructive"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>اختر تاريخ الانتهاء</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        {isExpired && (
+                          <Alert className="mt-2 border-destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription className="text-destructive">
+                              البطاقة المدنية منتهية الصلاحية
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="passport_number"
                   render={({ field }) => (
                     <FormItem>
@@ -447,6 +517,94 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                   )}
                 />
               </div>
+
+              {/* License Information - Only for Individuals */}
+              {customerType === 'individual' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-4">
+                    <CreditCard className="h-4 w-4" />
+                    <span>معلومات رخصة القيادة</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="license_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>رقم رخصة القيادة</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              placeholder="يتم تعبئتها تلقائياً من رقم الهوية"
+                              className="bg-muted/50"
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            يتم تعبئة هذا الحقل تلقائياً من رقم البطاقة المدنية
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="license_expiry"
+                      render={({ field }) => {
+                        const isExpired = field.value && field.value <= new Date();
+                        return (
+                          <FormItem>
+                            <FormLabel className={isExpired ? "text-destructive" : ""}>
+                              تاريخ انتهاء رخصة القيادة
+                              {isExpired && <AlertTriangle className="inline h-4 w-4 ml-1" />}
+                            </FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground",
+                                      isExpired && "border-destructive text-destructive"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>اختر تاريخ انتهاء الرخصة</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            {isExpired && (
+                              <Alert className="mt-2 border-destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription className="text-destructive">
+                                  رخصة القيادة منتهية الصلاحية
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
