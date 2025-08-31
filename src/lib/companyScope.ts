@@ -28,6 +28,18 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
   // Extract company_id consistently with useUnifiedCompanyAccess
   const companyId = user?.company?.id || (user as any)?.company_id || user?.profile?.company_id;
   
+  // تسجيل معلومات تشخيصية
+  console.log('🔧 [getCompanyScopeContext] Processing user context:', {
+    userId: user?.id,
+    companyId,
+    userCompanyFromObject: user?.company?.id,
+    userCompanyFromDirect: (user as any)?.company_id,
+    userCompanyFromProfile: user?.profile?.company_id,
+    normalizedRoles,
+    isSystemLevel: normalizedRoles.includes('super_admin'),
+    isCompanyScoped: normalizedRoles.includes('company_admin') && !normalizedRoles.includes('super_admin')
+  });
+  
   return {
     user,
     userRoles: normalizedRoles,

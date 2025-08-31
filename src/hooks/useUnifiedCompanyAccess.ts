@@ -91,7 +91,15 @@ export const useUnifiedCompanyAccess = () => {
       companyId: context.companyId,
       isSystemLevel: context.isSystemLevel,
       isCompanyScoped: context.isCompanyScoped,
-      userRoles: context.user?.roles
+      userRoles: context.user?.roles,
+      userCompanyId: userCompanyId
+    });
+    
+    // تسجيل معلومات البراوز مود
+    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Browse mode details:', {
+      isBrowsingMode,
+      browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+      isSuperAdmin: rolesNormalized.includes('super_admin')
     });
     
     // Store original user roles before modifying context

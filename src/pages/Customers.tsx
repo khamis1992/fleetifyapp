@@ -20,6 +20,8 @@ import { BulkDeleteCustomersDialog } from "@/components/customers/BulkDeleteCust
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { useCompanyContext } from "@/contexts/CompanyContext"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
 import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
@@ -27,6 +29,8 @@ import { useQueryClient } from "@tanstack/react-query"
 
 export default function Customers() {
   const { user, loading } = useAuth()
+  const { browsedCompany, isBrowsingMode, exitBrowseMode } = useCompanyContext()
+  const { companyId, isSystemLevel, hasFullCompanyControl } = useUnifiedCompanyAccess()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showCustomerForm, setShowCustomerForm] = useState(false)
@@ -195,6 +199,25 @@ export default function Customers() {
           <p className="text-muted-foreground mt-1">
             إدارة وتتبع معلومات العملاء
           </p>
+          {/* مؤشر الشركة النشطة */}
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant={isBrowsingMode ? "secondary" : "default"}>
+              {isBrowsingMode ? `تصفح: ${browsedCompany?.name}` : `شركتك: ${user?.company?.name || 'غير محدد'}`}
+            </Badge>
+            {isBrowsingMode && (
+              <Button
+                onClick={exitBrowseMode}
+                variant="outline"
+                size="sm"
+                className="h-6 text-xs"
+              >
+                العودة لشركتي
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground">
+              Company ID: {companyId || 'غير متوفر'}
+            </span>
+          </div>
         </div>
         <div className="flex gap-2">
           <CustomerRefreshButton />
@@ -243,6 +266,11 @@ export default function Customers() {
         <Alert variant="destructive">
           <AlertDescription>
             حدث خطأ أثناء تحميل بيانات العملاء: {error.message || 'يرجى المحاولة مرة أخرى.'}
+            <div className="mt-2 text-xs font-mono bg-muted p-2 rounded">
+              Company ID: {companyId || 'غير متوفر'} | 
+              Browse Mode: {isBrowsingMode ? 'نعم' : 'لا'} | 
+              User Company: {user?.company?.name || 'غير محدد'}
+            </div>
             {!user && (
               <div className="mt-2">
                 <Button 
@@ -256,6 +284,24 @@ export default function Customers() {
                 </Button>
               </div>
             )}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* تشخيص الشركة */}
+      {!error && allCustomers.length === 0 && !isLoading && (
+        <Alert>
+          <AlertDescription>
+            لا توجد عملاء في الشركة الحالية.
+            <div className="mt-2 text-xs font-mono bg-muted p-2 rounded">
+              <strong>معلومات التشخيص:</strong><br />
+              Company ID: {companyId || 'غير متوفر'}<br />
+              Browse Mode: {isBrowsingMode ? 'نعم' : 'لا'}<br />
+              Browsed Company: {browsedCompany ? `${browsedCompany.name} (${browsedCompany.id})` : 'لا يوجد'}<br />
+              User Company: {user?.company?.name || 'غير محدد'}<br />
+              System Level: {isSystemLevel ? 'نعم' : 'لا'}<br />
+              Has Full Control: {hasFullCompanyControl ? 'نعم' : 'لا'}
+            </div>
           </AlertDescription>
         </Alert>
       )}

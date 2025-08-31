@@ -23,15 +23,19 @@ export const useCustomers = (filters?: CustomerFilters) => {
     companyId,
     isBrowsingMode,
     browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-    filters
+    filters,
+    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted])
   });
   
   return useQuery({
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted]),
     queryFn: async (): Promise<EnhancedCustomer[]> => {
       if (!companyId) {
+        console.error('❌ [useCustomers] No company ID available for query');
         throw new Error("No company access available");
       }
+      
+      console.log('🔍 [useCustomers] Executing query for company:', companyId);
       
       let query = supabase
         .from('customers')
@@ -75,9 +79,15 @@ export const useCustomers = (filters?: CustomerFilters) => {
       const { data, error } = await query;
       
       if (error) {
-        console.error('Error fetching customers:', error);
+        console.error('❌ [useCustomers] Error fetching customers:', error);
         throw error;
       }
+      
+      console.log('✅ [useCustomers] Successfully fetched customers:', {
+        count: data?.length || 0,
+        companyId,
+        customers: data?.map(c => ({ id: c.id, name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name })) || []
+      });
       
       return data || [];
     },
