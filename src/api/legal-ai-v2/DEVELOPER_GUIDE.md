@@ -169,7 +169,716 @@ export function Component({
 }
 ```
 
-## Quality Assurance and Testing
+## Authentication and Authorization
+
+### User Roles System
+
+The application implements a comprehensive role-based access control (RBAC) system with the following roles:
+
+#### Role Hierarchy
+```typescript
+enum UserRole {
+  SUPER_ADMIN = 'super_admin',     // Platform-wide access
+  COMPANY_ADMIN = 'company_admin', // Full company access
+  MANAGER = 'manager',             // Department management
+  SALES_AGENT = 'sales_agent',     // Sales operations
+  EMPLOYEE = 'employee',           // Basic employee access
+  VIEWER = 'viewer'                // Read-only access
+}
+```
+
+#### Role Permissions Matrix
+
+| Feature | Super Admin | Company Admin | Manager | Sales Agent | Employee | Viewer |
+|---------|-------------|---------------|---------|-------------|----------|--------|
+| Company Settings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| User Management | ✅ | ✅ | ✅* | ❌ | ❌ | ❌ |
+| Financial Reports | ✅ | ✅ | ✅ | ❌ | ❌ | 👁️ |
+| Customer Management | ✅ | ✅ | ✅ | ✅ | ❌ | 👁️ |
+| Contract Management | ✅ | ✅ | ✅ | ✅ | ❌ | 👁️ |
+| Payment Processing | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Legal Cases | ✅ | ✅ | ✅ | ❌ | ❌ | 👁️ |
+| Vehicle Management | ✅ | ✅ | ✅ | ❌ | ❌ | 👁️ |
+| Attendance | ✅ | ✅ | ✅ | ❌ | ✅ | 👁️ |
+| Chat/AI Assistant | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+*Managers can only manage users in their department
+
+### Role-Based Component Access
+
+```typescript
+// hooks/useAuth.ts
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const checkRole = useCallback((requiredRole: UserRole): boolean => {
+    if (!user) return false;
+    
+    const roleHierarchy = {
+      [UserRole.SUPER_ADMIN]: 6,
+      [UserRole.COMPANY_ADMIN]: 5,
+      [UserRole.MANAGER]: 4,
+      [UserRole.SALES_AGENT]: 3,
+      [UserRole.EMPLOYEE]: 2,
+      [UserRole.VIEWER]: 1,
+    };
+    
+    const userLevel = roleHierarchy[user.role];
+    const requiredLevel = roleHierarchy[requiredRole];
+    
+    return userLevel >= requiredLevel;
+  }, [user]);
+
+  const hasPermission = useCallback((resource: string, action: string): boolean => {
+    if (!user) return false;
+
+    // Super admin has all permissions
+    if (user.role === UserRole.SUPER_ADMIN) return true;
+
+    // Check specific permissions based on role and resource
+    return checkResourcePermission(user.role, resource, action);
+  }, [user]);
+
+  return {
+    user,
+    loading,
+    checkRole,
+    hasPermission,
+    isAuthenticated: !!user,
+  };
+}
+
+// components/ProtectedRoute.tsx
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredRole?: UserRole;
+  requiredPermission?: { resource: string; action: string };
+  fallback?: React.ReactNode;
+}
+
+export function ProtectedRoute({ 
+  children, 
+  requiredRole, 
+  requiredPermission,
+  fallback = <div>Access Denied</div> 
+}: ProtectedRouteProps) {
+  const { checkRole, hasPermission, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // Check role-based access
+  if (requiredRole && !checkRole(requiredRole)) {
+    return <>{fallback}</>;
+  }
+
+  // Check permission-based access
+  if (requiredPermission && !hasPermission(requiredPermission.resource, requiredPermission.action)) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
+}
+```
+
+### Database-Level Security (RLS)
+
+```sql
+-- Helper function to check user roles
+CREATE OR REPLACE FUNCTION has_role(user_id UUID, required_role user_role)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM user_roles ur
+    WHERE ur.user_id = $1 
+    AND ur.role = $2
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper function to get user's company
+CREATE OR REPLACE FUNCTION get_user_company(user_id UUID)
+RETURNS UUID AS $$
+BEGIN
+  RETURN (
+    SELECT company_id 
+    FROM profiles 
+    WHERE user_id = $1
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Example RLS policy for customers table
+CREATE POLICY "Company users can view customers" 
+ON customers FOR SELECT 
+USING (company_id = get_user_company(auth.uid()));
+
+CREATE POLICY "Admins and managers can manage customers" 
+ON customers FOR ALL 
+USING (
+  has_role(auth.uid(), 'super_admin'::user_role) OR 
+  (
+    company_id = get_user_company(auth.uid()) AND 
+    (
+      has_role(auth.uid(), 'company_admin'::user_role) OR 
+      has_role(auth.uid(), 'manager'::user_role) OR
+      has_role(auth.uid(), 'sales_agent'::user_role)
+    )
+  )
+);
+```
+
+## Routing and Navigation
+
+### Application Routes Structure
+
+```typescript
+// routes/index.tsx
+import { createBrowserRouter } from 'react-router-dom';
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <RootLayout />,
+    children: [
+      // Public routes
+      {
+        path: 'login',
+        element: <LoginPage />,
+      },
+      {
+        path: 'register',
+        element: <RegisterPage />,
+      },
+      
+      // Protected routes
+      {
+        path: 'dashboard',
+        element: (
+          <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
+            <DashboardLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <DashboardHome />,
+          },
+          
+          // Customer Management
+          {
+            path: 'customers',
+            element: (
+              <ProtectedRoute 
+                requiredPermission={{ resource: 'customers', action: 'read' }}
+              >
+                <CustomerRoutes />
+              </ProtectedRoute>
+            ),
+            children: [
+              { index: true, element: <CustomerList /> },
+              { path: 'new', element: <CreateCustomer /> },
+              { path: ':id', element: <CustomerDetails /> },
+              { path: ':id/edit', element: <EditCustomer /> },
+            ],
+          },
+          
+          // Financial Management
+          {
+            path: 'finance',
+            element: (
+              <ProtectedRoute requiredRole={UserRole.MANAGER}>
+                <FinanceRoutes />
+              </ProtectedRoute>
+            ),
+            children: [
+              { index: true, element: <FinanceDashboard /> },
+              { path: 'obligations', element: <ObligationsList /> },
+              { path: 'payments', element: <PaymentsList /> },
+              { path: 'reports', element: <FinancialReports /> },
+            ],
+          },
+          
+          // Legal Management
+          {
+            path: 'legal',
+            element: (
+              <ProtectedRoute requiredRole={UserRole.MANAGER}>
+                <LegalRoutes />
+              </ProtectedRoute>
+            ),
+            children: [
+              { index: true, element: <LegalDashboard /> },
+              { path: 'cases', element: <LegalCasesList /> },
+              { path: 'contracts', element: <ContractsList /> },
+              { path: 'documents', element: <DocumentsList /> },
+            ],
+          },
+          
+          // HR Management
+          {
+            path: 'hr',
+            element: (
+              <ProtectedRoute requiredRole={UserRole.MANAGER}>
+                <HRRoutes />
+              </ProtectedRoute>
+            ),
+            children: [
+              { index: true, element: <HRDashboard /> },
+              { path: 'employees', element: <EmployeesList /> },
+              { path: 'attendance', element: <AttendanceManagement /> },
+              { path: 'payroll', element: <PayrollManagement /> },
+            ],
+          },
+          
+          // Vehicle Management
+          {
+            path: 'vehicles',
+            element: (
+              <ProtectedRoute requiredRole={UserRole.MANAGER}>
+                <VehicleRoutes />
+              </ProtectedRoute>
+            ),
+            children: [
+              { index: true, element: <VehiclesList /> },
+              { path: 'maintenance', element: <MaintenanceSchedule /> },
+              { path: 'tracking', element: <VehicleTracking /> },
+            ],
+          },
+          
+          // Settings (Company Admin only)
+          {
+            path: 'settings',
+            element: (
+              <ProtectedRoute requiredRole={UserRole.COMPANY_ADMIN}>
+                <SettingsRoutes />
+              </ProtectedRoute>
+            ),
+            children: [
+              { index: true, element: <GeneralSettings /> },
+              { path: 'users', element: <UserManagement /> },
+              { path: 'company', element: <CompanySettings /> },
+              { path: 'billing', element: <BillingSettings /> },
+            ],
+          },
+          
+          // Chat/AI Assistant (All authenticated users)
+          {
+            path: 'chat',
+            element: <ChatInterface />,
+          },
+        ],
+      },
+      
+      // Public quotation approval
+      {
+        path: 'approve-quotation/:token',
+        element: <QuotationApproval />,
+      },
+      
+      // Error pages
+      {
+        path: '404',
+        element: <NotFoundPage />,
+      },
+      {
+        path: '*',
+        element: <Navigate to="/404" replace />,
+      },
+    ],
+  },
+]);
+```
+
+### Layout Components
+
+```typescript
+// components/layouts/DashboardLayout.tsx
+export function DashboardLayout() {
+  const { user, hasPermission } = useAuth();
+  const location = useLocation();
+  
+  const navigationItems = useMemo(() => [
+    {
+      title: 'Dashboard',
+      icon: Home,
+      href: '/dashboard',
+      visible: true,
+    },
+    {
+      title: 'العملاء',
+      icon: Users,
+      href: '/dashboard/customers',
+      visible: hasPermission('customers', 'read'),
+    },
+    {
+      title: 'المالية',
+      icon: DollarSign,
+      href: '/dashboard/finance',
+      visible: hasPermission('finance', 'read'),
+    },
+    {
+      title: 'القانونية',
+      icon: Scale,
+      href: '/dashboard/legal',
+      visible: hasPermission('legal', 'read'),
+    },
+    {
+      title: 'الموارد البشرية',
+      icon: UserCheck,
+      href: '/dashboard/hr',
+      visible: hasPermission('hr', 'read'),
+    },
+    {
+      title: 'المركبات',
+      icon: Car,
+      href: '/dashboard/vehicles',
+      visible: hasPermission('vehicles', 'read'),
+    },
+    {
+      title: 'المساعد الذكي',
+      icon: MessageSquare,
+      href: '/dashboard/chat',
+      visible: true,
+    },
+    {
+      title: 'الإعدادات',
+      icon: Settings,
+      href: '/dashboard/settings',
+      visible: hasPermission('settings', 'read'),
+    },
+  ], [hasPermission]);
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar 
+        navigationItems={navigationItems.filter(item => item.visible)}
+        currentPath={location.pathname}
+      />
+      <main className="flex-1 overflow-auto">
+        <Header user={user} />
+        <div className="p-6">
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  );
+}
+```
+
+### Navigation Guards
+
+```typescript
+// hooks/useNavigationGuard.ts
+export function useNavigationGuard() {
+  const { hasPermission, checkRole } = useAuth();
+  const navigate = useNavigate();
+
+  const navigateWithPermission = useCallback((
+    path: string,
+    requiredPermission?: { resource: string; action: string },
+    requiredRole?: UserRole
+  ) => {
+    // Check role requirement
+    if (requiredRole && !checkRole(requiredRole)) {
+      toast.error('ليس لديك صلاحية للوصول لهذه الصفحة');
+      return false;
+    }
+
+    // Check permission requirement
+    if (requiredPermission && !hasPermission(requiredPermission.resource, requiredPermission.action)) {
+      toast.error('ليس لديك صلاحية لتنفيذ هذا العمل');
+      return false;
+    }
+
+    navigate(path);
+    return true;
+  }, [hasPermission, checkRole, navigate]);
+
+  return { navigateWithPermission };
+}
+
+// Usage in components
+function CustomerCard({ customer }: { customer: Customer }) {
+  const { navigateWithPermission } = useNavigationGuard();
+
+  const handleEdit = () => {
+    navigateWithPermission(
+      `/dashboard/customers/${customer.id}/edit`,
+      { resource: 'customers', action: 'update' }
+    );
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <h3>{customer.name}</h3>
+        <Button onClick={handleEdit}>تعديل</Button>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### Route Parameters and State Management
+
+```typescript
+// hooks/useRouteState.ts
+export function useRouteState<T>() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const updateRouteState = useCallback((updates: Partial<T>) => {
+    const currentState = location.state as T || {};
+    const newState = { ...currentState, ...updates };
+    
+    navigate(location.pathname + location.search, {
+      state: newState,
+      replace: true,
+    });
+  }, [location, navigate]);
+
+  return {
+    routeState: (location.state as T) || {},
+    updateRouteState,
+  };
+}
+
+// hooks/useSearchParams.ts
+export function useSearchParams() {
+  const [searchParams, setSearchParams] = useReactSearchParams();
+  
+  const updateSearchParam = useCallback((key: string, value: string | null) => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    if (value === null || value === '') {
+      newParams.delete(key);
+    } else {
+      newParams.set(key, value);
+    }
+    
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const getSearchParam = useCallback((key: string): string | null => {
+    return searchParams.get(key);
+  }, [searchParams]);
+
+  return {
+    searchParams,
+    updateSearchParam,
+    getSearchParam,
+  };
+}
+```
+
+### Role-Based Menu Configuration
+
+```typescript
+// config/menuConfig.ts
+export const menuConfig: MenuConfig = {
+  [UserRole.SUPER_ADMIN]: {
+    sections: [
+      {
+        title: 'الإدارة العامة',
+        items: [
+          { title: 'جميع الشركات', path: '/admin/companies' },
+          { title: 'إدارة النظام', path: '/admin/system' },
+          { title: 'التقارير العامة', path: '/admin/reports' },
+        ],
+      },
+      {
+        title: 'الإدارة',
+        items: [
+          { title: 'لوحة التحكم', path: '/dashboard' },
+          { title: 'العملاء', path: '/dashboard/customers' },
+          { title: 'المالية', path: '/dashboard/finance' },
+          { title: 'القانونية', path: '/dashboard/legal' },
+          { title: 'الموارد البشرية', path: '/dashboard/hr' },
+          { title: 'المركبات', path: '/dashboard/vehicles' },
+        ],
+      },
+    ],
+  },
+  
+  [UserRole.COMPANY_ADMIN]: {
+    sections: [
+      {
+        title: 'الإدارة',
+        items: [
+          { title: 'لوحة التحكم', path: '/dashboard' },
+          { title: 'العملاء', path: '/dashboard/customers' },
+          { title: 'المالية', path: '/dashboard/finance' },
+          { title: 'القانونية', path: '/dashboard/legal' },
+          { title: 'الموارد البشرية', path: '/dashboard/hr' },
+          { title: 'المركبات', path: '/dashboard/vehicles' },
+        ],
+      },
+      {
+        title: 'الإعدادات',
+        items: [
+          { title: 'إعدادات الشركة', path: '/dashboard/settings/company' },
+          { title: 'إدارة المستخدمين', path: '/dashboard/settings/users' },
+          { title: 'الفوترة', path: '/dashboard/settings/billing' },
+        ],
+      },
+    ],
+  },
+  
+  [UserRole.MANAGER]: {
+    sections: [
+      {
+        title: 'الإدارة',
+        items: [
+          { title: 'لوحة التحكم', path: '/dashboard' },
+          { title: 'العملاء', path: '/dashboard/customers' },
+          { title: 'المالية', path: '/dashboard/finance' },
+          { title: 'القانونية', path: '/dashboard/legal' },
+          { title: 'الموارد البشرية', path: '/dashboard/hr' },
+          { title: 'المركبات', path: '/dashboard/vehicles' },
+        ],
+      },
+    ],
+  },
+  
+  [UserRole.SALES_AGENT]: {
+    sections: [
+      {
+        title: 'المبيعات',
+        items: [
+          { title: 'لوحة التحكم', path: '/dashboard' },
+          { title: 'العملاء', path: '/dashboard/customers' },
+          { title: 'العقود', path: '/dashboard/legal/contracts' },
+          { title: 'المدفوعات', path: '/dashboard/finance/payments' },
+        ],
+      },
+    ],
+  },
+  
+  [UserRole.EMPLOYEE]: {
+    sections: [
+      {
+        title: 'الموظف',
+        items: [
+          { title: 'لوحة التحكم', path: '/dashboard' },
+          { title: 'الحضور', path: '/dashboard/hr/attendance' },
+          { title: 'المساعد الذكي', path: '/dashboard/chat' },
+        ],
+      },
+    ],
+  },
+  
+  [UserRole.VIEWER]: {
+    sections: [
+      {
+        title: 'عرض',
+        items: [
+          { title: 'لوحة التحكم', path: '/dashboard' },
+          { title: 'التقارير', path: '/dashboard/reports' },
+          { title: 'المساعد الذكي', path: '/dashboard/chat' },
+        ],
+      },
+    ],
+  },
+};
+```
+
+### Breadcrumb Navigation
+
+```typescript
+// hooks/useBreadcrumbs.ts
+export function useBreadcrumbs() {
+  const location = useLocation();
+  
+  const breadcrumbs = useMemo(() => {
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const breadcrumbItems: BreadcrumbItem[] = [];
+    
+    let currentPath = '';
+    
+    pathSegments.forEach((segment, index) => {
+      currentPath += `/${segment}`;
+      
+      const breadcrumbConfig = getBreadcrumbConfig(currentPath);
+      if (breadcrumbConfig) {
+        breadcrumbItems.push({
+          title: breadcrumbConfig.title,
+          path: currentPath,
+          isLast: index === pathSegments.length - 1,
+        });
+      }
+    });
+    
+    return breadcrumbItems;
+  }, [location.pathname]);
+  
+  return breadcrumbs;
+}
+
+// components/Breadcrumbs.tsx
+export function Breadcrumbs() {
+  const breadcrumbs = useBreadcrumbs();
+  
+  if (breadcrumbs.length <= 1) return null;
+  
+  return (
+    <nav className="breadcrumbs">
+      {breadcrumbs.map((item, index) => (
+        <span key={item.path} className="breadcrumb-item">
+          {!item.isLast ? (
+            <Link to={item.path}>{item.title}</Link>
+          ) : (
+            <span>{item.title}</span>
+          )}
+          {!item.isLast && <span className="separator"> / </span>}
+        </span>
+      ))}
+    </nav>
+  );
+}
+```
+
+### Route-Based Feature Flags
+
+```typescript
+// hooks/useFeatureFlags.ts
+export function useFeatureFlags() {
+  const { user } = useAuth();
+  const location = useLocation();
+  
+  const isFeatureEnabled = useCallback((featureName: string): boolean => {
+    // Check user role permissions
+    const userRole = user?.role;
+    if (!userRole) return false;
+    
+    // Check route-based features
+    const currentRoute = location.pathname;
+    
+    const featureConfig = getFeatureConfig(featureName);
+    if (!featureConfig) return false;
+    
+    // Check role requirements
+    if (featureConfig.requiredRoles && !featureConfig.requiredRoles.includes(userRole)) {
+      return false;
+    }
+    
+    // Check route requirements
+    if (featureConfig.allowedRoutes && !featureConfig.allowedRoutes.some(route => 
+      currentRoute.startsWith(route)
+    )) {
+      return false;
+    }
+    
+    return true;
+  }, [user, location]);
+  
+  return { isFeatureEnabled };
+}
+```
+
+108
 
 ### Automated Quality Checks
 
