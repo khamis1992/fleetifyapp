@@ -10,6 +10,20 @@ export const useSimpleUpdateCustomer = () => {
     mutationFn: async ({ customerId, data }: { customerId: string; data: CustomerFormData }) => {
       console.log('🔄 Starting simple customer update:', { customerId, data });
       
+      // الحصول على البيانات الحالية للعميل للتأكد من company_id
+      const { data: existingCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('company_id, first_name, last_name, company_name')
+        .eq('id', customerId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching existing customer:', fetchError);
+        throw new Error('فشل في جلب بيانات العميل الحالية');
+      }
+
+      console.log('📋 Existing customer data:', existingCustomer);
+      
       // تنظيف البيانات بحفظ القيم الفارغة كـ null
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([key, value]) => {
@@ -29,7 +43,13 @@ export const useSimpleUpdateCustomer = () => {
       // إزالة الحقول التي لا تخص جدول العملاء
       const { selectedCompanyId, ...customerData } = cleanData;
 
-      console.log('📝 Clean data for update:', customerData);
+      // التأكد من الحفاظ على company_id الأصلي
+      if (existingCustomer.company_id) {
+        customerData.company_id = existingCustomer.company_id;
+      }
+
+      console.log('📝 Clean data for update (with preserved company_id):', customerData);
+      console.log('🏢 Preserving company_id:', existingCustomer.company_id);
 
       const { data: updatedCustomer, error } = await supabase
         .from('customers')
@@ -48,6 +68,13 @@ export const useSimpleUpdateCustomer = () => {
     },
     onSuccess: (updatedCustomer) => {
       console.log('✅ Update successful, updated customer:', updatedCustomer);
+      console.log('🏢 Company ID after update:', updatedCustomer.company_id);
+      
+      // التحقق من وجود company_id في النتيجة
+      if (!updatedCustomer.company_id) {
+        console.warn('⚠️ Warning: Updated customer missing company_id');
+      }
+      
       // إعادة تحميل البيانات بطرق متعددة لضمان التحديث
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customer'] });
@@ -55,6 +82,9 @@ export const useSimpleUpdateCustomer = () => {
       
       // تحديث cache مباشرة أيضاً
       queryClient.setQueryData(['customer', updatedCustomer.id], updatedCustomer);
+      
+      // إعادة تحميل جميع استعلامات الشركات أيضاً للتأكد
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       
       toast.success('تم تحديث بيانات العميل بنجاح');
     },
