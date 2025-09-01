@@ -10990,6 +10990,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_user_role_simple: {
+        Args: { input_role: string; input_user_id: string }
+        Returns: boolean
+      }
       check_vehicle_availability_fixed: {
         Args: {
           end_date_param: string
@@ -12028,6 +12032,10 @@ export type Database = {
       }
       get_user_company_secure_cached: {
         Args: { _user_id: string }
+        Returns: string
+      }
+      get_user_company_simple: {
+        Args: { input_user_id: string }
         Returns: string
       }
       handle_incomplete_user_account: {

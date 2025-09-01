@@ -143,22 +143,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (retryCount < maxRetries) {
                   console.log(`📝 [AUTH_CONTEXT] Retrying in ${retryCount * 1000}ms...`);
                   await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
-                } else {
-                  console.error('📝 [AUTH_CONTEXT] Max retries reached, using session user with fallback data');
-                  // Create fallback user with session data
-                  const fallbackUser: AuthUser = {
-                    ...session.user,
-                    profile: {
-                      id: session.user.id,
-                      first_name: session.user.user_metadata?.first_name || 'مستخدم',
-                      last_name: session.user.user_metadata?.last_name || '',
-                      company_id: session.user.user_metadata?.company_id || null
-                    },
-                    roles: ['user'], // Default role
-                    company_id: session.user.user_metadata?.company_id || null
-                  };
-                  setUser(fallbackUser);
-                  setSessionError('تم تحميل بيانات أساسية للمستخدم');
+                 } else {
+                   console.error('📝 [AUTH_CONTEXT] Max retries reached, using session user with fallback data');
+                   // Create fallback user with session data
+                   const fallbackUser: AuthUser = {
+                     ...session.user,
+                     profile: {
+                       id: session.user.id,
+                       first_name: session.user.user_metadata?.first_name || 'مستخدم',
+                       last_name: session.user.user_metadata?.last_name || '',
+                       company_id: session.user.user_metadata?.company_id || null
+                     },
+                     roles: ['user'], // Default role
+                     company_id: session.user.user_metadata?.company_id || null
+                   };
+                   setUser(fallbackUser);
+                   setSessionError(null); // Clear error since we have a working fallback
                 }
               }
             }
