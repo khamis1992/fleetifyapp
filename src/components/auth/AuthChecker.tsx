@@ -14,19 +14,6 @@ export const AuthChecker: React.FC<AuthCheckerProps> = ({
 }) => {
   const { user, session, loading } = useAuth();
   const navigate = useNavigate();
-  const [timeoutReached, setTimeoutReached] = React.useState(false);
-
-  // Emergency timeout to prevent infinite loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('🔒 [AUTH_CHECKER] Loading timeout reached, checking current state');
-        setTimeoutReached(true);
-      }
-    }, 8000); // 8 second timeout
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
 
   useEffect(() => {
     if (!loading && (!user || !session)) {
@@ -35,22 +22,7 @@ export const AuthChecker: React.FC<AuthCheckerProps> = ({
     }
   }, [user, session, loading, navigate, redirectTo]);
 
-  // If timeout reached and still loading, check if we can proceed anyway
-  if (timeoutReached && loading) {
-    console.warn('🔒 [AUTH_CHECKER] Timeout reached but still loading, checking session manually');
-    // If we have a session but user is still loading, proceed anyway
-    if (session && !user) {
-      console.log('🔒 [AUTH_CHECKER] Have session but no user data, proceeding with minimal auth');
-      return <>{children}</>;
-    }
-    // If no session, redirect
-    if (!session) {
-      navigate(redirectTo, { replace: true });
-      return null;
-    }
-  }
-
-  if (loading && !timeoutReached) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
         <LoadingSpinner size="lg" />

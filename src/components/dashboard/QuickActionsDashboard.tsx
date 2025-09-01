@@ -46,7 +46,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'إضافة عميل جديد',
       description: 'تسجيل عميل جديد في النظام',
       icon: Users,
-      color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
+      color: 'from-blue-500/10 to-blue-600/5 border-blue-200/20 hover:border-blue-300/30',
       route: '/customers',
       badge: 'شائع'
     },
@@ -55,7 +55,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'إضافة مركبة',
       description: 'تسجيل مركبة جديدة في الأسطول',
       icon: Car,
-      color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
+      color: 'from-green-500/10 to-green-600/5 border-green-200/20 hover:border-green-300/30',
       route: '/fleet',
       badge: 'سريع'
     },
@@ -64,7 +64,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'إنشاء عقد',
       description: 'إنشاء عقد إيجار جديد',
       icon: FileText,
-      color: 'from-accent/20 to-accent/10 border-accent/30 hover:border-accent/40',
+      color: 'from-purple-500/10 to-purple-600/5 border-purple-200/20 hover:border-purple-300/30',
       route: '/contracts'
     },
     {
@@ -72,7 +72,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'تسجيل دفعة',
       description: 'تسجيل دفعة مالية جديدة',
       icon: DollarSign,
-      color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
+      color: 'from-emerald-500/10 to-emerald-600/5 border-emerald-200/20 hover:border-emerald-300/30',
       route: '/finance/payments'
     },
     {
@@ -80,7 +80,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'الحاسبة المالية',
       description: 'احتساب التكاليف والأرباح',
       icon: Calculator,
-      color: 'from-warning/10 to-warning/5 border-warning/20 hover:border-warning/30',
+      color: 'from-orange-500/10 to-orange-600/5 border-orange-200/20 hover:border-orange-300/30',
       route: '/finance/calculator'
     },
     {
@@ -88,7 +88,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'البحث المتقدم',
       description: 'البحث في جميع سجلات النظام',
       icon: Search,
-      color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
+      color: 'from-indigo-500/10 to-indigo-600/5 border-indigo-200/20 hover:border-indigo-300/30',
       route: '/search'
     }
   ];
@@ -99,7 +99,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'تصدير البيانات',
       description: 'تصدير التقارير والبيانات',
       icon: Download,
-      color: 'from-secondary/10 to-secondary/5 border-secondary/20 hover:border-secondary/30',
+      color: 'from-gray-500/10 to-gray-600/5 border-gray-200/20 hover:border-gray-300/30',
       route: '/reports'
     },
     {
@@ -107,7 +107,7 @@ const QuickActionsDashboard: React.FC = () => {
       title: 'استيراد البيانات',
       description: 'استيراد بيانات من ملفات CSV',
       icon: Upload,
-      color: 'from-warning/10 to-warning/5 border-warning/20 hover:border-warning/30',
+      color: 'from-yellow-500/10 to-yellow-600/5 border-yellow-200/20 hover:border-yellow-300/30',
       route: '/import'
     }
   ];
@@ -132,13 +132,13 @@ const QuickActionsDashboard: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Card 
-              className={`cursor-pointer transition-smooth bg-gradient-card shadow-card hover:shadow-elevated ${action.color} border group`}
+              className={`cursor-pointer transition-all duration-300 bg-gradient-to-br ${action.color} hover:shadow-lg border group`}
               onClick={() => handleActionClick(action)}
             >
               <CardContent className={variant === 'compact' ? 'p-4' : 'p-6'}>
                 <div className="flex items-start gap-4">
                   <motion.div 
-                    className="p-3 rounded-lg bg-background/80 group-hover:bg-background/90 transition-smooth"
+                    className="p-3 rounded-lg bg-white/50 group-hover:bg-white/70 transition-colors duration-300"
                     whileHover={{ rotate: 5 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
@@ -155,13 +155,13 @@ const QuickActionsDashboard: React.FC = () => {
                       {action.badge && (
                         <Badge 
                           variant="secondary" 
-                          className="text-xs bg-background/80 text-foreground/80 border-border/40"
+                          className="text-xs bg-white/60 text-foreground/70 border-white/40"
                         >
                           {action.badge}
                         </Badge>
                       )}
                     </div>
-                    <p className={`text-muted-foreground group-hover:text-muted-foreground/90 transition-smooth ${
+                    <p className={`text-muted-foreground group-hover:text-muted-foreground/80 transition-colors ${
                       variant === 'compact' ? 'text-xs' : 'text-sm'
                     }`}>
                       {action.description}
@@ -187,7 +187,7 @@ const QuickActionsDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-border/50">
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

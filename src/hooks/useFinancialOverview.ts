@@ -44,145 +44,111 @@ export interface FinancialOverview {
 }
 
 export const useFinancialOverview = () => {
-  const { companyId, user, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['financial-overview']),
     queryFn: async (): Promise<FinancialOverview> => {
-      if (!user) {
-        console.log('⚠️ [FINANCIAL_OVERVIEW] No authenticated user');
-        return getEmptyFinancialOverview();
-      }
-
       if (!companyId) {
-        console.log('⚠️ [FINANCIAL_OVERVIEW] No company ID');
         return getEmptyFinancialOverview();
       }
-
-      console.log('🔄 [FINANCIAL_OVERVIEW] Fetching for company:', companyId);
-
       const currentDate = new Date();
       const sixMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, 1);
 
-      try {
-        // Get revenue data from contracts and payments
-        const { data: revenueData, error: revenueError } = await supabase
-          .from('payments')
-          .select('amount, payment_date, payment_method')
-          .eq('company_id', companyId)
-          .eq('payment_method', 'received')
-          .eq('payment_status', 'completed')
-          .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
+      // Get revenue data from contracts and payments
+      const { data: revenueData } = await supabase
+        .from('payments')
+        .select('amount, payment_date, payment_method')
+        .eq('company_id', companyId)
+        .eq('payment_method', 'received')
+        .eq('payment_status', 'completed')
+        .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
 
-        if (revenueError) {
-          console.error('❌ [FINANCIAL_OVERVIEW] Revenue error:', revenueError);
-        }
+      // Get expense data from payments and maintenance
+      const { data: expenseData } = await supabase
+        .from('payments')
+        .select('amount, payment_date, payment_method')
+        .eq('company_id', companyId)
+        .eq('payment_method', 'made')
+        .eq('payment_status', 'completed')
+        .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
 
-        // Get expense data from payments and maintenance
-        const { data: expenseData, error: expenseError } = await supabase
-          .from('payments')
-          .select('amount, payment_date, payment_method')
-          .eq('company_id', companyId)
-          .eq('payment_method', 'made')
-          .eq('payment_status', 'completed')
-          .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
+      // Get maintenance costs
+      const { data: maintenanceCosts } = await supabase
+        .from('vehicle_maintenance')
+        .select('estimated_cost, created_at')
+        .eq('company_id', companyId)
+        .eq('status', 'completed')
+        .not('estimated_cost', 'is', null)
+        .gte('created_at', sixMonthsAgo.toISOString());
 
-        if (expenseError) {
-          console.error('❌ [FINANCIAL_OVERVIEW] Expense error:', expenseError);
-        }
+      // Get payroll costs
+      const { data: payrollData } = await supabase
+        .from('payroll')
+        .select('net_amount, payroll_date')
+        .eq('company_id', companyId)
+        .eq('status', 'paid')
+        .gte('payroll_date', sixMonthsAgo.toISOString().split('T')[0]);
 
-        // Get maintenance costs
-        const { data: maintenanceCosts, error: maintenanceError } = await supabase
-          .from('vehicle_maintenance')
-          .select('estimated_cost, created_at')
-          .eq('company_id', companyId)
-          .eq('status', 'completed')
-          .not('estimated_cost', 'is', null)
-          .gte('created_at', sixMonthsAgo.toISOString());
+      // Calculate totals
+      const totalRevenue = revenueData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      const totalPaymentExpenses = expenseData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      const totalMaintenanceExpenses = maintenanceCosts?.reduce((sum, maintenance) => sum + (maintenance.estimated_cost || 0), 0) || 0;
+      const totalPayrollExpenses = payrollData?.reduce((sum, payroll) => sum + (payroll.net_amount || 0), 0) || 0;
+      
+      const totalExpenses = totalPaymentExpenses + totalMaintenanceExpenses + totalPayrollExpenses;
+      const netIncome = totalRevenue - totalExpenses;
+      const profitMargin = totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0;
 
-        if (maintenanceError) {
-          console.error('❌ [FINANCIAL_OVERVIEW] Maintenance error:', maintenanceError);
-        }
+      // Calculate monthly trends
+      const monthlyTrend = calculateMonthlyTrend(revenueData, expenseData, maintenanceCosts, payrollData);
 
-        // Get payroll costs
-        const { data: payrollData, error: payrollError } = await supabase
-          .from('payroll')
-          .select('net_amount, payroll_date')
-          .eq('company_id', companyId)
-          .eq('status', 'paid')
-          .gte('payroll_date', sixMonthsAgo.toISOString().split('T')[0]);
+      // Calculate revenue by source
+      const revenueBySource = calculateRevenueBySource(totalRevenue);
 
-        if (payrollError) {
-          console.error('❌ [FINANCIAL_OVERVIEW] Payroll error:', payrollError);
-        }
+      // Calculate expense categories
+      const topExpenseCategories = calculateExpenseCategories(
+        totalPaymentExpenses,
+        totalMaintenanceExpenses,
+        totalPayrollExpenses
+      );
 
-        console.log('✅ [FINANCIAL_OVERVIEW] Data collected successfully');
+      // Simple financial ratios (would need more detailed balance sheet data for accuracy)
+      const currentRatio = 1.2; // Placeholder - would need current assets/liabilities
+      const quickRatio = 1.0; // Placeholder
+      const debtToEquity = 0.3; // Placeholder
 
-        // Calculate totals
-        const totalRevenue = revenueData?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
-        const totalPaymentExpenses = expenseData?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
-        const totalMaintenanceExpenses = maintenanceCosts?.reduce((sum, maintenance) => sum + (Number(maintenance.estimated_cost) || 0), 0) || 0;
-        const totalPayrollExpenses = payrollData?.reduce((sum, payroll) => sum + (Number(payroll.net_amount) || 0), 0) || 0;
-        
-        const totalExpenses = totalPaymentExpenses + totalMaintenanceExpenses + totalPayrollExpenses;
-        const netIncome = totalRevenue - totalExpenses;
-        const profitMargin = totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0;
+      // Cash flow (simplified)
+      const operatingCashFlow = netIncome;
+      const investingCashFlow = -totalMaintenanceExpenses; // Treating maintenance as investment
+      const financingCashFlow = 0; // Placeholder
 
-        // Calculate monthly trends
-        const monthlyTrend = calculateMonthlyTrend(revenueData, expenseData, maintenanceCosts, payrollData);
+      // Simple forecasting based on recent trends
+      const recentMonthlyRevenue = monthlyTrend.slice(-3).reduce((sum, month) => sum + month.revenue, 0) / 3;
+      const projectedMonthlyRevenue = recentMonthlyRevenue * 1.05; // 5% growth assumption
+      const projectedAnnualRevenue = projectedMonthlyRevenue * 12;
 
-        // Calculate revenue by source
-        const revenueBySource = calculateRevenueBySource(totalRevenue);
-
-        // Calculate expense categories
-        const topExpenseCategories = calculateExpenseCategories(
-          totalPaymentExpenses,
-          totalMaintenanceExpenses,
-          totalPayrollExpenses
-        );
-
-        // Simple financial ratios (would need more detailed balance sheet data for accuracy)
-        const currentRatio = 1.2; // Placeholder - would need current assets/liabilities
-        const quickRatio = 1.0; // Placeholder
-        const debtToEquity = 0.3; // Placeholder
-
-        // Cash flow (simplified)
-        const operatingCashFlow = netIncome;
-        const investingCashFlow = -totalMaintenanceExpenses; // Treating maintenance as investment
-        const financingCashFlow = 0; // Placeholder
-
-        // Simple forecasting based on recent trends
-        const recentMonthlyRevenue = monthlyTrend.slice(-3).reduce((sum, month) => sum + month.revenue, 0) / 3 || 0;
-        const projectedMonthlyRevenue = Math.max(0, recentMonthlyRevenue * 1.05); // 5% growth assumption
-        const projectedAnnualRevenue = projectedMonthlyRevenue * 12;
-
-        return {
-          totalRevenue,
-          totalExpenses,
-          netIncome,
-          cashFlow: operatingCashFlow + investingCashFlow + financingCashFlow,
-          profitMargin,
-          monthlyTrend,
-          revenueBySource,
-          topExpenseCategories,
-          currentRatio,
-          quickRatio,
-          debtToEquity,
-          operatingCashFlow,
-          investingCashFlow,
-          financingCashFlow,
-          projectedMonthlyRevenue,
-          projectedAnnualRevenue
-        };
-      } catch (error) {
-        console.error('❌ [FINANCIAL_OVERVIEW] Error:', error);
-        return getEmptyFinancialOverview();
-      }
+      return {
+        totalRevenue,
+        totalExpenses,
+        netIncome,
+        cashFlow: operatingCashFlow + investingCashFlow + financingCashFlow,
+        profitMargin,
+        monthlyTrend,
+        revenueBySource,
+        topExpenseCategories,
+        currentRatio,
+        quickRatio,
+        debtToEquity,
+        operatingCashFlow,
+        investingCashFlow,
+        financingCashFlow,
+        projectedMonthlyRevenue,
+        projectedAnnualRevenue
+      };
     },
-    enabled: !!user && !!companyId,
+    enabled: !!companyId,
     staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    retryDelay: 1000,
   });
 };
 

@@ -25,11 +25,16 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
     )
   ) as UserRole[];
 
-  // Extract company_id consistently - try multiple sources
-  const companyId = user?.company?.id || 
-                   (user as any)?.company_id || 
-                   user?.profile?.company_id ||
-                   (user as any)?.user_metadata?.company_id;
+  // Extract company_id consistently - use multiple sources with priority
+  let companyId = user?.company?.id || (user as any)?.company_id || user?.profile?.company_id;
+  
+  // إضافة log للتأكد من company_id
+  console.log('🔧 [getCompanyScopeContext] Company ID extraction:', {
+    userCompanyId: user?.company?.id,
+    directCompanyId: (user as any)?.company_id,
+    profileCompanyId: user?.profile?.company_id,
+    finalCompanyId: companyId
+  });
   
   // تسجيل معلومات تشخيصية
   console.log('🔧 [getCompanyScopeContext] Processing user context:', {

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface OptimizedDashboardStats {
-// Core Stats
+  // Core Stats
   totalVehicles: number;
   vehiclesChange: string;
   
@@ -34,185 +34,20 @@ export interface OptimizedDashboardStats {
 }
 
 export const useOptimizedDashboardStats = () => {
-  const { companyId, user, isSystemLevel, getQueryKey, context, isAuthenticating } = useUnifiedCompanyAccess();
-  
-  // 🔍 PHASE 1: DETAILED AUTHENTICATION AND COMPANY DIAGNOSIS
-  console.log('🚀 [DASHBOARD_STATS_HOOK] === PHASE 1: AUTHENTICATION DIAGNOSIS ===', {
-    timestamp: new Date().toISOString(),
-    user: {
-      exists: !!user,
-      id: user?.id,
-      email: user?.email,
-      company_id_direct: (user as any)?.company_id,
-      company_object: user?.company ? { id: user.company.id, name: user.company.name } : null,
-      profile: user?.profile ? { company_id: user.profile.company_id } : null,
-      roles: (user as any)?.roles || []
-    },
-    companyAccess: {
-      companyId,
-      isSystemLevel,
-      isAuthenticating,
-      context: context ? {
-        companyId: context.companyId,
-        isSystemLevel: context.isSystemLevel,
-        isCompanyScoped: context.isCompanyScoped
-      } : null
-    }
-  });
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['optimized-dashboard-stats']),
     queryFn: async (): Promise<OptimizedDashboardStats> => {
-      console.log('🔍 [DASHBOARD_STATS_QUERY] === PHASE 2: QUERY EXECUTION START ===', {
-        timestamp: new Date().toISOString(),
-        companyId,
-        userId: user?.id,
-        isSystemLevel,
-        isAuthenticating
-      });
-
-      // Always return demo stats if no user to prevent hanging
-      if (!user) {
-        console.log('⚠️ [DASHBOARD_STATS_QUERY] RETURNING DEMO: No authenticated user', {
-          reason: 'no_user',
-          isAuthenticating,
-          timestamp: new Date().toISOString()
-        });
-        return getDemoStats();
-      }
-
-      // For system level users, we may not need a specific company ID
-      if (!companyId && !isSystemLevel) {
-        console.log('⚠️ [DASHBOARD_STATS_QUERY] RETURNING DEMO: No company ID available', {
-          reason: 'no_company_id',
-          isSystemLevel,
-          companyId,
-          userCompanyId: (user as any)?.company_id,
-          userCompany: user.company,
-          profileCompanyId: user.profile?.company_id,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Return demo stats instead of trying fallback
-        return getDemoStats();
-      }
-
-      console.log('🎯 [DASHBOARD_STATS_QUERY] === PHASE 3: ATTEMPTING REAL DATA FETCH ===', {
-        companyId,
-        isSystemLevel,
-        timestamp: new Date().toISOString()
-      });
-      
-      try {
-        // Get the effective company ID
-        const effectiveCompanyId = companyId || (user as any)?.company_id || user.company?.id || user.profile?.company_id;
-        
-        console.log('🔧 [DASHBOARD_STATS_QUERY] Company ID resolution:', {
-          primaryCompanyId: companyId,
-          userCompanyIdDirect: (user as any)?.company_id,
-          userCompanyObject: user.company?.id,
-          userProfileCompanyId: user.profile?.company_id,
-          effectiveCompanyId,
-          timestamp: new Date().toISOString()
-        });
-        
-        if (!effectiveCompanyId) {
-          console.log('❌ [DASHBOARD_STATS_QUERY] RETURNING EMPTY: No effective company ID found', {
-            timestamp: new Date().toISOString()
-          });
-          return getEmptyStats();
-        }
-
-        console.log('🚀 [DASHBOARD_STATS_QUERY] === PHASE 4: EXECUTING DIRECT QUERIES ===', {
-          effectiveCompanyId,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Skip RPC and use direct queries immediately for reliability
-        const result = await fetchStatsDirectly(effectiveCompanyId);
-        
-        console.log('✅ [DASHBOARD_STATS_QUERY] === SUCCESS: REAL DATA RETRIEVED ===', {
-          effectiveCompanyId,
-          resultKeys: Object.keys(result),
-          totalVehicles: result.totalVehicles,
-          totalCustomers: result.totalCustomers,
-          activeContracts: result.activeContracts,
-          timestamp: new Date().toISOString()
-        });
-        
-        return result;
-        
-      } catch (error) {
-        console.error('❌ [DASHBOARD_STATS_QUERY] === ERROR: QUERY FAILED ===', {
-          companyId,
-          effectiveCompanyId: companyId || (user as any)?.company_id || user.company?.id,
-          error: {
-            message: error?.message,
-            name: error?.name,
-            stack: error?.stack
-          },
-          timestamp: new Date().toISOString()
-        });
-        
-        // 🔍 PHASE 4: SIMPLE FALLBACK TEST
-        console.log('🔄 [DASHBOARD_STATS_QUERY] === PHASE 5: TESTING SIMPLE QUERIES ===');
-        try {
-          const testCompanyId = companyId || (user as any)?.company_id || user.company?.id;
-          console.log('🔍 [DASHBOARD_STATS_QUERY] Testing vehicle count with company:', testCompanyId);
-          
-          const vehicleTest = await supabase
-            .from('vehicles')
-            .select('id', { count: 'exact' })
-            .eq('company_id', testCompanyId)
-            .eq('is_active', true);
-            
-          console.log('🔍 [DASHBOARD_STATS_QUERY] Vehicle test result:', {
-            companyId: testCompanyId,
-            count: vehicleTest.count,
-            error: vehicleTest.error,
-            hasData: !!vehicleTest.data,
-            dataLength: vehicleTest.data?.length,
-            timestamp: new Date().toISOString()
-          });
-          
-          if (vehicleTest.error) {
-            console.error('❌ [DASHBOARD_STATS_QUERY] Vehicle query RLS/permission error:', {
-              error: vehicleTest.error,
-              errorCode: vehicleTest.error.code,
-              errorMessage: vehicleTest.error.message,
-              companyId: testCompanyId,
-              userId: user?.id,
-              timestamp: new Date().toISOString()
-            });
-          }
-          
-        } catch (fallbackError) {
-          console.error('❌ [DASHBOARD_STATS_QUERY] Fallback test also failed:', {
-            fallbackError: fallbackError?.message,
-            timestamp: new Date().toISOString()
-          });
-        }
-        
-        // Return empty data on error to see if there's a data issue
-        console.log('⚠️ [DASHBOARD_STATS_QUERY] RETURNING EMPTY due to error');
+      if (!companyId) {
         return getEmptyStats();
       }
+
+      // Use optimized direct queries with our new indexes
+      return await fetchStatsDirectly(companyId);
     },
-    enabled: !!user && !!companyId, // Enable only when user is fully loaded
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: (failureCount, error) => {
-      // Retry up to 3 times for network errors, but not for auth errors
-      if (failureCount < 3) {
-        const errorMessage = error?.message || '';
-        if (errorMessage.includes('غير مسموح') || errorMessage.includes('unauthorized')) {
-          console.log('📝 [DASHBOARD_STATS] Auth error, not retrying');
-          return false;
-        }
-        return true;
-      }
-      return false;
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -319,16 +154,16 @@ async function fetchStatsMultiQuery(companyId: string): Promise<OptimizedDashboa
 function getEmptyStats(): OptimizedDashboardStats {
   return {
     totalVehicles: 0,
-    vehiclesChange: '+0%',
+    vehiclesChange: '+0',
     
     activeContracts: 0,
-    contractsChange: '+0%',
+    contractsChange: '+0',
     
     totalCustomers: 0,
-    customersChange: '+0%',
+    customersChange: '+0',
     
     totalEmployees: 0,
-    employeesChange: '+0%',
+    employeesChange: '+0',
     
     monthlyRevenue: 0,
     revenueChange: '+0%',
@@ -342,35 +177,6 @@ function getEmptyStats(): OptimizedDashboardStats {
     averageContractValue: 0,
     cashFlow: 0,
     profitMargin: 0
-  };
-}
-
-function getDemoStats(): OptimizedDashboardStats {
-  return {
-    totalVehicles: 12,
-    vehiclesChange: '+8%',
-    
-    activeContracts: 45,
-    contractsChange: '+12%',
-    
-    totalCustomers: 38,
-    customersChange: '+15%',
-    
-    totalEmployees: 8,
-    employeesChange: '+2%',
-    
-    monthlyRevenue: 125000,
-    revenueChange: '+18%',
-    totalRevenue: 1500000,
-    
-    maintenanceRequests: 3,
-    pendingPayments: 25000,
-    expiringContracts: 5,
-    
-    fleetUtilization: 85.5,
-    averageContractValue: 33333,
-    cashFlow: 95000,
-    profitMargin: 76
   };
 }
 

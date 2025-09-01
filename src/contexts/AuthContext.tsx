@@ -23,10 +23,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // Enhanced session validation with retry logic
-  const validateSession = async (currentSession: Session | null, retryCount = 0): Promise<boolean> => {
+  // Session validation helper
+  const validateSession = async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
-      console.log('📝 [AUTH_CONTEXT] No session to validate');
       return false;
     }
 
@@ -39,14 +38,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error || !data.session) {
           console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
-          
-          // Retry once if this is the first attempt
-          if (retryCount === 0) {
-            console.log('📝 [AUTH_CONTEXT] Retrying session refresh...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return validateSession(currentSession, 1);
-          }
-          
           setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
           return false;
         }
@@ -56,27 +47,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
       }
       
-      // Validate that session still works with a simple query
-      const { error: testError } = await supabase.auth.getUser();
-      if (testError) {
-        console.error('📝 [AUTH_CONTEXT] Session validation failed:', testError);
-        if (retryCount === 0) {
-          console.log('📝 [AUTH_CONTEXT] Retrying session validation...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          return validateSession(currentSession, 1);
-        }
-        setSessionError('خطأ في التحقق من صحة الجلسة');
-        return false;
-      }
-      
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
-      if (retryCount === 0) {
-        console.log('📝 [AUTH_CONTEXT] Retrying after error...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return validateSession(currentSession, 1);
-      }
       setSessionError('خطأ في التحقق من صحة الجلسة');
       return false;
     }
@@ -113,57 +86,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
           setSession(session);
           
-          // Don't set loading to false yet - wait for user data
-          (async () => {
+          // Defer the profile fetch to avoid blocking the auth state change
+          setTimeout(async () => {
             try {
-              console.log('📝 [AUTH_CONTEXT] Fetching user data for session:', session?.user?.id);
-              
-              // Single attempt with timeout
-              const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('User data fetch timeout')), 5000)
-              );
-              
-              const userData = await Promise.race([
-                authService.getCurrentUser(),
-                timeoutPromise
-              ]) as AuthUser | null;
-
-              if (userData) {
-                console.log('📝 [AUTH_CONTEXT] Successfully fetched user data');
-                setUser(userData);
-                setSessionError(null);
-              } else {
-                throw new Error('No user data returned');
-              }
+              const authUser = await authService.getCurrentUser();
+              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
+              setUser(authUser);
+              setSessionError(null);
             } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Failed to fetch user data, using fallback:', error);
-              
-              // Create fallback user immediately
-              const fallbackUser: AuthUser = {
-                ...session.user,
-                profile: {
-                  id: session.user.id,
-                  first_name: session.user.user_metadata?.first_name || 'مستخدم',
-                  last_name: session.user.user_metadata?.last_name || '',
-                  company_id: session.user.user_metadata?.company_id || null
-                },
-                roles: ['user'], // Default role
-                company_id: session.user.user_metadata?.company_id || null
-              };
-              setUser(fallbackUser);
-              setSessionError(null); // Clear error since we have a working fallback
-              console.log('📝 [AUTH_CONTEXT] Using fallback user data');
-            } finally {
-              // Only set loading to false after user data is processed
-              setLoading(false);
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
             }
-          })();
+          }, 0);
         } else {
           console.log('📝 [AUTH_CONTEXT] No user session');
           setUser(null);
           setSession(null);
-          setLoading(false);
         }
+        
+        setLoading(false);
       }
     );
 
@@ -185,42 +127,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setSession(session);
             try {
               const authUser = await authService.getCurrentUser();
-              if (authUser) {
-                setUser(authUser);
-                setLoading(false);
-                console.log('📝 [AUTH_CONTEXT] Initial user loaded successfully');
-              } else {
-                throw new Error('No user data returned on initialization');
-              }
+              setUser(authUser);
             } catch (error) {
               console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
-              // Create fallback user for initialization
-              const fallbackUser: AuthUser = {
-                ...session.user,
-                profile: {
-                  id: session.user.id,
-                  first_name: session.user.user_metadata?.first_name || 'مستخدم',
-                  last_name: session.user.user_metadata?.last_name || '',
-                  company_id: session.user.user_metadata?.company_id || null
-                },
-                roles: ['user'],
-                company_id: session.user.user_metadata?.company_id || null
-              };
-              setUser(fallbackUser);
-              setLoading(false);
-              setSessionError('تم تحميل بيانات أساسية للمستخدم');
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
             }
-          } else {
-            console.log('📝 [AUTH_CONTEXT] Invalid session on initialization');
-            setUser(null);
-            setSession(null);
-            setLoading(false);
           }
-        } else {
-          console.log('📝 [AUTH_CONTEXT] No user found on initialization');
-          setUser(null);
-          setSession(null);
-          setLoading(false);
         }
       } catch (error) {
         console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);

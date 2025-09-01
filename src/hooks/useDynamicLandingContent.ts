@@ -2,8 +2,6 @@ import { useLandingContent } from './useLandingContent';
 
 export const useDynamicLandingContent = (language: 'en' | 'ar' = 'en') => {
   const { content, loading, getContentByKey } = useLandingContent();
-  
-  console.log('🎭 [DYNAMIC_LANDING] Loading:', loading, 'Content length:', content?.length);
 
   // Helper function to get content with fallback
   const getContent = (key: string, fallback: string = '') => {

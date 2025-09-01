@@ -16,105 +16,54 @@ export interface OptimizedActivity {
 }
 
 export const useOptimizedRecentActivities = () => {
-  const { companyId, user, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['optimized-recent-activities']),
     queryFn: async (): Promise<OptimizedActivity[]> => {
-      if (!user) {
-        console.log('⚠️ [RECENT_ACTIVITIES] No authenticated user');
-        return generateFallbackActivities();
-      }
-
       if (!companyId) {
-        console.log('⚠️ [RECENT_ACTIVITIES] No company ID available');
-        return generateFallbackActivities();
+        return [];
       }
 
-      console.log('🔄 [RECENT_ACTIVITIES] Fetching for company:', companyId);
+      // Use optimized query without the problematic foreign key relationship
+      const { data: activities, error } = await supabase
+        .from('system_logs')
+        .select(`
+          id,
+          category,
+          action,
+          message,
+          level,
+          created_at,
+          user_id
+        `)
+        .eq('company_id', companyId)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(15);
 
-      try {
-        // Use optimized query without the problematic foreign key relationship
-        const { data: activities, error } = await supabase
-          .from('system_logs')
-          .select(`
-            id,
-            category,
-            action,
-            message,
-            level,
-            created_at,
-            user_id
-          `)
-          .eq('company_id', companyId)
-          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-          .order('created_at', { ascending: false })
-          .limit(15);
-
-        if (error) {
-          console.error('❌ [RECENT_ACTIVITIES] Error:', error);
-          return generateFallbackActivities();
-        }
-
-        console.log('✅ [RECENT_ACTIVITIES] Fetched:', activities?.length || 0, 'activities');
-
-        if (!activities || activities.length === 0) {
-          console.log('📝 [RECENT_ACTIVITIES] No activities found, returning fallback');
-          return generateFallbackActivities();
-        }
-
-        // Transform the database results to our activity format
-        return activities?.map(activity => ({
-          id: activity.id,
-          type: getCategoryDisplayName(activity.category),
-          description: activity.message || getActivityDescription(activity),
-          time: getRelativeTime(activity.created_at),
-          icon: getCategoryIcon(activity.category),
-          color: getCategoryColor(activity.category, activity.level),
-          priority: getPriorityFromLevel(activity.level),
-          created_at: activity.created_at,
-          status: activity.action
-        })) || generateFallbackActivities();
-      } catch (error) {
-        console.error('❌ [RECENT_ACTIVITIES] Query error:', error);
-        return generateFallbackActivities();
+      if (error) {
+        console.error('Error fetching optimized activities:', error);
+        return [];
       }
+
+      // Transform the database results to our activity format
+      return activities?.map(activity => ({
+        id: activity.id,
+        type: getCategoryDisplayName(activity.category),
+        description: activity.message || getActivityDescription(activity),
+        time: getRelativeTime(activity.created_at),
+        icon: getCategoryIcon(activity.category),
+        color: getCategoryColor(activity.category, activity.level),
+        priority: getPriorityFromLevel(activity.level),
+        created_at: activity.created_at,
+        status: activity.action
+      })) || [];
     },
-    enabled: !!user && !!companyId,
+    enabled: !!companyId,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 2,
-    retryDelay: 1000,
   });
 };
-
-// Generate some fallback activities when no data is available
-function generateFallbackActivities(): OptimizedActivity[] {
-  const now = new Date();
-  return [
-    {
-      id: 'fallback-1',
-      type: 'تحديث النظام',
-      description: 'تم تحديث النظام بنجاح',
-      time: 'منذ دقائق',
-      icon: 'Settings',
-      color: 'text-blue-600 bg-blue-50',
-      priority: 'low',
-      created_at: new Date(now.getTime() - 5 * 60 * 1000).toISOString(),
-      status: 'info'
-    },
-    {
-      id: 'fallback-2', 
-      type: 'تسجيل دخول',
-      description: 'تم تسجيل الدخول للنظام',
-      time: 'منذ ساعة',
-      icon: 'User',
-      color: 'text-green-600 bg-green-50',
-      priority: 'low',
-      created_at: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
-      status: 'info'
-    }
-  ];
-}
 
 // Remove unused function
 

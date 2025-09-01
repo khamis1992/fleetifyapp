@@ -4,19 +4,19 @@ project_id = "qwhunliohlkkahbspfiu"
 verify_jwt = true
 
 [functions.send-account-invitation]
-verify_jwt = true
+verify_jwt = false
 
 [functions.process-monthly-depreciation]
-verify_jwt = true
+verify_jwt = false
 
 [functions.refresh-stats-cache]
-verify_jwt = true
+verify_jwt = false
 
 [functions.quotation-approval]
-verify_jwt = true
+verify_jwt = false
 
 [functions.legal-ai-api]
-verify_jwt = true
+verify_jwt = false
 
 [functions.legal-ai-enhanced]
 verify_jwt = true
@@ -40,7 +40,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.sync-document-alerts]
-verify_jwt = true
+verify_jwt = false
 
 [functions.extract-traffic-violations]
 verify_jwt = true
