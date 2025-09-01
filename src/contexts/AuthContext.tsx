@@ -113,9 +113,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
           setSession(session);
           
-          // Defer the profile fetch to avoid blocking the auth state change
-          setTimeout(async () => {
-            // Simplified retry logic with faster fallback
+          // Don't set loading to false yet - wait for user data
+          (async () => {
             try {
               console.log('📝 [AUTH_CONTEXT] Fetching user data for session:', session?.user?.id);
               
@@ -154,15 +153,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setUser(fallbackUser);
               setSessionError(null); // Clear error since we have a working fallback
               console.log('📝 [AUTH_CONTEXT] Using fallback user data');
+            } finally {
+              // Only set loading to false after user data is processed
+              setLoading(false);
             }
-          }, 0);
+          })();
         } else {
           console.log('📝 [AUTH_CONTEXT] No user session');
           setUser(null);
           setSession(null);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -207,6 +208,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setUser(fallbackUser);
               setSessionError('تم تحميل بيانات أساسية للمستخدم');
             }
+          } else {
+            console.log('📝 [AUTH_CONTEXT] Invalid session on initialization');
           }
         }
       } catch (error) {

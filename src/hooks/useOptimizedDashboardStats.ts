@@ -198,7 +198,7 @@ export const useOptimizedDashboardStats = () => {
         return getEmptyStats();
       }
     },
-    enabled: !!user, // Enable when user is authenticated
+    enabled: !!user && !isAuthenticating, // Enable only when user is fully loaded
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: (failureCount, error) => {
       // Retry up to 3 times for network errors, but not for auth errors
