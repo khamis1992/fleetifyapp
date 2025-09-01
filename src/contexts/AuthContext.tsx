@@ -187,6 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               const authUser = await authService.getCurrentUser();
               if (authUser) {
                 setUser(authUser);
+                setLoading(false);
                 console.log('📝 [AUTH_CONTEXT] Initial user loaded successfully');
               } else {
                 throw new Error('No user data returned on initialization');
@@ -206,6 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 company_id: session.user.user_metadata?.company_id || null
               };
               setUser(fallbackUser);
+              setLoading(false);
               setSessionError('تم تحميل بيانات أساسية للمستخدم');
             }
           } else {
