@@ -41,17 +41,17 @@ export const useOptimizedDashboardStats = () => {
     queryFn: async (): Promise<OptimizedDashboardStats> => {
       // Check if user is authenticated
       if (!user) {
-        console.log('⚠️ No authenticated user for dashboard stats');
+        console.log('⚠️ [DASHBOARD_STATS] No authenticated user');
         return getEmptyStats();
       }
 
       // For system level users, we may not need a specific company ID
       if (!companyId && !isSystemLevel) {
-        console.log('⚠️ No company ID available for dashboard stats');
+        console.log('⚠️ [DASHBOARD_STATS] No company ID available, isSystemLevel:', isSystemLevel);
         return getEmptyStats();
       }
 
-      console.log('🔄 Fetching dashboard stats for company:', companyId, 'isSystemLevel:', isSystemLevel);
+      console.log('🔄 [DASHBOARD_STATS] Fetching stats for company:', companyId, 'isSystemLevel:', isSystemLevel);
       
       try {
         // First try to use the secure dashboard stats function
@@ -61,7 +61,7 @@ export const useOptimizedDashboardStats = () => {
           });
         
         if (!secureError && secureStats && secureStats.length > 0) {
-          console.log('✅ Dashboard stats fetched via RPC:', secureStats[0]);
+          console.log('✅ [DASHBOARD_STATS] RPC success:', secureStats[0]);
           const stats = secureStats[0];
           return {
             totalVehicles: stats.total_vehicles || 0,
@@ -72,37 +72,49 @@ export const useOptimizedDashboardStats = () => {
             contractsChange: stats.contracts_change || '+0%',
             totalEmployees: stats.total_employees || 0,
             employeesChange: '+0%',
-            monthlyRevenue: stats.monthly_revenue || 0,
+            monthlyRevenue: Number(stats.monthly_revenue) || 0,
             revenueChange: stats.revenue_change || '+0%',
-            totalRevenue: stats.total_revenue || 0,
+            totalRevenue: Number(stats.total_revenue) || 0,
             maintenanceRequests: stats.maintenance_requests || 0,
-            pendingPayments: stats.pending_payments || 0,
+            pendingPayments: Number(stats.pending_payments) || 0,
             expiringContracts: stats.expiring_contracts || 0,
-            fleetUtilization: stats.fleet_utilization || 0,
-            averageContractValue: stats.avg_contract_value || 0,
-            cashFlow: stats.cash_flow || 0,
-            profitMargin: stats.profit_margin || 0
+            fleetUtilization: Number(stats.fleet_utilization) || 0,
+            averageContractValue: Number(stats.avg_contract_value) || 0,
+            cashFlow: Number(stats.cash_flow) || 0,
+            profitMargin: Number(stats.profit_margin) || 0
           };
         }
         
         if (secureError) {
-          console.warn('⚠️ RPC failed, falling back to direct queries:', secureError.message);
+          console.warn('⚠️ [DASHBOARD_STATS] RPC failed, fallback to direct queries:', secureError.message);
         }
         
         // Fallback to direct queries if secure function fails
         if (companyId) {
+          console.log('🔄 [DASHBOARD_STATS] Using fallback direct queries for company:', companyId);
           return await fetchStatsDirectly(companyId);
         } else {
-          console.log('⚠️ No company ID for fallback queries');
+          console.log('⚠️ [DASHBOARD_STATS] No company ID for fallback queries');
           return getEmptyStats();
         }
       } catch (error) {
-        console.error('❌ Error fetching dashboard stats:', error);
+        console.error('❌ [DASHBOARD_STATS] Error:', error);
+        // Return fallback data even on error
+        if (companyId) {
+          try {
+            return await fetchStatsDirectly(companyId);
+          } catch (fallbackError) {
+            console.error('❌ [DASHBOARD_STATS] Fallback also failed:', fallbackError);
+            return getEmptyStats();
+          }
+        }
         return getEmptyStats();
       }
     },
     enabled: !!user, // Enable when user is authenticated
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2, // Retry failed requests
+    retryDelay: 1000, // Wait 1 second between retries
   });
 };
 
