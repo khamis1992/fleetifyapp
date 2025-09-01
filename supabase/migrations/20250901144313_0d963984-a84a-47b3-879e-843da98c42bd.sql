@@ -1,0 +1,204 @@
+-- Fix ambiguous column references by recreating functions properly
+-- This addresses the core RLS issue causing "user not authorized" errors
+
+-- First, create new versions of the functions with different names
+CREATE OR REPLACE FUNCTION public.get_user_company_cached_v2(p_user_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_company_id uuid;
+BEGIN
+    -- Try to get company_id from profiles table first (most direct)
+    SELECT p.company_id INTO v_company_id
+    FROM public.profiles p
+    WHERE p.user_id = p_user_id
+    AND p.company_id IS NOT NULL
+    LIMIT 1;
+    
+    -- If not found in profiles, try employees table
+    IF v_company_id IS NULL THEN
+        SELECT e.company_id INTO v_company_id
+        FROM public.employees e
+        WHERE e.user_id = p_user_id
+        AND e.company_id IS NOT NULL
+        LIMIT 1;
+    END IF;
+    
+    RETURN v_company_id;
+END;
+$$;
+
+-- Create improved has_role_cached function with different name
+CREATE OR REPLACE FUNCTION public.has_role_cached_v2(p_user_id uuid, p_role user_role)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM public.user_roles ur
+        WHERE ur.user_id = p_user_id
+        AND ur.role = p_role::text
+    );
+END;
+$$;
+
+-- Now replace the original functions by updating their definitions
+CREATE OR REPLACE FUNCTION public.get_user_company_cached(p_user_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_company_id uuid;
+BEGIN
+    -- Try to get company_id from profiles table first (most direct)
+    SELECT p.company_id INTO v_company_id
+    FROM public.profiles p
+    WHERE p.user_id = p_user_id
+    AND p.company_id IS NOT NULL
+    LIMIT 1;
+    
+    -- If not found in profiles, try employees table
+    IF v_company_id IS NULL THEN
+        SELECT e.company_id INTO v_company_id
+        FROM public.employees e
+        WHERE e.user_id = p_user_id
+        AND e.company_id IS NOT NULL
+        LIMIT 1;
+    END IF;
+    
+    RETURN v_company_id;
+END;
+$$;
+
+-- Replace the has_role_cached function
+CREATE OR REPLACE FUNCTION public.has_role_cached(p_user_id uuid, p_role user_role)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM public.user_roles ur
+        WHERE ur.user_id = p_user_id
+        AND ur.role = p_role::text
+    );
+END;
+$$;
+
+-- Drop the temporary functions
+DROP FUNCTION IF EXISTS public.get_user_company_cached_v2(uuid);
+DROP FUNCTION IF EXISTS public.has_role_cached_v2(uuid, user_role);
+
+-- Create the dashboard stats function
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats_safe(p_company_id uuid DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_company_id uuid;
+    v_user_id uuid;
+    v_is_super_admin boolean := false;
+    v_stats jsonb := '{}';
+    v_total_customers integer := 0;
+    v_total_contracts integer := 0;
+    v_active_contracts integer := 0;
+    v_total_revenue numeric := 0;
+    v_pending_payments numeric := 0;
+    v_overdue_contracts integer := 0;
+    v_vehicles_count integer := 0;
+    v_recent_activity jsonb := '[]';
+BEGIN
+    -- Get current user
+    v_user_id := auth.uid();
+    
+    -- Check if user is super admin
+    IF v_user_id IS NOT NULL THEN
+        v_is_super_admin := public.has_role_cached(v_user_id, 'super_admin');
+    END IF;
+    
+    -- Determine company_id to use
+    IF p_company_id IS NOT NULL THEN
+        v_company_id := p_company_id;
+    ELSIF v_user_id IS NOT NULL THEN
+        v_company_id := public.get_user_company_cached(v_user_id);
+    END IF;
+    
+    -- If no company_id found and not super admin, return basic stats
+    IF v_company_id IS NULL AND NOT v_is_super_admin THEN
+        RETURN jsonb_build_object(
+            'totalCustomers', 0,
+            'totalContracts', 0,
+            'activeContracts', 0,
+            'totalRevenue', 0,
+            'pendingPayments', 0,
+            'overdueContracts', 0,
+            'vehiclesCount', 0,
+            'recentActivity', '[]'::jsonb,
+            'companyId', null,
+            'isSuperAdmin', false,
+            'message', 'لا يمكن تحديد الشركة للمستخدم'
+        );
+    END IF;
+    
+    BEGIN
+        -- Get customers count
+        IF v_is_super_admin AND v_company_id IS NULL THEN
+            SELECT COUNT(*) INTO v_total_customers FROM public.customers WHERE is_active = true;
+        ELSE
+            SELECT COUNT(*) INTO v_total_customers 
+            FROM public.customers 
+            WHERE company_id = v_company_id AND is_active = true;
+        END IF;
+        
+        -- Get contracts statistics - simplified for safety
+        IF v_is_super_admin AND v_company_id IS NULL THEN
+            SELECT COUNT(*) INTO v_total_contracts FROM public.contracts;
+            SELECT COUNT(*) INTO v_active_contracts FROM public.contracts WHERE status = 'active';
+        ELSE
+            SELECT COUNT(*) INTO v_total_contracts FROM public.contracts WHERE company_id = v_company_id;
+            SELECT COUNT(*) INTO v_active_contracts FROM public.contracts WHERE company_id = v_company_id AND status = 'active';
+        END IF;
+        
+        -- Get vehicles count
+        IF v_is_super_admin AND v_company_id IS NULL THEN
+            SELECT COUNT(*) INTO v_vehicles_count FROM public.vehicles WHERE is_active = true;
+        ELSE
+            SELECT COUNT(*) INTO v_vehicles_count 
+            FROM public.vehicles 
+            WHERE company_id = v_company_id AND is_active = true;
+        END IF;
+        
+    EXCEPTION WHEN OTHERS THEN
+        -- Log error and continue with zeros
+        RAISE NOTICE 'Error in get_dashboard_stats_safe: %', SQLERRM;
+    END;
+    
+    -- Build final stats object
+    v_stats := jsonb_build_object(
+        'totalCustomers', COALESCE(v_total_customers, 0),
+        'totalContracts', COALESCE(v_total_contracts, 0),
+        'activeContracts', COALESCE(v_active_contracts, 0),
+        'totalRevenue', COALESCE(v_total_revenue, 0),
+        'pendingPayments', COALESCE(v_pending_payments, 0),
+        'overdueContracts', COALESCE(v_overdue_contracts, 0),
+        'vehiclesCount', COALESCE(v_vehicles_count, 0),
+        'recentActivity', COALESCE(v_recent_activity, '[]'::jsonb),
+        'companyId', v_company_id,
+        'isSuperAdmin', v_is_super_admin
+    );
+    
+    RETURN v_stats;
+END;
+$$;
