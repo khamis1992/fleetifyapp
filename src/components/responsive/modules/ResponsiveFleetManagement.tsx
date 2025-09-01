@@ -177,14 +177,20 @@ function MobileVehicleCard({ vehicle, onView, onEdit }: MobileVehicleCardProps) 
           <ResponsiveButton
             variant="ghost"
             size="sm"
-            onClick={() => onView(vehicle)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onView(vehicle)
+            }}
           >
             <Eye size={16} />
           </ResponsiveButton>
           <ResponsiveButton
             variant="ghost"
             size="sm"
-            onClick={() => onEdit(vehicle)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(vehicle)
+            }}
           >
             <Edit size={16} />
           </ResponsiveButton>

@@ -7,8 +7,6 @@ interface FeatureFlags {
   responsiveDashboard: boolean
   responsiveForms: boolean
   responsiveTables: boolean
-  responsiveContracts: boolean
-  responsiveHR: boolean
   mobileOptimizations: boolean
   tabletLayoutEnhancements: boolean
   desktopAdvancedFeatures: boolean
@@ -24,8 +22,6 @@ const defaultFeatureFlags: FeatureFlags = {
   responsiveDashboard: false,
   responsiveForms: false,
   responsiveTables: false,
-  responsiveContracts: false,
-  responsiveHR: false,
   mobileOptimizations: false,
   tabletLayoutEnhancements: false,
   desktopAdvancedFeatures: false,

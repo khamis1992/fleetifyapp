@@ -765,8 +765,3 @@ export class ResponsiveTester {
     this.results = []
   }
 }
-
-// Export aliases for compatibility
-export class VisualRegressionTester extends ResponsiveTester {}
-export class DeviceTestMatrix extends ResponsiveTester {}
-export class PerformanceTestSuite extends ResponsiveTester {}

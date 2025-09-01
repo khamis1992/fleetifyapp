@@ -52,24 +52,15 @@ export function ResponsiveButton({
   const { deviceType } = useEnhancedResponsive()
   const responsiveProps = getResponsiveProps(deviceType)
 
-  // Get proper size with type safety
-  const getValidSize = (): "sm" | "default" | "lg" => {
-    if (size && ['sm', 'default', 'lg'].includes(size)) {
-      return size as "sm" | "default" | "lg"
-    }
-    // Use responsive props if available and valid
-    if (responsiveProps.buttonProps?.size && ['sm', 'default', 'lg'].includes(responsiveProps.buttonProps.size)) {
-      return responsiveProps.buttonProps.size as "sm" | "default" | "lg"
-    }
-    return 'default'
-  }
-  
+  // Use device-specific button props if size not specified
+  const buttonProps = size ? { size } : responsiveProps.buttonProps
+
   return (
     <Button
       variant={variant}
-      size={getValidSize()}
+      size={buttonProps.size}
       className={cn(
-        responsiveProps.buttonProps?.className || '',
+        buttonProps.className,
         fullWidth && 'w-full',
         className
       )}

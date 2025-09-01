@@ -1,4 +1,3 @@
-import React from 'react'
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext'
 import { useEnhancedResponsive } from '@/hooks/useEnhancedResponsive'
 

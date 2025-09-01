@@ -434,8 +434,7 @@ export class ResponsivePerformanceMonitor {
   private getLocalStorageData(): ResponsiveEvent[] {
     const allEvents: ResponsiveEvent[] = []
     
-    const eventTypes = ['device_change', 'orientation_change', 'performance', 'interaction', 'error', 'user_behavior']
-    eventTypes.forEach(type => {
+    ['device_change', 'orientation_change', 'performance', 'interaction', 'error', 'user_behavior'].forEach(type => {
       try {
         const key = `responsive_analytics_${type}`
         const events = JSON.parse(localStorage.getItem(key) || '[]')

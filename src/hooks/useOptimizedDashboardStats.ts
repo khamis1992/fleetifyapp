@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface OptimizedDashboardStats {
-// Core Stats
+  // Core Stats
   totalVehicles: number;
   vehiclesChange: string;
   
@@ -42,42 +42,9 @@ export const useOptimizedDashboardStats = () => {
       if (!companyId) {
         return getEmptyStats();
       }
-      
-      try {
-        // First try to use the secure dashboard stats function
-        const { data: secureStats, error: secureError } = await supabase
-          .rpc('get_dashboard_stats_safe');
-        
-        if (!secureError && secureStats && secureStats.length > 0) {
-          const stats = secureStats[0];
-          return {
-            totalVehicles: stats.total_vehicles || 0,
-            vehiclesChange: '+0%',
-            totalCustomers: 0, // Will be calculated separately
-            customersChange: '+0%',
-            activeContracts: stats.active_contracts || 0,
-            contractsChange: '+0%',
-            totalEmployees: 0,
-            employeesChange: '+0%',
-            monthlyRevenue: stats.total_revenue || 0,
-            revenueChange: '+0%',
-            totalRevenue: stats.total_revenue || 0,
-            maintenanceRequests: 0,
-            pendingPayments: 0,
-            expiringContracts: 0,
-            fleetUtilization: 0,
-            averageContractValue: 0,
-            cashFlow: 0,
-            profitMargin: 0
-          };
-        }
-        
-        // Fallback to direct queries if secure function fails
-        return await fetchStatsDirectly(companyId);
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        return getEmptyStats();
-      }
+
+      // Use optimized direct queries with our new indexes
+      return await fetchStatsDirectly(companyId);
     },
     enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
