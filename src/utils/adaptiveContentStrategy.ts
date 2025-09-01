@@ -357,12 +357,12 @@ export class ContentAdapter {
   ): ContentAdaptationConfig {
     return strategies.reduce(
       (merged, strategy) => ({
-        mobile: { ...merged.mobile, ...strategy.mobile },
-        tablet: { ...merged.tablet, ...strategy.tablet },
-        desktop: { ...merged.desktop, ...strategy.desktop }
+        mobile: { ...merged.mobile, ...(strategy.mobile || {}) },
+        tablet: { ...merged.tablet, ...(strategy.tablet || {}) },
+        desktop: { ...merged.desktop, ...(strategy.desktop || {}) }
       }),
       defaultConfig
-    )
+    ) as ContentAdaptationConfig
   }
 
   static calculateOptimalBatchSize(deviceType: 'mobile' | 'tablet' | 'desktop'): number {

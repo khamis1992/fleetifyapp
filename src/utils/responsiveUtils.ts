@@ -1,4 +1,4 @@
-import { type BreakpointKey } from './useEnhancedResponsive'
+// Responsive configuration utilities - no longer importing BreakpointKey as it's not used
 
 // Responsive configuration utilities
 export const ResponsiveConfig = {

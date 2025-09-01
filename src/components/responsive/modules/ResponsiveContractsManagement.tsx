@@ -204,7 +204,7 @@ function ContractForm({ contract, isOpen, onClose, onSave }: ContractFormProps) 
         onSubmit={handleSubmit}
         actions={
           <>
-            <ResponsiveButton type="submit" className="flex-1">
+            <ResponsiveButton className="flex-1">
               {contract ? 'تحديث' : 'إضافة'}
             </ResponsiveButton>
             <ResponsiveButton 
@@ -262,7 +262,7 @@ function ContractForm({ contract, isOpen, onClose, onSave }: ContractFormProps) 
         <ResponsiveInput
           label="المبلغ الإجمالي"
           type="number"
-          value={formData.totalAmount}
+          value={formData.totalAmount.toString()}
           onChange={(value) => handleChange('totalAmount', parseFloat(value) || 0)}
           placeholder="أدخل المبلغ الإجمالي"
         />

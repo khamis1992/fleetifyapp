@@ -250,8 +250,7 @@ export function useOptimalLayout() {
     columns: getOptimalColumns(),
     spacing: getOptimalSpacing(),
     deviceType,
-    gridCols: `grid-cols-${getOptimalColumns()}`,
-    spacing: getOptimalSpacing()
+    gridCols: `grid-cols-${getOptimalColumns()}`
   }
 }
 
