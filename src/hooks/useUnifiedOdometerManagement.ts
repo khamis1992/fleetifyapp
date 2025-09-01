@@ -287,34 +287,70 @@ export const useUpdateOdometerForOperation = () => {
 
 // Validate odometer reading increment
 export const useValidateOdometerIncrement = () => {
+  const { user } = useAuth(); // Move hook call outside async function
+  
   return async (vehicleId: string, newReading: number): Promise<{ isValid: boolean; message?: string; currentReading?: number }> => {
     try {
-      const { user } = useAuth();
-      if (!user?.profile?.company_id) {
-        return { isValid: false, message: 'المستخدم غير مسجل الدخول' };
+      console.log('📝 [ODOMETER_VALIDATION] Starting validation with user:', {
+        hasUser: !!user,
+        hasProfile: !!user?.profile,
+        companyId: user?.profile?.company_id || user?.company?.id,
+        vehicleId,
+        newReading
+      });
+
+      // Enhanced fallback logic for company_id
+      const companyId = user?.profile?.company_id || user?.company?.id;
+      
+      if (!user || !companyId) {
+        console.error('📝 [ODOMETER_VALIDATION] Missing user or company_id:', {
+          hasUser: !!user,
+          hasProfile: !!user?.profile,
+          hasCompany: !!user?.company,
+          profileCompanyId: user?.profile?.company_id,
+          companyIdFromCompany: user?.company?.id
+        });
+        return { isValid: false, message: 'المستخدم غير مسجل الدخول أو البيانات غير مكتملة' };
       }
 
       // Get current odometer reading
-      const { data: latestReading } = await supabase
+      const { data: latestReading, error: readingError } = await supabase
         .from('odometer_readings')
         .select('odometer_reading')
         .eq('vehicle_id', vehicleId)
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .order('reading_date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const { data: vehicle } = await supabase
+      if (readingError) {
+        console.error('📝 [ODOMETER_VALIDATION] Error fetching latest reading:', readingError);
+      }
+
+      const { data: vehicle, error: vehicleError } = await supabase
         .from('vehicles')
         .select('odometer_reading')
         .eq('id', vehicleId)
+        .eq('company_id', companyId)
         .single();
+
+      if (vehicleError) {
+        console.error('📝 [ODOMETER_VALIDATION] Error fetching vehicle:', vehicleError);
+        return { isValid: false, message: 'خطأ في الوصول لبيانات المركبة' };
+      }
 
       const currentReading = Math.max(
         latestReading?.odometer_reading || 0,
         vehicle?.odometer_reading || 0
       );
+
+      console.log('📝 [ODOMETER_VALIDATION] Current readings:', {
+        latestReading: latestReading?.odometer_reading,
+        vehicleReading: vehicle?.odometer_reading,
+        currentReading,
+        newReading
+      });
 
       if (newReading < currentReading) {
         return {
@@ -345,9 +381,10 @@ export const useValidateOdometerIncrement = () => {
 
       return { isValid: true, currentReading };
     } catch (error) {
+      console.error('📝 [ODOMETER_VALIDATION] Validation error:', error);
       return {
         isValid: false,
-        message: 'خطأ في التحقق من قراءة العداد',
+        message: 'خطأ في التحقق من قراءة العداد: ' + (error instanceof Error ? error.message : 'خطأ غير معروف'),
       };
     }
   };

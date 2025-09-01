@@ -74,7 +74,7 @@ export const authService = {
 
     console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
-    // Get user profile with company info
+    // Get user profile with company info - with better error handling
     let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select(`
@@ -87,6 +87,8 @@ export const authService = {
       `)
       .eq('user_id', user.id)
       .single();
+
+    console.log('📝 [AUTH] Profile query result:', { profile, profileError });
 
     // If no company from profile, try to get from employees table
     let employeeCompany = null;
@@ -175,6 +177,15 @@ export const authService = {
       company: companyInfo || undefined,
       roles: roles?.map(r => r.role) || []
     };
+
+    // Enhanced logging for debugging
+    console.log('📝 [AUTH] Creating AuthUser with:', {
+      hasProfile: !!profile,
+      profileCompanyId: profile?.company_id,
+      companyId,
+      hasCompanyInfo: !!companyInfo,
+      roles: authUser.roles
+    });
 
     console.log('📝 [AUTH] Final authUser:', {
       id: authUser.id,
