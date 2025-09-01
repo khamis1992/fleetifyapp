@@ -238,7 +238,7 @@ function EmployeeForm({ employee, isOpen, onClose, onSave }: EmployeeFormProps) 
         onSubmit={handleSubmit}
         actions={
           <>
-            <ResponsiveButton type="submit" className="flex-1">
+            <ResponsiveButton className="flex-1">
               {employee ? 'تحديث' : 'إضافة'}
             </ResponsiveButton>
             <ResponsiveButton 
@@ -311,7 +311,7 @@ function EmployeeForm({ employee, isOpen, onClose, onSave }: EmployeeFormProps) 
         <ResponsiveInput
           label="الراتب الأساسي"
           type="number"
-          value={formData.salary}
+          value={formData.salary.toString()}
           onChange={(value) => handleChange('salary', parseFloat(value) || 0)}
           placeholder="أدخل الراتب الأساسي"
         />
