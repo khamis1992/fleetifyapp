@@ -11809,6 +11809,16 @@ export type Database = {
         Args: { customer_id_param: string }
         Returns: string
       }
+      get_dashboard_stats_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_contracts: number
+          company_id: string
+          total_contracts: number
+          total_revenue: number
+          total_vehicles: number
+        }[]
+      }
       get_effective_company_id: {
         Args: Record<PropertyKey, never>
         Returns: string
