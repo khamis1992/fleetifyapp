@@ -82,6 +82,11 @@ export const useOptimizedDashboardStats = () => {
         );
 
         // Try RPC with timeout protection
+        const statsPromise = supabase
+          .rpc('get_dashboard_stats_safe', { 
+            company_id_param: isSystemLevel ? null : (effectiveCompanyId || null)
+          });
+          
         try {
           const result = await Promise.race([statsPromise, timeoutPromise]) as any;
           const { data: secureStats, error: secureError } = result;
