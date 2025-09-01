@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface EnhancedStatsCardProps {
   title: string;
@@ -27,7 +28,17 @@ interface EnhancedStatsCardProps {
   isLoading?: boolean;
 }
 
-const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
+// Safe hook wrapper to prevent useState null errors
+function useSafeState<T>(initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  try {
+    return useState(initialValue);
+  } catch (error) {
+    console.warn('useState failed, using fallback:', error);
+    return [initialValue, () => {}] as [T, React.Dispatch<React.SetStateAction<T>>];
+  }
+}
+
+const EnhancedStatsCardContent: React.FC<EnhancedStatsCardProps> = ({
   title,
   value,
   change,
@@ -41,7 +52,12 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
   gradient = false,
   isLoading = false
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useSafeState(false);
+  const [isMounted, setIsMounted] = useSafeState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const getTrendColor = () => {
     switch (trend) {
@@ -69,23 +85,32 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
 
   const TrendIcon = getTrendIcon();
 
+  // Fallback for when motion components fail
+  const MotionDiv = isMounted ? motion.div : 'div' as any;
+  const MotionComponent = isMounted ? motion.div : 'div' as any;
+
+  const motionProps = isMounted ? {
+    initial: { opacity: 0, y: 30, scale: 0.9 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    transition: { 
+      duration: 0.5, 
+      delay: index * 0.1,
+      ease: [0.25, 0.46, 0.45, 0.94]
+    },
+    whileHover: { 
+      y: -4,
+      transition: { duration: 0.2 }
+    },
+    onHoverStart: () => setIsHovered(true),
+    onHoverEnd: () => setIsHovered(false)
+  } : {
+    onMouseEnter: () => setIsHovered(true),
+    onMouseLeave: () => setIsHovered(false)
+  };
+
   return (
     <TooltipProvider>
-      <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ 
-          duration: 0.5, 
-          delay: index * 0.1,
-          ease: [0.25, 0.46, 0.45, 0.94]
-        }}
-        whileHover={{ 
-          y: -4,
-          transition: { duration: 0.2 }
-        }}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-      >
+      <MotionDiv {...motionProps}>
         <Card className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl ${
           gradient 
             ? 'bg-gradient-to-br from-card/80 via-card/60 to-card/40' 
@@ -93,38 +118,50 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
         } backdrop-blur-sm border-border/50 hover:border-primary/20`}>
           
           {/* Loading State */}
-          <AnimatePresence>
-            {isLoading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-card/80 backdrop-blur-sm flex items-center justify-center z-10"
-              >
+          {isMounted ? (
+            <AnimatePresence>
+              {isLoading && (
                 <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-card/80 backdrop-blur-sm flex items-center justify-center z-10"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          ) : (
+            isLoading && (
+              <div className="absolute inset-0 bg-card/80 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+              </div>
+            )
+          )}
 
           {/* Background Glow Effect */}
-          <motion.div
+          <MotionComponent
             className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            animate={{
-              background: isHovered 
-                ? "radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.05) 0%, transparent 70%)"
-                : "transparent"
-            }}
+            {...(isMounted ? {
+              animate: {
+                background: isHovered 
+                  ? "radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.05) 0%, transparent 70%)"
+                  : "transparent"
+              }
+            } : {})}
           />
           
           {/* Animated Corner Accent */}
-          <motion.div
+          <MotionComponent
             className="absolute top-0 left-0 w-0 h-0 border-l-[50px] border-t-[50px] border-l-transparent border-t-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            initial={{ scale: 0 }}
-            whileHover={{ scale: 1 }}
+            {...(isMounted ? {
+              initial: { scale: 0 },
+              whileHover: { scale: 1 }
+            } : {})}
           />
           
           <div className="relative p-6">
@@ -132,16 +169,18 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
             <div className="flex items-start justify-between mb-5">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <motion.div 
+                  <MotionComponent 
                     className="p-3 rounded-xl bg-primary/10 text-primary shadow-sm group-hover:bg-primary/15 transition-colors duration-300"
-                    whileHover={{ 
-                      scale: 1.1,
-                      rotate: 5,
-                      transition: { type: "spring", stiffness: 400, damping: 17 }
-                    }}
+                    {...(isMounted ? {
+                      whileHover: { 
+                        scale: 1.1,
+                        rotate: 5,
+                        transition: { type: "spring", stiffness: 400, damping: 17 }
+                      }
+                    } : {})}
                   >
                     <Icon size={24} />
-                  </motion.div>
+                  </MotionComponent>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{title}</p>
@@ -149,10 +188,12 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
               </Tooltip>
               
               {change && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + index * 0.05 }}
+                <MotionComponent
+                  {...(isMounted ? {
+                    initial: { opacity: 0, scale: 0.8 },
+                    animate: { opacity: 1, scale: 1 },
+                    transition: { delay: 0.2 + index * 0.05 }
+                  } : {})}
                 >
                   <Badge 
                     variant="outline" 
@@ -161,7 +202,7 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
                     <TrendIcon size={12} />
                     <span className="text-xs font-medium">{change}</span>
                   </Badge>
-                </motion.div>
+                </MotionComponent>
               )}
             </div>
             
@@ -174,16 +215,18 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
                 )}
               </div>
               
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 + index * 0.05 }}
+              <MotionComponent
+                {...(isMounted ? {
+                  initial: { opacity: 0 },
+                  animate: { opacity: 1 },
+                  transition: { delay: 0.3 + index * 0.05 }
+                } : {})}
               >
                 <StatCardNumber 
                   value={value} 
                   className="text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-300" 
                 />
-              </motion.div>
+              </MotionComponent>
               
               {description && (
                 <p className="text-sm text-muted-foreground/70">{description}</p>
@@ -191,36 +234,54 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
             </div>
 
             {/* Action Section */}
-            <AnimatePresence>
-              {actionText && onAction && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ 
-                    opacity: isHovered ? 1 : 0, 
-                    height: isHovered ? 'auto' : 0,
-                    marginTop: isHovered ? 16 : 0
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
+            {isMounted ? (
+              <AnimatePresence>
+                {actionText && onAction && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ 
+                      opacity: isHovered ? 1 : 0, 
+                      height: isHovered ? 'auto' : 0,
+                      marginTop: isHovered ? 16 : 0
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onAction}
+                      className="w-full h-8 text-xs hover:bg-primary/10 hover:text-primary group-hover:opacity-100"
+                    >
+                      {actionText}
+                      <ArrowRight size={12} className="mr-2" />
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            ) : (
+              actionText && onAction && isHovered && (
+                <div className="mt-4">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onAction}
-                    className="w-full h-8 text-xs hover:bg-primary/10 hover:text-primary group-hover:opacity-100"
+                    className="w-full h-8 text-xs hover:bg-primary/10 hover:text-primary"
                   >
                     {actionText}
                     <ArrowRight size={12} className="mr-2" />
                   </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              )
+            )}
 
             {/* Quick View Button */}
-            <motion.div
+            <MotionComponent
               className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              initial={{ scale: 0 }}
-              whileHover={{ scale: 1 }}
+              {...(isMounted ? {
+                initial: { scale: 0 },
+                whileHover: { scale: 1 }
+              } : {})}
             >
               <Button
                 variant="ghost"
@@ -233,18 +294,41 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
               >
                 <Eye size={14} />
               </Button>
-            </motion.div>
+            </MotionComponent>
           </div>
 
           {/* Bottom Border Accent */}
-          <motion.div
+          <MotionComponent
             className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-primary/50 to-primary/20 w-0 group-hover:w-full transition-all duration-500"
-            initial={{ width: 0 }}
-            whileHover={{ width: '100%' }}
+            {...(isMounted ? {
+              initial: { width: 0 },
+              whileHover: { width: '100%' }
+            } : {})}
           />
         </Card>
-      </motion.div>
+      </MotionDiv>
     </TooltipProvider>
+  );
+};
+
+// Wrapped component with error boundary
+const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = (props) => {
+  return (
+    <ErrorBoundary fallback={
+      <Card className="p-6 bg-card/60 backdrop-blur-sm border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-primary/10 text-primary">
+            <props.icon size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground font-medium">{props.title}</p>
+            <p className="text-3xl font-bold text-foreground">{props.value}</p>
+          </div>
+        </div>
+      </Card>
+    }>
+      <EnhancedStatsCardContent {...props} />
+    </ErrorBoundary>
   );
 };
 
