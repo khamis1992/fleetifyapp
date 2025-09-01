@@ -140,26 +140,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 console.error(`📝 [AUTH_CONTEXT] Error fetching user profile (attempt ${retryCount + 1}):`, error);
                 retryCount++;
                 
-                if (retryCount < maxRetries) {
-                  console.log(`📝 [AUTH_CONTEXT] Retrying in ${retryCount * 1000}ms...`);
-                  await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
-                 } else {
-                   console.error('📝 [AUTH_CONTEXT] Max retries reached, using session user with fallback data');
-                   // Create fallback user with session data
-                   const fallbackUser: AuthUser = {
-                     ...session.user,
-                     profile: {
-                       id: session.user.id,
-                       first_name: session.user.user_metadata?.first_name || 'مستخدم',
-                       last_name: session.user.user_metadata?.last_name || '',
-                       company_id: session.user.user_metadata?.company_id || null
-                     },
-                     roles: ['user'], // Default role
-                     company_id: session.user.user_metadata?.company_id || null
-                   };
-                   setUser(fallbackUser);
-                   setSessionError(null); // Clear error since we have a working fallback
-                }
+      // Simplified retry logic with faster fallback
+      try {
+        console.log('📝 [AUTH_CONTEXT] Fetching user data for session:', session?.user?.id);
+        
+        // Single attempt with timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('User data fetch timeout')), 5000)
+        );
+        
+        const userData = await Promise.race([
+          authService.getCurrentUser(),
+          timeoutPromise
+        ]);
+
+        if (userData) {
+          console.log('📝 [AUTH_CONTEXT] Successfully fetched user data');
+          setUser(userData);
+          setSessionError(null);
+        } else {
+          throw new Error('No user data returned');
+        }
+      } catch (error) {
+        console.error('📝 [AUTH_CONTEXT] Failed to fetch user data, using fallback:', error);
+        
+        // Create fallback user immediately
+        const fallbackUser: AuthUser = {
+          ...session.user,
+          profile: {
+            id: session.user.id,
+            first_name: session.user.user_metadata?.first_name || 'مستخدم',
+            last_name: session.user.user_metadata?.last_name || '',
+            company_id: session.user.user_metadata?.company_id || null
+          },
+          roles: ['user'], // Default role
+          company_id: session.user.user_metadata?.company_id || null
+        };
+        setUser(fallbackUser);
+        setSessionError(null); // Clear error since we have a working fallback
+        console.log('📝 [AUTH_CONTEXT] Using fallback user data');
+      }
               }
             }
           }, 0);

@@ -26,7 +26,22 @@ export const DashboardLayout: React.FC = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();
+
+  // Emergency timeout for loading state
+  React.useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('🏠 [DASHBOARD_LAYOUT] Loading timeout reached');
+        setLoadingTimeout(true);
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
 
   const handleSignOut = async () => {
     try {
@@ -36,15 +51,24 @@ export const DashboardLayout: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Show loading with timeout fallback
+  if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">جاري تحميل البيانات...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
+  // If timeout reached but still loading, proceed with minimal auth
+  if (loadingTimeout && loading) {
+    console.warn('🏠 [DASHBOARD_LAYOUT] Proceeding with minimal authentication due to timeout');
+  }
+
+  if (!user && !loadingTimeout) {
     return <Navigate to="/auth" replace />;
   }
 

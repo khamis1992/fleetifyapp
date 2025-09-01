@@ -66,37 +66,27 @@ export const authService = {
   },
 
   async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      console.log('📝 [AUTH] No user found');
-      return null;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('📝 [AUTH] No user found');
+        return null;
+      }
 
-    console.log('📝 [AUTH] Fetching profile for user:', user.id);
+      console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
-    // Get user profile with company info
-    let { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        companies:company_id (
-          id,
-          name,
-          name_ar
-        )
-      `)
-      .eq('user_id', user.id)
-      .single();
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      );
 
-    // If no company from profile, try to get from employees table
-    let employeeCompany = null;
-    if (!profile?.company_id) {
-      const { data: empData } = await supabase
-        .from('employees')
+      // Get user profile with timeout protection
+      const profilePromise = supabase
+        .from('profiles')
         .select(`
-          company_id,
-          companies (
+          *,
+          companies:company_id (
             id,
             name,
             name_ar
@@ -104,91 +94,84 @@ export const authService = {
         `)
         .eq('user_id', user.id)
         .single();
-      
-      employeeCompany = empData;
-    }
 
-    if (profileError) {
-      console.error('📝 [AUTH] Profile fetch error:', profileError);
-      
-      // If profile doesn't exist, try to create it
-      if (profileError.code === 'PGRST116') {
-        console.log('📝 [AUTH] No profile found, attempting to create one...');
-        try {
-          const { data, error } = await supabase.functions.invoke('create-super-admin-profile');
-          if (error) {
-            console.error('📝 [AUTH] Failed to create profile via edge function:', error);
-          } else {
-            console.log('📝 [AUTH] Profile created successfully:', data);
-            // Retry fetching the profile
-            const { data: newProfile, error: retryError } = await supabase
-              .from('profiles')
-              .select(`
-                *,
-                companies:company_id (
-                  id,
-                  name,
-                  name_ar
-                )
-              `)
-              .eq('user_id', user.id)
-              .single();
-            
-            if (!retryError && newProfile) {
-              console.log('📝 [AUTH] Successfully fetched newly created profile');
-              // Continue with the new profile
-              profile = newProfile;
-            }
-          }
-        } catch (edgeFunctionError) {
-          console.error('📝 [AUTH] Edge function call failed:', edgeFunctionError);
-        }
+      let profile, profileError;
+      try {
+        const result = await Promise.race([profilePromise, timeoutPromise]) as any;
+        profile = result.data;
+        profileError = result.error;
+      } catch (error) {
+        console.error('📝 [AUTH] Profile fetch timeout or error:', error);
+        profileError = error;
       }
+
+      // If profile fetch fails, create fallback user immediately
+      if (profileError) {
+        console.error('📝 [AUTH] Profile fetch error, creating fallback user:', profileError);
+        
+        const fallbackUser: AuthUser = {
+          ...user,
+          profile: {
+            id: user.id,
+            first_name: user.user_metadata?.first_name || 'مستخدم',
+            last_name: user.user_metadata?.last_name || '',
+            company_id: user.user_metadata?.company_id || null
+          },
+          roles: ['user'], // Default role
+          company_id: user.user_metadata?.company_id || null
+        };
+        
+        console.log('📝 [AUTH] Returning fallback user');
+        return fallbackUser;
+      }
+
+      // Quick roles fetch with timeout
+      let roles = [];
+      try {
+        const rolesPromise = supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+        
+        const rolesResult = await Promise.race([
+          rolesPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Roles fetch timeout')), 5000)
+          )
+        ]) as any;
+        
+        roles = rolesResult.data?.map((r: any) => r.role) || ['user'];
+      } catch (rolesError) {
+        console.error('📝 [AUTH] Roles fetch error, using default:', rolesError);
+        roles = ['user'];
+      }
+
+      // Build auth user with available data
+      const authUser: AuthUser = {
+        ...user,
+        profile: profile || {
+          id: user.id,
+          first_name: user.user_metadata?.first_name || 'مستخدم',
+          last_name: user.user_metadata?.last_name || '',
+          company_id: user.user_metadata?.company_id || null
+        },
+        company: profile?.companies || undefined,
+        roles: roles,
+        company_id: profile?.company_id || user.user_metadata?.company_id || null
+      };
+
+      console.log('📝 [AUTH] Successfully built authUser:', {
+        id: authUser.id,
+        email: authUser.email,
+        company_id: authUser.company_id,
+        roles: authUser.roles
+      });
+
+      return authUser;
+    } catch (error) {
+      console.error('📝 [AUTH] getCurrentUser failed completely:', error);
+      return null;
     }
-
-    console.log('📝 [AUTH] Profile data:', profile);
-
-    // Get user roles
-    const { data: roles, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id);
-
-    if (rolesError) {
-      console.error('📝 [AUTH] Roles fetch error:', rolesError);
-    }
-
-    // Get company info - prioritize from profiles, fallback to employees
-    let companyInfo = profile?.companies;
-    let companyId = profile?.company_id;
-    
-    // If no company from profiles, try from employees table
-    if (!companyInfo && employeeCompany) {
-      companyInfo = employeeCompany.companies;
-      companyId = employeeCompany.company_id;
-      
-      console.log('📝 [AUTH] Using company info from employees table:', companyInfo);
-    }
-
-    // Ensure company_id is available in multiple places for compatibility
-    const authUser: AuthUser = {
-      ...user,
-      profile: profile ? { ...profile, company_id: companyId } : undefined,
-      company: companyInfo || undefined,
-      roles: roles?.map(r => r.role) || [],
-      // Add company_id at root level for easier access
-      company_id: companyId
-    };
-
-    console.log('📝 [AUTH] Final authUser:', {
-      id: authUser.id,
-      email: authUser.email,
-      company_id: companyId,
-      company: authUser.company,
-      roles: authUser.roles
-    });
-
-    return authUser;
   },
 
   async updateProfile(userId: string, updates: any) {
