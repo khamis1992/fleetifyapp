@@ -23,9 +23,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // Session validation helper
-  const validateSession = async (currentSession: Session | null): Promise<boolean> => {
+  // Enhanced session validation with retry logic
+  const validateSession = async (currentSession: Session | null, retryCount = 0): Promise<boolean> => {
     if (!currentSession) {
+      console.log('📝 [AUTH_CONTEXT] No session to validate');
       return false;
     }
 
@@ -38,6 +39,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error || !data.session) {
           console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
+          
+          // Retry once if this is the first attempt
+          if (retryCount === 0) {
+            console.log('📝 [AUTH_CONTEXT] Retrying session refresh...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return validateSession(currentSession, 1);
+          }
+          
           setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
           return false;
         }
@@ -47,9 +56,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
       }
       
+      // Validate that session still works with a simple query
+      const { error: testError } = await supabase.auth.getUser();
+      if (testError) {
+        console.error('📝 [AUTH_CONTEXT] Session validation failed:', testError);
+        if (retryCount === 0) {
+          console.log('📝 [AUTH_CONTEXT] Retrying session validation...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return validateSession(currentSession, 1);
+        }
+        setSessionError('خطأ في التحقق من صحة الجلسة');
+        return false;
+      }
+      
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
+      if (retryCount === 0) {
+        console.log('📝 [AUTH_CONTEXT] Retrying after error...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return validateSession(currentSession, 1);
+      }
       setSessionError('خطأ في التحقق من صحة الجلسة');
       return false;
     }
@@ -88,15 +115,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // Defer the profile fetch to avoid blocking the auth state change
           setTimeout(async () => {
-            try {
-              const authUser = await authService.getCurrentUser();
-              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-              setUser(authUser);
-              setSessionError(null);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              setUser(session.user as AuthUser);
-              setSessionError('خطأ في تحميل بيانات المستخدم');
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (retryCount < maxRetries) {
+              try {
+                console.log(`📝 [AUTH_CONTEXT] Attempting to fetch profile (attempt ${retryCount + 1}/${maxRetries})`);
+                const authUser = await authService.getCurrentUser();
+                
+                if (authUser) {
+                  console.log('📝 [AUTH_CONTEXT] Profile loaded:', {
+                    userId: authUser.id,
+                    companyId: authUser.profile?.company_id || authUser.company_id,
+                    hasCompany: !!authUser.company,
+                    roles: authUser.roles
+                  });
+                  setUser(authUser);
+                  setSessionError(null);
+                  break;
+                } else {
+                  throw new Error('No user data returned');
+                }
+              } catch (error) {
+                console.error(`📝 [AUTH_CONTEXT] Error fetching user profile (attempt ${retryCount + 1}):`, error);
+                retryCount++;
+                
+                if (retryCount < maxRetries) {
+                  console.log(`📝 [AUTH_CONTEXT] Retrying in ${retryCount * 1000}ms...`);
+                  await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
+                } else {
+                  console.error('📝 [AUTH_CONTEXT] Max retries reached, using session user with fallback data');
+                  // Create fallback user with session data
+                  const fallbackUser: AuthUser = {
+                    ...session.user,
+                    profile: {
+                      id: session.user.id,
+                      first_name: session.user.user_metadata?.first_name || 'مستخدم',
+                      last_name: session.user.user_metadata?.last_name || '',
+                      company_id: session.user.user_metadata?.company_id || null
+                    },
+                    roles: ['user'], // Default role
+                    company_id: session.user.user_metadata?.company_id || null
+                  };
+                  setUser(fallbackUser);
+                  setSessionError('تم تحميل بيانات أساسية للمستخدم');
+                }
+              }
             }
           }, 0);
         } else {
@@ -127,11 +191,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setSession(session);
             try {
               const authUser = await authService.getCurrentUser();
-              setUser(authUser);
+              if (authUser) {
+                setUser(authUser);
+                console.log('📝 [AUTH_CONTEXT] Initial user loaded successfully');
+              } else {
+                throw new Error('No user data returned on initialization');
+              }
             } catch (error) {
               console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
-              setUser(session.user as AuthUser);
-              setSessionError('خطأ في تحميل بيانات المستخدم');
+              // Create fallback user for initialization
+              const fallbackUser: AuthUser = {
+                ...session.user,
+                profile: {
+                  id: session.user.id,
+                  first_name: session.user.user_metadata?.first_name || 'مستخدم',
+                  last_name: session.user.user_metadata?.last_name || '',
+                  company_id: session.user.user_metadata?.company_id || null
+                },
+                roles: ['user'],
+                company_id: session.user.user_metadata?.company_id || null
+              };
+              setUser(fallbackUser);
+              setSessionError('تم تحميل بيانات أساسية للمستخدم');
             }
           }
         }

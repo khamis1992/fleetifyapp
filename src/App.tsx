@@ -7,6 +7,7 @@ import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import Auth from '@/pages/Auth';
 import SuperAdmin from '@/pages/SuperAdmin';
 import Dashboard from '@/pages/Dashboard';
@@ -23,25 +24,27 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="fleetify-theme">
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CompanyContextProvider>
-            <Router>
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/super-admin" element={<SuperAdmin />} />
-                <Route path="/" element={<DashboardLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="dashboard" element={<Dashboard />} />
-                </Route>
-              </Routes>
-            </Router>
-            <Toaster />
-          </CompanyContextProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" storageKey="fleetify-theme">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <CompanyContextProvider>
+              <Router>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/super-admin" element={<SuperAdmin />} />
+                  <Route path="/" element={<DashboardLayout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                  </Route>
+                </Routes>
+              </Router>
+              <Toaster />
+            </CompanyContextProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
