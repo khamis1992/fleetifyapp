@@ -7,7 +7,7 @@ import { Customer, CustomerFilters } from '@/types/customer';
 export type EnhancedCustomer = Customer;
 
 export const useCustomers = (filters?: CustomerFilters) => {
-  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess } = useUnifiedCompanyAccess();
   const { 
     includeInactive = false, 
     searchTerm, 
@@ -22,6 +22,8 @@ export const useCustomers = (filters?: CustomerFilters) => {
   console.log('🏢 [useCustomers] Company context:', {
     companyId,
     isBrowsingMode,
+    isSystemLevel,
+    hasGlobalAccess,
     browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
     filters,
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted])
@@ -30,17 +32,27 @@ export const useCustomers = (filters?: CustomerFilters) => {
   return useQuery({
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted]),
     queryFn: async (): Promise<EnhancedCustomer[]> => {
-      if (!companyId) {
-        console.error('❌ [useCustomers] No company ID available for query');
+      // For system level users (super_admin), allow querying all customers
+      // For company scoped users, require a company ID
+      if (!isSystemLevel && !companyId) {
+        console.error('❌ [useCustomers] No company ID available for company-scoped user');
         throw new Error("No company access available");
       }
       
-      console.log('🔍 [useCustomers] Executing query for company:', companyId);
+      console.log('🔍 [useCustomers] Executing query:', {
+        isSystemLevel,
+        companyId,
+        hasGlobalAccess
+      });
       
       let query = supabase
         .from('customers')
-        .select('*')
-        .eq('company_id', companyId);
+        .select('*');
+      
+      // Apply company filter only for non-system level users
+      if (!isSystemLevel && companyId) {
+        query = query.eq('company_id', companyId);
+      }
       
       if (!includeInactive) {
         query = query.eq('is_active', true);
@@ -86,19 +98,21 @@ export const useCustomers = (filters?: CustomerFilters) => {
       console.log('✅ [useCustomers] Successfully fetched customers:', {
         count: data?.length || 0,
         companyId,
+        isSystemLevel,
         customers: data?.map(c => ({ id: c.id, name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name })) || []
       });
       
       return data || [];
     },
-    enabled: !!companyId,
+    // Enable query for system level users or users with company ID
+    enabled: isSystemLevel || !!companyId,
     staleTime: 3 * 60 * 1000, // 3 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes
   });
 };
 
 export const useCustomerById = (customerId: string) => {
-  const { companyId, getQueryKey, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, browsedCompany, isBrowsingMode, isSystemLevel } = useUnifiedCompanyAccess();
   
   // Debug logging for company context
   console.log('🏢 [useCustomerById] Company context:', {
@@ -111,14 +125,20 @@ export const useCustomerById = (customerId: string) => {
   return useQuery({
     queryKey: getQueryKey(['customer'], [customerId]),
     queryFn: async (): Promise<EnhancedCustomer | null> => {
-      if (!companyId || !customerId) return null;
+      if (!customerId) return null;
+      if (!isSystemLevel && !companyId) return null;
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select('*')
-        .eq('id', customerId)
-        .eq('company_id', companyId)
-        .single();
+        .eq('id', customerId);
+      
+      // Apply company filter only for non-system level users
+      if (!isSystemLevel && companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      const { data, error } = await query.single();
       
       if (error) {
         if (error.code === 'PGRST116') return null;
@@ -128,7 +148,7 @@ export const useCustomerById = (customerId: string) => {
       
       return data;
     },
-    enabled: !!companyId && !!customerId,
+    enabled: !!customerId && (isSystemLevel || !!companyId),
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
 };

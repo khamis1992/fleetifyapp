@@ -6,23 +6,38 @@ import { toast } from 'sonner';
 
 export const useCustomersRealtime = () => {
   const queryClient = useQueryClient();
-  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, isSystemLevel } = useUnifiedCompanyAccess();
 
   useEffect(() => {
-    if (!companyId) return;
+    // For system level users, we need to listen to all customers
+    // For company scoped users, we need a company ID
+    if (!isSystemLevel && !companyId) return;
 
-    console.log('🔄 Setting up real-time subscription for customers in company:', companyId);
+    console.log('🔄 Setting up real-time subscription for customers:', {
+      companyId,
+      isSystemLevel
+    });
+
+    // Create subscription config based on user level
+    const subscriptionConfig = isSystemLevel 
+      ? {
+          event: 'INSERT' as const,
+          schema: 'public',
+          table: 'customers'
+          // No filter for system level users - listen to all customers
+        }
+      : {
+          event: 'INSERT' as const,
+          schema: 'public',
+          table: 'customers',
+          filter: `company_id=eq.${companyId}`
+        };
 
     const channel = supabase
       .channel('customers-changes')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'customers',
-          filter: `company_id=eq.${companyId}`
-        },
+        subscriptionConfig,
         (payload) => {
           console.log('✅ Real-time: Customer inserted', payload.new);
           
@@ -51,12 +66,18 @@ export const useCustomersRealtime = () => {
       )
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'customers',
-          filter: `company_id=eq.${companyId}`
-        },
+        isSystemLevel 
+          ? {
+              event: 'UPDATE' as const,
+              schema: 'public',
+              table: 'customers'
+            }
+          : {
+              event: 'UPDATE' as const,
+              schema: 'public',
+              table: 'customers',
+              filter: `company_id=eq.${companyId}`
+            },
         (payload) => {
           console.log('📝 Real-time: Customer updated', payload.new);
           
@@ -82,12 +103,18 @@ export const useCustomersRealtime = () => {
       )
       .on(
         'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'customers',
-          filter: `company_id=eq.${companyId}`
-        },
+        isSystemLevel 
+          ? {
+              event: 'DELETE' as const,
+              schema: 'public',
+              table: 'customers'
+            }
+          : {
+              event: 'DELETE' as const,
+              schema: 'public',
+              table: 'customers',
+              filter: `company_id=eq.${companyId}`
+            },
         (payload) => {
           console.log('🗑️ Real-time: Customer deleted', payload.old);
           
@@ -122,5 +149,5 @@ export const useCustomersRealtime = () => {
       console.log('🔌 Unsubscribing from customers real-time updates');
       supabase.removeChannel(channel);
     };
-  }, [companyId, queryClient, getQueryKey]);
+  }, [companyId, isSystemLevel, queryClient, getQueryKey]);
 };
