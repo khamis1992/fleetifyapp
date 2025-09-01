@@ -25,8 +25,11 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
     )
   ) as UserRole[];
 
-  // Extract company_id consistently with useUnifiedCompanyAccess
-  const companyId = user?.company?.id || (user as any)?.company_id || user?.profile?.company_id;
+  // Extract company_id consistently - try multiple sources
+  const companyId = user?.company?.id || 
+                   (user as any)?.company_id || 
+                   user?.profile?.company_id ||
+                   (user as any)?.user_metadata?.company_id;
   
   // تسجيل معلومات تشخيصية
   console.log('🔧 [getCompanyScopeContext] Processing user context:', {
