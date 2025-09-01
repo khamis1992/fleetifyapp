@@ -65,83 +65,19 @@ export const useOptimizedDashboardStats = () => {
         const effectiveCompanyId = companyId || user.company_id || user.company?.id || user.profile?.company_id;
         
         if (!effectiveCompanyId) {
-          console.log('📊 [DASHBOARD_STATS] No effective company ID, returning demo stats');
-          return getDemoStats();
+          console.log('📊 [DASHBOARD_STATS] No effective company ID, returning empty stats');
+          return getEmptyStats();
         }
 
-        console.log('🔄 [DASHBOARD_STATS] Using company ID for query:', {
-          companyId,
-          effectiveCompanyId,
-          isSystemLevel,
-          willUseRPC: true
-        });
+        console.log('🔄 [DASHBOARD_STATS] Using direct queries for company:', effectiveCompanyId);
         
-        // Add timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Stats fetch timeout')), 8000)
-        );
-
-        // Try RPC with timeout protection
-        const statsPromise = supabase
-          .rpc('get_dashboard_stats_safe', { 
-            company_id_param: isSystemLevel ? null : (effectiveCompanyId || null)
-          });
-          
-        try {
-          const result = await Promise.race([statsPromise, timeoutPromise]) as any;
-          const { data: secureStats, error: secureError } = result;
-          
-          if (!secureError && secureStats && secureStats.length > 0) {
-            console.log('✅ [DASHBOARD_STATS] RPC success:', secureStats[0]);
-            const stats = secureStats[0];
-            return {
-              totalVehicles: stats.total_vehicles || 0,
-              vehiclesChange: stats.vehicles_change || '+0%',
-              totalCustomers: stats.total_customers || 0,
-              customersChange: stats.customers_change || '+0%',
-              activeContracts: stats.active_contracts || 0,
-              contractsChange: stats.contracts_change || '+0%',
-              totalEmployees: stats.total_employees || 0,
-              employeesChange: '+0%',
-              monthlyRevenue: Number(stats.monthly_revenue) || 0,
-              revenueChange: stats.revenue_change || '+0%',
-              totalRevenue: Number(stats.total_revenue) || 0,
-              maintenanceRequests: stats.maintenance_requests || 0,
-              pendingPayments: Number(stats.pending_payments) || 0,
-              expiringContracts: stats.expiring_contracts || 0,
-              fleetUtilization: Number(stats.fleet_utilization) || 0,
-              averageContractValue: Number(stats.avg_contract_value) || 0,
-              cashFlow: Number(stats.cash_flow) || 0,
-              profitMargin: Number(stats.profit_margin) || 0
-            };
-          }
-        } catch (error) {
-          console.warn('⚠️ [DASHBOARD_STATS] RPC timeout/failed, returning demo stats:', error);
-          return getDemoStats();
-        }
+        // Skip RPC and use direct queries immediately for reliability
+        return await fetchStatsDirectly(effectiveCompanyId);
         
-        // Fallback to direct queries if secure function fails
-        const fallbackCompanyId = effectiveCompanyId || companyId;
-        if (fallbackCompanyId) {
-          console.log('🔄 [DASHBOARD_STATS] Using fallback direct queries for company:', fallbackCompanyId);
-          return await fetchStatsDirectly(fallbackCompanyId);
-        } else {
-          console.log('⚠️ [DASHBOARD_STATS] No company ID for fallback queries, returning demo data');
-          return getDemoStats();
-        }
       } catch (error) {
         console.error('❌ [DASHBOARD_STATS] Error:', error);
-        // Return fallback data even on error
-        const fallbackCompanyId = companyId || user.company_id || user.company?.id || user.profile?.company_id;
-        if (fallbackCompanyId) {
-          try {
-            return await fetchStatsDirectly(fallbackCompanyId);
-          } catch (fallbackError) {
-            console.error('❌ [DASHBOARD_STATS] Fallback also failed:', fallbackError);
-            return getDemoStats();
-          }
-        }
-        return getDemoStats();
+        // Return empty data on error to see if there's a data issue
+        return getEmptyStats();
       }
     },
     enabled: !!user, // Enable when user is authenticated

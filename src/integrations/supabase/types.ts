@@ -11814,7 +11814,7 @@ export type Database = {
         Returns: string
       }
       get_dashboard_stats_safe: {
-        Args: { company_id_param?: string }
+        Args: { company_id_param: string }
         Returns: {
           active_contracts: number
           avg_contract_value: number
