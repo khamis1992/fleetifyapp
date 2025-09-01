@@ -11810,8 +11810,30 @@ export type Database = {
         Returns: string
       }
       get_dashboard_stats_safe: {
-        Args: { company_id_param: string }
-        Returns: Json
+        Args: { company_id_param?: string }
+        Returns: {
+          active_contracts: number
+          avg_contract_value: number
+          cash_flow: number
+          contracts_change: string
+          customers_change: string
+          expiring_contracts: number
+          fleet_utilization: number
+          maintenance_change: string
+          maintenance_requests: number
+          monthly_revenue: number
+          payments_change: string
+          pending_maintenance: number
+          pending_payments: number
+          profit_margin: number
+          revenue_change: string
+          total_contracts: number
+          total_customers: number
+          total_employees: number
+          total_revenue: number
+          total_vehicles: number
+          vehicles_change: string
+        }[]
       }
       get_effective_company_id: {
         Args: Record<PropertyKey, never>
