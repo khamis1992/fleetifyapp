@@ -210,7 +210,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           } else {
             console.log('📝 [AUTH_CONTEXT] Invalid session on initialization');
+            setUser(null);
+            setSession(null);
           }
+        } else {
+          console.log('📝 [AUTH_CONTEXT] No user found on initialization');
+          setUser(null);
+          setSession(null);
         }
       } catch (error) {
         console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
