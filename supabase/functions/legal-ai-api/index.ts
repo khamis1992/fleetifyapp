@@ -1,16 +1,26 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { withCors, createCorsHeaders } from '../_shared/cors.ts'
+import { 
+  createAuthenticatedClient, 
+  createServiceRoleClient, 
+  getAuthContext, 
+  requireAuth, 
+  rateLimit, 
+  validateInput, 
+  logSecurityEvent, 
+  type ValidationRule 
+} from '../_shared/security.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+// Use secure CORS configuration
+const createSecureCorsHeaders = (origin?: string) => createCorsHeaders(origin);
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+// Use secure client creation instead of hardcoded service role
+const getSupabaseClient = (authToken?: string) => {
+  return authToken ? createAuthenticatedClient(authToken) : createServiceRoleClient();
+};
 
 // Enhanced query classification with more detailed analysis
 async function classifyQuery(query: string, companyId: string, userId?: string): Promise<{
@@ -206,8 +216,10 @@ async function getContractStatistics(companyId: string, supabase: any) {
   }
 }
 
-async function handleSystemDataQuery(body: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
+async function handleSystemDataQuery(body: any, origin: string | null, authToken: string | null, openAIApiKey: string) {
   const { query, company_id, user_id } = body;
+  const corsHeaders = createSecureCorsHeaders(origin);
+  const supabase = getSupabaseClient(authToken);
   
   try {
     // Check user permissions for system data queries
@@ -375,8 +387,10 @@ Important: You now have access to real system data. Use it to provide accurate, 
   }
 }
 
-async function handleMixedQuery(body: any, classification: any, corsHeaders: any, supabase: any, openAIApiKey: string) {
+async function handleMixedQuery(body: any, classification: any, origin: string | null, authToken: string | null, openAIApiKey: string) {
   const { query, company_id, user_id, country } = body;
+  const corsHeaders = createSecureCorsHeaders(origin);
+  const supabase = getSupabaseClient(authToken);
   
   try {
     // Check user permissions for system data access
@@ -588,15 +602,16 @@ interface LegalFeedback {
   message_id: string;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const body = req.method === 'POST' ? await req.json() : {};
-    const requestedPath = body.path || '';
+serve(withCors(async (req) => {
+  const body = req.method === 'POST' ? await req.json() : {};
+  const requestedPath = body.path || '';
+  const origin = req.headers.get('origin');
+  const corsHeaders = createSecureCorsHeaders(origin);
+  
+  // Extract auth token for secure client creation
+  const authHeader = req.headers.get('authorization');
+  const authToken = authHeader?.replace('Bearer ', '') || null;
+  const supabase = getSupabaseClient(authToken);
     
     console.log(`Processing request: ${req.method} with path: ${requestedPath}`);
 
@@ -618,11 +633,27 @@ serve(async (req) => {
     if (requestedPath === 'legal-advice') {
       console.log('Processing legal advice request:', { query: body.query?.substring(0, 100), country: body.country });
 
-      if (!body.query || !body.country || !body.company_id) {
+      // Comprehensive input validation
+      const validationRules: ValidationRule[] = [
+        { field: 'query', type: 'string', required: true, minLength: 10, maxLength: 2000 },
+        { field: 'country', type: 'string', required: true, allowedValues: ['Kuwait', 'UAE', 'Saudi Arabia', 'Bahrain', 'Qatar', 'Oman'] },
+        { field: 'company_id', type: 'uuid', required: true },
+        { field: 'user_id', type: 'uuid', required: false }
+      ];
+
+      const validation = validateInput(body, validationRules);
+      if (!validation.valid) {
+        await logSecurityEvent('invalid_input', { 
+          errors: validation.errors, 
+          endpoint: 'legal-advice',
+          body: body 
+        }, req);
+        
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Missing required fields: query, country, company_id' 
+            message: 'Invalid input data',
+            errors: validation.errors
           }),
           {
             status: 400,
@@ -631,16 +662,21 @@ serve(async (req) => {
         );
       }
 
-      // Validate company_id is a valid UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(body.company_id)) {
+      // Rate limiting
+      const clientId = req.headers.get('x-forwarded-for') || 'unknown';
+      if (!rateLimit(`legal-advice:${clientId}`, 50, 60000)) { // 50 requests per minute
+        await logSecurityEvent('rate_limit_exceeded', { 
+          endpoint: 'legal-advice',
+          client_id: clientId
+        }, req);
+        
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Invalid company_id format. Must be a valid UUID.' 
+            message: 'Rate limit exceeded. Please try again later.' 
           }),
           {
-            status: 400,
+            status: 429,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
@@ -665,12 +701,12 @@ serve(async (req) => {
       
       if (classification.type === 'system_data') {
         // Route to system data analysis
-        return await handleSystemDataQuery(body, corsHeaders, supabase, openAIApiKey);
+        return await handleSystemDataQuery(body, origin, authToken, openAIApiKey);
       }
       
       if (classification.type === 'mixed') {
         // Handle mixed queries - process both system data and legal advice
-        return await handleMixedQuery(body, classification, corsHeaders, supabase, openAIApiKey);
+        return await handleMixedQuery(body, classification, origin, authToken, openAIApiKey);
       }
 
       // Handle general legal advice
@@ -757,11 +793,37 @@ serve(async (req) => {
 
     // Feedback endpoint
     if (requestedPath === 'feedback') {
-      if (!body.company_id || !body.message_id || !body.rating) {
+      // Input validation
+      const validationRules: ValidationRule[] = [
+        { field: 'company_id', type: 'uuid', required: true },
+        { field: 'message_id', type: 'string', required: true, minLength: 1, maxLength: 100 },
+        { field: 'rating', type: 'number', required: true },
+        { field: 'feedback_text', type: 'string', required: false, maxLength: 1000 },
+        { field: 'query', type: 'string', required: false, maxLength: 2000 },
+        { field: 'country', type: 'string', required: false, allowedValues: ['Kuwait', 'UAE', 'Saudi Arabia', 'Bahrain', 'Qatar', 'Oman'] }
+      ];
+
+      const validation = validateInput(body, validationRules);
+      if (!validation.valid) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Missing required fields: company_id, message_id, rating' 
+            message: 'Invalid feedback data',
+            errors: validation.errors
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Validate rating range
+      if (body.rating < 1 || body.rating > 5) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Rating must be between 1 and 5'
           }),
           {
             status: 400,
@@ -927,14 +989,38 @@ serve(async (req) => {
 
     // Customer search endpoint
     if (requestedPath === 'customer-search') {
-      if (!body.company_id || !body.search_query) {
+      // Input validation
+      const validationRules: ValidationRule[] = [
+        { field: 'company_id', type: 'uuid', required: true },
+        { field: 'search_query', type: 'string', required: true, minLength: 2, maxLength: 100 },
+        { field: 'user_id', type: 'uuid', required: false }
+      ];
+
+      const validation = validateInput(body, validationRules);
+      if (!validation.valid) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Missing required fields: company_id, search_query' 
+            message: 'Invalid input data',
+            errors: validation.errors
           }),
           {
             status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Rate limiting for search
+      const clientId = req.headers.get('x-forwarded-for') || 'unknown';
+      if (!rateLimit(`customer-search:${clientId}`, 30, 60000)) { // 30 searches per minute
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Search rate limit exceeded. Please try again later.' 
+          }),
+          {
+            status: 429,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
@@ -1450,17 +1536,4 @@ ${customer.is_blacklisted && customer.blacklist_reason ? `- سبب الحظر: $
       }
     );
 
-  } catch (error) {
-    console.error('Error in legal-ai-api function:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: 'Internal server error' 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  }
-});
+}));

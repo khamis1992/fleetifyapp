@@ -104,9 +104,9 @@ export const useContractValidation = () => {
       if (error) {
         console.error('Validation error:', error);
         
-        // Optimized retry logic for transient errors
+        // Smart retry logic for transient errors
         if (retryCount < 2 && (error.code === '503' || error.message.includes('network') || error.message.includes('timeout'))) {
-          await new Promise(resolve => setTimeout(resolve, Math.min(500, Math.pow(2, retryCount) * 200)));
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
           return validateContract(formData, retryCount + 1);
         }
         
@@ -147,9 +147,9 @@ export const useContractValidation = () => {
     } catch (error) {
       console.error('Validation failed:', error);
       
-      // Optimized retry for network errors
+      // Smart retry for network errors
       if (retryCount < 2 && (error instanceof TypeError || error.message.includes('fetch'))) {
-        await new Promise(resolve => setTimeout(resolve, Math.min(500, Math.pow(2, retryCount) * 200)));
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
         return validateContract(formData, retryCount + 1);
       }
       
@@ -217,17 +217,17 @@ export const useContractValidation = () => {
     }
   }, []);
 
-  // Optimized debounced validation function
+  // Debounced validation function
   const debouncedValidation = useCallback((formData: ContractFormData) => {
     // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout (reduced from 500ms to 200ms)
+    // Set new timeout
     timeoutRef.current = setTimeout(() => {
       validateContract(formData);
-    }, 200);
+    }, 500);
   }, [validateContract]);
 
   return {

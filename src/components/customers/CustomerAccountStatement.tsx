@@ -209,7 +209,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       'journal_debit': 'قيد مدين',
       'journal_credit': 'قيد دائن',
       'opening_balance': 'رصيد افتتاحي'
-    } as const;
+    };
 
     return (
       <Badge variant={variants[type as keyof typeof variants] || 'secondary'}>
@@ -376,7 +376,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
 
       {/* Professional Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-destructive">
+        <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-destructive">
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">إجمالي المدين</div>
             <div className="text-2xl font-bold text-destructive">
@@ -388,10 +388,10 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           </CardContent>
         </Card>
         
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-emerald-500">
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">إجمالي الدائن</div>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-emerald-600">
               {formatCurrency(totalCredit)}
             </div>
             <div className="text-xs text-muted-foreground">
@@ -400,10 +400,10 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           </CardContent>
         </Card>
         
-        <Card className="border-l-4 border-l-primary">
+        <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">الرصيد الصافي</div>
-            <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-destructive' : 'text-green-600'}`}>
+            <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-destructive' : 'text-emerald-600'}`}>
               {formatCurrency(Math.abs(netBalance))}
             </div>
             <div className="text-xs text-muted-foreground">
@@ -412,10 +412,10 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           </CardContent>
         </Card>
         
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-accent">
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">عدد المعاملات</div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-accent-foreground">
               {transactions.length}
             </div>
             <div className="text-xs text-muted-foreground">
@@ -479,9 +479,9 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                     {transactions.map((transaction, index) => (
                       <TableRow 
                         key={`${transaction.transaction_id}-${index}`}
-                         className={`hover:bg-muted/50 ${
-                           (transaction.transaction_type as string) === 'opening_balance' ? 'bg-blue-50 font-medium' : ''
-                         }`}
+                        className={`hover:bg-muted/50 ${
+                          (transaction.transaction_type as string) === 'opening_balance' ? 'bg-accent/10 font-medium' : ''
+                        }`}
                       >
                         <TableCell className="font-medium">
                           {formatDate(transaction.transaction_date)}
@@ -508,7 +508,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                         </TableCell>
                         <TableCell className="text-right">
                           {transaction.credit_amount > 0 && (
-                            <span className="text-green-600 font-medium">
+                            <span className="text-emerald-600 font-medium">
                               {formatCurrency(transaction.credit_amount)}
                             </span>
                           )}
@@ -517,7 +517,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                           <span className={
                             transaction.running_balance >= 0 
                               ? 'text-destructive' 
-                              : 'text-green-600'
+                              : 'text-emerald-600'
                           }>
                             {formatCurrency(Math.abs(transaction.running_balance))}
                           </span>
@@ -542,14 +542,14 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">إجمالي الدائن</div>
-                  <div className="text-lg font-bold text-green-600">
+                  <div className="text-lg font-bold text-emerald-600">
                     {formatCurrency(totalCredit)}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">الرصيد النهائي</div>
                   <div className={`text-lg font-bold ${
-                    netBalance >= 0 ? 'text-destructive' : 'text-green-600'
+                    netBalance >= 0 ? 'text-destructive' : 'text-emerald-600'
                   }`}>
                     {formatCurrency(Math.abs(netBalance))} 
                     <span className="text-sm ml-1">

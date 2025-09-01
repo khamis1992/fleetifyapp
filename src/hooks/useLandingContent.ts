@@ -23,15 +23,24 @@ export const useLandingContent = () => {
 
   const fetchContent = async () => {
     try {
+      console.log('🎭 [LANDING_CONTENT] Fetching content...');
       const { data, error } = await supabase
         .from('landing_content')
         .select('*')
         .order('sort_order');
       
-      if (error) throw error;
-      setContent(data || []);
+      if (error) {
+        console.warn('🎭 [LANDING_CONTENT] Table might not exist, using fallback:', error);
+        // Fallback - don't throw error, just use empty content
+        setContent([]);
+      } else {
+        console.log('🎭 [LANDING_CONTENT] Content fetched:', data?.length, 'items');
+        setContent(data || []);
+      }
     } catch (error) {
-      console.error('Error fetching landing content:', error);
+      console.error('🎭 [LANDING_CONTENT] Error fetching content:', error);
+      // Set empty array as fallback
+      setContent([]);
     } finally {
       setLoading(false);
     }

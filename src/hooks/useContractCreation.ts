@@ -195,8 +195,8 @@ export const useContractCreation = () => {
             console.log('🔧 [CONTRACT_CREATION] إنشاء الحسابات الأساسية وربطها تلقائياً...')
             await autoConfigureEssentialMappings()
             
-            // انتظار قصير للتأكد من تحديث البيانات (محسن)
-            await new Promise(resolve => setTimeout(resolve, 300))
+            // انتظار قصير للتأكد من تحديث البيانات
+            await new Promise(resolve => setTimeout(resolve, 2000))
             
             console.log('✅ [CONTRACT_CREATION] تم إنشاء الحسابات والربط بنجاح')
             updateStepStatus('accounts', 'completed', undefined, ['تم إنشاء الحسابات الأساسية وربطها تلقائياً'])

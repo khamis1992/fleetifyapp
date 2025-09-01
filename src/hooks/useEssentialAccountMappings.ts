@@ -161,70 +161,62 @@ export const useEssentialAccountMappings = () => {
   const { companyId } = useUnifiedCompanyAccess()
   const queryClient = useQueryClient()
 
-  // Check current status of essential account mappings (optimized)
+  // Check current status of essential account mappings
   const { data: mappingStatus, isLoading } = useQuery({
     queryKey: ['essential-account-mappings-status', companyId],
     queryFn: async () => {
       if (!companyId) return null
 
       try {
-        // Use optimized query that combines multiple checks
-        const [revenueCheck, receivablesCheck] = await Promise.all([
-          supabase
-            .from('chart_of_accounts')
-            .select('id')
-            .eq('company_id', companyId)
-            .eq('account_type', 'revenue')
-            .eq('is_active', true)
-            .eq('is_header', false)
-            .limit(1),
-          supabase
-            .from('chart_of_accounts')
-            .select('id')
-            .eq('company_id', companyId)
-            .eq('account_type', 'assets')
-            .or('account_name.ilike.%receivable%,account_name.ilike.%مدين%')
-            .eq('is_active', true)
-            .eq('is_header', false)
-            .limit(1)
-        ])
+        // First try the main function
+        const { data, error } = await supabase.rpc('ensure_essential_account_mappings', {
+          company_id_param: companyId
+        })
 
-        const result: AutoConfigResult = {
-          existing: [],
-          errors: []
+        if (error) {
+          console.log('⚠️ [ACCOUNT_MAPPINGS] Main function not available, trying manual check')
+          throw error
         }
 
-        if (revenueCheck.data && revenueCheck.data.length > 0) {
-          result.existing?.push('Revenue Account')
-        } else {
-          result.errors?.push('Revenue account missing')
-        }
-
-        if (receivablesCheck.data && receivablesCheck.data.length > 0) {
-          result.existing?.push('Receivables Account')
-        } else {
-          result.errors?.push('Receivables account missing')
-        }
-
-        return result
+        return data as AutoConfigResult
       } catch (error: any) {
         console.error('Failed to check account mapping status:', error)
-        return await checkAccountsManually(companyId)
+        
+        // If functions don't exist, return manual check result
+        if (error.message?.includes('function') && error.message?.includes('does not exist')) {
+          return await checkAccountsManually(companyId)
+        }
+        
+        throw error
       }
     },
     enabled: !!companyId,
-    staleTime: 30 * 1000, // Reduced to 30 seconds for faster updates
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  // Auto-configure essential account mappings (optimized)
+  // Auto-configure essential account mappings
   const autoConfigureMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID is required')
 
-      console.log('🔧 [ACCOUNT_MAPPINGS] Starting optimized auto-configuration for company:', companyId)
+      console.log('🔧 [ACCOUNT_MAPPINGS] Starting auto-configuration for company:', companyId)
 
-      // Use manual account creation directly for better performance
-      return await createEssentialAccountsManually(companyId)
+      const { data, error } = await supabase.rpc('ensure_essential_account_mappings', {
+        company_id_param: companyId
+      })
+
+      if (error) {
+        console.error('❌ [ACCOUNT_MAPPINGS] Auto-configuration failed:', error)
+        // If function doesn't exist, try alternative approach
+        if (error.message?.includes('function') && error.message?.includes('does not exist')) {
+          console.log('⚠️ [ACCOUNT_MAPPINGS] Function not found, trying manual account creation')
+          return await createEssentialAccountsManually(companyId)
+        }
+        throw error
+      }
+
+      console.log('✅ [ACCOUNT_MAPPINGS] Auto-configuration completed:', data)
+      return data as AutoConfigResult
     },
     onSuccess: (result) => {
       // Invalidate related queries
