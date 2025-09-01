@@ -3,10 +3,13 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import Auth from '@/pages/Auth';
 import SuperAdmin from '@/pages/SuperAdmin';
+import Dashboard from '@/pages/Dashboard';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -23,14 +26,19 @@ function App() {
     <ThemeProvider defaultTheme="light" storageKey="fleetify-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <Router>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/super-admin" element={<SuperAdmin />} />
-              <Route path="/" element={<Auth />} />
-            </Routes>
-          </Router>
-          <Toaster />
+          <CompanyContextProvider>
+            <Router>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/super-admin" element={<SuperAdmin />} />
+                <Route path="/" element={<DashboardLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                </Route>
+              </Routes>
+            </Router>
+            <Toaster />
+          </CompanyContextProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
