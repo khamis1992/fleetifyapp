@@ -34,75 +34,66 @@ export interface OptimizedDashboardStats {
 }
 
 export const useOptimizedDashboardStats = () => {
-  const { companyId, user, isSystemLevel, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['optimized-dashboard-stats']),
     queryFn: async (): Promise<OptimizedDashboardStats> => {
-      // Check if user is authenticated
-      if (!user) {
-        console.log('⚠️ No authenticated user for dashboard stats');
+      if (!companyId) {
+        console.log('🚫 [DASHBOARD_STATS] No company ID, returning empty stats');
         return getEmptyStats();
       }
 
-      // For system level users, we may not need a specific company ID
-      if (!companyId && !isSystemLevel) {
-        console.log('⚠️ No company ID available for dashboard stats');
-        return getEmptyStats();
-      }
+      console.log('📊 [DASHBOARD_STATS] Fetching stats for company:', companyId);
 
-      console.log('🔄 Fetching dashboard stats for company:', companyId, 'isSystemLevel:', isSystemLevel);
-      
       try {
-        // First try to use the secure dashboard stats function
-        const { data: secureStats, error: secureError } = await supabase
-          .rpc('get_dashboard_stats_safe', { 
-            company_id_param: isSystemLevel ? null : companyId 
-          });
-        
-        if (!secureError && secureStats && secureStats.length > 0) {
-          console.log('✅ Dashboard stats fetched via RPC:', secureStats[0]);
-          const stats = secureStats[0];
-          return {
-            totalVehicles: stats.total_vehicles || 0,
-            vehiclesChange: stats.vehicles_change || '+0%',
-            totalCustomers: stats.total_customers || 0,
-            customersChange: stats.customers_change || '+0%',
-            activeContracts: stats.active_contracts || 0,
-            contractsChange: stats.contracts_change || '+0%',
-            totalEmployees: stats.total_employees || 0,
-            employeesChange: '+0%',
-            monthlyRevenue: stats.monthly_revenue || 0,
-            revenueChange: stats.revenue_change || '+0%',
-            totalRevenue: stats.total_revenue || 0,
-            maintenanceRequests: stats.maintenance_requests || 0,
-            pendingPayments: stats.pending_payments || 0,
-            expiringContracts: stats.expiring_contracts || 0,
-            fleetUtilization: stats.fleet_utilization || 0,
-            averageContractValue: stats.avg_contract_value || 0,
-            cashFlow: stats.cash_flow || 0,
-            profitMargin: stats.profit_margin || 0
-          };
-        }
-        
-        if (secureError) {
-          console.warn('⚠️ RPC failed, falling back to direct queries:', secureError.message);
-        }
-        
-        // Fallback to direct queries if secure function fails
-        if (companyId) {
+        // Call the new RPC function for secure data fetching
+        const { data: rpcResult, error: rpcError } = await supabase
+          .rpc('get_dashboard_stats_safe', { company_id_param: companyId });
+
+        if (rpcError) {
+          console.error('📊 [DASHBOARD_STATS] RPC Error:', rpcError);
           return await fetchStatsDirectly(companyId);
+        }
+
+        // Type-safe handling of RPC result
+        const result = rpcResult as any;
+        if (result?.success && result?.data) {
+          console.log('✅ [DASHBOARD_STATS] RPC Success:', result.data);
+          const data = result.data;
+          return {
+            totalVehicles: data.totalVehicles || 0,
+            vehiclesChange: data.vehiclesChange || '+0%',
+            totalCustomers: data.totalCustomers || 0,
+            customersChange: data.customersChange || '+0%',
+            activeContracts: data.activeContracts || 0,
+            contractsChange: data.contractsChange || '+0%',
+            totalEmployees: data.totalEmployees || 0,
+            employeesChange: '+0%',
+            monthlyRevenue: data.monthlyRevenue || 0,
+            revenueChange: data.revenueChange || '+0%',
+            totalRevenue: data.monthlyRevenue || 0,
+            maintenanceRequests: data.pendingMaintenance || 0,
+            pendingPayments: data.overduePayments || 0,
+            expiringContracts: data.expiringContracts || 0,
+            fleetUtilization: data.fleetUtilization || 0,
+            averageContractValue: data.avgContractValue || 0,
+            cashFlow: data.cashFlow || 0,
+            profitMargin: data.profitMargin || 0
+          };
         } else {
-          console.log('⚠️ No company ID for fallback queries');
-          return getEmptyStats();
+          console.warn('📊 [DASHBOARD_STATS] RPC returned no data, using fallback');
+          return await fetchStatsDirectly(companyId);
         }
       } catch (error) {
-        console.error('❌ Error fetching dashboard stats:', error);
-        return getEmptyStats();
+        console.error('📊 [DASHBOARD_STATS] Unexpected error:', error);
+        return await fetchStatsDirectly(companyId);
       }
     },
-    enabled: !!user, // Enable when user is authenticated
+    enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2, // Retry failed requests
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 

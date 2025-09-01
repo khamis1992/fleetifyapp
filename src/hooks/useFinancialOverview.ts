@@ -50,8 +50,13 @@ export const useFinancialOverview = () => {
     queryKey: getQueryKey(['financial-overview']),
     queryFn: async (): Promise<FinancialOverview> => {
       if (!companyId) {
+        console.log('🚫 [FINANCIAL_OVERVIEW] No company ID, returning empty overview');
         return getEmptyFinancialOverview();
       }
+
+      console.log('💰 [FINANCIAL_OVERVIEW] Fetching financial data for company:', companyId);
+
+      try {
       const currentDate = new Date();
       const sixMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, 1);
 
@@ -146,9 +151,14 @@ export const useFinancialOverview = () => {
         projectedMonthlyRevenue,
         projectedAnnualRevenue
       };
+      } catch (error) {
+        console.error('💰 [FINANCIAL_OVERVIEW] Error fetching financial data:', error);
+        return getEmptyFinancialOverview();
+      }
     },
     enabled: !!companyId,
     staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1, // Only retry once for financial data
   });
 };
 
