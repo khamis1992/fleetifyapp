@@ -190,13 +190,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "account_mappings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "account_mappings_default_account_type_id_fkey"
             columns: ["default_account_type_id"]
             isOneToOne: false
@@ -246,13 +239,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "account_movement_settings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -967,13 +953,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "backup_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       bank_transactions: {
@@ -1656,13 +1635,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "company_usage_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       contract_approval_steps: {
@@ -1709,13 +1681,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_contract_approval_steps_contract"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_contract_approval_steps_contract"
             columns: ["contract_id"]
@@ -1886,13 +1851,6 @@ export type Database = {
             foreignKeyName: "contract_documents_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contract_documents_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contract_payment_summary"
             referencedColumns: ["contract_id"]
           },
@@ -1982,13 +1940,6 @@ export type Database = {
           title?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_contract_notifications_contract"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_contract_notifications_contract"
             columns: ["contract_id"]
@@ -2399,24 +2350,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_contracts_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "fk_contracts_customer_id"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_contracts_customer_id"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2916,13 +2853,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "customers_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "customers_default_cost_center_id_fkey"
             columns: ["default_cost_center_id"]
             isOneToOne: false
@@ -2935,13 +2865,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_customers_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -3375,13 +3298,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_employees_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       essential_account_mappings: {
@@ -3436,13 +3352,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_essential_mappings_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -3687,69 +3596,6 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: []
-      }
-      function_performance_logs: {
-        Row: {
-          cache_hit_rate: number | null
-          company_id: string | null
-          created_at: string | null
-          error_message: string | null
-          execution_time_ms: number
-          function_name: string
-          id: string
-          memory_usage_mb: number | null
-          query_count: number | null
-          request_size_bytes: number | null
-          response_size_bytes: number | null
-          success: boolean
-          user_id: string | null
-        }
-        Insert: {
-          cache_hit_rate?: number | null
-          company_id?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          execution_time_ms: number
-          function_name: string
-          id?: string
-          memory_usage_mb?: number | null
-          query_count?: number | null
-          request_size_bytes?: number | null
-          response_size_bytes?: number | null
-          success?: boolean
-          user_id?: string | null
-        }
-        Update: {
-          cache_hit_rate?: number | null
-          company_id?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          execution_time_ms?: number
-          function_name?: string
-          id?: string
-          memory_usage_mb?: number | null
-          query_count?: number | null
-          request_size_bytes?: number | null
-          response_size_bytes?: number | null
-          success?: boolean
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "function_performance_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "function_performance_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-        ]
       }
       goods_receipt_items: {
         Row: {
@@ -4135,13 +3981,6 @@ export type Database = {
             foreignKeyName: "fk_invoices_contract_id"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_invoices_contract_id"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contract_payment_summary"
             referencedColumns: ["contract_id"]
           },
@@ -4164,13 +4003,6 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
             referencedColumns: ["id"]
           },
           {
@@ -4515,13 +4347,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "landing_ab_tests_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       landing_analytics: {
@@ -4580,13 +4405,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "landing_analytics_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -4703,13 +4521,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "landing_media_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       landing_sections: {
@@ -4760,13 +4571,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "landing_sections_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       landing_settings: {
@@ -4807,13 +4611,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "landing_settings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -4870,13 +4667,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "landing_themes_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -5982,45 +5772,6 @@ export type Database = {
         }
         Relationships: []
       }
-      migration_logs: {
-        Row: {
-          completed_at: string | null
-          created_by: string | null
-          description: string | null
-          execution_time_seconds: number | null
-          id: string
-          migration_name: string
-          migration_type: string
-          notes: string | null
-          started_at: string
-          status: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          execution_time_seconds?: number | null
-          id?: string
-          migration_name: string
-          migration_type: string
-          notes?: string | null
-          started_at?: string
-          status?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          execution_time_seconds?: number | null
-          id?: string
-          migration_name?: string
-          migration_type?: string
-          notes?: string | null
-          started_at?: string
-          status?: string | null
-        }
-        Relationships: []
-      }
       notification_settings: {
         Row: {
           company_id: string
@@ -6136,13 +5887,6 @@ export type Database = {
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_contract_linking_attempts_selected_contract_id_fkey"
-            columns: ["selected_contract_id"]
-            isOneToOne: false
-            referencedRelation: "active_contracts_view"
             referencedColumns: ["id"]
           },
           {
@@ -6278,13 +6022,6 @@ export type Database = {
             foreignKeyName: "fk_payments_contract_id"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_payments_contract_id"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contract_payment_summary"
             referencedColumns: ["contract_id"]
           },
@@ -6314,13 +6051,6 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
             referencedColumns: ["id"]
           },
           {
@@ -6760,20 +6490,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_pending_journal_entries_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "fk_pending_journal_entries_contract"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_pending_journal_entries_contract"
             columns: ["contract_id"]
             isOneToOne: false
@@ -6827,13 +6543,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "performance_metrics_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -6973,13 +6682,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -7125,66 +6827,6 @@ export type Database = {
           },
         ]
       }
-      query_performance_logs: {
-        Row: {
-          company_id: string | null
-          created_at: string | null
-          execution_time_ms: number
-          function_name: string | null
-          id: string
-          index_used: string | null
-          query_plan: Json | null
-          query_type: string
-          rows_examined: number | null
-          rows_returned: number | null
-          table_name: string
-          user_id: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string | null
-          execution_time_ms: number
-          function_name?: string | null
-          id?: string
-          index_used?: string | null
-          query_plan?: Json | null
-          query_type: string
-          rows_examined?: number | null
-          rows_returned?: number | null
-          table_name: string
-          user_id?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string | null
-          execution_time_ms?: number
-          function_name?: string | null
-          id?: string
-          index_used?: string | null
-          query_plan?: Json | null
-          query_type?: string
-          rows_examined?: number | null
-          rows_returned?: number | null
-          table_name?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "query_performance_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "query_performance_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-        ]
-      }
       quotation_approval_log: {
         Row: {
           action: string
@@ -7308,24 +6950,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "quotations_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "quotations_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quotations_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
             referencedColumns: ["id"]
           },
           {
@@ -7399,78 +7027,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      security_audit_logs: {
-        Row: {
-          company_id: string | null
-          created_at: string | null
-          details: Json | null
-          endpoint: string | null
-          event_type: string
-          function_name: string | null
-          id: string
-          ip_address: unknown | null
-          request_body: Json | null
-          request_headers: Json | null
-          request_method: string | null
-          response_status: number | null
-          risk_level: string | null
-          success: boolean
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string | null
-          details?: Json | null
-          endpoint?: string | null
-          event_type: string
-          function_name?: string | null
-          id?: string
-          ip_address?: unknown | null
-          request_body?: Json | null
-          request_headers?: Json | null
-          request_method?: string | null
-          response_status?: number | null
-          risk_level?: string | null
-          success?: boolean
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string | null
-          details?: Json | null
-          endpoint?: string | null
-          event_type?: string
-          function_name?: string | null
-          id?: string
-          ip_address?: unknown | null
-          request_body?: Json | null
-          request_headers?: Json | null
-          request_method?: string | null
-          response_status?: number | null
-          risk_level?: string | null
-          success?: boolean
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "security_audit_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "security_audit_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-        ]
       }
       service_ratings: {
         Row: {
@@ -7835,13 +7391,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "system_alerts_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       system_analytics: {
@@ -7939,13 +7488,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "system_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -8189,13 +7731,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "traffic_violations_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "traffic_violations_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -8265,13 +7800,6 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
             referencedColumns: ["id"]
           },
           {
@@ -8441,13 +7969,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_roles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       user_transfer_logs: {
@@ -8568,13 +8089,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "vehicle_activity_log_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "vehicle_activity_log_cost_center_id_fkey"
             columns: ["cost_center_id"]
             isOneToOne: false
@@ -8692,13 +8206,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "vehicle_categories_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       vehicle_condition_reports: {
@@ -8772,13 +8279,6 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "vehicle_condition_reports_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "active_contracts_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "vehicle_condition_reports_contract_id_fkey"
             columns: ["contract_id"]
@@ -9112,13 +8612,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "vehicle_inspections_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
             foreignKeyName: "vehicle_inspections_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -9267,13 +8760,6 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vehicle_installments_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
             referencedColumns: ["id"]
           },
         ]
@@ -10152,13 +9638,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "vehicles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
       }
       vendor_accounts: {
@@ -10410,50 +9889,6 @@ export type Database = {
       }
     }
     Views: {
-      active_contracts_view: {
-        Row: {
-          company_id: string | null
-          contract_amount: number | null
-          customer_id: string | null
-          customer_name: string | null
-          end_date: string | null
-          id: string | null
-          start_date: string | null
-          status: string | null
-          vehicle_id: string | null
-          vehicle_info: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_contracts_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_contracts_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "fk_contracts_customer_id"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_contracts_customer_id"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "optimized_customer_view"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contract_payment_summary: {
         Row: {
           company_id: string | null
@@ -10471,49 +9906,7 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_contracts_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
         ]
-      }
-      dashboard_stats_mv: {
-        Row: {
-          active_contracts: number | null
-          active_customers: number | null
-          available_vehicles: number | null
-          company_id: string | null
-          last_updated: string | null
-          pending_invoice_amount: number | null
-        }
-        Relationships: []
-      }
-      failed_auth_summary: {
-        Row: {
-          failure_count: number | null
-          ip_address: unknown | null
-          last_attempt: string | null
-          unique_users_targeted: number | null
-          user_agents: string[] | null
-        }
-        Relationships: []
-      }
-      function_performance_summary: {
-        Row: {
-          avg_execution_time: number | null
-          avg_queries_per_call: number | null
-          error_count: number | null
-          function_name: string | null
-          max_execution_time: number | null
-          min_execution_time: number | null
-          p95_execution_time: number | null
-          success_rate: number | null
-          total_calls: number | null
-        }
-        Relationships: []
       }
       maintenance_cost_summary: {
         Row: {
@@ -10531,64 +9924,6 @@ export type Database = {
           vehicle_id: string | null
         }
         Relationships: []
-      }
-      optimized_customer_view: {
-        Row: {
-          company_id: string | null
-          credit_limit: number | null
-          current_balance: number | null
-          email: string | null
-          first_name: string | null
-          id: string | null
-          is_active: boolean | null
-          last_name: string | null
-          phone: string | null
-          profile_company_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customers_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customers_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "fk_customers_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_customers_company"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["profile_company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_company_id_fkey"
-            columns: ["profile_company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-        ]
       }
       payroll_financial_analysis: {
         Row: {
@@ -10618,34 +9953,6 @@ export type Database = {
           tax_amount: number | null
         }
         Relationships: []
-      }
-      security_alerts: {
-        Row: {
-          company_id: string | null
-          event_count: number | null
-          event_type: string | null
-          first_occurrence: string | null
-          ip_address: unknown | null
-          last_occurrence: string | null
-          threat_level: string | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "security_audit_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "security_audit_logs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_stats_mv"
-            referencedColumns: ["company_id"]
-          },
-        ]
       }
       v_account_linking_stats: {
         Row: {
@@ -10777,25 +10084,6 @@ export type Database = {
       analyze_account_dependencies: {
         Args: { account_id_param: string }
         Returns: Json
-      }
-      analyze_rls_performance: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          avg_execution_time: number
-          policy_name: string
-          policy_usage_count: number
-          table_name: string
-        }[]
-      }
-      analyze_slow_queries: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          avg_execution_time: number
-          call_count: number
-          max_execution_time: number
-          performance_rating: string
-          query_type: string
-        }[]
       }
       analyze_system_performance: {
         Args: { company_id_param: string; hours_back?: number }
@@ -10966,18 +10254,6 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: Json
       }
-      check_index_usage: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          idx_scan: number
-          idx_tup_fetch: number
-          idx_tup_read: number
-          indexname: string
-          schemaname: string
-          tablename: string
-          usage_ratio: number
-        }[]
-      }
       check_rate_limit: {
         Args: {
           max_attempts?: number
@@ -11011,10 +10287,6 @@ export type Database = {
       cleanup_all_account_references: {
         Args: { target_company_id: string }
         Returns: Json
-      }
-      cleanup_audit_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       cleanup_contract_issues: {
         Args: { company_id_param: string }
@@ -11312,16 +10584,6 @@ export type Database = {
         Args: { contract_id_param: string }
         Returns: string
       }
-      create_security_incident_report: {
-        Args: {
-          affected_company_id?: string
-          affected_user_id?: string
-          description: string
-          incident_type: string
-          severity: string
-        }
-        Returns: string
-      }
       create_smart_account: {
         Args: {
           account_name_ar_param?: string
@@ -11385,16 +10647,6 @@ export type Database = {
       delete_all_accounts_v2: {
         Args: { company_id: string; force_system: boolean; reason: string }
         Returns: Json
-      }
-      detect_security_threats: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          affected_count: number
-          description: string
-          recommendation: string
-          threat_level: string
-          threat_type: string
-        }[]
       }
       diagnose_account_deletion_failures: {
         Args: { target_company_id: string }
@@ -11809,29 +11061,6 @@ export type Database = {
         Args: { customer_id_param: string }
         Returns: string
       }
-      get_dashboard_stats_safe: {
-        Args: { company_id_param?: string }
-        Returns: {
-          active_contracts: number
-          avg_contract_value: number
-          cash_flow: number
-          contracts_change: string
-          customers_change: string
-          employees_change: string
-          expiring_contracts: number
-          fleet_utilization: number
-          maintenance_requests: number
-          monthly_revenue: number
-          pending_payments: number
-          profit_margin: number
-          revenue_change: string
-          total_customers: number
-          total_employees: number
-          total_revenue: number
-          total_vehicles: number
-          vehicles_change: string
-        }[]
-      }
       get_effective_company_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -11964,16 +11193,6 @@ export type Database = {
           unlinked_payments: number
         }[]
       }
-      get_performance_metrics: {
-        Args: { hours_back?: number }
-        Returns: {
-          metric_type: string
-          metric_unit: string
-          metric_value: number
-          recommendation: string
-          status: string
-        }[]
-      }
       get_reporting_accounts: {
         Args: { company_id_param: string }
         Returns: {
@@ -11985,16 +11204,6 @@ export type Database = {
           balance_type: string
           id: string
           parent_account_name: string
-        }[]
-      }
-      get_table_performance_stats: {
-        Args: { table_name_param: string }
-        Returns: {
-          index_size: string
-          row_count: number
-          table_name: string
-          table_size: string
-          total_size: string
         }[]
       }
       get_trial_balance: {
@@ -12012,10 +11221,6 @@ export type Database = {
       }
       get_user_company: {
         Args: { _user_id: string }
-        Returns: string
-      }
-      get_user_company_cached: {
-        Args: { user_id: string }
         Returns: string
       }
       get_user_company_safe: {
@@ -12039,13 +11244,6 @@ export type Database = {
         }
         Returns: Json
       }
-      has_any_role_cached: {
-        Args: {
-          roles: Database["public"]["Enums"]["user_role"][]
-          user_id: string
-        }
-        Returns: boolean
-      }
       has_feature_access: {
         Args: { company_id_param: string; feature_code_param: string }
         Returns: boolean
@@ -12059,8 +11257,8 @@ export type Database = {
       }
       has_role_cached: {
         Args: {
-          role_name: Database["public"]["Enums"]["user_role"]
-          user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -12106,18 +11304,6 @@ export type Database = {
           meta?: Json
           status_param?: string
           step_name?: string
-        }
-        Returns: undefined
-      }
-      log_query_performance: {
-        Args: {
-          p_execution_time_ms: number
-          p_function_name?: string
-          p_index_used?: string
-          p_query_type: string
-          p_rows_examined?: number
-          p_rows_returned?: number
-          p_table_name: string
         }
         Returns: undefined
       }
@@ -12232,10 +11418,6 @@ export type Database = {
         Returns: string
       }
       refresh_company_stats_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      refresh_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -12386,10 +11568,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      update_table_statistics: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       update_vehicle_installment_status: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -12469,15 +11647,6 @@ export type Database = {
       validate_contract_realtime: {
         Args: { contract_data: Json }
         Returns: Json
-      }
-      validate_index_performance: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          effectiveness_score: number
-          index_name: string
-          recommendation: string
-          table_name: string
-        }[]
       }
       validate_password_strength: {
         Args: { password: string }

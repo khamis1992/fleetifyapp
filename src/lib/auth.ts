@@ -19,7 +19,6 @@ export interface AuthUser extends User {
     name_ar?: string;
   };
   roles?: string[];
-  company_id?: string; // Direct access for easier use
 }
 
 export interface AuthContextType {
@@ -170,14 +169,11 @@ export const authService = {
       console.log('📝 [AUTH] Using company info from employees table:', companyInfo);
     }
 
-    // Ensure company_id is available in multiple places for compatibility
     const authUser: AuthUser = {
       ...user,
       profile: profile ? { ...profile, company_id: companyId } : undefined,
       company: companyInfo || undefined,
-      roles: roles?.map(r => r.role) || [],
-      // Add company_id at root level for easier access
-      company_id: companyId
+      roles: roles?.map(r => r.role) || []
     };
 
     console.log('📝 [AUTH] Final authUser:', {
