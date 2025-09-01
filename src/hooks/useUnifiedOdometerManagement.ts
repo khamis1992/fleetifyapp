@@ -287,10 +287,9 @@ export const useUpdateOdometerForOperation = () => {
 
 // Validate odometer reading increment
 export const useValidateOdometerIncrement = () => {
-  const { user } = useAuth();
-
-  const validateOdometerReading = async (vehicleId: string, newReading: number): Promise<{ isValid: boolean; message?: string; currentReading?: number }> => {
+  return async (vehicleId: string, newReading: number): Promise<{ isValid: boolean; message?: string; currentReading?: number }> => {
     try {
+      const { user } = useAuth();
       if (!user?.profile?.company_id) {
         return { isValid: false, message: 'المستخدم غير مسجل الدخول' };
       }
@@ -346,13 +345,10 @@ export const useValidateOdometerIncrement = () => {
 
       return { isValid: true, currentReading };
     } catch (error) {
-      console.error('خطأ في التحقق من قراءة العداد:', error);
       return {
         isValid: false,
         message: 'خطأ في التحقق من قراءة العداد',
       };
     }
   };
-
-  return validateOdometerReading;
 };

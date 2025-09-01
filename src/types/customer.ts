@@ -83,7 +83,7 @@ export interface CustomerFilters {
 
 export interface CustomerAccountTransaction {
   transaction_date: string;
-  transaction_type: 'payment' | 'invoice';
+  transaction_type: 'payment' | 'invoice' | 'opening_balance' | 'journal_debit' | 'journal_credit';
   description: string;
   reference_number: string;
   debit_amount: number;
