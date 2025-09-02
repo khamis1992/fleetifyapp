@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ValidationResult, ValidationAlert } from '@/hooks/useContractValidation';
+import { cn } from '@/lib/utils';
 
 interface ProactiveAlertSystemProps {
   validation: ValidationResult;
@@ -71,23 +72,33 @@ const AlertItem: React.FC<{
   });
 
   return (
-    <Alert variant={getAlertVariant(alert.severity)} className="mb-3">
-      <div className="flex items-start gap-2">
-        {getSeverityIcon(alert.severity)}
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+    <Alert variant={getAlertVariant(alert.severity)} className="mb-3 border-2">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 mt-0.5">
+          {getSeverityIcon(alert.severity)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
               <AlertDescription 
-                className="font-medium text-destructive-foreground"
+                className={cn(
+                  "font-medium leading-relaxed",
+                  alert.severity === 'critical' || alert.severity === 'high' 
+                    ? "text-destructive dark:text-destructive" 
+                    : "text-foreground"
+                )}
                 style={{ 
-                  color: 'hsl(var(--destructive-foreground))',
-                  fontSize: '14px',
-                  lineHeight: '1.4'
+                  fontSize: '15px',
+                  lineHeight: '1.5',
+                  fontWeight: '500'
                 }}
               >
                 {alert.message || 'رسالة خطأ غير محددة'}
               </AlertDescription>
-              <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
+              <Badge 
+                variant={getSeverityColor(alert.severity)} 
+                className="text-xs font-medium mt-1 flex-shrink-0"
+              >
                 {alert.severity === 'critical' && 'خطر'}
                 {alert.severity === 'high' && 'عالي'}
                 {alert.severity === 'medium' && 'متوسط'}
@@ -99,7 +110,7 @@ const AlertItem: React.FC<{
                 variant="ghost"
                 size="sm"
                 onClick={() => onDismiss(alert.type)}
-                className="h-auto p-1"
+                className="h-auto p-1 flex-shrink-0 hover:bg-destructive/20"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -192,14 +203,14 @@ export const ProactiveAlertSystem: React.FC<ProactiveAlertSystemProps> = ({
   return (
     <div className="space-y-3">
       {validation.errors.length > 0 && (
-        <Card className="border-red-200 bg-red-50/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-red-700 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
+        <Card className="border-destructive/30 bg-destructive/5 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-destructive flex items-center gap-2 font-semibold">
+              <AlertTriangle className="h-5 w-5" />
               أخطاء يجب إصلاحها ({validation.errors.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 space-y-3">
             {validation.errors.map((error, index) => {
               console.log(`🔴 [ERROR_${index}] Processing error:`, error);
               return (
@@ -216,14 +227,14 @@ export const ProactiveAlertSystem: React.FC<ProactiveAlertSystemProps> = ({
       )}
 
       {validation.warnings.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-700 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
+        <Card className="border-warning/30 bg-warning/5 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-warning-foreground flex items-center gap-2 font-semibold">
+              <AlertCircle className="h-5 w-5" />
               تحذيرات ({validation.warnings.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 space-y-3">
             {validation.warnings.map((warning, index) => (
               <AlertItem
                 key={`warning-${index}`}
