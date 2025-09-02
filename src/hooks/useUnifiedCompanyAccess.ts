@@ -37,6 +37,8 @@ export const useUnifiedCompanyAccess = () => {
       canAccessCompany: () => false,
       canAccessMultipleCompanies: () => false,
       validateCompanyAccess: () => { throw new Error('Access denied: User not authenticated') },
+      getFilterForOwnCompany: () => ({ company_id: undefined }),
+      getFilterForGlobalView: () => ({ company_id: undefined }),
       getQueryKey: () => [],
       isBrowsingMode: false,
       browsedCompany: null,
@@ -132,7 +134,7 @@ export const useUnifiedCompanyAccess = () => {
       };
     }
     
-    const filter = getCompanyFilter(context);
+    const filter = getCompanyFilter(context, false, false); // Default: show own company only
     
     console.log('🔧 [UNIFIED_COMPANY_ACCESS] Final filter:', filter);
     
@@ -174,6 +176,10 @@ export const useUnifiedCompanyAccess = () => {
           throw new Error('Access denied: Cannot access data from different company');
         }
       },
+      
+      // Filter helpers with global view control
+      getFilterForOwnCompany: () => getCompanyFilter(context, true, false),
+      getFilterForGlobalView: () => getCompanyFilter(context, false, true),
       
       // Query key generation for React Query
       getQueryKey: (baseKey: string[], additionalKeys: unknown[] = []) => {

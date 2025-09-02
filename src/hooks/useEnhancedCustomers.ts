@@ -8,7 +8,7 @@ import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 export type EnhancedCustomer = Customer;
 
 export const useCustomers = (filters?: CustomerFilters) => {
-  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess, filter } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess, filter, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
   
   // Use customer view context with fallback
   let viewAllCustomers = false;
@@ -19,6 +19,9 @@ export const useCustomers = (filters?: CustomerFilters) => {
     // Context not available - use default value
     viewAllCustomers = false;
   }
+  
+  // Get the appropriate filter based on view mode
+  const activeFilter = viewAllCustomers && hasGlobalAccess ? getFilterForGlobalView() : getFilterForOwnCompany();
   const { 
     includeInactive = false, 
     searchTerm, 
@@ -37,7 +40,9 @@ export const useCustomers = (filters?: CustomerFilters) => {
     hasGlobalAccess,
     browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
     filters,
-    filter,
+    defaultFilter: filter,
+    activeFilter,
+    viewAllCustomers,
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted])
   });
   
@@ -55,23 +60,22 @@ export const useCustomers = (filters?: CustomerFilters) => {
         isSystemLevel,
         companyId,
         hasGlobalAccess,
-        filterCompanyId: filter.company_id,
-        usingFilter: !!filter.company_id
+        defaultFilterCompanyId: filter.company_id,
+        activeFilterCompanyId: activeFilter.company_id,
+        viewAllCustomers,
+        usingActiveFilter: !!activeFilter.company_id
       });
       
       let query = supabase
         .from('customers')
         .select('*');
       
-      // Use the unified filter logic instead of direct companyId
-      // This ensures proper filtering for super_admins and browsing mode
-      // But allow super_admin to view all customers when viewAllCustomers is enabled
-      if (viewAllCustomers && hasGlobalAccess) {
-        // Super admin viewing all customers - no company filter
-        console.log('🔍 [useCustomers] Super admin viewing all customers, no filter applied');
-      } else if (filter.company_id) {
-        query = query.eq('company_id', filter.company_id);
-        console.log('🔍 [useCustomers] Applied company filter:', filter.company_id);
+      // Use the active filter based on view mode
+      if (activeFilter.company_id) {
+        query = query.eq('company_id', activeFilter.company_id);
+        console.log('🔍 [useCustomers] Applied active company filter:', activeFilter.company_id);
+      } else {
+        console.log('🔍 [useCustomers] No company filter - viewing all customers');
       }
       
       if (!includeInactive) {
