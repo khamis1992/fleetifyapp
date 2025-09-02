@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useNotificationThrottling } from '@/hooks/useNotificationThrottling';
 import { useToast } from '@/hooks/use-toast';
 
 export interface RealTimeAlert {
@@ -16,6 +17,7 @@ export interface RealTimeAlert {
 
 export const useRealTimeAlerts = () => {
   const { companyId, user, getQueryKey } = useUnifiedCompanyAccess();
+  const { showNotification } = useNotificationThrottling();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -132,16 +134,21 @@ export const useRealTimeAlerts = () => {
         (payload) => {
           console.log('Budget alert change:', payload);
           const newAlert = payload.new as any;
-          toast({
-            title: "تنبيه موازنة جديد",
-            description: newAlert.message_ar || newAlert.message,
-            variant: newAlert.alert_type === 'budget_exceeded' ? 'destructive' : 'default',
-          });
-          queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
-          // Also invalidate other notification-related queries for sync
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
-          queryClient.invalidateQueries({ queryKey: getQueryKey(['budget-alerts']) });
+          
+          // Use throttled notification system
+          showNotification(
+            'budget',
+            "تنبيه موازنة جديد",
+            newAlert.message_ar || newAlert.message,
+            newAlert.alert_type === 'budget_exceeded' ? 'critical' : 'high',
+            newAlert.alert_type === 'budget_exceeded' ? 'destructive' : 'default'
+          );
+          
+          // Debounced query invalidation
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+            queryClient.invalidateQueries({ queryKey: getQueryKey(['budget-alerts']) });
+          }, 1000);
         }
       )
       .on(
@@ -155,16 +162,21 @@ export const useRealTimeAlerts = () => {
         (payload) => {
           console.log('Vehicle alert change:', payload);
           const newAlert = payload.new as any;
-          toast({
-            title: "تنبيه مركبة جديد",
-            description: newAlert.alert_message,
-            variant: newAlert.priority === 'high' ? 'destructive' : 'default',
-          });
-          queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
-          // Also invalidate other notification-related queries for sync
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
-          queryClient.invalidateQueries({ queryKey: getQueryKey(['vehicle-alerts']) });
+          
+          // Use throttled notification system
+          showNotification(
+            'vehicle',
+            "تنبيه مركبة جديد",
+            newAlert.alert_message,
+            newAlert.priority === 'high' ? 'high' : 'medium',
+            newAlert.priority === 'high' ? 'destructive' : 'default'
+          );
+          
+          // Debounced query invalidation
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+            queryClient.invalidateQueries({ queryKey: getQueryKey(['vehicle-alerts']) });
+          }, 1000);
         }
       )
       .on(
@@ -178,16 +190,21 @@ export const useRealTimeAlerts = () => {
         (payload) => {
           console.log('Notification change:', payload);
           const newNotification = payload.new as any;
-          toast({
-            title: "إشعار جديد",
-            description: newNotification.title,
-            variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
-          });
-          queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
-          // Also invalidate other notification-related queries for sync
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
-          queryClient.invalidateQueries({ queryKey: getQueryKey(['user-notifications']) });
+          
+          // Use throttled notification system
+          showNotification(
+            'notification',
+            newNotification.title,
+            newNotification.message,
+            newNotification.notification_type === 'error' ? 'critical' : 'medium',
+            newNotification.notification_type === 'error' ? 'destructive' : 'default'
+          );
+          
+          // Debounced query invalidation
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
+            queryClient.invalidateQueries({ queryKey: getQueryKey(['notifications']) });
+          }, 1000);
         }
       )
       .subscribe();
@@ -199,7 +216,7 @@ export const useRealTimeAlerts = () => {
       alertsChannel.unsubscribe();
       setIsSubscribed(false);
     };
-  }, [companyId, queryClient, toast, user?.id, getQueryKey]);
+  }, [companyId, queryClient, showNotification, user?.id, getQueryKey]);
 
   // Statistics
   const totalAlerts = alerts.length;

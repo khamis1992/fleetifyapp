@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdvancedAI } from '@/hooks/useAdvancedAI';
+import { useNotificationThrottling } from '@/hooks/useNotificationThrottling';
 
 interface AutomationRule {
   id: string;
@@ -58,6 +59,7 @@ export const SmartAutomationEngine: React.FC<SmartAutomationEngineProps> = ({
   const [activeAutomations, setActiveAutomations] = useState<string[]>([]);
   const [processingQueue, setProcessingQueue] = useState<any[]>([]);
   const { isProcessing, predictRisks } = useAdvancedAI();
+  const { showNotification } = useNotificationThrottling();
 
   // قواعد الأتمتة الذكية المُعرّفة مسبقاً
   useEffect(() => {
@@ -247,26 +249,53 @@ export const SmartAutomationEngine: React.FC<SmartAutomationEngineProps> = ({
       for (const action of rule.actions) {
         switch (action.type) {
           case 'approve_contract':
-            toast.success(`تمت الموافقة تلقائياً على العقد ${contract.contract_number || contract.id}`);
+            showNotification(
+              'automation',
+              'موافقة تلقائية',
+              `تمت الموافقة تلقائياً على العقد ${contract.contract_number || contract.id}`,
+              'medium'
+            );
             break;
           
           case 'send_urgent_alert':
-            toast.error(`تنبيه: مخاطر عالية في العقد ${contract.contract_number || contract.id}`);
+            showNotification(
+              'automation',
+              'تنبيه مخاطر',
+              `مخاطر عالية في العقد ${contract.contract_number || contract.id}`,
+              'critical',
+              'destructive'
+            );
             break;
           
           case 'suggest_optimizations':
             const optimizations = await generateOptimizations(contract);
-            toast.info(`تم اقتراح ${optimizations.length} تحسين للعقد`);
+            showNotification(
+              'automation',
+              'اقتراحات تحسين',
+              `تم اقتراح ${optimizations.length} تحسين للعقد`,
+              'low'
+            );
             break;
           
           case 'send_payment_reminder':
-            toast.info(`تم إرسال تذكير دفع للعميل ${contract.customer?.name || 'غير محدد'}`);
+            showNotification(
+              'automation',
+              'تذكير دفع',
+              `تم إرسال تذكير دفع للعميل ${contract.customer?.name || 'غير محدد'}`,
+              'medium'
+            );
             break;
           
           case 'run_compliance_check':
             const complianceIssues = await checkCompliance(contract);
             if (complianceIssues.length > 0) {
-              toast.warning(`تم اكتشاف ${complianceIssues.length} مسألة امتثال`);
+              showNotification(
+                'automation',
+                'فحص الامتثال',
+                `تم اكتشاف ${complianceIssues.length} مسألة امتثال`,
+                'high',
+                'destructive'
+              );
             }
             break;
         }
@@ -285,7 +314,13 @@ export const SmartAutomationEngine: React.FC<SmartAutomationEngineProps> = ({
       
     } catch (error) {
       console.error('خطأ في تنفيذ الأتمتة:', error);
-      toast.error('حدث خطأ في تنفيذ الأتمتة');
+      showNotification(
+        'automation',
+        'خطأ في الأتمتة',
+        'حدث خطأ في تنفيذ الأتمتة',
+        'critical',
+        'destructive'
+      );
     }
   };
 
@@ -317,10 +352,20 @@ export const SmartAutomationEngine: React.FC<SmartAutomationEngineProps> = ({
     
     if (enabled) {
       setActiveAutomations(prev => [...prev, ruleId]);
-      toast.success('تم تفعيل قاعدة الأتمتة');
+      showNotification(
+        'automation-settings',
+        'تفعيل قاعدة',
+        'تم تفعيل قاعدة الأتمتة',
+        'medium'
+      );
     } else {
       setActiveAutomations(prev => prev.filter(id => id !== ruleId));
-      toast.info('تم إيقاف قاعدة الأتمتة');
+      showNotification(
+        'automation-settings',
+        'إيقاف قاعدة',
+        'تم إيقاف قاعدة الأتمتة',
+        'low'
+      );
     }
   };
 
