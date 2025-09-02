@@ -113,32 +113,33 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
   const totalIssues = validation.errors.length + validation.warnings.length;
   const criticalIssues = validation.errors.filter(e => e.severity === 'critical').length;
 
-  if (isCurrentlyValidating) {
-    return (
-      <Card className={cn("w-full", className)}>
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 animate-spin text-blue-500" />
-              جاري التحقق من البيانات...
-            </CardTitle>
-            <Badge variant="outline">
-              <Clock className="h-3 w-3 mr-1" />
-              {retryCount > 0 ? `المحاولة ${retryCount + 1}` : 'التحقق الأولي'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Progress value={validationProgress} className="w-full" />
-            <p className="text-sm text-muted-foreground text-center">
-              يتم التحقق من صحة البيانات وتوافقها مع النظام...
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Remove the validation loading state completely
+  // if (isCurrentlyValidating) {
+  //   return (
+  //     <Card className={cn("w-full", className)}>
+  //       <CardHeader className="pb-4">
+  //         <div className="flex items-center justify-between">
+  //           <CardTitle className="flex items-center gap-2">
+  //             <RefreshCw className="h-5 w-5 animate-spin text-blue-500" />
+  //             جاري التحقق من البيانات...
+  //           </CardTitle>
+  //           <Badge variant="outline">
+  //             <Clock className="h-3 w-3 mr-1" />
+  //             {retryCount > 0 ? `المحاولة ${retryCount + 1}` : 'التحقق الأولي'}
+  //           </Badge>
+  //         </div>
+  //       </CardHeader>
+  //       <CardContent>
+  //         <div className="space-y-3">
+  //           <Progress value={validationProgress} className="w-full" />
+  //           <p className="text-sm text-muted-foreground text-center">
+  //             يتم التحقق من صحة البيانات وتوافقها مع النظام...
+  //           </p>
+  //         </div>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }
 
   if (!hasIssues && validation.valid) {
     return (
