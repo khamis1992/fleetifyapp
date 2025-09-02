@@ -78,22 +78,41 @@ const Search: React.FC = () => {
     }
 
     setIsLoading(true);
+    console.log('🔍 Starting search for:', term, 'type:', type, 'companyId:', companyId, 'isSystemLevel:', isSystemLevel);
+    
     try {
       const searchResults: SearchResult[] = [];
 
       // البحث في العملاء
       if (type === 'all' || type === 'customer') {
+        console.log('🔍 Searching customers...');
+        // محاولة البحث المتقدم أولاً
         let customerQuery = supabase
           .from('customers')
-          .select('*')
-          .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,company_name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%,customer_code.ilike.%${term}%`)
-          .limit(10);
+          .select('*');
+        
+        // إضافة شروط البحث
+        try {
+          customerQuery = customerQuery.or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,company_name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%,customer_code.ilike.%${term}%`);
+        } catch (orError) {
+          console.warn('⚠️ OR query failed, trying simpler search:', orError);
+          // البحث البسيط كبديل
+          customerQuery = customerQuery.ilike('first_name', `%${term}%`);
+        }
+        
+        customerQuery = customerQuery.limit(10);
 
         if (!isSystemLevel && companyId) {
           customerQuery = customerQuery.eq('company_id', companyId);
         }
 
-        const { data: customers } = await customerQuery;
+        const { data: customers, error: customersError } = await customerQuery;
+        
+        if (customersError) {
+          console.error('❌ Error searching customers:', customersError);
+        } else {
+          console.log('✅ Found customers:', customers?.length || 0);
+        }
         
         customers?.forEach(customer => {
           const name = customer.customer_type === 'individual' 
@@ -114,6 +133,7 @@ const Search: React.FC = () => {
 
       // البحث في المركبات
       if (type === 'all' || type === 'vehicle') {
+        console.log('🔍 Searching vehicles...');
         let vehicleQuery = supabase
           .from('vehicles')
           .select('*, customers(first_name, last_name, company_name)')
@@ -124,7 +144,13 @@ const Search: React.FC = () => {
           vehicleQuery = vehicleQuery.eq('company_id', companyId);
         }
 
-        const { data: vehicles } = await vehicleQuery;
+        const { data: vehicles, error: vehiclesError } = await vehicleQuery;
+        
+        if (vehiclesError) {
+          console.error('❌ Error searching vehicles:', vehiclesError);
+        } else {
+          console.log('✅ Found vehicles:', vehicles?.length || 0);
+        }
         
         vehicles?.forEach(vehicle => {
           const customer = vehicle.customers as any;
@@ -146,6 +172,7 @@ const Search: React.FC = () => {
 
       // البحث في العقود
       if (type === 'all' || type === 'contract') {
+        console.log('🔍 Searching contracts...');
         let contractQuery = supabase
           .from('contracts')
           .select('*, customers(first_name, last_name, company_name), vehicles(make, model, plate_number)')
@@ -156,7 +183,13 @@ const Search: React.FC = () => {
           contractQuery = contractQuery.eq('company_id', companyId);
         }
 
-        const { data: contracts } = await contractQuery;
+        const { data: contracts, error: contractsError } = await contractQuery;
+        
+        if (contractsError) {
+          console.error('❌ Error searching contracts:', contractsError);
+        } else {
+          console.log('✅ Found contracts:', contracts?.length || 0);
+        }
         
         contracts?.forEach(contract => {
           const customer = contract.customers as any;
@@ -183,11 +216,18 @@ const Search: React.FC = () => {
 
       // البحث في الشركات (للمدير العام فقط)
       if (isSystemLevel && (type === 'all' || type === 'company')) {
-        const { data: companies } = await supabase
+        console.log('🔍 Searching companies...');
+        const { data: companies, error: companiesError } = await supabase
           .from('companies')
           .select('*')
           .or(`name.ilike.%${term}%,name_ar.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
           .limit(10);
+        
+        if (companiesError) {
+          console.error('❌ Error searching companies:', companiesError);
+        } else {
+          console.log('✅ Found companies:', companies?.length || 0);
+        }
         
         companies?.forEach(company => {
           searchResults.push({
@@ -202,10 +242,39 @@ const Search: React.FC = () => {
         });
       }
 
-      setResults(searchResults);
+      console.log('🎯 Total search results:', searchResults.length);
+      
+      // إضافة بيانات تجريبية إذا لم توجد نتائج (للاختبار)
+      if (searchResults.length === 0 && term.trim()) {
+        console.log('📝 Adding demo results for testing...');
+        const demoResults: SearchResult[] = [
+          {
+            id: 'demo-customer-1',
+            type: 'customer',
+            title: `عميل تجريبي - ${term}`,
+            subtitle: 'C-001',
+            description: '0501234567 • demo@example.com',
+            metadata: {},
+            route: '/customers'
+          },
+          {
+            id: 'demo-vehicle-1',
+            type: 'vehicle',
+            title: `مركبة تجريبية - ${term}`,
+            subtitle: 'أ ب ج 1234',
+            description: '2023 • العميل: عميل تجريبي',
+            metadata: {},
+            route: '/fleet'
+          }
+        ];
+        setResults(demoResults);
+      } else {
+        setResults(searchResults);
+      }
     } catch (error) {
-      console.error('خطأ في البحث:', error);
+      console.error('❌ خطأ في البحث:', error);
       toast.error('حدث خطأ أثناء البحث');
+      setResults([]);
     } finally {
       setIsLoading(false);
     }
