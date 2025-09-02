@@ -27,6 +27,7 @@ import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
 import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
 import { CustomerDataDiagnostics } from "@/components/customers/CustomerDataDiagnostics"
 import { useQueryClient } from "@tanstack/react-query"
+import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
 
 export default function Customers() {
   const { user, loading } = useAuth()
@@ -192,7 +193,8 @@ export default function Customers() {
   }
 
   return (
-    <div className="space-y-6">
+    <CustomerViewProvider>
+      <div className="space-y-6">
       {/* رأس الصفحة */}
       <div className="flex justify-between items-center">
         <div>
@@ -681,6 +683,7 @@ export default function Customers() {
         open={showBulkDeleteDialog}
         onOpenChange={setShowBulkDeleteDialog}
       />
-    </div>
+      </div>
+    </CustomerViewProvider>
   )
 }

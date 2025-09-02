@@ -3,11 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import { Customer, CustomerFilters } from '@/types/customer';
+import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 
 export type EnhancedCustomer = Customer;
 
 export const useCustomers = (filters?: CustomerFilters) => {
-  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess, filter } = useUnifiedCompanyAccess();
+  
+  // Use customer view context with fallback
+  let viewAllCustomers = false;
+  try {
+    const context = useCustomerViewContext();
+    viewAllCustomers = context.viewAllCustomers;
+  } catch (error) {
+    // Context not available - use default value
+    viewAllCustomers = false;
+  }
   const { 
     includeInactive = false, 
     searchTerm, 
@@ -26,11 +37,12 @@ export const useCustomers = (filters?: CustomerFilters) => {
     hasGlobalAccess,
     browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
     filters,
+    filter,
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted])
   });
   
   return useQuery({
-    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted]),
+    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, viewAllCustomers]),
     queryFn: async (): Promise<EnhancedCustomer[]> => {
       // For system level users (super_admin), allow querying all customers
       // For company scoped users, require a company ID
@@ -42,17 +54,24 @@ export const useCustomers = (filters?: CustomerFilters) => {
       console.log('🔍 [useCustomers] Executing query:', {
         isSystemLevel,
         companyId,
-        hasGlobalAccess
+        hasGlobalAccess,
+        filterCompanyId: filter.company_id,
+        usingFilter: !!filter.company_id
       });
       
       let query = supabase
         .from('customers')
         .select('*');
       
-      // Apply company filter based on unified company access logic
-      // Super admins see their primary company by default, unless in browse mode showing all
-      if (companyId) {
-        query = query.eq('company_id', companyId);
+      // Use the unified filter logic instead of direct companyId
+      // This ensures proper filtering for super_admins and browsing mode
+      // But allow super_admin to view all customers when viewAllCustomers is enabled
+      if (viewAllCustomers && hasGlobalAccess) {
+        // Super admin viewing all customers - no company filter
+        console.log('🔍 [useCustomers] Super admin viewing all customers, no filter applied');
+      } else if (filter.company_id) {
+        query = query.eq('company_id', filter.company_id);
+        console.log('🔍 [useCustomers] Applied company filter:', filter.company_id);
       }
       
       if (!includeInactive) {
@@ -113,7 +132,17 @@ export const useCustomers = (filters?: CustomerFilters) => {
 };
 
 export const useCustomerById = (customerId: string) => {
-  const { companyId, getQueryKey, browsedCompany, isBrowsingMode, isSystemLevel } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, browsedCompany, isBrowsingMode, isSystemLevel, filter } = useUnifiedCompanyAccess();
+  
+  // Use customer view context with fallback
+  let viewAllCustomers = false;
+  try {
+    const context = useCustomerViewContext();
+    viewAllCustomers = context.viewAllCustomers;
+  } catch (error) {
+    // Context not available - use default value
+    viewAllCustomers = false;
+  }
   
   // Debug logging for company context
   console.log('🏢 [useCustomerById] Company context:', {
@@ -124,7 +153,7 @@ export const useCustomerById = (customerId: string) => {
   });
   
   return useQuery({
-    queryKey: getQueryKey(['customer'], [customerId]),
+    queryKey: getQueryKey(['customer'], [customerId, viewAllCustomers]),
     queryFn: async (): Promise<EnhancedCustomer | null> => {
       if (!customerId) return null;
       if (!isSystemLevel && !companyId) return null;
@@ -134,9 +163,10 @@ export const useCustomerById = (customerId: string) => {
         .select('*')
         .eq('id', customerId);
       
-      // Apply company filter based on unified company access logic
-      if (companyId) {
-        query = query.eq('company_id', companyId);
+      // Use the unified filter logic instead of direct companyId
+      // But allow super_admin to view customers from any company when viewAllCustomers is enabled
+      if (!viewAllCustomers && filter.company_id) {
+        query = query.eq('company_id', filter.company_id);
       }
       
       const { data, error } = await query.single();

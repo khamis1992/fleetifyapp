@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Database, Eye, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 
 interface CustomerDataDiagnosticsProps {
   currentCustomersCount: number;
@@ -21,24 +22,25 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
   const { user } = useAuth();
   const { companyId, filter, isBrowsingMode, browsedCompany, hasGlobalAccess } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
+  const { viewAllCustomers, setViewAllCustomers } = useCustomerViewContext();
   const queryClient = useQueryClient();
   const [showAllCompanies, setShowAllCompanies] = useState(false);
 
   // Query to get actual database count for current company
   const { data: dbCount, refetch: refetchDbCount } = useQuery({
-    queryKey: ['customers-db-count', companyId, filter.company_id, showAllCompanies],
+    queryKey: ['customers-db-count', companyId, filter.company_id, showAllCompanies, viewAllCustomers],
     queryFn: async () => {
-      console.log('🔢 [DB_COUNT] Fetching database count for company:', companyId, 'showAll:', showAllCompanies);
+      console.log('🔢 [DB_COUNT] Fetching database count for company:', companyId, 'showAll:', showAllCompanies, 'viewAll:', viewAllCustomers);
       
       let query = supabase
         .from('customers')
         .select('id', { count: 'exact', head: true });
 
-      if (filter.company_id) {
+      if ((showAllCompanies || viewAllCustomers) && hasGlobalAccess) {
+        // Super admin viewing all companies/customers
+        console.log('🌐 [DB_COUNT] Super admin viewing all companies/customers');
+      } else if (filter.company_id) {
         query = query.eq('company_id', filter.company_id);
-      } else if (hasGlobalAccess && showAllCompanies) {
-        // Super admin viewing all companies
-        console.log('🌐 [DB_COUNT] Super admin viewing all companies');
       } else if (companyId) {
         // Default: show only current user's company
         query = query.eq('company_id', companyId);
@@ -78,7 +80,7 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
       console.log('✅ [ALL_COMPANIES_COUNT] All companies count:', count);
       return count || 0;
     },
-    enabled: hasGlobalAccess && showAllCompanies
+    enabled: hasGlobalAccess && (showAllCompanies || viewAllCustomers)
   });
 
   // Query to get count for user's actual company (not browsed)
@@ -119,6 +121,12 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
     handleClearCache();
   };
 
+  const handleToggleViewAllCustomers = (checked: boolean) => {
+    console.log('🔄 [VIEW_ALL_CUSTOMERS] Toggling view all customers:', checked);
+    setViewAllCustomers(checked);
+    handleClearCache();
+  };
+
   const handleExitBrowseMode = () => {
     console.log('🚪 [BROWSE] Exiting browse mode');
     exitBrowseMode();
@@ -126,7 +134,7 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
   };
 
   const isDiscrepancy = currentCustomersCount !== dbCount;
-  const displayCount = showAllCompanies && hasGlobalAccess ? allCompaniesCount : dbCount;
+  const displayCount = (showAllCompanies || viewAllCustomers) && hasGlobalAccess ? allCompaniesCount : dbCount;
 
   return (
     <Card className={`border-2 ${isDiscrepancy ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50'}`}>
@@ -147,7 +155,7 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
             <div className="text-2xl font-bold text-green-600">{displayCount ?? '...'}</div>
             <div className="text-sm text-green-700">
               عدد العملاء في قاعدة البيانات
-              {showAllCompanies && hasGlobalAccess && ' (جميع الشركات)'}
+              {(showAllCompanies || viewAllCustomers) && hasGlobalAccess && ' (جميع الشركات)'}
             </div>
           </div>
         </div>
@@ -183,12 +191,21 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
           </div>
 
           {hasGlobalAccess && (
-            <div className="flex justify-between items-center">
-              <span>عرض جميع الشركات:</span>
-              <Switch 
-                checked={showAllCompanies}
-                onCheckedChange={handleToggleShowAll}
-              />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span>عرض جميع الشركات:</span>
+                <Switch 
+                  checked={showAllCompanies}
+                  onCheckedChange={handleToggleShowAll}
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span>عرض جميع العملاء:</span>
+                <Switch 
+                  checked={viewAllCustomers}
+                  onCheckedChange={handleToggleViewAllCustomers}
+                />
+              </div>
             </div>
           )}
 
@@ -199,7 +216,7 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
             </div>
           )}
 
-          {showAllCompanies && hasGlobalAccess && allCompaniesCount && (
+          {(showAllCompanies || viewAllCustomers) && hasGlobalAccess && allCompaniesCount && (
             <div className="flex justify-between">
               <span>إجمالي عملاء جميع الشركات:</span>
               <span className="font-mono text-blue-600">{allCompaniesCount}</span>
