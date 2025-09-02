@@ -28,11 +28,11 @@ const ContractWizardOptimized: React.FC<ContractWizardOptimizedProps> = ({
       console.log('✅ Contract created successfully:', result)
       onSubmit?.(result)
       
-      // إغلاق النافذة بعد 2 ثانية لإظهار النجاح
+      // إغلاق النافذة بعد ثانية واحدة لتحسين السرعة
       setTimeout(() => {
         onOpenChange(false)
         reset()
-      }, 2000)
+      }, 1000)
     } catch (error) {
       console.error('❌ Contract creation failed:', error)
     }

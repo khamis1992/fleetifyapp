@@ -47,9 +47,8 @@ export const useContractCreationOptimized = () => {
   const [creationState, setCreationState] = useState<ContractCreationState>({
     currentStep: 0,
     steps: [
-      { id: 'validation', title: 'التحقق من البيانات', status: 'pending' },
-      { id: 'creation', title: 'إنشاء العقد والقيد المحاسبي', status: 'pending' },
-      { id: 'finalization', title: 'إتمام العملية', status: 'pending' }
+      { id: 'creation', title: 'إنشاء العقد', status: 'pending' },
+      { id: 'finalization', title: 'المعالجة النهائية', status: 'pending' }
     ],
     isProcessing: false,
     canRetry: false,
@@ -103,9 +102,7 @@ export const useContractCreationOptimized = () => {
       setCreationState(prev => ({ ...prev, isProcessing: true, canRetry: false }))
 
       try {
-        // خطوة التحقق السريعة
-        updateStepStatus('validation', 'processing')
-        
+        // التحقق السريع
         if (!inputContractData.start_date || !inputContractData.end_date) {
           throw new Error('تواريخ بداية ونهاية العقد مطلوبة')
         }
@@ -115,12 +112,11 @@ export const useContractCreationOptimized = () => {
           throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من أو يساوي صفر')
         }
 
-        updateStepStatus('validation', 'completed')
         updateStepStatus('creation', 'processing')
 
-        // استخدام الدالة المحسنة
-        console.log('⚡ [CONTRACT_CREATION_OPTIMIZED] استخدام الدالة المحسنة للسرعة القصوى...')
-        const { data: result, error: createError } = await supabase.rpc('create_contract_with_journal_entry_enhanced', {
+        // استخدام الدالة فائقة السرعة
+        console.log('⚡ [CONTRACT_CREATION_ULTRA_FAST] استخدام الدالة فائقة السرعة...')
+        const { data: result, error: createError } = await supabase.rpc('create_contract_with_journal_entry_ultra_fast', {
           p_company_id: companyId,
           p_customer_id: inputContractData.customer_id,
           p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
@@ -177,65 +173,24 @@ export const useContractCreationOptimized = () => {
         const contractId = typedResult.contract_id
         const journalEntryId = typedResult.journal_entry_id
 
-        // ربط تقرير حالة المركبة إذا كان موجود
-        if (inputContractData.vehicle_condition_report_id && contractId) {
-          try {
-            console.log('🔗 [CONTRACT_CREATION_OPTIMIZED] ربط تقرير حالة المركبة بالعقد')
-            
-            await supabase
-              .from('vehicle_condition_reports')
-              .update({ contract_id: contractId })
-              .eq('id', inputContractData.vehicle_condition_report_id)
-            
-            console.log('✅ [CONTRACT_CREATION_OPTIMIZED] تم ربط تقرير حالة المركبة بنجاح')
-          } catch (error) {
-            console.error('❌ [CONTRACT_CREATION_OPTIMIZED] خطأ في ربط تقرير حالة المركبة:', error)
-          }
-        }
-
-        // معالجة المستندات في الخلفية (غير متزامن)
-        setTimeout(async () => {
-          try {
-            console.log('📄 [CONTRACT_CREATION_OPTIMIZED] بدء معالجة المستندات في الخلفية...')
-            
-            // جلب اسم العميل
-            const { data: customer } = await supabase
-              .from('customers')
-              .select('first_name_ar, last_name_ar, company_name_ar, customer_type')
-              .eq('id', inputContractData.customer_id)
-              .single()
-
-            const customerName = customer?.customer_type === 'corporate' 
-              ? customer.company_name_ar || 'شركة'
-              : `${customer?.first_name_ar || ''} ${customer?.last_name_ar || ''}`.trim() || 'عميل'
-
-            // إنشاء مستند PDF للعقد
-            const pdfResult = await fetch('/api/generate-contract-pdf', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contractId,
-                customerName,
-                contractData: {
-                  contract_number: typedResult.contract_number,
-                  contract_amount: contractAmount,
-                  start_date: inputContractData.start_date,
-                  end_date: inputContractData.end_date,
-                  contract_type: inputContractData.contract_type
-                }
-              })
-            })
-
-            if (pdfResult.ok) {
-              console.log('✅ [CONTRACT_CREATION_OPTIMIZED] تم إنشاء PDF في الخلفية')
+        // معالجة سريعة في الخلفية (لا تنتظر الانتهاء)
+        supabase.functions.invoke('process-contract-background', {
+          body: {
+            contractId,
+            contractData: {
+              ...inputContractData,
+              contract_number: typedResult.contract_number,
+              contract_amount: contractAmount
             }
-          } catch (error) {
-            console.warn('⚠️ [CONTRACT_CREATION_OPTIMIZED] فشل في معالجة المستندات (غير حرج):', error)
           }
-        }, 100) // تأخير بسيط للسماح للعملية الرئيسية بالانتهاء
+        }).then(() => {
+          console.log('✅ [CONTRACT_CREATION_ULTRA_FAST] تم بدء المعالجة الخلفية')
+        }).catch(error => {
+          console.warn('⚠️ [CONTRACT_CREATION_ULTRA_FAST] فشل في المعالجة الخلفية (غير حرج):', error)
+        })
 
         const totalTime = Date.now() - startTime
-        console.log(`🎉 [CONTRACT_CREATION_OPTIMIZED] عملية إنشاء العقد مكتملة في ${totalTime}ms`)
+        console.log(`🎉 [CONTRACT_CREATION_ULTRA_FAST] عملية إنشاء العقد مكتملة في ${totalTime}ms`)
         
         setCreationState(prev => ({
           ...prev,
@@ -246,17 +201,14 @@ export const useContractCreationOptimized = () => {
 
         updateStepStatus('finalization', 'completed')
 
-        // جلب بيانات العقد الكاملة
-        const { data: createdContract } = await supabase
-          .from('contracts')
-          .select('*')
-          .eq('id', contractId)
-          .single()
-
-        return createdContract || { 
+        // إرجاع البيانات الأساسية فوراً دون انتظار الجلب الإضافي
+        return { 
           id: contractId, 
           contract_number: typedResult.contract_number,
-          status: journalEntryId ? 'active' : 'draft'
+          status: journalEntryId ? 'active' : 'draft',
+          contract_amount: contractAmount,
+          start_date: inputContractData.start_date,
+          end_date: inputContractData.end_date
         }
 
       } catch (error: any) {
@@ -299,7 +251,10 @@ export const useContractCreationOptimized = () => {
     reset: () => setCreationState(prev => ({
       ...prev,
       currentStep: 0,
-      steps: prev.steps.map(step => ({ ...step, status: 'pending', error: undefined, warnings: undefined })),
+      steps: [
+        { id: 'creation', title: 'إنشاء العقد', status: 'pending' },
+        { id: 'finalization', title: 'المعالجة النهائية', status: 'pending' }
+      ],
       contractId: undefined,
       isProcessing: false,
       canRetry: false,
