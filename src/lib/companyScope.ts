@@ -94,17 +94,29 @@ export const hasFullCompanyControl = (
  * Get the appropriate WHERE clause for filtering data by company
  */
 export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: boolean = false, allowGlobalView: boolean = false): { company_id?: string } => {
+  console.log('📊 [getCompanyFilter] Input parameters:', {
+    forceOwnCompany,
+    allowGlobalView,
+    hasGlobalAccess: hasGlobalAccess(context),
+    companyId: context.companyId,
+    isSystemLevel: context.isSystemLevel
+  });
+
   if (context.isSystemLevel && !forceOwnCompany && allowGlobalView) {
     // Super admin can see all companies only when explicitly requested with allowGlobalView
+    console.log('🌐 [getCompanyFilter] Returning global view (empty filter)');
     return {};
   }
   
   if (context.companyId) {
     // Default behavior: all users (including super_admin) are limited to their company
-    return { company_id: context.companyId };
+    const result = { company_id: context.companyId };
+    console.log('🏢 [getCompanyFilter] Returning company filter:', result);
+    return result;
   }
   
   // Fallback: no access if no company association
+  console.warn('⚠️ [getCompanyFilter] No company access - returning no-access filter');
   return { company_id: 'no-access' };
 };
 

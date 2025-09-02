@@ -21,7 +21,17 @@ export const useCustomers = (filters?: CustomerFilters) => {
   }
   
   // Get the appropriate filter based on view mode
+  // For Super Admins: default to their own company unless explicitly viewing all customers
   const activeFilter = viewAllCustomers && hasGlobalAccess ? getFilterForGlobalView() : getFilterForOwnCompany();
+  
+  console.log('🎯 [useCustomers] Filter logic:', {
+    viewAllCustomers,
+    hasGlobalAccess,
+    userCompanyId: companyId,
+    activeFilter,
+    getFilterForOwnCompany: getFilterForOwnCompany(),
+    getFilterForGlobalView: getFilterForGlobalView()
+  });
   const { 
     includeInactive = false, 
     searchTerm, 

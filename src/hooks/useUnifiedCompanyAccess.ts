@@ -178,8 +178,16 @@ export const useUnifiedCompanyAccess = () => {
       },
       
       // Filter helpers with global view control
-      getFilterForOwnCompany: () => getCompanyFilter(context, true, false),
-      getFilterForGlobalView: () => getCompanyFilter(context, false, true),
+      getFilterForOwnCompany: () => {
+        const ownFilter = getCompanyFilter(context, true, false);
+        console.log('🔍 [getFilterForOwnCompany] Filter result:', ownFilter, 'for companyId:', context.companyId);
+        return ownFilter;
+      },
+      getFilterForGlobalView: () => {
+        const globalFilter = getCompanyFilter(context, false, true);
+        console.log('🌐 [getFilterForGlobalView] Filter result:', globalFilter);
+        return globalFilter;
+      },
       
       // Query key generation for React Query
       getQueryKey: (baseKey: string[], additionalKeys: unknown[] = []) => {

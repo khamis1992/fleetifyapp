@@ -39,11 +39,15 @@ export const CustomerDataDiagnostics: React.FC<CustomerDataDiagnosticsProps> = (
       if ((showAllCompanies || viewAllCustomers) && hasGlobalAccess) {
         // Super admin viewing all companies/customers
         console.log('🌐 [DB_COUNT] Super admin viewing all companies/customers');
-      } else if (filter.company_id) {
-        query = query.eq('company_id', filter.company_id);
-      } else if (companyId) {
-        // Default: show only current user's company
-        query = query.eq('company_id', companyId);
+      } else {
+        // Always use companyId for filtering (user's actual company)
+        const targetCompanyId = companyId;
+        if (targetCompanyId) {
+          query = query.eq('company_id', targetCompanyId);
+          console.log('🏢 [DB_COUNT] Filtering by company ID:', targetCompanyId);
+        } else {
+          console.warn('⚠️ [DB_COUNT] No company ID available for filtering');
+        }
       }
 
       query = query.eq('is_active', true);
