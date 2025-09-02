@@ -194,16 +194,6 @@ export const BasicInfoStep: React.FC = () => {
           </div>
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="description">وصف العقد</Label>
-          <Textarea
-            id="description"
-            value={data.description}
-            onChange={(e) => updateData({ description: e.target.value })}
-            placeholder="وصف مختصر للعقد..."
-            rows={3}
-          />
-        </div>
         
         <div className="space-y-2">
           <div className="flex items-center justify-between">
