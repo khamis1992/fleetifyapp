@@ -105,8 +105,8 @@ export const useUnifiedNotificationCount = () => {
       };
     },
     enabled: !!companyId && !!user?.id,
-    staleTime: 1000 * 60 * 2, // 2 minutes - reduced frequency
-    refetchInterval: 1000 * 60 * 3, // Refetch every 3 minutes - reduced frequency
+    staleTime: 1000 * 30, // 30 seconds
+    refetchInterval: 1000 * 60, // Refetch every minute
   });
 
   // Include smart alerts loading state

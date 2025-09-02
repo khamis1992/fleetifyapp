@@ -26,11 +26,6 @@ import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialo
 import { ContractCSVUpload } from "@/components/contracts/ContractCSVUpload"
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings"
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog"
-import { AIChatInterface } from "@/components/contracts/AIChatInterface"
-import { AIVisualAnalytics } from "@/components/contracts/AIVisualAnalytics"
-import { SmartAutomationEngine } from "@/components/contracts/SmartAutomationEngine"
-import { PredictiveInsightsEngine } from "@/components/contracts/PredictiveInsightsEngine"
-import { Bot, BarChart3, Settings, Brain } from "lucide-react"
 
 // Hook imports
 import { useContractsData } from "@/hooks/useContractsData"
@@ -340,79 +335,6 @@ export default function Contracts() {
         open={showBulkDelete}
         onOpenChange={setShowBulkDelete}
       />
-
-      {/* Smart AI Components Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-        {/* AI Chat Interface */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              المساعد الذكي للعقود
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AIChatInterface 
-              contractData={selectedContract}
-              onActionSuggested={(action) => {
-                console.log('AI suggested action:', action);
-                // Handle AI suggestions here
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* AI Visual Analytics */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              التحليلات المرئية
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AIVisualAnalytics 
-              contractsData={contracts || []}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Smart Automation and Predictive Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-        {/* Smart Automation Engine */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              محرك الأتمتة الذكي
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SmartAutomationEngine 
-              contractsData={contracts || []}
-              onAutomationTriggered={(automation) => {
-                console.log('Automation triggered:', automation);
-                // Handle automation triggers
-                refetch();
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Predictive Insights Engine */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              محرك التنبؤات الذكي
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PredictiveInsightsEngine />
-          </CardContent>
-        </Card>
-      </div>
 
       {showTemplateManager && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

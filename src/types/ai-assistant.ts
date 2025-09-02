@@ -23,7 +23,7 @@ export type SystemModule =
   | 'reports'     // التقارير
   | 'dashboard';  // لوحة التحكم
 
-// أنواع المهام المختلفة (محسنة للمرحلة الأولى)
+// أنواع المهام المختلفة
 export type TaskType = 
   | 'generate_document'     // توليد وثيقة
   | 'analyze_data'         // تحليل البيانات
@@ -32,12 +32,7 @@ export type TaskType =
   | 'automate_process'     // أتمتة عملية
   | 'research_topic'       // بحث موضوع
   | 'optimize_workflow'    // تحسين سير العمل
-  | 'predict_outcome'      // توقع النتائج
-  | 'sentiment_analysis'   // تحليل المشاعر (جديد)
-  | 'risk_prediction'      // التنبؤ بالمخاطر (جديد)
-  | 'competitive_analysis' // التحليل التنافسي (جديد)
-  | 'contract_comparison'  // مقارنة العقود (جديد)
-  | 'financial_forecasting'; // التنبؤ المالي (جديد)
+  | 'predict_outcome';     // توقع النتائج
 
 // مستوى الأولوية حسب Impact/Effort Framework
 export type PriorityLevel = 
@@ -171,43 +166,18 @@ export interface AITaskTemplate {
   estimatedTime: number; // بالثواني
 }
 
-// نتيجة تحليل البيانات المحسنة
+// نتيجة تحليل البيانات
 export interface AIDataAnalysisResult {
   summary: string;
   insights: string[];
   recommendations: string[];
   charts?: {
-    type: 'line' | 'bar' | 'pie' | 'radar' | 'scatter' | 'heatmap';
+    type: 'line' | 'bar' | 'pie' | 'radar';
     data: any[];
     config: Record<string, any>;
   }[];
   confidence: number;
   dataQuality: number;
-  // إضافات المرحلة الأولى
-  riskAssessment?: {
-    level: 'low' | 'medium' | 'high' | 'critical';
-    score: number;
-    factors: string[];
-    mitigation: string[];
-  };
-  sentimentAnalysis?: {
-    overall: 'positive' | 'negative' | 'neutral';
-    score: number;
-    keyPhrases: string[];
-    emotionalTrends: any[];
-  };
-  predictiveInsights?: {
-    trends: string[];
-    forecasts: any[];
-    probabilities: Record<string, number>;
-    earlyWarnings: string[];
-  };
-  benchmarkComparison?: {
-    industryAverage: number;
-    percentile: number;
-    competitivePosition: string;
-    gapAnalysis: string[];
-  };
 }
 
 // نتيجة إنشاء المحتوى
