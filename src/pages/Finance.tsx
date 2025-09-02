@@ -42,6 +42,7 @@ import AccountsSettings from "./finance/settings/AccountsSettings"
 import CostCentersSettings from "./finance/settings/CostCentersSettings"
 import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSettings"
 import AccountingWizard from "./finance/AccountingWizard"
+import FinancialCalculator from "./finance/Calculator"
 import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 
 const FinanceModules = () => {
@@ -466,6 +467,16 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.accounts.write">
             <AccountingWizard />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* الحاسبة المالية */}
+      <Route 
+        path="calculator" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <FinancialCalculator />
           </ProtectedFinanceRoute>
         } 
       />

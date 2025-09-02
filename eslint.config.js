@@ -24,12 +24,18 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       // تخفيف قواعد TypeScript المتشددة مؤقتاً
-      '@typescript-eslint/no-explicit-any': 'warn', // تحويل من error إلى warning
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/ban-ts-comment': 'warn',
+      // إصلاح قاعدة no-unused-expressions
+      '@typescript-eslint/no-unused-expressions': ['error', { 
+        allowShortCircuit: true, 
+        allowTernary: true,
+        allowTaggedTemplates: true 
+      }],
       // إضافة قواعد مفيدة
-      'no-console': 'off', // السماح بـ console.log للتطوير
+      'no-console': 'off',
       'prefer-const': 'warn',
       'no-var': 'error',
       'no-duplicate-imports': 'error',

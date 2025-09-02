@@ -18,12 +18,14 @@ import {
   Zap
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface QuickAction {
   id: string;
@@ -34,11 +36,14 @@ interface QuickAction {
   route: string;
   badge?: string;
   permission?: string;
+  requiresAdmin?: boolean;
+  requiresCompanyAccess?: boolean;
 }
 
 const QuickActionsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hasCompanyAdminAccess, companyId } = useUnifiedCompanyAccess();
 
   const quickActions: QuickAction[] = [
     {
@@ -48,7 +53,8 @@ const QuickActionsDashboard: React.FC = () => {
       icon: Users,
       color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
       route: '/customers',
-      badge: 'شائع'
+      badge: 'شائع',
+      requiresCompanyAccess: true
     },
     {
       id: 'add-vehicle',
@@ -57,7 +63,8 @@ const QuickActionsDashboard: React.FC = () => {
       icon: Car,
       color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
       route: '/fleet',
-      badge: 'سريع'
+      badge: 'سريع',
+      requiresAdmin: true
     },
     {
       id: 'create-contract',
@@ -65,7 +72,8 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'إنشاء عقد إيجار جديد',
       icon: FileText,
       color: 'from-accent/20 to-accent/10 border-accent/30 hover:border-accent/40',
-      route: '/contracts'
+      route: '/contracts',
+      requiresAdmin: true
     },
     {
       id: 'record-payment',
@@ -73,7 +81,8 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'تسجيل دفعة مالية جديدة',
       icon: DollarSign,
       color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
-      route: '/finance/payments'
+      route: '/finance/payments',
+      requiresAdmin: true
     },
     {
       id: 'financial-calculator',
@@ -81,7 +90,8 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'احتساب التكاليف والأرباح',
       icon: Calculator,
       color: 'from-warning/10 to-warning/5 border-warning/20 hover:border-warning/30',
-      route: '/finance/calculator'
+      route: '/finance/calculator',
+      requiresCompanyAccess: true
     },
     {
       id: 'search-records',
@@ -89,7 +99,8 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'البحث في جميع سجلات النظام',
       icon: Search,
       color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
-      route: '/search'
+      route: '/search',
+      requiresCompanyAccess: true
     }
   ];
 
@@ -100,7 +111,8 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'تصدير التقارير والبيانات',
       icon: Download,
       color: 'from-secondary/10 to-secondary/5 border-secondary/20 hover:border-secondary/30',
-      route: '/reports'
+      route: '/reports',
+      requiresCompanyAccess: true
     },
     {
       id: 'import-data',
@@ -108,11 +120,43 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'استيراد بيانات من ملفات CSV',
       icon: Upload,
       color: 'from-warning/10 to-warning/5 border-warning/20 hover:border-warning/30',
-      route: '/import'
+      route: '/import',
+      requiresAdmin: true
     }
   ];
 
+  // تصفية الإجراءات بناءً على الصلاحيات
+  const filterActionsByPermissions = (actions: QuickAction[]) => {
+    return actions.filter(action => {
+      // إذا كان الإجراء يتطلب صلاحيات إدارية
+      if (action.requiresAdmin && !hasCompanyAdminAccess) {
+        return false;
+      }
+      
+      // إذا كان الإجراء يتطلب وصول للشركة
+      if (action.requiresCompanyAccess && !companyId) {
+        return false;
+      }
+      
+      return true;
+    });
+  };
+
+  const availableQuickActions = filterActionsByPermissions(quickActions);
+  const availableRecentActions = filterActionsByPermissions(recentActions);
+
   const handleActionClick = (action: QuickAction) => {
+    // التحقق من الصلاحيات قبل التنقل
+    if (action.requiresAdmin && !hasCompanyAdminAccess) {
+      toast.error('تحتاج إلى صلاحيات إدارية للوصول لهذه الميزة');
+      return;
+    }
+    
+    if (action.requiresCompanyAccess && !companyId) {
+      toast.error('تحتاج إلى الانتماء لشركة للوصول لهذه الميزة');
+      return;
+    }
+    
     navigate(action.route);
   };
 
@@ -210,11 +254,19 @@ const QuickActionsDashboard: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quickActions.map((action, index) => (
-                <ActionButton key={action.id} action={action} index={index} />
-              ))}
-            </div>
+            {availableQuickActions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableQuickActions.map((action, index) => (
+                  <ActionButton key={action.id} action={action} index={index} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock size={48} className="mx-auto mb-4 opacity-50" />
+                <p>لا توجد إجراءات متاحة</p>
+                <p className="text-sm">تحتاج إلى صلاحيات إضافية للوصول للإجراءات السريعة</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

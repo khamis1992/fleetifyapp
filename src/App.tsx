@@ -24,6 +24,9 @@ import Settings from "./pages/Settings";
 import AdvancedSettings from "./pages/AdvancedSettings";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import ResetPassword from "./pages/ResetPassword";
+import Search from "./pages/Search";
+import Import from "./pages/Import";
+import FinancialCalculator from "./pages/finance/Calculator";
 
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
@@ -224,6 +227,20 @@ const App = () => (
               } />
               <Route path="support" element={<Support />} />
               <Route path="support/ticket/:ticketId" element={<SupportTicketDetail />} />
+              
+              {/* البحث المتقدم */}
+              <Route path="search" element={
+                <ProtectedRoute>
+                  <Search />
+                </ProtectedRoute>
+              } />
+              
+              {/* الاستيراد */}
+              <Route path="import" element={
+                <AdminRoute>
+                  <Import />
+                </AdminRoute>
+              } />
             </Route>
             
             {/* Company Browser Layout - Super Admin browsing company data */}
