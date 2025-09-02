@@ -10478,6 +10478,23 @@ export type Database = {
             }
         Returns: Json
       }
+      create_contract_with_journal_entry_enhanced: {
+        Args: {
+          p_company_id: string
+          p_contract_amount?: number
+          p_contract_type?: string
+          p_cost_center_id?: string
+          p_created_by?: string
+          p_customer_id: string
+          p_description?: string
+          p_end_date?: string
+          p_monthly_amount?: number
+          p_start_date?: string
+          p_terms?: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
       create_customer_financial_account: {
         Args: { p_company_id: string; p_customer_id: string }
         Returns: Json

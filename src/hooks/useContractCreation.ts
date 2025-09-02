@@ -42,6 +42,8 @@ interface ContractCreationResult {
   message?: string
   error?: string
   errors?: string[]
+  execution_time_seconds?: number
+  performance_breakdown?: any
 }
 
 export const useContractCreation = () => {
@@ -195,8 +197,8 @@ export const useContractCreation = () => {
             console.log('🔧 [CONTRACT_CREATION] إنشاء الحسابات الأساسية وربطها تلقائياً...')
             await autoConfigureEssentialMappings()
             
-            // انتظار قصير للتأكد من تحديث البيانات
-            await new Promise(resolve => setTimeout(resolve, 2000))
+        // انتظار مختصر للتأكد من تحديث البيانات (مقلل من 2 ثانية)
+        await new Promise(resolve => setTimeout(resolve, 500))
             
             console.log('✅ [CONTRACT_CREATION] تم إنشاء الحسابات والربط بنجاح')
             updateStepStatus('accounts', 'completed', undefined, ['تم إنشاء الحسابات الأساسية وربطها تلقائياً'])
@@ -214,8 +216,22 @@ export const useContractCreation = () => {
 
         updateStepStatus('creation', 'processing')
 
-        // استخدام دالة إنشاء العقد الموحدة مع المعاملات المنفصلة مع fallback
-        const { data: result, error: createError } = await createContractWithFallback(rpcParams)
+        // استخدام الدالة المحسنة الجديدة للسرعة القصوى
+        console.log('🚀 [CONTRACT_CREATION] استخدام الدالة المحسنة لتسريع الإنشاء...')
+        const { data: result, error: createError } = await supabase.rpc('create_contract_with_journal_entry_enhanced', {
+          p_company_id: companyId,
+          p_customer_id: inputContractData.customer_id,
+          p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
+          p_contract_type: inputContractData.contract_type || 'rental',
+          p_start_date: inputContractData.start_date,
+          p_end_date: inputContractData.end_date,
+          p_contract_amount: contractAmount,
+          p_monthly_amount: Number(inputContractData.monthly_amount || contractAmount) || contractAmount,
+          p_description: inputContractData.description || null,
+          p_terms: inputContractData.terms || null,
+          p_cost_center_id: inputContractData.cost_center_id || null,
+          p_created_by: inputContractData.created_by || user?.id
+        })
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
@@ -317,6 +333,14 @@ export const useContractCreation = () => {
         }
 
         console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', typedResult)
+        
+        // عرض معلومات الأداء إذا كانت متوفرة
+        if (typedResult.execution_time_seconds) {
+          console.log(`⚡ [CONTRACT_CREATION] وقت التنفيذ الإجمالي: ${typedResult.execution_time_seconds} ثانية`)
+          if (typedResult.performance_breakdown) {
+            console.log('📊 [CONTRACT_CREATION] تفاصيل الأداء:', typedResult.performance_breakdown)
+          }
+        }
 
         // تحديد حالة الخطوات بناءً على النتيجة
         updateStepStatus('validation', 'completed')
