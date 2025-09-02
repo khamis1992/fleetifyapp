@@ -34,33 +34,50 @@ export interface OptimizedDashboardStats {
 }
 
 export const useOptimizedDashboardStats = () => {
-  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, filter, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['optimized-dashboard-stats']),
     queryFn: async (): Promise<OptimizedDashboardStats> => {
-      if (!companyId) {
+      if (!companyId && !hasGlobalAccess) {
+        return getEmptyStats();
+      }
+
+      // Use filter.company_id if available, otherwise use companyId
+      const targetCompanyId = filter.company_id || companyId;
+      if (!targetCompanyId && !hasGlobalAccess) {
         return getEmptyStats();
       }
 
       // Use optimized direct queries with our new indexes
-      return await fetchStatsDirectly(companyId);
+      return await fetchStatsDirectly(targetCompanyId, hasGlobalAccess);
     },
-    enabled: !!companyId,
+    enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
-async function fetchStatsDirectly(companyId: string): Promise<OptimizedDashboardStats> {
+async function fetchStatsDirectly(companyId: string | undefined, hasGlobalAccess: boolean = false): Promise<OptimizedDashboardStats> {
   // Use optimized direct queries with parallel execution
-  return await fetchStatsMultiQuery(companyId);
+  return await fetchStatsMultiQuery(companyId, hasGlobalAccess);
 }
 
 // Fallback to multiple optimized queries if RPC is not available
-async function fetchStatsMultiQuery(companyId: string): Promise<OptimizedDashboardStats> {
+async function fetchStatsMultiQuery(companyId: string | undefined, hasGlobalAccess: boolean = false): Promise<OptimizedDashboardStats> {
   const currentDate = new Date();
   const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
   const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+
+  // Helper function to build query with company filtering
+  const buildQuery = (baseQuery: any) => {
+    if (companyId && !hasGlobalAccess) {
+      return baseQuery.eq('company_id', companyId);
+    } else if (companyId && hasGlobalAccess) {
+      return baseQuery.eq('company_id', companyId);
+    }
+    // For super_admin without specific company filter, return all
+    return baseQuery;
+  };
 
   // Execute optimized parallel queries using our new indexes
   const [
@@ -74,30 +91,30 @@ async function fetchStatsMultiQuery(companyId: string): Promise<OptimizedDashboa
     expiringCount
   ] = await Promise.all([
     // Count queries are fast with our new indexes
-    supabase.from('vehicles').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).eq('is_active', true),
+    buildQuery(supabase.from('vehicles').select('*', { count: 'exact', head: true }))
+      .eq('is_active', true),
     
-    supabase.from('contracts').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).eq('status', 'active'),
+    buildQuery(supabase.from('contracts').select('*', { count: 'exact', head: true }))
+      .eq('status', 'active'),
     
-    supabase.from('customers').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).eq('is_active', true),
+    buildQuery(supabase.from('customers').select('*', { count: 'exact', head: true }))
+      .eq('is_active', true),
     
-    supabase.from('employees').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).eq('is_active', true),
+    buildQuery(supabase.from('employees').select('*', { count: 'exact', head: true }))
+      .eq('is_active', true),
     
     // Single query for all contract financial data
-    supabase.from('contracts').select('monthly_amount, contract_amount')
-      .eq('company_id', companyId).eq('status', 'active'),
+    buildQuery(supabase.from('contracts').select('monthly_amount, contract_amount'))
+      .eq('status', 'active'),
     
-    supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).in('status', ['pending', 'in_progress']),
+    buildQuery(supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true }))
+      .in('status', ['pending', 'in_progress']),
     
-    supabase.from('payments').select('amount')
-      .eq('company_id', companyId).eq('payment_status', 'pending'),
+    buildQuery(supabase.from('payments').select('amount'))
+      .eq('payment_status', 'pending'),
     
-    supabase.from('contracts').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).eq('status', 'active')
+    buildQuery(supabase.from('contracts').select('*', { count: 'exact', head: true }))
+      .eq('status', 'active')
       .lt('end_date', nextMonth.toISOString().split('T')[0])
   ]);
 
