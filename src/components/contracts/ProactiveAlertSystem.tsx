@@ -62,6 +62,14 @@ const AlertItem: React.FC<{
   onDismiss?: (alertType: string) => void;
   showConflictDetails?: boolean;
 }> = ({ alert, onDismiss, showConflictDetails }) => {
+  // Debug each alert item
+  console.log('🚨 [ALERT_ITEM] Rendering alert:', {
+    message: alert.message,
+    severity: alert.severity,
+    type: alert.type,
+    alertData: alert
+  });
+
   return (
     <Alert variant={getAlertVariant(alert.severity)} className="mb-3">
       <div className="flex items-start gap-2">
@@ -69,8 +77,15 @@ const AlertItem: React.FC<{
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertDescription className="font-medium">
-                {alert.message}
+              <AlertDescription 
+                className="font-medium text-destructive-foreground"
+                style={{ 
+                  color: 'hsl(var(--destructive-foreground))',
+                  fontSize: '14px',
+                  lineHeight: '1.4'
+                }}
+              >
+                {alert.message || 'رسالة خطأ غير محددة'}
               </AlertDescription>
               <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
                 {alert.severity === 'critical' && 'خطر'}
@@ -146,6 +161,15 @@ export const ProactiveAlertSystem: React.FC<ProactiveAlertSystemProps> = ({
   onDismissAlert,
   showConflictDetails = true
 }) => {
+  // Debug logging to understand what's happening
+  console.log('🔍 [PROACTIVE_ALERT_SYSTEM] Validation data:', {
+    errors: validation.errors,
+    warnings: validation.warnings,
+    errorsCount: validation.errors.length,
+    warningsCount: validation.warnings.length,
+    isValidating
+  });
+
   const hasAlerts = validation.errors.length > 0 || validation.warnings.length > 0;
 
   if (isValidating) {
@@ -176,14 +200,17 @@ export const ProactiveAlertSystem: React.FC<ProactiveAlertSystemProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            {validation.errors.map((error, index) => (
-              <AlertItem
-                key={`error-${index}`}
-                alert={error}
-                onDismiss={onDismissAlert}
-                showConflictDetails={showConflictDetails}
-              />
-            ))}
+            {validation.errors.map((error, index) => {
+              console.log(`🔴 [ERROR_${index}] Processing error:`, error);
+              return (
+                <AlertItem
+                  key={`error-${index}`}
+                  alert={error}
+                  onDismiss={onDismissAlert}
+                  showConflictDetails={showConflictDetails}
+                />
+              );
+            })}
           </CardContent>
         </Card>
       )}
