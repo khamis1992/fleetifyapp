@@ -41,8 +41,11 @@ export const useCustomers = (filters?: CustomerFilters) => {
         console.log('🏢 [CUSTOMERS] Applying company filter:', filter.company_id);
         query = query.eq('company_id', filter.company_id);
       } else if (hasGlobalAccess && !isBrowsingMode) {
-        console.log('🌐 [CUSTOMERS] Global access without browse mode - showing all customers');
-        // For super_admin not in browse mode, show all customers
+        console.log('🏢 [CUSTOMERS] Super admin without browse mode - showing own company customers only');
+        // For super_admin not in browse mode, show their own company customers only (not all)
+        if (companyId) {
+          query = query.eq('company_id', companyId);
+        }
       } else if (companyId) {
         console.log('🏢 [CUSTOMERS] Applying fallback company filter:', companyId);
         query = query.eq('company_id', companyId);

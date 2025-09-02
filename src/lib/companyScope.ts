@@ -93,14 +93,14 @@ export const hasFullCompanyControl = (
 /**
  * Get the appropriate WHERE clause for filtering data by company
  */
-export const getCompanyFilter = (context: CompanyScopeContext): { company_id?: string } => {
-  if (context.isSystemLevel) {
-    // Super admin can see all companies
+export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: boolean = false): { company_id?: string } => {
+  if (context.isSystemLevel && !forceOwnCompany) {
+    // Super admin can see all companies only when explicitly requested
     return {};
   }
   
   if (context.companyId) {
-    // All other users are limited to their company
+    // All users (including super_admin by default) are limited to their company
     return { company_id: context.companyId };
   }
   
