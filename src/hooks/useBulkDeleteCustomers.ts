@@ -73,49 +73,61 @@ export const useBulkDeleteCustomers = () => {
         console.warn(`Warning deleting invoices for customer ${customerId}:`, invoicesError);
       }
 
-      // 3. Delete contract-related data for each contract
+      // 3. Delete ALL vehicle condition reports first (comprehensive deletion)
       if (contracts && contracts.length > 0) {
-        for (const contract of contracts) {
-          // Delete vehicle condition reports
-          const { error: conditionReportsError } = await supabase
-            .from('vehicle_condition_reports')
-            .delete()
-            .eq('contract_id', contract.id);
-          
-          if (conditionReportsError) {
-            console.warn(`Warning deleting vehicle condition reports for contract ${contract.id}:`, conditionReportsError);
-          }
-
-          // Delete contract payment schedules
-          const { error: scheduleError } = await supabase
-            .from('contract_payment_schedules')
-            .delete()
-            .eq('contract_id', contract.id);
-          
-          if (scheduleError) {
-            console.warn(`Warning deleting payment schedules for contract ${contract.id}:`, scheduleError);
-          }
-
-          // Delete contract documents
-          const { error: documentsError } = await supabase
-            .from('contract_documents')
-            .delete()
-            .eq('contract_id', contract.id);
-          
-          if (documentsError) {
-            console.warn(`Warning deleting documents for contract ${contract.id}:`, documentsError);
-          }
-
-          // Delete approval steps
-          const { error: approvalError } = await supabase
-            .from('contract_approval_steps')
-            .delete()
-            .eq('contract_id', contract.id);
-          
-          if (approvalError) {
-            console.warn(`Warning deleting approval steps for contract ${contract.id}:`, approvalError);
-          }
+        const contractIds = contracts.map(c => c.id);
+        
+        // Delete all vehicle condition reports for these contracts in a single operation
+        const { error: allConditionReportsError } = await supabase
+          .from('vehicle_condition_reports')
+          .delete()
+          .in('contract_id', contractIds);
+        
+        if (allConditionReportsError) {
+          console.warn(`Warning deleting all vehicle condition reports for contracts:`, allConditionReportsError);
         }
+
+        // Delete contract documents that might reference condition reports
+        const { error: contractDocsError } = await supabase
+          .from('contract_documents')
+          .delete()
+          .in('contract_id', contractIds);
+        
+        if (contractDocsError) {
+          console.warn(`Warning deleting contract documents:`, contractDocsError);
+        }
+
+        // Delete contract payment schedules
+        const { error: scheduleError } = await supabase
+          .from('contract_payment_schedules')
+          .delete()
+          .in('contract_id', contractIds);
+        
+        if (scheduleError) {
+          console.warn(`Warning deleting payment schedules:`, scheduleError);
+        }
+
+        // Delete approval steps
+        const { error: approvalError } = await supabase
+          .from('contract_approval_steps')
+          .delete()
+          .in('contract_id', contractIds);
+        
+        if (approvalError) {
+          console.warn(`Warning deleting approval steps:`, approvalError);
+        }
+      }
+
+      // 3.5. Double-check: Delete any remaining vehicle condition reports that might be linked
+      const { error: remainingReportsError } = await supabase
+        .from('vehicle_condition_reports')
+        .delete()
+        .in('contract_id', 
+          contracts ? contracts.map(c => c.id) : []
+        );
+      
+      if (remainingReportsError) {
+        console.warn(`Warning deleting remaining vehicle condition reports:`, remainingReportsError);
       }
 
       // 4. Delete quotations
