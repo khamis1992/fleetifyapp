@@ -10965,20 +10965,17 @@ export type Database = {
         }[]
       }
       get_available_vehicles_for_contracts: {
-        Args:
-          | { company_id_param: string }
-          | {
-              company_id_param: string
-              contract_date_end?: string
-              contract_date_start?: string
-            }
+        Args: {
+          company_id_param: string
+          contract_end_date?: string
+          contract_start_date?: string
+        }
         Returns: {
           color: string
           company_id: string
           daily_rate: number
           enforce_minimum_price: boolean
           id: string
-          is_active: boolean
           make: string
           minimum_rental_price: number
           model: string

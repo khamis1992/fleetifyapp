@@ -822,9 +822,11 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
       });
 
       try {
-        // استخدام RPC function أولاً
+        // استخدام الدالة المحدثة الموحدة
         const { data: rpcData, error: rpcError } = await supabase.rpc('get_available_vehicles_for_contracts', {
-          company_id_param: companyId
+          company_id_param: companyId,
+          contract_start_date: null,
+          contract_end_date: null
         });
 
         if (!rpcError && rpcData) {
