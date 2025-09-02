@@ -238,154 +238,174 @@ const FinancialCalculator: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* رأس الصفحة */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <motion.div 
-                  className="p-3 rounded-lg bg-green-100 text-green-700"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
-                  <Calculator size={24} />
-                </motion.div>
-                <div>
-                  <CardTitle className="text-2xl">الحاسبة المالية</CardTitle>
-                  <p className="text-muted-foreground">احتساب التكاليف والأرباح والعوائد</p>
+    <div className="min-h-screen bg-gradient-hero">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* رأس الصفحة المحدث */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative"
+        >
+          <Card className="bg-gradient-card border-0 shadow-elevated overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-primary opacity-5" />
+            <CardHeader className="relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <motion.div 
+                    className="p-4 rounded-xl bg-gradient-primary text-white shadow-glow"
+                    whileHover={{ scale: 1.05, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <Calculator size={28} />
+                  </motion.div>
+                  <div>
+                    <CardTitle className="arabic-heading-md text-foreground">الحاسبة المالية المتقدمة</CardTitle>
+                    <p className="arabic-body-sm text-muted-foreground">أدوات احتساب شاملة للتكاليف والأرباح والعوائد المالية</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={exportResults} className="shadow-card hover:shadow-elevated transition-smooth">
+                    <Download size={18} className="ml-2" />
+                    تصدير البيانات
+                  </Button>
+                  <Button variant="outline" onClick={clearHistory} className="shadow-card hover:shadow-elevated transition-smooth">
+                    <History size={18} className="ml-2" />
+                    مسح السجل
+                  </Button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={exportResults}>
-                  <Download size={16} className="ml-2" />
-                  تصدير
-                </Button>
-                <Button variant="outline" onClick={clearHistory}>
-                  <History size={16} className="ml-2" />
-                  مسح التاريخ
-                </Button>
+            </CardHeader>
+          </Card>
+        </motion.div>
+
+        {/* الحاسبات المالية */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Tabs defaultValue="loan" className="space-y-8">
+            <TabsList className="grid w-full grid-cols-4 bg-card border border-border/50 shadow-card p-2 rounded-xl">
+              <TabsTrigger value="loan" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white shadow-card">
+                <DollarSign size={18} />
+                <span className="arabic-body-sm">حاسبة القروض</span>
+              </TabsTrigger>
+              <TabsTrigger value="depreciation" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white shadow-card">
+                <TrendingUp size={18} />
+                <span className="arabic-body-sm">حاسبة الإهلاك</span>
+              </TabsTrigger>
+              <TabsTrigger value="profit" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white shadow-card">
+                <PieChart size={18} />
+                <span className="arabic-body-sm">حاسبة الربحية</span>
+              </TabsTrigger>
+              <TabsTrigger value="roi" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white shadow-card">
+                <Target size={18} />
+                <span className="arabic-body-sm">عائد الاستثمار</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* حاسبة القروض المحدثة */}
+            <TabsContent value="loan">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Card className="bg-gradient-card border-0 shadow-elevated">
+                    <CardHeader className="pb-6">
+                      <CardTitle className="arabic-heading-sm flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-gradient-primary text-white">
+                          <DollarSign size={20} />
+                        </div>
+                        بيانات القرض
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <Label className="arabic-body-sm">مبلغ القرض (ريال سعودي)</Label>
+                        <Input
+                          type="number"
+                          value={loanInputs.principal || ''}
+                          onChange={(e) => setLoanInputs(prev => ({
+                            ...prev,
+                            principal: parseFloat(e.target.value) || 0
+                          }))}
+                          placeholder="100,000"
+                          className="h-12 shadow-card border-border/50 focus:shadow-elevated transition-smooth"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="arabic-body-sm">معدل الفائدة السنوي (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={loanInputs.rate || ''}
+                          onChange={(e) => setLoanInputs(prev => ({
+                            ...prev,
+                            rate: parseFloat(e.target.value) || 0
+                          }))}
+                          placeholder="5.5"
+                          className="h-12 shadow-card border-border/50 focus:shadow-elevated transition-smooth"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="arabic-body-sm">مدة القرض (سنوات)</Label>
+                        <Input
+                          type="number"
+                          value={loanInputs.term || ''}
+                          onChange={(e) => setLoanInputs(prev => ({
+                            ...prev,
+                            term: parseFloat(e.target.value) || 0
+                          }))}
+                          placeholder="5"
+                          className="h-12 shadow-card border-border/50 focus:shadow-elevated transition-smooth"
+                        />
+                      </div>
+                      <Button onClick={calculateLoan} className="w-full h-12 bg-gradient-primary hover:shadow-glow transition-smooth">
+                        <Calculator size={18} className="ml-2" />
+                        <span className="arabic-body">احسب القرض</span>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <Card className="bg-gradient-card border-0 shadow-elevated">
+                    <CardHeader className="pb-6">
+                      <CardTitle className="arabic-heading-sm">النتائج المالية</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="text-center p-6 bg-gradient-accent rounded-xl shadow-card">
+                          <p className="arabic-body-sm text-muted-foreground mb-2">القسط الشهري</p>
+                          <p className="arabic-heading-sm text-primary">
+                            {formatCurrency(loanResult.monthlyPayment)}
+                          </p>
+                        </div>
+                        <div className="text-center p-6 bg-gradient-accent rounded-xl shadow-card">
+                          <p className="arabic-body-sm text-muted-foreground mb-2">إجمالي المدفوعات</p>
+                          <p className="arabic-heading-sm text-success">
+                            {formatCurrency(loanResult.totalPayment)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-center p-6 bg-gradient-accent rounded-xl shadow-card">
+                        <p className="arabic-body-sm text-muted-foreground mb-2">إجمالي الفوائد المضافة</p>
+                        <p className="arabic-heading-sm text-warning">
+                          {formatCurrency(loanResult.totalInterest)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
-            </div>
-          </CardHeader>
-        </Card>
-      </motion.div>
-
-      {/* الحاسبات */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <Tabs defaultValue="loan" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="loan" className="flex items-center gap-2">
-              <DollarSign size={16} />
-              حاسبة القروض
-            </TabsTrigger>
-            <TabsTrigger value="depreciation" className="flex items-center gap-2">
-              <TrendingUp size={16} />
-              حاسبة الإهلاك
-            </TabsTrigger>
-            <TabsTrigger value="profit" className="flex items-center gap-2">
-              <PieChart size={16} />
-              حاسبة الربحية
-            </TabsTrigger>
-            <TabsTrigger value="roi" className="flex items-center gap-2">
-              <Target size={16} />
-              حاسبة ROI
-            </TabsTrigger>
-          </TabsList>
-
-          {/* حاسبة القروض */}
-          <TabsContent value="loan">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign size={20} />
-                    معطيات القرض
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>مبلغ القرض (ريال)</Label>
-                    <Input
-                      type="number"
-                      value={loanInputs.principal || ''}
-                      onChange={(e) => setLoanInputs(prev => ({
-                        ...prev,
-                        principal: parseFloat(e.target.value) || 0
-                      }))}
-                      placeholder="100000"
-                    />
-                  </div>
-                  <div>
-                    <Label>معدل الفائدة السنوي (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={loanInputs.rate || ''}
-                      onChange={(e) => setLoanInputs(prev => ({
-                        ...prev,
-                        rate: parseFloat(e.target.value) || 0
-                      }))}
-                      placeholder="5.5"
-                    />
-                  </div>
-                  <div>
-                    <Label>مدة القرض (سنوات)</Label>
-                    <Input
-                      type="number"
-                      value={loanInputs.term || ''}
-                      onChange={(e) => setLoanInputs(prev => ({
-                        ...prev,
-                        term: parseFloat(e.target.value) || 0
-                      }))}
-                      placeholder="5"
-                    />
-                  </div>
-                  <Button onClick={calculateLoan} className="w-full">
-                    <Calculator size={16} className="ml-2" />
-                    احسب القرض
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>نتائج القرض</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">القسط الشهري</p>
-                      <p className="text-xl font-bold text-blue-700">
-                        {formatCurrency(loanResult.monthlyPayment)}
-                      </p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">إجمالي المدفوعات</p>
-                      <p className="text-xl font-bold text-green-700">
-                        {formatCurrency(loanResult.totalPayment)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">إجمالي الفوائد</p>
-                    <p className="text-xl font-bold text-red-700">
-                      {formatCurrency(loanResult.totalInterest)}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
           {/* حاسبة الإهلاك */}
           <TabsContent value="depreciation">
@@ -659,48 +679,55 @@ const FinancialCalculator: React.FC = () => {
         </Tabs>
       </motion.div>
 
-      {/* تاريخ الحسابات */}
-      {history.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History size={20} />
-                تاريخ الحسابات
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {history.map((calc, index) => (
-                  <div key={calc.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline">
-                        {calc.type === 'loan' && 'قرض'}
-                        {calc.type === 'depreciation' && 'إهلاك'}
-                        {calc.type === 'profit' && 'ربحية'}
-                        {calc.type === 'roi' && 'ROI'}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {calc.timestamp.toLocaleString('ar-SA')}
-                      </span>
-                    </div>
-                    <div className="font-semibold">
-                      {calc.type === 'roi' || calc.type === 'profit' ? 
-                        `${calc.result.toFixed(2)}%` : 
-                        formatCurrency(calc.result)
-                      }
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+        {/* سجل الحسابات السابقة */}
+        {history.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Card className="bg-gradient-card border-0 shadow-elevated">
+              <CardHeader>
+                <CardTitle className="arabic-heading-sm flex items-center gap-2">
+                  <History size={20} className="text-primary" />
+                  سجل الحسابات المالية
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {history.map((calc, index) => (
+                    <motion.div 
+                      key={calc.id} 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-card hover:shadow-elevated transition-smooth"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Badge variant="secondary" className="text-xs">
+                          {calc.type === 'loan' && 'قرض'}
+                          {calc.type === 'depreciation' && 'إهلاك'}
+                          {calc.type === 'profit' && 'ربحية'}
+                          {calc.type === 'roi' && 'عائد الاستثمار'}
+                        </Badge>
+                        <span className="arabic-body-sm text-muted-foreground">
+                          {calc.timestamp.toLocaleString('ar-SA')}
+                        </span>
+                      </div>
+                      <div className="arabic-body font-semibold text-primary">
+                        {calc.type === 'roi' || calc.type === 'profit' ? 
+                          `${calc.result.toFixed(2)}%` : 
+                          formatCurrency(calc.result)
+                        }
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };
