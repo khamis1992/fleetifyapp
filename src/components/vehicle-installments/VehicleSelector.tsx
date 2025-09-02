@@ -57,36 +57,34 @@ export function VehicleSelector({
   error = null,
 }: VehicleSelectorProps) {
   const currentCompanyId = useCurrentCompanyId();
-  // إضافة تصفية إضافية للمركبات حسب الشركة الحالية للأمان
-  const companyFilteredVehicles = vehicles?.filter(vehicle => {
-    // التحقق من أن المركبة تنتمي للشركة الحالية
-    const vehicleCompanyId = (vehicle as any)?.company_id;
-    if (vehicleCompanyId && currentCompanyId && vehicleCompanyId !== currentCompanyId) {
-      console.warn('⚠️ [VEHICLE_SELECTOR] مركبة من شركة مختلفة تم تصفيتها:', {
-        vehicleId: vehicle.id,
-        plateNumber: vehicle.plate_number,
-        vehicleCompanyId,
-        currentCompanyId
-      });
-      return false;
-    }
-    return true;
-  }) || [];
-
-  console.log('🔄 VehicleSelector تم تهيئته مع:', {
+  
+  console.log('🔍 [VEHICLE_SELECTOR] تهيئة المكون:', {
     originalVehiclesCount: vehicles?.length || 0,
-    companyFilteredCount: companyFilteredVehicles.length,
     currentCompanyId,
     selectedVehicleId,
     excludeCount: excludeVehicleIds?.length || 0,
     isLoading,
     error,
-    // إضافة تفاصيل المركبات للتحقق من الشركة
-    sampleVehicles: companyFilteredVehicles?.slice(0, 3)?.map(v => ({ 
+    sampleVehicleData: vehicles?.slice(0, 2)?.map(v => ({ 
       id: v.id, 
       plate_number: v.plate_number,
       company_id: (v as any)?.company_id 
     })) || []
+  });
+
+  // تبسيط منطق التصفية - إزالة التصفية المضاعفة للشركة
+  // حيث أن البيانات تأتي مصفاة مسبقاً من useAvailableVehiclesForContracts
+  const availableVehicles = vehicles || [];
+
+  console.log('✅ [VEHICLE_SELECTOR] المركبات المتاحة بعد التصفية:', {
+    count: availableVehicles.length,
+    hasData: availableVehicles.length > 0,
+    firstThreeVehicles: availableVehicles.slice(0, 3).map(v => ({
+      id: v.id,
+      plate_number: v.plate_number,
+      make: v.make,
+      model: v.model
+    }))
   });
 
   const [open, setOpen] = useState(false);
@@ -97,13 +95,13 @@ export function VehicleSelector({
   // استخراج قائمة الماركات المتاحة
   const availableMakes = useMemo(() => {
     const makes = new Set<string>();
-    companyFilteredVehicles?.forEach(vehicle => {
+    availableVehicles?.forEach(vehicle => {
       if (vehicle.make && vehicle.make.trim()) {
         makes.add(vehicle.make.trim());
       }
     });
     return Array.from(makes).sort();
-  }, [companyFilteredVehicles]);
+  }, [availableVehicles]);
 
   try {
     // ULTRA-SAFE data processing - ABSOLUTE PROTECTION against undefined iteration
@@ -111,20 +109,20 @@ export function VehicleSelector({
       try {
         console.log('🔍 معالجة بيانات المركبات...');
         
-        // Handle null/undefined vehicles (استخدام المركبات المصفاة حسب الشركة)
-        if (!companyFilteredVehicles) {
-          console.warn('⚠️ companyFilteredVehicles is null/undefined');
+        // Handle null/undefined vehicles (استخدام المركبات المتاحة)
+        if (!availableVehicles) {
+          console.warn('⚠️ availableVehicles is null/undefined');
           return [];
         }
 
         // Handle non-array vehicles  
-        if (!Array.isArray(companyFilteredVehicles)) {
-          console.warn('⚠️ companyFilteredVehicles is not an array:', typeof companyFilteredVehicles);
+        if (!Array.isArray(availableVehicles)) {
+          console.warn('⚠️ availableVehicles is not an array:', typeof availableVehicles);
           return [];
         }
 
         // Filter and validate each vehicle
-        const validVehicles = companyFilteredVehicles.filter(vehicle => {
+        const validVehicles = availableVehicles.filter(vehicle => {
           // Null check
           if (!vehicle) {
             console.warn('⚠️ Found null/undefined vehicle');

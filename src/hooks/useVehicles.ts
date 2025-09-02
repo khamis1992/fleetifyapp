@@ -799,127 +799,111 @@ export const useProcessVehicleDepreciation = () => {
   })
 }
 
-// Enhanced hook for available vehicles for contracts with improved pricing handling
+// استعلام المركبات المتاحة للعقود - محسن لـ super admin
 export const useAvailableVehiclesForContracts = (companyId?: string) => {
+  const { log } = useSystemLogger();
+  
   return useQuery({
-    queryKey: ["available-vehicles-contracts", companyId],
+    queryKey: ['available-vehicles-for-contracts', companyId],
     queryFn: async () => {
+      log.info('vehicles', 'fetch_available_for_contracts', `استعلام المركبات للشركة ${companyId}`, {
+        resource_type: 'vehicle',
+        metadata: { companyId, timestamp: Date.now() }
+      });
+
       if (!companyId) {
-        console.log("❌ [AVAILABLE_VEHICLES_CONTRACTS] No company ID provided")
-        return []
+        console.warn('🚨 [useAvailableVehiclesForContracts] لا يوجد companyId - إرجاع مصفوفة فارغة');
+        return [];
       }
 
-      console.log("🚗 [AVAILABLE_VEHICLES_CONTRACTS] Fetching vehicles for company:", companyId)
+      console.log('🔄 [useAvailableVehiclesForContracts] بدء استعلام المركبات المتاحة للعقود:', { 
+        companyId,
+        timestamp: new Date().toISOString()
+      });
 
       try {
-        // Log the exact parameters being sent
-        console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Calling RPC with company_id_param:", companyId)
-        
-        // Use the updated database function that includes all required fields
-        const { data, error } = await supabase.rpc(
-          'get_available_vehicles_for_contracts',
-          { company_id_param: companyId }
-        )
+        // استخدام RPC function أولاً
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_available_vehicles_for_contracts', {
+          company_id_param: companyId
+        });
 
-        if (error) {
-          console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Database function error:", error)
-          console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Error details:", {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          })
-          
-          // Fallback to direct vehicle query if function fails
-          console.log("🔄 [AVAILABLE_VEHICLES_CONTRACTS] Using fallback query...")
-          const fallbackResult = await supabase
-            .from('vehicles')
-            .select(`
-              id,
-              plate_number,
-              make,
-              model,
-              year,
-              color,
-              status,
-              daily_rate,
-              weekly_rate,
-              monthly_rate,
-              minimum_rental_price,
-              enforce_minimum_price,
-              is_active,
-              company_id
-            `)
-            .eq('company_id', companyId)
-            .eq('is_active', true)
-            .in('status', ['available', 'reserved'])
-            .order('plate_number')
-          
-          console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Fallback query for company:", companyId)
-
-          if (fallbackResult.error) {
-            console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fallback query failed:", fallbackResult.error)
-            throw new Error(`Failed to fetch vehicles: ${fallbackResult.error.message}`)
-          }
-
-          console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Fallback successful, vehicles found:", fallbackResult.data?.length || 0)
-          console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Sample vehicles:", fallbackResult.data?.slice(0, 2))
-          return fallbackResult.data || []
+        if (!rpcError && rpcData) {
+          console.log('✅ [useAvailableVehiclesForContracts] نجح RPC function:', {
+            count: rpcData.length,
+            companyId,
+            sampleVehicles: rpcData.slice(0, 3).map(v => ({ 
+              id: v.id, 
+              plate_number: v.plate_number,
+              company_id: v.company_id
+            }))
+          });
+          return rpcData;
         }
 
-        const availableVehicles = data || []
-        console.log("✅ [AVAILABLE_VEHICLES_CONTRACTS] Retrieved vehicles from RPC:", availableVehicles.length)
-        console.log("🔍 [AVAILABLE_VEHICLES_CONTRACTS] Sample vehicles from RPC:", availableVehicles.slice(0, 2))
-        
-        // Log all company IDs for debugging
-        const uniqueCompanyIds = [...new Set(availableVehicles.map((v: any) => v.company_id))]
-        console.log("🏢 [AVAILABLE_VEHICLES_CONTRACTS] Unique company IDs in results:", uniqueCompanyIds)
-        console.log("🏢 [AVAILABLE_VEHICLES_CONTRACTS] Expected company ID:", companyId)
-        
-        // Validate that all vehicles belong to the expected company
-        const wrongCompanyVehicles = availableVehicles.filter((v: any) => v.company_id !== companyId)
-        if (wrongCompanyVehicles.length > 0) {
-          console.error("⚠️ [AVAILABLE_VEHICLES_CONTRACTS] Found vehicles from wrong companies:", wrongCompanyVehicles)
+        console.warn('⚠️ [useAvailableVehiclesForContracts] RPC function فشل، استخدام fallback:', {
+          error: rpcError,
+          companyId
+        });
+
+        // Fallback إلى direct query
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('vehicles')
+          .select(`
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            color,
+            status,
+            daily_rate,
+            weekly_rate,
+            monthly_rate,
+            minimum_rental_price,
+            enforce_minimum_price,
+            company_id
+          `)
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .in('status', ['available', 'reserved'])
+          .order('plate_number');
+
+        if (fallbackError) {
+          console.error('❌ [useAvailableVehiclesForContracts] خطأ في fallback query:', {
+            error: fallbackError,
+            companyId
+          });
+          throw fallbackError;
         }
 
-        // Validate that all required fields are present
-        const validatedVehicles = availableVehicles.map(vehicle => ({
-          ...vehicle,
-          daily_rate: vehicle.daily_rate ?? 0,
-          weekly_rate: vehicle.weekly_rate ?? 0,
-          monthly_rate: vehicle.monthly_rate ?? 0,
-          minimum_rental_price: vehicle.minimum_rental_price ?? 0,
-          enforce_minimum_price: vehicle.enforce_minimum_price ?? false
-        }))
+        console.log('✅ [useAvailableVehiclesForContracts] نجح fallback query:', {
+          count: fallbackData?.length || 0,
+          companyId,
+          sampleVehicles: fallbackData?.slice(0, 3)?.map(v => ({ 
+            id: v.id, 
+            plate_number: v.plate_number,
+            company_id: v.company_id
+          })) || []
+        });
 
-        return validatedVehicles
+        return fallbackData || [];
 
-        // Ensure pricing defaults for vehicles without pricing data
-        const vehiclesWithDefaults = availableVehicles.map(vehicle => ({
-          ...vehicle,
-          daily_rate: vehicle.daily_rate || 0,
-          weekly_rate: vehicle.weekly_rate || 0,
-          monthly_rate: vehicle.monthly_rate || 0,
-          status: vehicle.status || 'available'
-        }))
-
-        return vehiclesWithDefaults
       } catch (error) {
-        console.error("❌ [AVAILABLE_VEHICLES_CONTRACTS] Fetch failed:", error)
-        throw error
+        console.error('❌ [useAvailableVehiclesForContracts] خطأ شامل:', {
+          error,
+          companyId,
+          message: error instanceof Error ? error.message : 'خطأ غير معروف'
+        });
+        throw error;
       }
     },
     enabled: !!companyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    throwOnError: false, // Don't throw errors to prevent UI crashes
-    meta: {
-      errorMessage: "فشل في تحميل قائمة المركبات المتاحة"
-    }
-  })
-}
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000, // 30 seconds
+    gcTime: 300000, // 5 minutes
+  });
+};
 
 // Hook for fleet analytics and reports
 export const useFleetAnalytics = (companyId?: string) => {

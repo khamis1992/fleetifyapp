@@ -10965,7 +10965,13 @@ export type Database = {
         }[]
       }
       get_available_vehicles_for_contracts: {
-        Args: { company_id_param: string }
+        Args:
+          | { company_id_param: string }
+          | {
+              company_id_param: string
+              contract_date_end?: string
+              contract_date_start?: string
+            }
         Returns: {
           color: string
           company_id: string

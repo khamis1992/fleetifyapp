@@ -286,7 +286,7 @@ export const CustomerVehicleStep: React.FC = () => {
 
   const companyId = useCurrentCompanyId()
   
-  // Always load available vehicles for contracts
+  // Load all available vehicles for contracts with enhanced logging
   const { data: allAvailableVehicles, isLoading: allVehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts(companyId)
   
   // Use date-range filtered vehicles only if dates are available AND we want to filter by dates
