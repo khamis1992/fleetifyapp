@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
 export interface EnhancedDashboardStats {
   // Core Fleet Stats
@@ -51,19 +52,32 @@ export interface EnhancedDashboardStats {
 
 export const useEnhancedDashboardStats = () => {
   const { user } = useAuth();
+  const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['enhanced-dashboard-stats', user?.profile?.company_id],
+    queryKey: ['enhanced-dashboard-stats', companyId, filter.company_id, hasGlobalAccess],
     queryFn: async (): Promise<EnhancedDashboardStats> => {
-      if (!user?.profile?.company_id) {
+      console.log('📊 [DASHBOARD_STATS] Fetching stats with filter:', { companyId, filter, hasGlobalAccess });
+      
+      if (!companyId && !hasGlobalAccess) {
+        console.log('📊 [DASHBOARD_STATS] No access to any company data');
         return getEmptyStats();
       }
-
-      const companyId = user.profile.company_id;
       const currentDate = new Date();
       const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
       const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+
+      // Build query filters
+      const buildQuery = (baseQuery: any) => {
+        if (filter.company_id) {
+          return baseQuery.eq('company_id', filter.company_id);
+        } else if (companyId && !hasGlobalAccess) {
+          return baseQuery.eq('company_id', companyId);
+        }
+        // For super_admin without company filter, return all
+        return baseQuery;
+      };
 
       // Fetch current period data
       const [
@@ -84,22 +98,29 @@ export const useEnhancedDashboardStats = () => {
         prevRevenueResult
       ] = await Promise.all([
         // Current period
-        supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
-        supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active'),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
-        supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
-        supabase.from('contracts').select('monthly_amount, contract_amount').eq('company_id', companyId).eq('status', 'active'),
-        supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true }).eq('company_id', companyId).in('status', ['pending', 'in_progress']),
-        supabase.from('payments').select('amount').eq('company_id', companyId).eq('payment_status', 'pending'),
-        supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active').lt('end_date', nextMonth.toISOString().split('T')[0]),
+        buildQuery(supabase.from('vehicles').select('*', { count: 'exact', head: true })).eq('is_active', true),
+        buildQuery(supabase.from('contracts').select('*', { count: 'exact', head: true })).eq('status', 'active'),
+        buildQuery(supabase.from('customers').select('*', { count: 'exact', head: true })).eq('is_active', true),
+        buildQuery(supabase.from('employees').select('*', { count: 'exact', head: true })).eq('is_active', true),
+        buildQuery(supabase.from('contracts').select('monthly_amount, contract_amount')).eq('status', 'active'),
+        buildQuery(supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true })).in('status', ['pending', 'in_progress']),
+        buildQuery(supabase.from('payments').select('amount')).eq('payment_status', 'pending'),
+        buildQuery(supabase.from('contracts').select('*', { count: 'exact', head: true })).eq('status', 'active').lt('end_date', nextMonth.toISOString().split('T')[0]),
         
         // Previous period for comparison
-        supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).lt('created_at', currentMonth.toISOString()),
-        supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active').lt('created_at', currentMonth.toISOString()),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).lt('created_at', currentMonth.toISOString()),
-        supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).lt('created_at', currentMonth.toISOString()),
-        supabase.from('contracts').select('monthly_amount, contract_amount').eq('company_id', companyId).eq('status', 'active').lt('created_at', currentMonth.toISOString())
+        buildQuery(supabase.from('vehicles').select('*', { count: 'exact', head: true })).eq('is_active', true).lt('created_at', currentMonth.toISOString()),
+        buildQuery(supabase.from('contracts').select('*', { count: 'exact', head: true })).eq('status', 'active').lt('created_at', currentMonth.toISOString()),
+        buildQuery(supabase.from('customers').select('*', { count: 'exact', head: true })).eq('is_active', true).lt('created_at', currentMonth.toISOString()),
+        buildQuery(supabase.from('employees').select('*', { count: 'exact', head: true })).eq('is_active', true).lt('created_at', currentMonth.toISOString()),
+        buildQuery(supabase.from('contracts').select('monthly_amount, contract_amount')).eq('status', 'active').lt('created_at', currentMonth.toISOString())
       ]);
+
+      console.log('📊 [DASHBOARD_STATS] Results:', {
+        totalCustomers: customersResult.count,
+        totalVehicles: vehiclesResult.count,
+        activeContracts: contractsResult.count,
+        filter
+      });
 
       // Calculate current values
       const totalVehicles = vehiclesResult.count || 0;
@@ -177,7 +198,7 @@ export const useEnhancedDashboardStats = () => {
         profitMargin
       };
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
