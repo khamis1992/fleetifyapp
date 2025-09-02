@@ -286,20 +286,34 @@ export const CustomerVehicleStep: React.FC = () => {
 
   const companyId = useCurrentCompanyId()
   
-  // Use date-range filtered vehicles if dates are available, otherwise fallback to all available vehicles
+  // Always load available vehicles for contracts
+  const { data: allAvailableVehicles, isLoading: allVehiclesLoading, error: vehiclesError } = useAvailableVehiclesForContracts(companyId)
+  
+  // Use date-range filtered vehicles only if dates are available AND we want to filter by dates
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesByDateRange({
     companyId,
     startDate: data.start_date,
     endDate: data.end_date,
-    enabled: !!companyId
+    enabled: !!(companyId && data.start_date && data.end_date)
   })
   
-  // Fallback for when no dates are selected yet
-  const { data: allAvailableVehicles, isLoading: allVehiclesLoading } = useAvailableVehiclesForContracts(companyId)
-  
   // Use filtered vehicles if dates are available, otherwise use all available vehicles
-  const vehiclesToShow = (data.start_date && data.end_date) ? availableVehicles : allAvailableVehicles
-  const isLoadingVehicles = (data.start_date && data.end_date) ? vehiclesLoading : allVehiclesLoading
+  const vehiclesToShow = (data.start_date && data.end_date && availableVehicles) ? availableVehicles : allAvailableVehicles
+  const isLoadingVehicles = allVehiclesLoading || (data.start_date && data.end_date ? vehiclesLoading : false)
+  
+  // Debug logging for vehicle loading
+  React.useEffect(() => {
+    console.log("🚗 [CustomerVehicleStep] Vehicle loading state:", {
+      companyId,
+      allVehiclesCount: allAvailableVehicles?.length || 0,
+      filteredVehiclesCount: availableVehicles?.length || 0,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      vehiclesToShowCount: vehiclesToShow?.length || 0,
+      isLoadingVehicles,
+      vehiclesError
+    })
+  }, [allAvailableVehicles, availableVehicles, vehiclesToShow, isLoadingVehicles, vehiclesError, companyId, data.start_date, data.end_date])
   const { formatCurrency } = useCurrencyFormatter()
 
   return (
@@ -351,7 +365,7 @@ export const CustomerVehicleStep: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="vehicle_id">المركبة</Label>
               <VehicleSelector
-                vehicles={vehiclesToShow}
+                vehicles={vehiclesToShow || []}
                 selectedVehicleId={data.vehicle_id === 'none' ? '' : data.vehicle_id}
                 onSelect={(vehicleId) => {
                   // Handle both vehicle selection and "no vehicle" option
@@ -364,8 +378,14 @@ export const CustomerVehicleStep: React.FC = () => {
                 placeholder="ابحث عن المركبة أو اختر (اختياري)"
                 disabled={false}
                 isLoading={isLoadingVehicles}
-                error={null}
+                error={vehiclesError?.message || null}
               />
+              {!isLoadingVehicles && (!vehiclesToShow || vehiclesToShow.length === 0) && (
+                <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                  <p>لا توجد مركبات متاحة حالياً.</p>
+                  {companyId && <p className="text-xs mt-1">الشركة: {companyId}</p>}
+                </div>
+              )}
               {/* إضافة خيار "بدون مركبة" */}
               {data.vehicle_id && data.vehicle_id !== 'none' && (
                 <Button

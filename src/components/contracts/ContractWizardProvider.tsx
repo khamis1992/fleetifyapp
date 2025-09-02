@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { useSignatureSettings } from '@/hooks/useSignatureSettings'
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
 
 interface ContractWizardData {
@@ -118,6 +119,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   preselectedCustomerId
 }) => {
   const { user } = useAuth()
+  const currentCompanyId = useCurrentCompanyId()
   const [data, setData] = useState<ContractWizardData>(defaultData)
   const [currentStep, setCurrentStep] = useState(0)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
@@ -237,10 +239,17 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
     setIsAutoSaving(true)
     try {
       const draftData = {
-        company_id: user.user_metadata?.company_id || '',
+        company_id: currentCompanyId || user.user_metadata?.company_id || '',
         created_by: user.id,
         current_step: currentStep,
-        data: data as any,
+        data: {
+          ...data,
+          // Ensure no empty string UUIDs are sent
+          customer_id: data.customer_id || null,
+          vehicle_id: data.vehicle_id === '' ? null : data.vehicle_id,
+          account_id: data.account_id || null,
+          cost_center_id: data.cost_center_id || null
+        } as any,
         last_saved_at: new Date().toISOString()
       }
 
