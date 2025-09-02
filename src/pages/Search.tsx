@@ -37,6 +37,18 @@ interface SearchResult {
   route: string;
 }
 
+interface CustomerRelation {
+  first_name: string;
+  last_name: string;
+  company_name: string;
+}
+
+interface VehicleRelation {
+  make: string;
+  model: string;
+  plate_number: string;
+}
+
 const Search: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -115,8 +127,9 @@ const Search: React.FC = () => {
         const { data: vehicles } = await vehicleQuery;
         
         vehicles?.forEach(vehicle => {
-          const customerName = vehicle.customers 
-            ? (vehicle.customers.company_name || `${vehicle.customers.first_name} ${vehicle.customers.last_name}`)
+          const customer = vehicle.customers as any;
+          const customerName = customer && typeof customer === 'object' && !Array.isArray(customer)
+            ? (customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim())
             : 'غير محدد';
           
           searchResults.push({
@@ -146,12 +159,14 @@ const Search: React.FC = () => {
         const { data: contracts } = await contractQuery;
         
         contracts?.forEach(contract => {
-          const customerName = contract.customers 
-            ? (contract.customers.company_name || `${contract.customers.first_name} ${contract.customers.last_name}`)
+          const customer = contract.customers as any;
+          const customerName = customer && typeof customer === 'object' && !Array.isArray(customer)
+            ? (customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim())
             : 'غير محدد';
           
-          const vehicleInfo = contract.vehicles 
-            ? `${contract.vehicles.make} ${contract.vehicles.model} (${contract.vehicles.plate_number})`
+          const vehicle = contract.vehicles as any;
+          const vehicleInfo = vehicle && typeof vehicle === 'object' && !Array.isArray(vehicle)
+            ? `${vehicle.make || ''} ${vehicle.model || ''} (${vehicle.plate_number || ''})`.trim()
             : 'غير محدد';
           
           searchResults.push({
