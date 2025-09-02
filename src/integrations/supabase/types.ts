@@ -10981,7 +10981,7 @@ export type Database = {
           model: string
           monthly_rate: number
           plate_number: string
-          status: string
+          status: Database["public"]["Enums"]["vehicle_status"]
           weekly_rate: number
           year: number
         }[]
