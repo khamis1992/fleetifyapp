@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 
 // Re-export types for compatibility
@@ -11,22 +12,41 @@ export type { Customer, CustomerFormData, CustomerFilters };
 
 export const useCustomers = (filters?: CustomerFilters) => {
   const { user } = useAuth();
+  const { companyId, filter, isBrowsingMode, browsedCompany, hasGlobalAccess } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['customers', user?.profile?.company_id || user?.company?.id, filters],
+    queryKey: ['customers', companyId, isBrowsingMode, browsedCompany?.id, filters],
     queryFn: async () => {
-      const companyId = user?.profile?.company_id || user?.company?.id;
-      if (!companyId) {
-        console.log('❌ No company ID found for user');
+      console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
+        companyId,
+        filter,
+        isBrowsingMode,
+        browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+        hasGlobalAccess,
+        userCompany: user?.company?.name,
+        filters
+      });
+
+      if (!companyId && !hasGlobalAccess) {
+        console.log('❌ [CUSTOMERS] No company ID found and no global access');
         return [];
       }
 
-      console.log('🔍 Fetching customers for company:', companyId, 'with filters:', filters);
-
       let query = supabase
         .from('customers')
-        .select('*')
-        .eq('company_id', companyId);
+        .select('*');
+
+      // Apply company filter based on unified access logic
+      if (filter.company_id) {
+        console.log('🏢 [CUSTOMERS] Applying company filter:', filter.company_id);
+        query = query.eq('company_id', filter.company_id);
+      } else if (hasGlobalAccess && !isBrowsingMode) {
+        console.log('🌐 [CUSTOMERS] Global access without browse mode - showing all customers');
+        // For super_admin not in browse mode, show all customers
+      } else if (companyId) {
+        console.log('🏢 [CUSTOMERS] Applying fallback company filter:', companyId);
+        query = query.eq('company_id', companyId);
+      }
 
       // Apply active filter
       if (!filters?.includeInactive) {
@@ -71,14 +91,20 @@ export const useCustomers = (filters?: CustomerFilters) => {
       const { data, error } = await query;
 
       if (error) {
-        console.error('❌ Error fetching customers:', error);
+        console.error('❌ [CUSTOMERS] Error fetching customers:', error);
         throw error;
       }
 
-      console.log('✅ Successfully fetched customers:', data?.length || 0);
+      console.log('✅ [CUSTOMERS] Successfully fetched customers:', {
+        count: data?.length || 0,
+        companyFilter: filter.company_id,
+        isBrowsingMode,
+        browsedCompanyName: browsedCompany?.name
+      });
+      
       return data || [];
     },
-    enabled: !!(user?.profile?.company_id || user?.company?.id),
+    enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
