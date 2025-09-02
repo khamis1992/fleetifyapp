@@ -49,8 +49,9 @@ export const useCustomers = (filters?: CustomerFilters) => {
         .from('customers')
         .select('*');
       
-      // Apply company filter only for non-system level users
-      if (!isSystemLevel && companyId) {
+      // Apply company filter based on unified company access logic
+      // Super admins see their primary company by default, unless in browse mode showing all
+      if (companyId) {
         query = query.eq('company_id', companyId);
       }
       
@@ -133,8 +134,8 @@ export const useCustomerById = (customerId: string) => {
         .select('*')
         .eq('id', customerId);
       
-      // Apply company filter only for non-system level users
-      if (!isSystemLevel && companyId) {
+      // Apply company filter based on unified company access logic
+      if (companyId) {
         query = query.eq('company_id', companyId);
       }
       
