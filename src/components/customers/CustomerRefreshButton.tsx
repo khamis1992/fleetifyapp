@@ -21,20 +21,22 @@ export const CustomerRefreshButton: React.FC<CustomerRefreshButtonProps> = ({
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      console.log('🔄 Manual refresh triggered for customers');
+      console.log('🔄 [REFRESH] Manual refresh triggered for customers');
       
-      // Clear existing cache and force fresh fetch
-      await queryClient.resetQueries({ queryKey: ['customers'] });
+      // Invalidate and refetch all customer-related queries immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customers'] }),
+        queryClient.refetchQueries({ queryKey: ['customers'] }),
+        queryClient.refetchQueries({ 
+          queryKey: ['customer'],
+          type: 'active' 
+        })
+      ]);
       
-      // Also refresh any individual customer queries
-      await queryClient.refetchQueries({ 
-        queryKey: ['customer'],
-        type: 'active' 
-      });
-      
+      console.log('✅ [REFRESH] Manual refresh completed successfully');
       toast.success('تم تحديث قائمة العملاء بنجاح');
     } catch (error) {
-      console.error('Error refreshing customers:', error);
+      console.error('❌ [REFRESH] Error refreshing customers:', error);
       toast.error('حدث خطأ أثناء تحديث القائمة');
     } finally {
       setIsRefreshing(false);

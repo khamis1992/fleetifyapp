@@ -2,168 +2,162 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
-import { toast } from 'sonner';
 
 export const useCustomersRealtime = () => {
   const queryClient = useQueryClient();
-  const { companyId, getQueryKey, isSystemLevel } = useUnifiedCompanyAccess();
+  const { companyId, isSystemLevel } = useUnifiedCompanyAccess();
 
   useEffect(() => {
-    // For system level users, we need to listen to all customers
-    // For company scoped users, we need a company ID
-    if (!isSystemLevel && !companyId) return;
+    if (!companyId) return;
 
-    console.log('🔄 Setting up real-time subscription for customers:', {
+    console.log('📡 [REALTIME] Setting up customers subscription:', {
       companyId,
-      isSystemLevel
+      isSystemLevel,
+      timestamp: new Date().toISOString()
     });
 
-    // Create subscription config based on user level
-    const subscriptionConfig = isSystemLevel 
-      ? {
-          event: 'INSERT' as const,
-          schema: 'public',
-          table: 'customers'
-          // No filter for system level users - listen to all customers
-        }
-      : {
-          event: 'INSERT' as const,
-          schema: 'public',
-          table: 'customers',
-          filter: `company_id=eq.${companyId}`
-        };
-
+    // Create channel with unique name
     const channel = supabase
-      .channel('customers-changes')
-      .on(
-        'postgres_changes',
-        subscriptionConfig,
-        (payload) => {
-          console.log('✅ Real-time: Customer inserted', payload.new);
+      .channel('customers-realtime-v3', {
+        config: {
+          broadcast: { self: true },
+          presence: { key: 'customers' }
+        }
+      });
+
+    // Subscription config based on user level
+    const subscriptionConfig = {
+      event: '*' as const,
+      schema: 'public' as const,
+      table: 'customers' as const,
+      ...(isSystemLevel ? {} : { filter: `company_id=eq.${companyId}` })
+    };
+
+    console.log('📡 [REALTIME] Subscription config:', subscriptionConfig);
+
+    channel
+      .on('postgres_changes', subscriptionConfig, (payload) => {
+        console.log('🔔 [REALTIME] Customer event received:', {
+          eventType: payload.eventType,
+          recordId: (payload.new as any)?.id || (payload.old as any)?.id,
+          timestamp: new Date().toISOString()
+        });
+
+        try {
+          const { eventType, new: newRecord, old: oldRecord } = payload;
           
-          try {
-            // تحديث فوري للـ cache
-            queryClient.setQueriesData(
-              { queryKey: ['customers'] },
-              (oldData: any) => {
-                if (!oldData) return [payload.new];
-                
-                // التحقق من عدم وجود العميل مسبقاً لتجنب التكرار
-                const exists = oldData.some((customer: any) => customer.id === payload.new.id);
-                if (exists) {
-                  console.log('📋 Real-time: Customer already exists in cache, skipping update');
-                  return oldData;
-                }
-                
-                // إضافة العميل الجديد في بداية القائمة
-                console.log('📋 Real-time: Adding customer to cache', payload.new.id);
-                return [payload.new, ...oldData];
-              }
-            );
-            
-            // عدم إظهار toast من Real-time لتجنب التكرار مع onSuccess
-            console.log('📡 Real-time update processed for customer:', payload.new.id);
-          } catch (error) {
-            console.error('❌ Real-time cache update error:', error);
-            // Fallback: trigger refetch if cache update fails
-            queryClient.refetchQueries({ queryKey: ['customers'] });
+          switch (eventType) {
+            case 'INSERT':
+              console.log('✅ [REALTIME] Processing INSERT');
+              handleCustomerInsert(newRecord, queryClient);
+              break;
+            case 'UPDATE':
+              console.log('✅ [REALTIME] Processing UPDATE');
+              handleCustomerUpdate(newRecord, queryClient);
+              break;
+            case 'DELETE':
+              console.log('✅ [REALTIME] Processing DELETE');
+              handleCustomerDelete(oldRecord, queryClient);
+              break;
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        isSystemLevel 
-          ? {
-              event: 'UPDATE' as const,
-              schema: 'public',
-              table: 'customers'
-            }
-          : {
-              event: 'UPDATE' as const,
-              schema: 'public',
-              table: 'customers',
-              filter: `company_id=eq.${companyId}`
-            },
-        (payload) => {
-          console.log('📝 Real-time: Customer updated', payload.new);
-          
-          // تحديث فوري للـ cache
-          queryClient.setQueriesData(
-            { queryKey: ['customers'] },
-            (oldData: any) => {
-              if (!oldData) return oldData;
-              
-              // تحديث العميل الموجود في القائمة
-              return oldData.map((customer: any) => 
-                customer.id === payload.new.id ? { ...customer, ...payload.new } : customer
-              );
-            }
-          );
-          
-          // تحديث الـ cache للعميل المُحدث
-          queryClient.setQueryData(
-            getQueryKey(['customer'], [payload.new.id]),
-            payload.new
-          );
-        }
-      )
-      .on(
-        'postgres_changes',
-        isSystemLevel 
-          ? {
-              event: 'DELETE' as const,
-              schema: 'public',
-              table: 'customers'
-            }
-          : {
-              event: 'DELETE' as const,
-              schema: 'public',
-              table: 'customers',
-              filter: `company_id=eq.${companyId}`
-            },
-        (payload) => {
-          console.log('🗑️ Real-time: Customer deleted', payload.old);
-          
-          // إزالة العميل من الـ cache
-          queryClient.setQueriesData(
-            { queryKey: ['customers'] },
-            (oldData: any) => {
-              if (!oldData) return oldData;
-              
-              // إزالة العميل من القائمة
-              return oldData.filter((customer: any) => customer.id !== payload.old.id);
-            }
-          );
-          
-          // إزالة العميل من الـ cache الفردي
-          queryClient.removeQueries({
-            queryKey: getQueryKey(['customer'], [payload.old.id])
-          });
-          
-          const customerName = payload.old.customer_type === 'individual' 
-            ? `${payload.old.first_name} ${payload.old.last_name}`
-            : payload.old.company_name;
-          
-          toast.success(`تم حذف العميل "${customerName}" بنجاح`);
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status);
-        
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Real-time subscription established successfully');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Real-time subscription error, attempting fallback');
-          // Fallback: periodic refresh if real-time fails
+        } catch (error) {
+          console.error('❌ [REALTIME] Error processing event:', error);
+          // Enhanced fallback with delay
           setTimeout(() => {
+            console.log('🔄 [REALTIME] Fallback: Refetching customers');
             queryClient.refetchQueries({ queryKey: ['customers'] });
           }, 2000);
+        }
+      })
+      .subscribe((status) => {
+        console.log('📡 [REALTIME] Subscription status:', {
+          status,
+          timestamp: new Date().toISOString(),
+          companyId
+        });
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [REALTIME] Customers subscription established');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [REALTIME] Subscription error - fallback initiated');
+          queryClient.refetchQueries({ queryKey: ['customers'] });
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚠️ [REALTIME] Subscription timed out - retrying');
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ['customers'] });
+          }, 3000);
         }
       });
 
     return () => {
-      console.log('🔌 Unsubscribing from customers real-time updates');
+      console.log('🔌 [REALTIME] Cleaning up customers subscription');
       supabase.removeChannel(channel);
     };
-  }, [companyId, isSystemLevel, queryClient, getQueryKey]);
+  }, [companyId, isSystemLevel, queryClient]);
+};
+
+// Enhanced handler functions
+const handleCustomerInsert = (newCustomer: any, queryClient: any) => {
+  console.log('🆕 [REALTIME] Handling customer insert:', {
+    id: newCustomer.id,
+    name: newCustomer.customer_type === 'individual' 
+      ? `${newCustomer.first_name} ${newCustomer.last_name}`
+      : newCustomer.company_name
+  });
+  
+  // Remove optimistic updates and add real customer
+  queryClient.setQueriesData(
+    { queryKey: ['customers'] },
+    (oldData: any) => {
+      if (!oldData) return [newCustomer];
+      
+      // Filter out optimistic entries and check for existing real customer
+      const filteredData = oldData.filter((customer: any) => 
+        !customer._isOptimistic && customer.id !== newCustomer.id
+      );
+      
+      return [newCustomer, ...filteredData];
+    }
+  );
+  
+  // Update individual customer cache
+  queryClient.setQueryData(['customer', newCustomer.id], newCustomer);
+  
+  console.log('✅ [REALTIME] Customer insert processed');
+};
+
+const handleCustomerUpdate = (updatedCustomer: any, queryClient: any) => {
+  console.log('📝 [REALTIME] Handling customer update:', updatedCustomer.id);
+  
+  // Update customers list
+  queryClient.setQueriesData(
+    { queryKey: ['customers'] },
+    (oldData: any) => {
+      if (!oldData) return oldData;
+      
+      return oldData.map((customer: any) => 
+        customer.id === updatedCustomer.id ? updatedCustomer : customer
+      );
+    }
+  );
+  
+  // Update individual customer cache
+  queryClient.setQueryData(['customer', updatedCustomer.id], updatedCustomer);
+};
+
+const handleCustomerDelete = (deletedCustomer: any, queryClient: any) => {
+  console.log('🗑️ [REALTIME] Handling customer delete:', deletedCustomer.id);
+  
+  // Remove from customers list
+  queryClient.setQueriesData(
+    { queryKey: ['customers'] },
+    (oldData: any) => {
+      if (!oldData) return oldData;
+      
+      return oldData.filter((customer: any) => customer.id !== deletedCustomer.id);
+    }
+  );
+  
+  // Remove individual customer cache
+  queryClient.removeQueries({ queryKey: ['customer', deletedCustomer.id] });
 };

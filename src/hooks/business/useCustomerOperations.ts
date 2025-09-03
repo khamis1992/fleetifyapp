@@ -162,13 +162,13 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       };
 
       // Remove ID from update data
-      const { id, ...dataToUpdate } = updateData;
+      const { id: customerId, ...dataToUpdate } = updateData;
 
       // Update customer
       const { data: updatedCustomer, error } = await supabase
         .from('customers')
         .update(dataToUpdate)
-        .eq('id', validatedData.id)
+        .eq('id', customerId)
         .eq('company_id', companyId)
         .select()
         .single();

@@ -167,23 +167,24 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         return;
       }
 
+      console.log('📝 [FORM] Submitting customer form:', data);
+      
       const result = await createCustomer.mutateAsync({
         ...data,
-        force_create: forceCreate,
-        context,
+        force_create: forceCreate
       });
 
-      toast.success(editingCustomer ? 'تم تحديث العميل بنجاح' : 'تم إنشاء العميل بنجاح');
+      // Form reset and UI updates - immediate for better UX
+      form.reset();
+      setCurrentStep('basic');
+      setCompletedSteps([]);
+      setForceCreate(false);
+      setHasDuplicates(false);
+      
+      console.log('✅ [FORM] Customer created successfully, calling onSuccess');
       
       if (onSuccess) {
         onSuccess(result);
-      } else {
-        // Reset form for standalone usage
-        form.reset();
-        setCurrentStep('basic');
-        setCompletedSteps([]);
-        setForceCreate(false);
-        setHasDuplicates(false);
       }
     } catch (error: any) {
       console.error('Error saving customer:', error);
