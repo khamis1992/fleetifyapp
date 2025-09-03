@@ -24,14 +24,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
 
-  console.log('📝 [AUTH_CONTEXT] Current state:', { 
-    loading, 
-    initializing, 
-    hasUser: !!user, 
-    hasSession: !!session,
-    sessionError 
-  });
-
   // Session validation helper
   const validateSession = async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
@@ -177,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setLoading(false);
               setInitializing(false);
             }
-          }, 1000); // 1 second timeout (reduced from 3 seconds)
+          }, 3000); // 3 second timeout
         } else {
           console.log('📝 [AUTH_CONTEXT] No existing session found');
           setLoading(false);
@@ -194,19 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Small delay to let auth state change fire first
     setTimeout(initializeSession, 100);
 
-    // Ultimate fallback - force loading to false after 5 seconds no matter what
-    const ultimateTimeout = setTimeout(() => {
-      if (loading || initializing) {
-        console.warn('📝 [AUTH_CONTEXT] ULTIMATE FALLBACK: Forcing loading to false after 5 seconds');
-        setLoading(false);
-        setInitializing(false);
-      }
-    }, 5000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(ultimateTimeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {

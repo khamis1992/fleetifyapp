@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Trash2, Trash, RefreshCw } from "lucide-react"
+import { Plus, Users, Building, Phone, Mail, MapPin, UserX, Search, Filter, Edit, Eye, ShieldX, Trash2, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +24,7 @@ import { useCompanyContext } from "@/contexts/CompanyContext"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
-import { useCustomerCacheManager } from "@/hooks/useCustomerCacheManager"
+
 
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
@@ -35,7 +35,6 @@ export default function Customers() {
   const { companyId, isSystemLevel, hasFullCompanyControl } = useUnifiedCompanyAccess()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { forceRefreshAllCustomers } = useCustomerCacheManager()
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
@@ -205,17 +204,6 @@ export default function Customers() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => {
-              console.log('🔄 Manual refresh triggered from Customers page');
-              forceRefreshAllCustomers();
-            }}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            تحديث
-          </Button>
           
           {canDeleteCustomers && allCustomers.length > 0 && (
             <Button 

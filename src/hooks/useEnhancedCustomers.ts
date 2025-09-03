@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
-import { useCustomerCacheManager } from './useCustomerCacheManager';
 import { toast } from 'sonner';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
@@ -407,7 +406,6 @@ export const useDeleteCustomer = () => {
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
-  const { refreshCustomerCache } = useCustomerCacheManager();
 
   return useMutation({
     mutationFn: async (data: any) => {
@@ -569,17 +567,15 @@ export const useCreateCustomer = () => {
     onSuccess: (customerData) => {
       console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
       
-      // استخدام مدير الكاش المحسن للتحديث الشامل
-      refreshCustomerCache(customerData);
+      // تحديث فوري للـ cache بإضافة العميل الجديد في المقدمة
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       
-      // تحديث إضافي للحسابات المرتبطة
-      queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] });
-      
-      // آلية fallback إضافية للتأكد من التحديث
-      setTimeout(() => {
-        console.log('🔄 [FALLBACK] Additional cache refresh for customer creation in useCreateCustomer');
-        refreshCustomerCache();
-      }, 500);
+      // إعادة جلب البيانات لضمان التحديث الكامل
+      Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] }),
+        queryClient.invalidateQueries({ queryKey: ['enhanced-customers'] })
+      ]);
       
       // إظهار رسالة نجاح مع تحذير إذا فشل إنشاء الحسابات
       const hasAccountError = (customerData as any)?._autoAccountCreationError;

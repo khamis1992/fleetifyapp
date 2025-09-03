@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCreateCustomer } from '@/hooks/useEnhancedCustomers';
 import { useCustomerOperations } from '@/hooks/business/useCustomerOperations';
-import { useCustomerCacheManager } from '@/hooks/useCustomerCacheManager';
 import { createCustomerSchema } from '@/schemas/customer.schema';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
 import { toast } from 'sonner';
@@ -80,8 +79,6 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     autoCreateAccounts: context === 'standalone',
     sendWelcomeEmail: false
   });
-  
-  const { refreshCustomerCache } = useCustomerCacheManager();
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -150,13 +147,6 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
-      // منع الحفظ إذا لم نكن في خطوة المراجعة النهائية
-      if (currentStep !== 'summary') {
-        console.log('⚠️ [FORM] Attempted to submit form outside of summary step, preventing submission');
-        toast.warning('يرجى إكمال جميع الخطوات والوصول إلى خطوة المراجعة قبل الحفظ');
-        return;
-      }
-
       // Enhanced validation for expired documents
       const expiredDocs = [];
       if (data.national_id_expiry && data.national_id_expiry <= new Date()) {
@@ -177,7 +167,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         return;
       }
 
-      console.log('📝 [FORM] Submitting customer form from summary step:', data);
+      console.log('📝 [FORM] Submitting customer form:', data);
       
       const result = await createCustomer.mutateAsync({
         ...data,
@@ -192,12 +182,6 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       setHasDuplicates(false);
       
       console.log('✅ [FORM] Customer created successfully, calling onSuccess');
-      
-      // تحديث إضافي مباشر من النموذج للتأكد من ظهور العميل
-      setTimeout(() => {
-        console.log('🔄 [FORM] Additional cache refresh from form');
-        refreshCustomerCache(result);
-      }, 100);
       
       if (onSuccess) {
         onSuccess(result);
@@ -348,15 +332,6 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       </div>
     </div>
   );
-
-  // دالة لمنع الإرسال التلقائي عند الضغط على Enter
-  const handleFormKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && currentStep !== 'summary') {
-      e.preventDefault();
-      console.log('⚠️ [FORM] Enter key pressed outside summary step, preventing form submission');
-      toast.info('استخدم أزرار التنقل للانتقال بين الخطوات');
-    }
-  };
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -724,7 +699,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   if (integrationMode === 'dialog') {
     return (
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           {renderFormContent()}
         </form>
       </Form>
@@ -735,7 +710,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     return (
       <div className="max-w-4xl mx-auto p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             {renderFormContent()}
           </form>
         </Form>
@@ -747,7 +722,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   return (
     <div className="w-full">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           {renderFormContent()}
         </form>
       </Form>
