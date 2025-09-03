@@ -114,6 +114,54 @@ const Dashboard: React.FC = () => {
     }
   ];
 
+  // إعداد المساعد الذكي للوحة التحكم
+  const dashboardAIConfig: AIAssistantConfig = {
+    module: 'dashboard',
+    primitives: ['data_analysis', 'content_creation', 'research', 'ideation_strategy'],
+    context: {
+      stats: enhancedStats,
+      activities: enhancedActivities,
+      financialData: smartMetricsData,
+      userRole: user?.role,
+      companyName: browsedCompany?.name || 'شركتك'
+    },
+    priority: 'high_value',
+    enabledFeatures: [
+      {
+        id: 'dashboard_insights',
+        name: 'تحليل لوحة التحكم',
+        description: 'تحليل ذكي للإحصائيات والبيانات المعروضة',
+        primitive: 'data_analysis',
+        taskType: 'analyze_data',
+        enabled: true
+      },
+      {
+        id: 'create_report',
+        name: 'إنشاء التقارير',
+        description: 'إنشاء تقارير مخصصة بناءً على البيانات',
+        primitive: 'content_creation',
+        taskType: 'create_report',
+        enabled: true
+      },
+      {
+        id: 'suggest_actions',
+        name: 'اقتراح الإجراءات',
+        description: 'اقتراح إجراءات لتحسين الأداء',
+        primitive: 'ideation_strategy',
+        taskType: 'suggest_action',
+        enabled: true
+      },
+      {
+        id: 'optimize_workflow',
+        name: 'تحسين سير العمل',
+        description: 'تحليل وتحسين العمليات الحالية',
+        primitive: 'automation',
+        taskType: 'optimize_workflow',
+        enabled: true
+      }
+    ]
+  };
+
   return (
     <>
       <ProfessionalBackground />
