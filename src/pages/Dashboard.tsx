@@ -13,6 +13,8 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
+import { FloatingAIAssistant } from '@/components/ai/FloatingAIAssistant';
+import { AIAssistantConfig } from '@/types/ai-assistant';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
