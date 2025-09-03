@@ -1,5 +1,5 @@
+import React, { useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
 import { StatCardNumber } from '@/components/ui/NumberDisplay';

@@ -1,5 +1,5 @@
+import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
 import { InteractiveDashboardCard } from './InteractiveDashboardCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
