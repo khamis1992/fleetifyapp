@@ -1,6 +1,5 @@
 import * as React from "react"
 import { format } from "date-fns"
-import { ar } from "date-fns/locale"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -56,7 +55,7 @@ export function DateField({
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {dateValue ? (
-            format(dateValue, "dd MMMM yyyy", { locale: ar })
+            format(dateValue, "dd MMMM yyyy")
           ) : (
             <span>{placeholder}</span>
           )}
@@ -69,7 +68,6 @@ export function DateField({
           onSelect={handleSelect}
           initialFocus
           className="pointer-events-auto"
-          locale={ar}
           disabled={(date) => date < new Date("1900-01-01")}
         />
       </PopoverContent>
