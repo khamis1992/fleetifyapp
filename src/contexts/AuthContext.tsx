@@ -22,15 +22,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [initializing, setInitializing] = useState(true);
-
-  console.log('📝 [AUTH_CONTEXT] Current state:', { 
-    loading, 
-    initializing, 
-    hasUser: !!user, 
-    hasSession: !!session,
-    sessionError 
-  });
 
   // Session validation helper
   const validateSession = async (currentSession: Session | null): Promise<boolean> => {
@@ -65,148 +56,96 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    let isInitialLoad = true;
-    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session, 'isInitialLoad:', isInitialLoad);
+        console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
         
         // Clear previous errors
         setSessionError(null);
         
-        // Handle different auth events
-        if (event === 'SIGNED_OUT') {
-          console.log('📝 [AUTH_CONTEXT] User signed out');
-          setUser(null);
-          setSession(null);
-          setLoading(false);
-          setInitializing(false);
-          return;
-        }
-        
-        if (event === 'TOKEN_REFRESHED' && session) {
-          console.log('📝 [AUTH_CONTEXT] Token refreshed');
-          setSession(session);
-          // Don't change loading state for token refresh
-          return;
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setSession(null);
+          } else if (event === 'TOKEN_REFRESHED' && session) {
+            setSession(session);
+          }
         }
         
         if (session?.user) {
           // Validate session before proceeding
           const isValidSession = await validateSession(session);
           if (!isValidSession) {
-            console.log('📝 [AUTH_CONTEXT] Invalid session, clearing state');
             setUser(null);
             setSession(null);
             setLoading(false);
-            setInitializing(false);
             return;
           }
 
           console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
           setSession(session);
           
-          // For initial load, keep loading state until profile is loaded
-          if (isInitialLoad) {
+          // Defer the profile fetch to avoid blocking the auth state change
+          setTimeout(async () => {
             try {
               const authUser = await authService.getCurrentUser();
-              console.log('📝 [AUTH_CONTEXT] Profile loaded on initial load:', authUser?.profile?.company_id);
+              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
               setUser(authUser);
               setSessionError(null);
             } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile on initial load:', error);
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
               setUser(session.user as AuthUser);
               setSessionError('خطأ في تحميل بيانات المستخدم');
-            } finally {
-              setLoading(false);
-              setInitializing(false);
             }
-          } else {
-            // For subsequent changes, update in background
-            setTimeout(async () => {
-              try {
-                const authUser = await authService.getCurrentUser();
-                console.log('📝 [AUTH_CONTEXT] Profile updated:', authUser?.profile?.company_id);
-                setUser(authUser);
-                setSessionError(null);
-              } catch (error) {
-                console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-                setUser(session.user as AuthUser);
-                setSessionError('خطأ في تحميل بيانات المستخدم');
-              }
-            }, 0);
-            setLoading(false);
-          }
+          }, 0);
         } else {
           console.log('📝 [AUTH_CONTEXT] No user session');
           setUser(null);
           setSession(null);
-          setLoading(false);
-          setInitializing(false);
         }
         
-        // Mark that initial load is complete
-        isInitialLoad = false;
+        setLoading(false);
       }
     );
 
-    // THEN check for existing session - but only if auth state change hasn't fired yet
+    // THEN check for existing session
     const initializeSession = async () => {
       try {
-        console.log('📝 [AUTH_CONTEXT] Initializing session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
           setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
           setLoading(false);
-          setInitializing(false);
           return;
         }
 
-        // If we have a session, the auth state change will handle it
-        // This is just a fallback in case the auth state change doesn't fire
         if (session?.user) {
-          console.log('📝 [AUTH_CONTEXT] Found existing session during initialization');
-          // Let the auth state change handler deal with this
-          // Just ensure we don't stay in loading state forever
-          setTimeout(() => {
-            if (initializing) {
-              console.log('📝 [AUTH_CONTEXT] Fallback: Setting loading to false after timeout');
-              setLoading(false);
-              setInitializing(false);
+          const isValidSession = await validateSession(session);
+          if (isValidSession) {
+            setSession(session);
+            try {
+              const authUser = await authService.getCurrentUser();
+              setUser(authUser);
+            } catch (error) {
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
             }
-          }, 1000); // 1 second timeout (reduced from 3 seconds)
-        } else {
-          console.log('📝 [AUTH_CONTEXT] No existing session found');
-          setLoading(false);
-          setInitializing(false);
+          }
         }
       } catch (error) {
         console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
         setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
+      } finally {
         setLoading(false);
-        setInitializing(false);
       }
     };
 
-    // Small delay to let auth state change fire first
-    setTimeout(initializeSession, 100);
+    initializeSession();
 
-    // Ultimate fallback - force loading to false after 5 seconds no matter what
-    const ultimateTimeout = setTimeout(() => {
-      if (loading || initializing) {
-        console.warn('📝 [AUTH_CONTEXT] ULTIMATE FALLBACK: Forcing loading to false after 5 seconds');
-        setLoading(false);
-        setInitializing(false);
-      }
-    }, 5000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(ultimateTimeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
@@ -264,7 +203,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     session,
-    loading: loading || initializing, // Keep loading true during initialization
+    loading,
     signUp,
     signIn,
     signOut,
