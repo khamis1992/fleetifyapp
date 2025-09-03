@@ -567,30 +567,37 @@ export const useCreateCustomer = () => {
     onSuccess: (customerData) => {
       console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
       
-      // Update cache immediately with optimistic update
-      queryClient.setQueriesData(
-        { queryKey: ['customers'] },
-        (oldData: any) => {
-          if (!oldData) return [customerData];
-          
-          // Check if customer already exists to avoid duplicates
+      // Get all customer queries to update them properly
+      const allCustomerQueries = queryClient.getQueriesData({ 
+        queryKey: ['customers'], 
+        exact: false 
+      });
+      
+      console.log('🔄 [useCreateCustomer] Found customer queries to update:', allCustomerQueries.length);
+      
+      // Update all matching customer query caches immediately
+      allCustomerQueries.forEach(([queryKey, oldData]) => {
+        if (Array.isArray(oldData)) {
           const exists = oldData.some((customer: any) => customer.id === customerData.id);
-          if (exists) return oldData;
-          
-          // Add new customer to the beginning of the list
-          return [customerData, ...oldData];
+          if (!exists) {
+            console.log('🔄 [useCreateCustomer] Updating cache for query:', queryKey);
+            queryClient.setQueryData(queryKey, [customerData, ...oldData]);
+          }
         }
-      );
+      });
       
       // Also update individual customer cache
       queryClient.setQueryData(['customer', customerData.id], customerData);
       
-      // Trigger refetch as backup (but don't wait for it)
-      Promise.all([
-        queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] }),
-        queryClient.invalidateQueries({ queryKey: ['enhanced-customers'] })
-      ]);
+      // Trigger immediate invalidation for all customer queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['customers'], 
+        exact: false,
+        refetchType: 'active' 
+      });
+      
+      // Mark that manual update happened to coordinate with real-time
+      (queryClient as any)._lastCustomerUpdate = Date.now();
       
       // إظهار رسالة نجاح مع تحذير إذا فشل إنشاء الحسابات
       const hasAccountError = (customerData as any)?._autoAccountCreationError;

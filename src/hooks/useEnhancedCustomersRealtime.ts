@@ -105,20 +105,34 @@ const handleCustomerInsert = (newCustomer: any, queryClient: any) => {
       : newCustomer.company_name
   });
   
-  // Update cache with new customer at the beginning
-  queryClient.setQueriesData(
-    { queryKey: ['customers'] },
-    (oldData: any) => {
-      if (!oldData) return [newCustomer];
-      
-      // Check if customer already exists to avoid duplicates
+  // Debounce real-time updates to avoid conflicts with manual updates
+  const now = Date.now();
+  const lastUpdate = (queryClient as any)._lastCustomerUpdate || 0;
+  
+  // Skip if manual update happened recently (within 2 seconds)
+  if (now - lastUpdate < 2000) {
+    console.log('⏭️ [REALTIME] Skipping real-time update - recent manual update detected');
+    return;
+  }
+  
+  // Get all customer queries to update them properly
+  const allCustomerQueries = queryClient.getQueriesData({ 
+    queryKey: ['customers'], 
+    exact: false 
+  });
+  
+  console.log('🔄 [REALTIME] Found customer queries to update:', allCustomerQueries.length);
+  
+  // Update all matching customer query caches
+  allCustomerQueries.forEach(([queryKey, oldData]) => {
+    if (Array.isArray(oldData)) {
       const exists = oldData.some((customer: any) => customer.id === newCustomer.id);
-      if (exists) return oldData;
-      
-      // Add new customer to the beginning of the list
-      return [newCustomer, ...oldData];
+      if (!exists) {
+        console.log('🔄 [REALTIME] Updating cache for query:', queryKey);
+        queryClient.setQueryData(queryKey, [newCustomer, ...oldData]);
+      }
     }
-  );
+  });
   
   // Update individual customer cache
   queryClient.setQueryData(['customer', newCustomer.id], newCustomer);
@@ -129,17 +143,22 @@ const handleCustomerInsert = (newCustomer: any, queryClient: any) => {
 const handleCustomerUpdate = (updatedCustomer: any, queryClient: any) => {
   console.log('📝 [REALTIME] Handling customer update:', updatedCustomer.id);
   
-  // Update customers list
-  queryClient.setQueriesData(
-    { queryKey: ['customers'] },
-    (oldData: any) => {
-      if (!oldData) return oldData;
-      
-      return oldData.map((customer: any) => 
-        customer.id === updatedCustomer.id ? updatedCustomer : customer
+  // Get all customer queries to update them properly
+  const allCustomerQueries = queryClient.getQueriesData({ 
+    queryKey: ['customers'], 
+    exact: false 
+  });
+  
+  // Update all matching customer query caches
+  allCustomerQueries.forEach(([queryKey, oldData]) => {
+    if (Array.isArray(oldData)) {
+      queryClient.setQueryData(queryKey, 
+        oldData.map((customer: any) => 
+          customer.id === updatedCustomer.id ? updatedCustomer : customer
+        )
       );
     }
-  );
+  });
   
   // Update individual customer cache
   queryClient.setQueryData(['customer', updatedCustomer.id], updatedCustomer);
@@ -148,15 +167,20 @@ const handleCustomerUpdate = (updatedCustomer: any, queryClient: any) => {
 const handleCustomerDelete = (deletedCustomer: any, queryClient: any) => {
   console.log('🗑️ [REALTIME] Handling customer delete:', deletedCustomer.id);
   
-  // Remove from customers list
-  queryClient.setQueriesData(
-    { queryKey: ['customers'] },
-    (oldData: any) => {
-      if (!oldData) return oldData;
-      
-      return oldData.filter((customer: any) => customer.id !== deletedCustomer.id);
+  // Get all customer queries to update them properly
+  const allCustomerQueries = queryClient.getQueriesData({ 
+    queryKey: ['customers'], 
+    exact: false 
+  });
+  
+  // Update all matching customer query caches
+  allCustomerQueries.forEach(([queryKey, oldData]) => {
+    if (Array.isArray(oldData)) {
+      queryClient.setQueryData(queryKey, 
+        oldData.filter((customer: any) => customer.id !== deletedCustomer.id)
+      );
     }
-  );
+  });
   
   // Remove individual customer cache
   queryClient.removeQueries({ queryKey: ['customer', deletedCustomer.id] });
