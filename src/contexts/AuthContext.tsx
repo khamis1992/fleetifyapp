@@ -56,63 +56,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    let isInitializing = true;
-    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
         
-        // Skip processing during initialization to avoid double updates
-        if (isInitializing && event === 'INITIAL_SESSION') {
-          return;
-        }
-        
         // Clear previous errors
         setSessionError(null);
         
-        // Handle different auth events
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setSession(null);
-          setLoading(false);
-          return;
-        }
-        
-        if (event === 'TOKEN_REFRESHED' && session) {
-          setSession(session);
-          return;
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setSession(null);
+          } else if (event === 'TOKEN_REFRESHED' && session) {
+            setSession(session);
+          }
         }
         
         if (session?.user) {
-          // For existing sessions, skip validation if recently validated
-          const needsValidation = !session.expires_at || 
-            (Date.now() / 1000) > (session.expires_at - 300); // 5 min buffer
-          
-          if (needsValidation) {
-            const isValidSession = await validateSession(session);
-            if (!isValidSession) {
-              setUser(null);
-              setSession(null);
-              setLoading(false);
-              return;
-            }
+          // Validate session before proceeding
+          const isValidSession = await validateSession(session);
+          if (!isValidSession) {
+            setUser(null);
+            setSession(null);
+            setLoading(false);
+            return;
           }
 
           console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
           setSession(session);
           
-          // Fetch profile immediately without setTimeout
-          try {
-            const authUser = await authService.getCurrentUser();
-            console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-            setUser(authUser);
-            setSessionError(null);
-          } catch (error) {
-            console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-            setUser(session.user as AuthUser);
-            setSessionError('خطأ في تحميل بيانات المستخدم');
-          }
+          // Defer the profile fetch to avoid blocking the auth state change
+          setTimeout(async () => {
+            try {
+              const authUser = await authService.getCurrentUser();
+              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
+              setUser(authUser);
+              setSessionError(null);
+            } catch (error) {
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
+            }
+          }, 0);
         } else {
           console.log('📝 [AUTH_CONTEXT] No user session');
           setUser(null);
@@ -136,18 +122,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         if (session?.user) {
-          // Trust stored session without excessive validation
-          console.log('📝 [AUTH_CONTEXT] Found stored session, loading profile...');
-          setSession(session);
-          
-          try {
-            const authUser = await authService.getCurrentUser();
-            setUser(authUser);
-            setSessionError(null);
-          } catch (error) {
-            console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
-            setUser(session.user as AuthUser);
-            setSessionError('خطأ في تحميل بيانات المستخدم');
+          const isValidSession = await validateSession(session);
+          if (isValidSession) {
+            setSession(session);
+            try {
+              const authUser = await authService.getCurrentUser();
+              setUser(authUser);
+            } catch (error) {
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
+            }
           }
         }
       } catch (error) {
@@ -155,7 +140,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
       } finally {
         setLoading(false);
-        isInitializing = false;
       }
     };
 
