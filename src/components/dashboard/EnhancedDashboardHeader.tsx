@@ -27,7 +27,6 @@ const EnhancedDashboardHeader: React.FC<EnhancedDashboardHeaderProps> = ({
 
   const getCurrentDate = () => {
     return new Intl.DateTimeFormat('ar-EG', {
-      calendar: 'gregory',
       weekday: 'long',
       year: 'numeric',
       month: 'long',

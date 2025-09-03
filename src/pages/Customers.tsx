@@ -24,7 +24,7 @@ import { useCompanyContext } from "@/contexts/CompanyContext"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
-
+import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
@@ -202,9 +202,25 @@ export default function Customers() {
           <p className="text-muted-foreground mt-1">
             إدارة وتتبع معلومات العملاء
           </p>
+          {/* مؤشر الشركة النشطة */}
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant={isBrowsingMode ? "secondary" : "default"}>
+              {isBrowsingMode ? `تصفح: ${browsedCompany?.name}` : `شركتك: ${user?.company?.name || 'غير محدد'}`}
+            </Badge>
+            {isBrowsingMode && (
+              <Button
+                onClick={exitBrowseMode}
+                variant="outline"
+                size="sm"
+                className="h-6 text-xs"
+              >
+                العودة لشركتي
+              </Button>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
-          
+          <CustomerRefreshButton />
           {canDeleteCustomers && allCustomers.length > 0 && (
             <Button 
               onClick={() => setShowBulkDeleteDialog(true)}
