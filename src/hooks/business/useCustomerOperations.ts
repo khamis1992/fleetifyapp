@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
-import { useCustomerCacheManager } from '@/hooks/useCustomerCacheManager';
 import { 
   CreateCustomerData, 
   UpdateCustomerData,
@@ -20,7 +19,6 @@ export interface CustomerOperationsOptions {
 export const useCustomerOperations = (options: CustomerOperationsOptions = {}) => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
-  const { refreshCustomerCache, updateCustomerInCache, removeCustomerFromCache } = useCustomerCacheManager();
 
   const {
     enableDuplicateCheck = true,
@@ -97,14 +95,32 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
     onSuccess: (customer) => {
       console.log('✅ Customer creation successful:', customer.id);
       
-      // استخدام مدير الكاش المحسن للتحديث الشامل
-      refreshCustomerCache(customer);
+      // Immediate cache update - add new customer to existing list
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return [customer];
+          
+          // Check if customer already exists to avoid duplicates
+          const exists = oldData.some((c: any) => c.id === customer.id);
+          if (exists) return oldData;
+          
+          // Add new customer at the beginning of the list
+          console.log('📋 Cache: Adding new customer to list', customer.id);
+          return [customer, ...oldData];
+        }
+      );
       
-      // إضافة آلية fallback إضافية للتأكد من التحديث
+      // Set individual customer cache
+      queryClient.setQueryData(['customer', customer.id], customer);
+      
+      // Force a background refetch to ensure data consistency
       setTimeout(() => {
-        console.log('🔄 [FALLBACK] Additional cache refresh for customer creation');
-        refreshCustomerCache();
-      }, 1000);
+        queryClient.refetchQueries({ 
+          queryKey: ['customers'],
+          type: 'active'
+        });
+      }, 100);
       
       toast.success('تم إنشاء العميل بنجاح');
     },
@@ -168,8 +184,28 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
     onSuccess: (customer) => {
       console.log('✅ Customer update successful:', customer.id);
       
-      // استخدام مدير الكاش المحسن لتحديث العميل
-      updateCustomerInCache(customer);
+      // Immediate cache update - update customer in existing list
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          return oldData.map((c: any) => 
+            c.id === customer.id ? { ...c, ...customer } : c
+          );
+        }
+      );
+      
+      // Update individual customer cache
+      queryClient.setQueryData(['customer', customer.id], customer);
+      
+      // Force background refetch for consistency
+      setTimeout(() => {
+        queryClient.refetchQueries({ 
+          queryKey: ['customers'],
+          type: 'active'
+        });
+      }, 100);
       
       toast.success('تم تحديث العميل بنجاح');
     },
@@ -209,9 +245,9 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       console.log('✅ [useCustomerOperations] Customer deleted successfully');
       return { id: customerId };
     },
-    onSuccess: (result) => {
-      // استخدام مدير الكاش المحسن لحذف العميل
-      removeCustomerFromCache(result.id);
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       
       toast.success('تم حذف العميل بنجاح');
     },
