@@ -24,7 +24,7 @@ import { useCompanyContext } from "@/contexts/CompanyContext"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
-import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
+
 
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
@@ -204,7 +204,7 @@ export default function Customers() {
           </p>
         </div>
         <div className="flex gap-2">
-          <CustomerRefreshButton />
+          
           {canDeleteCustomers && allCustomers.length > 0 && (
             <Button 
               onClick={() => setShowBulkDeleteDialog(true)}
