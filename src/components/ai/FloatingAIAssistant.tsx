@@ -93,6 +93,10 @@ export const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     cancelCurrentTask
   } = useAIAssistant(config);
 
+  // سجل تتبع للتشخيص
+  console.log('🤖 FloatingAIAssistant mounted with config:', config);
+  console.log('🤖 FloatingAIAssistant isOpen:', isOpen);
+
   // التعامل مع السحب والإفلات
   const handleMouseDown = (e: React.MouseEvent) => {
     if (dragRef.current) {

@@ -235,6 +235,15 @@ const Dashboard: React.FC = () => {
             <DocumentExpiryAlerts />
           </motion.div>
         </div>
+
+        {/* المساعد الذكي العائم */}
+        <FloatingAIAssistant 
+          config={dashboardAIConfig}
+          defaultPosition={{ 
+            x: typeof window !== 'undefined' ? window.innerWidth - 420 : 300, 
+            y: 100 
+          }}
+        />
       </div>
     </>
   );
