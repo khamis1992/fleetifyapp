@@ -118,7 +118,7 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
         }, 'image/png');
       };
       
-      img.src = '/lovable-uploads/c3d3679c-5f97-4d37-a138-1c52edad03f8.png';
+      img.src = '/مخطط.png';
     } catch (error) {
       console.error('Error exporting diagram:', error);
       setIsExporting(false);
@@ -224,10 +224,14 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
           {/* Vehicle Diagram Background */}
           <div className="absolute inset-0">
             <img
-              src="/lovable-uploads/c3d3679c-5f97-4d37-a138-1c52edad03f8.png"
+              src="/مخطط.png"
               alt="مخطط المركبة"
               className="w-full h-full object-contain"
               draggable={false}
+              onError={(e) => {
+                console.error('خطأ في تحميل صورة مخطط المركبة');
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
           
