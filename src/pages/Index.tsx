@@ -16,12 +16,14 @@ const Index = () => {
   const { user, loading } = useAuth();
   const { content: dynamicContent, loading: contentLoading } = useDynamicLandingContent('ar');
 
-  // أثناء التحميل، لا تعرض أي شيء (AuthGuard سيتولى عرض شاشة التحميل)
   if (loading) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
-  // إذا كان المستخدم مسجل دخول، انتقل للوحة التحكم
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }

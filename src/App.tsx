@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
-import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout";
@@ -72,12 +71,11 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <AuthGuard>
-        <CompanyContextProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+      <CompanyContextProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -380,7 +378,6 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
       </CompanyContextProvider>
-      </AuthGuard>
     </AuthProvider>
   </QueryClientProvider>
 );
