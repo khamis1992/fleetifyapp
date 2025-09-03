@@ -25,7 +25,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
 import { CustomerRefreshButton } from "@/components/customers/CustomerRefreshButton"
-import { CustomerDataDiagnostics } from "@/components/customers/CustomerDataDiagnostics"
+
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
 
@@ -380,8 +380,6 @@ export default function Customers() {
         </CardContent>
       </Card>
 
-      {/* تشخيص البيانات */}
-      <CustomerDataDiagnostics currentCustomersCount={allCustomers.length} />
 
       {/* بطاقات الإحصائيات */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
