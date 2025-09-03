@@ -84,11 +84,25 @@ export const useCreateCustomerAccount = () => {
         description: "تم ربط الحساب المحاسبي بالعميل بنجاح",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating customer account:', error);
+      
+      let errorMessage = "حدث خطأ أثناء إضافة الحساب المحاسبي";
+      
+      // Handle specific error types
+      if (error.message?.includes('unique constraint') || error.code === '23505') {
+        if (error.message?.includes('customer_accounts_customer_id_account_id_key')) {
+          errorMessage = "هذا الحساب المحاسبي مربوط مسبقاً بهذا العميل";
+        } else if (error.message?.includes('unique_customer_account')) {
+          errorMessage = "يوجد حساب محاسبي لهذا العميل مسبقاً في هذه الشركة";
+        } else {
+          errorMessage = "يوجد تضارب في البيانات، تأكد من عدم تكرار المعلومات";
+        }
+      }
+      
       toast({
         title: "خطأ في إضافة الحساب",
-        description: "حدث خطأ أثناء إضافة الحساب المحاسبي",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -110,6 +124,22 @@ export const useUpdateCustomerAccount = () => {
       customerId: string; 
       accountData: Partial<CustomerAccountFormData> 
     }) => {
+      // Check for existing account conflicts before updating
+      if (accountData.account_id) {
+        const { data: existingAccount } = await supabase
+          .from('customer_accounts')
+          .select('id')
+          .eq('customer_id', customerId)
+          .eq('account_id', accountData.account_id)
+          .neq('id', accountId)
+          .eq('is_active', true)
+          .single();
+
+        if (existingAccount) {
+          throw new Error('ACCOUNT_ALREADY_LINKED');
+        }
+      }
+
       // If this is set as default, first unset other defaults of the same type
       if (accountData.is_default && accountData.account_type_id) {
         await supabase
@@ -137,11 +167,27 @@ export const useUpdateCustomerAccount = () => {
         description: "تم تحديث بيانات الحساب المحاسبي بنجاح",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error updating customer account:', error);
+      
+      let errorMessage = "حدث خطأ أثناء تحديث الحساب المحاسبي";
+      
+      // Handle specific error types
+      if (error.message === 'ACCOUNT_ALREADY_LINKED') {
+        errorMessage = "هذا الحساب المحاسبي مربوط مسبقاً بهذا العميل";
+      } else if (error.message?.includes('unique constraint') || error.code === '23505') {
+        if (error.message?.includes('customer_accounts_customer_id_account_id_key')) {
+          errorMessage = "هذا الحساب المحاسبي مربوط مسبقاً بهذا العميل";
+        } else if (error.message?.includes('unique_customer_account')) {
+          errorMessage = "يوجد تضارب في بيانات الحساب، تأكد من عدم وجود حساب مكرر";
+        } else {
+          errorMessage = "يوجد تضارب في البيانات، تأكد من عدم تكرار المعلومات";
+        }
+      }
+      
       toast({
         title: "خطأ في تحديث الحساب",
-        description: "حدث خطأ أثناء تحديث الحساب المحاسبي",
+        description: errorMessage,
         variant: "destructive",
       });
     },

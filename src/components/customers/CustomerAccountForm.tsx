@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { CustomerAccountSelector } from '@/components/finance/CustomerAccountSelector';
 import { useCustomerAccountTypes } from '@/hooks/useCustomerAccountTypes';
-import { useCreateCustomerAccount, useUpdateCustomerAccount } from '@/hooks/useEnhancedCustomerAccounts';
+import { useCreateCustomerAccount, useUpdateCustomerAccount, useCustomerAccounts } from '@/hooks/useEnhancedCustomerAccounts';
 import { Customer } from '@/types/customer';
 import { CustomerAccount, CustomerAccountFormData } from '@/types/customerAccount';
 
@@ -38,6 +38,7 @@ export const CustomerAccountForm: React.FC<CustomerAccountFormProps> = ({
   onCancel,
 }) => {
   const { data: accountTypes = [] } = useCustomerAccountTypes();
+  const { data: existingAccounts = [] } = useCustomerAccounts(customer.id);
   const createMutation = useCreateCustomerAccount();
   const updateMutation = useUpdateCustomerAccount();
 
@@ -108,12 +109,33 @@ export const CustomerAccountForm: React.FC<CustomerAccountFormProps> = ({
             <Label htmlFor="account_id">الحساب المحاسبي *</Label>
             <CustomerAccountSelector
               value={form.watch('account_id')}
-              onValueChange={(value) => form.setValue('account_id', value)}
+              onValueChange={(value) => {
+                // Check if this account is already linked (for edit mode)
+                const isAlreadyLinked = existingAccounts.some(
+                  existingAcc => existingAcc.account_id === value && existingAcc.id !== account?.id
+                );
+                
+                if (isAlreadyLinked) {
+                  form.setError('account_id', {
+                    type: 'manual',
+                    message: 'هذا الحساب المحاسبي مربوط مسبقاً بهذا العميل'
+                  });
+                  return;
+                }
+                
+                form.clearErrors('account_id');
+                form.setValue('account_id', value);
+              }}
               placeholder="اختر الحساب المحاسبي"
             />
             {form.formState.errors.account_id && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.account_id.message}
+              </p>
+            )}
+            {existingAccounts.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                تجنب اختيار الحسابات المربوطة مسبقاً بهذا العميل
               </p>
             )}
           </div>
