@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout";
@@ -64,7 +65,8 @@ import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSet
 const App = () => (
   <AppProviders>
     <BrowserRouter>
-      <Routes>
+      <AuthGuard>
+        <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -361,8 +363,9 @@ const App = () => (
         </Route>
         
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthGuard>
     </BrowserRouter>
   </AppProviders>
 );
