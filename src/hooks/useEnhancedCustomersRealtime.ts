@@ -41,27 +41,33 @@ export const useCustomersRealtime = () => {
         (payload) => {
           console.log('✅ Real-time: Customer inserted', payload.new);
           
-          // تحديث فوري للـ cache
-          queryClient.setQueriesData(
-            { queryKey: ['customers'] },
-            (oldData: any) => {
-              if (!oldData) return [payload.new];
-              
-              // التحقق من عدم وجود العميل مسبقاً لتجنب التكرار
-              const exists = oldData.some((customer: any) => customer.id === payload.new.id);
-              if (exists) {
-                console.log('📋 Real-time: Customer already exists in cache, skipping update');
-                return oldData;
+          try {
+            // تحديث فوري للـ cache
+            queryClient.setQueriesData(
+              { queryKey: ['customers'] },
+              (oldData: any) => {
+                if (!oldData) return [payload.new];
+                
+                // التحقق من عدم وجود العميل مسبقاً لتجنب التكرار
+                const exists = oldData.some((customer: any) => customer.id === payload.new.id);
+                if (exists) {
+                  console.log('📋 Real-time: Customer already exists in cache, skipping update');
+                  return oldData;
+                }
+                
+                // إضافة العميل الجديد في بداية القائمة
+                console.log('📋 Real-time: Adding customer to cache', payload.new.id);
+                return [payload.new, ...oldData];
               }
-              
-              // إضافة العميل الجديد في بداية القائمة
-              console.log('📋 Real-time: Adding customer to cache', payload.new.id);
-              return [payload.new, ...oldData];
-            }
-          );
-          
-          // عدم إظهار toast من Real-time لتجنب التكرار مع onSuccess
-          console.log('📡 Real-time update processed for customer:', payload.new.id);
+            );
+            
+            // عدم إظهار toast من Real-time لتجنب التكرار مع onSuccess
+            console.log('📡 Real-time update processed for customer:', payload.new.id);
+          } catch (error) {
+            console.error('❌ Real-time cache update error:', error);
+            // Fallback: trigger refetch if cache update fails
+            queryClient.refetchQueries({ queryKey: ['customers'] });
+          }
         }
       )
       .on(
@@ -143,6 +149,16 @@ export const useCustomersRealtime = () => {
       )
       .subscribe((status) => {
         console.log('📡 Real-time subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Real-time subscription established successfully');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Real-time subscription error, attempting fallback');
+          // Fallback: periodic refresh if real-time fails
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ['customers'] });
+          }, 2000);
+        }
       });
 
     return () => {

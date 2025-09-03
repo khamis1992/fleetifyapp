@@ -93,9 +93,34 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       return insertedCustomer;
     },
     onSuccess: (customer) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customer', customer.id] });
+      console.log('✅ Customer creation successful:', customer.id);
+      
+      // Immediate cache update - add new customer to existing list
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return [customer];
+          
+          // Check if customer already exists to avoid duplicates
+          const exists = oldData.some((c: any) => c.id === customer.id);
+          if (exists) return oldData;
+          
+          // Add new customer at the beginning of the list
+          console.log('📋 Cache: Adding new customer to list', customer.id);
+          return [customer, ...oldData];
+        }
+      );
+      
+      // Set individual customer cache
+      queryClient.setQueryData(['customer', customer.id], customer);
+      
+      // Force a background refetch to ensure data consistency
+      setTimeout(() => {
+        queryClient.refetchQueries({ 
+          queryKey: ['customers'],
+          type: 'active'
+        });
+      }, 100);
       
       toast.success('تم إنشاء العميل بنجاح');
     },
@@ -157,9 +182,30 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       return updatedCustomer;
     },
     onSuccess: (customer) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customer', customer.id] });
+      console.log('✅ Customer update successful:', customer.id);
+      
+      // Immediate cache update - update customer in existing list
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          return oldData.map((c: any) => 
+            c.id === customer.id ? { ...c, ...customer } : c
+          );
+        }
+      );
+      
+      // Update individual customer cache
+      queryClient.setQueryData(['customer', customer.id], customer);
+      
+      // Force background refetch for consistency
+      setTimeout(() => {
+        queryClient.refetchQueries({ 
+          queryKey: ['customers'],
+          type: 'active'
+        });
+      }, 100);
       
       toast.success('تم تحديث العميل بنجاح');
     },
