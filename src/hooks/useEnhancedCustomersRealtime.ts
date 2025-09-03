@@ -105,18 +105,18 @@ const handleCustomerInsert = (newCustomer: any, queryClient: any) => {
       : newCustomer.company_name
   });
   
-  // Remove optimistic updates and add real customer
+  // Update cache with new customer at the beginning
   queryClient.setQueriesData(
     { queryKey: ['customers'] },
     (oldData: any) => {
       if (!oldData) return [newCustomer];
       
-      // Filter out optimistic entries and check for existing real customer
-      const filteredData = oldData.filter((customer: any) => 
-        !customer._isOptimistic && customer.id !== newCustomer.id
-      );
+      // Check if customer already exists to avoid duplicates
+      const exists = oldData.some((customer: any) => customer.id === newCustomer.id);
+      if (exists) return oldData;
       
-      return [newCustomer, ...filteredData];
+      // Add new customer to the beginning of the list
+      return [newCustomer, ...oldData];
     }
   );
   

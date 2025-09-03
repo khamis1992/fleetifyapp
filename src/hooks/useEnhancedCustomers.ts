@@ -567,10 +567,25 @@ export const useCreateCustomer = () => {
     onSuccess: (customerData) => {
       console.log('🎉 [useCreateCustomer] onSuccess called with:', customerData);
       
-      // تحديث فوري للـ cache بإضافة العميل الجديد في المقدمة
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      // Update cache immediately with optimistic update
+      queryClient.setQueriesData(
+        { queryKey: ['customers'] },
+        (oldData: any) => {
+          if (!oldData) return [customerData];
+          
+          // Check if customer already exists to avoid duplicates
+          const exists = oldData.some((customer: any) => customer.id === customerData.id);
+          if (exists) return oldData;
+          
+          // Add new customer to the beginning of the list
+          return [customerData, ...oldData];
+        }
+      );
       
-      // إعادة جلب البيانات لضمان التحديث الكامل
+      // Also update individual customer cache
+      queryClient.setQueryData(['customer', customerData.id], customerData);
+      
+      // Trigger refetch as backup (but don't wait for it)
       Promise.all([
         queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' }),
         queryClient.invalidateQueries({ queryKey: ['customer-accounts', customerData.id] }),

@@ -211,9 +211,6 @@ export const useCreateCustomer = () => {
       console.log('🎉 Customer creation successful:', data);
       
       // Update cache immediately with optimistic update
-      const companyId = data.company_id;
-      
-      // Update all customers queries for this company
       queryClient.setQueriesData(
         { queryKey: ['customers'] },
         (oldData: any) => {
@@ -228,7 +225,10 @@ export const useCreateCustomer = () => {
         }
       );
       
-      // Also trigger refetch as a backup (but don't wait for it)
+      // Also update individual customer cache
+      queryClient.setQueryData(['customer', data.id], data);
+      
+      // Trigger refetch as backup (but don't wait for it)
       queryClient.refetchQueries({ 
         queryKey: ['customers'],
         type: 'active' 
