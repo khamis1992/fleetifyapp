@@ -68,18 +68,19 @@ import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSet
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CompanyContextProvider>
-        <React.Fragment>
-          <SimpleToaster />
-          <Sonner />
-          <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+const App = () => {
+  return (
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CompanyContextProvider>
+            <SimpleToaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/quotation-approval" element={<QuotationApproval />} />
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/super-admin/*" element={<SuperAdminLayout />}>
@@ -372,14 +373,15 @@ const App = () => (
               <Route path="support/ticket/:ticketId" element={<SupportTicketDetail />} />
             </Route>
             
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        </React.Fragment>
-      </CompanyContextProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </CompanyContextProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
+};
 
 export default App;
