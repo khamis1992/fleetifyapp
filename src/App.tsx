@@ -54,6 +54,8 @@ import Payroll from "./pages/hr/Payroll";
 import HRReports from "./pages/hr/Reports";
 import HRSettings from "./pages/hr/Settings";
 import Legal from "./pages/Legal";
+import LegalAdvisor from "./pages/legal/LegalAdvisor";
+import CaseManagement from "./pages/legal/CaseManagement";
 import ApprovalSystem from "./pages/ApprovalSystem";
 import Support from "./pages/Support";
 import SupportTicketDetail from "./pages/SupportTicketDetail";
@@ -208,6 +210,16 @@ const App = () => (
                   <Legal />
                 </AdminRoute>
               } />
+              <Route path="legal/advisor" element={
+                <AdminRoute>
+                  <LegalAdvisor />
+                </AdminRoute>
+              } />
+              <Route path="legal/cases" element={
+                <AdminRoute>
+                  <CaseManagement />
+                </AdminRoute>
+              } />
               <Route path="approvals" element={
                 <AdminRoute>
                   <ApprovalSystem />
@@ -339,6 +351,16 @@ const App = () => (
               <Route path="legal" element={
                 <AdminRoute>
                   <Legal />
+                </AdminRoute>
+              } />
+              <Route path="legal/advisor" element={
+                <AdminRoute>
+                  <LegalAdvisor />
+                </AdminRoute>
+              } />
+              <Route path="legal/cases" element={
+                <AdminRoute>
+                  <CaseManagement />
                 </AdminRoute>
               } />
               <Route path="approvals" element={

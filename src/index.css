@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import responsive and accessibility fixes */
-@import './styles/accessibility.css';
-@import './styles/z-index-fix.css';
-@import './styles/desktop-layout-fix.css';
-
 /* KW Rent Flow ERP - Professional Design System 
 Inspired by Kuwait business environment with premium colors and gradients.
 All colors MUST be HSL.

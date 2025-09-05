@@ -5,9 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { AdminOnly, SuperAdminOnly } from '@/components/common/PermissionGuard';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
-import { useDeviceDetection } from '@/hooks/responsive/useDeviceDetection';
-import { cn } from '@/lib/utils';
 import { 
   Car, 
   FileText, 
@@ -253,10 +250,6 @@ export function AppSidebar() {
   const location = useLocation();
   const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
   
-  // Responsive hooks
-  const { isMobile, isTablet, touchDevice } = useResponsiveBreakpoint();
-  const { touchSupport } = useDeviceDetection();
-  
   // Check if finance section should be open
   const isFinanceActive = location.pathname.startsWith('/finance');
   // Check if HR section should be open
@@ -269,74 +262,29 @@ export function AppSidebar() {
   };
 
   const isActive = (href: string) => location.pathname.startsWith(href);
-  
-  // Enhanced navigation classes for responsive design
   const getNavClassName = ({ isActive: active }: { isActive: boolean }) => 
-    cn(
-      "transition-all duration-200",
-      // Base styles
-      active 
-        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-        : "hover:bg-sidebar-accent/60",
-      // Mobile optimizations
-      isMobile && [
-        "min-h-[48px]", // Larger touch targets
-        "text-base", // Larger text
-        touchSupport && "active:scale-95 active:bg-sidebar-accent/80"
-      ],
-      // Tablet optimizations
-      isTablet && [
-        "min-h-[44px]",
-        "text-sm"
-      ]
-    );
+    active ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/60";
 
   return (
-    <Sidebar 
-      side="right" 
-      className={cn(
-        "border-l border-sidebar-border bg-sidebar-background app-sidebar",
-        // Desktop: Fixed width and proper positioning
-        !isMobile && "w-64 flex-shrink-0",
-        // Mobile adjustments
-        isMobile && "w-full max-w-[280px]"
-      )}
-    >
+    <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
       {/* Header */}
-      <SidebarHeader className={cn(
-        "border-b border-sidebar-border",
-        isMobile ? "p-4" : "p-6"
-      )}>
+      <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex flex-col items-center text-center space-y-2">
           <img 
             src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
             alt="Fleetify Logo" 
-            className={cn(
-              "w-auto filter brightness-0 invert",
-              isMobile ? "h-12" : "h-16"
-            )}
+            className="h-16 w-auto filter brightness-0 invert"
           />
           {!collapsed && (
-            <p className={cn(
-              "text-sidebar-foreground/60",
-              isMobile ? "text-sm" : "text-xs"
-            )}>
-              نظام إدارة تأجير السيارات
-            </p>
+            <p className="text-xs text-sidebar-foreground/60">نظام إدارة تأجير السيارات</p>
           )}
         </div>
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className={cn(
-        "overflow-y-auto overscroll-contain",
-        isMobile ? "px-2 py-3" : "px-3 py-4"
-      )}>
+      <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className={cn(
-            "font-medium text-sidebar-foreground/60 mb-2",
-            isMobile ? "text-sm px-2" : "text-xs"
-          )}>
+          <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
             القائمة الرئيسية
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -345,25 +293,10 @@ export function AppSidebar() {
                 console.log('Navigation item:', item.name, item.href);
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton 
-                      asChild 
-                      className={cn(
-                        isMobile ? "h-12 px-3" : "h-10",
-                        "transition-all duration-200"
-                      )}
-                    >
+                    <SidebarMenuButton asChild className="h-10">
                       <NavLink to={item.href} className={getNavClassName}>
-                        <item.icon className={cn(
-                          isMobile ? "h-5 w-5" : "h-4 w-4"
-                        )} />
-                        {!collapsed && (
-                          <span className={cn(
-                            "font-medium",
-                            isMobile ? "text-base" : "text-sm"
-                          )}>
-                            {item.name}
-                          </span>
-                        )}
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span className="font-medium">{item.name}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                    </SidebarMenuItem>
@@ -374,25 +307,12 @@ export function AppSidebar() {
                <SidebarMenuItem>
                  <Collapsible defaultOpen={isFleetActive}>
                    <CollapsibleTrigger asChild>
-                     <SidebarMenuButton className={cn(
-                       isMobile ? "h-12 px-3" : "h-10",
-                       "transition-all duration-200"
-                     )}>
-                       <Car className={cn(
-                         isMobile ? "h-5 w-5" : "h-4 w-4"
-                       )} />
+                     <SidebarMenuButton className="h-10">
+                       <Car className="h-4 w-4" />
                        {!collapsed && (
                          <>
-                           <span className={cn(
-                             "font-medium",
-                             isMobile ? "text-base" : "text-sm"
-                           )}>
-                             الأسطول
-                           </span>
-                           <ChevronDown className={cn(
-                             "ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180",
-                             isMobile ? "h-5 w-5" : "h-4 w-4"
-                           )} />
+                           <span className="font-medium">الأسطول</span>
+                           <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
                          </>
                        )}
                      </SidebarMenuButton>
@@ -401,24 +321,10 @@ export function AppSidebar() {
                      <SidebarMenuSub>
                        {fleetSubItems.map((subItem) => (
                          <SidebarMenuSubItem key={subItem.href}>
-                           <SidebarMenuSubButton 
-                             asChild
-                             className={cn(
-                               isMobile ? "h-11 px-4" : "h-9",
-                               "transition-all duration-200"
-                             )}
-                           >
+                           <SidebarMenuSubButton asChild>
                              <NavLink to={subItem.href} className={getNavClassName}>
-                               <subItem.icon className={cn(
-                                 isMobile ? "h-4 w-4" : "h-3.5 w-3.5"
-                               )} />
-                               {!collapsed && (
-                                 <span className={cn(
-                                   isMobile ? "text-sm" : "text-xs"
-                                 )}>
-                                   {subItem.name}
-                                 </span>
-                               )}
+                               <subItem.icon className="h-4 w-4" />
+                               {!collapsed && <span>{subItem.name}</span>}
                              </NavLink>
                            </SidebarMenuSubButton>
                          </SidebarMenuSubItem>
@@ -430,50 +336,20 @@ export function AppSidebar() {
 
                {/* Quotations */}
                <SidebarMenuItem>
-                 <SidebarMenuButton 
-                   asChild 
-                   className={cn(
-                     isMobile ? "h-12 px-3" : "h-10",
-                     "transition-all duration-200"
-                   )}
-                 >
+                 <SidebarMenuButton asChild className="h-10">
                    <NavLink to="/quotations" className={getNavClassName}>
-                     <FileText className={cn(
-                       isMobile ? "h-5 w-5" : "h-4 w-4"
-                     )} />
-                     {!collapsed && (
-                       <span className={cn(
-                         "font-medium",
-                         isMobile ? "text-base" : "text-sm"
-                       )}>
-                         عروض الأسعار
-                       </span>
-                     )}
+                     <FileText className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">عروض الأسعار</span>}
                    </NavLink>
                  </SidebarMenuButton>
                </SidebarMenuItem>
 
                {/* Contracts */}
                <SidebarMenuItem>
-                 <SidebarMenuButton 
-                   asChild 
-                   className={cn(
-                     isMobile ? "h-12 px-3" : "h-10",
-                     "transition-all duration-200"
-                   )}
-                 >
+                 <SidebarMenuButton asChild className="h-10">
                    <NavLink to="/contracts" className={getNavClassName}>
-                     <FileText className={cn(
-                       isMobile ? "h-5 w-5" : "h-4 w-4"
-                     )} />
-                     {!collapsed && (
-                       <span className={cn(
-                         "font-medium",
-                         isMobile ? "text-base" : "text-sm"
-                       )}>
-                         العقود
-                       </span>
-                     )}
+                     <FileText className="h-4 w-4" />
+                     {!collapsed && <span className="font-medium">العقود</span>}
                    </NavLink>
                  </SidebarMenuButton>
                </SidebarMenuItem>
