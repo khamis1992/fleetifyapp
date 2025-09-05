@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 // import { SimpleToaster } from "@/components/ui/simple-toaster";
 // import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
