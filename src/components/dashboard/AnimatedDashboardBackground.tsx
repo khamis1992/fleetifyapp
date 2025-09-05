@@ -1,30 +1,5 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
-
-function AnimatedSphere() {
-  return (
-    <mesh scale={2}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial
-        color="#6366f1"
-        transparent
-        opacity={0.1}
-        roughness={0}
-      />
-    </mesh>
-  );
-}
-
-function Scene() {
-  return (
-    <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <AnimatedSphere />
-    </>
-  );
-}
 
 export function AnimatedDashboardBackground() {
   return (
@@ -48,36 +23,30 @@ export function AnimatedDashboardBackground() {
 
       {/* Floating particles */}
       <div className="absolute inset-0">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 15 }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 bg-primary/20 rounded-full"
+            className="absolute rounded-full bg-primary/10"
+            style={{
+              width: Math.random() * 40 + 20,
+              height: Math.random() * 40 + 20,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
             animate={{
-              x: [0, 100, 0],
-              y: [0, -100, 0],
-              opacity: [0, 1, 0],
+              y: [0, -30, 0],
+              x: [0, 20, 0],
+              scale: [1, 1.1, 1],
+              opacity: [0.3, 0.8, 0.3],
             }}
             transition={{
-              duration: 10 + i * 2,
+              duration: 6 + Math.random() * 4,
               repeat: Infinity,
-              delay: i * 2,
-              ease: 'easeInOut',
-            }}
-            style={{
-              left: `${20 + i * 15}%`,
-              top: `${30 + i * 10}%`,
+              ease: "easeInOut",
+              delay: Math.random() * 2,
             }}
           />
         ))}
-      </div>
-
-      {/* Simplified 3D Scene */}
-      <div className="absolute inset-0 opacity-20">
-        <Canvas camera={{ position: [0, 0, 5] }}>
-          <Suspense fallback={null}>
-            <Scene />
-          </Suspense>
-        </Canvas>
       </div>
 
       {/* Gradient overlays */}
