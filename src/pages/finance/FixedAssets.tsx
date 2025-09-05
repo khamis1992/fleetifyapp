@@ -229,7 +229,6 @@ const FixedAssets = () => {
   }
 
   return (
-    <TooltipProvider>
       <div className="space-y-6">
       {/* Breadcrumb */}
       <Breadcrumb>
@@ -868,7 +867,6 @@ const FixedAssets = () => {
         </DialogContent>
       </Dialog>
       </div>
-    </TooltipProvider>
   )
 }
 

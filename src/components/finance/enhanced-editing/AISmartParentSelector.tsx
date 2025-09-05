@@ -5,7 +5,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Check, ChevronDown, Bot, TrendingUp, Users, Sparkles, Target, Clock, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEnhancedAccountSuggestions, EnhancedSuggestion } from '@/hooks/useEnhancedAccountSuggestions';
@@ -165,8 +165,7 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
   };
 
   return (
-    <TooltipProvider>
-      <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -342,6 +341,5 @@ export const AISmartParentSelector: React.FC<AISmartParentSelectorProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
-    </TooltipProvider>
   );
 };

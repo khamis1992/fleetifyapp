@@ -8,7 +8,7 @@ import { StatCardNumber } from '@/components/ui/NumberDisplay';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
@@ -70,8 +70,7 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
   const TrendIcon = getTrendIcon();
 
   return (
-    <TooltipProvider>
-      <motion.div
+    <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ 
@@ -244,7 +243,6 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
           />
         </Card>
       </motion.div>
-    </TooltipProvider>
   );
 };
 

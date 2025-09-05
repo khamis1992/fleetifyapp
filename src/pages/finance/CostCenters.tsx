@@ -345,7 +345,6 @@ export default function CostCenters() {
                     </Badge>
                     </TableCell>
                     <TableCell>
-                      <TooltipProvider>
                         <div className="flex items-center space-x-2">
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -415,7 +414,6 @@ export default function CostCenters() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 );

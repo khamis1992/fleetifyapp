@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AdminOnly } from '@/components/common/PermissionGuard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Plus, Edit, Trash2, Copy, Settings, HelpCircle, Info } from 'lucide-react'
 import { useContractTemplates, ContractTemplate } from '@/hooks/useContractTemplates'
 import { useForm } from 'react-hook-form'
@@ -128,8 +128,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
   }
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -452,6 +451,5 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
         )}
         </div>
       </div>
-    </TooltipProvider>
   )
 }

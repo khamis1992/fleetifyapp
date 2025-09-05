@@ -18,7 +18,7 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
@@ -169,8 +169,7 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
     const balanceIcon = balance > 0 ? TrendingUp : balance < 0 ? TrendingDown : null;
     
     return (
-      <TooltipProvider>
-        <Tooltip>
+      <Tooltip>
           <TooltipTrigger asChild>
             <div className="text-left cursor-help">
               <div className="flex items-center gap-1">
@@ -205,7 +204,6 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
             </div>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
     );
   };
 

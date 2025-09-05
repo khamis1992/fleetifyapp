@@ -22,7 +22,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -172,8 +172,7 @@ const QuickActionsDashboard: React.FC = () => {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <TooltipProvider>
-        <Tooltip>
+      <Tooltip>
           <TooltipTrigger asChild>
             <Card 
               className={`cursor-pointer transition-smooth bg-gradient-card shadow-card hover:shadow-elevated ${action.color} border group`}
@@ -219,7 +218,6 @@ const QuickActionsDashboard: React.FC = () => {
             <p>انقر للانتقال إلى {action.title}</p>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
     </motion.div>
   );
 

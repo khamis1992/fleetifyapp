@@ -239,7 +239,6 @@ const Vendors = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <TooltipProvider>
                         <div className="flex gap-1">
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -298,7 +297,6 @@ const Vendors = () => {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))}
