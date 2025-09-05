@@ -21,6 +21,9 @@ import { RefreshCw, Filter, Search, Plus } from "lucide-react"
 
 // Component imports
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
+import { MobileContractsHeader } from "@/components/contracts/MobileContractsHeader"
+import { MobileActionButtons, FloatingCreateButton } from "@/components/contracts/MobileActionButtons"
+import { MobileTabsNavigation } from "@/components/contracts/MobileTabsNavigation"
 import { ContractsStatistics } from "@/components/contracts/ContractsStatistics"
 import { ContractsList } from "@/components/contracts/ContractsList"
 import { ContractsTabsContent } from "@/components/contracts/ContractsTabsContent"
@@ -254,48 +257,27 @@ export default function Contracts() {
   return (
     <PullToRefresh onRefresh={handleRefresh} isRefreshing={isRefreshing}>
       <ResponsiveContainer className={cn("space-y-4 md:space-y-6", animationStyle)}>
-        {/* Enhanced Header with Quick Actions */}
+        {/* Enhanced Header - Mobile vs Desktop */}
         <div className="flex flex-col space-y-4">
-          <ContractsHeader
-            onCreateContract={handleCreateContract}
-            onShowTemplates={handleShowTemplates}
-            onShowExport={handleShowExport}
-            onShowCSVUpload={handleShowCSVUpload}
-            onShowBulkDelete={handleShowBulkDelete}
-          />
-          
-          {/* Mobile Quick Actions Bar */}
-          {isMobile && (
-            <div className="flex items-center justify-between gap-2 p-3 bg-background/50 backdrop-blur-sm rounded-lg border">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className="flex items-center gap-2"
-              >
-                <Filter className="h-4 w-4" />
-                فلترة
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                تحديث
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCreateContract}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                عقد جديد
-              </Button>
-            </div>
+          {isMobile ? (
+            <MobileContractsHeader
+              onCreateContract={handleCreateContract}
+              onShowTemplates={handleShowTemplates}
+              onShowExport={handleShowExport}
+              onShowCSVUpload={handleShowCSVUpload}
+              onShowBulkDelete={handleShowBulkDelete}
+              onRefresh={handleRefresh}
+              onToggleFilters={() => setShowMobileFilters(!showMobileFilters)}
+              isRefreshing={isRefreshing}
+            />
+          ) : (
+            <ContractsHeader
+              onCreateContract={handleCreateContract}
+              onShowTemplates={handleShowTemplates}
+              onShowExport={handleShowExport}
+              onShowCSVUpload={handleShowCSVUpload}
+              onShowBulkDelete={handleShowBulkDelete}
+            />
           )}
         </div>
 
@@ -332,59 +314,25 @@ export default function Contracts() {
         {/* Contract Management Tabs - Enhanced with Swipe Support */}
         <div className="space-y-3 md:space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-4">
-            <div className={cn(
-              "overflow-x-auto",
-              isMobile && "pb-2 scrollbar-hide"
-            )}>
-              <TabsList className={cn(
-                "grid w-full transition-all duration-200",
-                isMobile ? "grid-cols-3 min-w-max gap-1" : "grid-cols-6 lg:w-auto lg:inline-flex"
-              )}>
-                <TabsTrigger 
-                  value="all" 
-                  className={cn(
-                    "transition-all duration-200",
-                    isMobile ? "text-xs px-3 py-2" : ""
-                  )}
-                >
-                  {isMobile ? "الكل" : "جميع العقود"}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="active" 
-                  className={cn(
-                    "transition-all duration-200",
-                    isMobile ? "text-xs px-3 py-2" : ""
-                  )}
-                >
-                  النشطة
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="suspended" 
-                  className={cn(
-                    "transition-all duration-200",
-                    isMobile ? "text-xs px-3 py-2" : ""
-                  )}
-                >
-                  المعلقة
-                </TabsTrigger>
-                {!isMobile && (
-                  <>
-                    <TabsTrigger value="expired">المنتهية</TabsTrigger>
-                    <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
-                    <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
-                  </>
-                )}
-              </TabsList>
-              
-              {/* Swipe Indicator for Mobile */}
-              {isMobile && enableSwipe && (
-                <div className="flex justify-center mt-2">
-                  <div className="text-xs text-muted-foreground opacity-60">
-                    اسحب يميناً أو يساراً للتنقل
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Enhanced Tabs Navigation */}
+            {isMobile ? (
+              <MobileTabsNavigation
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                showAllTabs={false}
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+                  <TabsTrigger value="all">جميع العقود</TabsTrigger>
+                  <TabsTrigger value="active">النشطة</TabsTrigger>
+                  <TabsTrigger value="suspended">المعلقة</TabsTrigger>
+                  <TabsTrigger value="expired">المنتهية</TabsTrigger>
+                  <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
+                  <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
+                </TabsList>
+              </div>
+            )}
 
             <TabsContent value="all" className="animate-fade-in">
               <div className="min-h-[400px]">
@@ -528,6 +476,11 @@ export default function Contracts() {
               </Card>
             </div>
           </div>
+        )}
+
+        {/* Floating Action Button for Mobile */}
+        {isMobile && (
+          <FloatingCreateButton onCreateContract={handleCreateContract} />
         )}
       </ResponsiveContainer>
     </PullToRefresh>
