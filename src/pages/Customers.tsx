@@ -18,6 +18,7 @@ import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
 import { CustomerDisplayName } from "@/components/customers/CustomerDisplayName"
 import { BulkDeleteCustomersDialog } from "@/components/customers/BulkDeleteCustomersDialog"
+import { MobileCustomerCard } from "@/components/customers/MobileCustomerCard"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
@@ -295,15 +296,15 @@ export default function Customers() {
       )}
 
       {/* مرشحات البحث */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Filter className="h-4 w-4" />
             البحث والتصفية
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">البحث</label>
               <div className="relative">
@@ -431,11 +432,13 @@ export default function Customers() {
       </DashboardGrid>
 
       {/* قائمة العملاء - Mobile Responsive */}
-      <ResponsiveCard>
-        <ResponsiveCardHeader>
-          <ResponsiveCardTitle className="flex items-center justify-between">
+      <ResponsiveCard className="border-border/50">
+        <ResponsiveCardHeader className="pb-3">
+          <ResponsiveCardTitle className="flex items-center justify-between text-lg">
             قائمة العملاء
-            <Badge variant="secondary">{customers?.length || 0}</Badge>
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
+              {customers?.length || 0}
+            </Badge>
           </ResponsiveCardTitle>
         </ResponsiveCardHeader>
         <ResponsiveCardContent>
@@ -448,125 +451,42 @@ export default function Customers() {
           ))
         ) : (
           customers?.map((customer) => (
-            <Card key={customer.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {customer.customer_type === 'corporate' ? (
-                          <Building className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                        ) : (
-                          <Users className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <CustomerDisplayName 
-                            customer={customer} 
-                            showBadges={false}
-                            className="font-semibold text-lg"
-                          />
-                          {customer.customer_code && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                                {customer.customer_code}
-                              </span>
-      </div>
-                          )}
-                        </div>
-                        {customer.is_blacklisted && (
-                          <Badge variant="destructive" className="flex-shrink-0">
-                            <UserX className="h-3 w-3 mr-1" />
-                            محظور
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewCustomer(customer.id)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        عرض
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/edit-customer/${customer.id}`)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        تعديل
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleToggleBlacklist(customer.id, !customer.is_blacklisted)}
-                        disabled={!canAddCustomers}
-                      >
-                        <ShieldX className="h-4 w-4 mr-1" />
-                        {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
-                      </Button>
-                      {canDeleteCustomers && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDeleteCustomer(customer)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          حذف
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="text-sm truncate" dir="ltr">{customer.phone}</span>
-                    </div>
-                    
-                    {customer.email && (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-sm truncate">{customer.email}</span>
-                      </div>
-                    )}
-                    
-                    {customer.city && (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-sm truncate">{customer.city}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {customer.notes && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{customer.notes}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <MobileCustomerCard
+              key={customer.id}
+              customer={customer}
+              onView={handleViewCustomer}
+              onEdit={(customer) => {
+                setEditingCustomer(customer)
+                setShowCustomerForm(true)
+              }}
+              onToggleBlacklist={handleToggleBlacklist}
+              onDelete={handleDeleteCustomer}
+              canEdit={canAddCustomers}
+              canDelete={canDeleteCustomers}
+            />
           ))
         )}
         
         {!isLoading && customers?.length === 0 && (
-          <Card>
+          <Card className="border-border/50 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">لا توجد عملاء</h3>
-              <p className="text-muted-foreground text-center mb-4">
+              <p className="text-muted-foreground text-center mb-4 max-w-md">
                 {Object.values(debouncedFilters).some(v => v) 
                   ? 'لا توجد نتائج تطابق معايير البحث المحددة'
                   : 'ابدأ في إضافة أول عميل إلى قاعدة البيانات'
                 }
               </p>
               {!Object.values(debouncedFilters).some(v => v) && canAddCustomers && (
-                <Button onClick={() => setShowCustomerForm(true)}>
+                <Button onClick={() => setShowCustomerForm(true)} className="mt-2">
                   <Plus className="h-4 w-4 mr-2" />
                   إضافة عميل جديد
+                </Button>
+              )}
+              {Object.values(debouncedFilters).some(v => v) && (
+                <Button variant="outline" onClick={resetFilters} className="mt-2">
+                  إعادة تعيين المرشحات
                 </Button>
               )}
             </CardContent>

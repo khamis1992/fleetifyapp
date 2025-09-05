@@ -21,6 +21,7 @@ export { BulkDeleteCustomersDialog } from './BulkDeleteCustomersDialog';
 
 // مكونات مساعدة
 export { CustomerDisplayName } from './CustomerDisplayName';
+export { MobileCustomerCard } from './MobileCustomerCard';
 
 export { AccountingSettings } from './AccountingSettings';
 export { AccountLinking } from './AccountLinking';
