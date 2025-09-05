@@ -301,23 +301,15 @@ export default function Contracts() {
         {/* Journal Entry Status Alert */}
         <ContractJournalEntryStatus />
 
-        {/* Statistics Cards - Enhanced with animations */}
-        <DashboardGrid variant="stats" gap={isMobile ? "sm" : "default"}>
-          <ResponsiveCard 
-            variant="elevated" 
-            density={isMobile ? "compact" : "comfortable"}
-            className="animate-fade-in"
-          >
-            <ResponsiveCardContent>
-              <ContractsStatistics
-                activeCount={statistics.activeContracts.length}
-                draftCount={statistics.draftContracts.length}
-                cancelledCount={statistics.cancelledContracts.length}
-                totalRevenue={statistics.totalRevenue}
-              />
-            </ResponsiveCardContent>
-          </ResponsiveCard>
-        </DashboardGrid>
+        {/* Statistics Cards */}
+        <div className="w-full">
+          <ContractsStatistics
+            activeCount={statistics.activeContracts.length}
+            draftCount={statistics.draftContracts.length}
+            cancelledCount={statistics.cancelledContracts.length}
+            totalRevenue={statistics.totalRevenue}
+          />
+        </div>
 
         {/* Search and Filters - Collapsible on Mobile */}
         <ResponsiveCard 
