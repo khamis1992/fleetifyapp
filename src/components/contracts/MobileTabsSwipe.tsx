@@ -143,7 +143,6 @@ export const MobileTabsSwipe: React.FC<MobileTabsSwipeProps> = ({
               onDragEnd={handleDragEnd}
               className="absolute inset-0 w-full"
             >
-            >
               {children}
             </motion.div>
           </AnimatePresence>
