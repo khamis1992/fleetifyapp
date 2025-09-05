@@ -138,6 +138,10 @@ const QuickActionsDashboard: React.FC = () => {
   const availableRecentActions = filterActionsByPermissions(recentActions);
 
   const handleActionClick = (action: QuickAction) => {
+    console.log('Quick Action clicked:', action);
+    console.log('Has admin access:', hasCompanyAdminAccess);
+    console.log('Company ID:', companyId);
+    
     // التحقق من الصلاحيات قبل التنقل
     if (action.requiresAdmin && !hasCompanyAdminAccess) {
       toast.error('تحتاج إلى صلاحيات إدارية للوصول لهذه الميزة');
@@ -149,6 +153,7 @@ const QuickActionsDashboard: React.FC = () => {
       return;
     }
     
+    console.log('Navigating to:', action.route);
     navigate(action.route);
   };
 
