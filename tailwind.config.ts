@@ -129,12 +129,18 @@ export default {
 					overlay: 'hsl(var(--mobile-overlay, 0 0% 0% / 0.8))',
 					touch: 'hsl(var(--mobile-touch, var(--accent)))'
 				},
-				// Touch-friendly sizes
-				touch: {
-					target: 'hsl(var(--touch-target, var(--primary)))',
-					active: 'hsl(var(--touch-active, var(--primary-light)))',
-					ghost: 'hsl(var(--touch-ghost, var(--accent)))'
-				}
+			// Touch-friendly sizes
+			touch: {
+				target: 'hsl(var(--touch-target, var(--primary)))',
+				active: 'hsl(var(--touch-active, var(--primary-light)))',
+				ghost: 'hsl(var(--touch-ghost, var(--accent)))'
+			},
+			// Responsive state colors
+			responsive: {
+				highlight: 'hsl(var(--responsive-highlight, var(--primary)))',
+				surface: 'hsl(var(--responsive-surface, var(--card)))',
+				interactive: 'hsl(var(--responsive-interactive, var(--accent)))'
+			}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -145,13 +151,20 @@ export default {
 			spacing: {
 				'touch': '44px', // Minimum touch target size
 				'touch-lg': '48px', // Larger touch target
+				'touch-xl': '56px', // Extra large touch target
 				'mobile-safe-top': 'env(safe-area-inset-top)',
 				'mobile-safe-bottom': 'env(safe-area-inset-bottom)',
 				'mobile-safe-left': 'env(safe-area-inset-left)',
 				'mobile-safe-right': 'env(safe-area-inset-right)',
 				'mobile-header': '60px',
 				'mobile-bottom-nav': '68px',
-				'mobile-tab-height': '56px'
+				'mobile-tab-height': '56px',
+				'sidebar-mobile': '280px',
+				'sidebar-tablet': '320px',
+				'sidebar-desktop': '360px',
+				'content-mobile': 'calc(100vw - 2rem)',
+				'content-tablet': 'calc(100vw - 4rem)',
+				'content-desktop': 'calc(100vw - 6rem)'
 			},
 			// Mobile-optimized sizes
 			minHeight: {

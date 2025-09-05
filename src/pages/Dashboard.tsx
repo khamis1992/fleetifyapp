@@ -6,6 +6,8 @@ import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
+import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
 import EnhancedStatsCard from '@/components/dashboard/EnhancedStatsCard';
@@ -15,6 +17,9 @@ import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
 import { FloatingAIAssistant } from '@/components/ai/FloatingAIAssistant';
 import { AIAssistantConfig } from '@/types/ai-assistant';
+import { ResponsiveContainer } from '@/components/ui/responsive-container';
+import { DashboardGrid } from '@/components/ui/responsive-grid';
+import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from '@/components/ui/responsive-card';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -178,8 +183,8 @@ const Dashboard: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
+          <DashboardGrid variant="stats" gap="default">
           {statsConfig.map((stat, index) => (
             <EnhancedStatsCard
               key={stat.title}
@@ -197,6 +202,7 @@ const Dashboard: React.FC = () => {
               index={index}
             />
           ))}
+          </DashboardGrid>
         </motion.div>
 
         {/* Quick Actions Panel */}

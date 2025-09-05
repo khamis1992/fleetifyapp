@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { ResponsiveDashboardLayout } from "@/components/layouts/ResponsiveDashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout";
 import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common/ProtectedRoute";
@@ -92,7 +93,7 @@ const App = () => (
               <Route path="landing-management" element={<LandingManagement />} />
               <Route path="settings" element={<SuperAdminSettings />} />
             </Route>
-            <Route path="/*" element={<DashboardLayout />}>
+            <Route path="/*" element={<ResponsiveDashboardLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="subscription" element={<SubscriptionPage />} />
               
