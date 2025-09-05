@@ -22,8 +22,7 @@ import { ReportFilters } from '@/components/reports/ReportFilters';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
 import { ResponsiveGrid } from '@/components/responsive/ResponsiveGrid';
 import { AdaptiveCard } from '@/components/responsive/AdaptiveCard';
-import { ResponsiveButton } from '@/components/ui/responsive-button';
-import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+import { Dialog } from '@/components/ui/dialog';
 import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { cn } from '@/lib/utils';
@@ -43,10 +42,7 @@ export default function Reports() {
   const { data: reportsData, isLoading } = useUnifiedReports();
   const { isMobile, isTablet } = useResponsiveBreakpoint();
   const { 
-    containerPadding, 
-    cardSpacing, 
-    buttonSize, 
-    gridColumns,
+    containerPadding,
     contentDensity 
   } = useAdaptiveLayout();
 
@@ -189,20 +185,20 @@ export default function Reports() {
           {isMobile ? (
             // Mobile: Dropdown Menu
             <div className="flex items-center gap-2 w-full">
-              <ResponsiveButton 
+              <Button 
                 variant="outline"
                 className="flex-1"
-                size={buttonSize}
+                size="sm"
               >
                 <Calendar className="h-4 w-4 ml-2" />
                 جدولة تقرير
-              </ResponsiveButton>
+              </Button>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <ResponsiveButton variant="outline" size={buttonSize}>
+                  <Button variant="outline" size="sm">
                     <Menu className="h-4 w-4" />
-                  </ResponsiveButton>
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem>
@@ -215,14 +211,14 @@ export default function Reports() {
           ) : (
             // Desktop: Individual Buttons
             <>
-              <ResponsiveButton variant="outline" size={buttonSize}>
+              <Button variant="outline" size="sm">
                 <Calendar className="h-4 w-4 ml-2" />
                 جدولة تقرير
-              </ResponsiveButton>
-              <ResponsiveButton size={buttonSize}>
+              </Button>
+              <Button size="sm">
                 <Download className="h-4 w-4 ml-2" />
                 تصدير مجمع
-              </ResponsiveButton>
+              </Button>
             </>
           )}
         </div>
@@ -230,12 +226,12 @@ export default function Reports() {
 
       {/* Quick Stats - Responsive */}
       <ResponsiveGrid
-        columns={gridColumns.stats}
-        gap={cardSpacing}
+        columns={{ mobile: 1, tablet: 2, desktop: 4 }}
+        gap="md"
         className="w-full"
       >
         {quickStats.map((stat) => (
-          <AdaptiveCard key={stat.title} density={contentDensity}>
+          <AdaptiveCard key={stat.title}>
             <CardContent className={cn(
               isMobile ? "p-4" : "p-6"
             )}>
@@ -300,10 +296,10 @@ export default function Reports() {
           <div className="flex justify-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <ResponsiveButton variant="outline" size="sm">
+              <Button variant="outline" size="sm">
                   <Menu className="h-4 w-4 mr-2" />
                   تقارير أخرى
-                </ResponsiveButton>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-56">
                 <DropdownMenuItem onClick={() => setSelectedModule('hr')}>
@@ -326,14 +322,13 @@ export default function Reports() {
         {/* Dashboard Tab - Responsive */}
         <TabsContent value="dashboard" className="space-y-6">
           <ResponsiveGrid
-            columns={gridColumns.modules}
-            gap={cardSpacing}
+            columns={{ mobile: 1, tablet: 2, desktop: 3 }}
+            gap="md"
             className="w-full"
           >
             {reportModules.map((module) => (
               <AdaptiveCard 
                 key={module.id} 
-                density={contentDensity}
                 className="hover:shadow-lg transition-shadow cursor-pointer"
               >
                 <CardHeader className={cn(
@@ -379,7 +374,7 @@ export default function Reports() {
                         <span className={cn(
                           isMobile ? "text-xs" : "text-sm"
                         )}>{report.name}</span>
-                        <ResponsiveButton
+                        <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => {
@@ -388,18 +383,18 @@ export default function Reports() {
                           }}
                         >
                           <FileText className="h-4 w-4" />
-                        </ResponsiveButton>
+                        </Button>
                       </div>
                     ))}
                     {module.reports.length > 3 && (
                       <div className="text-center pt-2">
-                        <ResponsiveButton
+                        <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedModule(module.id)}
                         >
                           عرض المزيد ({module.reports.length - 3})
-                        </ResponsiveButton>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -429,7 +424,7 @@ export default function Reports() {
 
               {/* Reports List - Responsive */}
               <div className="flex-1">
-                <AdaptiveCard density={contentDensity}>
+                <AdaptiveCard>
                   <CardHeader>
                     <CardTitle className={cn(
                       isMobile ? "text-lg" : "text-xl"
@@ -442,14 +437,13 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveGrid
-                      columns={isMobile ? 1 : 2}
-                      gap={cardSpacing}
+                      columns={{ mobile: 1, tablet: 2, desktop: 2 }}
+                      gap="md"
                       className="w-full"
                     >
                       {module.reports.map((report) => (
                         <AdaptiveCard 
                           key={report.id} 
-                          density={contentDensity}
                           className="hover:shadow-md transition-shadow cursor-pointer"
                         >
                           <CardContent className={cn(
@@ -476,16 +470,16 @@ export default function Reports() {
                                 "flex gap-2",
                                 isMobile && "w-full justify-end"
                               )}>
-                                <ResponsiveButton
+                                <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setSelectedReport(report.id)}
                                 >
                                   عرض
-                                </ResponsiveButton>
-                                <ResponsiveButton size="sm" variant="outline">
+                                </Button>
+                                <Button size="sm" variant="outline">
                                   <Download className="h-4 w-4" />
-                                </ResponsiveButton>
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
@@ -501,11 +495,9 @@ export default function Reports() {
       </Tabs>
 
       {/* Report Viewer Modal/Dialog - Responsive */}
-      <ResponsiveDialog
+      <Dialog
         open={!!selectedReport}
         onOpenChange={(open) => !open && setSelectedReport('')}
-        title="عارض التقارير"
-        fullScreenOnMobile={true}
       >
         {selectedReport && (
           <UnifiedReportViewer
@@ -515,7 +507,7 @@ export default function Reports() {
             onClose={() => setSelectedReport('')}
           />
         )}
-      </ResponsiveDialog>
+      </Dialog>
     </div>
   );
 }

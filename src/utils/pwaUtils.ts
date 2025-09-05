@@ -252,7 +252,6 @@ export class NotificationManager {
           badge: options.badge || '/icons/icon-72x72.png',
           tag: options.tag,
           requireInteraction: options.requireInteraction,
-          actions: options.actions,
           data: options.data,
           dir: 'rtl',
           lang: 'ar'
