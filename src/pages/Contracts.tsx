@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useLocation } from "react-router-dom"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -7,12 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout"
+import { useSwipeGesture } from "@/hooks/useSwipeGestures"
+import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization"
 import { ResponsiveContainer } from "@/components/ui/responsive-container"
 import { ResponsiveGrid, DashboardGrid } from "@/components/ui/responsive-grid"
 import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from "@/components/ui/responsive-card"
 import { ResponsiveTable } from "@/components/ui/responsive-table"
 import { ResponsiveModal } from "@/components/ui/responsive-modal"
+import { SwipeableCard, PullToRefresh } from "@/components/ui/swipeable-components"
 import { cn } from "@/lib/utils"
+import { RefreshCw, Filter, Search, Plus } from "lucide-react"
 
 // Component imports
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
@@ -51,14 +55,21 @@ export default function Contracts() {
     itemSpacing, 
     gridCols,
     modalSize,
-    isCardLayout 
+    isCardLayout,
+    enableSwipe,
+    animationStyle
   } = useAdaptiveLayout({
     mobileViewMode: 'stack',
     tabletColumns: 2,
     desktopColumns: 3,
     cardLayout: true,
-    fullscreenModals: true
+    fullscreenModals: true,
+    enableSwipeGestures: true,
+    touchTargetSize: 'large'
   })
+
+  // Performance optimization hooks
+  const { measureRenderTime, getOptimizedImageSrc } = usePerformanceOptimization()
 
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false)
@@ -76,6 +87,9 @@ export default function Contracts() {
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [showBulkDelete, setShowBulkDelete] = useState(false)
   const [filters, setFilters] = useState<any>({})
+  const [activeTab, setActiveTab] = useState("all")
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // Hooks
   const location = useLocation()
@@ -88,6 +102,21 @@ export default function Contracts() {
   // Data fetching
   const { contracts, filteredContracts, isLoading, refetch, statistics } = useContractsData(filters)
 
+  // Swipe gestures for mobile
+  const handleSwipe = useCallback((result: any) => {
+    if (result.direction === 'left' && isMobile && activeTab === "all") {
+      setActiveTab("active")
+    } else if (result.direction === 'left' && isMobile && activeTab === "active") {
+      setActiveTab("suspended")
+    } else if (result.direction === 'right' && isMobile && activeTab === "suspended") {
+      setActiveTab("active")
+    } else if (result.direction === 'right' && isMobile && activeTab === "active") {
+      setActiveTab("all")
+    }
+  }, [isMobile, activeTab])
+
+  const swipeHandlers = useSwipeGesture(handleSwipe)
+
   // Handle pre-selected customer from navigation
   useEffect(() => {
     if (location.state?.selectedCustomerId) {
@@ -96,8 +125,24 @@ export default function Contracts() {
     }
   }, [location.state])
 
+  // Optimized handlers with useCallback
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      await refetch()
+      if (isMobile) {
+        // Haptic feedback for mobile
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50)
+        }
+      }
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [refetch, isMobile])
+
   // Event handlers
-  const handleContractSubmit = async (contractData: any) => {
+  const handleContractSubmit = useCallback(async (contractData: any) => {
     try {
       console.log('📋 [CONTRACT_SUBMIT] Starting new contract creation process with progress tracking')
       
@@ -118,43 +163,43 @@ export default function Contracts() {
       setShowCreationProgress(false)
       throw error
     }
-  }
+  }, [user?.id, createContract, resetCreationState])
 
-  const handleCreationComplete = () => {
+  const handleCreationComplete = useCallback(() => {
     setShowCreationProgress(false)
     setShowContractWizard(false)
     setPreselectedCustomerId(null)
     refetch()
-  }
+  }, [refetch])
 
-  const handleCreationRetry = () => {
+  const handleCreationRetry = useCallback(() => {
     retryCreation()
-  }
+  }, [retryCreation])
 
-  const handleRenewContract = (contract: any) => {
+  const handleRenewContract = useCallback((contract: any) => {
     setSelectedContract(contract)
     setShowRenewalDialog(true)
-  }
+  }, [])
 
-  const handleManageStatus = (contract: any) => {
+  const handleManageStatus = useCallback((contract: any) => {
     setSelectedContract(contract)
     setShowStatusDialog(true)
-  }
+  }, [])
 
-  const handleViewDetails = (contract: any) => {
+  const handleViewDetails = useCallback((contract: any) => {
     setSelectedContract(contract)
     setShowDetailsDialog(true)
-  }
+  }, [])
 
-  const handleCancelContract = (contract: any) => {
+  const handleCancelContract = useCallback((contract: any) => {
     setSelectedContract(contract)
     setShowCancellationDialog(true)
-  }
+  }, [])
 
-  const handleDeleteContract = (contract: any) => {
+  const handleDeleteContract = useCallback((contract: any) => {
     setSelectedContract(contract)
     setShowDeleteDialog(true)
-  }
+  }, [])
 
   const handleManagePayments = (contract: any) => {
     setSelectedContract(contract)
@@ -206,212 +251,295 @@ export default function Contracts() {
   }
 
   return (
-    <ResponsiveContainer className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <ContractsHeader
-        onCreateContract={handleCreateContract}
-        onShowTemplates={handleShowTemplates}
-        onShowExport={handleShowExport}
-        onShowCSVUpload={handleShowCSVUpload}
-        onShowBulkDelete={handleShowBulkDelete}
-      />
+    <PullToRefresh onRefresh={handleRefresh} isRefreshing={isRefreshing}>
+      <ResponsiveContainer className={cn("space-y-4 md:space-y-6", animationStyle)}>
+        {/* Enhanced Header with Quick Actions */}
+        <div className="flex flex-col space-y-4">
+          <ContractsHeader
+            onCreateContract={handleCreateContract}
+            onShowTemplates={handleShowTemplates}
+            onShowExport={handleShowExport}
+            onShowCSVUpload={handleShowCSVUpload}
+            onShowBulkDelete={handleShowBulkDelete}
+          />
+          
+          {/* Mobile Quick Actions Bar */}
+          {isMobile && (
+            <div className="flex items-center justify-between gap-2 p-3 bg-background/50 backdrop-blur-sm rounded-lg border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                فلترة
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                تحديث
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleCreateContract}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                عقد جديد
+              </Button>
+            </div>
+          )}
+        </div>
 
-      {/* Journal Entry Status Alert */}
-      <ContractJournalEntryStatus />
+        {/* Journal Entry Status Alert */}
+        <ContractJournalEntryStatus />
 
-      {/* Statistics Cards - Responsive Grid */}
-      <DashboardGrid variant="stats" gap={isMobile ? "sm" : "default"}>
-        <ResponsiveCard variant="elevated" density={isMobile ? "compact" : "comfortable"}>
+        {/* Statistics Cards - Enhanced with animations */}
+        <DashboardGrid variant="stats" gap={isMobile ? "sm" : "default"}>
+          <ResponsiveCard 
+            variant="elevated" 
+            density={isMobile ? "compact" : "comfortable"}
+            className="animate-fade-in"
+          >
+            <ResponsiveCardContent>
+              <ContractsStatistics
+                activeCount={statistics.activeContracts.length}
+                draftCount={statistics.draftContracts.length}
+                cancelledCount={statistics.cancelledContracts.length}
+                totalRevenue={statistics.totalRevenue}
+              />
+            </ResponsiveCardContent>
+          </ResponsiveCard>
+        </DashboardGrid>
+
+        {/* Search and Filters - Collapsible on Mobile */}
+        <ResponsiveCard 
+          variant="outlined" 
+          density={isMobile ? "compact" : "comfortable"}
+          className={cn(
+            "transition-all duration-300",
+            isMobile && !showMobileFilters && "hidden"
+          )}
+        >
           <ResponsiveCardContent>
-            <ContractsStatistics
-              activeCount={statistics.activeContracts.length}
-              draftCount={statistics.draftContracts.length}
-              cancelledCount={statistics.cancelledContracts.length}
-              totalRevenue={statistics.totalRevenue}
+            <ContractSearchFilters 
+              onFiltersChange={setFilters}
+              activeFilters={filters}
             />
           </ResponsiveCardContent>
         </ResponsiveCard>
-      </DashboardGrid>
 
-      {/* Search and Filters - Responsive */}
-      <ResponsiveCard variant="outlined" density={isMobile ? "compact" : "comfortable"}>
-        <ResponsiveCardContent>
-          <ContractSearchFilters 
-            onFiltersChange={setFilters}
-            activeFilters={filters}
-          />
-        </ResponsiveCardContent>
-      </ResponsiveCard>
-
-      {/* Contract Management Tabs - Mobile-friendly */}
-      <Tabs defaultValue="all" className="space-y-3 md:space-y-4">
-        <div className={cn(
-          "overflow-x-auto",
-          isMobile && "pb-2"
-        )}>
-          <TabsList className={cn(
-            "grid w-full",
-            isMobile ? "grid-cols-3 min-w-max" : "grid-cols-6 lg:w-auto lg:inline-flex"
-          )}>
-            <TabsTrigger value="all" className={isMobile ? "text-xs px-3" : ""}>
-              {isMobile ? "الكل" : "جميع العقود"}
-            </TabsTrigger>
-            <TabsTrigger value="active" className={isMobile ? "text-xs px-3" : ""}>
-              النشطة
-            </TabsTrigger>
-            <TabsTrigger value="suspended" className={isMobile ? "text-xs px-3" : ""}>
-              المعلقة
-            </TabsTrigger>
-            {!isMobile && (
-              <>
-                <TabsTrigger value="expired">المنتهية</TabsTrigger>
-                <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
-                <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
-              </>
-            )}
-          </TabsList>
-        </div>
-
-        <TabsContent value="all">
-          <ContractsList
-            contracts={filteredContracts}
-            onRenewContract={handleRenewContract}
-            onManageStatus={handleManageStatus}
-            onViewDetails={handleViewDetails}
-            onCancelContract={handleCancelContract}
-            onDeleteContract={handleDeleteContract}
-            onCreateContract={handleCreateContract}
-            onClearFilters={handleClearFilters}
-            hasFilters={Object.keys(filters).length > 0}
-            hasContracts={!!contracts && contracts.length > 0}
-          />
-        </TabsContent>
-
-        <ContractsTabsContent
-          activeContracts={statistics.activeContracts}
-          suspendedContracts={statistics.suspendedContracts}
-          expiredContracts={statistics.expiredContracts}
-          onRenewContract={handleRenewContract}
-          onManageStatus={handleManageStatus}
-          onViewContract={handleViewDetails}
-          onCancelContract={handleCancelContract}
-          onDeleteContract={handleDeleteContract}
-        />
-
-        <TabsContent value="late-fines">
-          <LateFinesSettings />
-        </TabsContent>
-      </Tabs>
-
-      {/* Dialogs */}
-      <ContractRenewalDialog
-        open={showRenewalDialog}
-        onOpenChange={setShowRenewalDialog}
-        contract={selectedContract}
-      />
-      
-      <ContractStatusManagement
-        open={showStatusDialog}
-        onOpenChange={setShowStatusDialog}
-        contract={selectedContract}
-      />
-      
-      <ContractDetailsDialog
-        open={showDetailsDialog}
-        onOpenChange={setShowDetailsDialog}
-        contract={selectedContract}
-        onEdit={(contract) => { setSelectedContract(contract); refetch(); }}
-        onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
-      />
-      
-      <ContractInvoiceDialog
-        open={showInvoiceDialog}
-        onOpenChange={setShowInvoiceDialog}
-        contract={selectedContract}
-        onSuccess={() => { refetch(); setShowInvoiceDialog(false); }}
-      />
-      
-      <ContractExportDialog
-        open={showExportDialog}
-        onOpenChange={setShowExportDialog}
-      />
-      
-      <ContractWizard
-        open={showContractWizard}
-        onOpenChange={setShowContractWizard}
-        onSubmit={handleContractSubmit}
-        preselectedCustomerId={preselectedCustomerId}
-      />
-      
-      {/* Contract Creation Progress Dialog - Responsive */}
-      <ResponsiveModal
-        open={showCreationProgress}
-        onOpenChange={(open) => {
-          if (!open && !creationState.isProcessing) {
-            setShowCreationProgress(false)
-            resetCreationState()
-          }
-        }}
-        title="إنشاء العقد"
-        size="sm"
-        mobileFullScreen={false}
-        mobileFromBottom={true}
-      >
-        <ContractCreationProgress
-          creationState={creationState}
-          onRetry={handleCreationRetry}
-          onClose={handleCreationComplete}
-        />
-      </ResponsiveModal>
-
-      <ContractCancellationDialog
-        open={showCancellationDialog}
-        onOpenChange={setShowCancellationDialog}
-        contract={selectedContract}
-      />
-
-      <ContractDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        contract={selectedContract}
-        onSuccess={() => refetch()}
-      />
-
-      {/* Contract CSV Upload Dialog */}
-      <ContractCSVUpload
-        open={showCSVUpload}
-        onOpenChange={setShowCSVUpload}
-        onUploadComplete={() => {
-          setShowCSVUpload(false)
-          refetch()
-        }}
-      />
-
-      {/* Bulk Delete Contracts Dialog */}
-      <BulkDeleteContractsDialog
-        open={showBulkDelete}
-        onOpenChange={setShowBulkDelete}
-      />
-
-      {showTemplateManager && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>إدارة قوالب العقود</CardTitle>
-                  <Button variant="outline" onClick={() => setShowTemplateManager(false)}>
-                    إغلاق
-                  </Button>
+        {/* Contract Management Tabs - Enhanced with Swipe Support */}
+        <div className="space-y-3 md:space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-4">
+            <div className={cn(
+              "overflow-x-auto",
+              isMobile && "pb-2 scrollbar-hide"
+            )}>
+              <TabsList className={cn(
+                "grid w-full transition-all duration-200",
+                isMobile ? "grid-cols-3 min-w-max gap-1" : "grid-cols-6 lg:w-auto lg:inline-flex"
+              )}>
+                <TabsTrigger 
+                  value="all" 
+                  className={cn(
+                    "transition-all duration-200",
+                    isMobile ? "text-xs px-3 py-2" : "",
+                    activeTab === "all" && "scale-105"
+                  )}
+                >
+                  {isMobile ? "الكل" : "جميع العقود"}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="active" 
+                  className={cn(
+                    "transition-all duration-200",
+                    isMobile ? "text-xs px-3 py-2" : "",
+                    activeTab === "active" && "scale-105"
+                  )}
+                >
+                  النشطة
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="suspended" 
+                  className={cn(
+                    "transition-all duration-200",
+                    isMobile ? "text-xs px-3 py-2" : "",
+                    activeTab === "suspended" && "scale-105"
+                  )}
+                >
+                  المعلقة
+                </TabsTrigger>
+                {!isMobile && (
+                  <>
+                    <TabsTrigger value="expired">المنتهية</TabsTrigger>
+                    <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
+                    <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
+                  </>
+                )}
+              </TabsList>
+              
+              {/* Swipe Indicator for Mobile */}
+              {isMobile && enableSwipe && (
+                <div className="flex justify-center mt-2">
+                  <div className="text-xs text-muted-foreground opacity-60">
+                    اسحب يميناً أو يساراً للتنقل
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <ContractTemplateManager />
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </div>
+
+            <TabsContent value="all" className="animate-fade-in">
+              <div className="min-h-[400px]">
+                <ContractsList
+                  contracts={filteredContracts}
+                  onRenewContract={handleRenewContract}
+                  onManageStatus={handleManageStatus}
+                  onViewDetails={handleViewDetails}
+                  onCancelContract={handleCancelContract}
+                  onDeleteContract={handleDeleteContract}
+                  onCreateContract={handleCreateContract}
+                  onClearFilters={handleClearFilters}
+                  hasFilters={Object.keys(filters).length > 0}
+                  hasContracts={!!contracts && contracts.length > 0}
+                />
+              </div>
+            </TabsContent>
+
+            <ContractsTabsContent
+              activeContracts={statistics.activeContracts}
+              suspendedContracts={statistics.suspendedContracts}
+              expiredContracts={statistics.expiredContracts}
+              onRenewContract={handleRenewContract}
+              onManageStatus={handleManageStatus}
+              onViewContract={handleViewDetails}
+              onCancelContract={handleCancelContract}
+              onDeleteContract={handleDeleteContract}
+            />
+
+            <TabsContent value="late-fines" className="animate-fade-in">
+              <LateFinesSettings />
+            </TabsContent>
+          </Tabs>
         </div>
-      )}
-    </ResponsiveContainer>
+
+        {/* Dialogs */}
+        <ContractRenewalDialog
+          open={showRenewalDialog}
+          onOpenChange={setShowRenewalDialog}
+          contract={selectedContract}
+        />
+        
+        <ContractStatusManagement
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          contract={selectedContract}
+        />
+        
+        <ContractDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          contract={selectedContract}
+          onEdit={(contract) => { setSelectedContract(contract); refetch(); }}
+          onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
+        />
+        
+        <ContractInvoiceDialog
+          open={showInvoiceDialog}
+          onOpenChange={setShowInvoiceDialog}
+          contract={selectedContract}
+          onSuccess={() => { refetch(); setShowInvoiceDialog(false); }}
+        />
+        
+        <ContractExportDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+        />
+        
+        <ContractWizard
+          open={showContractWizard}
+          onOpenChange={setShowContractWizard}
+          onSubmit={handleContractSubmit}
+          preselectedCustomerId={preselectedCustomerId}
+        />
+        
+        {/* Contract Creation Progress Dialog - Responsive */}
+        <ResponsiveModal
+          open={showCreationProgress}
+          onOpenChange={(open) => {
+            if (!open && !creationState.isProcessing) {
+              setShowCreationProgress(false)
+              resetCreationState()
+            }
+          }}
+          title="إنشاء العقد"
+          size="sm"
+          mobileFullScreen={false}
+          mobileFromBottom={true}
+        >
+          <ContractCreationProgress
+            creationState={creationState}
+            onRetry={handleCreationRetry}
+            onClose={handleCreationComplete}
+          />
+        </ResponsiveModal>
+
+        <ContractCancellationDialog
+          open={showCancellationDialog}
+          onOpenChange={setShowCancellationDialog}
+          contract={selectedContract}
+        />
+
+        <ContractDeleteDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          contract={selectedContract}
+          onSuccess={() => refetch()}
+        />
+
+        {/* Contract CSV Upload Dialog */}
+        <ContractCSVUpload
+          open={showCSVUpload}
+          onOpenChange={setShowCSVUpload}
+          onUploadComplete={() => {
+            setShowCSVUpload(false)
+            refetch()
+          }}
+        />
+
+        {/* Bulk Delete Contracts Dialog */}
+        <BulkDeleteContractsDialog
+          open={showBulkDelete}
+          onOpenChange={setShowBulkDelete}
+        />
+
+        {showTemplateManager && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>إدارة قوالب العقود</CardTitle>
+                    <Button variant="outline" onClick={() => setShowTemplateManager(false)}>
+                      إغلاق
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ContractTemplateManager />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+      </ResponsiveContainer>
+    </PullToRefresh>
   )
 }
