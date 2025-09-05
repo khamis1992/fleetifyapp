@@ -19,6 +19,13 @@ import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Za
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
+// Import responsive components
+import { ResponsiveGrid } from '@/components/responsive/ResponsiveGrid';
+import { AdaptiveCard } from '@/components/responsive/AdaptiveCard';
+import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { cn } from '@/lib/utils';
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
@@ -28,6 +35,19 @@ const Dashboard: React.FC = () => {
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
+  
+  // Responsive hooks
+  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint();
+  const { 
+    columns, 
+    spacing, 
+    contentDensity,
+    animationStyle,
+    viewMode 
+  } = useAdaptiveLayout({
+    contentDensity: 'comfortable',
+    enableAnimations: true
+  });
 
   // Convert financial overview data to the format expected by SmartMetricsPanel
   const smartMetricsData = financialOverview ? {
@@ -165,77 +185,159 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <ProfessionalBackground />
-      <div className="relative z-10 space-y-8">
+      <div className={cn(
+        "relative z-10",
+        spacing
+      )}>
         {/* Enhanced Header */}
-        <EnhancedDashboardHeader
-          isBrowsingMode={isBrowsingMode}
-          browsedCompany={browsedCompany}
-          onExitBrowseMode={exitBrowseMode}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <EnhancedDashboardHeader
+            isBrowsingMode={isBrowsingMode}
+            browsedCompany={browsedCompany}
+            onExitBrowseMode={exitBrowseMode}
+          />
+        </motion.div>
 
-        {/* Enhanced Stats Grid */}
+        {/* Enhanced Stats Grid - Responsive */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          {statsConfig.map((stat, index) => (
-            <EnhancedStatsCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              change={stat.change}
-              icon={stat.icon}
-              trend={stat.trend}
-              description={stat.description}
-              subtitle={stat.subtitle}
-              actionText={stat.actionText}
-              onAction={stat.onAction}
-              gradient={stat.gradient}
-              isLoading={statsLoading}
-              index={index}
-            />
-          ))}
+          <ResponsiveGrid
+            columns={columns.stats}
+            gap={isMobile ? 4 : 6}
+            className="mb-6"
+          >
+            {statsConfig.map((stat, index) => (
+              <AdaptiveCard
+                key={stat.title}
+                variant={isMobile ? 'compact' : 'default'}
+                interactive={true}
+                className={cn(
+                  "transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <EnhancedStatsCard
+                  title={stat.title}
+                  value={stat.value}
+                  change={stat.change}
+                  icon={stat.icon}
+                  trend={stat.trend}
+                  description={stat.description}
+                  subtitle={stat.subtitle}
+                  actionText={stat.actionText}
+                  onAction={stat.onAction}
+                  gradient={stat.gradient}
+                  isLoading={statsLoading}
+                  index={index}
+                />
+              </AdaptiveCard>
+            ))}
+          </ResponsiveGrid>
         </motion.div>
 
-        {/* Quick Actions Panel */}
+        {/* Quick Actions Panel - Responsive */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-6"
         >
-          <QuickActionsDashboard />
+          <AdaptiveCard
+            variant={isMobile ? 'compact' : 'default'}
+            className={cn(
+              "transition-all duration-200",
+              animationStyle
+            )}
+          >
+            <QuickActionsDashboard />
+          </AdaptiveCard>
         </motion.div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Main Content Grid - Adaptive Layout */}
+        <ResponsiveGrid
+          columns={isMobile ? 1 : isTablet ? 1 : 3}
+          gap={isMobile ? 4 : 6}
+          className="items-start"
+        >
           {/* Enhanced Activity Feed */}
-          <div className="xl:col-span-2">
-            <EnhancedActivityFeed
-              activities={enhancedActivities}
-              loading={activitiesLoading}
-              title="النشاطات الأخيرة"
-              onRefresh={() => window.location.reload()}
-              showFilters={true}
-            />
+          <div className={cn(
+            isMobile ? "col-span-1" : isTablet ? "col-span-1" : "col-span-2"
+          )}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <AdaptiveCard
+                variant={isMobile ? 'compact' : 'default'}
+                className={cn(
+                  "h-full transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <EnhancedActivityFeed
+                  activities={enhancedActivities}
+                  loading={activitiesLoading}
+                  title="النشاطات الأخيرة"
+                  onRefresh={() => window.location.reload()}
+                  showFilters={!isMobile}
+                />
+              </AdaptiveCard>
+            </motion.div>
           </div>
 
-          {/* Enhanced Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="space-y-6"
-          >
-            <SmartMetricsPanel 
-              financialData={smartMetricsData} 
-              loading={financialLoading} 
-            />
-            <DocumentExpiryAlerts />
-          </motion.div>
-        </div>
+          {/* Enhanced Sidebar - Responsive */}
+          <div className="col-span-1">
+            <motion.div
+              initial={{ opacity: 0, x: isMobile ? 0 : 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className={cn(
+                isMobile ? "space-y-4" : "space-y-6"
+              )}
+            >
+              {/* Smart Metrics Panel */}
+              <AdaptiveCard
+                variant={isMobile ? 'compact' : 'default'}
+                className={cn(
+                  "transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <SmartMetricsPanel 
+                  financialData={smartMetricsData} 
+                  loading={financialLoading} 
+                />
+              </AdaptiveCard>
 
+              {/* Document Expiry Alerts */}
+              <AdaptiveCard
+                variant={isMobile ? 'compact' : 'default'}
+                className={cn(
+                  "transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <DocumentExpiryAlerts />
+              </AdaptiveCard>
+            </motion.div>
+          </div>
+        </ResponsiveGrid>
+
+        {/* Floating AI Assistant - Positioned for mobile */}
+        <FloatingAIAssistant 
+          config={dashboardAIConfig}
+          className={cn(
+            isMobile ? "bottom-24 right-4" : "bottom-6 right-6"
+          )}
+        />
       </div>
     </>
   );

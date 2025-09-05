@@ -14,11 +14,20 @@ import {
   DollarSign,
   Building,
   Scale,
-  AlertTriangle
+  AlertTriangle,
+  Menu
 } from 'lucide-react';
 import { UnifiedReportViewer } from '@/components/reports/UnifiedReportViewer';
 import { ReportFilters } from '@/components/reports/ReportFilters';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
+import { ResponsiveGrid } from '@/components/responsive/ResponsiveGrid';
+import { AdaptiveCard } from '@/components/responsive/AdaptiveCard';
+import { ResponsiveButton } from '@/components/ui/responsive-button';
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 export default function Reports() {
@@ -32,6 +41,14 @@ export default function Reports() {
   });
 
   const { data: reportsData, isLoading } = useUnifiedReports();
+  const { isMobile, isTablet } = useResponsiveBreakpoint();
+  const { 
+    containerPadding, 
+    cardSpacing, 
+    buttonSize, 
+    gridColumns,
+    contentDensity 
+  } = useAdaptiveLayout();
 
   const reportModules = [
     {
@@ -133,86 +150,236 @@ export default function Reports() {
   ];
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <BarChart3 className="h-6 w-6 text-primary" />
+    <div className={cn("space-y-6", containerPadding)} dir="rtl">
+      {/* Header - Responsive */}
+      <div className={cn(
+        "flex items-center justify-between",
+        isMobile && "flex-col space-y-4 items-start"
+      )}>
+        <div className={cn(
+          "flex items-center gap-3",
+          isMobile && "w-full"
+        )}>
+          <div className={cn(
+            "bg-primary/10 rounded-lg",
+            isMobile ? "p-1.5" : "p-2"
+          )}>
+            <BarChart3 className={cn(
+              "text-primary",
+              isMobile ? "h-5 w-5" : "h-6 w-6"
+            )} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">مركز التقارير الموحد</h1>
-            <p className="text-muted-foreground">تقارير شاملة لجميع أقسام النظام</p>
+            <h1 className={cn(
+              "font-bold text-foreground",
+              isMobile ? "text-xl" : "text-2xl"
+            )}>مركز التقارير الموحد</h1>
+            <p className={cn(
+              "text-muted-foreground",
+              isMobile ? "text-sm" : "text-base"
+            )}>تقارير شاملة لجميع أقسام النظام</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Calendar className="h-4 w-4 ml-2" />
-            جدولة تقرير
-          </Button>
-          <Button>
-            <Download className="h-4 w-4 ml-2" />
-            تصدير مجمع
-          </Button>
+        
+        {/* Action Buttons - Responsive */}
+        <div className={cn(
+          "flex gap-2",
+          isMobile && "w-full"
+        )}>
+          {isMobile ? (
+            // Mobile: Dropdown Menu
+            <div className="flex items-center gap-2 w-full">
+              <ResponsiveButton 
+                variant="outline"
+                className="flex-1"
+                size={buttonSize}
+              >
+                <Calendar className="h-4 w-4 ml-2" />
+                جدولة تقرير
+              </ResponsiveButton>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <ResponsiveButton variant="outline" size={buttonSize}>
+                    <Menu className="h-4 w-4" />
+                  </ResponsiveButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem>
+                    <Download className="h-4 w-4 mr-2" />
+                    تصدير مجمع
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
+            // Desktop: Individual Buttons
+            <>
+              <ResponsiveButton variant="outline" size={buttonSize}>
+                <Calendar className="h-4 w-4 ml-2" />
+                جدولة تقرير
+              </ResponsiveButton>
+              <ResponsiveButton size={buttonSize}>
+                <Download className="h-4 w-4 ml-2" />
+                تصدير مجمع
+              </ResponsiveButton>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Quick Stats - Responsive */}
+      <ResponsiveGrid
+        columns={gridColumns.stats}
+        gap={cardSpacing}
+        className="w-full"
+      >
         {quickStats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <stat.icon className="h-6 w-6 text-primary" />
+          <AdaptiveCard key={stat.title} density={contentDensity}>
+            <CardContent className={cn(
+              isMobile ? "p-4" : "p-6"
+            )}>
+              <div className={cn(
+                "flex items-center gap-4",
+                isMobile && "gap-3"
+              )}>
+                <div className={cn(
+                  "bg-primary/10 rounded-lg",
+                  isMobile ? "p-2" : "p-3"
+                )}>
+                  <stat.icon className={cn(
+                    "text-primary",
+                    isMobile ? "h-5 w-5" : "h-6 w-6"
+                  )} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className={cn(
+                    "text-muted-foreground",
+                    isMobile ? "text-xs" : "text-sm"
+                  )}>{stat.title}</p>
+                  <p className={cn(
+                    "font-bold",
+                    isMobile ? "text-xl" : "text-2xl"
+                  )}>{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.change}</p>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </AdaptiveCard>
         ))}
-      </div>
+      </ResponsiveGrid>
 
-      {/* Main Content */}
+      {/* Main Content - Responsive */}
       <Tabs value={selectedModule} onValueChange={setSelectedModule} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="legal">القانونية</TabsTrigger>
-          <TabsTrigger value="customers">العملاء</TabsTrigger>
-          <TabsTrigger value="fleet">الأسطول</TabsTrigger>
-          <TabsTrigger value="hr">الموارد البشرية</TabsTrigger>
-          <TabsTrigger value="finance">المالية</TabsTrigger>
-          <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
+        <TabsList className={cn(
+          "grid w-full",
+          isMobile ? "grid-cols-3 h-auto" : "grid-cols-6"
+        )}>
+          {isMobile ? (
+            // Mobile: Show only 3 most important tabs
+            <>
+              <TabsTrigger value="dashboard" className="text-xs">لوحة التحكم</TabsTrigger>
+              <TabsTrigger value="finance" className="text-xs">المالية</TabsTrigger>
+              <TabsTrigger value="fleet" className="text-xs">الأسطول</TabsTrigger>
+            </>
+          ) : (
+            // Desktop: Show all tabs
+            <>
+              <TabsTrigger value="legal">القانونية</TabsTrigger>
+              <TabsTrigger value="customers">العملاء</TabsTrigger>
+              <TabsTrigger value="fleet">الأسطول</TabsTrigger>
+              <TabsTrigger value="hr">الموارد البشرية</TabsTrigger>
+              <TabsTrigger value="finance">المالية</TabsTrigger>
+              <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
+            </>
+          )}
         </TabsList>
+        
+        {/* Mobile: Additional tabs dropdown */}
+        {isMobile && (
+          <div className="flex justify-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ResponsiveButton variant="outline" size="sm">
+                  <Menu className="h-4 w-4 mr-2" />
+                  تقارير أخرى
+                </ResponsiveButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-56">
+                <DropdownMenuItem onClick={() => setSelectedModule('hr')}>
+                  <Users className="h-4 w-4 mr-2" />
+                  الموارد البشرية
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSelectedModule('customers')}>
+                  <Building className="h-4 w-4 mr-2" />
+                  العملاء
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSelectedModule('legal')}>
+                  <Scale className="h-4 w-4 mr-2" />
+                  القانونية
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
-        {/* Dashboard Tab */}
+        {/* Dashboard Tab - Responsive */}
         <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <ResponsiveGrid
+            columns={gridColumns.modules}
+            gap={cardSpacing}
+            className="w-full"
+          >
             {reportModules.map((module) => (
-              <Card key={module.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-lg ${module.color}`}>
-                        <module.icon className="h-6 w-6" />
+              <AdaptiveCard 
+                key={module.id} 
+                density={contentDensity}
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+              >
+                <CardHeader className={cn(
+                  isMobile && "pb-3"
+                )}>
+                  <div className={cn(
+                    "flex items-center justify-between",
+                    isMobile && "flex-col items-start space-y-2"
+                  )}>
+                    <div className={cn(
+                      "flex items-center gap-3",
+                      isMobile && "w-full"
+                    )}>
+                      <div className={cn(
+                        `rounded-lg ${module.color}`,
+                        isMobile ? "p-2" : "p-3"
+                      )}>
+                        <module.icon className={cn(
+                          isMobile ? "h-5 w-5" : "h-6 w-6"
+                        )} />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{module.title}</CardTitle>
-                        <CardDescription>{module.description}</CardDescription>
+                      <div className="flex-1">
+                        <CardTitle className={cn(
+                          isMobile ? "text-base" : "text-lg"
+                        )}>{module.title}</CardTitle>
+                        <CardDescription className={cn(
+                          isMobile ? "text-xs" : "text-sm"
+                        )}>{module.description}</CardDescription>
                       </div>
                     </div>
-                    <Badge variant="secondary">{module.count}</Badge>
+                    <Badge variant="secondary" className={cn(
+                      isMobile && "self-end"
+                    )}>{module.count}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {module.reports.slice(0, 3).map((report) => (
-                      <div key={report.id} className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
-                        <span className="text-sm">{report.name}</span>
-                        <Button
+                      <div key={report.id} className={cn(
+                        "flex items-center justify-between bg-muted/50 rounded-lg",
+                        isMobile ? "py-1.5 px-2" : "py-2 px-3"
+                      )}>
+                        <span className={cn(
+                          isMobile ? "text-xs" : "text-sm"
+                        )}>{report.name}</span>
+                        <ResponsiveButton
                           size="sm"
                           variant="ghost"
                           onClick={() => {
@@ -221,33 +388,38 @@ export default function Reports() {
                           }}
                         >
                           <FileText className="h-4 w-4" />
-                        </Button>
+                        </ResponsiveButton>
                       </div>
                     ))}
                     {module.reports.length > 3 && (
                       <div className="text-center pt-2">
-                        <Button
+                        <ResponsiveButton
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedModule(module.id)}
                         >
                           عرض المزيد ({module.reports.length - 3})
-                        </Button>
+                        </ResponsiveButton>
                       </div>
                     )}
                   </div>
                 </CardContent>
-              </Card>
+              </AdaptiveCard>
             ))}
-          </div>
+          </ResponsiveGrid>
         </TabsContent>
 
-        {/* Module Specific Tabs */}
+        {/* Module Specific Tabs - Responsive */}
         {reportModules.map((module) => (
           <TabsContent key={module.id} value={module.id} className="space-y-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Filters Sidebar */}
-              <div className="lg:w-80">
+            <div className={cn(
+              "flex gap-6",
+              isMobile ? "flex-col" : "flex-col lg:flex-row"
+            )}>
+              {/* Filters Sidebar - Responsive */}
+              <div className={cn(
+                isMobile ? "w-full" : "lg:w-80"
+              )}>
                 <ReportFilters
                   moduleType={module.id}
                   filters={filters}
@@ -255,59 +427,95 @@ export default function Reports() {
                 />
               </div>
 
-              {/* Reports List */}
+              {/* Reports List - Responsive */}
               <div className="flex-1">
-                <Card>
+                <AdaptiveCard density={contentDensity}>
                   <CardHeader>
-                    <CardTitle>{module.title}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className={cn(
+                      isMobile ? "text-lg" : "text-xl"
+                    )}>{module.title}</CardTitle>
+                    <CardDescription className={cn(
+                      isMobile ? "text-sm" : "text-base"
+                    )}>
                       اختر التقرير المطلوب من القائمة أدناه
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ResponsiveGrid
+                      columns={isMobile ? 1 : 2}
+                      gap={cardSpacing}
+                      className="w-full"
+                    >
                       {module.reports.map((report) => (
-                        <Card key={report.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <FileText className="h-5 w-5 text-primary" />
-                                <span className="font-medium">{report.name}</span>
+                        <AdaptiveCard 
+                          key={report.id} 
+                          density={contentDensity}
+                          className="hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <CardContent className={cn(
+                            isMobile ? "p-3" : "p-4"
+                          )}>
+                            <div className={cn(
+                              "flex items-center justify-between",
+                              isMobile && "flex-col space-y-3 items-start"
+                            )}>
+                              <div className={cn(
+                                "flex items-center gap-3",
+                                isMobile && "w-full"
+                              )}>
+                                <FileText className={cn(
+                                  "text-primary",
+                                  isMobile ? "h-4 w-4" : "h-5 w-5"
+                                )} />
+                                <span className={cn(
+                                  "font-medium",
+                                  isMobile ? "text-sm" : "text-base"
+                                )}>{report.name}</span>
                               </div>
-                              <div className="flex gap-2">
-                                <Button
+                              <div className={cn(
+                                "flex gap-2",
+                                isMobile && "w-full justify-end"
+                              )}>
+                                <ResponsiveButton
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setSelectedReport(report.id)}
                                 >
                                   عرض
-                                </Button>
-                                <Button size="sm" variant="outline">
+                                </ResponsiveButton>
+                                <ResponsiveButton size="sm" variant="outline">
                                   <Download className="h-4 w-4" />
-                                </Button>
+                                </ResponsiveButton>
                               </div>
                             </div>
                           </CardContent>
-                        </Card>
+                        </AdaptiveCard>
                       ))}
-                    </div>
+                    </ResponsiveGrid>
                   </CardContent>
-                </Card>
+                </AdaptiveCard>
               </div>
             </div>
           </TabsContent>
         ))}
       </Tabs>
 
-      {/* Report Viewer Modal/Dialog */}
-      {selectedReport && (
-        <UnifiedReportViewer
-          reportId={selectedReport}
-          moduleType={selectedModule}
-          filters={filters}
-          onClose={() => setSelectedReport('')}
-        />
-      )}
+      {/* Report Viewer Modal/Dialog - Responsive */}
+      <ResponsiveDialog
+        open={!!selectedReport}
+        onOpenChange={(open) => !open && setSelectedReport('')}
+        title="عارض التقارير"
+        fullScreenOnMobile={true}
+      >
+        {selectedReport && (
+          <UnifiedReportViewer
+            reportId={selectedReport}
+            moduleType={selectedModule}
+            filters={filters}
+            onClose={() => setSelectedReport('')}
+          />
+        )}
+      </ResponsiveDialog>
     </div>
   );
 }

@@ -24,6 +24,12 @@ import { usePermissionCheck } from "@/hooks/usePermissionCheck"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect } from "react"
+import { ResponsiveGrid } from "@/components/responsive/ResponsiveGrid"
+import { AdaptiveCard } from "@/components/responsive/AdaptiveCard"
+import { ResponsiveButton } from "@/components/ui/responsive-button"
+import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout"
+import { cn } from "@/lib/utils"
 import ChartOfAccounts from "./finance/ChartOfAccounts"
 import Ledger from "./finance/Ledger"
 import Treasury from "./finance/Treasury"
@@ -47,6 +53,14 @@ import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()
+  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { 
+    containerPadding, 
+    cardSpacing, 
+    buttonSize, 
+    gridColumns,
+    contentDensity 
+  } = useAdaptiveLayout()
   
   const modules = [
     {
@@ -172,111 +186,185 @@ const FinanceModules = () => {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/20 rounded-xl">
-            <DollarSign className="h-8 w-8" />
+    <div className={cn("space-y-6", containerPadding)}>
+      {/* Header - Responsive */}
+      <div className={cn(
+        "bg-gradient-primary rounded-2xl text-primary-foreground shadow-elevated",
+        isMobile ? "p-4" : "p-8"
+      )}>
+        <div className={cn(
+          "flex items-center gap-4",
+          isMobile && "flex-col text-center"
+        )}>
+          <div className={cn(
+            "bg-white/20 rounded-xl",
+            isMobile ? "p-2" : "p-3"
+          )}>
+            <DollarSign className={cn(
+              isMobile ? "h-6 w-6" : "h-8 w-8"
+            )} />
           </div>
           <div>
-            <h1 className="text-3xl font-bold mb-2">النظام المالي</h1>
-            <p className="text-primary-foreground/80">
+            <h1 className={cn(
+              "font-bold mb-2",
+              isMobile ? "text-2xl" : "text-3xl"
+            )}>النظام المالي</h1>
+            <p className={cn(
+              "text-primary-foreground/80",
+              isMobile ? "text-sm" : "text-base"
+            )}>
               إدارة شاملة لجميع العمليات المالية والمحاسبية
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Modules Grid - Responsive */}
+      <ResponsiveGrid
+        columns={gridColumns.modules}
+        gap={cardSpacing}
+        className="w-full"
+      >
         {modules.map((module, index) => (
           <Link key={index} to={module.path}>
-            <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer border-2 hover:border-primary/20">
-              <CardHeader className="pb-3">
-                <div className={`w-12 h-12 rounded-xl ${module.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                  <module.icon className="h-6 w-6 text-white" />
+            <AdaptiveCard 
+              density={contentDensity}
+              className="group hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer border-2 hover:border-primary/20"
+            >
+              <CardHeader className={cn(
+                "pb-3",
+                isMobile && "pb-2"
+              )}>
+                <div className={cn(
+                  `rounded-xl ${module.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`,
+                  isMobile ? "w-10 h-10" : "w-12 h-12"
+                )}>
+                  <module.icon className={cn(
+                    "text-white",
+                    isMobile ? "h-5 w-5" : "h-6 w-6"
+                  )} />
                 </div>
-                <CardTitle className="text-lg">{module.title}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardTitle className={cn(
+                  isMobile ? "text-base" : "text-lg"
+                )}>{module.title}</CardTitle>
+                <CardDescription className={cn(
+                  "text-muted-foreground",
+                  isMobile ? "text-xs" : "text-sm"
+                )}>
                   {module.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <Button variant="ghost" size="sm" className="w-full justify-start p-0 h-auto font-normal">
+                <ResponsiveButton 
+                  variant="ghost" 
+                  size={isMobile ? "sm" : "sm"}
+                  className="w-full justify-start p-0 h-auto font-normal"
+                >
                   <TrendingUp className="h-4 w-4 mr-2" />
                   الدخول إلى الوحدة
-                </Button>
+                </ResponsiveButton>
               </CardContent>
-            </Card>
+            </AdaptiveCard>
           </Link>
         ))}
-      </div>
+      </ResponsiveGrid>
 
-      {/* Quick Stats Section */}
+      {/* Quick Stats Section - Responsive */}
       {isLoading ? (
         <div className="flex justify-center py-8">
           <LoadingSpinner size="lg" />
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
+          <ResponsiveGrid
+            columns={gridColumns.stats}
+            gap={cardSpacing}
+            className="w-full"
+          >
+            <AdaptiveCard density={contentDensity}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الإيرادات</CardTitle>
+                <CardTitle className={cn(
+                  "font-medium text-muted-foreground",
+                  isMobile ? "text-xs" : "text-sm"
+                )}>إجمالي الإيرادات</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className={cn(
+                  "font-bold",
+                  isMobile ? "text-xl" : "text-2xl"
+                )}>
                   {financialSummary?.totalRevenue?.toFixed(3) || '0.000'} د.ك
                 </div>
                 <p className="text-xs text-muted-foreground">هذا الشهر</p>
               </CardContent>
-            </Card>
+            </AdaptiveCard>
             
-            <Card>
+            <AdaptiveCard density={contentDensity}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المصروفات</CardTitle>
+                <CardTitle className={cn(
+                  "font-medium text-muted-foreground",
+                  isMobile ? "text-xs" : "text-sm"
+                )}>إجمالي المصروفات</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className={cn(
+                  "font-bold",
+                  isMobile ? "text-xl" : "text-2xl"
+                )}>
                   {financialSummary?.totalExpenses?.toFixed(3) || '0.000'} د.ك
                 </div>
                 <p className="text-xs text-muted-foreground">هذا الشهر</p>
               </CardContent>
-            </Card>
+            </AdaptiveCard>
             
-            <Card>
+            <AdaptiveCard density={contentDensity}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">صافي الربح</CardTitle>
+                <CardTitle className={cn(
+                  "font-medium text-muted-foreground",
+                  isMobile ? "text-xs" : "text-sm"
+                )}>صافي الربح</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${
+                <div className={cn(
+                  "font-bold",
+                  isMobile ? "text-xl" : "text-2xl",
                   (financialSummary?.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                )}>
                   {financialSummary?.netIncome?.toFixed(3) || '0.000'} د.ك
                 </div>
                 <p className="text-xs text-muted-foreground">هذا الشهر</p>
               </CardContent>
-            </Card>
+            </AdaptiveCard>
             
-            <Card>
+            <AdaptiveCard density={contentDensity}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">المعاملات المعلقة</CardTitle>
+                <CardTitle className={cn(
+                  "font-medium text-muted-foreground",
+                  isMobile ? "text-xs" : "text-sm"
+                )}>المعاملات المعلقة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className={cn(
+                  "font-bold",
+                  isMobile ? "text-xl" : "text-2xl"
+                )}>
                   {financialSummary?.pendingTransactions || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">تحتاج مراجعة</p>
               </CardContent>
-            </Card>
-          </div>
+            </AdaptiveCard>
+          </ResponsiveGrid>
           
-          {/* Quick Access to Dashboard */}
+          {/* Quick Access to Dashboard - Responsive */}
           <div className="flex justify-center">
             <Link to="/finance/dashboard">
-              <Button size="lg" className="bg-gradient-primary hover:bg-gradient-primary/90">
+              <ResponsiveButton 
+                size={isMobile ? "default" : "lg"}
+                className="bg-gradient-primary hover:bg-gradient-primary/90"
+              >
                 <TrendingUp className="h-5 w-5 mr-2" />
                 الانتقال إلى لوحة التحكم المتقدمة
-              </Button>
+              </ResponsiveButton>
             </Link>
           </div>
         </>

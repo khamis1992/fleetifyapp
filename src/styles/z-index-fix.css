@@ -1,0 +1,320 @@
+/**
+ * إصلاح مشاكل z-index والتداخل في المكونات
+ * ترتيب طبقات العرض بشكل صحيح
+ */
+
+/* ========================================
+   ترتيب طبقات Z-Index
+======================================== */
+
+/* الطبقة الأساسية - المحتوى العادي */
+.z-base {
+  z-index: 1;
+}
+
+/* طبقة الهيدر والتنقل */
+.z-header {
+  z-index: 10;
+}
+
+/* طبقة الشريط الجانبي */
+.z-sidebar {
+  z-index: 20;
+}
+
+/* طبقة التنقل السفلي */
+.z-bottom-nav {
+  z-index: 30;
+}
+
+/* طبقة النوافذ المنبثقة العادية */
+.z-modal {
+  z-index: 40;
+}
+
+/* طبقة الـ Drawer المحمول */
+.z-drawer {
+  z-index: 50;
+}
+
+/* طبقة النوافذ المنبثقة المهمة */
+.z-modal-important {
+  z-index: 60;
+}
+
+/* طبقة التنبيهات والإشعارات */
+.z-notification {
+  z-index: 70;
+}
+
+/* طبقة التولتيب والقوائم المنسدلة */
+.z-tooltip {
+  z-index: 80;
+}
+
+/* الطبقة العليا - العناصر الحرجة */
+.z-top {
+  z-index: 90;
+}
+
+/* ========================================
+   إصلاحات محددة للمكونات
+======================================== */
+
+/* إصلاح Sidebar Provider */
+.sidebar-provider {
+  position: relative;
+  z-index: 1;
+}
+
+/* إصلاح AppSidebar */
+.app-sidebar {
+  position: relative;
+  z-index: 20;
+  background: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
+}
+
+/* إصلاح ResponsiveLayout */
+.responsive-layout {
+  position: relative;
+  z-index: 1;
+}
+
+.responsive-layout .main-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* إصلاح Header */
+.responsive-header {
+  position: relative;
+  z-index: 10;
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(8px);
+}
+
+/* إصلاح MobileDrawer */
+.mobile-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.mobile-drawer-content {
+  position: fixed;
+  z-index: 60;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+/* إصلاح BottomNavigation */
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid hsl(var(--border));
+}
+
+/* إصلاح Sheet Components */
+.sheet-overlay {
+  z-index: 65 !important;
+}
+
+.sheet-content {
+  z-index: 70 !important;
+}
+
+/* إصلاح Dialog Components */
+.dialog-overlay {
+  z-index: 45 !important;
+}
+
+.dialog-content {
+  z-index: 50 !important;
+}
+
+/* إصلاح Dropdown Menu */
+.dropdown-menu-content {
+  z-index: 75 !important;
+}
+
+/* إصلاح Tooltip */
+.tooltip-content {
+  z-index: 80 !important;
+}
+
+/* ========================================
+   إصلاحات التخطيط
+======================================== */
+
+/* منع التداخل في التخطيط الرئيسي */
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+}
+
+.main-layout .header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.main-layout .content-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-layout .sidebar {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+
+.main-layout .main-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* إصلاح التداخل على الموبايل */
+@media (max-width: 768px) {
+  .main-layout .sidebar {
+    display: none; /* مخفي على الموبايل، يستخدم drawer بدلاً منه */
+  }
+  
+  .main-layout .main-content {
+    padding-bottom: 80px; /* مساحة للتنقل السفلي */
+  }
+  
+  .mobile-drawer-content {
+    width: 280px;
+    max-width: 85vw;
+  }
+}
+
+/* ========================================
+   إصلاحات إضافية
+======================================== */
+
+/* منع تمرير الخلفية عند فتح Modal */
+.modal-open {
+  overflow: hidden !important;
+}
+
+/* تحسين الشفافية والضبابية */
+.backdrop-blur {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.backdrop-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* إصلاح التحولات السلسة */
+.smooth-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+.smooth-transform {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* إصلاح مشاكل الفيض */
+.overflow-fix {
+  overflow: hidden;
+}
+
+.overflow-auto-fix {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* ========================================
+   إصلاحات خاصة بـ Tailwind
+======================================== */
+
+/* تجاوز z-index في Tailwind */
+.z-\[55\] {
+  z-index: 55 !important;
+}
+
+.z-\[60\] {
+  z-index: 60 !important;
+}
+
+.z-\[65\] {
+  z-index: 65 !important;
+}
+
+.z-\[70\] {
+  z-index: 70 !important;
+}
+
+.z-\[75\] {
+  z-index: 75 !important;
+}
+
+.z-\[80\] {
+  z-index: 80 !important;
+}
+
+/* ========================================
+   إصلاحات التجاوب
+======================================== */
+
+/* تحسين العرض على الشاشات الصغيرة */
+@media (max-width: 640px) {
+  .responsive-header {
+    height: 64px; /* ارتفاع ثابت للهيدر على الموبايل */
+  }
+  
+  .main-content {
+    padding-top: 0;
+    padding-bottom: 80px; /* مساحة للتنقل السفلي */
+  }
+  
+  .mobile-drawer-content {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+/* تحسين العرض على الأجهزة اللوحية */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .responsive-header {
+    height: 56px;
+  }
+  
+  .sidebar {
+    width: 240px;
+  }
+}
+
+/* تحسين العرض على أجهزة سطح المكتب */
+@media (min-width: 1025px) {
+  .responsive-header {
+    height: 56px;
+  }
+  
+  .sidebar {
+    width: 256px;
+  }
+  
+  .main-content {
+    padding-bottom: 0;
+  }
+}

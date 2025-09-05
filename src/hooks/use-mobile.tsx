@@ -20,6 +20,7 @@ const BREAKPOINTS = {
 type BreakpointKey = keyof typeof BREAKPOINTS
 
 export interface ResponsiveBreakpoint {
+  // Existing breakpoint states
   xs: boolean
   sm: boolean
   md: boolean
@@ -32,13 +33,31 @@ export interface ResponsiveBreakpoint {
   'tablet-sm': boolean
   'tablet-md': boolean
   'tablet-lg': boolean
+  
+  // Device categories
   isMobile: boolean
   isTablet: boolean
   isDesktop: boolean
-  currentBreakpoint: BreakpointKey | null
+  
+  // Enhanced device detection
+  deviceType: 'mobile' | 'tablet' | 'desktop'
+  touchDevice: boolean
+  screenSize: BreakpointKey | null
+  
+  // Dimensions and orientation
   width: number
   height: number
   orientation: 'portrait' | 'landscape'
+  
+  // Enhanced orientation helpers
+  isPortraitMobile: boolean
+  isLandscapeTablet: boolean
+  
+  // Interaction capabilities
+  canHover: boolean
+  
+  // Current and previous states
+  currentBreakpoint: BreakpointKey | null
   wasMobile: boolean
   wasTablet: boolean
   wasDesktop: boolean
@@ -59,6 +78,39 @@ export function useResponsiveBreakpoint(): ResponsiveBreakpoint {
     isTablet: false,
     isDesktop: false
   })
+
+  // Enhanced device detection
+  const [touchDevice, setTouchDevice] = React.useState<boolean>(false)
+  const [canHover, setCanHover] = React.useState<boolean>(true)
+
+  // Detect touch device and hover capability
+  React.useEffect(() => {
+    const detectTouch = () => {
+      const hasTouch = 'ontouchstart' in window || 
+                      navigator.maxTouchPoints > 0 || 
+                      (navigator as any).msMaxTouchPoints > 0
+      setTouchDevice(hasTouch)
+      
+      // Detect hover capability (desktop with mouse)
+      const hasHover = window.matchMedia('(hover: hover)').matches
+      setCanHover(hasHover)
+    }
+
+    detectTouch()
+    
+    // Listen for changes in hover capability
+    const hoverQuery = window.matchMedia('(hover: hover)')
+    const handleHoverChange = (e: MediaQueryListEvent) => setCanHover(e.matches)
+    
+    if (hoverQuery.addEventListener) {
+      hoverQuery.addEventListener('change', handleHoverChange)
+      return () => hoverQuery.removeEventListener('change', handleHoverChange)
+    } else {
+      // Fallback for older browsers
+      hoverQuery.addListener(handleHoverChange)
+      return () => hoverQuery.removeListener(handleHoverChange)
+    }
+  }, [])
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -103,6 +155,13 @@ export function useResponsiveBreakpoint(): ResponsiveBreakpoint {
   const isTablet = width >= BREAKPOINTS.md && width < BREAKPOINTS.lg
   const isDesktop = width >= BREAKPOINTS.lg
 
+  // Enhanced device type determination
+  const deviceType: 'mobile' | 'tablet' | 'desktop' = React.useMemo(() => {
+    if (isMobile) return 'mobile'
+    if (isTablet) return 'tablet'
+    return 'desktop'
+  }, [isMobile, isTablet])
+
   // Track previous states
   React.useEffect(() => {
     setPreviousBreakpoint({
@@ -115,15 +174,25 @@ export function useResponsiveBreakpoint(): ResponsiveBreakpoint {
   // Determine orientation
   const orientation = height > width ? 'portrait' : 'landscape'
 
+  // Enhanced orientation helpers
+  const isPortraitMobile = isMobile && orientation === 'portrait'
+  const isLandscapeTablet = isTablet && orientation === 'landscape'
+
   return {
     ...breakpointStates,
     isMobile,
     isTablet,
     isDesktop,
+    deviceType,
+    touchDevice,
+    screenSize: currentBreakpoint,
     currentBreakpoint,
     width,
     height,
     orientation,
+    isPortraitMobile,
+    isLandscapeTablet,
+    canHover,
     wasMobile: previousBreakpoint.isMobile,
     wasTablet: previousBreakpoint.isTablet,
     wasDesktop: previousBreakpoint.isDesktop

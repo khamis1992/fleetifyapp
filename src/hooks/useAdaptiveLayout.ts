@@ -1,150 +1,302 @@
 import { useMemo } from 'react'
 import { useResponsiveBreakpoint } from './use-mobile'
+import { useDeviceDetection } from './responsive/useDeviceDetection'
+import { useScreenOrientation } from './responsive/useScreenOrientation'
 
 export interface AdaptiveLayoutConfig {
-  mobileViewMode: 'stack' | 'carousel' | 'grid' | 'list'
-  tabletColumns: 1 | 2 | 3
-  desktopColumns: 2 | 3 | 4 | 5
+  // Layout modes
+  mobileViewMode: 'stack' | 'carousel' | 'grid' | 'list' | 'masonry'
+  tabletColumns: 1 | 2 | 3 | 4
+  desktopColumns: 2 | 3 | 4 | 5 | 6
+  
+  // Interaction
   enableSwipeGestures: boolean
   swipeDirection: 'horizontal' | 'vertical' | 'both'
+  enablePullToRefresh: boolean
+  
+  // Navigation
   showMobileToolbar: boolean
   mobileNavigation: 'bottom' | 'drawer' | 'both' | 'none'
+  sidebarBehavior: 'overlay' | 'push' | 'reveal' | 'auto'
+  
+  // Layout styles
   cardLayout: boolean
   fullscreenModals: boolean
-  touchTargetSize: 'default' | 'large' | 'extra-large'
-  animationStyle: 'default' | 'mobile-first' | 'desktop-first'
+  stickyHeaders: boolean
+  
+  // Touch and accessibility
+  touchTargetSize: 'compact' | 'default' | 'large' | 'extra-large'
+  enableHapticFeedback: boolean
+  
+  // Animations and performance
+  animationStyle: 'none' | 'subtle' | 'default' | 'mobile-first' | 'desktop-first'
+  reducedMotion: boolean
+  
+  // Content density
+  contentDensity: 'compact' | 'comfortable' | 'spacious'
+  
+  // Orientation handling
+  orientationLock: boolean
+  landscapeLayout: 'auto' | 'force-desktop' | 'optimized'
 }
 
 export interface AdaptiveLayoutResult {
+  // Device and view information
   viewMode: 'mobile' | 'tablet' | 'desktop'
+  deviceType: 'mobile' | 'tablet' | 'desktop'
+  orientation: 'portrait' | 'landscape'
+  
+  // Layout configuration
   columns: number
   isCardLayout: boolean
+  contentDensity: 'compact' | 'comfortable' | 'spacious'
+  
+  // Navigation
   showBottomNav: boolean
   showDrawer: boolean
   showToolbar: boolean
+  sidebarBehavior: 'overlay' | 'push' | 'reveal' | 'auto'
+  
+  // Interaction
   enableSwipe: boolean
   swipeDirection: 'horizontal' | 'vertical' | 'both'
-  modalSize: 'mobile' | 'desktop'
+  enablePullToRefresh: boolean
+  touchOptimized: boolean
+  
+  // UI elements
+  modalSize: 'mobile' | 'desktop' | 'fullscreen'
+  stickyHeaders: boolean
+  
+  // Styling classes
   containerPadding: string
   itemSpacing: string
   gridCols: string
   touchTargetClass: string
-  animationStyle: string
+  animationClass: string
+  densityClass: string
+  
+  // Device capabilities
   isMobile: boolean
   isTablet: boolean
   isDesktop: boolean
+  touchDevice: boolean
+  canHover: boolean
+  
+  // Accessibility
+  reducedMotion: boolean
+  highContrast: boolean
 }
 
 const DEFAULT_CONFIG: AdaptiveLayoutConfig = {
+  // Layout modes
   mobileViewMode: 'stack',
   tabletColumns: 2,
   desktopColumns: 3,
+  
+  // Interaction
   enableSwipeGestures: true,
   swipeDirection: 'horizontal',
+  enablePullToRefresh: true,
+  
+  // Navigation
   showMobileToolbar: true,
   mobileNavigation: 'both',
+  sidebarBehavior: 'auto',
+  
+  // Layout styles
   cardLayout: true,
   fullscreenModals: true,
+  stickyHeaders: false,
+  
+  // Touch and accessibility
   touchTargetSize: 'default',
-  animationStyle: 'mobile-first'
+  enableHapticFeedback: false,
+  
+  // Animations and performance
+  animationStyle: 'mobile-first',
+  reducedMotion: false,
+  
+  // Content density
+  contentDensity: 'comfortable',
+  
+  // Orientation handling
+  orientationLock: false,
+  landscapeLayout: 'auto'
 }
 
 export function useAdaptiveLayout(config: Partial<AdaptiveLayoutConfig> = {}): AdaptiveLayoutResult {
   const breakpoint = useResponsiveBreakpoint()
+  const deviceInfo = useDeviceDetection()
+  const orientation = useScreenOrientation()
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
 
   return useMemo(() => {
-    const { isMobile, isTablet, isDesktop } = breakpoint
+    const { isMobile, isTablet, isDesktop, touchDevice, canHover } = breakpoint
 
-    // Determine view mode
+    // Determine view mode with orientation consideration
     let viewMode: 'mobile' | 'tablet' | 'desktop'
-    if (isMobile) viewMode = 'mobile'
-    else if (isTablet) viewMode = 'tablet'
-    else viewMode = 'desktop'
+    if (isMobile) {
+      viewMode = 'mobile'
+    } else if (isTablet) {
+      // In landscape mode, tablets might behave more like desktop
+      viewMode = orientation.isLandscape && finalConfig.landscapeLayout === 'force-desktop' 
+        ? 'desktop' 
+        : 'tablet'
+    } else {
+      viewMode = 'desktop'
+    }
 
-    // Calculate columns based on view mode
+    // Calculate columns based on view mode and orientation
     let columns: number
     if (isMobile) {
-      columns = finalConfig.mobileViewMode === 'grid' 
-        ? (finalConfig.tabletColumns > 2 ? 2 : 1) 
-        : 1
+      if (orientation.isLandscape && finalConfig.mobileViewMode === 'grid') {
+        columns = 2
+      } else {
+        columns = finalConfig.mobileViewMode === 'grid' 
+          ? (finalConfig.tabletColumns > 2 ? 2 : 1) 
+          : 1
+      }
     } else if (isTablet) {
-      columns = finalConfig.tabletColumns
+      columns = orientation.isLandscape 
+        ? Math.min(finalConfig.tabletColumns + 1, finalConfig.desktopColumns)
+        : finalConfig.tabletColumns
     } else {
       columns = finalConfig.desktopColumns
     }
 
-    // Layout configurations
+    // Enhanced layout configurations
     const isCardLayout = finalConfig.cardLayout && (isMobile || isTablet)
     const showBottomNav = isMobile && ['bottom', 'both'].includes(finalConfig.mobileNavigation)
-    const showDrawer = isMobile && ['drawer', 'both'].includes(finalConfig.mobileNavigation)
+    const showDrawer = (isMobile || (isTablet && orientation.isPortrait)) && ['drawer', 'both'].includes(finalConfig.mobileNavigation)
     const showToolbar = isMobile && finalConfig.showMobileToolbar
-    const enableSwipe = isMobile && finalConfig.enableSwipeGestures
+    const enableSwipe = (isMobile || touchDevice) && finalConfig.enableSwipeGestures
     const swipeDirection = enableSwipe ? finalConfig.swipeDirection : 'horizontal'
-    const modalSize = isMobile && finalConfig.fullscreenModals ? 'mobile' : 'desktop'
+    const enablePullToRefresh = (isMobile || touchDevice) && finalConfig.enablePullToRefresh
+    
+    // Enhanced modal sizing
+    let modalSize: 'mobile' | 'desktop' | 'fullscreen'
+    if (isMobile && finalConfig.fullscreenModals) {
+      modalSize = 'fullscreen'
+    } else if (isMobile) {
+      modalSize = 'mobile'
+    } else {
+      modalSize = 'desktop'
+    }
 
-    // Responsive spacing and styling
+    // Sidebar behavior
+    const sidebarBehavior = finalConfig.sidebarBehavior === 'auto'
+      ? (isMobile ? 'overlay' : isTablet ? 'push' : 'reveal')
+      : finalConfig.sidebarBehavior
+
+    // Enhanced responsive spacing based on content density
+    const densitySpacing = {
+      compact: { container: 'p-1 md:p-2', item: 'gap-1 md:gap-2' },
+      comfortable: { container: 'p-2 md:p-4', item: 'gap-3 md:gap-4' },
+      spacious: { container: 'p-4 md:p-6', item: 'gap-6 md:gap-8' }
+    }
+
+    const currentDensity = densitySpacing[finalConfig.contentDensity]
+    
     const containerPadding = isMobile 
-      ? 'p-2 md:p-4' 
+      ? currentDensity.container
       : isTablet 
-        ? 'p-4 md:p-6' 
-        : 'p-6 md:p-8'
+        ? `${currentDensity.container} lg:p-6` 
+        : `${currentDensity.container} lg:p-8`
     
     const itemSpacing = isMobile 
-      ? 'gap-3 md:gap-4' 
+      ? currentDensity.item
       : isTablet 
-        ? 'gap-4 md:gap-6' 
-        : 'gap-6 md:gap-8'
+        ? `${currentDensity.item} lg:gap-6` 
+        : `${currentDensity.item} lg:gap-8`
     
-    // Touch target sizing
+    // Enhanced touch target sizing
     const touchTargetMap = {
-      default: 'touch-44px',
-      large: 'touch-48px',
-      'extra-large': 'touch-56px'
+      compact: 'min-h-[40px] min-w-[40px]',
+      default: 'min-h-[44px] min-w-[44px]',
+      large: 'min-h-[48px] min-w-[48px]',
+      'extra-large': 'min-h-[56px] min-w-[56px]'
     }
     
     const touchTargetClass = touchTargetMap[finalConfig.touchTargetSize]
 
-    // Grid column classes for Tailwind
+    // Enhanced grid column classes
     const gridColsMap = {
       1: 'grid-cols-1',
       2: 'grid-cols-1 sm:grid-cols-2',
       3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
       4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
-      5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+      5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+      6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
     }
     
     const gridCols = gridColsMap[columns as keyof typeof gridColsMap] || 'grid-cols-1'
 
-    // Animation style
+    // Enhanced animation handling
+    const shouldReduceMotion = finalConfig.reducedMotion || deviceInfo.prefersReducedMotion
+    
     const animationMap = {
-      default: 'fade-in',
-      'mobile-first': isMobile ? 'slide-in-bottom' : 'fade-in',
-      'desktop-first': isDesktop ? 'scale-in' : 'fade-in'
+      none: '',
+      subtle: shouldReduceMotion ? '' : 'transition-opacity duration-200',
+      default: shouldReduceMotion ? '' : 'transition-all duration-300 ease-in-out',
+      'mobile-first': shouldReduceMotion ? '' : (isMobile ? 'animate-slide-in-bottom' : 'animate-fade-in'),
+      'desktop-first': shouldReduceMotion ? '' : (isDesktop ? 'animate-scale-in' : 'animate-fade-in')
     }
     
-    const animationStyle = animationMap[finalConfig.animationStyle]
+    const animationClass = animationMap[finalConfig.animationStyle]
+
+    // Content density class
+    const densityClass = `density-${finalConfig.contentDensity}`
+
+    // Accessibility features
+    const highContrast = deviceInfo.prefersColorScheme === 'dark'
 
     return {
+      // Device and view information
       viewMode,
+      deviceType: deviceInfo.deviceType,
+      orientation: orientation.orientation,
+      
+      // Layout configuration
       columns,
       isCardLayout,
+      contentDensity: finalConfig.contentDensity,
+      
+      // Navigation
       showBottomNav,
       showDrawer,
       showToolbar,
+      sidebarBehavior,
+      
+      // Interaction
       enableSwipe,
       swipeDirection,
+      enablePullToRefresh,
+      touchOptimized: touchDevice,
+      
+      // UI elements
       modalSize,
+      stickyHeaders: finalConfig.stickyHeaders,
+      
+      // Styling classes
       containerPadding,
       itemSpacing,
       gridCols,
       touchTargetClass,
-      animationStyle,
+      animationClass,
+      densityClass,
+      
+      // Device capabilities
       isMobile,
       isTablet,
-      isDesktop
+      isDesktop,
+      touchDevice,
+      canHover,
+      
+      // Accessibility
+      reducedMotion: shouldReduceMotion,
+      highContrast
     }
-  }, [breakpoint, finalConfig])
+  }, [breakpoint, deviceInfo, orientation, finalConfig])
 }
 
 // Specialized hooks for common use cases

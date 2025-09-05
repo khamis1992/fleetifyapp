@@ -6,6 +6,15 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
+// Import responsive components
+import { ResponsiveGrid } from "@/components/responsive/ResponsiveGrid"
+import { AdaptiveCard } from "@/components/responsive/AdaptiveCard"
+import { ResponsiveButton } from "@/components/ui/responsive-button"
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog"
+import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout"
+import { cn } from "@/lib/utils"
+
 // Component imports
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
 import { ContractsStatistics } from "@/components/contracts/ContractsStatistics"
@@ -60,6 +69,17 @@ export default function Contracts() {
   const queryClient = useQueryClient()
   const autoRenewContracts = useAutoRenewContracts()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
+  
+  // Responsive hooks
+  const { isMobile, isTablet, touchDevice } = useResponsiveBreakpoint()
+  const { 
+    columns, 
+    spacing, 
+    contentDensity,
+    touchOptimized 
+  } = useAdaptiveLayout({
+    contentDensity: 'comfortable'
+  })
   
   // Data fetching
   const { contracts, filteredContracts, isLoading, refetch, statistics } = useContractsData(filters)
@@ -182,179 +202,322 @@ export default function Contracts() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <ContractsHeader
-        onCreateContract={handleCreateContract}
-        onShowTemplates={handleShowTemplates}
-        onShowExport={handleShowExport}
-        onShowCSVUpload={handleShowCSVUpload}
-        onShowBulkDelete={handleShowBulkDelete}
-      />
+    <div className={cn("space-y-6", spacing)}>
+      {/* Header - Responsive */}
+      <AdaptiveCard variant={isMobile ? 'compact' : 'default'}>
+        <ContractsHeader
+          onCreateContract={handleCreateContract}
+          onShowTemplates={handleShowTemplates}
+          onShowExport={handleShowExport}
+          onShowCSVUpload={handleShowCSVUpload}
+          onShowBulkDelete={handleShowBulkDelete}
+        />
+      </AdaptiveCard>
 
-      {/* Journal Entry Status Alert */}
-      <ContractJournalEntryStatus />
+      {/* Journal Entry Status Alert - Responsive */}
+      <AdaptiveCard variant={isMobile ? 'compact' : 'default'}>
+        <ContractJournalEntryStatus />
+      </AdaptiveCard>
 
-      {/* Statistics Cards */}
-      <ContractsStatistics
-        activeCount={statistics.activeContracts.length}
-        draftCount={statistics.draftContracts.length}
-        cancelledCount={statistics.cancelledContracts.length}
-        totalRevenue={statistics.totalRevenue}
-      />
+      {/* Statistics Cards - Responsive Grid */}
+      <ResponsiveGrid
+        columns={columns.stats}
+        gap={isMobile ? 3 : 4}
+      >
+        <AdaptiveCard 
+          variant={isMobile ? 'compact' : 'default'}
+          className="col-span-full"
+        >
+          <ContractsStatistics
+            activeCount={statistics.activeContracts.length}
+            draftCount={statistics.draftContracts.length}
+            cancelledCount={statistics.cancelledContracts.length}
+            totalRevenue={statistics.totalRevenue}
+          />
+        </AdaptiveCard>
+      </ResponsiveGrid>
 
-      {/* Search and Filters */}
-      <ContractSearchFilters 
-        onFiltersChange={setFilters}
-        activeFilters={filters}
-      />
+      {/* Search and Filters - Responsive */}
+      <AdaptiveCard variant={isMobile ? 'compact' : 'default'}>
+        <ContractSearchFilters 
+          onFiltersChange={setFilters}
+          activeFilters={filters}
+        />
+      </AdaptiveCard>
 
-      {/* Contract Management Tabs */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">جميع العقود</TabsTrigger>
-          <TabsTrigger value="active">النشطة</TabsTrigger>
-          <TabsTrigger value="suspended">المعلقة</TabsTrigger>
-          <TabsTrigger value="expired">المنتهية</TabsTrigger>
-          <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
-          <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
-        </TabsList>
+      {/* Contract Management Tabs - Responsive */}
+      <AdaptiveCard variant={isMobile ? 'compact' : 'default'}>
+        <Tabs defaultValue="all" className={cn(
+          isMobile ? "space-y-3" : "space-y-4"
+        )}>
+          <TabsList className={cn(
+            "grid w-full",
+            isMobile ? "grid-cols-2 gap-1" : "grid-cols-6 gap-2"
+          )}>
+            <TabsTrigger 
+              value="all"
+              className={cn(
+                touchOptimized && "min-h-[44px]",
+                isMobile && "text-xs"
+              )}
+            >
+              {isMobile ? "الكل" : "جميع العقود"}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="active"
+              className={cn(
+                touchOptimized && "min-h-[44px]",
+                isMobile && "text-xs"
+              )}
+            >
+              النشطة
+            </TabsTrigger>
+            <TabsTrigger 
+              value="suspended"
+              className={cn(
+                touchOptimized && "min-h-[44px]",
+                isMobile && "text-xs"
+              )}
+            >
+              المعلقة
+            </TabsTrigger>
+            <TabsTrigger 
+              value="expired"
+              className={cn(
+                touchOptimized && "min-h-[44px]",
+                isMobile && "text-xs"
+              )}
+            >
+              المنتهية
+            </TabsTrigger>
+            <TabsTrigger 
+              value="alerts"
+              className={cn(
+                touchOptimized && "min-h-[44px]",
+                isMobile && "text-xs"
+              )}
+            >
+              {isMobile ? "تنبيهات" : "تنبيهات الانتهاء"}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="late-fines"
+              className={cn(
+                touchOptimized && "min-h-[44px]",
+                isMobile && "text-xs"
+              )}
+            >
+              {isMobile ? "غرامات" : "إعدادات الغرامات"}
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="all">
-          <ContractsList
-            contracts={filteredContracts}
+          <TabsContent value="all">
+            <ContractsList
+              contracts={filteredContracts}
+              onRenewContract={handleRenewContract}
+              onManageStatus={handleManageStatus}
+              onViewDetails={handleViewDetails}
+              onCancelContract={handleCancelContract}
+              onDeleteContract={handleDeleteContract}
+              onCreateContract={handleCreateContract}
+              onClearFilters={handleClearFilters}
+              hasFilters={Object.keys(filters).length > 0}
+              hasContracts={!!contracts && contracts.length > 0}
+            />
+          </TabsContent>
+
+          <ContractsTabsContent
+            activeContracts={statistics.activeContracts}
+            suspendedContracts={statistics.suspendedContracts}
+            expiredContracts={statistics.expiredContracts}
             onRenewContract={handleRenewContract}
             onManageStatus={handleManageStatus}
-            onViewDetails={handleViewDetails}
+            onViewContract={handleViewDetails}
             onCancelContract={handleCancelContract}
             onDeleteContract={handleDeleteContract}
-            onCreateContract={handleCreateContract}
-            onClearFilters={handleClearFilters}
-            hasFilters={Object.keys(filters).length > 0}
-            hasContracts={!!contracts && contracts.length > 0}
           />
-        </TabsContent>
 
-        <ContractsTabsContent
-          activeContracts={statistics.activeContracts}
-          suspendedContracts={statistics.suspendedContracts}
-          expiredContracts={statistics.expiredContracts}
-          onRenewContract={handleRenewContract}
-          onManageStatus={handleManageStatus}
-          onViewContract={handleViewDetails}
-          onCancelContract={handleCancelContract}
-          onDeleteContract={handleDeleteContract}
-        />
+          <TabsContent value="late-fines">
+            <LateFinesSettings />
+          </TabsContent>
+        </Tabs>
+      </AdaptiveCard>
 
-        <TabsContent value="late-fines">
-          <LateFinesSettings />
-        </TabsContent>
-      </Tabs>
-
-      {/* Dialogs */}
-      <ContractRenewalDialog
+      {/* Dialogs - Responsive */}
+      <ResponsiveDialog
         open={showRenewalDialog}
         onOpenChange={setShowRenewalDialog}
-        contract={selectedContract}
-      />
+        title="تجديد العقد"
+        fullScreenOnMobile={true}
+      >
+        <ContractRenewalDialog
+          open={showRenewalDialog}
+          onOpenChange={setShowRenewalDialog}
+          contract={selectedContract}
+        />
+      </ResponsiveDialog>
       
-      <ContractStatusManagement
+      <ResponsiveDialog
         open={showStatusDialog}
         onOpenChange={setShowStatusDialog}
-        contract={selectedContract}
-      />
+        title="إدارة حالة العقد"
+        fullScreenOnMobile={true}
+      >
+        <ContractStatusManagement
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          contract={selectedContract}
+        />
+      </ResponsiveDialog>
       
-      <ContractDetailsDialog
+      <ResponsiveDialog
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
-        contract={selectedContract}
-        onEdit={(contract) => { setSelectedContract(contract); refetch(); }}
-        onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
-      />
+        title="تفاصيل العقد"
+        fullScreenOnMobile={true}
+      >
+        <ContractDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          contract={selectedContract}
+          onEdit={(contract) => { setSelectedContract(contract); refetch(); }}
+          onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
+        />
+      </ResponsiveDialog>
       
-      <ContractInvoiceDialog
+      <ResponsiveDialog
         open={showInvoiceDialog}
         onOpenChange={setShowInvoiceDialog}
-        contract={selectedContract}
-        onSuccess={() => { refetch(); setShowInvoiceDialog(false); }}
-      />
+        title="إنشاء فاتورة"
+        fullScreenOnMobile={true}
+      >
+        <ContractInvoiceDialog
+          open={showInvoiceDialog}
+          onOpenChange={setShowInvoiceDialog}
+          contract={selectedContract}
+          onSuccess={() => { refetch(); setShowInvoiceDialog(false); }}
+        />
+      </ResponsiveDialog>
       
-      <ContractExportDialog
+      <ResponsiveDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
-      />
+        title="تصدير العقود"
+        fullScreenOnMobile={false}
+      >
+        <ContractExportDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+        />
+      </ResponsiveDialog>
       
-      <ContractWizard
+      <ResponsiveDialog
         open={showContractWizard}
         onOpenChange={setShowContractWizard}
-        onSubmit={handleContractSubmit}
-        preselectedCustomerId={preselectedCustomerId}
-      />
+        title="إنشاء عقد جديد"
+        fullScreenOnMobile={true}
+      >
+        <ContractWizard
+          open={showContractWizard}
+          onOpenChange={setShowContractWizard}
+          onSubmit={handleContractSubmit}
+          preselectedCustomerId={preselectedCustomerId}
+        />
+      </ResponsiveDialog>
       
-      {/* Contract Creation Progress Dialog */}
-      <Dialog open={showCreationProgress} onOpenChange={(open) => {
-        if (!open && !creationState.isProcessing) {
-          setShowCreationProgress(false)
-          resetCreationState()
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
+      {/* Contract Creation Progress Dialog - Responsive */}
+      <ResponsiveDialog 
+        open={showCreationProgress} 
+        onOpenChange={(open) => {
+          if (!open && !creationState.isProcessing) {
+            setShowCreationProgress(false)
+            resetCreationState()
+          }
+        }}
+        title="إنشاء العقد"
+        fullScreenOnMobile={false}
+      >
+        <div className={cn(
+          isMobile ? "p-4" : "p-6"
+        )}>
           <ContractCreationProgress
             creationState={creationState}
             onRetry={handleCreationRetry}
             onClose={handleCreationComplete}
           />
-        </DialogContent>
-      </Dialog>
+        </div>
+      </ResponsiveDialog>
 
-      <ContractCancellationDialog
+      <ResponsiveDialog
         open={showCancellationDialog}
         onOpenChange={setShowCancellationDialog}
-        contract={selectedContract}
-      />
+        title="إلغاء العقد"
+        fullScreenOnMobile={false}
+      >
+        <ContractCancellationDialog
+          open={showCancellationDialog}
+          onOpenChange={setShowCancellationDialog}
+          contract={selectedContract}
+        />
+      </ResponsiveDialog>
 
-      <ContractDeleteDialog
+      <ResponsiveDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        contract={selectedContract}
-        onSuccess={() => refetch()}
-      />
+        title="حذف العقد"
+        fullScreenOnMobile={false}
+      >
+        <ContractDeleteDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          contract={selectedContract}
+          onSuccess={() => refetch()}
+        />
+      </ResponsiveDialog>
 
-      {/* Contract CSV Upload Dialog */}
-      <ContractCSVUpload
+      {/* Contract CSV Upload Dialog - Responsive */}
+      <ResponsiveDialog
         open={showCSVUpload}
         onOpenChange={setShowCSVUpload}
-        onUploadComplete={() => {
-          setShowCSVUpload(false)
-          refetch()
-        }}
-      />
+        title="رفع العقود من ملف CSV"
+        fullScreenOnMobile={true}
+      >
+        <ContractCSVUpload
+          open={showCSVUpload}
+          onOpenChange={setShowCSVUpload}
+          onUploadComplete={() => {
+            setShowCSVUpload(false)
+            refetch()
+          }}
+        />
+      </ResponsiveDialog>
 
-      {/* Bulk Delete Contracts Dialog */}
-      <BulkDeleteContractsDialog
+      {/* Bulk Delete Contracts Dialog - Responsive */}
+      <ResponsiveDialog
         open={showBulkDelete}
         onOpenChange={setShowBulkDelete}
-      />
+        title="حذف جميع العقود"
+        fullScreenOnMobile={false}
+      >
+        <BulkDeleteContractsDialog
+          open={showBulkDelete}
+          onOpenChange={setShowBulkDelete}
+        />
+      </ResponsiveDialog>
 
-      {showTemplateManager && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>إدارة قوالب العقود</CardTitle>
-                  <Button variant="outline" onClick={() => setShowTemplateManager(false)}>
-                    إغلاق
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ContractTemplateManager />
-              </CardContent>
-            </Card>
-          </div>
+      {/* Template Manager - Responsive */}
+      <ResponsiveDialog
+        open={showTemplateManager}
+        onOpenChange={setShowTemplateManager}
+        title="إدارة قوالب العقود"
+        fullScreenOnMobile={true}
+      >
+        <div className={cn(
+          "w-full",
+          isMobile ? "p-2" : "p-4"
+        )}>
+          <ContractTemplateManager />
         </div>
-      )}
+      </ResponsiveDialog>
     </div>
   )
 }
