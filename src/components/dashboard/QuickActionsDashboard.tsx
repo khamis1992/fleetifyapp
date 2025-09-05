@@ -22,7 +22,6 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
   Tooltip,
   TooltipContent,
-  
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';

@@ -1,8 +1,7 @@
 import React from "react";
 // import { SimpleToaster } from "@/components/ui/simple-toaster";
 // import { Toaster as Sonner } from "@/components/ui/sonner";
-// Temporarily removing TooltipProvider to fix React hooks issue
-// import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -74,8 +73,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CompanyContextProvider>
-        {/* Temporarily removing TooltipProvider to fix React hooks issue */}
-        {/* <TooltipProvider> */}
+        <TooltipProvider>
           {/* <SimpleToaster /> */}
           {/* <Sonner /> */}
           <BrowserRouter>
@@ -379,7 +377,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        {/* </TooltipProvider> */}
+        </TooltipProvider>
       </CompanyContextProvider>
     </AuthProvider>
   </QueryClientProvider>
