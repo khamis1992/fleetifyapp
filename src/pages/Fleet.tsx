@@ -14,6 +14,9 @@ import { useVehiclesPaginated, VehicleFilters as IVehicleFilters } from "@/hooks
 import { useFleetStatus } from "@/hooks/useFleetStatus"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQueryClient } from "@tanstack/react-query"
+import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
+import { ResponsiveContainer } from '@/components/ui/responsive-container'
 
 export default function Fleet() {
   // Responsive hooks

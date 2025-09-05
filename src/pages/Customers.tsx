@@ -27,7 +27,9 @@ import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
 import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
-
+import { ResponsiveContainer } from '@/components/ui/responsive-container'
+import { ResponsiveCard, ResponsiveCardHeader, ResponsiveCardTitle, ResponsiveCardContent } from '@/components/ui/responsive-card'
+import { DataGrid, DashboardGrid } from '@/components/ui/responsive-grid'
 
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
@@ -579,7 +581,6 @@ export default function Customers() {
           )}
         </ResponsiveCardContent>
       </ResponsiveCard>
-    </div>
 
       {/* نماذج الحوار */}
       <EnhancedCustomerDialog
@@ -700,6 +701,7 @@ export default function Customers() {
         open={showBulkDeleteDialog}
         onOpenChange={setShowBulkDeleteDialog}
       />
-    </div>
+    </ResponsiveContainer>
+    </CustomerViewProvider>
   )
 }

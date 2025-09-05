@@ -152,7 +152,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   }
 
   return (
-    <div ref={ref} className={cn("relative", className)}>
+    <div ref={ref as React.RefObject<HTMLDivElement>} className={cn("relative", className)}>
       {/* Pull indicator */}
       <div
         className={cn(
