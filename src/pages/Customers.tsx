@@ -210,7 +210,7 @@ export default function Customers() {
 
   return (
     <CustomerViewProvider>
-    <div className="space-y-6">
+    <ResponsiveContainer className="space-y-4 md:space-y-6">
       {/* رأس الصفحة */}
       <div className="flex justify-between items-center">
         <div>
@@ -382,7 +382,7 @@ export default function Customers() {
 
 
       {/* بطاقات الإحصائيات */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <DashboardGrid variant="stats" gap={isMobile ? "sm" : "default"}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
@@ -426,10 +426,20 @@ export default function Customers() {
             <p className="text-xs text-muted-foreground">عميل محظور</p>
           </CardContent>
         </Card>
-      </div>
+      </DashboardGrid>
 
-      {/* قائمة العملاء */}
-      <div className="grid gap-4">
+      {/* قائمة العملاء - Mobile Responsive */}
+      <ResponsiveCard>
+        <ResponsiveCardHeader>
+          <ResponsiveCardTitle className="flex items-center justify-between">
+            قائمة العملاء
+            <Badge variant="secondary">{customers?.length || 0}</Badge>
+          </ResponsiveCardTitle>
+        </ResponsiveCardHeader>
+        <ResponsiveCardContent>
+          {isMobile || isCardLayout ? (
+            // Mobile/Card View
+            <DataGrid density={isMobile ? "compact" : "comfortable"} gap="sm">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, index) => (
             <CustomerSkeleton key={index} />
@@ -560,6 +570,15 @@ export default function Customers() {
             </CardContent>
           </Card>
         )}
+            </DataGrid>
+          ) : (
+            // Desktop Table View - placeholder for now
+            <div className="text-center py-8 text-muted-foreground">
+              عرض الجدول سيتم تحديثه قريباً
+            </div>
+          )}
+        </ResponsiveCardContent>
+      </ResponsiveCard>
     </div>
 
       {/* نماذج الحوار */}
@@ -681,7 +700,6 @@ export default function Customers() {
         open={showBulkDeleteDialog}
         onOpenChange={setShowBulkDeleteDialog}
       />
-      </div>
-    </CustomerViewProvider>
+    </div>
   )
 }

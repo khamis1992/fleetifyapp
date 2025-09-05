@@ -16,6 +16,21 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useQueryClient } from "@tanstack/react-query"
 
 export default function Fleet() {
+  // Responsive hooks
+  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { 
+    containerPadding, 
+    itemSpacing, 
+    gridCols,
+    modalSize,
+    isCardLayout 
+  } = useAdaptiveLayout({
+    mobileViewMode: 'list',
+    tabletColumns: 2,
+    desktopColumns: 3,
+    cardLayout: true,
+    fullscreenModals: true
+  })
   const queryClient = useQueryClient()
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [showGroupManagement, setShowGroupManagement] = useState(false)
@@ -67,7 +82,7 @@ export default function Fleet() {
   }
 
   return (
-    <div className="space-y-6">
+    <ResponsiveContainer className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -220,6 +235,6 @@ export default function Fleet() {
           queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] })
         }}
       />
-    </div>
+    </ResponsiveContainer>
   )
 }
