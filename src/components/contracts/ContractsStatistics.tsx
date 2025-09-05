@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { CheckCircle, Clock, XCircle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
