@@ -606,4 +606,27 @@ All colors MUST be HSL.
     text-align: right;
     justify-content: flex-end;
   }
+
+  /* Vehicle diagram specific fixes */
+  .vehicle-diagram-container {
+    transform: none !important;
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  .vehicle-diagram-container img {
+    transform: none !important;
+    will-change: auto;
+  }
+
+  /* Prevent unwanted transforms on vehicle condition components */
+  [class*="VehicleCondition"] {
+    transform: none !important;
+  }
+
+  /* Damage points styling */
+  .damage-point {
+    transform: translate(-50%, -50%) !important;
+    will-change: auto;
+  }
 }

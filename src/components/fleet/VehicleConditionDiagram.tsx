@@ -217,7 +217,7 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
       <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
         <div
           ref={diagramRef}
-          className={`relative w-full bg-white ${readOnly ? 'cursor-default' : 'cursor-crosshair'}`}
+          className={`vehicle-diagram-container relative w-full bg-white ${readOnly ? 'cursor-default' : 'cursor-crosshair'}`}
           style={{ paddingBottom: '60%' }} // Aspect ratio for the diagram
           onClick={handleDiagramClick}
         >
@@ -226,11 +226,30 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
             <img
               src="/مخطط.png"
               alt="مخطط المركبة"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain transition-transform duration-200"
               draggable={false}
+              onLoad={() => {
+                console.log('✅ تم تحميل مخطط المركبة بنجاح');
+              }}
               onError={(e) => {
-                console.error('خطأ في تحميل صورة مخطط المركبة');
-                e.currentTarget.style.display = 'none';
+                console.error('❌ خطأ في تحميل صورة مخطط المركبة:', e);
+                const target = e.currentTarget as HTMLImageElement;
+                target.style.display = 'none';
+                // Show fallback content
+                const fallback = document.createElement('div');
+                fallback.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-gray-500';
+                fallback.innerHTML = `
+                  <div class="text-center p-4">
+                    <div class="w-16 h-16 mx-auto mb-2 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2"></path>
+                      </svg>
+                    </div>
+                    <p class="text-sm">مخطط المركبة غير متوفر</p>
+                    <p class="text-xs text-gray-400">يمكنك إضافة نقاط الضرر بالنقر على المنطقة</p>
+                  </div>
+                `;
+                target.parentNode?.appendChild(fallback);
               }}
             />
           </div>
@@ -239,11 +258,12 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
           {damagePoints.map((point) => (
             <div
               key={point.id}
-              className={`absolute w-4 h-4 rounded-full border-2 border-white cursor-pointer transform -translate-x-1/2 -translate-y-1/2 ${getSeverityColor(point.severity)}`}
+              className={`damage-point absolute w-4 h-4 rounded-full border-2 border-white cursor-pointer ${getSeverityColor(point.severity)}`}
               style={{
                 left: `${point.x}%`,
                 top: `${point.y}%`,
-                zIndex: 10
+                zIndex: 10,
+                transform: 'translate(-50%, -50%)'
               }}
               onClick={(e) => {
                 e.stopPropagation();
