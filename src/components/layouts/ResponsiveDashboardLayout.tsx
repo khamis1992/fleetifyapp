@@ -6,14 +6,14 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from './AppSidebar';
 import { MobileNavigation } from './MobileNavigation';
 import { ResponsiveHeader } from './ResponsiveHeader';
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { ResponsiveContainer } from '@/components/ui/responsive-container';
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 
 export const ResponsiveDashboardLayout: React.FC = () => {
   const { user, loading } = useAuth();
-  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint();
+  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   if (loading) {
