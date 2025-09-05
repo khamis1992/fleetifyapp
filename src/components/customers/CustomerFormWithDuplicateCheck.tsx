@@ -40,10 +40,11 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
       hasDuplicates: duplicateCheck?.has_duplicates,
       count: duplicateCheck?.count,
       customerData: debouncedCustomerData,
-      excludeCustomerId
+      excludeCustomerId,
+      isLoading
     });
     
-    if (duplicateCheck) {
+    if (duplicateCheck && !isLoading) {
       // تأكد من أن التكرارات المكتشفة لا تتضمن العميل الحالي إذا كان في وضع التعديل
       const validDuplicates = duplicateCheck.duplicates?.filter(duplicate => 
         !excludeCustomerId || duplicate.id !== excludeCustomerId
@@ -55,21 +56,33 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
         originalCount: duplicateCheck.duplicates?.length || 0,
         validCount: validDuplicates.length,
         hasValidDuplicates,
-        excludeCustomerId
+        excludeCustomerId,
+        showInlineWarning
       });
       
-      setShowInlineWarning(hasValidDuplicates);
+      // Only show warning if there are actual valid duplicates
+      const shouldShowWarning = hasValidDuplicates && enableRealTimeCheck;
+      setShowInlineWarning(shouldShowWarning);
+      
       if (onDuplicateDetected) {
         onDuplicateDetected(hasValidDuplicates);
       }
+    } else if (!isLoading && duplicateCheck && !duplicateCheck.has_duplicates) {
+      // Clear warnings when no duplicates found
+      console.log('✅ [DUPLICATE_CHECK_UI] No duplicates found, clearing warnings');
+      setShowInlineWarning(false);
+      if (onDuplicateDetected) {
+        onDuplicateDetected(false);
+      }
     }
-  }, [duplicateCheck, onDuplicateDetected, debouncedCustomerData, excludeCustomerId]);
+  }, [duplicateCheck, onDuplicateDetected, debouncedCustomerData, excludeCustomerId, isLoading, enableRealTimeCheck]);
 
   const handleViewDuplicates = () => {
     setShowDuplicateDialog(true);
   };
 
   const handleProceedAnyway = () => {
+    console.log('✅ [DUPLICATE_CHECK] User chose to proceed with duplicates');
     setShowInlineWarning(false);
     if (onProceedWithDuplicates) {
       onProceedWithDuplicates();
@@ -86,13 +99,22 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
               <span className="text-foreground font-medium">
                 تم العثور على {duplicateCheck.duplicates?.filter(d => !excludeCustomerId || d.id !== excludeCustomerId).length || 0} عميل(عملاء) مشابه(ين) في النظام
               </span>
-              <button
-                type="button"
-                onClick={handleViewDuplicates}
-                className="text-sm underline hover:no-underline font-medium text-primary hover:text-primary/80"
-              >
-                عرض التفاصيل
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleViewDuplicates}
+                  className="text-sm underline hover:no-underline font-medium text-primary hover:text-primary/80"
+                >
+                  عرض التفاصيل
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProceedAnyway}
+                  className="text-sm underline hover:no-underline font-medium text-warning hover:text-warning/80"
+                >
+                  المتابعة رغم ذلك
+                </button>
+              </div>
             </div>
           </AlertDescription>
         </Alert>

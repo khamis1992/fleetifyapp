@@ -278,11 +278,14 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       )}
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between items-center pt-6 border-t border-border/50">
+      <div className={`flex justify-between items-center pt-6 border-t border-border/50 form-button-container ${hasDuplicates ? 'duplicate-check-active' : ''}`}>
         <Button
           type="button"
           variant="outline"
-          onClick={previousStep}
+          onClick={() => {
+            console.log('🔙 [FORM] Previous button clicked');
+            previousStep();
+          }}
           disabled={currentStep === visibleSteps[0].id}
           className="flex items-center gap-2"
         >
@@ -295,6 +298,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             type="button"
             variant="outline"
             onClick={() => {
+              console.log('❌ [FORM] Cancel button clicked');
               if (onCancel) {
                 onCancel();
               } else {
@@ -314,6 +318,9 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
               type="submit" 
               disabled={createCustomer.isPending}
               className={`flex items-center gap-2 ${hasDuplicates && !forceCreate ? 'bg-warning hover:bg-warning/90' : ''}`}
+              onClick={() => {
+                console.log('💾 [FORM] Save button clicked', { hasDuplicates, forceCreate });
+              }}
             >
               <CheckCircle className="h-4 w-4" />
               {createCustomer.isPending ? 'جاري الحفظ...' : 'حفظ العميل'}
@@ -321,7 +328,17 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           ) : (
             <Button
               type="button"
-              onClick={nextStep}
+              onClick={() => {
+                console.log('➡️ [FORM] Next button clicked', {
+                  currentStep,
+                  hasDuplicates,
+                  forceCreate,
+                  formValues: form.getValues(),
+                  formErrors: form.formState.errors
+                });
+                nextStep();
+              }}
+              disabled={hasDuplicates && !forceCreate}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />

@@ -394,6 +394,35 @@ All colors MUST be HSL.
     @apply bg-gradient-card border-0 shadow-card transition-smooth hover:shadow-elevated hover:scale-[1.02];
   }
   
+  /* Fix for form button interactions - prevent CSS transform issues */
+  .form-button-container {
+    @apply relative;
+    transform: none !important;
+    will-change: auto;
+  }
+  
+  .form-button-container button {
+    @apply relative;
+    transform: none !important;
+    pointer-events: auto !important;
+    z-index: 10;
+    transition: var(--transition-micro);
+  }
+  
+  .form-button-container button:hover {
+    transform: translateY(-1px) !important;
+  }
+  
+  .form-button-container button:active {
+    transform: translateY(0) !important;
+  }
+  
+  /* Prevent scale animations on form elements during duplicate checks */
+  .duplicate-check-active .form-button-container button {
+    animation: none !important;
+    transform: none !important;
+  }
+  
   .glass-card {
     @apply bg-background/80 backdrop-blur-sm border border-border/50;
   }
