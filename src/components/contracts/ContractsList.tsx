@@ -1,6 +1,4 @@
 import React from 'react';
-import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
-import { MobileContractsView } from './MobileContractsView';
 import { ContractCard } from './ContractCard';
 import { ContractsEmptyState } from './ContractsEmptyState';
 
@@ -17,28 +15,18 @@ interface ContractsListProps {
   hasContracts: boolean;
 }
 
-export const ContractsList: React.FC<ContractsListProps> = (props) => {
-  const { isMobile } = useSimpleBreakpoint();
-
-  // Use mobile view for mobile devices
-  if (isMobile) {
-    return <MobileContractsView {...props} />;
-  }
-
-  // Desktop view
-  const {
-    contracts,
-    onRenewContract,
-    onManageStatus,
-    onViewDetails,
-    onCancelContract,
-    onDeleteContract,
-    onCreateContract,
-    onClearFilters,
-    hasFilters,
-    hasContracts
-  } = props;
-
+export const ContractsList: React.FC<ContractsListProps> = ({
+  contracts,
+  onRenewContract,
+  onManageStatus,
+  onViewDetails,
+  onCancelContract,
+  onDeleteContract,
+  onCreateContract,
+  onClearFilters,
+  hasFilters,
+  hasContracts
+}) => {
   if (contracts.length > 0) {
     return (
       <div className="grid gap-4 w-full">
@@ -60,11 +48,20 @@ export const ContractsList: React.FC<ContractsListProps> = (props) => {
     );
   }
 
-  return (
-    <ContractsEmptyState 
-      type={hasFilters ? 'no-results' : 'no-contracts'}
-      onCreateContract={onCreateContract}
-      onClearFilters={onClearFilters}
-    />
-  );
+  // Empty state handling
+  if (hasContracts && hasFilters) {
+    return (
+      <ContractsEmptyState
+        type="no-results"
+        onClearFilters={onClearFilters}
+      />
+    );
+  } else {
+    return (
+      <ContractsEmptyState
+        type="no-contracts"
+        onCreateContract={onCreateContract}
+      />
+    );
+  }
 };

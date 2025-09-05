@@ -18,9 +18,6 @@ import { ResponsiveModal } from "@/components/ui/responsive-modal"
 import { SwipeableCard, PullToRefresh } from "@/components/ui/swipeable-components"
 import { cn } from "@/lib/utils"
 import { RefreshCw, Filter, Search, Plus } from "lucide-react"
-import { MobileContractsFloatingButton } from "@/components/contracts/MobileContractsFloatingButton"
-import { MobileContractsSearch } from "@/components/contracts/MobileContractsSearch"
-import { MobileContractsStats } from "@/components/contracts/MobileContractsStats"
 
 // Component imports
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
@@ -267,30 +264,8 @@ export default function Contracts() {
             onShowBulkDelete={handleShowBulkDelete}
           />
           
-          {/* Mobile Search and Floating Button */}
+          {/* Mobile Quick Actions Bar */}
           {isMobile && (
-            <>
-              <MobileContractsSearch
-                onSearch={(query) => setFilters({...filters, search: query})}
-                onFiltersChange={setFilters}
-                activeFilters={filters}
-                isVisible={showMobileFilters}
-                onClose={() => setShowMobileFilters(false)}
-              />
-              <MobileContractsFloatingButton
-                onCreateContract={handleCreateContract}
-                onShowCSVUpload={handleShowCSVUpload}
-                onShowExport={handleShowExport}
-                onRefresh={handleRefresh}
-                onToggleFilters={() => setShowMobileFilters(!showMobileFilters)}
-                isRefreshing={isRefreshing}
-                showFilters={showMobileFilters}
-              />
-            </>
-          )}
-          
-          {/* Desktop Quick Actions Bar */}
-          {!isMobile && (
             <div className="flex items-center justify-between gap-2 p-3 bg-background/50 backdrop-blur-sm rounded-lg border">
               <Button
                 variant="outline"
@@ -327,23 +302,14 @@ export default function Contracts() {
         {/* Journal Entry Status Alert */}
         <ContractJournalEntryStatus />
 
-        {/* Statistics Cards - Enhanced for Mobile */}
+        {/* Statistics Cards */}
         <div className="w-full">
-          {isMobile ? (
-            <MobileContractsStats
-              activeCount={statistics.activeContracts.length}
-              draftCount={statistics.draftContracts.length}
-              cancelledCount={statistics.cancelledContracts.length}
-              totalRevenue={statistics.totalRevenue}
-            />
-          ) : (
-            <ContractsStatistics
-              activeCount={statistics.activeContracts.length}
-              draftCount={statistics.draftContracts.length}
-              cancelledCount={statistics.cancelledContracts.length}
-              totalRevenue={statistics.totalRevenue}
-            />
-          )}
+          <ContractsStatistics
+            activeCount={statistics.activeContracts.length}
+            draftCount={statistics.draftContracts.length}
+            cancelledCount={statistics.cancelledContracts.length}
+            totalRevenue={statistics.totalRevenue}
+          />
         </div>
 
         {/* Search and Filters - Collapsible on Mobile */}
