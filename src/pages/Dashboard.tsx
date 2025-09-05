@@ -13,8 +13,6 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
-import { FloatingAIAssistant } from '@/components/ai/FloatingAIAssistant';
-import { AIAssistantConfig } from '@/types/ai-assistant';
 import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -134,53 +132,6 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  // إعداد المساعد الذكي للوحة التحكم
-  const dashboardAIConfig: AIAssistantConfig = {
-    module: 'dashboard',
-    primitives: ['data_analysis', 'content_creation', 'research', 'ideation_strategy'],
-    context: {
-      stats: enhancedStats,
-      activities: enhancedActivities,
-      financialData: smartMetricsData,
-      userRole: user?.role,
-      companyName: browsedCompany?.name || 'شركتك'
-    },
-    priority: 'high_value',
-    enabledFeatures: [
-      {
-        id: 'dashboard_insights',
-        name: 'تحليل لوحة التحكم',
-        description: 'تحليل ذكي للإحصائيات والبيانات المعروضة',
-        primitive: 'data_analysis',
-        taskType: 'analyze_data',
-        enabled: true
-      },
-      {
-        id: 'create_report',
-        name: 'إنشاء التقارير',
-        description: 'إنشاء تقارير مخصصة بناءً على البيانات',
-        primitive: 'content_creation',
-        taskType: 'create_report',
-        enabled: true
-      },
-      {
-        id: 'suggest_actions',
-        name: 'اقتراح الإجراءات',
-        description: 'اقتراح إجراءات لتحسين الأداء',
-        primitive: 'ideation_strategy',
-        taskType: 'suggest_action',
-        enabled: true
-      },
-      {
-        id: 'optimize_workflow',
-        name: 'تحسين سير العمل',
-        description: 'تحليل وتحسين العمليات الحالية',
-        primitive: 'automation',
-        taskType: 'optimize_workflow',
-        enabled: true
-      }
-    ]
-  };
 
   return (
     <>
@@ -331,13 +282,6 @@ const Dashboard: React.FC = () => {
           </div>
         </ResponsiveGrid>
 
-        {/* Floating AI Assistant - Positioned for mobile */}
-        <FloatingAIAssistant 
-          config={dashboardAIConfig}
-          className={cn(
-            isMobile ? "bottom-24 right-4" : "bottom-6 right-6"
-          )}
-        />
       </div>
     </>
   );
