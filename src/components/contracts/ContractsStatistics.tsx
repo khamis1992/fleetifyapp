@@ -26,8 +26,8 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
   });
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 w-full">
+      <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">العقود النشطة</CardTitle>
           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -38,7 +38,7 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">مسودات العقود</CardTitle>
           <Clock className="h-4 w-4 text-yellow-600" />
@@ -49,7 +49,7 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">العقود الملغية</CardTitle>
           <XCircle className="h-4 w-4 text-red-600" />
@@ -60,7 +60,7 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
           <DollarSign className="h-4 w-4 text-blue-600" />

@@ -351,8 +351,7 @@ export default function Contracts() {
                   value="all" 
                   className={cn(
                     "transition-all duration-200",
-                    isMobile ? "text-xs px-3 py-2" : "",
-                    activeTab === "all" && "scale-105"
+                    isMobile ? "text-xs px-3 py-2" : ""
                   )}
                 >
                   {isMobile ? "الكل" : "جميع العقود"}
@@ -361,8 +360,7 @@ export default function Contracts() {
                   value="active" 
                   className={cn(
                     "transition-all duration-200",
-                    isMobile ? "text-xs px-3 py-2" : "",
-                    activeTab === "active" && "scale-105"
+                    isMobile ? "text-xs px-3 py-2" : ""
                   )}
                 >
                   النشطة
@@ -371,8 +369,7 @@ export default function Contracts() {
                   value="suspended" 
                   className={cn(
                     "transition-all duration-200",
-                    isMobile ? "text-xs px-3 py-2" : "",
-                    activeTab === "suspended" && "scale-105"
+                    isMobile ? "text-xs px-3 py-2" : ""
                   )}
                 >
                   المعلقة

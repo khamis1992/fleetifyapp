@@ -29,7 +29,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
 }) => {
   if (contracts.length > 0) {
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-4 w-full">
         {contracts.map((contract) => (
           <ContractCard
             key={contract.id}
