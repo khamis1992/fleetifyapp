@@ -53,8 +53,7 @@ const QuickActionsDashboard: React.FC = () => {
       icon: Users,
       color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
       route: '/customers',
-      badge: 'شائع',
-      requiresCompanyAccess: true
+      badge: 'شائع'
     },
     {
       id: 'add-vehicle',
@@ -63,8 +62,7 @@ const QuickActionsDashboard: React.FC = () => {
       icon: Car,
       color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
       route: '/fleet',
-      badge: 'سريع',
-      requiresAdmin: true
+      badge: 'سريع'
     },
     {
       id: 'create-contract',
@@ -72,8 +70,7 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'إنشاء عقد إيجار جديد',
       icon: FileText,
       color: 'from-accent/20 to-accent/10 border-accent/30 hover:border-accent/40',
-      route: '/contracts',
-      requiresAdmin: true
+      route: '/contracts'
     },
     {
       id: 'record-payment',
@@ -81,8 +78,7 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'تسجيل دفعة مالية جديدة',
       icon: DollarSign,
       color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
-      route: '/finance/payments',
-      requiresAdmin: true
+      route: '/finance'
     },
     {
       id: 'financial-calculator',
@@ -90,8 +86,7 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'احتساب التكاليف والأرباح',
       icon: Calculator,
       color: 'from-warning/10 to-warning/5 border-warning/20 hover:border-warning/30',
-      route: '/finance/calculator',
-      requiresCompanyAccess: true
+      route: '/finance'
     },
     {
       id: 'search-records',
@@ -99,8 +94,7 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'البحث في جميع سجلات النظام',
       icon: Search,
       color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
-      route: '/search',
-      requiresCompanyAccess: true
+      route: '/search'
     }
   ];
 
@@ -111,8 +105,7 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'تصدير التقارير والبيانات',
       icon: Download,
       color: 'from-secondary/10 to-secondary/5 border-secondary/20 hover:border-secondary/30',
-      route: '/reports',
-      requiresCompanyAccess: true
+      route: '/reports'
     },
     {
       id: 'import-data',
@@ -120,8 +113,7 @@ const QuickActionsDashboard: React.FC = () => {
       description: 'استيراد بيانات من ملفات CSV',
       icon: Upload,
       color: 'from-warning/10 to-warning/5 border-warning/20 hover:border-warning/30',
-      route: '/import',
-      requiresAdmin: true
+      route: '/import'
     }
   ];
 
