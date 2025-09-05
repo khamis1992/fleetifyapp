@@ -26,7 +26,7 @@ import { useCompanyContext } from "@/contexts/CompanyContext"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple'
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
 import { ResponsiveContainer } from '@/components/ui/responsive-container'
 import { ResponsiveCard, ResponsiveCardHeader, ResponsiveCardTitle, ResponsiveCardContent } from '@/components/ui/responsive-card'
@@ -37,7 +37,7 @@ import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
 
 export default function Customers() {
   // Responsive hooks
-  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
   const { 
     containerPadding, 
     itemSpacing, 

@@ -1,7 +1,7 @@
 import React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 
 const responsiveGridVariants = cva(
   "grid",
@@ -54,7 +54,7 @@ const ResponsiveGrid = React.forwardRef<HTMLDivElement, ResponsiveGridProps>(
     desktopColumns,
     ...props 
   }, ref) => {
-    const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+    const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
     
     // Custom adaptive columns logic
     const adaptiveGridClass = React.useMemo(() => {

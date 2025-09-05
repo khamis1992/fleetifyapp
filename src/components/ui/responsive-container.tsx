@@ -1,7 +1,7 @@
 import React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 
 const responsiveContainerVariants = cva(
   "w-full mx-auto",
@@ -50,7 +50,7 @@ const ResponsiveContainer = React.forwardRef<HTMLDivElement, ResponsiveContainer
     fluid = false,
     ...props 
   }, ref) => {
-    const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+    const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
     
     // Responsive padding based on device
     const responsivePadding = React.useMemo(() => {
@@ -96,7 +96,7 @@ export interface PageContainerProps extends ResponsiveContainerProps {
 
 export const PageContainer = React.forwardRef<HTMLDivElement, PageContainerProps>(
   ({ withSidebar = false, headerHeight = "h-14", className, ...props }, ref) => {
-    const { isMobile } = useResponsiveBreakpoint()
+    const { isMobile } = useSimpleBreakpoint()
     
     const sidebarAdjustment = withSidebar && !isMobile ? 'lg:pl-64' : ''
     const topSpacing = isMobile ? 'pt-2' : 'pt-4'
@@ -126,7 +126,7 @@ export interface SectionContainerProps extends ResponsiveContainerProps {
 
 export const SectionContainer = React.forwardRef<HTMLDivElement, SectionContainerProps>(
   ({ spacing = 'normal', className, ...props }, ref) => {
-    const { isMobile, isTablet } = useResponsiveBreakpoint()
+    const { isMobile, isTablet } = useSimpleBreakpoint()
     
     const spacingMap = {
       tight: isMobile ? 'py-4' : isTablet ? 'py-6' : 'py-8',

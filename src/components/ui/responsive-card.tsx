@@ -1,7 +1,7 @@
 import React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 
 const responsiveCardVariants = cva(
   "rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200",
@@ -40,7 +40,7 @@ export interface ResponsiveCardProps
 
 const ResponsiveCard = React.forwardRef<HTMLDivElement, ResponsiveCardProps>(
   ({ className, variant, size, density, ...props }, ref) => {
-    const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+    const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
     
     // Responsive padding based on device and density
     const responsivePadding = React.useMemo(() => {
@@ -84,7 +84,7 @@ const ResponsiveCardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   const responsivePadding = isMobile ? 'p-4 pb-2' : isTablet ? 'p-5 pb-3' : 'p-6 pb-4'
   
@@ -102,7 +102,7 @@ const ResponsiveCardTitle = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   const responsiveSize = isMobile 
     ? 'text-lg font-semibold' 
@@ -128,7 +128,7 @@ const ResponsiveCardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   
   const responsiveSize = isMobile ? 'text-sm' : 'text-sm'
   
@@ -146,7 +146,7 @@ const ResponsiveCardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   const responsivePadding = isMobile ? 'p-4 pt-0' : isTablet ? 'p-5 pt-0' : 'p-6 pt-0'
   
@@ -164,7 +164,7 @@ const ResponsiveCardFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   const responsivePadding = isMobile ? 'p-4 pt-0' : isTablet ? 'p-5 pt-0' : 'p-6 pt-0'
   const responsiveLayout = isMobile ? 'flex-col gap-2' : 'flex-row gap-3'

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useResponsiveBreakpoint } from './use-mobile'
+import { useSimpleBreakpoint } from './use-mobile-simple'
 
 export interface AdaptiveContentConfig {
   enableLazyLoading: boolean
@@ -53,7 +53,7 @@ const DEFAULT_CONFIG: AdaptiveContentConfig = {
 }
 
 export function useAdaptiveContent(config: Partial<AdaptiveContentConfig> = {}): AdaptiveContentResult {
-  const breakpoint = useResponsiveBreakpoint()
+  const breakpoint = useSimpleBreakpoint()
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
 
   return useMemo(() => {
@@ -149,7 +149,7 @@ export function useAdaptiveContent(config: Partial<AdaptiveContentConfig> = {}):
 
 // Specialized content hooks
 export function useAdaptiveText() {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   return {
     headingClass: isMobile 
@@ -173,7 +173,7 @@ export function useAdaptiveText() {
 }
 
 export function useAdaptiveImages() {
-  const { isMobile, isTablet, screenWidth } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   return {
     thumbnailSize: isMobile ? 'w-16 h-16' : isTablet ? 'w-20 h-20' : 'w-24 h-24',
@@ -181,12 +181,12 @@ export function useAdaptiveImages() {
     heroImageSize: isMobile ? 'h-64' : isTablet ? 'h-80' : 'h-96',
     quality: isMobile ? 75 : isTablet ? 85 : 95,
     loading: 'lazy' as const,
-    sizes: `(max-width: ${screenWidth}px) 100vw, 50vw`
+    sizes: isMobile ? '100vw' : isTablet ? '50vw' : '33vw'
   }
 }
 
 export function useAdaptiveCharts() {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   return {
     height: isMobile ? 200 : isTablet ? 300 : 400,
@@ -204,7 +204,7 @@ export function useAdaptiveCharts() {
 }
 
 export function useAdaptiveButtons() {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   
   return {
     size: isMobile ? 'lg' : 'default' as const,

@@ -1,7 +1,7 @@
 import React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from "./responsive-card"
 import { Button } from "./button"
 import { Badge } from "./badge"
@@ -70,7 +70,7 @@ const ResponsiveTable = React.forwardRef<HTMLTableElement, ResponsiveTableProps>
     mobileCardActions,
     ...props 
   }, ref) => {
-    const { isMobile, isTablet } = useResponsiveBreakpoint()
+    const { isMobile, isTablet } = useSimpleBreakpoint()
     const [currentPage, setCurrentPage] = React.useState(1)
     const [sortConfig, setSortConfig] = React.useState<{
       key: string

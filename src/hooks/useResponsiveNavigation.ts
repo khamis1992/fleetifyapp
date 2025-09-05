@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useResponsiveBreakpoint } from './use-mobile';
+import { useSimpleBreakpoint } from './use-mobile-simple';
 
 export interface NavigationState {
   isSidebarOpen: boolean;
@@ -10,7 +10,7 @@ export interface NavigationState {
 }
 
 export function useResponsiveNavigation() {
-  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint();
+  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint();
   const location = useLocation();
   
   const [navigationState, setNavigationState] = useState<NavigationState>({

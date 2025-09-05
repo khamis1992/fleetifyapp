@@ -3,7 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 
 const responsiveDialogVariants = cva(
   "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
@@ -78,7 +78,7 @@ const ResponsiveDialogContent = React.forwardRef<
   mobileFromBottom = false,
   ...props 
 }, ref) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
 
   // Determine responsive behavior
   const responsiveSide = React.useMemo(() => {
@@ -134,7 +134,7 @@ const ResponsiveDialogHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   
   return (
     <div
@@ -154,7 +154,7 @@ const ResponsiveDialogFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   
   return (
     <div
@@ -174,7 +174,7 @@ const ResponsiveDialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   
   return (
     <DialogPrimitive.Title

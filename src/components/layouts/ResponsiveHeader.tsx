@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { isMobile, isTablet } = useResponsiveBreakpoint();
+  const { isMobile, isTablet } = useSimpleBreakpoint();
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useResponsiveBreakpoint } from './use-mobile'
+import { useSimpleBreakpoint } from './use-mobile-simple'
 
 export interface SwipeGestureConfig {
   threshold: number
@@ -26,7 +26,7 @@ export function useSwipeGesture(
   onSwipe?: (result: SwipeGestureResult) => void,
   config: Partial<SwipeGestureConfig> = {}
 ) {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   const elementRef = useRef<HTMLElement>(null)
   const [isActive, setIsActive] = useState(false)
   const [startPoint, setStartPoint] = useState<{ x: number; y: number; time: number } | null>(null)
@@ -151,7 +151,7 @@ export function usePullToRefresh(
   onRefresh: () => void | Promise<void>,
   threshold: number = 100
 ) {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   const [isPulling, setIsPulling] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -191,7 +191,7 @@ export function useSwipeActions(
   onSwipeRight?: () => void,
   threshold: number = 80
 ) {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null)
   const [isRevealed, setIsRevealed] = useState(false)
 

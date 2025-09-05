@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout"
 import { useSwipeGesture } from "@/hooks/useSwipeGestures"
 import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization"
@@ -50,7 +50,7 @@ import { useQueryClient } from "@tanstack/react-query"
 
 export default function Contracts() {
   // Responsive hooks
-  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
   const { 
     containerPadding, 
     itemSpacing, 

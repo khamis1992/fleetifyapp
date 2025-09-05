@@ -1,7 +1,7 @@
 import React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple"
 import { ResponsiveGrid } from "./responsive-grid"
 import { Button } from "./button"
 
@@ -64,7 +64,7 @@ const ResponsiveForm = React.forwardRef<HTMLFormElement, ResponsiveFormProps>(
     mobileStackActions = true,
     ...props 
   }, ref) => {
-    const { isMobile, isTablet } = useResponsiveBreakpoint()
+    const { isMobile, isTablet } = useSimpleBreakpoint()
 
     // Determine responsive layout
     const responsiveLayout = React.useMemo(() => {
@@ -186,7 +186,7 @@ export const ResponsiveFormSection = React.forwardRef<
   children,
   ...props 
 }, ref) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint()
+  const { isMobile, isTablet } = useSimpleBreakpoint()
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
 
   // Responsive column calculation
@@ -280,7 +280,7 @@ export const ResponsiveFormField = React.forwardRef<
   children,
   ...props 
 }, ref) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
 
   // Force top label on mobile
   const effectiveLabelPosition = isMobile ? 'top' : (labelPosition || 'top')

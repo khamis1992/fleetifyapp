@@ -14,13 +14,13 @@ import { useVehiclesPaginated, VehicleFilters as IVehicleFilters } from "@/hooks
 import { useFleetStatus } from "@/hooks/useFleetStatus"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQueryClient } from "@tanstack/react-query"
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple'
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
 import { ResponsiveContainer } from '@/components/ui/responsive-container'
 
 export default function Fleet() {
   // Responsive hooks
-  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
   const { 
     containerPadding, 
     itemSpacing, 

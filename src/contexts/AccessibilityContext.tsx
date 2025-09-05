@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple'
 
 export interface AccessibilitySettings {
   fontSize: 'small' | 'medium' | 'large' | 'extra-large'
@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined)
 
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     if (typeof window === 'undefined') return DEFAULT_SETTINGS
     
@@ -257,7 +257,7 @@ export function useFocusManagement() {
 // Sound and haptic feedback
 export function useAccessibilityFeedback() {
   const { settings } = useAccessibility()
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
 
   const playSound = (type: 'success' | 'error' | 'warning' | 'info') => {
     if (!settings.soundEnabled) return

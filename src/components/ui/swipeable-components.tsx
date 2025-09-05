@@ -1,6 +1,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple'
 import { useSwipeGesture, usePullToRefresh, useSwipeActions } from '@/hooks/useSwipeGestures'
 import { RefreshCw, Trash2, Edit, Archive } from 'lucide-react'
 import { Button } from './button'
@@ -36,7 +36,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({
   className,
   ...props
 }) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
 
   const {
     ref: swipeRef,
@@ -137,7 +137,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   threshold = 100,
   className
 }) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   const {
     ref,
     isPulling,
@@ -194,7 +194,7 @@ export const TouchFeedbackButton: React.FC<TouchFeedbackButtonProps> = ({
   onClick,
   ...props
 }) => {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     // Haptic feedback for mobile

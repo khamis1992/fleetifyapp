@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { 
   Plus, 
   FileText, 
@@ -47,7 +47,7 @@ export const ContractsEnhancedHeader: React.FC<ContractsEnhancedHeaderProps> = (
   pendingActions,
   isRefreshing = false
 }) => {
-  const { isMobile, isTablet } = useResponsiveBreakpoint();
+  const { isMobile, isTablet } = useSimpleBreakpoint();
 
   if (isMobile) {
     return (

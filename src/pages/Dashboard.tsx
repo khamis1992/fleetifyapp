@@ -6,7 +6,7 @@ import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
-import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';

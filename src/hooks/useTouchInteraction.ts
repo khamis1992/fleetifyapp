@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useResponsiveBreakpoint } from './use-mobile'
+import { useSimpleBreakpoint } from './use-mobile-simple'
 
 export interface TouchInteractionConfig {
   enableSwipeGestures: boolean
@@ -49,7 +49,7 @@ export function useTouchInteraction(
   onLongPress?: () => void,
   config: Partial<TouchInteractionConfig> = {}
 ): TouchInteractionResult {
-  const { isMobile } = useResponsiveBreakpoint()
+  const { isMobile } = useSimpleBreakpoint()
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
   
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null)

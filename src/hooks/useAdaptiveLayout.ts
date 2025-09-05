@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useResponsiveBreakpoint } from './use-mobile'
+import { useSimpleBreakpoint } from './use-mobile-simple'
 
 export interface AdaptiveLayoutConfig {
   mobileViewMode?: 'stack' | 'tabs' | 'carousel'
@@ -22,7 +22,7 @@ export interface AdaptiveLayoutResult {
 }
 
 export function useAdaptiveLayout(config: AdaptiveLayoutConfig = {}): AdaptiveLayoutResult {
-  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
   
   const {
     mobileViewMode = 'stack',
