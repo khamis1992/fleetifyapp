@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { ContractCard } from './ContractCard';
 import { ContractsEmptyState } from './ContractsEmptyState';
 

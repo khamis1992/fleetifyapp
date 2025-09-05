@@ -1,4 +1,4 @@
-import * as React from "react"
+import React from "react"
 
 // Enhanced breakpoint system matching Tailwind config
 const BREAKPOINTS = {
