@@ -25,12 +25,27 @@ import { useCompanyContext } from "@/contexts/CompanyContext"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { LogIn } from "lucide-react"
 import { useCustomersRealtime } from "@/hooks/useEnhancedCustomersRealtime"
+import { useResponsiveBreakpoint } from '@/hooks/use-mobile'
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
 
 
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
 
 export default function Customers() {
+  // Responsive hooks
+  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { 
+    containerPadding, 
+    itemSpacing, 
+    gridCols,
+    isCardLayout 
+  } = useAdaptiveLayout({
+    mobileViewMode: 'list',
+    tabletColumns: 2,
+    desktopColumns: 3,
+    cardLayout: true
+  })
   const { user, loading } = useAuth()
   const { browsedCompany, isBrowsingMode, exitBrowseMode } = useCompanyContext()
   const { companyId, isSystemLevel, hasFullCompanyControl } = useUnifiedCompanyAccess()
@@ -195,7 +210,7 @@ export default function Customers() {
 
   return (
     <CustomerViewProvider>
-      <div className="space-y-6">
+    <div className="space-y-6">
       {/* رأس الصفحة */}
       <div className="flex justify-between items-center">
         <div>
@@ -443,7 +458,7 @@ export default function Customers() {
                               <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
                                 {customer.customer_code}
                               </span>
-                            </div>
+      </div>
                           )}
                         </div>
                         {customer.is_blacklisted && (
@@ -545,7 +560,7 @@ export default function Customers() {
             </CardContent>
           </Card>
         )}
-      </div>
+    </div>
 
       {/* نماذج الحوار */}
       <EnhancedCustomerDialog

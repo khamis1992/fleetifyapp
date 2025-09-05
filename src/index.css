@@ -105,6 +105,22 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 0 70% 45%;
+    /* Mobile-specific colors */
+    --mobile-navbar: var(--background);
+    --mobile-tab: var(--card);
+    --mobile-tab-active: var(--primary);
+    --mobile-overlay: 0 0% 0% / 0.8;
+    --mobile-touch: var(--accent);
+    
+    /* Touch feedback colors */
+    --touch-target: var(--primary);
+    --touch-active: var(--primary-light);
+    --touch-ghost: var(--accent);
+    
+    /* Responsive state colors */
+    --responsive-highlight: var(--primary);
+    --responsive-surface: var(--card);
+    --responsive-interactive: var(--accent);
   }
 
   .dark {
@@ -156,6 +172,11 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Dark mode touch and responsive colors */
+    --touch-target: var(--primary);
+    --touch-active: var(--primary-light);
+    --responsive-highlight: var(--primary);
+    --responsive-surface: var(--card);
   }
 }
 

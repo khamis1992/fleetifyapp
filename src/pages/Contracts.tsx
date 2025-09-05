@@ -5,6 +5,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useResponsiveBreakpoint } from "@/hooks/use-mobile"
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout"
+import { ResponsiveContainer } from "@/components/ui/responsive-container"
+import { ResponsiveGrid, DashboardGrid } from "@/components/ui/responsive-grid"
+import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from "@/components/ui/responsive-card"
+import { ResponsiveTable } from "@/components/ui/responsive-table"
+import { ResponsiveModal } from "@/components/ui/responsive-modal"
+import { cn } from "@/lib/utils"
 
 // Component imports
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
@@ -36,6 +44,22 @@ import { useToast } from "@/hooks/use-toast"
 import { useQueryClient } from "@tanstack/react-query"
 
 export default function Contracts() {
+  // Responsive hooks
+  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint()
+  const { 
+    containerPadding, 
+    itemSpacing, 
+    gridCols,
+    modalSize,
+    isCardLayout 
+  } = useAdaptiveLayout({
+    mobileViewMode: 'stack',
+    tabletColumns: 2,
+    desktopColumns: 3,
+    cardLayout: true,
+    fullscreenModals: true
+  })
+
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false)
   const [showTemplateManager, setShowTemplateManager] = useState(false)
@@ -182,7 +206,7 @@ export default function Contracts() {
   }
 
   return (
-    <div className="space-y-6">
+    <ResponsiveContainer className="space-y-4 md:space-y-6">
       {/* Header */}
       <ContractsHeader
         onCreateContract={handleCreateContract}
@@ -195,30 +219,58 @@ export default function Contracts() {
       {/* Journal Entry Status Alert */}
       <ContractJournalEntryStatus />
 
-      {/* Statistics Cards */}
-      <ContractsStatistics
-        activeCount={statistics.activeContracts.length}
-        draftCount={statistics.draftContracts.length}
-        cancelledCount={statistics.cancelledContracts.length}
-        totalRevenue={statistics.totalRevenue}
-      />
+      {/* Statistics Cards - Responsive Grid */}
+      <DashboardGrid variant="stats" gap={isMobile ? "sm" : "default"}>
+        <ResponsiveCard variant="elevated" density={isMobile ? "compact" : "comfortable"}>
+          <ResponsiveCardContent>
+            <ContractsStatistics
+              activeCount={statistics.activeContracts.length}
+              draftCount={statistics.draftContracts.length}
+              cancelledCount={statistics.cancelledContracts.length}
+              totalRevenue={statistics.totalRevenue}
+            />
+          </ResponsiveCardContent>
+        </ResponsiveCard>
+      </DashboardGrid>
 
-      {/* Search and Filters */}
-      <ContractSearchFilters 
-        onFiltersChange={setFilters}
-        activeFilters={filters}
-      />
+      {/* Search and Filters - Responsive */}
+      <ResponsiveCard variant="outlined" density={isMobile ? "compact" : "comfortable"}>
+        <ResponsiveCardContent>
+          <ContractSearchFilters 
+            onFiltersChange={setFilters}
+            activeFilters={filters}
+          />
+        </ResponsiveCardContent>
+      </ResponsiveCard>
 
-      {/* Contract Management Tabs */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">جميع العقود</TabsTrigger>
-          <TabsTrigger value="active">النشطة</TabsTrigger>
-          <TabsTrigger value="suspended">المعلقة</TabsTrigger>
-          <TabsTrigger value="expired">المنتهية</TabsTrigger>
-          <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
-          <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
-        </TabsList>
+      {/* Contract Management Tabs - Mobile-friendly */}
+      <Tabs defaultValue="all" className="space-y-3 md:space-y-4">
+        <div className={cn(
+          "overflow-x-auto",
+          isMobile && "pb-2"
+        )}>
+          <TabsList className={cn(
+            "grid w-full",
+            isMobile ? "grid-cols-3 min-w-max" : "grid-cols-6 lg:w-auto lg:inline-flex"
+          )}>
+            <TabsTrigger value="all" className={isMobile ? "text-xs px-3" : ""}>
+              {isMobile ? "الكل" : "جميع العقود"}
+            </TabsTrigger>
+            <TabsTrigger value="active" className={isMobile ? "text-xs px-3" : ""}>
+              النشطة
+            </TabsTrigger>
+            <TabsTrigger value="suspended" className={isMobile ? "text-xs px-3" : ""}>
+              المعلقة
+            </TabsTrigger>
+            {!isMobile && (
+              <>
+                <TabsTrigger value="expired">المنتهية</TabsTrigger>
+                <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
+                <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
+              </>
+            )}
+          </TabsList>
+        </div>
 
         <TabsContent value="all">
           <ContractsList
@@ -291,21 +343,26 @@ export default function Contracts() {
         preselectedCustomerId={preselectedCustomerId}
       />
       
-      {/* Contract Creation Progress Dialog */}
-      <Dialog open={showCreationProgress} onOpenChange={(open) => {
-        if (!open && !creationState.isProcessing) {
-          setShowCreationProgress(false)
-          resetCreationState()
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <ContractCreationProgress
-            creationState={creationState}
-            onRetry={handleCreationRetry}
-            onClose={handleCreationComplete}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Contract Creation Progress Dialog - Responsive */}
+      <ResponsiveModal
+        open={showCreationProgress}
+        onOpenChange={(open) => {
+          if (!open && !creationState.isProcessing) {
+            setShowCreationProgress(false)
+            resetCreationState()
+          }
+        }}
+        title="إنشاء العقد"
+        size="sm"
+        mobileFullScreen={false}
+        mobileFromBottom={true}
+      >
+        <ContractCreationProgress
+          creationState={creationState}
+          onRetry={handleCreationRetry}
+          onClose={handleCreationComplete}
+        />
+      </ResponsiveModal>
 
       <ContractCancellationDialog
         open={showCancellationDialog}
@@ -355,6 +412,6 @@ export default function Contracts() {
           </div>
         </div>
       )}
-    </div>
+    </ResponsiveContainer>
   )
 }
