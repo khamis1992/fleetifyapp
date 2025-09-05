@@ -45,7 +45,7 @@ import { useContractsData } from "@/hooks/useContractsData"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAutoRenewContracts } from "@/hooks/useContractRenewal"
 import { useContractCreation } from "@/hooks/useContractCreation"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast-mock"
 import { useQueryClient } from "@tanstack/react-query"
 
 export default function Contracts() {

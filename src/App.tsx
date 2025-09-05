@@ -1,5 +1,5 @@
 import * as React from "react";
-import { SimpleToaster } from "@/components/ui/simple-toaster";
+// import { SimpleToaster } from "@/components/ui/simple-toaster";
 // import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -74,7 +74,7 @@ const App = () => (
     <AuthProvider>
       <CompanyContextProvider>
         <TooltipProvider>
-          <SimpleToaster />
+          {/* <SimpleToaster /> */}
           {/* <Sonner /> */}
           <BrowserRouter>
           <Routes>
