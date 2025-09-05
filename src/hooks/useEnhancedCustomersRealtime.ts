@@ -46,20 +46,23 @@ export const useCustomersRealtime = () => {
         try {
           const { eventType, new: newRecord, old: oldRecord } = payload;
           
-          switch (eventType) {
-            case 'INSERT':
-              console.log('✅ [REALTIME] Processing INSERT');
-              handleCustomerInsert(newRecord, queryClient);
-              break;
-            case 'UPDATE':
-              console.log('✅ [REALTIME] Processing UPDATE');
-              handleCustomerUpdate(newRecord, queryClient);
-              break;
-            case 'DELETE':
-              console.log('✅ [REALTIME] Processing DELETE');
-              handleCustomerDelete(oldRecord, queryClient);
-              break;
-          }
+          // تأخير قصير لتجنب التضارب مع Optimistic Updates
+          setTimeout(() => {
+            switch (eventType) {
+              case 'INSERT':
+                console.log('✅ [REALTIME] Processing INSERT');
+                handleCustomerInsert(newRecord, queryClient);
+                break;
+              case 'UPDATE':
+                console.log('✅ [REALTIME] Processing UPDATE');
+                handleCustomerUpdate(newRecord, queryClient);
+                break;
+              case 'DELETE':
+                console.log('✅ [REALTIME] Processing DELETE');
+                handleCustomerDelete(oldRecord, queryClient);
+                break;
+            }
+          }, 100); // تأخير 100ms لتجنب التضارب
         } catch (error) {
           console.error('❌ [REALTIME] Error processing event:', error);
           // Enhanced fallback with delay

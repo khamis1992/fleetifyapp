@@ -10720,6 +10720,10 @@ export type Database = {
         }
         Returns: Json
       }
+      enhanced_delete_customer_and_relations: {
+        Args: { target_company_id: string; target_customer_id: string }
+        Returns: Json
+      }
       ensure_essential_account_mappings: {
         Args: { company_id_param: string }
         Returns: Json

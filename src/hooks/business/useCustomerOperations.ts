@@ -215,35 +215,42 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
     }
   });
 
-  // Delete customer operation
+  // Delete customer operation using optimized function
   const deleteCustomer = useMutation({
     mutationFn: async (customerId: string) => {
-      console.log('🗑️ [useCustomerOperations] Starting customer deletion:', customerId);
+      console.log('🗑️ [useCustomerOperations] Starting optimized customer deletion:', customerId);
 
-      // Check if customer has active contracts or unpaid invoices
-      const hasActiveRelations = await checkCustomerActiveRelations(customerId);
-      if (hasActiveRelations) {
-        throw new Error('لا يمكن حذف العميل لوجود عقود نشطة أو فواتير غير مدفوعة');
+      // Get customer data for the optimized delete function
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (customerError || !customer) {
+        throw new Error('العميل غير موجود');
       }
 
-      // Soft delete customer (set inactive)
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id,
-        })
-        .eq('id', customerId)
-        .eq('company_id', companyId);
+      // Use the enhanced database function for fast deletion
+      const { data, error } = await supabase.rpc('enhanced_delete_customer_and_relations', {
+        target_customer_id: customerId,
+        target_company_id: companyId
+      });
 
       if (error) {
-        console.error('❌ [useCustomerOperations] Delete error:', error);
-        throw error;
+        console.error('❌ [useCustomerOperations] Database error:', error);
+        throw new Error(`خطأ في حذف العميل: ${error.message}`);
       }
 
-      console.log('✅ [useCustomerOperations] Customer deleted successfully');
-      return { id: customerId };
+      const result = data as any;
+      if (!result?.success) {
+        console.error('❌ [useCustomerOperations] Function error:', result?.error);
+        throw new Error(result?.error || 'فشل في حذف العميل');
+      }
+
+      console.log('✅ [useCustomerOperations] Customer deleted successfully:', result);
+      return result;
     },
     onSuccess: () => {
       // Invalidate related queries

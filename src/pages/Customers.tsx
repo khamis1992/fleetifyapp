@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { useCustomers, useToggleCustomerBlacklist, useDeleteCustomer } from "@/hooks/useEnhancedCustomers"
+import { useCustomers, useToggleCustomerBlacklist } from "@/hooks/useEnhancedCustomers"
+import { useOptimizedDeleteCustomer } from "@/hooks/useOptimizedDeleteCustomer"
 import { useDebounce } from "@/hooks/useDebounce"
 import { EnhancedCustomerDialog } from "@/components/customers/EnhancedCustomerForm"
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
@@ -55,7 +56,7 @@ export default function Customers() {
   
   const { data: customers, isLoading, isFetching, error } = useCustomers(debouncedFilters)
   const toggleBlacklistMutation = useToggleCustomerBlacklist()
-  const deleteCustomerMutation = useDeleteCustomer()
+  const deleteCustomerMutation = useOptimizedDeleteCustomer()
   
   // إعداد Real-time updates
   useCustomersRealtime()
@@ -105,7 +106,7 @@ export default function Customers() {
 
   const confirmDeleteCustomer = () => {
     if (customerToDelete) {
-      deleteCustomerMutation.mutate(customerToDelete.id, {
+      deleteCustomerMutation.mutate(customerToDelete, {
         onSuccess: () => {
           setCustomerToDelete(null)
         },
@@ -647,7 +648,7 @@ export default function Customers() {
               {deleteCustomerMutation.isPending ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
-                  جاري الحذف...
+                  جاري الحذف السريع...
                 </>
               ) : (
                 <>
