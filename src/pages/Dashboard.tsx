@@ -1,105 +1,289 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCompanyContext } from '@/contexts/CompanyContext';
+import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
+import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
+import { useFinancialOverview } from '@/hooks/useFinancialOverview';
+import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
+import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
+import EnhancedStatsCard from '@/components/dashboard/EnhancedStatsCard';
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
-import { BarChart3, DollarSign, Users, Truck } from 'lucide-react';
+import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
+import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
+import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
+import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
-const Dashboard = () => {
+// Import responsive components
+import { ResponsiveGrid } from '@/components/responsive/ResponsiveGrid';
+import { AdaptiveCard } from '@/components/responsive/AdaptiveCard';
+import { useResponsiveBreakpoint } from '@/hooks/use-mobile';
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { cn } from '@/lib/utils';
+
+const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
+  const { exitBrowseMode } = useCompanyContext();
+  const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
+  const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
+  const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
+  const { formatCurrency } = useCurrencyFormatter();
+  const navigate = useNavigate();
+  
+  // Responsive hooks
+  const { isMobile, isTablet, isDesktop } = useResponsiveBreakpoint();
+  const { 
+    columns, 
+    spacing, 
+    contentDensity,
+    animationStyle,
+    viewMode 
+  } = useAdaptiveLayout({
+    contentDensity: 'comfortable',
+    enableAnimations: true
+  });
+
+  // Convert financial overview data to the format expected by SmartMetricsPanel
+  const smartMetricsData = financialOverview ? {
+    totalRevenue: financialOverview.totalRevenue || 0,
+    monthlyRevenue: financialOverview.monthlyTrend?.[financialOverview.monthlyTrend.length - 1]?.revenue || 0,
+    totalProfit: financialOverview.netIncome || 0,
+    profitMargin: financialOverview.profitMargin || 0,
+    monthlyGrowth: 0, // Calculate based on monthly trend if needed
+    activeContracts: 0, // This would need to come from a different source
+    pendingPayments: 0, // This would need to come from a different source
+    overduePayments: 0, // This would need to come from a different source
+  } : undefined;
+
+  // Convert activities to enhanced format with fallback data
+  const enhancedActivities = recentActivities?.slice(0, 10).map((activity, index) => ({
+    id: activity.id || `activity-${index}`,
+    type: 'system' as const,
+    title: activity.description || 'نشاط جديد',
+    description: activity.description || 'لا يوجد وصف',
+    user: 'النظام',
+    timestamp: new Date(activity.created_at || new Date()),
+    status: 'info' as const,
+    metadata: {
+      'نوع العملية': activity.description || 'غير محدد',
+      'الوقت': new Date(activity.created_at || new Date()).toLocaleString('ar-SA')
+    }
+  })) || [];
+
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "صباح الخير";
+    if (hour < 18) return "مساء الخير";
+    return "مساء الخير";
+  };
+
+  // Enhanced stats configuration with actions
+  const statsConfig = [
+    {
+      title: 'إجمالي المركبات',
+      value: String(enhancedStats?.totalVehicles || 0),
+      change: String(enhancedStats?.vehiclesChange || '+0%'),
+      icon: Car,
+      trend: 'up' as const,
+      description: 'مركبة في الأسطول',
+      subtitle: 'الأسطول الكامل',
+      actionText: 'إدارة الأسطول',
+      onAction: () => navigate('/fleet'),
+      gradient: true
+    },
+    {
+      title: 'العملاء النشطين',
+      value: String(enhancedStats?.totalCustomers || 0),
+      change: String(enhancedStats?.customersChange || '+0%'),
+      icon: Users,
+      trend: 'up' as const,
+      description: 'عميل مسجل',
+      subtitle: 'قاعدة العملاء',
+      actionText: 'إدارة العملاء',
+      onAction: () => navigate('/customers')
+    },
+    {
+      title: 'العقود النشطة',
+      value: String(enhancedStats?.activeContracts || 0),
+      change: String(enhancedStats?.contractsChange || '+0%'),
+      icon: FileText,
+      trend: 'neutral' as const,
+      description: 'عقد ساري المفعول',
+      subtitle: 'العقود الجارية',
+      actionText: 'إدارة العقود',
+      onAction: () => navigate('/contracts')
+    },
+    {
+      title: 'الإيرادات الشهرية',
+      value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
+      change: String(enhancedStats?.revenueChange || '+0%'),
+      icon: DollarSign,
+      trend: 'up' as const,
+      description: 'هذا الشهر',
+      subtitle: 'الأداء المالي',
+      actionText: 'التقارير المالية',
+      onAction: () => navigate('/finance'),
+      gradient: true
+    }
+  ];
+
+
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">لوحة التحكم</h1>
-      </div>
-      
-      {/* إحصائيات سريعة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2,350</div>
-            <p className="text-xs text-muted-foreground">
-              +180.1% من الشهر الماضي
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المركبات النشطة</CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">145</div>
-            <p className="text-xs text-muted-foreground">
-              +7% من الشهر الماضي
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الإيرادات</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% من الشهر الماضي
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">العقود النشطة</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">573</div>
-            <p className="text-xs text-muted-foreground">
-              +201 عقد جديد هذا الشهر
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+    <>
+      <ProfessionalBackground />
+      <div className={cn(
+        "relative z-10",
+        spacing
+      )}>
+        {/* Enhanced Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <EnhancedDashboardHeader
+            isBrowsingMode={isBrowsingMode}
+            browsedCompany={browsedCompany}
+            onExitBrowseMode={exitBrowseMode}
+          />
+        </motion.div>
 
-      {/* الإجراءات السريعة */}
-      <QuickActionsDashboard />
-      
-      {/* نشاط حديث */}
-      <Card>
-        <CardHeader>
-          <CardTitle>النشاط الحديث</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">تم إضافة عميل جديد: أحمد محمد</p>
-                <p className="text-xs text-muted-foreground">منذ 5 دقائق</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">تم تحديث حالة المركبة ABC-123</p>
-                <p className="text-xs text-muted-foreground">منذ 15 دقيقة</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">دفعة جديدة بقيمة 5,000 ريال</p>
-                <p className="text-xs text-muted-foreground">منذ 30 دقيقة</p>
-              </div>
-            </div>
+        {/* Enhanced Stats Grid - Responsive */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <ResponsiveGrid
+            columns={columns.stats}
+            gap={isMobile ? 4 : 6}
+            className="mb-6"
+          >
+            {statsConfig.map((stat, index) => (
+              <AdaptiveCard
+                key={stat.title}
+                variant={isMobile ? 'compact' : 'default'}
+                interactive={true}
+                className={cn(
+                  "transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <EnhancedStatsCard
+                  title={stat.title}
+                  value={stat.value}
+                  change={stat.change}
+                  icon={stat.icon}
+                  trend={stat.trend}
+                  description={stat.description}
+                  subtitle={stat.subtitle}
+                  actionText={stat.actionText}
+                  onAction={stat.onAction}
+                  gradient={stat.gradient}
+                  isLoading={statsLoading}
+                  index={index}
+                />
+              </AdaptiveCard>
+            ))}
+          </ResponsiveGrid>
+        </motion.div>
+
+        {/* Quick Actions Panel - Responsive */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-6"
+        >
+          <AdaptiveCard
+            variant={isMobile ? 'compact' : 'default'}
+            className={cn(
+              "transition-all duration-200",
+              animationStyle
+            )}
+          >
+            <QuickActionsDashboard />
+          </AdaptiveCard>
+        </motion.div>
+
+        {/* Main Content Grid - Adaptive Layout */}
+        <ResponsiveGrid
+          columns={isMobile ? 1 : isTablet ? 1 : 3}
+          gap={isMobile ? 4 : 6}
+          className="items-start"
+        >
+          {/* Enhanced Activity Feed */}
+          <div className={cn(
+            isMobile ? "col-span-1" : isTablet ? "col-span-1" : "col-span-2"
+          )}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <AdaptiveCard
+                variant={isMobile ? 'compact' : 'default'}
+                className={cn(
+                  "h-full transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <EnhancedActivityFeed
+                  activities={enhancedActivities}
+                  loading={activitiesLoading}
+                  title="النشاطات الأخيرة"
+                  onRefresh={() => window.location.reload()}
+                  showFilters={!isMobile}
+                />
+              </AdaptiveCard>
+            </motion.div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          {/* Enhanced Sidebar - Responsive */}
+          <div className="col-span-1">
+            <motion.div
+              initial={{ opacity: 0, x: isMobile ? 0 : 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className={cn(
+                isMobile ? "space-y-4" : "space-y-6"
+              )}
+            >
+              {/* Smart Metrics Panel */}
+              <AdaptiveCard
+                variant={isMobile ? 'compact' : 'default'}
+                className={cn(
+                  "transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <SmartMetricsPanel 
+                  financialData={smartMetricsData} 
+                  loading={financialLoading} 
+                />
+              </AdaptiveCard>
+
+              {/* Document Expiry Alerts */}
+              <AdaptiveCard
+                variant={isMobile ? 'compact' : 'default'}
+                className={cn(
+                  "transition-all duration-200",
+                  animationStyle
+                )}
+              >
+                <DocumentExpiryAlerts />
+              </AdaptiveCard>
+            </motion.div>
+          </div>
+        </ResponsiveGrid>
+
+      </div>
+    </>
   );
 };
 
