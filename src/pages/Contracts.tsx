@@ -1,4 +1,4 @@
-import * as React from "react"
+import React from "react"
 const { useState, useEffect, useMemo, useCallback } = React;
 import { useLocation } from "react-router-dom"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
