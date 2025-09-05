@@ -43,7 +43,7 @@ export default function Customers() {
     gridCols,
     isCardLayout 
   } = useAdaptiveLayout({
-    mobileViewMode: 'list',
+    mobileViewMode: 'stack',
     tabletColumns: 2,
     desktopColumns: 3,
     cardLayout: true

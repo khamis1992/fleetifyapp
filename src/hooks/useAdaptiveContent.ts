@@ -173,7 +173,7 @@ export function useAdaptiveText() {
 }
 
 export function useAdaptiveImages() {
-  const { isMobile, isTablet, width } = useResponsiveBreakpoint()
+  const { isMobile, isTablet, screenWidth } = useResponsiveBreakpoint()
   
   return {
     thumbnailSize: isMobile ? 'w-16 h-16' : isTablet ? 'w-20 h-20' : 'w-24 h-24',
@@ -181,7 +181,7 @@ export function useAdaptiveImages() {
     heroImageSize: isMobile ? 'h-64' : isTablet ? 'h-80' : 'h-96',
     quality: isMobile ? 75 : isTablet ? 85 : 95,
     loading: 'lazy' as const,
-    sizes: `(max-width: ${width}px) 100vw, 50vw`
+    sizes: `(max-width: ${screenWidth}px) 100vw, 50vw`
   }
 }
 

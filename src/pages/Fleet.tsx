@@ -28,7 +28,7 @@ export default function Fleet() {
     modalSize,
     isCardLayout 
   } = useAdaptiveLayout({
-    mobileViewMode: 'list',
+    mobileViewMode: 'stack',
     tabletColumns: 2,
     desktopColumns: 3,
     cardLayout: true,
