@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { normalizeArabicDigits } from '@/utils/numberFormatter';
 import { cn } from '@/lib/utils';
 
