@@ -171,52 +171,46 @@ const QuickActionsDashboard: React.FC = () => {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Tooltip>
-          <TooltipTrigger asChild>
-            <Card 
-              className={`cursor-pointer transition-smooth bg-gradient-card shadow-card hover:shadow-elevated ${action.color} border group`}
-              onClick={() => handleActionClick(action)}
+      <Card 
+        className={`cursor-pointer transition-smooth bg-gradient-card shadow-card hover:shadow-elevated ${action.color} border group`}
+        onClick={() => handleActionClick(action)}
+        title={`انقر للانتقال إلى ${action.title}`}
+      >
+        <CardContent className={variant === 'compact' ? 'p-4' : 'p-6'}>
+          <div className="flex items-start gap-4">
+            <motion.div 
+              className="p-3 rounded-lg bg-background/80 group-hover:bg-background/90 transition-smooth"
+              whileHover={{ rotate: 5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <CardContent className={variant === 'compact' ? 'p-4' : 'p-6'}>
-                <div className="flex items-start gap-4">
-                  <motion.div 
-                    className="p-3 rounded-lg bg-background/80 group-hover:bg-background/90 transition-smooth"
-                    whileHover={{ rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              <action.icon size={variant === 'compact' ? 20 : 24} className="text-foreground/80" />
+            </motion.div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-1">
+                <h3 className={`font-semibold text-foreground group-hover:text-foreground/90 transition-colors ${
+                  variant === 'compact' ? 'text-sm' : 'text-base'
+                }`}>
+                  {action.title}
+                </h3>
+                {action.badge && (
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs bg-background/80 text-foreground/80 border-border/40"
                   >
-                    <action.icon size={variant === 'compact' ? 20 : 24} className="text-foreground/80" />
-                  </motion.div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className={`font-semibold text-foreground group-hover:text-foreground/90 transition-colors ${
-                        variant === 'compact' ? 'text-sm' : 'text-base'
-                      }`}>
-                        {action.title}
-                      </h3>
-                      {action.badge && (
-                        <Badge 
-                          variant="secondary" 
-                          className="text-xs bg-background/80 text-foreground/80 border-border/40"
-                        >
-                          {action.badge}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className={`text-muted-foreground group-hover:text-muted-foreground/90 transition-smooth ${
-                      variant === 'compact' ? 'text-xs' : 'text-sm'
-                    }`}>
-                      {action.description}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>انقر للانتقال إلى {action.title}</p>
-          </TooltipContent>
-        </Tooltip>
+                    {action.badge}
+                  </Badge>
+                )}
+              </div>
+              <p className={`text-muted-foreground group-hover:text-muted-foreground/90 transition-smooth ${
+                variant === 'compact' ? 'text-xs' : 'text-sm'
+              }`}>
+                {action.description}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 

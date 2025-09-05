@@ -128,8 +128,7 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
           <div className="relative p-6">
             {/* Header Section */}
             <div className="flex items-start justify-between mb-5">
-              <Tooltip>
-                <TooltipTrigger asChild>
+                <div className="group">
                   <motion.div 
                     className="p-3 rounded-xl bg-primary/10 text-primary shadow-sm group-hover:bg-primary/15 transition-colors duration-300"
                     whileHover={{ 
@@ -140,11 +139,7 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
                   >
                     <Icon size={24} />
                   </motion.div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{title}</p>
-                </TooltipContent>
-              </Tooltip>
+                </div>
               
               {change && (
                 <motion.div
