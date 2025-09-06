@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ interface InvoicePreviewDialogProps {
 }
 
 export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePreviewDialogProps) {
-  const invoiceRef = useRef<HTMLDivElement>(null);
+  const invoiceRef = React.useRef<HTMLDivElement>(null);
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: companyCurrency } = useCompanyCurrency();
   

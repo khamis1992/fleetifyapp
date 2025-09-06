@@ -9,7 +9,7 @@ import { ar } from "date-fns/locale";
 import { FileText, Plus } from "lucide-react";
 import { InvoiceCard } from "@/components/finance/InvoiceCard";
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
-import { useState } from "react";
+import * as React from "react";
 import { StatCardNumber } from "@/components/ui/NumberDisplay";
 
 interface CustomerInvoicesTabProps {
@@ -23,8 +23,8 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
   const { formatCurrency } = useCurrencyFormatter();
   
   // Payment dialog state
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
+  const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
 
   // Handlers for invoice actions - these will be created for each invoice
   const createHandlers = (invoice: any) => ({
