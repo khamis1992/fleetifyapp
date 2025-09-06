@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -47,11 +47,11 @@ const documentTypes = [
 ];
 
 export function ContractDocuments({ contractId }: ContractDocumentsProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [isReportViewerOpen, setIsReportViewerOpen] = useState(false);
-  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState<any>(null);
-  const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [selectedReportId, setSelectedReportId] = React.useState<string | null>(null);
+  const [isReportViewerOpen, setIsReportViewerOpen] = React.useState(false);
+  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = React.useState<any>(null);
+  const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = React.useState(false);
   const { data: documents = [], isLoading } = useContractDocuments(contractId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();

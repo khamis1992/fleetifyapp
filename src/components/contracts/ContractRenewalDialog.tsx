@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
   onOpenChange,
   contract
 }) => {
-  const [renewalData, setRenewalData] = useState({
+  const [renewalData, setRenewalData] = React.useState({
     new_end_date: '',
     new_amount: 0,
     renewal_terms: ''
@@ -32,7 +32,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
   const { formatCurrency, currency } = useCurrencyFormatter();
 
   // Reset form when contract changes or dialog opens
-  useEffect(() => {
+  React.useEffect(() => {
     if (contract && open) {
       setRenewalData({
         new_end_date: calculateSuggestedEndDate(),

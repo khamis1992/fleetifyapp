@@ -1,4 +1,4 @@
-import { useState } from "react";
+import * as React from "react";
 import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
 import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,8 @@ interface ContractCSVUploadProps {
 }
 
 export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: ContractCSVUploadProps) {
-  const [uploadMode, setUploadMode] = useState<'classic' | 'smart' | 'bulk'>('smart');
-  const [file, setFile] = useState<File | null>(null);
+  const [uploadMode, setUploadMode] = React.useState<'classic' | 'smart' | 'bulk'>('smart');
+  const [file, setFile] = React.useState<File | null>(null);
   const { 
     uploadContracts, 
     smartUploadContracts,
@@ -38,8 +38,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     contractRequiredFields
   } = useContractCSVUpload();
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
-  const [dryRun, setDryRun] = useState(true);
-  const [upsertDuplicates, setUpsertDuplicates] = useState(true);
+  const [dryRun, setDryRun] = React.useState(true);
+  const [upsertDuplicates, setUpsertDuplicates] = React.useState(true);
   const isSuperAdmin = !!user?.roles?.includes('super_admin');
   const targetCompanyName = (
     isBrowsingMode && browsedCompany

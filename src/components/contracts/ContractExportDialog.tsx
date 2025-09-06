@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,17 +30,17 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   onOpenChange
 }) => {
   const { user } = useAuth();
-  const [exportType, setExportType] = useState('pdf');
-  const [dateRange, setDateRange] = useState('all');
+  const [exportType, setExportType] = React.useState('pdf');
+  const [dateRange, setDateRange] = React.useState('all');
   const { formatCurrency, currency } = useCurrencyFormatter();
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
-  const [contractStatus, setContractStatus] = useState('all');
-  const [contractType, setContractType] = useState('all');
-  const [includeCustomer, setIncludeCustomer] = useState(true);
-  const [includeFinancial, setIncludeFinancial] = useState(true);
-  const [includeVehicle, setIncludeVehicle] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
+  const [customStartDate, setCustomStartDate] = React.useState('');
+  const [customEndDate, setCustomEndDate] = React.useState('');
+  const [contractStatus, setContractStatus] = React.useState('all');
+  const [contractType, setContractType] = React.useState('all');
+  const [includeCustomer, setIncludeCustomer] = React.useState(true);
+  const [includeFinancial, setIncludeFinancial] = React.useState(true);
+  const [includeVehicle, setIncludeVehicle] = React.useState(true);
+  const [isExporting, setIsExporting] = React.useState(false);
 
   // Fetch contracts for export
   const { data: contracts } = useQuery({
