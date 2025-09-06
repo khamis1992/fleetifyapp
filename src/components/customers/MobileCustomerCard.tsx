@@ -27,7 +27,7 @@ export const MobileCustomerCard: React.FC<MobileCustomerCardProps> = ({
   canDelete = false
 }) => {
   return (
-    <Card className="hover:shadow-lg transition-all duration-200 border-border/50">
+    <Card className="hover:shadow-lg transition-all duration-200 border-border/50 active:scale-[0.98] touch-manipulation">
       <CardContent className="p-4 space-y-3">
         {/* Header with customer info and actions */}
         <div className="flex items-start justify-between gap-3">
@@ -66,37 +66,48 @@ export const MobileCustomerCard: React.FC<MobileCustomerCardProps> = ({
           {/* Actions dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-10 w-10 p-0 rounded-xl touch-manipulation active:scale-95 transition-transform"
+              >
+                <MoreVertical className="h-5 w-5" />
                 <span className="sr-only">المزيد من الإجراءات</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => onView(customer.id)}>
-                <Eye className="h-4 w-4 mr-2" />
-                عرض
+            <DropdownMenuContent align="end" className="w-48 p-2">
+              <DropdownMenuItem 
+                onClick={() => onView(customer.id)}
+                className="h-11 rounded-lg font-medium gap-3 cursor-pointer touch-manipulation"
+              >
+                <Eye className="h-4 w-4" />
+                عرض التفاصيل
               </DropdownMenuItem>
               {canEdit && (
-                <DropdownMenuItem onClick={() => onEdit(customer)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  تعديل
+                <DropdownMenuItem 
+                  onClick={() => onEdit(customer)}
+                  className="h-11 rounded-lg font-medium gap-3 cursor-pointer touch-manipulation"
+                >
+                  <Edit className="h-4 w-4" />
+                  تعديل البيانات
                 </DropdownMenuItem>
               )}
               {canEdit && (
                 <DropdownMenuItem 
                   onClick={() => onToggleBlacklist(customer.id, !customer.is_blacklisted)}
+                  className="h-11 rounded-lg font-medium gap-3 cursor-pointer touch-manipulation"
                 >
-                  <ShieldX className="h-4 w-4 mr-2" />
-                  {customer.is_blacklisted ? 'إلغاء الحظر' : 'حظر'}
+                  <ShieldX className="h-4 w-4" />
+                  {customer.is_blacklisted ? 'إلغاء الحظر' : 'إضافة للحظر'}
                 </DropdownMenuItem>
               )}
               {canDelete && (
                 <DropdownMenuItem 
                   onClick={() => onDelete(customer)}
-                  className="text-destructive focus:text-destructive"
+                  className="h-11 rounded-lg font-medium gap-3 cursor-pointer touch-manipulation text-destructive focus:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  حذف
+                  <Trash2 className="h-4 w-4" />
+                  حذف العميل
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
