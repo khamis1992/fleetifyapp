@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,8 +48,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [comment, setComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comment, setComment] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { formatCurrency } = useCurrencyFormatter();
 
   // Fetch real approval workflow steps

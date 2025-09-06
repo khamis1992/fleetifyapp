@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,10 +29,10 @@ export const LearningFeedbackDialog: React.FC<LearningFeedbackDialogProps> = ({
   queryData,
   isSubmitting = false
 }) => {
-  const [feedbackType, setFeedbackType] = useState<'helpful' | 'accurate' | 'improvement_needed'>('helpful');
-  const [rating, setRating] = useState<number>(5);
-  const [comments, setComments] = useState('');
-  const [suggestions, setSuggestions] = useState('');
+  const [feedbackType, setFeedbackType] = React.useState<'helpful' | 'accurate' | 'improvement_needed'>('helpful');
+  const [rating, setRating] = React.useState<number>(5);
+  const [comments, setComments] = React.useState('');
+  const [suggestions, setSuggestions] = React.useState('');
 
   const handleSubmit = async () => {
     const feedback: Omit<LearningFeedback, 'id'> = {

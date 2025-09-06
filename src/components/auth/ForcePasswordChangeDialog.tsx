@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,11 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 const ForcePasswordChangeDialog: React.FC = () => {
   const { user } = useAuth();
-  const requiresChange = useMemo(() => Boolean(user?.user_metadata?.requires_password_change), [user]);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const requiresChange = React.useMemo(() => Boolean(user?.user_metadata?.requires_password_change), [user]);
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+  const [completed, setCompleted] = React.useState(false);
   const { toast } = useToast();
 
   if (!requiresChange || completed) return null;
