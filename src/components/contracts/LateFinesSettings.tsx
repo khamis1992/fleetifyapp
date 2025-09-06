@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ export const LateFinesSettings = () => {
   const calculateFines = useCalculateLateFines();
   const { contracts, statistics } = useContractsData({});
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = React.useState({
     fine_type: (settings as any)?.fine_type || 'fixed_amount',
     fine_rate: (settings as any)?.fine_rate || 120,
     grace_period_days: (settings as any)?.grace_period_days || 0,

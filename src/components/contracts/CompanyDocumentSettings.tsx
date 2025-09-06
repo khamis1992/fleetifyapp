@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import * as React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -21,7 +21,7 @@ export function CompanyDocumentSettings({
   className = '' 
 }: CompanyDocumentSettingsProps) {
   const { companyId } = useUnifiedCompanyAccess()
-  const [settings, setSettings] = useState<ContractDocumentSavingSettings>({
+  const [settings, setSettings] = React.useState<ContractDocumentSavingSettings>({
     auto_save_unsigned_contracts: true,
     auto_save_signed_contracts: true,
     auto_save_condition_reports: true,
@@ -35,10 +35,10 @@ export function CompanyDocumentSettings({
     }
   })
   
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadSettings()
   }, [companyId])
 
