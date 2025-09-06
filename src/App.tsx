@@ -1,4 +1,5 @@
-import * as React from "react";
+
+import { StrictMode } from "react";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
 // import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
@@ -71,7 +72,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <React.StrictMode>
+    <StrictMode>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
@@ -383,7 +384,7 @@ const App = () => {
     </AuthProvider>
   </ThemeProvider>
 </QueryClientProvider>
-</React.StrictMode>
+</StrictMode>
 );
 };
 
