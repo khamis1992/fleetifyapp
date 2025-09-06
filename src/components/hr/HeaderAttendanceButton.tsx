@@ -8,6 +8,7 @@ import { Clock, MapPin, Loader2, AlertCircle, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { formatLocationError } from '@/lib/attendanceUtils';
 
 export const HeaderAttendanceButton: React.FC = () => {
   const { user } = useAuth();
@@ -65,7 +66,9 @@ export const HeaderAttendanceButton: React.FC = () => {
       
       refetchAttendance();
     } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ في تسجيل الحضور');
+      console.error('HeaderAttendanceButton error:', error);
+      const errorMessage = formatLocationError(error, error);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
