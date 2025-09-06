@@ -25,6 +25,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
+import { VehicleForm } from '@/components/fleet/VehicleForm';
+import { EnhancedContractForm } from '@/components/contracts/EnhancedContractForm';
+import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { toast } from 'sonner';
 
 interface QuickAction {
@@ -45,6 +48,9 @@ const QuickActionsDashboard: React.FC = () => {
   const { user } = useAuth();
   const { hasCompanyAdminAccess, companyId } = useUnifiedCompanyAccess();
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [showCreateVehicle, setShowCreateVehicle] = useState(false);
+  const [showCreateContract, setShowCreateContract] = useState(false);
+  const [showCreatePayment, setShowCreatePayment] = useState(false);
 
   const quickActions: QuickAction[] = [
     {
@@ -158,9 +164,24 @@ const QuickActionsDashboard: React.FC = () => {
       return;
     }
     
-    // معالجة خاصة لإضافة العميل
+    // معالجة خاصة للإجراءات التي تفتح dialogs
     if (action.id === 'add-customer') {
       setShowCreateCustomer(true);
+      return;
+    }
+    
+    if (action.id === 'add-vehicle') {
+      setShowCreateVehicle(true);
+      return;
+    }
+    
+    if (action.id === 'create-contract') {
+      setShowCreateContract(true);
+      return;
+    }
+    
+    if (action.id === 'record-payment') {
+      setShowCreatePayment(true);
       return;
     }
     
@@ -170,6 +191,21 @@ const QuickActionsDashboard: React.FC = () => {
   const handleCustomerCreated = (customer: any) => {
     setShowCreateCustomer(false);
     toast.success('تم إنشاء العميل بنجاح');
+  };
+
+  const handleVehicleCreated = () => {
+    setShowCreateVehicle(false);
+    toast.success('تم إضافة المركبة بنجاح');
+  };
+
+  const handleContractCreated = (contract: any) => {
+    setShowCreateContract(false);
+    toast.success('تم إنشاء العقد بنجاح');
+  };
+
+  const handlePaymentCreated = (payment: any) => {
+    setShowCreatePayment(false);
+    toast.success('تم تسجيل الدفعة بنجاح');
   };
 
   const ActionButton = ({ action, index, variant = 'default' }: { 
@@ -284,6 +320,35 @@ const QuickActionsDashboard: React.FC = () => {
         onSuccess={handleCustomerCreated}
         onCancel={() => setShowCreateCustomer(false)}
         context="standalone"
+      />
+
+      {/* Vehicle Creation Dialog */}
+      <VehicleForm
+        open={showCreateVehicle}
+        onOpenChange={(open) => {
+          setShowCreateVehicle(open);
+          if (!open) handleVehicleCreated();
+        }}
+      />
+
+      {/* Contract Creation Dialog */}
+      <EnhancedContractForm
+        open={showCreateContract}
+        onOpenChange={setShowCreateContract}
+        onSubmit={handleContractCreated}
+      />
+
+      {/* Payment Creation Dialog */}
+      <UnifiedPaymentForm
+        open={showCreatePayment}
+        onOpenChange={setShowCreatePayment}
+        type="customer_payment"
+        onSuccess={handlePaymentCreated}
+        onCancel={() => setShowCreatePayment(false)}
+        options={{
+          autoCreateJournalEntry: true,
+          showJournalPreview: true
+        }}
       />
     </>
   );
