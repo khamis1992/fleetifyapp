@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,9 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
 
 export const AuthForm: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [formData, setFormData] = React.useState({
     email: '',
     password: ''
   });

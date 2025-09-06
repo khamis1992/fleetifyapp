@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import * as React from 'react'
 
 export interface SimpleBreakpoint {
   isMobile: boolean
@@ -11,9 +11,9 @@ export function useSimpleBreakpoint(): SimpleBreakpoint {
   
   // Add debug logging to see if React hooks are accessible
   try {
-    console.log('🔍 [DEBUG] useState available:', typeof useState)
+    console.log('🔍 [DEBUG] useState available:', typeof React.useState)
     
-    const [breakpoint, setBreakpoint] = useState<SimpleBreakpoint>({
+    const [breakpoint, setBreakpoint] = React.useState<SimpleBreakpoint>({
       isMobile: true,
       isTablet: false,
       isDesktop: false
@@ -21,7 +21,7 @@ export function useSimpleBreakpoint(): SimpleBreakpoint {
 
     console.log('🔍 [DEBUG] useState successful, current breakpoint:', breakpoint)
 
-    useEffect(() => {
+    React.useEffect(() => {
       console.log('🔍 [DEBUG] useEffect called')
       const updateBreakpoint = () => {
         const width = window.innerWidth

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,16 +71,16 @@ export const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   className,
   defaultPosition = { x: window.innerWidth - 400, y: 100 }
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState(defaultPosition);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [inputValue, setInputValue] = useState('');
-  const [isListening, setIsListening] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [isMinimized, setIsMinimized] = React.useState(false);
+  const [position, setPosition] = React.useState(defaultPosition);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
+  const [inputValue, setInputValue] = React.useState('');
+  const [isListening, setIsListening] = React.useState(false);
   
-  const dragRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const dragRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const {
     messages,
@@ -109,7 +109,7 @@ export const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         setPosition({

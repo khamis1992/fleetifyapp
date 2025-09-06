@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
@@ -37,8 +37,8 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useSimpleBreakpoint();
-  const [alertsOpen, setAlertsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = React.useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
   const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();
 
   const handleSignOut = async () => {

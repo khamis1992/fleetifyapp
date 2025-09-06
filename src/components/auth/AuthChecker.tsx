@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -15,7 +15,7 @@ export const AuthChecker: React.FC<AuthCheckerProps> = ({
   const { user, session, loading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loading && (!user || !session)) {
       console.log('🔒 [AUTH_CHECKER] No authenticated session, redirecting to:', redirectTo);
       navigate(redirectTo, { replace: true });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,14 +68,14 @@ interface PredictiveAlert {
 
 export const IntelligentInsightsPanel: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
-  const [activeTab, setActiveTab] = useState('insights');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [insights, setInsights] = useState<AutoInsight[]>([]);
-  const [patterns, setPatterns] = useState<DataPattern[]>([]);
-  const [alerts, setAlerts] = useState<PredictiveAlert[]>([]);
+  const [activeTab, setActiveTab] = React.useState('insights');
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [insights, setInsights] = React.useState<AutoInsight[]>([]);
+  const [patterns, setPatterns] = React.useState<DataPattern[]>([]);
+  const [alerts, setAlerts] = React.useState<PredictiveAlert[]>([]);
 
   // Mock data for demonstration
-  useEffect(() => {
+  React.useEffect(() => {
     // Simulate auto-generated insights
     setInsights([
       {

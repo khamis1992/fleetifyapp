@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import * as React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
   const { user, session, loading, sessionError, validateSession } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const checkSession = async () => {
       if (!loading && session && !sessionError && validateSession) {
         try {

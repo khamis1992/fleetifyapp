@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,11 +67,11 @@ interface Message {
 }
 
 export const EnhancedAIPanel: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userInput, setUserInput] = useState('');
-  const [inputQuery, setInputQuery] = useState('');
-  const [quickStats, setQuickStats] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('chat');
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [userInput, setUserInput] = React.useState('');
+  const [inputQuery, setInputQuery] = React.useState('');
+  const [quickStats, setQuickStats] = React.useState<any>(null);
+  const [activeTab, setActiveTab] = React.useState('chat');
   
   const { 
     processQuery, 
@@ -113,7 +113,7 @@ export const EnhancedAIPanel: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadQuickStats();
     initializeEntityRegistry();
   }, []);

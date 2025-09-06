@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ interface Message {
 }
 
 export const SelfLearningChat: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = React.useState<Message[]>([
     {
       id: '1',
       content: 'Hello! I\'m your self-learning AI assistant. I continuously learn from our interactions to provide better responses. What would you like to know?',
@@ -50,12 +50,12 @@ export const SelfLearningChat: React.FC = () => {
       }
     }
   ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [showClarification, setShowClarification] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [lastResponse, setLastResponse] = useState<any>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = React.useState('');
+  const [isTyping, setIsTyping] = React.useState(false);
+  const [showClarification, setShowClarification] = React.useState(false);
+  const [showFeedback, setShowFeedback] = React.useState(false);
+  const [lastResponse, setLastResponse] = React.useState<any>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   const {
     processQueryWithLearning,
@@ -70,7 +70,7 @@ export const SelfLearningChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     scrollToBottom();
   }, [messages]);
 

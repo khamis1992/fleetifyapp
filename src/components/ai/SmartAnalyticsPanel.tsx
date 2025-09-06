@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,11 +21,11 @@ const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d
 
 export const SmartAnalyticsPanel: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
-  const [isLoading, setIsLoading] = useState(false);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [analytics, setAnalytics] = React.useState<any>(null);
 
   // Mock analytics data
-  useEffect(() => {
+  React.useEffect(() => {
     const mockData = {
       trends: [
         { month: 'يناير', revenue: 12000, customers: 45 },

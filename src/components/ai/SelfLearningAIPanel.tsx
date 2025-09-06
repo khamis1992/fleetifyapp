@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,15 +63,15 @@ interface AIRecommendation {
 
 export const SelfLearningAIPanel: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
-  const [activeTab, setActiveTab] = useState('learning');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [learningPatterns, setLearningPatterns] = useState<LearningPattern[]>([]);
-  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
-  const [feedbackText, setFeedbackText] = useState('');
+  const [activeTab, setActiveTab] = React.useState('learning');
+  const [isAnalyzing, setIsAnalyzing] = React.useState(false);
+  const [learningPatterns, setLearningPatterns] = React.useState<LearningPattern[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = React.useState<PerformanceMetric[]>([]);
+  const [recommendations, setRecommendations] = React.useState<AIRecommendation[]>([]);
+  const [feedbackText, setFeedbackText] = React.useState('');
 
   // Mock data for demonstration
-  useEffect(() => {
+  React.useEffect(() => {
     // Simulate loading learning patterns
     setLearningPatterns([
       {

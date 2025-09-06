@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -101,15 +101,15 @@ const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d
 
 export const ComprehensiveAIDashboard: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [systemOverview, setSystemOverview] = useState<SystemOverview | null>(null);
-  const [aiCapabilities, setAiCapabilities] = useState<AICapability[]>([]);
-  const [automatedTasks, setAutomatedTasks] = useState<AutomatedTask[]>([]);
-  const [intelligenceMetrics, setIntelligenceMetrics] = useState<IntelligenceMetric[]>([]);
+  const [activeTab, setActiveTab] = React.useState('overview');
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [systemOverview, setSystemOverview] = React.useState<SystemOverview | null>(null);
+  const [aiCapabilities, setAiCapabilities] = React.useState<AICapability[]>([]);
+  const [automatedTasks, setAutomatedTasks] = React.useState<AutomatedTask[]>([]);
+  const [intelligenceMetrics, setIntelligenceMetrics] = React.useState<IntelligenceMetric[]>([]);
 
   // Mock data for demonstration
-  useEffect(() => {
+  React.useEffect(() => {
     // Simulate system overview
     setSystemOverview({
       ai_health_score: 94,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,9 +27,9 @@ const EnhancedQuerySuggestions: React.FC<EnhancedQuerySuggestionsProps> = ({
   currentInput = '',
   recentQueries = []
 }) => {
-  const [suggestions, setSuggestions] = useState<QuerySuggestion[]>([]);
-  const [contextualSuggestions, setContextualSuggestions] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [suggestions, setSuggestions] = React.useState<QuerySuggestion[]>([]);
+  const [contextualSuggestions, setContextualSuggestions] = React.useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   
   const { getContextSuggestions } = useEnhancedContextAnalyzer();
 
@@ -187,7 +187,7 @@ const EnhancedQuerySuggestions: React.FC<EnhancedQuerySuggestionsProps> = ({
   ];
 
   // Update contextual suggestions based on input
-  useEffect(() => {
+  React.useEffect(() => {
     if (currentInput.trim().length > 2) {
       const contextSuggestions = getContextSuggestions(currentInput);
       setContextualSuggestions(contextSuggestions.slice(0, 6));

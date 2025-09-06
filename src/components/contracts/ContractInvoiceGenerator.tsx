@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -27,7 +27,7 @@ interface ContractInvoiceGeneratorProps {
 }
 
 export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> = ({ contract }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly')
+  const [selectedPeriod, setSelectedPeriod] = React.useState('monthly')
   const queryClient = useQueryClient()
 
   const { formatCurrency } = useCurrencyFormatter()
