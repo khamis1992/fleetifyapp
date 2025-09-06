@@ -5,6 +5,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AppSidebar } from './AppSidebar';
+import { MobileSidebar } from './MobileSidebar';
 import { MobileNavigation } from './MobileNavigation';
 import { ResponsiveHeader } from './ResponsiveHeader';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
@@ -60,9 +61,7 @@ export const ResponsiveDashboardLayout: React.FC = () => {
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetContent side="right" className="w-80 p-0 overflow-hidden">
-              <div className="h-full bg-sidebar-background">
-                <AppSidebar />
-              </div>
+              <MobileSidebar />
             </SheetContent>
           </Sheet>
         )}
