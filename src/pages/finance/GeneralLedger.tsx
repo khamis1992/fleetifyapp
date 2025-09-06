@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountMovementsDialog } from "@/components/finance/AccountMovementsDialog";
 import { DetailedJournalEntryView } from "@/components/finance/DetailedJournalEntryView";
 import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus, Calculator, BarChart3, Target, Users, Calendar, AlertCircle } from "lucide-react";
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { 
   useEnhancedJournalEntries, 
   useAccountBalances, 
@@ -33,6 +35,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function Ledger() {
+  const { isMobile } = useSimpleBreakpoint();
+  const layout = useAdaptiveLayout({
+    mobileViewMode: 'stack',
+    touchTargetSize: 'large'
+  });
+  
   const [filters, setFilters] = useState<LedgerFilters>({
     status: 'all'
   });
@@ -127,7 +135,7 @@ export default function Ledger() {
   return (
     <SessionValidator>
       <AuthChecker>
-        <div className="space-y-6" dir="rtl">
+        <div className={`space-y-6 ${layout.containerPadding}`} dir="rtl">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -142,16 +150,20 @@ export default function Ledger() {
       </Breadcrumb>
 
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">دفتر الأستاذ العام</h1>
-          <p className="text-muted-foreground">
+      <div className={`flex ${isMobile ? 'flex-col gap-4' : 'justify-between items-start'}`}>
+        <div className={isMobile ? 'text-center' : ''}>
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold tracking-tight`}>دفتر الأستاذ العام</h1>
+          <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>
             عرض وإدارة جميع القيود المحاسبية والتقارير المالية المتقدمة
           </p>
         </div>
-        <div className="flex space-x-2">
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+        <div className={`flex ${isMobile ? 'justify-center' : 'space-x-2'}`}>
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            size={isMobile ? "lg" : "default"}
+            className={isMobile ? "h-12 px-6 text-base" : ""}
+          >
+            <Plus className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} mr-2`} />
             قيد جديد
           </Button>
         </div>
@@ -212,56 +224,83 @@ export default function Ledger() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="analysis">التحليل المالي</TabsTrigger>
-          <TabsTrigger value="costcenters">مراكز التكلفة</TabsTrigger>
-          <TabsTrigger value="trial">ميزان المراجعة</TabsTrigger>
-          <TabsTrigger value="balances">أرصدة الحسابات</TabsTrigger>
-          <TabsTrigger value="entries">القيود المحاسبية</TabsTrigger>
+        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2 gap-1 h-auto p-1' : 'grid-cols-5'}`}>
+          {isMobile ? (
+            <>
+              <TabsTrigger value="entries" className="text-xs p-2">القيود</TabsTrigger>
+              <TabsTrigger value="balances" className="text-xs p-2">الأرصدة</TabsTrigger>
+              <TabsTrigger value="trial" className="text-xs p-2">الميزان</TabsTrigger>
+              <TabsTrigger value="costcenters" className="text-xs p-2">المراكز</TabsTrigger>
+              <TabsTrigger value="analysis" className="text-xs p-2">التحليل</TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="analysis">التحليل المالي</TabsTrigger>
+              <TabsTrigger value="costcenters">مراكز التكلفة</TabsTrigger>
+              <TabsTrigger value="trial">ميزان المراجعة</TabsTrigger>
+              <TabsTrigger value="balances">أرصدة الحسابات</TabsTrigger>
+              <TabsTrigger value="entries">القيود المحاسبية</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         {/* Journal Entries Tab */}
         <TabsContent value="entries">
           <Card>
             <CardHeader>
-              <div className="flex flex-col items-end space-y-4">
-                <div className="text-right">
-                  <CardTitle>القيود المحاسبية</CardTitle>
-                  <CardDescription>قائمة جميع القيود المحاسبية مع إمكانيات البحث والتصفية المتقدمة</CardDescription>
+              <div className={`flex flex-col ${isMobile ? 'space-y-4' : 'items-end space-y-4'}`}>
+                <div className={isMobile ? 'text-center' : 'text-right'}>
+                  <CardTitle className={isMobile ? 'text-lg' : ''}>القيود المحاسبية</CardTitle>
+                  <CardDescription className={isMobile ? 'text-sm' : ''}>قائمة جميع القيود المحاسبية مع إمكانيات البحث والتصفية المتقدمة</CardDescription>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="البحث في القيود..."
-                    value={filters.searchTerm || ''}
-                    onChange={(e) => updateFilters({ searchTerm: e.target.value })}
-                    className="w-64"
-                  />
-                  <Select value={filters.status || 'all'} onValueChange={(value) => updateFilters({ status: value })}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="تصفية بالحالة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع الحالات</SelectItem>
-                      <SelectItem value="draft">مسودة</SelectItem>
-                      <SelectItem value="posted">مرحل</SelectItem>
-                      <SelectItem value="reversed">ملغي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="date"
-                    placeholder="من تاريخ"
-                    value={filters.dateFrom || ''}
-                    onChange={(e) => updateFilters({ dateFrom: e.target.value })}
-                    className="w-40"
-                  />
-                  <Input
-                    type="date"
-                    placeholder="إلى تاريخ"
-                    value={filters.dateTo || ''}
-                    onChange={(e) => updateFilters({ dateTo: e.target.value })}
-                    className="w-40"
-                  />
+                <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center space-x-2'}`}>
+                  <div className={`relative flex items-center ${isMobile ? 'w-full' : ''}`}>
+                    <Search className="absolute right-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="البحث في القيود..."
+                      value={filters.searchTerm || ''}
+                      onChange={(e) => updateFilters({ searchTerm: e.target.value })}
+                      className={`${isMobile ? 'w-full pl-3 pr-10 h-11' : 'w-64'}`}
+                    />
+                  </div>
+                  <div className={`flex ${isMobile ? 'grid grid-cols-2 gap-2' : 'space-x-2'}`}>
+                    <Select value={filters.status || 'all'} onValueChange={(value) => updateFilters({ status: value })}>
+                      <SelectTrigger className={isMobile ? 'h-11' : 'w-40'}>
+                        <SelectValue placeholder="تصفية بالحالة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">جميع الحالات</SelectItem>
+                        <SelectItem value="draft">مسودة</SelectItem>
+                        <SelectItem value="posted">مرحل</SelectItem>
+                        <SelectItem value="reversed">ملغي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="date"
+                      placeholder="من تاريخ"
+                      value={filters.dateFrom || ''}
+                      onChange={(e) => updateFilters({ dateFrom: e.target.value })}
+                      className={isMobile ? 'h-11' : 'w-40'}
+                    />
+                  </div>
+                  {isMobile && (
+                    <Input
+                      type="date"
+                      placeholder="إلى تاريخ"
+                      value={filters.dateTo || ''}
+                      onChange={(e) => updateFilters({ dateTo: e.target.value })}
+                      className="h-11"
+                    />
+                  )}
+                  {!isMobile && (
+                    <Input
+                      type="date"
+                      placeholder="إلى تاريخ"
+                      value={filters.dateTo || ''}
+                      onChange={(e) => updateFilters({ dateTo: e.target.value })}
+                      className="w-40"
+                    />
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -279,18 +318,22 @@ export default function Ledger() {
                     <Card key={entry.id} className="border-l-4 border-l-primary">
                       {/* Header */}
                       <CardHeader className="bg-muted/30 pb-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex space-x-1">
+                        <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
+                          <div className={`flex ${isMobile ? 'flex-wrap gap-2 justify-center' : 'space-x-1'}`}>
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Eye className="h-4 w-4" />
-                                  معاينة
+                                <Button 
+                                  variant="ghost" 
+                                  size={isMobile ? "default" : "sm"}
+                                  className={isMobile ? "h-10 px-4 text-sm" : ""}
+                                >
+                                  <Eye className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4'}`} />
+                                  {isMobile ? '' : 'معاينة'}
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                              <DialogContent className={`${isMobile ? 'max-w-[95vw] max-h-[90vh]' : 'max-w-6xl max-h-[90vh]'} overflow-y-auto`}>
                                 <DialogHeader>
-                                  <DialogTitle>عرض القيد المحاسبي - النمط التقليدي</DialogTitle>
+                                  <DialogTitle className={isMobile ? 'text-base' : ''}>عرض القيد المحاسبي - النمط التقليدي</DialogTitle>
                                 </DialogHeader>
                                 <DetailedJournalEntryView entry={entry} />
                               </DialogContent>
@@ -298,9 +341,10 @@ export default function Ledger() {
                             {entry.status === 'draft' && (
                               <Button 
                                 variant="ghost" 
-                                size="sm"
+                                size={isMobile ? "default" : "sm"}
                                 onClick={() => handlePostEntry(entry.id)}
                                 disabled={postEntry.isPending}
+                                className={isMobile ? "h-10 px-4 text-sm" : ""}
                               >
                                 ترحيل
                               </Button>
@@ -308,22 +352,27 @@ export default function Ledger() {
                             {entry.status === 'posted' && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
+                                  <Button 
+                                    variant="ghost" 
+                                    size={isMobile ? "default" : "sm"}
+                                    className={isMobile ? "h-10 px-4 text-sm" : ""}
+                                  >
                                     عكس
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className={isMobile ? 'max-w-[95vw]' : ''}>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>تأكيد عكس القيد</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogTitle className={isMobile ? 'text-base' : ''}>تأكيد عكس القيد</AlertDialogTitle>
+                                    <AlertDialogDescription className={isMobile ? 'text-sm' : ''}>
                                       هل أنت متأكد من رغبتك في عكس هذا القيد؟ هذا الإجراء لا يمكن التراجع عنه.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogFooter className={isMobile ? 'flex-col gap-2' : ''}>
+                                    <AlertDialogCancel className={isMobile ? 'w-full' : ''}>إلغاء</AlertDialogCancel>
                                     <AlertDialogAction 
                                       onClick={() => handleReverseEntry(entry.id)}
                                       disabled={reverseEntry.isPending}
+                                      className={isMobile ? 'w-full' : ''}
                                     >
                                       تأكيد العكس
                                     </AlertDialogAction>
@@ -334,23 +383,27 @@ export default function Ledger() {
                             {entry.status === 'draft' && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                  <Button 
+                                    variant="ghost" 
+                                    size={isMobile ? "default" : "sm"} 
+                                    className={`text-red-600 hover:text-red-700 ${isMobile ? 'h-10 px-4 text-sm' : ''}`}
+                                  >
                                     حذف
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className={isMobile ? 'max-w-[95vw]' : ''}>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>تأكيد حذف القيد</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogTitle className={isMobile ? 'text-base' : ''}>تأكيد حذف القيد</AlertDialogTitle>
+                                    <AlertDialogDescription className={isMobile ? 'text-sm' : ''}>
                                       هل أنت متأكد من رغبتك في حذف هذا القيد نهائياً؟ هذا الإجراء لا يمكن التراجع عنه. يمكن حذف المسودات فقط.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogFooter className={isMobile ? 'flex-col gap-2' : ''}>
+                                    <AlertDialogCancel className={isMobile ? 'w-full' : ''}>إلغاء</AlertDialogCancel>
                                     <AlertDialogAction 
                                       onClick={() => handleDeleteEntry(entry.id)}
                                       disabled={deleteEntry.isPending}
-                                      className="bg-red-600 hover:bg-red-700"
+                                      className={`bg-red-600 hover:bg-red-700 ${isMobile ? 'w-full' : ''}`}
                                     >
                                       تأكيد الحذف
                                     </AlertDialogAction>
@@ -396,63 +449,116 @@ export default function Ledger() {
 
                       {/* جدول القيود */}
                       <CardContent className="p-0">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-slate-100">
-                              <TableHead className="text-center font-semibold text-red-700">دائن</TableHead>
-                              <TableHead className="text-center font-semibold text-green-700">مدين</TableHead>
-                              <TableHead className="text-center font-semibold">البيان</TableHead>
-                              <TableHead className="text-center font-semibold">اسم الحساب</TableHead>
-                              <TableHead className="text-center font-semibold">رمز الحساب</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
+                        {isMobile ? (
+                          <div className="space-y-3 p-4">
                             {entry.journal_entry_lines?.map((line, index) => (
-                              <TableRow key={index} className="hover:bg-slate-50">
-                                <TableCell className="text-center">
-                                  {line.credit_amount > 0 ? (
-                                    <span className="text-red-700 font-semibold">
-                                      {line.credit_amount.toFixed(3)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {line.debit_amount > 0 ? (
-                                    <span className="text-green-700 font-semibold">
-                                      {line.debit_amount.toFixed(3)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right text-sm">
-                                  {line.line_description || '-'}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  {line.chart_of_accounts?.account_name_ar || line.chart_of_accounts?.account_name}
-                                </TableCell>
-                                <TableCell className="text-center font-mono text-sm">
-                                  {line.chart_of_accounts?.account_code || '-'}
-                                </TableCell>
-                              </TableRow>
+                              <div key={index} className="border rounded-lg p-3 bg-slate-50">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="text-sm font-mono">{line.chart_of_accounts?.account_code || '-'}</div>
+                                  <div className="text-right">
+                                    <div className="font-medium text-sm">
+                                      {line.chart_of_accounts?.account_name_ar || line.chart_of_accounts?.account_name}
+                                    </div>
+                                  </div>
+                                </div>
+                                {line.line_description && (
+                                  <div className="text-sm text-muted-foreground mb-2 text-right">
+                                    {line.line_description}
+                                  </div>
+                                )}
+                                <div className="flex justify-between items-center">
+                                  <div className="flex gap-4">
+                                    <div className="text-center">
+                                      <div className="text-xs text-green-700 font-medium">مدين</div>
+                                      <div className="text-sm font-semibold text-green-700">
+                                        {line.debit_amount > 0 ? line.debit_amount.toFixed(3) : '-'}
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-xs text-red-700 font-medium">دائن</div>
+                                      <div className="text-sm font-semibold text-red-700">
+                                        {line.credit_amount > 0 ? line.credit_amount.toFixed(3) : '-'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             ))}
-                          </TableBody>
-                          <TableHeader>
-                            <TableRow className="bg-slate-200 border-t-2 border-slate-300">
-                              <TableHead className="text-center font-bold text-red-700">
-                                {entry.total_credit.toFixed(3)}
-                              </TableHead>
-                              <TableHead className="text-center font-bold text-green-700">
-                                {entry.total_debit.toFixed(3)}
-                              </TableHead>
-                              <TableHead colSpan={3} className="text-center font-bold">
-                                المجموع
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                        </Table>
+                            <div className="border-t-2 pt-3 mt-4 bg-slate-100 p-3 rounded-lg">
+                              <div className="flex justify-between items-center font-bold">
+                                <div className="flex gap-6">
+                                  <div className="text-center">
+                                    <div className="text-xs text-green-700">إجمالي المدين</div>
+                                    <div className="text-green-700">{entry.total_debit.toFixed(3)}</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-red-700">إجمالي الدائن</div>
+                                    <div className="text-red-700">{entry.total_credit.toFixed(3)}</div>
+                                  </div>
+                                </div>
+                                <div className="text-sm">المجموع</div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-slate-100">
+                                <TableHead className="text-center font-semibold text-red-700">دائن</TableHead>
+                                <TableHead className="text-center font-semibold text-green-700">مدين</TableHead>
+                                <TableHead className="text-center font-semibold">البيان</TableHead>
+                                <TableHead className="text-center font-semibold">اسم الحساب</TableHead>
+                                <TableHead className="text-center font-semibold">رمز الحساب</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {entry.journal_entry_lines?.map((line, index) => (
+                                <TableRow key={index} className="hover:bg-slate-50">
+                                  <TableCell className="text-center">
+                                    {line.credit_amount > 0 ? (
+                                      <span className="text-red-700 font-semibold">
+                                        {line.credit_amount.toFixed(3)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    {line.debit_amount > 0 ? (
+                                      <span className="text-green-700 font-semibold">
+                                        {line.debit_amount.toFixed(3)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm">
+                                    {line.line_description || '-'}
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    {line.chart_of_accounts?.account_name_ar || line.chart_of_accounts?.account_name}
+                                  </TableCell>
+                                  <TableCell className="text-center font-mono text-sm">
+                                    {line.chart_of_accounts?.account_code || '-'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                            <TableHeader>
+                              <TableRow className="bg-slate-200 border-t-2 border-slate-300">
+                                <TableHead className="text-center font-bold text-red-700">
+                                  {entry.total_credit.toFixed(3)}
+                                </TableHead>
+                                <TableHead className="text-center font-bold text-green-700">
+                                  {entry.total_debit.toFixed(3)}
+                                </TableHead>
+                                <TableHead colSpan={3} className="text-center font-bold">
+                                  المجموع
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                          </Table>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
