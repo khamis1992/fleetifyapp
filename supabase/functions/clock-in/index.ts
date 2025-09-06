@@ -109,7 +109,15 @@ serve(async (req) => {
       if (locationData.needsConfiguration) {
         errorMessage = 'لم يتم تكوين موقع المكتب. يرجى التواصل مع المسؤول لإعداد موقع المكتب.';
       } else if (locationData.distance && locationData.allowedRadius) {
-        errorMessage = `أنت على بعد ${Math.round(locationData.distance)}م من المكتب. المسافة المسموحة هي ${locationData.allowedRadius}م.`;
+        const distance = Math.round(locationData.distance);
+        const allowedRadius = locationData.allowedRadius;
+        
+        if (distance > 1000) {
+          const distanceKm = (distance / 1000).toFixed(1);
+          errorMessage = `أنت على بعد ${distanceKm} كم من المكتب. المسافة المسموحة هي ${allowedRadius} متر فقط. يرجى الاقتراب من المكتب أو التواصل مع المسؤول.`;
+        } else {
+          errorMessage = `أنت على بعد ${distance} متر من المكتب. المسافة المسموحة هي ${allowedRadius} متر. يرجى الاقتراب أكثر من المكتب.`;
+        }
       }
       
       return new Response(JSON.stringify({ 

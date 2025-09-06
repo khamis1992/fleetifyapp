@@ -23,24 +23,46 @@ export const useAttendance = () => {
   const getCurrentLocation = (): Promise<LocationData> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser'));
+        reject(new Error('خدمة الموقع غير مدعومة في هذا المتصفح. يرجى استخدام متصفح حديث.'));
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log('Location obtained:', { 
+            latitude: position.coords.latitude, 
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy 
+          });
           resolve({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
         },
         (error) => {
-          reject(new Error(`Location error: ${error.message}`));
+          console.error('Geolocation error:', error);
+          let errorMessage = 'حدث خطأ في تحديد الموقع';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'تم رفض الوصول للموقع. يرجى السماح للتطبيق بالوصول للموقع في إعدادات المتصفح';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'لا يمكن تحديد الموقع الحالي. يرجى التأكد من تفعيل GPS';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'انتهت مهلة تحديد الموقع. يرجى المحاولة مرة أخرى';
+              break;
+            default:
+              errorMessage = `خطأ في تحديد الموقع: ${error.message}`;
+          }
+          
+          reject(new Error(errorMessage));
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000,
+          timeout: 15000,
+          maximumAge: 30000,
         }
       );
     });

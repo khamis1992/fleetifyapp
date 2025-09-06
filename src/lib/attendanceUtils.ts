@@ -28,27 +28,40 @@ export const formatLocationError = (error: any, locationData?: any) => {
     return 'لم يتم تكوين موقع المكتب. يرجى التواصل مع المسؤول لإعداد موقع المكتب.';
   }
   
+  // Handle detailed distance information
   if (locationData?.distance && locationData?.allowedRadius) {
-    return `أنت على بعد ${Math.round(locationData.distance)}م من المكتب. المسافة المسموحة هي ${locationData.allowedRadius}م.`;
+    const distance = Math.round(locationData.distance);
+    const allowedRadius = locationData.allowedRadius;
+    
+    if (distance > 1000) {
+      const distanceKm = (distance / 1000).toFixed(1);
+      return `أنت على بعد ${distanceKm} كم من المكتب. المسافة المسموحة هي ${allowedRadius} متر فقط. يرجى الاقتراب من المكتب أو التواصل مع المسؤول.`;
+    } else {
+      return `أنت على بعد ${distance} متر من المكتب. المسافة المسموحة هي ${allowedRadius} متر. يرجى الاقتراب أكثر من المكتب.`;
+    }
   }
   
   // Check for specific error codes
   if (error?.errorCode) {
     switch (error.errorCode) {
       case 'LOCATION_OUT_OF_RANGE':
-        return 'أنت خارج منطقة العمل المسموحة';
+        return 'أنت خارج منطقة العمل المسموحة. يرجى الاقتراب من المكتب أو التواصل مع المسؤول.';
       case 'ALREADY_CLOCKED_IN':
         return 'تم تسجيل الحضور مسبقاً اليوم';
       case 'LOCATION_VERIFICATION_FAILED':
-        return 'فشل في التحقق من الموقع. يرجى المحاولة مرة أخرى';
+        return 'فشل في التحقق من الموقع. يرجى التأكد من تفعيل خدمة الموقع والمحاولة مرة أخرى';
       case 'DATABASE_ERROR':
         return 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى';
+      case 'LOCATION_PERMISSION_DENIED':
+        return 'تم رفض الوصول للموقع. يرجى السماح للتطبيق بالوصول للموقع في إعدادات المتصفح';
+      case 'LOCATION_UNAVAILABLE':
+        return 'لا يمكن تحديد الموقع الحالي. يرجى التأكد من تفعيل GPS والمحاولة مرة أخرى';
       default:
         return 'حدث خطأ غير متوقع';
     }
   }
   
-  return error?.message || 'أنت خارج منطقة العمل المسموحة.';
+  return error?.message || 'أنت خارج منطقة العمل المسموحة. يرجى التواصل مع المسؤول.';
 };
 
 export const isLocationConfigured = (locationStatus: string | null) => {
