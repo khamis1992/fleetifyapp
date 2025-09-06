@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -29,9 +29,9 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   disabled = false
 }) => {
   const { companyId, browsedCompany, isBrowsingMode, isAuthenticating, authError } = useUnifiedCompanyAccess();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
-  const [customerFormOpen, setCustomerFormOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
+  const [customerFormOpen, setCustomerFormOpen] = React.useState(false);
   
   // Use debounced search like the customer page
   const debouncedSearch = useDebounce(searchValue, 300);

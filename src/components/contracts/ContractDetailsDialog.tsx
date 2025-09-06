@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,13 +48,13 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   onEdit,
   onCreateInvoice
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState(contract || {});
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editData, setEditData] = React.useState(contract || {});
   const { formatCurrency, currency } = useCurrencyFormatter();
   
   // Payment dialog state
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
+  const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
 
   // Fetch related data
   const { data: customer } = useQuery({

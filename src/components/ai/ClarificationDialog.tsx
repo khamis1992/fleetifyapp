@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,18 +36,18 @@ export const ClarificationDialog: React.FC<ClarificationDialogProps> = ({
   onSubmitResponses,
   isProcessing = false
 }) => {
-  const [responses, setResponses] = useState<Record<string, string>>({});
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [analysisInsights, setAnalysisInsights] = useState<any>(null);
-  const [responseQuality, setResponseQuality] = useState<Record<string, number>>({});
+  const [responses, setResponses] = React.useState<Record<string, string>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+  const [analysisInsights, setAnalysisInsights] = React.useState<any>(null);
+  const [responseQuality, setResponseQuality] = React.useState<Record<string, number>>({});
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (session?.metadata) {
       setAnalysisInsights(session.metadata);
     }
   }, [session]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Analyze response quality in real-time
     Object.keys(responses).forEach(questionIndex => {
       const response = responses[questionIndex];
