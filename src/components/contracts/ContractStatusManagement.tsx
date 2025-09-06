@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
   onOpenChange,
   contract
 }) => {
-  const [statusData, setStatusData] = useState({
+  const [statusData, setStatusData] = React.useState({
     status: contract?.status || 'active',
     reason: ''
   });

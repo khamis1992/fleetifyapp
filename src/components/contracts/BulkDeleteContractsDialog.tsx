@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -32,8 +32,8 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
   onOpenChange,
   targetCompanyId
 }) => {
-  const [confirmationText, setConfirmationText] = useState('');
-  const [step, setStep] = useState<'warning' | 'processing' | 'completed'>('warning');
+  const [confirmationText, setConfirmationText] = React.useState('');
+  const [step, setStep] = React.useState<'warning' | 'processing' | 'completed'>('warning');
   
   const { companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const { bulkDeleteContracts, progress, resetProgress } = useBulkDeleteContracts();
@@ -88,7 +88,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
   const requiredConfirmationText = 'حذف جميع العقود';
   const isConfirmationValid = confirmationText.trim() === requiredConfirmationText;
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!open) {
       setStep('warning');
       setConfirmationText('');

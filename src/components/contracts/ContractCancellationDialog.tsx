@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -36,9 +36,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   onOpenChange,
   contract
 }) => {
-  const [currentStep, setCurrentStep] = useState<'vehicle-return' | 'approval' | 'cancellation'>('vehicle-return');
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [showComparisonReport, setShowComparisonReport] = useState(false);
+  const [currentStep, setCurrentStep] = React.useState<'vehicle-return' | 'approval' | 'cancellation'>('vehicle-return');
+  const [rejectionReason, setRejectionReason] = React.useState('');
+  const [showComparisonReport, setShowComparisonReport] = React.useState(false);
   
   const { data: vehicleReturn, isLoading: isLoadingReturn } = useContractVehicleReturnByContract(contract?.id);
   const { data: comparison, isLoading: comparisonLoading } = useVehicleConditionComparison(contract?.id);
