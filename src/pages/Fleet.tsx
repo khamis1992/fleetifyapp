@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple'
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
 import { ResponsiveContainer } from '@/components/ui/responsive-container'
+import { ResponsivePageActions } from '@/components/ui/responsive-page-actions'
 
 export default function Fleet() {
   // Responsive hooks
@@ -87,48 +88,50 @@ export default function Fleet() {
   return (
     <ResponsiveContainer className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">إدارة الأسطول</h1>
-          <p className="text-muted-foreground">
-            إدارة أسطول المركبات والصيانة والعمليات
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link to="/fleet/financial-analysis">
-            <Button variant="outline" size="sm">
-              <Calculator className="h-4 w-4 mr-2" />
-              التحليل المالي
-            </Button>
-          </Link>
-          <Dialog open={showGroupManagement} onOpenChange={setShowGroupManagement}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Layers3 className="h-4 w-4 mr-2" />
-                مجموعات المركبات
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>إدارة مجموعات المركبات</DialogTitle>
-              </DialogHeader>
-              {user?.profile?.company_id && (
-                <VehicleGroupManagement companyId={user.profile.company_id} />
-              )}
-            </DialogContent>
-          </Dialog>
-          {user?.roles?.includes('super_admin') && (
-            <Button variant="outline" size="sm" onClick={() => setShowCSVUpload(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              رفع CSV
-            </Button>
+      <ResponsivePageActions
+        title="إدارة الأسطول"
+        subtitle="إدارة أسطول المركبات والصيانة والعمليات"
+        primaryAction={{
+          id: 'add-vehicle',
+          label: 'إضافة مركبة',
+          icon: <Plus className="h-4 w-4 mr-2" />,
+          onClick: () => setShowVehicleForm(true)
+        }}
+        secondaryActions={[
+          {
+            id: 'financial-analysis',
+            label: 'التحليل المالي',
+            icon: <Calculator className="h-4 w-4 mr-2" />,
+            onClick: () => window.location.href = '/fleet/financial-analysis',
+            type: 'outline'
+          },
+          {
+            id: 'vehicle-groups',
+            label: 'مجموعات المركبات',
+            icon: <Layers3 className="h-4 w-4 mr-2" />,
+            onClick: () => setShowGroupManagement(true),
+            type: 'outline'
+          },
+          ...(user?.roles?.includes('super_admin') ? [{
+            id: 'csv-upload',
+            label: 'رفع CSV',
+            icon: <Upload className="h-4 w-4 mr-2" />,
+            onClick: () => setShowCSVUpload(true),
+            type: 'outline' as const
+          }] : [])
+        ]}
+      />
+
+      <Dialog open={showGroupManagement} onOpenChange={setShowGroupManagement}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>إدارة مجموعات المركبات</DialogTitle>
+          </DialogHeader>
+          {user?.profile?.company_id && (
+            <VehicleGroupManagement companyId={user.profile.company_id} />
           )}
-          <Button onClick={() => setShowVehicleForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            إضافة مركبة
-          </Button>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Fleet Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

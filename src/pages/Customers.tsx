@@ -31,6 +31,7 @@ import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout'
 import { ResponsiveContainer } from '@/components/ui/responsive-container'
 import { ResponsiveCard, ResponsiveCardHeader, ResponsiveCardTitle, ResponsiveCardContent } from '@/components/ui/responsive-card'
 import { DataGrid, DashboardGrid } from '@/components/ui/responsive-grid'
+import { ResponsivePageActions } from '@/components/ui/responsive-page-actions'
 
 import { useQueryClient } from "@tanstack/react-query"
 import { CustomerViewProvider } from "@/contexts/CustomerViewContext"
@@ -215,93 +216,33 @@ export default function Customers() {
     <CustomerViewProvider>
     <ResponsiveContainer className="space-y-4 md:space-y-6">
       {/* رأس الصفحة */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">العملاء</h1>
-          <p className="text-muted-foreground mt-1">
-            إدارة وتتبع معلومات العملاء
-          </p>
-        </div>
-        
-        {/* Desktop Actions */}
-        {!isMobile && (
-          <div className="flex gap-2">
-            {canDeleteCustomers && allCustomers.length > 0 && (
-              <Button 
-                onClick={() => setShowBulkDeleteDialog(true)}
-                variant="destructive"
-                size="lg"
-                className="flex items-center gap-2 h-11 px-6 rounded-xl shadow-sm font-medium"
-              >
-                <Trash className="h-4 w-4" />
-                حذف جميع العملاء
-              </Button>
-            )}
-            {isSuperAdmin && (
-              <Button 
-                onClick={() => setShowCSVUpload(true)}
-                variant="outline"
-                size="lg"
-                className="flex items-center gap-2 h-11 px-6 rounded-xl shadow-sm font-medium border-2"
-              >
-                <Plus className="h-4 w-4" />
-                رفع من CSV
-              </Button>
-            )}
-            <Button 
-              onClick={() => setShowCustomerForm(true)}
-              disabled={!canAddCustomers}
-              size="lg"
-              className="flex items-center gap-2 h-11 px-6 rounded-xl shadow-lg font-medium"
-            >
-              <Plus className="h-4 w-4" />
-              إضافة عميل جديد
-            </Button>
-          </div>
-        )}
-        
-        {/* Mobile Actions */}
-        {isMobile && (
-          <div className="w-full space-y-3">
-            {/* Primary Action */}
-            <Button 
-              onClick={() => setShowCustomerForm(true)}
-              disabled={!canAddCustomers}
-              size="lg"
-              className="w-full h-12 gap-3 rounded-xl shadow-lg font-medium text-base"
-            >
-              <Plus className="h-5 w-5" />
-              إضافة عميل جديد
-            </Button>
-            
-            {/* Secondary Actions */}
-            <div className="flex gap-2">
-              {isSuperAdmin && (
-                <Button 
-                  onClick={() => setShowCSVUpload(true)}
-                  variant="outline"
-                  size="lg"
-                  className="flex-1 h-11 gap-2 rounded-xl shadow-sm font-medium border-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  رفع CSV
-                </Button>
-              )}
-              {canDeleteCustomers && allCustomers.length > 0 && (
-                <Button 
-                  onClick={() => setShowBulkDeleteDialog(true)}
-                  variant="destructive"
-                  size="lg"
-                  className="flex-1 h-11 gap-2 rounded-xl shadow-sm font-medium"
-                >
-                  <Trash className="h-4 w-4" />
-                  حذف الكل
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      <ResponsivePageActions
+        title="العملاء"
+        subtitle="إدارة وتتبع معلومات العملاء"
+        primaryAction={{
+          id: 'add-customer',
+          label: 'إضافة عميل جديد',
+          icon: <Plus className="h-4 w-4 mr-2" />,
+          onClick: () => setShowCustomerForm(true),
+          disabled: !canAddCustomers
+        }}
+        secondaryActions={[
+          ...(isSuperAdmin ? [{
+            id: 'csv-upload',
+            label: 'رفع من CSV',
+            icon: <Plus className="h-4 w-4 mr-2" />,
+            onClick: () => setShowCSVUpload(true),
+            type: 'outline' as const
+          }] : []),
+          ...(canDeleteCustomers && allCustomers.length > 0 ? [{
+            id: 'bulk-delete',
+            label: isMobile ? 'حذف الكل' : 'حذف جميع العملاء',
+            icon: <Trash className="h-4 w-4 mr-2" />,
+            onClick: () => setShowBulkDeleteDialog(true),
+            variant: 'destructive' as const
+          }] : [])
+        ]}
+      />
 
       {/* رسالة عدم وجود صلاحيات */}
       {!canAddCustomers && (

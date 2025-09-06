@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DispatchPermitForm } from "@/components/fleet/DispatchPermitForm";
 import { DispatchPermitsList } from "@/components/fleet/DispatchPermitsList";
 import { useDispatchPermits } from "@/hooks/useDispatchPermits";
+import { ResponsivePageActions } from "@/components/ui/responsive-page-actions";
 
 export default function DispatchPermits() {
   const [showPermitForm, setShowPermitForm] = useState(false);
@@ -24,18 +25,16 @@ export default function DispatchPermits() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">تصاريح الحركة الداخلية</h1>
-          <p className="text-muted-foreground">
-            إدارة تصاريح حركة المركبات والموافقات
-          </p>
-        </div>
-        <Button onClick={() => setShowPermitForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          طلب تصريح جديد
-        </Button>
-      </div>
+      <ResponsivePageActions
+        title="تصاريح الحركة الداخلية"
+        subtitle="إدارة تصاريح حركة المركبات والموافقات"
+        primaryAction={{
+          id: 'new-permit',
+          label: 'طلب تصريح جديد',
+          icon: <Plus className="h-4 w-4 mr-2" />,
+          onClick: () => setShowPermitForm(true)
+        }}
+      />
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">

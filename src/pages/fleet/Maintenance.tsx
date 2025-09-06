@@ -14,6 +14,7 @@ import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles"
 import { useVehicleStatusUpdate, useCompleteMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
+import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -202,18 +203,16 @@ export default function Maintenance() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">إدارة الصيانة</h1>
-          <p className="text-muted-foreground">
-            جدولة ومتابعة صيانة المركبات
-          </p>
-        </div>
-        <Button onClick={() => setShowMaintenanceForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          جدولة صيانة
-        </Button>
-      </div>
+      <ResponsivePageActions
+        title="إدارة الصيانة"
+        subtitle="جدولة ومتابعة صيانة المركبات"
+        primaryAction={{
+          id: 'schedule-maintenance',
+          label: 'جدولة صيانة',
+          icon: <Plus className="h-4 w-4 mr-2" />,
+          onClick: () => setShowMaintenanceForm(true)
+        }}
+      />
 
       {/* Smart Alerts Panel */}
       {smartAlerts && smartAlerts.length > 0 && (

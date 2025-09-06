@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
+import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 
 interface QuotationFormData {
   customer_id: string
@@ -392,18 +393,16 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">عروض الأسعار</h1>
-          <p className="text-muted-foreground">
-            إنشاء وإدارة عروض الأسعار للعملاء وتحويلها لعقود
-          </p>
-        </div>
-        <Button onClick={() => setShowQuotationForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          عرض سعر جديد
-        </Button>
-      </div>
+      <ResponsivePageActions
+        title="عروض الأسعار"
+        subtitle="إنشاء وإدارة عروض الأسعار للعملاء وتحويلها لعقود"
+        primaryAction={{
+          id: 'new-quotation',
+          label: 'عرض سعر جديد',
+          icon: <Plus className="h-4 w-4 mr-2" />,
+          onClick: () => setShowQuotationForm(true)
+        }}
+      />
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
