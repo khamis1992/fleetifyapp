@@ -228,18 +228,18 @@ export default function Ledger() {
           {isMobile ? (
             <>
               <TabsTrigger value="entries" className="text-xs p-2">القيود</TabsTrigger>
-              <TabsTrigger value="balances" className="text-xs p-2">الأرصدة</TabsTrigger>
-              <TabsTrigger value="trial" className="text-xs p-2">الميزان</TabsTrigger>
-              <TabsTrigger value="costcenters" className="text-xs p-2">المراكز</TabsTrigger>
               <TabsTrigger value="analysis" className="text-xs p-2">التحليل</TabsTrigger>
+              <TabsTrigger value="costcenters" className="text-xs p-2">المراكز</TabsTrigger>
+              <TabsTrigger value="trial" className="text-xs p-2">الميزان</TabsTrigger>
+              <TabsTrigger value="balances" className="text-xs p-2">الأرصدة</TabsTrigger>
             </>
           ) : (
             <>
+              <TabsTrigger value="entries">القيود المحاسبية</TabsTrigger>
               <TabsTrigger value="analysis">التحليل المالي</TabsTrigger>
               <TabsTrigger value="costcenters">مراكز التكلفة</TabsTrigger>
               <TabsTrigger value="trial">ميزان المراجعة</TabsTrigger>
               <TabsTrigger value="balances">أرصدة الحسابات</TabsTrigger>
-              <TabsTrigger value="entries">القيود المحاسبية</TabsTrigger>
             </>
           )}
         </TabsList>
