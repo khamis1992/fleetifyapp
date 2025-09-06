@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { usePermissionCheck } from '@/hooks/usePermissionCheck';
@@ -13,7 +13,7 @@ import { formatLocationError } from '@/lib/attendanceUtils';
 export const HeaderAttendanceButton: React.FC = () => {
   const { user } = useAuth();
   const { getCurrentLocation, clockIn, clockOut } = useAttendance();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = React.useState(false);
 
   // Check attendance permission
   const { data: permissionCheck, isLoading: isCheckingPermission } = usePermissionCheck('attendance.clock_in');
