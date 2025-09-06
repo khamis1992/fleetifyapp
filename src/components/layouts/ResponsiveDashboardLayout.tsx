@@ -59,8 +59,10 @@ export const ResponsiveDashboardLayout: React.FC = () => {
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="right" className="w-80 p-0">
-              <AppSidebar />
+            <SheetContent side="right" className="w-80 p-0 overflow-hidden">
+              <div className="h-full bg-sidebar-background">
+                <AppSidebar />
+              </div>
             </SheetContent>
           </Sheet>
         )}
