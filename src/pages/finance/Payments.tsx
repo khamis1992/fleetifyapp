@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
+import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +42,7 @@ const Payments = () => {
 
   const { data: payments, isLoading, error } = usePayments();
   const { formatCurrency } = useCurrencyFormatter();
+  const { isMobile } = useSimpleBreakpoint();
 
   const filteredPayments = payments?.filter(payment => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,40 +117,87 @@ const Payments = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="flex justify-between items-center">
+        <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl text-primary-foreground">
               <CreditCard className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">المدفوعات</h1>
-              <p className="text-muted-foreground">إدارة المدفوعات والمقبوضات مع التكامل الكامل</p>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>المدفوعات</h1>
+              <p className="text-muted-foreground text-sm">إدارة المدفوعات والمقبوضات مع التكامل الكامل</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/finance/payment-linking">
-                <CreditCard className="h-4 w-4 mr-2" />
-                ربط المدفوعات
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              استيراد CSV/XLSX
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => setIsBulkDeleteOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              حذف جميع المدفوعات
-            </Button>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              دفع جديد
-            </Button>
-          </div>
+          
+          {/* Desktop Action Buttons */}
+          {!isMobile && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/finance/payment-linking">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  ربط المدفوعات
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                استيراد CSV/XLSX
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => setIsBulkDeleteOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                حذف جميع المدفوعات
+              </Button>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                دفع جديد
+              </Button>
+            </div>
+          )}
+
+          {/* Mobile Action Buttons */}
+          {isMobile && (
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="h-12 text-base justify-start"
+                asChild
+              >
+                <Link to="/finance/payment-linking">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  ربط المدفوعات
+                </Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="h-12 text-base justify-start"
+                onClick={() => setIsImportOpen(true)}
+              >
+                <Upload className="h-5 w-5 mr-2" />
+                استيراد CSV/XLSX
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="lg"
+                className="h-12 text-base justify-start"
+                onClick={() => setIsBulkDeleteOpen(true)}
+              >
+                <Trash2 className="h-5 w-5 mr-2" />
+                حذف جميع المدفوعات
+              </Button>
+              <Button 
+                size="lg"
+                className="h-12 text-base justify-start"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                دفع جديد
+              </Button>
+            </div>
+          )}
         </div>
 
          <Tabs defaultValue="list" className="w-full">
