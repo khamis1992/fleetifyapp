@@ -24,8 +24,5 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ['react', 'react-dom'],
     force: true
-  },
-  esbuild: {
-    jsxInject: `import * as React from 'react'`
   }
 }));
