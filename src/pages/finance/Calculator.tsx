@@ -384,22 +384,22 @@ const FinancialCalculator: React.FC = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="text-center p-6 bg-gradient-accent rounded-xl shadow-card">
                           <p className="arabic-body-sm text-muted-foreground mb-2">القسط الشهري</p>
-                          <p className="arabic-heading-sm text-primary">
-                            {formatCurrency(loanResult.monthlyPayment)}
-                          </p>
+                           <p className="arabic-heading-sm text-primary">
+                             {formatCurrency(loanResult.monthlyPayment, { locale: 'en-US' })}
+                           </p>
                         </div>
                         <div className="text-center p-6 bg-gradient-accent rounded-xl shadow-card">
                           <p className="arabic-body-sm text-muted-foreground mb-2">إجمالي المدفوعات</p>
-                          <p className="arabic-heading-sm text-success">
-                            {formatCurrency(loanResult.totalPayment)}
-                          </p>
+                           <p className="arabic-heading-sm text-success">
+                             {formatCurrency(loanResult.totalPayment, { locale: 'en-US' })}
+                           </p>
                         </div>
                       </div>
                       <div className="text-center p-6 bg-gradient-accent rounded-xl shadow-card">
                         <p className="arabic-body-sm text-muted-foreground mb-2">إجمالي الفوائد المضافة</p>
-                        <p className="arabic-heading-sm text-warning">
-                          {formatCurrency(loanResult.totalInterest)}
-                        </p>
+                         <p className="arabic-heading-sm text-warning">
+                           {formatCurrency(loanResult.totalInterest, { locale: 'en-US' })}
+                         </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -487,22 +487,22 @@ const FinancialCalculator: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
                       <p className="text-sm text-muted-foreground">الإهلاك السنوي</p>
-                      <p className="text-xl font-bold text-purple-700">
-                        {formatCurrency(depreciationResult.annualDepreciation)}
-                      </p>
+                       <p className="text-xl font-bold text-purple-700">
+                         {formatCurrency(depreciationResult.annualDepreciation, { locale: 'en-US' })}
+                       </p>
                     </div>
                     <div className="text-center p-4 bg-orange-50 rounded-lg">
                       <p className="text-sm text-muted-foreground">الإهلاك الشهري</p>
-                      <p className="text-xl font-bold text-orange-700">
-                        {formatCurrency(depreciationResult.monthlyDepreciation)}
-                      </p>
+                       <p className="text-xl font-bold text-orange-700">
+                         {formatCurrency(depreciationResult.monthlyDepreciation, { locale: 'en-US' })}
+                       </p>
                     </div>
                   </div>
                   <div className="text-center p-4 bg-teal-50 rounded-lg">
                     <p className="text-sm text-muted-foreground">القيمة الدفترية</p>
-                    <p className="text-xl font-bold text-teal-700">
-                      {formatCurrency(depreciationResult.bookValue)}
-                    </p>
+                     <p className="text-xl font-bold text-teal-700">
+                       {formatCurrency(depreciationResult.bookValue, { locale: 'en-US' })}
+                     </p>
                   </div>
                 </CardContent>
               </Card>
@@ -571,22 +571,22 @@ const FinancialCalculator: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-green-50 rounded-lg">
                       <p className="text-sm text-muted-foreground">الربح الإجمالي</p>
-                      <p className="text-xl font-bold text-green-700">
-                        {formatCurrency(profitResult.grossProfit)}
-                      </p>
+                       <p className="text-xl font-bold text-green-700">
+                         {formatCurrency(profitResult.grossProfit, { locale: 'en-US' })}
+                       </p>
                     </div>
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
                       <p className="text-sm text-muted-foreground">الربح الصافي</p>
-                      <p className="text-xl font-bold text-blue-700">
-                        {formatCurrency(profitResult.netProfit)}
-                      </p>
+                       <p className="text-xl font-bold text-blue-700">
+                         {formatCurrency(profitResult.netProfit, { locale: 'en-US' })}
+                       </p>
                     </div>
                   </div>
                   <div className="text-center p-4 bg-yellow-50 rounded-lg">
                     <p className="text-sm text-muted-foreground">هامش الربح</p>
-                    <p className="text-xl font-bold text-yellow-700">
-                      {profitResult.profitMargin.toFixed(2)}%
-                    </p>
+                     <p className="text-xl font-bold text-yellow-700">
+                       {profitResult.profitMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                     </p>
                   </div>
                 </CardContent>
               </Card>
@@ -655,22 +655,22 @@ const FinancialCalculator: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-indigo-50 rounded-lg">
                       <p className="text-sm text-muted-foreground">ROI الإجمالي</p>
-                      <p className="text-xl font-bold text-indigo-700">
-                        {roiResult.roi.toFixed(2)}%
-                      </p>
+                       <p className="text-xl font-bold text-indigo-700">
+                         {roiResult.roi.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                       </p>
                     </div>
                     <div className="text-center p-4 bg-pink-50 rounded-lg">
                       <p className="text-sm text-muted-foreground">العائد السنوي</p>
-                      <p className="text-xl font-bold text-pink-700">
-                        {roiResult.annualizedReturn.toFixed(2)}%
-                      </p>
+                       <p className="text-xl font-bold text-pink-700">
+                         {roiResult.annualizedReturn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                       </p>
                     </div>
                   </div>
                   <div className="text-center p-4 bg-cyan-50 rounded-lg">
                     <p className="text-sm text-muted-foreground">إجمالي العائد</p>
-                    <p className="text-xl font-bold text-cyan-700">
-                      {formatCurrency(roiResult.totalReturn)}
-                    </p>
+                     <p className="text-xl font-bold text-cyan-700">
+                       {formatCurrency(roiResult.totalReturn, { locale: 'en-US' })}
+                     </p>
                   </div>
                 </CardContent>
               </Card>
@@ -714,12 +714,12 @@ const FinancialCalculator: React.FC = () => {
                           {calc.timestamp.toLocaleString('ar-SA')}
                         </span>
                       </div>
-                      <div className="arabic-body font-semibold text-primary">
-                        {calc.type === 'roi' || calc.type === 'profit' ? 
-                          `${calc.result.toFixed(2)}%` : 
-                          formatCurrency(calc.result)
-                        }
-                      </div>
+                       <div className="arabic-body font-semibold text-primary">
+                         {calc.type === 'roi' || calc.type === 'profit' ? 
+                           `${calc.result.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : 
+                           formatCurrency(calc.result, { locale: 'en-US' })
+                         }
+                       </div>
                     </motion.div>
                   ))}
                 </div>
