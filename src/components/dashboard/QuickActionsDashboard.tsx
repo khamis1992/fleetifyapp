@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
 import { toast } from 'sonner';
 
 interface QuickAction {
@@ -43,6 +44,7 @@ const QuickActionsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasCompanyAdminAccess, companyId } = useUnifiedCompanyAccess();
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
 
   const quickActions: QuickAction[] = [
     {
@@ -156,7 +158,18 @@ const QuickActionsDashboard: React.FC = () => {
       return;
     }
     
+    // معالجة خاصة لإضافة العميل
+    if (action.id === 'add-customer') {
+      setShowCreateCustomer(true);
+      return;
+    }
+    
     navigate(action.route);
+  };
+
+  const handleCustomerCreated = (customer: any) => {
+    setShowCreateCustomer(false);
+    toast.success('تم إنشاء العميل بنجاح');
   };
 
   const ActionButton = ({ action, index, variant = 'default' }: { 
@@ -215,55 +228,64 @@ const QuickActionsDashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Primary Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-border/50">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <motion.div 
-                  className="p-2 rounded-lg bg-primary/10 text-primary"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
-                  <Zap size={20} />
-                </motion.div>
-                <div>
-                  <CardTitle className="text-lg">إجراءات سريعة</CardTitle>
-                  <p className="text-sm text-muted-foreground">العمليات الأكثر استخداماً</p>
+    <>
+      <div className="space-y-6">
+        {/* Primary Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-border/50">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <motion.div 
+                    className="p-2 rounded-lg bg-primary/10 text-primary"
+                    whileHover={{ scale: 1.05, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <Zap size={20} />
+                  </motion.div>
+                  <div>
+                    <CardTitle className="text-lg">إجراءات سريعة</CardTitle>
+                    <p className="text-sm text-muted-foreground">العمليات الأكثر استخداماً</p>
+                  </div>
                 </div>
+                <Badge variant="outline" className="text-xs">
+                  <Clock size={10} className="ml-1" />
+                  موفر للوقت
+                </Badge>
               </div>
-              <Badge variant="outline" className="text-xs">
-                <Clock size={10} className="ml-1" />
-                موفر للوقت
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {availableQuickActions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {availableQuickActions.map((action, index) => (
-                  <ActionButton key={action.id} action={action} index={index} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock size={48} className="mx-auto mb-4 opacity-50" />
-                <p>لا توجد إجراءات متاحة</p>
-                <p className="text-sm">تحتاج إلى صلاحيات إضافية للوصول للإجراءات السريعة</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {availableQuickActions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableQuickActions.map((action, index) => (
+                    <ActionButton key={action.id} action={action} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock size={48} className="mx-auto mb-4 opacity-50" />
+                  <p>لا توجد إجراءات متاحة</p>
+                  <p className="text-sm">تحتاج إلى صلاحيات إضافية للوصول للإجراءات السريعة</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
 
-
-    </div>
+      {/* Customer Creation Dialog */}
+      <EnhancedCustomerDialog
+        open={showCreateCustomer}
+        onOpenChange={setShowCreateCustomer}
+        onSuccess={handleCustomerCreated}
+        onCancel={() => setShowCreateCustomer(false)}
+        context="standalone"
+      />
+    </>
   );
 };
 
