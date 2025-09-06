@@ -22,6 +22,7 @@ import {
   Info
 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 import { toast } from 'sonner';
 
 interface CalculationResult {
@@ -34,6 +35,7 @@ interface CalculationResult {
 
 const FinancialCalculator: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
+  const { currency } = useCompanyCurrency();
   const [history, setHistory] = useState<CalculationResult[]>([]);
   
   // حاسبة القروض
@@ -324,7 +326,7 @@ const FinancialCalculator: React.FC = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="arabic-body-sm">مبلغ القرض (ريال سعودي)</Label>
+                        <Label className="arabic-body-sm">مبلغ القرض ({currency})</Label>
                         <Input
                           type="number"
                           value={loanInputs.principal || ''}
@@ -419,7 +421,7 @@ const FinancialCalculator: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>تكلفة الأصل (ريال)</Label>
+                    <Label>تكلفة الأصل ({currency})</Label>
                     <Input
                       type="number"
                       value={depreciationInputs.cost || ''}
@@ -431,7 +433,7 @@ const FinancialCalculator: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>القيمة المتبقية (ريال)</Label>
+                    <Label>القيمة المتبقية ({currency})</Label>
                     <Input
                       type="number"
                       value={depreciationInputs.salvageValue || ''}
@@ -521,7 +523,7 @@ const FinancialCalculator: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>الإيرادات (ريال)</Label>
+                    <Label>الإيرادات ({currency})</Label>
                     <Input
                       type="number"
                       value={profitInputs.revenue || ''}
@@ -533,7 +535,7 @@ const FinancialCalculator: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>تكلفة البضاعة المباعة (ريال)</Label>
+                    <Label>تكلفة البضاعة المباعة ({currency})</Label>
                     <Input
                       type="number"
                       value={profitInputs.costs || ''}
@@ -545,7 +547,7 @@ const FinancialCalculator: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>المصروفات التشغيلية (ريال)</Label>
+                    <Label>المصروفات التشغيلية ({currency})</Label>
                     <Input
                       type="number"
                       value={profitInputs.expenses || ''}
@@ -605,7 +607,7 @@ const FinancialCalculator: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>الاستثمار الأولي (ريال)</Label>
+                    <Label>الاستثمار الأولي ({currency})</Label>
                     <Input
                       type="number"
                       value={roiInputs.initialInvestment || ''}
@@ -617,7 +619,7 @@ const FinancialCalculator: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>القيمة النهائية (ريال)</Label>
+                    <Label>القيمة النهائية ({currency})</Label>
                     <Input
                       type="number"
                       value={roiInputs.finalValue || ''}
