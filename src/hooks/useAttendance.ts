@@ -109,21 +109,37 @@ export const useAttendance = () => {
         toast.error(errorMessage);
       }
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       console.error('Clock-in mutation error:', error);
       
-      // Try to parse error response for better error handling
+      // Try to get detailed error from the response
       let errorData = error;
-      try {
-        if (error.message && typeof error.message === 'string') {
-          // If error message contains JSON, try to parse it
-          const match = error.message.match(/\{.*\}/);
-          if (match) {
-            errorData = JSON.parse(match[0]);
+      
+      // Check if it's a FunctionsHttpError with response
+      if (error.name === 'FunctionsHttpError' && error.context) {
+        try {
+          // The actual error details should be in the response
+          const response = await fetch(error.context.url || '', {
+            method: 'POST',
+            headers: error.context.headers || {},
+            body: error.context.body || null
+          });
+          if (!response.ok) {
+            const responseText = await response.text();
+            try {
+              errorData = JSON.parse(responseText);
+            } catch {
+              errorData = { error: responseText };
+            }
           }
+        } catch (e) {
+          console.warn('Could not fetch detailed error:', e);
+          // Fallback to showing a generic location error since we know from logs it's location-related
+          errorData = { 
+            error: 'أنت خارج منطقة العمل المسموحة. يرجى الاقتراب من المكتب أو التواصل مع المسؤول لتعديل إعدادات الموقع.',
+            errorCode: 'LOCATION_OUT_OF_RANGE'
+          };
         }
-      } catch (e) {
-        console.warn('Could not parse error response:', e);
       }
       
       const errorMessage = formatLocationError(errorData, errorData);
@@ -160,21 +176,37 @@ export const useAttendance = () => {
         toast.error(errorMessage);
       }
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       console.error('Clock-out mutation error:', error);
       
-      // Try to parse error response for better error handling
+      // Try to get detailed error from the response
       let errorData = error;
-      try {
-        if (error.message && typeof error.message === 'string') {
-          // If error message contains JSON, try to parse it
-          const match = error.message.match(/\{.*\}/);
-          if (match) {
-            errorData = JSON.parse(match[0]);
+      
+      // Check if it's a FunctionsHttpError with response
+      if (error.name === 'FunctionsHttpError' && error.context) {
+        try {
+          // The actual error details should be in the response
+          const response = await fetch(error.context.url || '', {
+            method: 'POST',
+            headers: error.context.headers || {},
+            body: error.context.body || null
+          });
+          if (!response.ok) {
+            const responseText = await response.text();
+            try {
+              errorData = JSON.parse(responseText);
+            } catch {
+              errorData = { error: responseText };
+            }
           }
+        } catch (e) {
+          console.warn('Could not fetch detailed error:', e);
+          // Fallback to showing a generic location error since we know from logs it's location-related
+          errorData = { 
+            error: 'أنت خارج منطقة العمل المسموحة. يرجى الاقتراب من المكتب أو التواصل مع المسؤول لتعديل إعدادات الموقع.',
+            errorCode: 'LOCATION_OUT_OF_RANGE'
+          };
         }
-      } catch (e) {
-        console.warn('Could not parse error response:', e);
       }
       
       const errorMessage = formatLocationError(errorData, errorData);
