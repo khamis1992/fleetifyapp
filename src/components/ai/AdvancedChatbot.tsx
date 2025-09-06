@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +44,7 @@ interface Message {
 }
 
 export const AdvancedChatbot: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = React.useState<Message[]>([
     {
       id: '1',
       content: 'مرحباً! أنا مساعدك الذكي المتقدم مع ذاكرة محادثة وفهم السياق العميق. أستطيع تتبع محادثاتنا السابقة وفهم المراجع المعقدة. كيف يمكنني مساعدتك؟',
@@ -55,10 +55,10 @@ export const AdvancedChatbot: React.FC = () => {
       }
     }
   ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showContextDetails, setShowContextDetails] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = React.useState('');
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [showContextDetails, setShowContextDetails] = React.useState(false);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Hooks
   const {
@@ -80,7 +80,7 @@ export const AdvancedChatbot: React.FC = () => {
   } = useSelfLearningAI();
 
   // Initialize session on mount
-  useEffect(() => {
+  React.useEffect(() => {
     initializeSession('Advanced Chat Session');
   }, [initializeSession]);
 
@@ -88,7 +88,7 @@ export const AdvancedChatbot: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     scrollToBottom();
   }, [messages]);
 

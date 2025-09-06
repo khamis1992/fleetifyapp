@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 export const BackupManagement: React.FC = () => {
-  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = React.useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

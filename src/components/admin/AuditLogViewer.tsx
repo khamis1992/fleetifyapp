@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { useSystemLogs, useSystemLogStats } from '@/hooks/useSystemLogs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,11 +39,11 @@ import { ar } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 
 export const AuditLogViewer: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [levelFilter, setLevelFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [levelFilter, setLevelFilter] = React.useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = React.useState<string>('all');
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
+  const [selectedLog, setSelectedLog] = React.useState<any>(null);
 
   // Use the new hooks
   const { data: auditLogs, isLoading, refetch } = useSystemLogs({

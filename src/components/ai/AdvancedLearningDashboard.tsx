@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,12 +36,12 @@ interface PerformanceData {
 }
 
 export const AdvancedLearningDashboard: React.FC = () => {
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [realTimeMetrics, setRealTimeMetrics] = useState<any>(null);
-  const [learningInsights, setLearningInsights] = useState<any[]>([]);
+  const [performanceData, setPerformanceData] = React.useState<PerformanceData | null>(null);
+  const [isEvaluating, setIsEvaluating] = React.useState(false);
+  const [realTimeMetrics, setRealTimeMetrics] = React.useState<any>(null);
+  const [learningInsights, setLearningInsights] = React.useState<any[]>([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadDashboardData();
     startRealTimeMonitoring();
   }, []);

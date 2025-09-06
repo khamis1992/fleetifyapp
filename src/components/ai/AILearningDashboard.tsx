@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -41,12 +41,12 @@ interface RecentQuery {
 
 export const AILearningDashboard: React.FC = () => {
   const { getPerformanceMetrics } = useSelfLearningAI();
-  const [metrics, setMetrics] = useState<PerformanceMetrics[]>([]);
-  const [patterns, setPatterns] = useState<LearningPattern[]>([]);
-  const [recentQueries, setRecentQueries] = useState<RecentQuery[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = React.useState<PerformanceMetrics[]>([]);
+  const [patterns, setPatterns] = React.useState<LearningPattern[]>([]);
+  const [recentQueries, setRecentQueries] = React.useState<RecentQuery[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadDashboardData();
   }, []);
 
