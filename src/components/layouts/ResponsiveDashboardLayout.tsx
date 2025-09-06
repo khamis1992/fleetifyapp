@@ -3,6 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AppSidebar } from './AppSidebar';
 import { MobileNavigation } from './MobileNavigation';
 import { ResponsiveHeader } from './ResponsiveHeader';
@@ -55,16 +56,13 @@ export const ResponsiveDashboardLayout: React.FC = () => {
           {isMobile && <MobileNavigation />}
         </div>
 
-        {/* Mobile Sidebar Overlay */}
-        {isMobile && sidebarOpen && (
-          <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setSidebarOpen(false)}>
-            <div 
-              className="fixed right-0 top-0 h-full w-sidebar-mobile bg-sidebar shadow-lg transform transition-transform duration-300 ease-in-out"
-              onClick={(e) => e.stopPropagation()}
-            >
+        {/* Mobile Sidebar Sheet */}
+        {isMobile && (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetContent side="right" className="w-80 p-0">
               <AppSidebar />
-            </div>
-          </div>
+            </SheetContent>
+          </Sheet>
         )}
 
         <KeyboardShortcuts />
