@@ -245,7 +245,7 @@ const hrSubItems = [
 
 export function AppSidebar() {
   const { signOut } = useAuth();
-  const { state } = useSidebar();
+  const { state, isMobile } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
@@ -275,7 +275,7 @@ export function AppSidebar() {
             alt="Fleetify Logo" 
             className="h-16 w-auto filter brightness-0 invert"
           />
-          {!collapsed && (
+          {(!collapsed || isMobile) && (
             <p className="text-xs text-sidebar-foreground/60">نظام إدارة تأجير السيارات</p>
           )}
         </div>
@@ -296,7 +296,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild className="h-10">
                       <NavLink to={item.href} className={getNavClassName}>
                         <item.icon className="h-4 w-4" />
-                        {!collapsed && <span className="font-medium">{item.name}</span>}
+                        {(!collapsed || isMobile) && <span className="font-medium">{item.name}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                    </SidebarMenuItem>
@@ -309,12 +309,12 @@ export function AppSidebar() {
                    <CollapsibleTrigger asChild>
                      <SidebarMenuButton className="h-10">
                        <Car className="h-4 w-4" />
-                       {!collapsed && (
-                         <>
-                           <span className="font-medium">الأسطول</span>
-                           <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                         </>
-                       )}
+                        {(!collapsed || isMobile) && (
+                          <>
+                            <span className="font-medium">الأسطول</span>
+                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </>
+                        )}
                      </SidebarMenuButton>
                    </CollapsibleTrigger>
                    <CollapsibleContent>
@@ -324,7 +324,7 @@ export function AppSidebar() {
                            <SidebarMenuSubButton asChild>
                              <NavLink to={subItem.href} className={getNavClassName}>
                                <subItem.icon className="h-4 w-4" />
-                               {!collapsed && <span>{subItem.name}</span>}
+                                {(!collapsed || isMobile) && <span>{subItem.name}</span>}
                              </NavLink>
                            </SidebarMenuSubButton>
                          </SidebarMenuSubItem>
@@ -339,7 +339,7 @@ export function AppSidebar() {
                  <SidebarMenuButton asChild className="h-10">
                    <NavLink to="/quotations" className={getNavClassName}>
                      <FileText className="h-4 w-4" />
-                     {!collapsed && <span className="font-medium">عروض الأسعار</span>}
+                     {(!collapsed || isMobile) && <span className="font-medium">عروض الأسعار</span>}
                    </NavLink>
                  </SidebarMenuButton>
                </SidebarMenuItem>
@@ -349,7 +349,7 @@ export function AppSidebar() {
                  <SidebarMenuButton asChild className="h-10">
                    <NavLink to="/contracts" className={getNavClassName}>
                      <FileText className="h-4 w-4" />
-                     {!collapsed && <span className="font-medium">العقود</span>}
+                     {(!collapsed || isMobile) && <span className="font-medium">العقود</span>}
                    </NavLink>
                  </SidebarMenuButton>
                </SidebarMenuItem>
@@ -361,12 +361,12 @@ export function AppSidebar() {
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className="h-10">
                           <DollarSign className="h-4 w-4" />
-                          {!collapsed && (
-                            <>
-                              <span className="font-medium">المالية</span>
-                              <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                            </>
-                          )}
+                           {(!collapsed || isMobile) && (
+                             <>
+                               <span className="font-medium">المالية</span>
+                               <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                             </>
+                           )}
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                        <CollapsibleContent>
@@ -376,7 +376,7 @@ export function AppSidebar() {
                                <SidebarMenuSubButton asChild>
                                  <NavLink to={subItem.href} className={getNavClassName}>
                                    <subItem.icon className="h-4 w-4" />
-                                   {!collapsed && <span>{subItem.name}</span>}
+                                    {(!collapsed || isMobile) && <span>{subItem.name}</span>}
                                  </NavLink>
                                </SidebarMenuSubButton>
                              </SidebarMenuSubItem>
@@ -389,12 +389,12 @@ export function AppSidebar() {
                                  <CollapsibleTrigger asChild>
                                    <SidebarMenuSubButton>
                                      <Settings className="h-4 w-4" />
-                                     {!collapsed && (
-                                       <>
-                                         <span>إعدادات المالية</span>
-                                         <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                                       </>
-                                     )}
+                                      {(!collapsed || isMobile) && (
+                                        <>
+                                          <span>إعدادات المالية</span>
+                                          <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                                        </>
+                                      )}
                                    </SidebarMenuSubButton>
                                  </CollapsibleTrigger>
                                  <CollapsibleContent>
@@ -404,7 +404,7 @@ export function AppSidebar() {
                                          <SidebarMenuSubButton asChild>
                                            <NavLink to={settingItem.href} className={getNavClassName}>
                                              <settingItem.icon className="h-3 w-3" />
-                                             {!collapsed && <span className="text-xs">{settingItem.name}</span>}
+                                             {(!collapsed || isMobile) && <span className="text-xs">{settingItem.name}</span>}
                                            </NavLink>
                                          </SidebarMenuSubButton>
                                        </SidebarMenuSubItem>
@@ -427,12 +427,12 @@ export function AppSidebar() {
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className="h-10">
                           <UserCheck className="h-4 w-4" />
-                          {!collapsed && (
-                            <>
-                              <span className="font-medium">الموارد البشرية</span>
-                              <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                            </>
-                          )}
+                           {(!collapsed || isMobile) && (
+                             <>
+                               <span className="font-medium">الموارد البشرية</span>
+                               <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                             </>
+                           )}
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
@@ -442,7 +442,7 @@ export function AppSidebar() {
                               <SidebarMenuSubButton asChild>
                                 <NavLink to={subItem.href} className={getNavClassName}>
                                   <subItem.icon className="h-4 w-4" />
-                                  {!collapsed && <span>{subItem.name}</span>}
+                                  {(!collapsed || isMobile) && <span>{subItem.name}</span>}
                                 </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -459,12 +459,12 @@ export function AppSidebar() {
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton className="h-10">
                         <Shield className="h-4 w-4" />
-                        {!collapsed && (
-                          <>
-                            <span className="font-medium">الشؤون القانونية</span>
-                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                          </>
-                        )}
+                         {(!collapsed || isMobile) && (
+                           <>
+                             <span className="font-medium">الشؤون القانونية</span>
+                             <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                           </>
+                         )}
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -473,7 +473,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild>
                             <NavLink to="/legal/advisor" className={getNavClassName}>
                               <UserCog className="h-4 w-4" />
-                              {!collapsed && <span>المستشار القانوني</span>}
+                              {(!collapsed || isMobile) && <span>المستشار القانوني</span>}
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -481,7 +481,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild>
                             <NavLink to="/legal/cases" className={getNavClassName}>
                               <FileText className="h-4 w-4" />
-                              {!collapsed && <span>تتبع القضايا</span>}
+                              {(!collapsed || isMobile) && <span>تتبع القضايا</span>}
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -495,7 +495,7 @@ export function AppSidebar() {
                  <SidebarMenuButton asChild className="h-10">
                    <NavLink to="/reports" className={getNavClassName}>
                      <BarChart3 className="h-4 w-4" />
-                     {!collapsed && <span className="font-medium">التقارير</span>}
+                     {(!collapsed || isMobile) && <span className="font-medium">التقارير</span>}
                    </NavLink>
                  </SidebarMenuButton>
                </SidebarMenuItem>
@@ -505,7 +505,7 @@ export function AppSidebar() {
                  <SidebarMenuButton asChild className="h-10">
                    <NavLink to="/support" className={getNavClassName}>
                      <Headphones className="h-4 w-4" />
-                     {!collapsed && <span className="font-medium">الدعم الفني</span>}
+                     {(!collapsed || isMobile) && <span className="font-medium">الدعم الفني</span>}
                    </NavLink>
                  </SidebarMenuButton>
                </SidebarMenuItem>
@@ -530,7 +530,7 @@ export function AppSidebar() {
                           <SidebarMenuButton asChild className="h-10">
                             <NavLink to={item.href} className={getNavClassName}>
                               <item.icon className="h-4 w-4" />
-                              {!collapsed && <span className="font-medium">{item.name}</span>}
+                               {(!collapsed || isMobile) && <span className="font-medium">{item.name}</span>}
                             </NavLink>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -543,7 +543,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild className="h-10">
                         <NavLink to={item.href} className={getNavClassName}>
                           <item.icon className="h-4 w-4" />
-                          {!collapsed && <span className="font-medium">{item.name}</span>}
+                          {(!collapsed || isMobile) && <span className="font-medium">{item.name}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
