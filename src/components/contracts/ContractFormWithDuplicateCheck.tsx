@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import type { DuplicateContract } from '@/hooks/useContractDuplicateCheck';
 import { useContractDuplicateCheck, ContractData } from '@/hooks/useContractDuplicateCheck';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -25,9 +25,9 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   children,
   enableRealTimeCheck = true
 }) => {
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-  const [showInlineWarning, setShowInlineWarning] = useState(false);
-  const [forceProceed, setForceProceed] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
+  const [showInlineWarning, setShowInlineWarning] = React.useState(false);
+  const [forceProceed, setForceProceed] = React.useState(false);
 
   // Debounce the contract data to avoid too many API calls
   const debouncedContractData = useDebounce(contractData, 500);
@@ -37,7 +37,7 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
     enableRealTimeCheck
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('🔄 [CONTRACT_DUPLICATE_CHECK_UI] Duplicate check result changed:', {
       duplicateCheck,
       hasDuplicates: duplicateCheck?.has_duplicates,
@@ -74,7 +74,7 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   };
 
   // Reset forceProceed when contract data changes
-  useEffect(() => {
+  React.useEffect(() => {
     setForceProceed(false);
   }, [debouncedContractData]);
 

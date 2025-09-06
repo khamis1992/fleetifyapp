@@ -1,4 +1,4 @@
-import { useState } from "react";
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,10 @@ export const CreatePaymentScheduleDialog = ({
   contractId, 
   trigger 
 }: CreatePaymentScheduleDialogProps) => {
-  const [open, setOpen] = useState(false);
-  const [installmentPlan, setInstallmentPlan] = useState<'monthly' | 'quarterly' | 'semi_annual' | 'annual'>('monthly');
-  const [numberOfInstallments, setNumberOfInstallments] = useState<string>('');
-  const [firstPaymentDate, setFirstPaymentDate] = useState<string>('');
+  const [open, setOpen] = React.useState(false);
+  const [installmentPlan, setInstallmentPlan] = React.useState<'monthly' | 'quarterly' | 'semi_annual' | 'annual'>('monthly');
+  const [numberOfInstallments, setNumberOfInstallments] = React.useState<string>('');
+  const [firstPaymentDate, setFirstPaymentDate] = React.useState<string>('');
 
   const createSchedules = useCreatePaymentSchedules();
 

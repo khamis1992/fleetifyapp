@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -69,10 +69,10 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   initialData,
   showDuplicateCheck = true
 }) => {
-  const [currentStep, setCurrentStep] = useState('basic');
-  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  const [hasDuplicates, setHasDuplicates] = useState(false);
-  const [forceCreate, setForceCreate] = useState(false);
+  const [currentStep, setCurrentStep] = React.useState('basic');
+  const [completedSteps, setCompletedSteps] = React.useState<string[]>([]);
+  const [hasDuplicates, setHasDuplicates] = React.useState(false);
+  const [forceCreate, setForceCreate] = React.useState(false);
 
   const { createCustomer } = useCustomerOperations({
     enableDuplicateCheck: showDuplicateCheck,
@@ -103,7 +103,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   const nationalId = form.watch('national_id');
 
   // Auto-fill license number when national ID changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (nationalId && customerType === 'individual') {
       form.setValue('license_number', nationalId);
     }
