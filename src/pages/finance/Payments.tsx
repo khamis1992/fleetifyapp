@@ -180,9 +180,9 @@ const Payments = () => {
                 استيراد CSV/XLSX
               </Button>
               <Button 
-                variant="outline" 
+                variant="destructive" 
                 size="lg"
-                className="h-12 text-base justify-start border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="h-12 text-base justify-start"
                 onClick={() => setIsBulkDeleteOpen(true)}
               >
                 <Trash2 className="h-5 w-5 mr-2" />
