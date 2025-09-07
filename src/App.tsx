@@ -79,7 +79,7 @@ const App = () => {
           <AuthProvider>
               <CompanyContextProvider>
                 {/* <PWAInstallPrompt /> */}
-                <SimpleToaster />
+                {/* <SimpleToaster /> */}
                 {/* <Sonner /> */}
             <BrowserRouter>
               <Routes>
