@@ -23,10 +23,12 @@ interface SmartCSVUploadProps {
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
   entityType: 'customer' | 'vehicle' | 'contract' | 'payment';
-  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean }) => Promise<any>;
+  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; archiveFile?: boolean; originalFile?: File }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
   requiredFields: string[];
+  archiveFile?: boolean;
+  onArchiveChange?: (archive: boolean) => void;
 }
 
 export function SmartCSVUpload({
@@ -37,7 +39,9 @@ export function SmartCSVUpload({
   uploadFunction,
   downloadTemplate,
   fieldTypes,
-  requiredFields
+  requiredFields,
+  archiveFile = false,
+  onArchiveChange
 }: SmartCSVUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [fixes, setFixes] = useState<CSVRowFix[]>([]);
@@ -51,6 +55,7 @@ export function SmartCSVUpload({
   const [autoCompleteType, setAutoCompleteType] = useState(true);
   const [autoCompleteAmounts, setAutoCompleteAmounts] = useState(true);
   const [enableDryRun, setEnableDryRun] = useState(false);
+  const [archiveFileLocal, setArchiveFileLocal] = useState(false);
   const [lastResult, setLastResult] = useState<any | null>(null);
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
   const [editedRows, setEditedRows] = useState<any[]>([]);
@@ -268,7 +273,9 @@ export function SmartCSVUpload({
         autoCompleteDates,
         autoCompleteType, 
         autoCompleteAmounts,
-        dryRun: enableDryRun 
+        dryRun: enableDryRun,
+        archiveFile: archiveFile,
+        originalFile: file
       });
       console.log('Upload function result:', result);
       setLastResult(result);
@@ -382,7 +389,9 @@ export function SmartCSVUpload({
         autoCompleteDates,
         autoCompleteType,
         autoCompleteAmounts,
-        dryRun: enableDryRun 
+        dryRun: enableDryRun,
+        archiveFile: archiveFile,
+        originalFile: file
       });
       setLastResult(result);
 
@@ -567,6 +576,18 @@ export function SmartCSVUpload({
                     <label htmlFor="enableDryRun" className="text-sm">
                       تجربة بدون إدراج (Dry-run)
                       <div className="text-xs text-muted-foreground mt-1">سيتم تنفيذ جميع الفحوصات بدون حفظ أي بيانات في قاعدة البيانات</div>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      id="archiveFile" 
+                      checked={archiveFile} 
+                      onCheckedChange={(v) => onArchiveChange?.(Boolean(v))}
+                    />
+                    <label htmlFor="archiveFile" className="text-sm">
+                      حفظ الملف في الأرشيف
+                      <div className="text-xs text-muted-foreground mt-1">سيتم حفظ نسخة من الملف للمراجعة المستقبلية</div>
                     </label>
                   </div>
                   

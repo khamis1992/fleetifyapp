@@ -80,7 +80,12 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
         await handleSaveAsTemplate()
       }
       
-      toast.success('تم رفع الملف بنجاح')
+      // رسالة النجاح المناسبة
+      if (archiveFile) {
+        toast.success('تم رفع الملف وحفظه في الأرشيف بنجاح')
+      } else {
+        toast.success('تم رفع الملف بنجاح')
+      }
       onUploadComplete()
     } catch (error) {
       toast.error('حدث خطأ أثناء رفع الملف')
@@ -196,6 +201,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
         downloadTemplate={downloadTemplate}
         fieldTypes={contractFieldTypes}
         requiredFields={contractRequiredFields}
+        archiveFile={archiveFile}
+        onArchiveChange={setArchiveFile}
       />
     );
   }
@@ -378,26 +385,46 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
                       تم اختيار الملف: {file.name}
                     </div>
                     
-                    {/* خيار حفظ كقالب */}
-                    <div className="p-3 border rounded-lg bg-gray-50">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Switch
-                          id="save-template"
-                          checked={saveAsTemplate}
-                          onCheckedChange={setSaveAsTemplate}
-                        />
-                        <Label htmlFor="save-template" className="text-sm">
-                          حفظ كقالب قابل لإعادة الاستخدام
-                        </Label>
+                    {/* خيارات إضافية */}
+                    <div className="space-y-3">
+                      {/* خيار الأرشفة */}
+                      <div className="p-3 border rounded-lg bg-blue-50">
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <Switch
+                            id="archive-file"
+                            checked={archiveFile}
+                            onCheckedChange={setArchiveFile}
+                          />
+                          <Label htmlFor="archive-file" className="text-sm">
+                            حفظ الملف في الأرشيف للمراجعة المستقبلية
+                          </Label>
+                        </div>
+                        <p className="text-xs text-blue-700 mt-1">
+                          يمكنك الوصول للملفات المحفوظة لاحقاً من صفحة إدارة الأرشيف
+                        </p>
                       </div>
-                      {saveAsTemplate && (
-                        <Input
-                          placeholder="اسم القالب..."
-                          value={templateName}
-                          onChange={(e) => setTemplateName(e.target.value)}
-                          className="mt-2"
-                        />
-                      )}
+                      
+                      {/* خيار حفظ كقالب */}
+                      <div className="p-3 border rounded-lg bg-gray-50">
+                        <div className="flex items-center space-x-2 space-x-reverse mb-2">
+                          <Switch
+                            id="save-template"
+                            checked={saveAsTemplate}
+                            onCheckedChange={setSaveAsTemplate}
+                          />
+                          <Label htmlFor="save-template" className="text-sm">
+                            حفظ كقالب قابل لإعادة الاستخدام
+                          </Label>
+                        </div>
+                        {saveAsTemplate && (
+                          <Input
+                            placeholder="اسم القالب..."
+                            value={templateName}
+                            onChange={(e) => setTemplateName(e.target.value)}
+                            className="mt-2"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
