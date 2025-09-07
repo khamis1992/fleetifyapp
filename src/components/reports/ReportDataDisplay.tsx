@@ -14,13 +14,16 @@ import {
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface ReportDataDisplayProps {
-  data: any;
+  data: {
+    data: any[];
+    summary: Record<string, any>;
+  };
   reportId: string;
   moduleType: string;
 }
 
 export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisplayProps) {
-  if (!data) {
+  if (!data || (!data.data?.length && !Object.keys(data.summary || {}).length)) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">لا توجد بيانات متاحة لهذا التقرير</p>
@@ -29,6 +32,85 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
   }
 
   const { formatCurrency } = useCurrencyFormatter();
+
+  const getColumnTranslation = (column: string, moduleType: string) => {
+    const translations: Record<string, Record<string, string>> = {
+      hr: {
+        id: 'المعرف',
+        first_name: 'الاسم الأول',
+        last_name: 'اسم العائلة',
+        email: 'البريد الإلكتروني',
+        phone: 'رقم الهاتف',
+        department: 'القسم',
+        position: 'المنصب',
+        account_status: 'حالة الحساب',
+        basic_salary: 'الراتب الأساسي',
+        allowances: 'البدلات',
+        deductions: 'الخصومات',
+        hire_date: 'تاريخ التوظيف',
+        created_at: 'تاريخ الإنشاء'
+      },
+      fleet: {
+        id: 'المعرف',
+        plate_number: 'رقم اللوحة',
+        make: 'الصانع',
+        model: 'الموديل',
+        year: 'السنة',
+        status: 'الحالة',
+        mileage: 'عدد الكيلومترات',
+        daily_rate: 'الأجرة اليومية',
+        created_at: 'تاريخ الإنشاء'
+      },
+      customers: {
+        id: 'المعرف',
+        name: 'الاسم',
+        email: 'البريد الإلكتروني',
+        phone: 'رقم الهاتف',
+        civil_id: 'الرقم المدني',
+        is_active: 'نشط',
+        created_at: 'تاريخ الإنشاء'
+      },
+      legal: {
+        id: 'المعرف',
+        case_title: 'عنوان القضية',
+        case_number: 'رقم القضية',
+        case_status: 'حالة القضية',
+        case_type: 'نوع القضية',
+        client_name: 'اسم العميل',
+        created_at: 'تاريخ الإنشاء'
+      },
+      finance: {
+        id: 'المعرف',
+        invoice_number: 'رقم الفاتورة',
+        customer_name: 'اسم العميل',
+        total_amount: 'المبلغ الإجمالي',
+        status: 'الحالة',
+        due_date: 'تاريخ الاستحقاق',
+        amount: 'المبلغ',
+        payment_method: 'طريقة الدفع',
+        created_at: 'تاريخ الإنشاء'
+      }
+    };
+    return translations[moduleType]?.[column] || column;
+  };
+
+  const formatCellValue = (value: any, column: string) => {
+    if (value === null || value === undefined) return '-';
+    
+    if (column.includes('amount') || column.includes('salary') || column.includes('rate')) {
+      return formatCurrency(Number(value), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    if (column.includes('date') || column.includes('_at')) {
+      return new Date(value).toLocaleDateString('ar-KW');
+    }
+    
+    if (typeof value === 'boolean') {
+      return value ? 'نعم' : 'لا';
+    }
+    
+    return String(value);
+  };
 
   const renderMetrics = (metrics: Record<string, number>) => {
     const getIcon = (key: string) => {
@@ -96,11 +178,11 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
     );
   };
 
-  const renderTable = (items: any[], title: string) => {
+  const renderDataTable = (items: any[], title: string) => {
     if (!items || items.length === 0) return null;
 
     const firstItem = items[0];
-    const columns = Object.keys(firstItem);
+    const columns = Object.keys(firstItem).filter(col => col !== 'company_id');
 
     return (
       <Card className="mt-6">
@@ -114,7 +196,7 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
                 <tr className="border-b">
                   {columns.map((column) => (
                     <th key={column} className="text-right p-2 font-medium text-muted-foreground">
-                      {column}
+                      {getColumnTranslation(column, moduleType)}
                     </th>
                   ))}
                 </tr>
@@ -124,10 +206,7 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
                   <tr key={index} className="border-b hover:bg-muted/50">
                     {columns.map((column) => (
                       <td key={column} className="p-2">
-                          {typeof item[column] === 'number' && column.includes('amount') 
-                          ? formatCurrency(item[column] as number, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                          : String(item[column])
-                          }
+                        {formatCellValue(item[column], column)}
                       </td>
                     ))}
                   </tr>
@@ -147,13 +226,34 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
     );
   };
 
+  const getReportTableTitle = () => {
+    const titles: Record<string, Record<string, string>> = {
+      hr: {
+        employees_summary: 'بيانات الموظفين',
+        payroll_summary: 'بيانات الرواتب'
+      },
+      fleet: {
+        vehicles_summary: 'بيانات المركبات',
+        maintenance_summary: 'بيانات الصيانة'
+      },
+      customers: {
+        customers_summary: 'بيانات العملاء'
+      },
+      legal: {
+        cases_summary: 'بيانات القضايا'
+      },
+      finance: {
+        invoices_summary: 'بيانات الفواتير',
+        payments_summary: 'بيانات المدفوعات'
+      }
+    };
+    return titles[moduleType]?.[reportId] || 'بيانات التقرير';
+  };
+
   return (
     <div className="space-y-6">
-      {/* Metrics */}
-      {data.metrics && renderMetrics(data.metrics)}
-      
       {/* Summary Stats */}
-      {data.summary && (
+      {data.summary && Object.keys(data.summary).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>ملخص الإحصائيات</CardTitle>
@@ -162,8 +262,8 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.entries(data.summary).map(([key, value]) => (
                 <div key={key} className="text-center p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">{key}</p>
-                  <p className="text-xl font-bold">{String(value)}</p>
+                  <p className="text-sm text-muted-foreground">{getColumnTranslation(key, moduleType)}</p>
+                  <p className="text-xl font-bold">{formatCellValue(value, key)}</p>
                 </div>
               ))}
             </div>
@@ -171,24 +271,19 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
         </Card>
       )}
 
-      {/* Data Tables */}
-      {data.employees && renderTable(data.employees, 'بيانات الموظفين')}
-      {data.vehicles && renderTable(data.vehicles, 'بيانات المركبات')}
-      {data.customers && renderTable(data.customers, 'بيانات العملاء')}
-      {data.cases && renderTable(data.cases, 'بيانات القضايا')}
-      {data.invoices && renderTable(data.invoices, 'بيانات الفواتير')}
-      {data.payments && renderTable(data.payments, 'بيانات المدفوعات')}
+      {/* Main Data Table */}
+      {data.data && data.data.length > 0 && renderDataTable(data.data, getReportTableTitle())}
 
-      {/* Raw Data Fallback */}
-      {!data.metrics && !data.summary && !data.employees && !data.vehicles && !data.customers && !data.cases && !data.invoices && !data.payments && (
+      {/* Fallback for empty data */}
+      {(!data.data || data.data.length === 0) && (!data.summary || Object.keys(data.summary).length === 0) && (
         <Card>
           <CardHeader>
             <CardTitle>بيانات التقرير</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="bg-muted p-4 rounded-lg overflow-auto text-sm">
-              {JSON.stringify(data, null, 2)}
-            </pre>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">لا توجد بيانات متاحة لهذا التقرير</p>
+            </div>
           </CardContent>
         </Card>
       )}
