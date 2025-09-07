@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { normalizeCsvHeaders } from "@/utils/csv"
 import { cleanPhone, normalizeDigits } from "@/lib/phone"
 import { addDays, addMonths, addYears, differenceInMonths, parseISO, isValid as isValidDate, format } from "date-fns"
+import { useCSVArchive } from "@/hooks/useCSVArchive"
 
 interface CSVUploadResults {
   total: number
@@ -23,6 +24,7 @@ export function useContractCSVUpload() {
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<CSVUploadResults | null>(null)
+  const { archiveCSV } = useCSVArchive()
 
   // تعريف أنواع الحقول للعقود بما يدعم الحقول الذكية (الاسم/اللوحة)
   const contractFieldTypes = {
@@ -768,7 +770,7 @@ export function useContractCSVUpload() {
     return { isValid: errors.length === 0, errors }
   }
 
-  const uploadContracts = async (file: File) => {
+  const uploadContracts = async (file: File, shouldArchive: boolean = false) => {
     console.log('📝 [Contract CSV] Starting CSV upload for user:', user?.id, 'target companyId:', companyId);
     console.log('📝 [Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
     
@@ -945,6 +947,39 @@ export function useContractCSVUpload() {
 
       setResults(results)
       
+      // حفظ الملف في الأرشيف إذا طُلب ذلك
+      if (shouldArchive) {
+        try {
+          const fileContent = await file.text()
+          const createdContractsIds = results.contractsCreated ? 
+            Array.from({ length: results.contractsCreated }, (_, i) => `contract_${i + 1}`) : []
+          
+          archiveCSV({
+            file,
+            fileContent,
+            uploadType: 'contracts',
+            processingResults: {
+              uploadMode: 'classic',
+              completed: true,
+              summary: results
+            },
+            totalRows: results.total,
+            successfulRows: results.successful,
+            failedRows: results.failed,
+            errorDetails: results.errors,
+            createdContractsIds,
+            metadata: {
+              uploadedAt: new Date().toISOString(),
+              fileSize: file.size,
+              fileName: file.name,
+            }
+          })
+        } catch (archiveError) {
+          console.warn('فشل في أرشفة الملف:', archiveError)
+          // لا نوقف العملية إذا فشلت الأرشفة
+        }
+      }
+      
     } catch (error: any) {
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
       throw error
@@ -957,7 +992,7 @@ export function useContractCSVUpload() {
   // دالة رفع ذكية للعقود
   const smartUploadContracts = async (
     fixedData: any[],
-    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean }
+    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; shouldArchive?: boolean; originalFile?: File }
   ) => {
     console.log('📝 [Smart Contract CSV] Starting upload with companyId:', companyId);
     console.log('📝 [Smart Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
@@ -1092,6 +1127,38 @@ export function useContractCSVUpload() {
     } finally {
       setIsUploading(false);
       setResults(uploadResults);
+      
+      // حفظ الملف في الأرشيف إذا طُلب ذلك
+      if (options?.shouldArchive && options?.originalFile) {
+        try {
+          const fileContent = await options.originalFile.text()
+          
+          archiveCSV({
+            file: options.originalFile,
+            fileContent,
+            uploadType: 'contracts',
+            processingResults: {
+              uploadMode: 'smart',
+              completed: true,
+              summary: uploadResults,
+              options
+            },
+            totalRows: uploadResults.total,
+            successfulRows: uploadResults.successful,
+            failedRows: uploadResults.failed,
+            errorDetails: uploadResults.errors,
+            metadata: {
+              uploadedAt: new Date().toISOString(),
+              fileSize: options.originalFile.size,
+              fileName: options.originalFile.name,
+              smartUploadOptions: options
+            }
+          })
+        } catch (archiveError) {
+          console.warn('فشل في أرشفة الملف:', archiveError)
+          // لا نوقف العملية إذا فشلت الأرشفة
+        }
+      }
     }
 
     return uploadResults;

@@ -2409,6 +2409,78 @@ export type Database = {
         }
         Relationships: []
       }
+      csv_file_archives: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_contracts_ids: string[] | null
+          error_details: Json | null
+          failed_rows: number | null
+          file_content: string | null
+          file_name: string
+          file_size_bytes: number
+          id: string
+          is_archived: boolean | null
+          metadata: Json | null
+          original_file_name: string
+          processing_results: Json | null
+          processing_status: string
+          storage_path: string | null
+          successful_rows: number | null
+          total_rows: number | null
+          updated_at: string
+          upload_type: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_contracts_ids?: string[] | null
+          error_details?: Json | null
+          failed_rows?: number | null
+          file_content?: string | null
+          file_name: string
+          file_size_bytes: number
+          id?: string
+          is_archived?: boolean | null
+          metadata?: Json | null
+          original_file_name: string
+          processing_results?: Json | null
+          processing_status?: string
+          storage_path?: string | null
+          successful_rows?: number | null
+          total_rows?: number | null
+          updated_at?: string
+          upload_type?: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_contracts_ids?: string[] | null
+          error_details?: Json | null
+          failed_rows?: number | null
+          file_content?: string | null
+          file_name?: string
+          file_size_bytes?: number
+          id?: string
+          is_archived?: boolean | null
+          metadata?: Json | null
+          original_file_name?: string
+          processing_results?: Json | null
+          processing_status?: string
+          storage_path?: string | null
+          successful_rows?: number | null
+          total_rows?: number | null
+          updated_at?: string
+          upload_type?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       csv_templates: {
         Row: {
           company_id: string
