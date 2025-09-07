@@ -17,6 +17,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { UnifiedReportViewer } from '@/components/reports/UnifiedReportViewer';
+import { useReportExport } from '@/hooks/useReportExport';
 import { ReportFilters } from '@/components/reports/ReportFilters';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
@@ -47,6 +48,7 @@ export default function Reports() {
   });
 
   const { data: reportsData, isLoading } = useUnifiedReports();
+  const { exportToHTML, isExporting } = useReportExport();
 
   const reportModules = [
     {
@@ -216,6 +218,13 @@ export default function Reports() {
                                 <Button 
                                   size={isMobile ? "sm" : "sm"} 
                                   variant="outline"
+                                  onClick={() => exportToHTML({
+                                    reportId: report.id,
+                                    moduleType: module.id,
+                                    filters,
+                                    title: report.name
+                                  })}
+                                  disabled={isExporting}
                                   className={cn(isMobile && "h-10 w-10 p-0 rounded-lg shadow-sm")}
                                 >
                                   <Download className="h-4 w-4" />
