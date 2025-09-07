@@ -2409,6 +2409,69 @@ export type Database = {
         }
         Relationships: []
       }
+      csv_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          description_ar: string | null
+          entity_type: string
+          field_mappings: Json | null
+          headers: string[]
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          last_used_at: string | null
+          sample_data: Json | null
+          template_name: string
+          template_name_ar: string | null
+          updated_at: string
+          usage_count: number | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          description_ar?: string | null
+          entity_type: string
+          field_mappings?: Json | null
+          headers: string[]
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          sample_data?: Json | null
+          template_name: string
+          template_name_ar?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          description_ar?: string | null
+          entity_type?: string
+          field_mappings?: Json | null
+          headers?: string[]
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          sample_data?: Json | null
+          template_name?: string
+          template_name_ar?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
       customer_account_types: {
         Row: {
           account_category: string
@@ -7025,6 +7088,69 @@ export type Database = {
           session_id?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      saved_csv_files: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          last_import_at: string | null
+          last_import_status: string | null
+          last_import_summary: Json | null
+          metadata: Json | null
+          original_file_name: string
+          row_count: number | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          upload_method: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type?: string
+          id?: string
+          last_import_at?: string | null
+          last_import_status?: string | null
+          last_import_summary?: Json | null
+          metadata?: Json | null
+          original_file_name: string
+          row_count?: number | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          upload_method?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          last_import_at?: string | null
+          last_import_status?: string | null
+          last_import_summary?: Json | null
+          metadata?: Json | null
+          original_file_name?: string
+          row_count?: number | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          upload_method?: string | null
         }
         Relationships: []
       }
