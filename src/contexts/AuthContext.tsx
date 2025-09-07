@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -19,6 +18,12 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  // Safety check for React hooks availability
+  if (typeof useState === 'undefined') {
+    console.error('React hooks are not available. This might be a React version conflict.');
+    return <div>خطأ في تحميل النظام. يرجى إعادة تحميل الصفحة.</div>;
+  }
+  
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
