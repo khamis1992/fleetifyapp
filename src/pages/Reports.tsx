@@ -37,7 +37,7 @@ export default function Reports() {
   });
 
   // State management
-  const [selectedModule, setSelectedModule] = useState<string>('dashboard');
+  const [selectedModule, setSelectedModule] = useState<string>('finance');
   const [selectedReport, setSelectedReport] = useState<string>('');
   const [filters, setFilters] = useState({
     startDate: '',
@@ -185,10 +185,7 @@ export default function Reports() {
         {/* Enhanced Tabs Navigation */}
         {isMobile ? (
           <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-            <TabsList className="grid h-12 w-full min-w-max grid-cols-6 gap-1 p-1 bg-muted/50 rounded-xl">
-              <TabsTrigger value="dashboard" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                لوحة التحكم
-              </TabsTrigger>
+            <TabsList className="grid h-12 w-full min-w-max grid-cols-5 gap-1 p-1 bg-muted/50 rounded-xl">
               <TabsTrigger value="finance" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
                 المالية
               </TabsTrigger>
@@ -208,8 +205,7 @@ export default function Reports() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex h-12">
-              <TabsTrigger value="dashboard" className="h-10 rounded-lg">لوحة التحكم</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex h-12">
               <TabsTrigger value="finance" className="h-10 rounded-lg">المالية</TabsTrigger>
               <TabsTrigger value="hr" className="h-10 rounded-lg">الموارد البشرية</TabsTrigger>
               <TabsTrigger value="fleet" className="h-10 rounded-lg">الأسطول</TabsTrigger>
@@ -218,62 +214,6 @@ export default function Reports() {
             </TabsList>
           </div>
         )}
-
-        {/* Dashboard Tab */}
-        <TabsContent value="dashboard" className="space-y-6">
-          <div className={cn("grid gap-6", isMobile ? "grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3")}>
-            {reportModules.map((module) => (
-              <Card key={module.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className={cn(isMobile ? "p-4" : "p-6")}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-lg ${module.color}`}>
-                        <module.icon className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <CardTitle className={cn(isMobile ? "text-base" : "text-lg")}>{module.title}</CardTitle>
-                        <CardDescription className={cn(isMobile ? "text-xs" : "text-sm")}>{module.description}</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{module.count}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className={cn(isMobile ? "p-4 pt-0" : "p-6 pt-0")}>
-                  <div className="space-y-2">
-                    {module.reports.slice(0, 3).map((report) => (
-                      <div key={report.id} className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
-                        <span className="text-sm">{report.name}</span>
-                        <Button
-                          size={isMobile ? "sm" : "sm"}
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedReport(report.id);
-                            setSelectedModule(module.id);
-                          }}
-                          className={cn(isMobile && "h-8 w-8 p-0")}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {module.reports.length > 3 && (
-                      <div className="text-center pt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedModule(module.id)}
-                          className={cn(isMobile ? "h-10 rounded-lg" : "")}
-                        >
-                          عرض المزيد ({module.reports.length - 3})
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
 
         {/* Module Specific Tabs */}
         {reportModules.map((module) => (
