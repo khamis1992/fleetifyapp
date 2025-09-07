@@ -2425,6 +2425,7 @@ export type Database = {
           original_file_name: string
           processing_results: Json | null
           processing_status: string
+          storage_bucket: string | null
           storage_path: string | null
           successful_rows: number | null
           total_rows: number | null
@@ -2448,6 +2449,7 @@ export type Database = {
           original_file_name: string
           processing_results?: Json | null
           processing_status?: string
+          storage_bucket?: string | null
           storage_path?: string | null
           successful_rows?: number | null
           total_rows?: number | null
@@ -2471,6 +2473,7 @@ export type Database = {
           original_file_name?: string
           processing_results?: Json | null
           processing_status?: string
+          storage_bucket?: string | null
           storage_path?: string | null
           successful_rows?: number | null
           total_rows?: number | null
