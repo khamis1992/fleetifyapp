@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.extract-traffic-violations]
 verify_jwt = true
+
+[functions.intelligent-contract-processor]
+verify_jwt = true
