@@ -60,8 +60,8 @@ export const useCSVArchive = () => {
 
       if (!profile?.company_id) throw new Error('User company not found');
 
-      // List files from storage bucket
-      const { data, error } = await supabase.storage
+      // List files from user's company folder
+      const { data: userFiles, error: userError } = await supabase.storage
         .from('csv-archives')
         .list(`${user.id}/${profile.company_id}`, {
           limit: 100,
@@ -69,17 +69,32 @@ export const useCSVArchive = () => {
           sortBy: { column: 'created_at', order: 'desc' }
         });
 
-      if (error) throw error;
+      // List files from root (like templates)
+      const { data: rootFiles, error: rootError } = await supabase.storage
+        .from('csv-archives')
+        .list('', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+
+      if (userError && rootError) throw userError || rootError;
+
+      // Combine both file lists
+      const allFiles = [
+        ...(userFiles || []).map(file => ({ ...file, isUserFile: true })),
+        ...(rootFiles || []).map(file => ({ ...file, isUserFile: false }))
+      ];
 
       // Map storage files to CSVArchiveEntry format
-      return data?.map(file => ({
+      return allFiles.map(file => ({
         id: file.id || file.name,
         company_id: profile.company_id,
         file_name: file.name,
         original_file_name: file.name.split('_').slice(2).join('_'),
         file_size_bytes: file.metadata?.size || 0,
         file_content: null,
-        storage_path: `${user.id}/${profile.company_id}/${file.name}`,
+        storage_path: file.isUserFile ? `${user.id}/${profile.company_id}/${file.name}` : file.name,
         upload_type: file.name.split('_')[0] || 'unknown',
         uploaded_by: user.id,
         uploaded_at: file.created_at || new Date().toISOString(),
