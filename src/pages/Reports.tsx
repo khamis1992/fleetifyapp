@@ -208,22 +208,13 @@ export default function Reports() {
                               </div>
                               <div className="flex gap-2">
                                 <Button
-                                   size={isMobile ? "sm" : "sm"}
-                                   variant="outline"
-                                   onClick={() => {
-                                     const params = new URLSearchParams();
-                                     if (filters.startDate) params.set('startDate', filters.startDate);
-                                     if (filters.endDate) params.set('endDate', filters.endDate);
-                                     if (filters.companyId) params.set('companyId', filters.companyId);
-                                     params.set('title', report.name);
-                                     
-                                     const url = `/report/${module.id}/${report.id}?${params.toString()}`;
-                                     window.open(url, '_blank');
-                                   }}
-                                   className={cn(isMobile && "h-10 rounded-lg shadow-sm")}
-                                 >
-                                   عرض
-                                 </Button>
+                                  size={isMobile ? "sm" : "sm"}
+                                  variant="outline"
+                                  onClick={() => setSelectedReport(report.id)}
+                                  className={cn(isMobile && "h-10 rounded-lg shadow-sm")}
+                                >
+                                  عرض
+                                </Button>
                                 <Button 
                                   size={isMobile ? "sm" : "sm"} 
                                   variant="outline"
@@ -252,6 +243,15 @@ export default function Reports() {
         ))}
       </Tabs>
 
+      {/* Report Viewer Modal/Dialog */}
+      {selectedReport && (
+        <UnifiedReportViewer
+          reportId={selectedReport}
+          moduleType={selectedModule}
+          filters={filters}
+          onClose={() => setSelectedReport('')}
+        />
+      )}
     </div>
   );
 }

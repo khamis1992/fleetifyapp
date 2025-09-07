@@ -66,7 +66,6 @@ import SuperAdminPayments from "./pages/super-admin/Payments";
 import SuperAdminReports from "./pages/super-admin/Reports";
 import LandingManagement from "./pages/super-admin/LandingManagement";
 import Reports from "./pages/Reports";
-import ReportView from "./pages/ReportView";
 import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSettings";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
@@ -212,7 +211,6 @@ const App = () => {
                 </AdminRoute>
               } />
               <Route path="reports" element={<Reports />} />
-              <Route path="report/:moduleType/:reportId" element={<ReportView />} />
               <Route path="legal" element={
                 <AdminRoute>
                   <Legal />
