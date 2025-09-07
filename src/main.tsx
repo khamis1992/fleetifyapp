@@ -1,84 +1,88 @@
 // Import Safe React first
 import './utils/safe-react';
-import React from 'react';
-import App from './App.tsx';
-import './index.css';
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
 
 console.log('🔧 Main: Starting application...');
+console.log('🔧 Main: StrictMode available:', !!StrictMode);
+console.log('🔧 Main: createRoot available:', !!createRoot);
 
-// Safe React DOM rendering
-const safeRender = () => {
+// Error boundary for the entire application
+const renderWithErrorBoundary = () => {
   try {
-    // Try to use React 18 createRoot
-    const { createRoot } = require('react-dom/client');
-    const { StrictMode } = React;
-    
-    if (createRoot && StrictMode) {
-      console.log('🔧 Main: Using React 18 createRoot');
-      const rootElement = document.getElementById("root");
-      if (!rootElement) throw new Error("Root element not found");
-      
-      const root = createRoot(rootElement);
-      root.render(
-        React.createElement(StrictMode, null,
-          React.createElement(App)
-        )
-      );
-    } else {
-      throw new Error('React 18 APIs not available');
+    const rootElement = document.getElementById("root");
+    if (!rootElement) {
+      throw new Error("Root element not found");
     }
-  } catch (error) {
-    console.error('🔧 Main: Error with React 18, trying React 17 fallback:', error);
+
+    console.log('🔧 Main: Creating React root...');
+    const root = createRoot(rootElement);
     
-    try {
-      // Fallback to React 17 render
-      const ReactDOM = require('react-dom');
-      const rootElement = document.getElementById("root");
-      
-      if (!rootElement) throw new Error("Root element not found");
-      
-      console.log('🔧 Main: Using React 17 render fallback');
-      ReactDOM.render(
-        React.createElement(App),
-        rootElement
-      );
-    } catch (fallbackError) {
-      console.error('🔧 Main: Both React 18 and 17 failed:', fallbackError);
-      
-      // Ultimate fallback - direct DOM manipulation
-      const rootElement = document.getElementById("root");
-      if (rootElement) {
-        rootElement.innerHTML = `
-          <div style="
-            padding: 20px; 
-            text-align: center; 
-            font-family: Arial, sans-serif;
-            background-color: #fee;
-            border: 1px solid #fcc;
-            border-radius: 5px;
-            margin: 20px;
-          ">
-            <h2>خطأ في تحميل React</h2>
-            <p>يرجى إعادة تحميل الصفحة أو الاتصال بالدعم الفني</p>
-            <button 
-              onclick="window.location.reload()" 
-              style="
-                padding: 10px 20px; 
-                background-color: #007bff; 
-                color: white; 
-                border: none; 
-                border-radius: 5px;
-                cursor: pointer;
-              "
-            >
-              إعادة تحميل الصفحة
-            </button>
-          </div>
-        `;
-      }
+    console.log('🔧 Main: Rendering application...');
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+    
+    console.log('🔧 Main: Application rendered successfully');
+  } catch (error) {
+    console.error('🔧 Main: Critical error during rendering:', error);
+    
+    // Fallback error UI
+    const rootElement = document.getElementById("root");
+    if (rootElement) {
+      rootElement.innerHTML = `
+        <div style="
+          padding: 20px; 
+          text-align: center; 
+          font-family: Arial, sans-serif;
+          background-color: #fee;
+          border: 1px solid #fcc;
+          border-radius: 5px;
+          margin: 20px;
+          direction: rtl;
+        ">
+          <h2>خطأ في تحميل التطبيق</h2>
+          <p>حدث خطأ أثناء تحميل التطبيق. يرجى المحاولة مرة أخرى.</p>
+          <p style="font-size: 12px; color: #666; margin: 10px 0;">
+            تفاصيل الخطأ: ${error.message}
+          </p>
+          <button 
+            onclick="window.location.reload()" 
+            style="
+              padding: 10px 20px; 
+              background-color: #007bff; 
+              color: white; 
+              border: none; 
+              border-radius: 5px;
+              cursor: pointer;
+              margin: 5px;
+            "
+          >
+            إعادة تحميل الصفحة
+          </button>
+          <button 
+            onclick="localStorage.clear(); sessionStorage.clear(); window.location.reload()" 
+            style="
+              padding: 10px 20px; 
+              background-color: #dc3545; 
+              color: white; 
+              border: none; 
+              border-radius: 5px;
+              cursor: pointer;
+              margin: 5px;
+            "
+          >
+            مسح البيانات وإعادة التحميل
+          </button>
+        </div>
+      `;
     }
   }
 };
 
 // Initialize the application
-safeRender();
+renderWithErrorBoundary();
