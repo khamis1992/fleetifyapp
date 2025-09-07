@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CompanyContextProvider } from "@/contexts/CompanyContext";
 import { AuthChecker } from "@/components/auth/AuthChecker";
 
 // Import all pages
@@ -64,7 +65,8 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AuthProvider>
-          <BrowserRouter>
+          <CompanyContextProvider>
+            <BrowserRouter>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Index />} />
@@ -323,8 +325,9 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </AuthProvider>
-      </ThemeProvider>
+        </CompanyContextProvider>
+      </AuthProvider>
+    </ThemeProvider>
     </QueryClientProvider>
   );
 };
