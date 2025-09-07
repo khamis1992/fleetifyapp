@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Upload, Download, CheckCircle, FileText } from "lucide-react";
+import { AlertCircle, Upload, Download, CheckCircle, FileText, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -18,6 +18,8 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeCsvHeaders } from "@/utils/csv";
+import { CSVArchiveSelector } from "./CSVArchiveSelector";
+import { CSVArchiveEntry } from "@/hooks/useCSVArchive";
 interface SmartCSVUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -62,6 +64,8 @@ export function SmartCSVUpload({
   const [activeView, setActiveView] = useState<'preview' | 'table'>('preview');
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [pendingData, setPendingData] = useState<any[]>([]);
+  const [showArchiveSelector, setShowArchiveSelector] = useState(false);
+  const [selectedArchiveEntry, setSelectedArchiveEntry] = useState<CSVArchiveEntry | null>(null);
 
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   
@@ -96,6 +100,20 @@ export function SmartCSVUpload({
   const effectiveRequiredFields = (entityType === 'contract' && createMissingCustomers)
     ? Array.from(new Set([...requiredFields, 'customer_phone']))
     : requiredFields;
+
+  const handleFileFromArchive = (selectedFile: File, archiveEntry: CSVArchiveEntry) => {
+    setFile(selectedFile);
+    setSelectedArchiveEntry(archiveEntry);
+    setShowArchiveSelector(false);
+    setFixes([]);
+    setShowPreview(false);
+    setRawHeaders([]);
+    setEditedRows([]);
+    setActiveView('table');
+    setShowDateSelector(false);
+    setPendingData([]);
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     const name = selectedFile?.name?.toLowerCase() || '';
@@ -103,6 +121,7 @@ export function SmartCSVUpload({
     const isXlsx = selectedFile && (name.endsWith('.xlsx') || name.endsWith('.xls'));
     if (selectedFile && (isCsv || isXlsx)) {
       setFile(selectedFile);
+      setSelectedArchiveEntry(null);
       setFixes([]);
       setShowPreview(false);
       setRawHeaders([]);
@@ -506,13 +525,35 @@ export function SmartCSVUpload({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileChange}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleFileChange}
+                    className="flex-1"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowArchiveSelector(true)}
+                    className="px-3"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    من الأرشيف
+                  </Button>
+                </div>
+
+                {selectedArchiveEntry && (
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm text-blue-800">
+                        تم اختيار من الأرشيف: {selectedArchiveEntry.original_file_name}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 
-                {file && (
+                {file && !selectedArchiveEntry && (
                   <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                     <FileText className="h-4 w-4 text-blue-600" />
                     <span className="text-sm text-blue-800">{file.name}</span>
@@ -826,6 +867,13 @@ export function SmartCSVUpload({
           onConfirm={handleDateFormatsConfirmed}
         />
       </DialogContent>
+
+      <CSVArchiveSelector
+        open={showArchiveSelector}
+        onOpenChange={setShowArchiveSelector}
+        onFileSelected={handleFileFromArchive}
+        uploadType={entityType === 'contract' ? 'contracts' : entityType === 'customer' ? 'customers' : entityType === 'vehicle' ? 'vehicles' : 'payments'}
+      />
     </Dialog>
   );
 }
