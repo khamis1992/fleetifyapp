@@ -44,17 +44,57 @@ export const useCSVArchive = () => {
   const queryClient = useQueryClient();
   const [isArchiving, setIsArchiving] = useState(false);
 
-  // Fetch archived CSV files
+  // Fetch archived CSV files from Storage
   const { data: archivedFiles, isLoading, error } = useQuery({
     queryKey: ['csv-archives'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('csv_file_archives')
-        .select('*')
-        .order('uploaded_at', { ascending: false });
+      // Get current user's company
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('User company not found');
+
+      // List files from storage bucket
+      const { data, error } = await supabase.storage
+        .from('csv-archives')
+        .list(`${user.id}/${profile.company_id}`, {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
 
       if (error) throw error;
-      return data as CSVArchiveEntry[];
+
+      // Map storage files to CSVArchiveEntry format
+      return data?.map(file => ({
+        id: file.id || file.name,
+        company_id: profile.company_id,
+        file_name: file.name,
+        original_file_name: file.name.split('_').slice(2).join('_'),
+        file_size_bytes: file.metadata?.size || 0,
+        file_content: null,
+        storage_path: `${user.id}/${profile.company_id}/${file.name}`,
+        upload_type: file.name.split('_')[0] || 'unknown',
+        uploaded_by: user.id,
+        uploaded_at: file.created_at || new Date().toISOString(),
+        processing_status: 'completed',
+        processing_results: {},
+        total_rows: 0,
+        successful_rows: 0,
+        failed_rows: 0,
+        error_details: [],
+        created_contracts_ids: [],
+        is_archived: true,
+        metadata: file.metadata || {},
+        created_at: file.created_at || new Date().toISOString(),
+        updated_at: file.updated_at || new Date().toISOString(),
+      })) as CSVArchiveEntry[] || [];
     },
   });
 
@@ -80,38 +120,25 @@ export const useCSVArchive = () => {
         // Generate unique file name
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `${params.uploadType}_${timestamp}_${params.file.name}`;
+        const filePath = `${user.id}/${profile.company_id}/${fileName}`;
 
-        // Store file content in database
-        const { data, error } = await supabase
-          .from('csv_file_archives')
-          .insert({
-            company_id: profile.company_id,
-            file_name: fileName,
-            original_file_name: params.file.name,
-            file_size_bytes: params.file.size,
-            file_content: params.fileContent,
-            upload_type: params.uploadType,
-            uploaded_by: user.id,
-            processing_status: 'completed',
-            processing_results: params.processingResults || {},
-            total_rows: params.totalRows || 0,
-            successful_rows: params.successfulRows || 0,
-            failed_rows: params.failedRows || 0,
-            error_details: params.errorDetails || [],
-            created_contracts_ids: params.createdContractsIds || [],
-            metadata: {
-              ...params.metadata,
-              file_type: params.file.type,
-              archived_at: new Date().toISOString(),
-            },
-          })
-          .select()
-          .single();
+        // Upload file to Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('csv-archives')
+          .upload(filePath, params.file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-        if (error) throw error;
+        if (uploadError) throw uploadError;
 
         toast.success('تم حفظ الملف في الأرشيف بنجاح');
-        return data;
+        return {
+          id: fileName,
+          file_name: fileName,
+          storage_path: filePath,
+          ...params
+        };
       } finally {
         setIsArchiving(false);
       }
@@ -128,14 +155,20 @@ export const useCSVArchive = () => {
   // Download archived file
   const downloadArchivedFile = async (archiveEntry: CSVArchiveEntry) => {
     try {
-      if (!archiveEntry.file_content) {
-        toast.error('محتوى الملف غير متوفر');
+      if (!archiveEntry.storage_path) {
+        toast.error('مسار الملف غير متوفر');
         return;
       }
 
+      // Download file from Storage
+      const { data, error } = await supabase.storage
+        .from('csv-archives')
+        .download(archiveEntry.storage_path);
+
+      if (error) throw error;
+
       // Create blob and download
-      const blob = new Blob([archiveEntry.file_content], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
       link.download = archiveEntry.original_file_name;
@@ -153,11 +186,10 @@ export const useCSVArchive = () => {
 
   // Delete archived file
   const deleteArchivedFile = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('csv_file_archives')
-        .delete()
-        .eq('id', id);
+    mutationFn: async (storage_path: string) => {
+      const { error } = await supabase.storage
+        .from('csv-archives')
+        .remove([storage_path]);
 
       if (error) throw error;
     },
