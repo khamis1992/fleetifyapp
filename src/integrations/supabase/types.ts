@@ -7028,69 +7028,6 @@ export type Database = {
         }
         Relationships: []
       }
-      saved_csv_files: {
-        Row: {
-          company_id: string
-          created_at: string
-          created_by: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          file_type: string
-          id: string
-          last_import_at: string | null
-          last_import_status: string | null
-          last_import_summary: Json | null
-          metadata: Json | null
-          original_file_name: string
-          row_count: number | null
-          status: string
-          tags: string[] | null
-          updated_at: string
-          upload_method: string | null
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          created_by?: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          file_type?: string
-          id?: string
-          last_import_at?: string | null
-          last_import_status?: string | null
-          last_import_summary?: Json | null
-          metadata?: Json | null
-          original_file_name: string
-          row_count?: number | null
-          status?: string
-          tags?: string[] | null
-          updated_at?: string
-          upload_method?: string | null
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          created_by?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          file_type?: string
-          id?: string
-          last_import_at?: string | null
-          last_import_status?: string | null
-          last_import_summary?: Json | null
-          metadata?: Json | null
-          original_file_name?: string
-          row_count?: number | null
-          status?: string
-          tags?: string[] | null
-          updated_at?: string
-          upload_method?: string | null
-        }
-        Relationships: []
-      }
       service_ratings: {
         Row: {
           company_id: string
