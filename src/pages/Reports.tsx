@@ -210,9 +210,7 @@ export default function Reports() {
                                 <Button
                                   size={isMobile ? "sm" : "sm"}
                                   variant="outline"
-                                  onClick={() => {
-                                    window.open(`/reports/${module.id}/${report.id}?${new URLSearchParams(filters).toString()}`, '_blank');
-                                  }}
+                                  onClick={() => setSelectedReport(report.id)}
                                   className={cn(isMobile && "h-10 rounded-lg shadow-sm")}
                                 >
                                   عرض
