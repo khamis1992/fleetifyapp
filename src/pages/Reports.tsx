@@ -212,7 +212,7 @@ export default function Reports() {
                                   variant="outline"
                                   onClick={() => {
                                     const url = `/report/${module.id}/${report.id}?${new URLSearchParams(filters).toString()}`;
-                                    window.open(url, '_blank');
+                                    window.open(url, '_blank', 'noopener,noreferrer');
                                   }}
                                   className={cn(isMobile && "h-10 rounded-lg shadow-sm")}
                                 >
