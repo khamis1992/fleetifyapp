@@ -374,7 +374,139 @@ All colors MUST be HSL.
   .transition-fast {
     transition: var(--transition-fast);
   }
-  
+
+  /* Professional Print Styles */
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      background: white !important;
+      color: black !important;
+      font-size: 12pt !important;
+      line-height: 1.4 !important;
+    }
+
+    .print\:hidden {
+      display: none !important;
+    }
+
+    .print\:block {
+      display: block !important;
+    }
+
+    .print\:bg-white {
+      background-color: white !important;
+    }
+
+    .print\:text-black {
+      color: black !important;
+    }
+
+    .print\:border {
+      border: 1px solid #e5e7eb !important;
+    }
+
+    .print\:shadow-none {
+      box-shadow: none !important;
+    }
+
+    .print\:p-4 {
+      padding: 1rem !important;
+    }
+
+    .print\:pb-2 {
+      padding-bottom: 0.5rem !important;
+    }
+
+    .print\:text-gray-600 {
+      color: #4b5563 !important;
+    }
+
+    .print\:text-gray-700 {
+      color: #374151 !important;
+    }
+
+    .print\:text-gray-800 {
+      color: #1f2937 !important;
+    }
+
+    .print\:bg-gray-50 {
+      background-color: #f9fafb !important;
+    }
+
+    .print\:bg-gray-100 {
+      background-color: #f3f4f6 !important;
+    }
+
+    .print\:border-gray-200 {
+      border-color: #e5e7eb !important;
+    }
+
+    .print\:border-gray-300 {
+      border-color: #d1d5db !important;
+    }
+
+    /* Page breaks */
+    .print\:break-after {
+      page-break-after: always !important;
+    }
+
+    .print\:break-before {
+      page-break-before: always !important;
+    }
+
+    .print\:break-inside-avoid {
+      page-break-inside: avoid !important;
+    }
+
+    /* Hide interactive elements */
+    button, .print\:hidden {
+      display: none !important;
+    }
+
+    /* Ensure proper spacing */
+    .space-y-6 > * + * {
+      margin-top: 1.5rem !important;
+    }
+
+    .space-y-4 > * + * {
+      margin-top: 1rem !important;
+    }
+
+    /* Table styles for print */
+    table {
+      border-collapse: collapse !important;
+      width: 100% !important;
+    }
+
+    th, td {
+      border: 1px solid #d1d5db !important;
+      padding: 0.5rem !important;
+      text-align: right !important;
+    }
+
+    thead {
+      background-color: #f3f4f6 !important;
+    }
+
+    /* Card styles for print */
+    .print\:max-w-none {
+      max-width: none !important;
+    }
+
+    .print\:max-h-none {
+      max-height: none !important;
+    }
+
+    .print\:overflow-visible {
+      overflow: visible !important;
+    }
+  }
+
 }
 
 @layer utilities {
