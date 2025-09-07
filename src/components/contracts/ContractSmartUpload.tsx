@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { FileText, Upload, Download, AlertTriangle, CheckCircle, Info, Users, Car, FileIcon, Zap } from "lucide-react";
+import { FileText, Upload, Download, AlertTriangle, CheckCircle, Info, Users, Car, FileIcon, Zap, Save } from "lucide-react";
 import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
+import { useSavedCSVFiles } from "@/hooks/useSavedCSVFiles";
 import { toast } from "sonner";
 
 interface ContractSmartUploadProps {
@@ -26,6 +27,8 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
   const [autoCreateCustomers, setAutoCreateCustomers] = useState(true);
   const [validateOnly, setValidateOnly] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [autoSaveFile, setAutoSaveFile] = useState(true);
+  const [savedFileInfo, setSavedFileInfo] = useState<{name: string; id: string} | null>(null);
   
   const {
     isUploading,
@@ -35,6 +38,8 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
     downloadTemplate,
     smartUploadContracts
   } = useContractCSVUpload();
+
+  const { saveCSVFile, isLoading: isSaving } = useSavedCSVFiles();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -48,7 +53,35 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
         return;
       }
       setSelectedFile(file);
+      setSavedFileInfo(null); // إعادة تعيين معلومات الملف المحفوظ
       toast.success(`تم اختيار الملف: ${file.name}`);
+    }
+  };
+
+  const handleSaveFile = async () => {
+    if (!selectedFile) return;
+    
+    try {
+      const savedFile = await saveCSVFile.mutateAsync({
+        file: selectedFile,
+        fileType: 'smart_contracts',
+        tags: [
+          'smart_upload',
+          dryRun ? 'dry_run' : 'live_upload',
+          autoCreateCustomers ? 'auto_create' : 'no_auto_create',
+          validateOnly ? 'validate_only' : 'full_process'
+        ]
+      });
+      
+      setSavedFileInfo({
+        name: savedFile.original_file_name || savedFile.file_name,
+        id: savedFile.id
+      });
+      
+      toast.success(`تم حفظ الملف: ${savedFile.original_file_name || savedFile.file_name}`);
+    } catch (error: any) {
+      console.error('خطأ في حفظ الملف:', error);
+      toast.error(`فشل في حفظ الملف: ${error.message}`);
     }
   };
 
@@ -59,6 +92,11 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
     }
 
     try {
+      // حفظ الملف تلقائياً قبل المعالجة إذا كان مفعلاً
+      if (autoSaveFile && !savedFileInfo) {
+        await handleSaveFile();
+      }
+
       await uploadContracts(selectedFile);
       
       // النتائج ستكون متاحة في results state
@@ -151,9 +189,41 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
                   className="mt-1"
                 />
                 {selectedFile && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                    <FileIcon className="h-4 w-4" />
-                    <span>{selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                  <div className="space-y-2 mt-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileIcon className="h-4 w-4" />
+                      <span>{selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    
+                    {savedFileInfo && (
+                      <div className="flex items-center justify-between text-sm text-green-600">
+                        <div className="flex items-center gap-2">
+                          <Save className="h-4 w-4" />
+                          <span>تم الحفظ: {savedFileInfo.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open('/saved-files', '_blank')}
+                          className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          عرض الملفات المحفوظة
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {autoSaveFile && !savedFileInfo && selectedFile && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveFile}
+                        disabled={isSaving}
+                        className="h-7 text-xs"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        {isSaving ? 'جاري الحفظ...' : 'حفظ الملف'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -184,6 +254,15 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
                   id="validate-only"
                   checked={validateOnly}
                   onCheckedChange={setValidateOnly}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="auto-save">حفظ الملف تلقائياً</Label>
+                <Switch
+                  id="auto-save"
+                  checked={autoSaveFile}
+                  onCheckedChange={setAutoSaveFile}
                 />
               </div>
 
@@ -384,6 +463,7 @@ export const ContractSmartUpload: React.FC<ContractSmartUploadProps> = ({
                     <li>• استخدم أسماء العملاء وأرقام المركبات الموجودة فعلياً</li>
                     <li>• فعّل "التشغيل التجريبي" لفحص البيانات قبل الرفع الفعلي</li>
                     <li>• يمكن إنشاء العملاء الجدد تلقائياً عند الحاجة</li>
+                    <li>• سيتم حفظ الملف تلقائياً في "الملفات المحفوظة" للمراجعة لاحقاً</li>
                   </ul>
                 </div>
               </div>
