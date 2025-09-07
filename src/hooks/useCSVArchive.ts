@@ -78,12 +78,10 @@ export const useCSVArchive = () => {
           sortBy: { column: 'created_at', order: 'desc' }
         });
 
-      if (userError && rootError) throw userError || rootError;
-
-      // Combine both file lists
+      // Combine both file lists, but ignore errors if one location doesn't exist
       const allFiles = [
         ...(userFiles || []).map(file => ({ ...file, isUserFile: true })),
-        ...(rootFiles || []).map(file => ({ ...file, isUserFile: false }))
+        ...(rootFiles || []).filter(file => !file.name?.includes('/')).map(file => ({ ...file, isUserFile: false }))
       ];
 
       // Map storage files to CSVArchiveEntry format
@@ -91,11 +89,11 @@ export const useCSVArchive = () => {
         id: file.id || file.name,
         company_id: profile.company_id,
         file_name: file.name,
-        original_file_name: file.name.split('_').slice(2).join('_'),
+        original_file_name: file.isUserFile ? file.name.split('_').slice(2).join('_') : file.name,
         file_size_bytes: file.metadata?.size || 0,
         file_content: null,
         storage_path: file.isUserFile ? `${user.id}/${profile.company_id}/${file.name}` : file.name,
-        upload_type: file.name.split('_')[0] || 'unknown',
+        upload_type: file.isUserFile ? (file.name.split('_')[0] || 'unknown') : 'template',
         uploaded_by: user.id,
         uploaded_at: file.created_at || new Date().toISOString(),
         processing_status: 'completed',
