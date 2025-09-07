@@ -1,6 +1,9 @@
 import * as React from "react";
 import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
+import { useIntelligentContractProcessor } from "@/hooks/useIntelligentContractProcessor";
 import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
+import { IntelligentContractPreview } from "@/components/contracts/IntelligentContractPreview";
+import { CSVArchiveSelector } from "@/components/csv-archive/CSVArchiveSelector";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Download, FileText, AlertCircle, CheckCircle, Zap, Save } from "lucide-react";
+import { Upload, Download, FileText, AlertCircle, CheckCircle, Zap, Save, Brain } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +23,7 @@ import { CompanySelector } from "@/components/navigation/CompanySelector";
 import { StatCardNumber } from '@/components/ui/NumberDisplay';
 import { CSVTemplateSelector } from "@/components/csv-templates/CSVTemplateSelector";
 import { useCSVTemplates, type CSVTemplate } from "@/hooks/useCSVTemplates";
+import { normalizeCsvHeaders } from "@/utils/csv";
 
 interface ContractCSVUploadProps {
   open: boolean
@@ -34,6 +38,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   const [saveAsTemplate, setSaveAsTemplate] = React.useState(false);
   const [templateName, setTemplateName] = React.useState('');
   const [archiveFile, setArchiveFile] = React.useState(true);
+  const [useIntelligentProcessing, setUseIntelligentProcessing] = React.useState(false);
+  const [currentStep, setCurrentStep] = React.useState<'upload' | 'preview' | 'processing'>('upload');
   const { 
     uploadContracts, 
     smartUploadContracts,
@@ -44,6 +50,16 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     contractFieldTypes,
     contractRequiredFields
   } = useContractCSVUpload();
+  
+  const {
+    processContractData,
+    isProcessing,
+    processingProgress,
+    preview,
+    applyCorrections,
+    getProcessedCSVData,
+    clearPreview
+  } = useIntelligentContractProcessor();
   const { createTemplate } = useCSVTemplates('contracts');
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const [dryRun, setDryRun] = React.useState(true);
@@ -73,23 +89,105 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     }
 
     try {
-      await uploadContracts(file, archiveFile)
-      
-      // حفظ كقالب إذا طُلب ذلك
-      if (saveAsTemplate && templateName.trim()) {
-        await handleSaveAsTemplate()
-      }
-      
-      // رسالة النجاح المناسبة
-      if (archiveFile) {
-        toast.success('تم رفع الملف وحفظه في الأرشيف بنجاح')
+      if (useIntelligentProcessing) {
+        await handleIntelligentProcess()
       } else {
-        toast.success('تم رفع الملف بنجاح')
+        await uploadContracts(file, archiveFile)
+        
+        // حفظ كقالب إذا طُلب ذلك
+        if (saveAsTemplate && templateName.trim()) {
+          await handleSaveAsTemplate()
+        }
+        
+        // رسالة النجاح المناسبة
+        if (archiveFile) {
+          toast.success('تم رفع الملف وحفظه في الأرشيف بنجاح')
+        } else {
+          toast.success('تم رفع الملف بنجاح')
+        }
+        onUploadComplete()
       }
-      onUploadComplete()
     } catch (error) {
       toast.error('حدث خطأ أثناء رفع الملف')
     }
+  }
+
+  const handleIntelligentProcess = async () => {
+    if (!file) return;
+
+    try {
+      setCurrentStep('processing');
+      
+      // قراءة وتحليل الملف
+      const text = await file.text();
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
+      
+      if (parsed.errors.length > 0) {
+        toast.error('خطأ في قراءة الملف');
+        setCurrentStep('upload');
+        return;
+      }
+
+      // تطبيع الرؤوس وإعداد البيانات
+      const rawData = (parsed.data as any[]).filter(Boolean);
+      const normalizedData = rawData.map((row, index) => {
+        const normalizedRow = normalizeCsvHeaders(row);
+        return {
+          ...normalizedRow,
+          rowNumber: index + 2 // بداية من الصف الثاني (بعد الرؤوس)
+        };
+      });
+
+      // بدء المعالجة الذكية
+      await processContractData(normalizedData, {
+        enableAI: true,
+        autoApplyFixes: false,
+        skipValidation: false
+      });
+
+      setCurrentStep('preview');
+    } catch (error) {
+      console.error('خطأ في المعالجة الذكية:', error);
+      toast.error('حدث خطأ أثناء المعالجة الذكية');
+      setCurrentStep('upload');
+    }
+  }
+
+  const handleProceedWithProcessedData = async () => {
+    try {
+      const processedCSVData = getProcessedCSVData();
+      
+      // تحويل البيانات المعالجة إلى ملف CSV
+      const csvContent = Papa.unparse(processedCSVData);
+      const processedFile = new File([csvContent], `processed_${file?.name || 'contracts.csv'}`, {
+        type: 'text/csv'
+      });
+
+      // رفع البيانات المعالجة
+      await uploadContracts(processedFile, archiveFile);
+      
+      // حفظ كقالب إذا طُلب ذلك
+      if (saveAsTemplate && templateName.trim()) {
+        await handleSaveAsTemplate();
+      }
+      
+      toast.success('تم رفع البيانات المعالجة بنجاح');
+      onUploadComplete();
+    } catch (error) {
+      console.error('خطأ في رفع البيانات المعالجة:', error);
+      toast.error('حدث خطأ أثناء رفع البيانات المعالجة');
+    }
+  }
+
+  const handleFileFromArchive = (selectedFile: File) => {
+    setFile(selectedFile);
+    toast.success(`تم اختيار الملف من الأرشيف: ${selectedFile.name}`);
+  }
+
+  const handleCancel = () => {
+    setCurrentStep('upload');
+    clearPreview();
+    setUseIntelligentProcessing(false);
   }
 
   const handleSaveAsTemplate = async () => {
@@ -186,7 +284,22 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     setSelectedTemplate(null)
     setSaveAsTemplate(false)
     setTemplateName('')
+    setCurrentStep('upload')
+    setUseIntelligentProcessing(false)
+    clearPreview()
     onOpenChange(false)
+  }
+
+  // عرض المعاينة الذكية إذا كانت في الخطوة المناسبة
+  if (currentStep === 'preview' && preview) {
+    return (
+      <IntelligentContractPreview
+        preview={preview}
+        onApplyCorrections={applyCorrections}
+        onProceedWithData={handleProceedWithProcessedData}
+        onCancel={handleCancel}
+      />
+    );
   }
 
   // عرض الرفع الذكي أو التقليدي حسب الاختيار
@@ -342,11 +455,24 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
             </TabsList>
             
             <TabsContent value="templates" className="space-y-4">
-              <CSVTemplateSelector 
-                entityType="contracts"
-                onTemplateSelect={handleTemplateSelect}
-                selectedTemplateId={selectedTemplate?.id}
-              />
+              <div className="space-y-4">
+                <CSVTemplateSelector 
+                  entityType="contracts"
+                  onTemplateSelect={handleTemplateSelect}
+                  selectedTemplateId={selectedTemplate?.id}
+                />
+                
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    اختيار من الأرشيف
+                  </h4>
+                  <CSVArchiveSelector
+                    entityType="contracts"
+                    onFileSelect={handleFileFromArchive}
+                  />
+                </div>
+              </div>
             </TabsContent>
             
             <TabsContent value="upload" className="space-y-6">
