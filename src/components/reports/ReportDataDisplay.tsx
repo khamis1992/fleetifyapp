@@ -1,8 +1,23 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Users, 
+  DollarSign, 
+  Car, 
+  Building, 
+  Scale,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Target,
+  Activity,
+  BarChart3
+} from 'lucide-react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ReportKPISection } from './ReportKPISection';
 import { ProfessionalDataTable } from './ProfessionalDataTable';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { ReportExecutiveSummary } from './ReportExecutiveSummary';
 
 interface ReportDataDisplayProps {
   data: any;
@@ -22,74 +37,53 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
   const { formatCurrency } = useCurrencyFormatter();
 
   const convertMetricsToKPIs = (metrics: Record<string, number>) => {
-    const entries = Object.entries(metrics);
-    const mainKPIs = [];
-
-    // Create 3 main KPIs based on module type
-    if (moduleType === 'invoices') {
-      mainKPIs.push(
-        { label: 'إجمالي الفواتير', value: metrics.totalInvoices || 0, type: 'number' as const, color: 'gray' as const },
-        { label: 'الفواتير المدفوعة', value: metrics.paidInvoices || 0, type: 'number' as const, color: 'green' as const },
-        { label: 'إجمالي المبلغ', value: metrics.totalAmount || 0, type: 'currency' as const, color: 'blue' as const }
-      );
-    } else if (moduleType === 'employees') {
-      mainKPIs.push(
-        { label: 'إجمالي الموظفين', value: metrics.totalEmployees || 0, type: 'number' as const, color: 'gray' as const },
-        { label: 'الموظفين النشطين', value: metrics.activeEmployees || 0, type: 'number' as const, color: 'green' as const },
-        { label: 'معدل الحضور', value: metrics.attendanceRate || 0, type: 'percentage' as const, color: 'blue' as const }
-      );
-    } else if (moduleType === 'vehicles') {
-      mainKPIs.push(
-        { label: 'إجمالي المركبات', value: metrics.totalVehicles || 0, type: 'number' as const, color: 'gray' as const },
-        { label: 'المركبات النشطة', value: metrics.activeVehicles || 0, type: 'number' as const, color: 'green' as const },
-        { label: 'كفاءة الأسطول', value: metrics.fleetEfficiency || 0, type: 'percentage' as const, color: 'blue' as const }
-      );
-    } else {
-      // Default KPIs for other modules
-      const firstThree = entries.slice(0, 3);
-      firstThree.forEach(([key, value], index) => {
-        const colors = ['gray', 'green', 'blue'] as const;
-        mainKPIs.push({
-          label: formatLabel(key),
-          value,
-          type: getValueType(key) as 'currency' | 'number' | 'percentage',
-          color: colors[index % 3]
-        });
-      });
-    }
-
-    return mainKPIs;
-  };
-
-  const formatLabel = (key: string): string => {
-    const labelMap: Record<string, string> = {
-      totalEmployees: 'إجمالي الموظفين',
-      activeEmployees: 'الموظفين النشطين',
-      totalVehicles: 'إجمالي المركبات',
-      activeVehicles: 'المركبات النشطة',
-      totalCustomers: 'إجمالي العملاء',
-      activeCustomers: 'العملاء النشطين',
-      totalCases: 'إجمالي القضايا',
-      activeCases: 'القضايا النشطة',
-      totalInvoices: 'إجمالي الفواتير',
-      totalAmount: 'إجمالي المبلغ',
-      paidInvoices: 'الفواتير المدفوعة',
-      totalPayments: 'إجمالي المدفوعات',
-      revenue: 'الإيرادات',
-      expenses: 'المصروفات',
-      profit: 'الربح',
-      growth: 'النمو'
+    const getIcon = (key: string) => {
+      if (key.includes('employee') || key.includes('staff')) return Users;
+      if (key.includes('amount') || key.includes('total') || key.includes('paid')) return DollarSign;
+      if (key.includes('vehicle') || key.includes('car')) return Car;
+      if (key.includes('customer') || key.includes('client')) return Building;
+      if (key.includes('case') || key.includes('legal')) return Scale;
+      return Activity;
     };
-    return labelMap[key] || key;
-  };
 
-  const getValueType = (key: string): string => {
-    const currencyKeys = ['totalAmount', 'revenue', 'expenses', 'profit'];
-    const percentageKeys = ['growth', 'attendanceRate', 'fleetEfficiency'];
-    
-    if (currencyKeys.includes(key)) return 'currency';
-    if (percentageKeys.includes(key)) return 'percentage';
-    return 'number';
+    const formatLabel = (key: string) => {
+      const labels: Record<string, string> = {
+        totalEmployees: 'إجمالي الموظفين',
+        activeEmployees: 'الموظفين النشطين',
+        totalPayroll: 'إجمالي الرواتب',
+        averageSalary: 'متوسط الراتب',
+        totalVehicles: 'إجمالي المركبات',
+        activeVehicles: 'المركبات النشطة',
+        maintenanceCount: 'عدد الصيانات',
+        totalMaintenanceCost: 'تكلفة الصيانة الإجمالية',
+        totalCustomers: 'إجمالي العملاء',
+        activeCustomers: 'العملاء النشطين',
+        averageContractValue: 'متوسط قيمة العقد',
+        totalCases: 'إجمالي القضايا',
+        activeCases: 'القضايا النشطة',
+        resolvedCases: 'القضايا المحلولة',
+        totalInvoices: 'إجمالي الفواتير',
+        totalAmount: 'المبلغ الإجمالي',
+        paidAmount: 'المبلغ المدفوع',
+        pendingAmount: 'المبلغ المعلق',
+        totalPayments: 'إجمالي المدفوعات'
+      };
+      return labels[key] || key;
+    };
+
+    const getValueType = (key: string): 'currency' | 'number' | 'percentage' => {
+      if (key.includes('amount') || key.includes('salary') || key.includes('cost') || key.includes('paid') || (key.includes('total') && key.includes('payment'))) {
+        return 'currency';
+      }
+      return 'number';
+    };
+
+    return Object.entries(metrics).map(([key, value]) => ({
+      label: formatLabel(key),
+      value,
+      type: getValueType(key),
+      icon: getIcon(key)
+    }));
   };
 
   const getStatusColumn = (moduleType: string) => {
@@ -104,91 +98,101 @@ export function ReportDataDisplay({ data, reportId, moduleType }: ReportDataDisp
     return statusColumns[moduleType];
   };
 
-  // Check if we have any data to display
-  const hasData = data && (
-    data.metrics || 
-    data.summary || 
-    (data.employees && data.employees.length > 0) ||
-    (data.vehicles && data.vehicles.length > 0) ||
-    (data.customers && data.customers.length > 0) ||
-    (data.cases && data.cases.length > 0) ||
-    (data.invoices && data.invoices.length > 0) ||
-    (data.payments && data.payments.length > 0)
-  );
-
   return (
-    <div className="space-y-6 print:space-y-4">
-      {/* Filters Section */}
-      <section className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">معايير التصفية</h3>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-500">
-          لا توجد بيانات عرض
-        </div>
-      </section>
+    <div className="space-y-8">
+      {/* Executive Summary */}
+      <ReportExecutiveSummary 
+        data={data} 
+        moduleType={moduleType} 
+        reportId={reportId} 
+      />
 
       {/* KPI Section */}
       {data.metrics && (
         <ReportKPISection 
-          kpis={convertMetricsToKPIs(data.metrics)}
+          kpis={convertMetricsToKPIs(data.metrics)} 
+          title="مؤشرات الأداء الرئيسية"
         />
       )}
-
-      {/* No Data Alert */}
-      {!hasData && (
-        <section className="mb-6">
-          <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-600 font-medium">
-            لا توجد سجلات متاحة للفترة المحددة
-          </div>
-        </section>
+      
+      {/* Summary Stats */}
+      {data.summary && (
+        <Card className="bg-gradient-card border-0 shadow-card print:bg-white print:border print:shadow-none">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="flex items-center gap-2 arabic-heading-sm print:text-black">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              ملخص الإحصائيات التفصيلية
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="print:p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(data.summary).map(([key, value]) => (
+                <div key={key} className="text-center p-4 bg-accent/10 rounded-lg border border-border/20 print:bg-gray-50 print:border-gray-200">
+                  <p className="text-sm text-muted-foreground font-medium print:text-gray-600">{key}</p>
+                  <p className="text-2xl font-bold text-foreground arabic-heading-sm print:text-black">{String(value)}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Data Tables */}
-      {data.employees && data.employees.length > 0 && (
+      {/* Professional Data Tables */}
+      {data.employees && (
         <ProfessionalDataTable 
           data={data.employees} 
-          title="بيانات الموظفين"
-          statusColumn={getStatusColumn(moduleType)}
+          title="بيانات الموظفين" 
+          statusColumn={getStatusColumn('employees')}
         />
       )}
-      
-      {data.vehicles && data.vehicles.length > 0 && (
+      {data.vehicles && (
         <ProfessionalDataTable 
           data={data.vehicles} 
-          title="بيانات المركبات"
-          statusColumn={getStatusColumn(moduleType)}
+          title="بيانات المركبات" 
+          statusColumn={getStatusColumn('vehicles')}
         />
       )}
-      
-      {data.customers && data.customers.length > 0 && (
+      {data.customers && (
         <ProfessionalDataTable 
           data={data.customers} 
-          title="بيانات العملاء"
-          statusColumn={getStatusColumn(moduleType)}
+          title="بيانات العملاء" 
+          statusColumn={getStatusColumn('customers')}
         />
       )}
-      
-      {data.cases && data.cases.length > 0 && (
+      {data.cases && (
         <ProfessionalDataTable 
           data={data.cases} 
-          title="بيانات القضايا"
-          statusColumn={getStatusColumn(moduleType)}
+          title="بيانات القضايا" 
+          statusColumn={getStatusColumn('cases')}
         />
       )}
-      
-      {data.invoices && data.invoices.length > 0 && (
+      {data.invoices && (
         <ProfessionalDataTable 
           data={data.invoices} 
-          title="بيانات الفواتير"
-          statusColumn={getStatusColumn(moduleType)}
+          title="بيانات الفواتير" 
+          statusColumn={getStatusColumn('invoices')}
         />
       )}
-      
-      {data.payments && data.payments.length > 0 && (
+      {data.payments && (
         <ProfessionalDataTable 
           data={data.payments} 
-          title="بيانات المدفوعات"
-          statusColumn={getStatusColumn(moduleType)}
+          title="بيانات المدفوعات" 
+          statusColumn={getStatusColumn('payments')}
         />
+      )}
+
+      {/* Raw Data Fallback */}
+      {!data.metrics && !data.summary && !data.employees && !data.vehicles && !data.customers && !data.cases && !data.invoices && !data.payments && (
+        <Card className="bg-gradient-card border-0 shadow-card print:bg-white print:border print:shadow-none">
+          <CardHeader className="print:pb-2">
+            <CardTitle className="arabic-heading-sm print:text-black">بيانات التقرير</CardTitle>
+          </CardHeader>
+          <CardContent className="print:p-4">
+            <pre className="bg-muted p-4 rounded-lg overflow-auto text-sm font-mono print:bg-gray-100 print:text-gray-800">
+              {JSON.stringify(data, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
