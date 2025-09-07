@@ -1,3 +1,5 @@
+// Import React polyfill first to ensure hooks are available
+import '../utils/react-polyfill';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
@@ -18,10 +20,46 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Safety check for React hooks availability
-  if (typeof useState === 'undefined') {
+  // Comprehensive safety checks for React hooks availability
+  if (typeof useState === 'undefined' || typeof useEffect === 'undefined' || typeof useContext === 'undefined') {
     console.error('React hooks are not available. This might be a React version conflict.');
-    return <div>خطأ في تحميل النظام. يرجى إعادة تحميل الصفحة.</div>;
+    console.error('useState available:', typeof useState !== 'undefined');
+    console.error('useEffect available:', typeof useEffect !== 'undefined');
+    console.error('useContext available:', typeof useContext !== 'undefined');
+    console.error('React object:', React);
+    
+    // Try to use React hooks directly from React object as fallback
+    if (React && React.useState) {
+      console.log('Attempting to use React hooks directly from React object...');
+    } else {
+      return (
+        <div style={{ 
+          padding: '20px', 
+          textAlign: 'center', 
+          backgroundColor: '#fee', 
+          border: '1px solid #fcc',
+          borderRadius: '5px',
+          margin: '20px',
+          fontFamily: 'Arial, sans-serif'
+        }}>
+          <h2>خطأ في تحميل النظام</h2>
+          <p>يرجى إعادة تحميل الصفحة أو الاتصال بالدعم الفني</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: '#007bff', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            إعادة تحميل الصفحة
+          </button>
+        </div>
+      );
+    }
   }
   
   const [user, setUser] = useState<AuthUser | null>(null);

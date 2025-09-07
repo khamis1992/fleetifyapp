@@ -1,3 +1,5 @@
+// Import React polyfill first to ensure React is available
+import './utils/react-polyfill';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
