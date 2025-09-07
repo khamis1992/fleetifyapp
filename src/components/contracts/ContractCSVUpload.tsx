@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
+import { useEnhancedContractUpload } from "@/hooks/useEnhancedContractUpload";
 import { useIntelligentContractProcessor } from "@/hooks/useIntelligentContractProcessor";
 import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
 import { IntelligentContractPreview } from "@/components/contracts/IntelligentContractPreview";
@@ -60,6 +61,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     getProcessedCSVData,
     clearPreview
   } = useIntelligentContractProcessor();
+  
+  const enhancedUpload = useEnhancedContractUpload();
   const { createTemplate } = useCSVTemplates('contracts');
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const [dryRun, setDryRun] = React.useState(true);

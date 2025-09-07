@@ -136,9 +136,75 @@ Deno.serve(async (req) => {
           status: isCancelledDescription(raw.description) ? 'cancelled' : 'draft',
         }
 
+        // Handle customer name to ID conversion if customer_id is missing but customer_name is provided
+        if (!payload.customer_id && raw.customer_name) {
+          try {
+            // Search for customer by name
+            const like = `%${String(raw.customer_name).trim()}%`
+            const { data: customers, error: customerError } = await supabase
+              .from('customers')
+              .select('id, customer_type, company_name, first_name, last_name')
+              .eq('company_id', companyId)
+              .or(`company_name.ilike.${like},first_name.ilike.${like},last_name.ilike.${like}`)
+              .limit(5)
+            
+            if (customerError) {
+              console.error('Error searching for customer:', customerError)
+            } else if (customers && customers.length > 0) {
+              // Try exact match first
+              const customerName = normalize(String(raw.customer_name))
+              const exactMatch = customers.find(c => {
+                const companyName = normalize(c.company_name || '')
+                const fullName = normalize(`${c.first_name || ''} ${c.last_name || ''}`)
+                return companyName === customerName || fullName === customerName
+              })
+              
+              if (exactMatch) {
+                payload.customer_id = exactMatch.id
+                console.log(`✅ Found customer by name: ${raw.customer_name} -> ${exactMatch.id}`)
+              } else if (customers.length === 1) {
+                payload.customer_id = customers[0].id
+                console.log(`✅ Found single customer match: ${raw.customer_name} -> ${customers[0].id}`)
+              } else {
+                console.warn(`⚠️ Multiple customers found for: ${raw.customer_name}`)
+              }
+            }
+          } catch (error) {
+            console.error('Error resolving customer name:', error)
+          }
+        }
+
+        // Handle vehicle plate number to ID conversion if vehicle_id is missing but vehicle_number is provided
+        if (!payload.vehicle_id && raw.vehicle_number) {
+          try {
+            const plateNumber = String(raw.vehicle_number).trim()
+            const { data: vehicles, error: vehicleError } = await supabase
+              .from('vehicles')
+              .select('id, plate_number')
+              .eq('company_id', companyId)
+              .eq('plate_number', plateNumber)
+              .limit(1)
+            
+            if (vehicleError) {
+              console.error('Error searching for vehicle:', vehicleError)
+            } else if (vehicles && vehicles.length > 0) {
+              payload.vehicle_id = vehicles[0].id
+              console.log(`✅ Found vehicle by plate: ${plateNumber} -> ${vehicles[0].id}`)
+            }
+          } catch (error) {
+            console.error('Error resolving vehicle plate:', error)
+          }
+        }
+
         // Basic validation
         const errors: string[] = []
-        if (!payload.customer_id) errors.push('customer_id مفقود (الوضع بالجملة يتطلب معرف العميل)')
+        if (!payload.customer_id) {
+          if (raw.customer_name) {
+            errors.push(`لم يتم العثور على العميل: ${raw.customer_name}`)
+          } else {
+            errors.push('customer_id أو customer_name مطلوب')
+          }
+        }
         if (!payload.contract_type) errors.push('contract_type مفقود')
         if (!payload.start_date) errors.push('start_date مفقود')
         if (!payload.end_date) errors.push('end_date مفقود')
