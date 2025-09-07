@@ -5,7 +5,7 @@ export function SimpleReportFooter() {
     day: '2-digit',
     month: '2-digit', 
     year: 'numeric',
-    calendar: 'islamic-umalqura'
+    calendar: 'gregory'
   });
   
   const currentTime = new Date().toLocaleTimeString('ar-SA', {
