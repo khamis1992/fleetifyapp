@@ -210,10 +210,7 @@ export default function Reports() {
                                 <Button
                                   size={isMobile ? "sm" : "sm"}
                                   variant="outline"
-                                  onClick={() => {
-                                    const url = `/report/${module.id}/${report.id}?${new URLSearchParams(filters).toString()}`;
-                                    window.open(url, '_blank', 'noopener,noreferrer');
-                                  }}
+                                  onClick={() => setSelectedReport(report.id)}
                                   className={cn(isMobile && "h-10 rounded-lg shadow-sm")}
                                 >
                                   عرض
@@ -246,6 +243,15 @@ export default function Reports() {
         ))}
       </Tabs>
 
+      {/* Report Viewer */}
+      {selectedReport && (
+        <UnifiedReportViewer
+          reportId={selectedReport}
+          moduleType={selectedModule}
+          filters={filters}
+          onClose={() => setSelectedReport('')}
+        />
+      )}
     </div>
   );
 }
