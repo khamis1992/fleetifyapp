@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { CompanySelector } from "@/components/navigation/CompanySelector";
 import { StatCardNumber } from '@/components/ui/NumberDisplay';
+import { useSavedCSVFiles } from '@/hooks/useSavedCSVFiles';
 
 interface ContractCSVUploadProps {
   open: boolean
@@ -39,6 +40,7 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     contractRequiredFields
   } = useContractCSVUpload();
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const { saveCSVFile } = useSavedCSVFiles();
   const [dryRun, setDryRun] = React.useState(true);
   const [upsertDuplicates, setUpsertDuplicates] = React.useState(true);
   const isSuperAdmin = !!user?.roles?.includes('super_admin');
@@ -77,6 +79,23 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   const handleDownloadTemplate = () => {
     downloadTemplate()
     toast.success('تم تحميل القالب')
+  }
+
+  const handleSaveFile = async () => {
+    if (!file) {
+      toast.error('يرجى اختيار ملف أولاً')
+      return
+    }
+
+    try {
+      await saveCSVFile.mutateAsync({
+        file,
+        fileType: 'contracts',
+        tags: ['contracts', 'upload']
+      });
+    } catch (error: any) {
+      console.error('Save file error:', error);
+    }
   }
 
   const handleDownloadErrors = () => {
@@ -421,6 +440,21 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleClose} disabled={isUploading}>
               إلغاء
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleSaveFile} 
+              disabled={!file || isUploading || saveCSVFile.isPending}
+              className="flex items-center gap-2"
+            >
+              {saveCSVFile.isPending ? (
+                <>جاري الحفظ...</>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  حفظ الملف
+                </>
+              )}
             </Button>
             <Button 
               onClick={handleUpload} 
