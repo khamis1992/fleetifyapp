@@ -28,51 +28,56 @@ const { toast } = useToast();
       const reportData = await fetchReportData(options);
       const reportContent = generateReportContent(options, reportData);
       
-      // Create print-friendly content
+      // Create simple print-friendly content matching the template
       const printContent = `
         <div id="print-content" style="display: none;">
-          <header class="report-header">
-            <div class="header-content">
-              <div class="company-info">
-                <h1 class="company-name">اسم الشركة</h1>
+          <!-- Header -->
+          <header class="border-b-4 border-gray-700 pb-4 mb-6">
+            <div class="flex justify-between items-center">
+              <div>
+                <h1 class="text-2xl font-bold text-gray-800">اسم الشركة</h1>
+                <h2 class="text-lg text-gray-500">${options.title}</h2>
               </div>
-              <div class="report-info">
-                <h2 class="report-title">${options.title}</h2>
-                <div class="report-meta">
-                  <span>تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</span>
-                  <span>الوقت: ${new Date().toLocaleTimeString('en-GB')}</span>
-                </div>
+              <div class="text-sm text-gray-600">
+                <p>تاريخ التقرير: <span class="font-semibold">${new Date().toLocaleDateString('en-GB')}</span></p>
+                <p>الوقت: <span class="font-semibold">${new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></p>
               </div>
             </div>
           </header>
 
-          ${options.filters && Object.keys(options.filters).length > 0 ? `
-          <section class="filters-section">
-            <h3>معايير التصفية:</h3>
-            <div class="filters-grid">
-              ${options.filters.startDate ? `<div class="filter-item">من تاريخ: ${options.filters.startDate}</div>` : ''}
-              ${options.filters.endDate ? `<div class="filter-item">إلى تاريخ: ${options.filters.endDate}</div>` : ''}
-              ${options.filters.moduleType ? `<div class="filter-item">القسم: ${getModuleTitle(options.filters.moduleType)}</div>` : ''}
+          <!-- Filters -->
+          <section class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">معايير التصفية</h3>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-500">
+              ${options.filters && Object.keys(options.filters).length > 0 ? 
+                `${options.filters.startDate ? `من تاريخ: ${options.filters.startDate}<br>` : ''}
+                 ${options.filters.endDate ? `إلى تاريخ: ${options.filters.endDate}<br>` : ''}
+                 ${options.filters.moduleType ? `القسم: ${getModuleTitle(options.filters.moduleType)}` : ''}` 
+                : 'لا توجد بيانات عرض'
+              }
             </div>
           </section>
-          ` : ''}
 
-          <main class="report-content">
-            ${reportContent}
-          </main>
+          ${reportContent}
 
-          <footer class="report-footer">
-            <div class="footer-content">
-              <div class="print-info">
-                <span>تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات</span>
-                <span>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</span>
-              </div>
+          ${reportData && (reportData as any)?.metrics ? '' : `
+          <!-- No Data Alert -->
+          <section class="mb-6">
+            <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-600 font-medium">
+              لا توجد سجلات متاحة للفترة المحددة
             </div>
+          </section>
+          `}
+
+          <!-- Footer -->
+          <footer class="border-t pt-4 mt-8 text-sm text-gray-500 text-center">
+            تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات بتاريخ 
+            <span class="font-semibold">${new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'islamic-umalqura' })} - ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
           </footer>
         </div>
       `;
 
-      // Add print styles
+      // Add simplified print styles matching the template
       const printStyles = `
         <style id="print-styles">
           @media print {
@@ -90,115 +95,184 @@ const { toast } = useToast();
               top: 0;
               width: 100%;
               display: block !important;
-              font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              line-height: 1.6;
+              font-family: 'Cairo', sans-serif;
+              background: white;
               color: #333;
               direction: rtl;
             }
             
-            #print-content .report-header {
-              background: #667eea !important;
-              color: white !important;
-              padding: 2rem;
-              text-align: center;
-              -webkit-print-color-adjust: exact;
-              color-adjust: exact;
+            /* Page setup */
+            @page {
+              size: A4;
+              margin: 20mm;
             }
             
-            #print-content .company-name {
-              font-size: 1.8rem;
-              font-weight: bold;
-              margin-bottom: 0.5rem;
+            .page {
+              page-break-after: always;
             }
             
-            #print-content .report-title {
-              font-size: 2rem;
-              font-weight: bold;
-              margin-bottom: 0.5rem;
-            }
-            
-            #print-content .report-meta {
-              display: flex;
-              gap: 2rem;
-              font-size: 0.9rem;
-              opacity: 0.9;
-              justify-content: center;
-            }
-            
-            #print-content .filters-section {
-              background: #f8f9fa !important;
-              padding: 1.5rem;
-              border-bottom: 2px solid #e9ecef;
-            }
-            
-            #print-content .filters-grid {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-              gap: 1rem;
-            }
-            
-            #print-content .filter-item {
-              background: white !important;
-              padding: 0.75rem;
-              border-radius: 6px;
-              border: 1px solid #dee2e6;
-              font-weight: 500;
-            }
-            
-            #print-content .report-content {
-              padding: 2rem;
-            }
-            
-            #print-content .data-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 1rem 0;
-              background: white;
-              break-inside: avoid;
-            }
-            
-            #print-content .data-table th,
-            #print-content .data-table td {
-              padding: 1rem;
-              text-align: right;
-              border: 1px solid #000 !important;
-            }
-            
-            #print-content .data-table th {
-              background: #f8f9fa !important;
-              font-weight: bold;
-              color: #495057;
-            }
-            
-            #print-content .summary-cards {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-              gap: 1.5rem;
-              margin: 2rem 0;
-            }
-            
-            #print-content .summary-card {
-              background: white !important;
-              padding: 1.5rem;
-              border-radius: 10px;
-              border-right: 4px solid #667eea;
-              break-inside: avoid;
+            .no-break {
               page-break-inside: avoid;
             }
             
-            #print-content .report-footer {
-              background: #f8f9fa !important;
-              padding: 1.5rem 2rem;
-              border-top: 2px solid #e9ecef;
-              margin-top: 2rem;
-              text-align: center;
-              font-size: 0.9rem;
-              color: #666;
+            /* Header styles */
+            .border-b-4 {
+              border-bottom: 4px solid;
             }
             
-            @page {
-              margin: 1cm;
-              size: A4;
+            .border-gray-700 {
+              border-color: #374151;
+            }
+            
+            .pb-4 {
+              padding-bottom: 1rem;
+            }
+            
+            .mb-6 {
+              margin-bottom: 1.5rem;
+            }
+            
+            .flex {
+              display: flex;
+            }
+            
+            .justify-between {
+              justify-content: space-between;
+            }
+            
+            .items-center {
+              align-items: center;
+            }
+            
+            .text-2xl {
+              font-size: 1.5rem;
+            }
+            
+            .text-lg {
+              font-size: 1.125rem;
+            }
+            
+            .text-sm {
+              font-size: 0.875rem;
+            }
+            
+            .font-bold {
+              font-weight: bold;
+            }
+            
+            .font-semibold {
+              font-weight: 600;
+            }
+            
+            .text-gray-800 {
+              color: #1f2937;
+            }
+            
+            .text-gray-500 {
+              color: #6b7280;
+            }
+            
+            .text-gray-600 {
+              color: #4b5563;
+            }
+            
+            .text-gray-700 {
+              color: #374151;
+            }
+            
+            /* Filters section */
+            .bg-gray-50 {
+              background-color: #f9fafb;
+            }
+            
+            .border {
+              border: 1px solid;
+            }
+            
+            .border-gray-200 {
+              border-color: #e5e7eb;
+            }
+            
+            .border-gray-300 {
+              border-color: #d1d5db;
+            }
+            
+            .rounded-lg {
+              border-radius: 0.5rem;
+            }
+            
+            .p-3 {
+              padding: 0.75rem;
+            }
+            
+            .p-4 {
+              padding: 1rem;
+            }
+            
+            .p-6 {
+              padding: 1.5rem;
+            }
+            
+            /* Summary cards */
+            .grid {
+              display: grid;
+            }
+            
+            .grid-cols-3 {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            
+            .gap-6 {
+              gap: 1.5rem;
+            }
+            
+            .bg-white {
+              background-color: white;
+            }
+            
+            .bg-gray-100 {
+              background-color: #f3f4f6;
+            }
+            
+            .text-center {
+              text-align: center;
+            }
+            
+            .shadow-sm {
+              box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            }
+            
+            .mb-2 {
+              margin-bottom: 0.5rem;
+            }
+            
+            .text-3xl {
+              font-size: 1.875rem;
+            }
+            
+            .text-green-700 {
+              color: #15803d;
+            }
+            
+            .text-blue-800 {
+              color: #1e40af;
+            }
+            
+            /* Footer */
+            .border-t {
+              border-top: 1px solid;
+            }
+            
+            .pt-4 {
+              padding-top: 1rem;
+            }
+            
+            .mt-8 {
+              margin-top: 2rem;
+            }
+            
+            .font-medium {
+              font-weight: 500;
             }
           }
         </style>
@@ -826,45 +900,56 @@ const { toast } = useToast();
       return generateDamageReportContent(options, data);
     }
 
-    if (!data || !data.summary) {
-      return `
-        <div class="summary-cards">
-          <div class="summary-card">
-            <h4>إجمالي السجلات</h4>
-            <div class="value">0</div>
-            <div class="change">لا توجد بيانات متاحة حالياً</div>
-          </div>
-        </div>
-      `;
+    if (!data || (!data.metrics && !data.summary)) {
+      return '';
     }
 
-    // Generate summary cards based on data
-    const summaryCards = Object.entries(data.summary)
-      .map(([key, value]) => {
+    let content = '';
+
+    // Generate simplified summary cards (3 cards maximum)
+    if (data.metrics) {
+      const entries = Object.entries(data.metrics);
+      const cards = [];
+
+      for (let i = 0; i < Math.min(3, entries.length); i++) {
+        const [key, value] = entries[i];
         const label = getSummaryLabel(key);
+        let colorClass = 'text-gray-800';
+        
+        if (key.includes('paid') || key.includes('active') || key.includes('resolved')) {
+          colorClass = 'text-green-700';
+        } else if (key.includes('amount') || key.includes('total')) {
+          colorClass = 'text-blue-800';
+        }
+
         const formattedValue = typeof value === 'number' && key.includes('Amount') 
           ? formatCurrency(value) 
           : value?.toString() || '0';
-        
-        return `
-          <div class="summary-card">
-            <h4>${label}</h4>
-            <div class="value">${formattedValue}</div>
+
+        cards.push(`
+          <div class="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm no-break">
+            <h4 class="text-sm text-gray-500 mb-2">${label}</h4>
+            <p class="text-3xl font-bold ${colorClass}">${formattedValue}</p>
           </div>
+        `);
+      }
+
+      if (cards.length > 0) {
+        content += `
+          <section class="grid grid-cols-3 gap-6 mb-6">
+            ${cards.join('')}
+          </section>
         `;
-      })
-      .join('');
+      }
+    }
 
-    // Generate data table
-    const tableContent = generateDataTable(data.data, options.moduleType);
+    // Generate simplified data tables
+    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+      const tableContent = generateDataTable(data.data, options.moduleType);
+      content += tableContent;
+    }
 
-    return `
-      <div class="summary-cards">
-        ${summaryCards}
-      </div>
-      
-      ${tableContent}
-    `;
+    return content;
   };
 
   const generateDamageReportContent = (options: ExportOptions, data: any) => {
