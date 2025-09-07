@@ -1,14 +1,14 @@
-// Import React polyfill first to ensure hooks are available
-import '../utils/react-polyfill';
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+// Import Safe React implementation
+import React from 'react';
+import { safeCreateContext, safeUseContext, safeUseState, safeUseEffect, safeUseCallback } from '../utils/safe-react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = safeCreateContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = safeUseContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -20,56 +20,19 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Comprehensive safety checks for React hooks availability
-  if (typeof useState === 'undefined' || typeof useEffect === 'undefined' || typeof useContext === 'undefined') {
-    console.error('React hooks are not available. This might be a React version conflict.');
-    console.error('useState available:', typeof useState !== 'undefined');
-    console.error('useEffect available:', typeof useEffect !== 'undefined');
-    console.error('useContext available:', typeof useContext !== 'undefined');
-    console.error('React object:', React);
-    
-    // Try to use React hooks directly from React object as fallback
-    if (React && React.useState) {
-      console.log('Attempting to use React hooks directly from React object...');
-    } else {
-      return (
-        <div style={{ 
-          padding: '20px', 
-          textAlign: 'center', 
-          backgroundColor: '#fee', 
-          border: '1px solid #fcc',
-          borderRadius: '5px',
-          margin: '20px',
-          fontFamily: 'Arial, sans-serif'
-        }}>
-          <h2>خطأ في تحميل النظام</h2>
-          <p>يرجى إعادة تحميل الصفحة أو الاتصال بالدعم الفني</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{ 
-              padding: '10px 20px', 
-              backgroundColor: '#007bff', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            إعادة تحميل الصفحة
-          </button>
-        </div>
-      );
-    }
-  }
+  console.log('🔧 AuthProvider: Starting initialization...');
   
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionError, setSessionError] = useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  // Use safe React hooks
+  const [user, setUser] = safeUseState<AuthUser | null>(null);
+  const [session, setSession] = safeUseState<Session | null>(null);
+  const [loading, setLoading] = safeUseState(true);
+  const [sessionError, setSessionError] = safeUseState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = safeUseState(false);
+  
+  console.log('🔧 AuthProvider: State initialized successfully');
 
   // Session validation helper with improved error handling
-  const validateSession = useCallback(async (currentSession: Session | null): Promise<boolean> => {
+  const validateSession = safeUseCallback(async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
       return false;
     }
@@ -106,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isSigningOut]);
 
-  useEffect(() => {
+  safeUseEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
