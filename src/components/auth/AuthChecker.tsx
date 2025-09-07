@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -12,15 +12,22 @@ export const AuthChecker: React.FC<AuthCheckerProps> = ({
   children, 
   redirectTo = '/auth' 
 }) => {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading, sessionError } = useAuth();
   const navigate = useNavigate();
+  const hasCheckedAuth = useRef(false);
 
-  React.useEffect(() => {
-    if (!loading && (!user || !session)) {
-      console.log('🔒 [AUTH_CHECKER] No authenticated session, redirecting to:', redirectTo);
-      navigate(redirectTo, { replace: true });
+  useEffect(() => {
+    if (!loading && !hasCheckedAuth.current) {
+      hasCheckedAuth.current = true;
+      
+      // Only redirect if there's no user AND no session AND no session error
+      // This prevents redirecting during session refresh attempts
+      if ((!user || !session) && !sessionError) {
+        console.log('🔒 [AUTH_CHECKER] No authenticated session, redirecting to:', redirectTo);
+        navigate(redirectTo, { replace: true });
+      }
     }
-  }, [user, session, loading, navigate, redirectTo]);
+  }, [user, session, loading, sessionError, navigate, redirectTo]);
 
   if (loading) {
     return (
@@ -28,6 +35,11 @@ export const AuthChecker: React.FC<AuthCheckerProps> = ({
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  // If there's a session error, don't redirect immediately - let SessionValidator handle it
+  if (sessionError) {
+    return <>{children}</>;
   }
 
   if (!user || !session) {

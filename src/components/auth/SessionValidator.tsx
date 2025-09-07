@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,17 +13,24 @@ interface SessionValidatorProps {
 export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) => {
   const { user, session, loading, sessionError, validateSession } = useAuth();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const checkSession = async () => {
-      if (!loading && session && !sessionError && validateSession) {
+      if (!loading && session && sessionError && validateSession) {
         try {
+          setIsRefreshing(true);
           const isValid = await validateSession();
-          if (!isValid) {
+          if (isValid) {
+            // Session was refreshed successfully, clear error
+            window.location.reload();
+          } else {
             console.log('🔒 [SESSION_VALIDATOR] Session validation failed');
           }
         } catch (error) {
           console.error('🔒 [SESSION_VALIDATOR] Session validation error:', error);
+        } finally {
+          setIsRefreshing(false);
         }
       }
     };
@@ -32,7 +39,7 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
   }, [session, loading, sessionError, validateSession]);
 
   // Show loading while auth is initializing
-  if (loading) {
+  if (loading || isRefreshing) {
     return (
       <div className="flex items-center justify-center h-48">
         <LoadingSpinner size="lg" />
@@ -75,15 +82,21 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
                 variant="outline"
                 onClick={async () => {
                   try {
+                    setIsRefreshing(true);
                     await validateSession();
+                    // If we get here, try to reload the page to reset the state
+                    window.location.reload();
                   } catch (error) {
                     navigate('/auth');
+                  } finally {
+                    setIsRefreshing(false);
                   }
                 }}
                 className="flex items-center gap-2"
+                disabled={isRefreshing}
               >
-                <RefreshCw className="h-4 w-4" />
-                إعادة المحاولة
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'جاري المحاولة...' : 'إعادة المحاولة'}
               </Button>
             )}
           </div>
