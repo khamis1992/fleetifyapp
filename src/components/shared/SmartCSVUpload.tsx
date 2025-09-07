@@ -73,7 +73,7 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
   onComplete,
   fieldTypes,
   templateData,
-  maxFileSize = 10 * 1024 * 1024, // 10MB
+  maxFileSize = 100 * 1024 * 1024, // 100MB
   allowedExtensions = ['.csv', '.xlsx', '.xls'],
   className = ''
 }) => {

@@ -32,7 +32,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
   onFileProcessed,
   onError,
   acceptedFileTypes = ['.csv', '.xlsx', '.xls'],
-  maxFileSize = 10 * 1024 * 1024 // 10MB
+  maxFileSize = 100 * 1024 * 1024 // 100MB
 }) => {
   const [uploadedFile, setUploadedFile] = useState<FileInfo | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
