@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Archive } from "lucide-react";
+import { Upload, Archive, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { CSVArchiveManager } from "@/components/csv/CSVArchiveManager";
+import { CSVArchiveSelector } from "@/components/csv/CSVArchiveSelector";
+import { CSVArchiveEntry } from "@/hooks/useCSVArchive";
 
 interface ContractCSVUploadWithArchiveProps {
   open: boolean;
@@ -20,6 +22,8 @@ export function ContractCSVUploadWithArchive({ open, onOpenChange, onUploadCompl
   const [file, setFile] = useState<File | null>(null);
   const [archiveFile, setArchiveFile] = useState(true);
   const [showArchive, setShowArchive] = useState(false);
+  const [showArchiveSelector, setShowArchiveSelector] = useState(false);
+  const [selectedArchiveEntry, setSelectedArchiveEntry] = useState<CSVArchiveEntry | null>(null);
   const { uploadContracts, isUploading, progress, results } = useContractCSVUpload();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +35,12 @@ export function ContractCSVUploadWithArchive({ open, onOpenChange, onUploadCompl
       }
       setFile(selectedFile);
     }
+  };
+
+  const handleFileFromArchive = (selectedFile: File, archiveEntry: CSVArchiveEntry) => {
+    setFile(selectedFile);
+    setSelectedArchiveEntry(archiveEntry);
+    setShowArchiveSelector(false);
   };
 
   const handleUpload = async () => {
@@ -64,13 +74,30 @@ export function ContractCSVUploadWithArchive({ open, onOpenChange, onUploadCompl
           <div className="space-y-4">
             <div>
               <Label htmlFor="csv-file">اختيار ملف CSV</Label>
-              <Input
-                id="csv-file"
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="mt-2"
-              />
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowArchiveSelector(true)}
+                  className="px-3"
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  من الأرشيف
+                </Button>
+              </div>
+              {selectedArchiveEntry && (
+                <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
+                  <span className="text-blue-700">
+                    تم اختيار من الأرشيف: {selectedArchiveEntry.original_file_name}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -123,6 +150,13 @@ export function ContractCSVUploadWithArchive({ open, onOpenChange, onUploadCompl
       <CSVArchiveManager 
         open={showArchive} 
         onOpenChange={setShowArchive}
+      />
+
+      <CSVArchiveSelector
+        open={showArchiveSelector}
+        onOpenChange={setShowArchiveSelector}
+        onFileSelected={handleFileFromArchive}
+        uploadType="contracts"
       />
     </>
   );
