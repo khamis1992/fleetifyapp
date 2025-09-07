@@ -120,33 +120,6 @@ export default function Reports() {
     }
   ];
 
-  const quickStats = [
-    {
-      title: 'إجمالي التقارير',
-      value: '40',
-      icon: FileText,
-      change: '+5 هذا الشهر'
-    },
-    {
-      title: 'التقارير المُصدرة اليوم',
-      value: '12',
-      icon: Download,
-      change: '+3 منذ الأمس'
-    },
-    {
-      title: 'التقارير المجدولة',
-      value: '8',
-      icon: Calendar,
-      change: '2 قيد التنفيذ'
-    },
-    {
-      title: 'متوسط وقت التنفيذ',
-      value: '2.3 ثانية',
-      icon: TrendingUp,
-      change: '-0.5 ثانية'
-    }
-  ];
-
   return (
     <div className={cn(layout.containerPadding, layout.itemSpacing)} dir="rtl">
       {/* Enhanced Header */}
@@ -158,26 +131,6 @@ export default function Reports() {
           <h1 className={cn("font-bold text-foreground", isMobile ? "text-xl" : "text-2xl")}>مركز التقارير الموحد</h1>
           <p className={cn("text-muted-foreground", isMobile ? "text-sm" : "")}>تقارير شاملة لجميع أقسام النظام</p>
         </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className={cn("grid gap-4", layout.gridCols)}>
-        {quickStats.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
-            <CardContent className={cn("p-4", isMobile ? "p-4" : "p-6")}>
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <stat.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.change}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
       </div>
 
       {/* Main Content */}
