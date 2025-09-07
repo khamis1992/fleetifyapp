@@ -18,8 +18,6 @@ import {
 } from 'lucide-react';
 import { UnifiedReportViewer } from '@/components/reports/UnifiedReportViewer';
 import { ReportFilters } from '@/components/reports/ReportFilters';
-import { ReportsMobileHeader } from '@/components/reports/ReportsMobileHeader';
-import { FloatingReportsButton } from '@/components/reports/ReportsMobileActionButtons';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
@@ -41,8 +39,6 @@ export default function Reports() {
   // State management
   const [selectedModule, setSelectedModule] = useState<string>('dashboard');
   const [selectedReport, setSelectedReport] = useState<string>('');
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -50,7 +46,7 @@ export default function Reports() {
     moduleType: ''
   });
 
-  const { data: reportsData, isLoading, refetch } = useUnifiedReports();
+  const { data: reportsData, isLoading } = useUnifiedReports();
 
   const reportModules = [
     {
@@ -151,72 +147,17 @@ export default function Reports() {
     }
   ];
 
-  // Event handlers
-  const handleScheduleReport = useCallback(() => {
-    console.log('جدولة تقرير');
-  }, []);
-
-  const handleBulkExport = useCallback(() => {
-    console.log('تصدير مجمع');
-  }, []);
-
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refetch]);
-
-  const handleToggleFilters = useCallback(() => {
-    setShowMobileFilters(prev => !prev);
-  }, []);
-
   return (
     <div className={cn(layout.containerPadding, layout.itemSpacing)} dir="rtl">
-      {/* Enhanced Header - Mobile vs Desktop */}
-      <div className="flex flex-col space-y-4">
-        {isMobile ? (
-          <ReportsMobileHeader
-            onScheduleReport={handleScheduleReport}
-            onBulkExport={handleBulkExport}
-            onRefresh={handleRefresh}
-            onToggleFilters={handleToggleFilters}
-            isRefreshing={isRefreshing}
-          />
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">مركز التقارير الموحد</h1>
-                <p className="text-muted-foreground">تقارير شاملة لجميع أقسام النظام</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={handleScheduleReport}
-                className="h-12 rounded-xl shadow-sm"
-              >
-                <Calendar className="h-4 w-4 ml-2" />
-                جدولة تقرير
-              </Button>
-              <Button 
-                size="lg"
-                onClick={handleBulkExport}
-                className="h-12 rounded-xl shadow-lg"
-              >
-                <Download className="h-4 w-4 ml-2" />
-                تصدير مجمع
-              </Button>
-            </div>
-          </div>
-        )}
+      {/* Enhanced Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <BarChart3 className="h-6 w-6 text-primary" />
+        </div>
+        <div>
+          <h1 className={cn("font-bold text-foreground", isMobile ? "text-xl" : "text-2xl")}>مركز التقارير الموحد</h1>
+          <p className={cn("text-muted-foreground", isMobile ? "text-sm" : "")}>تقارير شاملة لجميع أقسام النظام</p>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -338,12 +279,9 @@ export default function Reports() {
         {reportModules.map((module) => (
           <TabsContent key={module.id} value={module.id} className="space-y-6">
             <div className={cn("flex gap-6", isMobile ? "flex-col" : "lg:flex-row")}>
-              {/* Filters Sidebar - Collapsible on Mobile */}
-              <div className={cn(
-                isMobile ? "w-full" : "lg:w-80",
-                isMobile && !showMobileFilters && "hidden"
-              )}>
-                <Card className={cn(isMobile && "border-2")}>
+              {/* Filters Sidebar */}
+              <div className={isMobile ? "w-full" : "lg:w-80"}>
+                <Card>
                   <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
                     <ReportFilters
                       moduleType={module.id}
@@ -411,11 +349,6 @@ export default function Reports() {
           filters={filters}
           onClose={() => setSelectedReport('')}
         />
-      )}
-
-      {/* Floating Action Button for Mobile */}
-      {isMobile && (
-        <FloatingReportsButton onBulkExport={handleBulkExport} />
       )}
     </div>
   );
