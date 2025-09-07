@@ -78,7 +78,7 @@ const App = () => {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
               <CompanyContextProvider>
-                <PWAInstallPrompt />
+                {/* <PWAInstallPrompt /> */}
                 <SimpleToaster />
                 {/* <Sonner /> */}
             <BrowserRouter>
