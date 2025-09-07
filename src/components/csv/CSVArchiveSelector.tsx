@@ -100,11 +100,14 @@ export function CSVArchiveSelector({
           ) : filteredFiles.length === 0 ? (
             <div className="text-center py-8">
               <Archive className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <div className="text-muted-foreground">
+              <div className="text-muted-foreground mb-3">
                 {uploadType 
                   ? `لا توجد ملفات محفوظة لـ ${getUploadTypeLabel(uploadType)}`
                   : 'لا توجد ملفات محفوظة'
                 }
+              </div>
+              <div className="text-sm text-muted-foreground">
+                لحفظ الملفات في الأرشيف، تأكد من تفعيل خيار "حفظ الملف في الأرشيف" عند رفع الملفات
               </div>
             </div>
           ) : (

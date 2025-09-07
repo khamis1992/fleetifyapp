@@ -33,7 +33,7 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   const [selectedTemplate, setSelectedTemplate] = React.useState<CSVTemplate | null>(null);
   const [saveAsTemplate, setSaveAsTemplate] = React.useState(false);
   const [templateName, setTemplateName] = React.useState('');
-  const [archiveFile, setArchiveFile] = React.useState(false);
+  const [archiveFile, setArchiveFile] = React.useState(true);
   const { 
     uploadContracts, 
     smartUploadContracts,
