@@ -164,28 +164,9 @@ export function UnifiedReportViewer({
                 عرض وتصدير التقرير مع إمكانية التخصيص
               </DialogDescription>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                disabled={isExporting}
-              >
-                {isExporting ? (
-                  <LoadingSpinner />
-                ) : (
-                  <Download className="h-4 w-4 ml-2" />
-                )}
-                تصدير HTML
-              </Button>
-              <Button variant="outline" size="sm">
-                <Printer className="h-4 w-4 ml-2" />
-                طباعة
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </DialogHeader>
 
