@@ -33,20 +33,40 @@ export function CSVArchiveSelector({
 
   const handleSelectFile = async (entry: CSVArchiveEntry) => {
     try {
-      if (!entry.file_content) {
+      console.log('🔄 Selecting file:', entry.original_file_name, 'from storage path:', entry.storage_path);
+      
+      if (!entry.storage_path) {
+        toast.error('مسار الملف غير متوفر');
+        return;
+      }
+
+      // تحميل الملف من Supabase Storage
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.storage
+        .from('csv-archives')
+        .download(entry.storage_path);
+
+      if (error) {
+        console.error('Storage download error:', error);
+        toast.error('فشل في تحميل الملف من التخزين');
+        return;
+      }
+
+      if (!data) {
         toast.error('محتوى الملف غير متوفر');
         return;
       }
 
-      // إنشاء ملف من المحتوى المحفوظ
-      const blob = new Blob([entry.file_content], { type: 'text/csv' });
-      const file = new File([blob], entry.original_file_name, { type: 'text/csv' });
+      // إنشاء ملف من البيانات المحملة
+      const file = new File([data], entry.original_file_name, { type: 'text/csv' });
+      
+      console.log('✅ File selected successfully:', file.name, 'Size:', file.size);
       
       onFileSelected(file, entry);
       onOpenChange(false);
       toast.success(`تم اختيار الملف: ${entry.original_file_name}`);
     } catch (error) {
-      console.error('Error selecting archived file:', error);
+      console.error('❌ Error selecting archived file:', error);
       toast.error('فشل في اختيار الملف من الأرشيف');
     }
   };
