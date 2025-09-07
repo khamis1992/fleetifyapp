@@ -60,6 +60,8 @@ export const useCSVArchive = () => {
 
       if (!profile?.company_id) throw new Error('User company not found');
 
+      console.log('Fetching CSV archives for user:', user.id, 'company:', profile.company_id);
+
       // List files from user's company folder
       const { data: userFiles, error: userError } = await supabase.storage
         .from('csv-archives')
@@ -68,6 +70,8 @@ export const useCSVArchive = () => {
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' }
         });
+
+      console.log('User files result:', { userFiles, userError });
 
       // List files from root (like templates)
       const { data: rootFiles, error: rootError } = await supabase.storage
@@ -78,11 +82,15 @@ export const useCSVArchive = () => {
           sortBy: { column: 'created_at', order: 'desc' }
         });
 
+      console.log('Root files result:', { rootFiles, rootError });
+
       // Combine both file lists, but ignore errors if one location doesn't exist
       const allFiles = [
         ...(userFiles || []).map(file => ({ ...file, isUserFile: true })),
         ...(rootFiles || []).filter(file => !file.name?.includes('/')).map(file => ({ ...file, isUserFile: false }))
       ];
+
+      console.log('Combined files:', allFiles);
 
       // Map storage files to CSVArchiveEntry format
       return allFiles.map(file => ({
