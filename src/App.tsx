@@ -1,5 +1,6 @@
 
 import { StrictMode } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
 // import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
@@ -75,9 +76,10 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthProvider>
               <CompanyContextProvider>
                 <PWAInstallPrompt />
                 <SimpleToaster />
@@ -384,13 +386,14 @@ const App = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </CompanyContextProvider>
-    </AuthProvider>
-  </ThemeProvider>
-</QueryClientProvider>
-</StrictMode>
-);
+            </BrowserRouter>
+              </CompanyContextProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </StrictMode>
+  );
 };
 
 export default App;

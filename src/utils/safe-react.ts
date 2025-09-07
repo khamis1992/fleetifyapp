@@ -3,126 +3,85 @@
 
 import React from 'react';
 
+console.log('🔧 Safe React: Module loading...');
+console.log('🔧 Safe React: React object:', React);
+console.log('🔧 Safe React: React.useState:', React.useState);
+
 // Safe useState implementation
 export const safeUseState = <T>(initialValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
+  console.log('🔧 Safe React: safeUseState called with:', initialValue);
+  
+  // Force check React availability
+  if (!React || typeof React.useState !== 'function') {
+    console.error('🔧 Safe React: React.useState is not available!');
+    console.error('🔧 Safe React: React object:', React);
+    console.error('🔧 Safe React: typeof React.useState:', typeof React.useState);
+    
+    // Emergency fallback - throw error to trigger error boundary
+    throw new Error(`React hooks are not available. React: ${!!React}, useState: ${typeof React?.useState}`);
+  }
+  
   try {
-    // Try to use React's useState first
-    if (React && React.useState && typeof React.useState === 'function') {
-      return React.useState(initialValue);
-    }
-    
-    // Fallback implementation using ref-based state
-    console.warn('🔧 Safe React: Using fallback useState implementation');
-    
-    let currentValue = initialValue;
-    const setValue = (newValue: T | ((prev: T) => T)) => {
-      if (typeof newValue === 'function') {
-        currentValue = (newValue as (prev: T) => T)(currentValue);
-      } else {
-        currentValue = newValue;
-      }
-      // Trigger re-render if possible
-      if (window && (window as any).forceUpdate) {
-        (window as any).forceUpdate();
-      }
-    };
-    
-    return [currentValue, setValue];
+    console.log('🔧 Safe React: Using React.useState');
+    return React.useState(initialValue);
   } catch (error) {
-    console.error('🔧 Safe React: Error in useState:', error);
-    throw new Error('React hooks are not available and fallback failed');
+    console.error('🔧 Safe React: Error calling React.useState:', error);
+    throw error;
   }
 };
 
 // Safe useEffect implementation
 export const safeUseEffect = (effect: () => void | (() => void), deps?: any[]): void => {
+  if (!React || typeof React.useEffect !== 'function') {
+    throw new Error(`React.useEffect is not available. React: ${!!React}, useEffect: ${typeof React?.useEffect}`);
+  }
+  
   try {
-    if (React && React.useEffect && typeof React.useEffect === 'function') {
-      return React.useEffect(effect, deps);
-    }
-    
-    console.warn('🔧 Safe React: Using fallback useEffect implementation');
-    
-    // Fallback: execute effect immediately
-    setTimeout(() => {
-      try {
-        const cleanup = effect();
-        if (cleanup && typeof cleanup === 'function') {
-          // Store cleanup for later if needed
-          (window as any).__CLEANUP_FUNCTIONS__ = (window as any).__CLEANUP_FUNCTIONS__ || [];
-          (window as any).__CLEANUP_FUNCTIONS__.push(cleanup);
-        }
-      } catch (err) {
-        console.error('🔧 Safe React: Error in effect:', err);
-      }
-    }, 0);
+    return React.useEffect(effect, deps);
   } catch (error) {
-    console.error('🔧 Safe React: Error in useEffect:', error);
+    console.error('🔧 Safe React: Error calling React.useEffect:', error);
+    throw error;
   }
 };
 
 // Safe useContext implementation
 export const safeUseContext = <T>(context: React.Context<T>): T => {
+  if (!React || typeof React.useContext !== 'function') {
+    throw new Error(`React.useContext is not available. React: ${!!React}, useContext: ${typeof React?.useContext}`);
+  }
+  
   try {
-    if (React && React.useContext && typeof React.useContext === 'function') {
-      return React.useContext(context);
-    }
-    
-    console.warn('🔧 Safe React: Using fallback useContext implementation');
-    
-    // Fallback: return default value if available
-    if (context && (context as any)._defaultValue !== undefined) {
-      return (context as any)._defaultValue;
-    }
-    
-    throw new Error('Context not available and no default value provided');
+    return React.useContext(context);
   } catch (error) {
-    console.error('🔧 Safe React: Error in useContext:', error);
+    console.error('🔧 Safe React: Error calling React.useContext:', error);
     throw error;
   }
 };
 
 // Safe useCallback implementation
 export const safeUseCallback = <T extends (...args: any[]) => any>(callback: T, deps?: any[]): T => {
+  if (!React || typeof React.useCallback !== 'function') {
+    throw new Error(`React.useCallback is not available. React: ${!!React}, useCallback: ${typeof React?.useCallback}`);
+  }
+  
   try {
-    if (React && React.useCallback && typeof React.useCallback === 'function') {
-      return React.useCallback(callback, deps);
-    }
-    
-    console.warn('🔧 Safe React: Using fallback useCallback implementation');
-    return callback;
+    return React.useCallback(callback, deps);
   } catch (error) {
-    console.error('🔧 Safe React: Error in useCallback:', error);
-    return callback;
+    console.error('🔧 Safe React: Error calling React.useCallback:', error);
+    throw error;
   }
 };
 
 // Safe createContext implementation
 export const safeCreateContext = <T>(defaultValue: T): React.Context<T> => {
+  if (!React || typeof React.createContext !== 'function') {
+    throw new Error(`React.createContext is not available. React: ${!!React}, createContext: ${typeof React?.createContext}`);
+  }
+  
   try {
-    if (React && React.createContext && typeof React.createContext === 'function') {
-      return React.createContext(defaultValue);
-    }
-    
-    console.warn('🔧 Safe React: Using fallback createContext implementation');
-    
-    // Fallback context implementation
-    const context = {
-      _defaultValue: defaultValue,
-      Provider: ({ children, value }: { children: React.ReactNode; value: T }) => {
-        (window as any).__CONTEXT_VALUES__ = (window as any).__CONTEXT_VALUES__ || {};
-        (window as any).__CONTEXT_VALUES__[context as any] = value;
-        return children as any;
-      },
-      Consumer: ({ children }: { children: (value: T) => React.ReactNode }) => {
-        const value = (window as any).__CONTEXT_VALUES__?.[context as any] || defaultValue;
-        return children(value) as any;
-      }
-    } as React.Context<T>;
-    
-    return context;
+    return React.createContext(defaultValue);
   } catch (error) {
-    console.error('🔧 Safe React: Error in createContext:', error);
+    console.error('🔧 Safe React: Error calling React.createContext:', error);
     throw error;
   }
 };
