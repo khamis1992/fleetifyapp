@@ -74,8 +74,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
               <CompanyContextProvider>
@@ -386,11 +385,10 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </CompanyContextProvider>
-    </AuthProvider>
-  </ThemeProvider>
-</QueryClientProvider>
-</StrictMode>
-);
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default App;
