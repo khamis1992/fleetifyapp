@@ -214,7 +214,8 @@ export const ContractsEnhancedHeader: React.FC<ContractsEnhancedHeaderProps> = (
               className="flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
-              استيراد CSV
+              <span className="hidden sm:inline">استيراد ذكي</span>
+              <span className="sm:hidden">استيراد</span>
             </Button>
 
             <Button

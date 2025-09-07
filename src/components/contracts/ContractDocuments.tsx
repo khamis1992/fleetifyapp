@@ -397,7 +397,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                     id="file"
                     type="file"
                     {...register('file')}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.csv,.xlsx,.xls,.json,.txt,.zip,.rar"
                   />
                 </div>
 

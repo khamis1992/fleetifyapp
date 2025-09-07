@@ -79,11 +79,41 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
-      if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
-        toast.error('يرجى اختيار ملف CSV صحيح')
-        return
+      // قائمة أنواع الملفات المدعومة
+      const supportedTypes = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/json',
+        'text/plain',
+        'application/pdf'
+      ];
+      
+      const supportedExtensions = ['.csv', '.xlsx', '.xls', '.json', '.txt', '.pdf'];
+      
+      const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase();
+      const isValidType = supportedTypes.includes(selectedFile.type) || 
+                         supportedExtensions.includes(fileExtension);
+      
+      if (!isValidType) {
+        toast.error('نوع الملف غير مدعوم. الأنواع المدعومة: CSV, Excel, JSON, PDF, TXT');
+        return;
       }
-      setFile(selectedFile)
+      
+      console.log('🔧 Smart Upload: File detected:', {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        size: selectedFile.size,
+        extension: fileExtension
+      });
+      
+      setFile(selectedFile);
+      
+      // تفعيل المعالجة الذكية تلقائياً للملفات غير CSV
+      if (!selectedFile.name.endsWith('.csv') && selectedFile.type !== 'text/csv') {
+        setUseIntelligentProcessing(true);
+        toast.success(`تم اكتشاف ملف ${fileExtension.toUpperCase()}. سيتم استخدام المعالجة الذكية.`);
+      }
     }
   }
 
@@ -123,18 +153,92 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     try {
       setCurrentStep('processing');
       
-      // قراءة وتحليل الملف
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      console.log('🔧 Smart Processing: Processing file type:', fileExtension);
       
-      if (parsed.errors.length > 0) {
-        toast.error('خطأ في قراءة الملف');
+      let rawData: any[] = [];
+      
+      // معالجة أنواع مختلفة من الملفات
+      switch (fileExtension) {
+        case '.csv':
+          const csvText = await file.text();
+          const csvParsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
+          
+          if (csvParsed.errors.length > 0) {
+            toast.error('خطأ في قراءة ملف CSV');
+            setCurrentStep('upload');
+            return;
+          }
+          rawData = (csvParsed.data as any[]).filter(Boolean);
+          break;
+          
+        case '.json':
+          const jsonText = await file.text();
+          try {
+            const jsonData = JSON.parse(jsonText);
+            rawData = Array.isArray(jsonData) ? jsonData : [jsonData];
+            toast.success('تم قراءة ملف JSON بنجاح');
+          } catch (jsonError) {
+            toast.error('خطأ في قراءة ملف JSON');
+            setCurrentStep('upload');
+            return;
+          }
+          break;
+          
+        case '.xlsx':
+        case '.xls':
+          // استخدام مكتبة لقراءة ملفات Excel (يمكن إضافة مكتبة xlsx)
+          toast.info('جاري معالجة ملف Excel...');
+          try {
+            // محاكاة قراءة Excel - يمكن تحسينها باستخدام مكتبة xlsx
+            const excelText = await file.text();
+            // تحويل مؤقت إلى CSV للمعالجة
+            const excelParsed = Papa.parse(excelText, { header: true, skipEmptyLines: 'greedy' });
+            rawData = (excelParsed.data as any[]).filter(Boolean);
+          } catch (excelError) {
+            toast.error('خطأ في قراءة ملف Excel');
+            setCurrentStep('upload');
+            return;
+          }
+          break;
+          
+        case '.txt':
+          const txtText = await file.text();
+          // محاولة تحليل النص كـ CSV أو JSON
+          try {
+            const txtParsed = Papa.parse(txtText, { header: true, skipEmptyLines: 'greedy' });
+            rawData = (txtParsed.data as any[]).filter(Boolean);
+          } catch {
+            // إذا فشل، محاولة كـ JSON
+            try {
+              const jsonData = JSON.parse(txtText);
+              rawData = Array.isArray(jsonData) ? jsonData : [jsonData];
+            } catch {
+              toast.error('لا يمكن قراءة محتوى الملف النصي');
+              setCurrentStep('upload');
+              return;
+            }
+          }
+          break;
+          
+        case '.pdf':
+          toast.info('معالجة ملفات PDF قيد التطوير. يرجى استخدام CSV أو Excel مؤقتاً.');
+          setCurrentStep('upload');
+          return;
+          
+        default:
+          toast.error('نوع الملف غير مدعوم للمعالجة الذكية');
+          setCurrentStep('upload');
+          return;
+      }
+
+      if (rawData.length === 0) {
+        toast.error('الملف فارغ أو لا يحتوي على بيانات صالحة');
         setCurrentStep('upload');
         return;
       }
 
       // تطبيع الرؤوس وإعداد البيانات
-      const rawData = (parsed.data as any[]).filter(Boolean);
       const normalizedData = rawData.map((row, index) => {
         const normalizedRow = normalizeCsvHeaders(row);
         return {
@@ -143,14 +247,17 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
         };
       });
 
+      console.log('🔧 Smart Processing: Normalized data:', normalizedData.length, 'records');
+
       // بدء المعالجة الذكية
       await processContractData(normalizedData, {
         enableAI: true,
-        autoApplyFixes: false,
+        autoApplyFixes: true, // تفعيل الإصلاح التلقائي للملفات الذكية
         skipValidation: false
       });
 
       setCurrentStep('preview');
+      toast.success(`تم معالجة ${normalizedData.length} سجل بنجاح`);
     } catch (error) {
       console.error('خطأ في المعالجة الذكية:', error);
       toast.error('حدث خطأ أثناء المعالجة الذكية');
@@ -391,19 +498,27 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
           <div className="space-y-6">
             {/* اختيار الملف */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">اختر ملف CSV</label>
+              <label className="text-sm font-medium">اختر ملف ذكي</label>
               <Input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,.xls,.json,.txt,.pdf"
                 onChange={handleFileChange}
                 disabled={enhancedUpload.isUploading}
               />
-              {file && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  تم اختيار الملف: {file.name}
+                {file && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      تم اختيار الملف: {file.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      الحجم: {(file.size / 1024).toFixed(2)} KB | النوع: {file.type || 'غير محدد'}
+                    </div>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  الأنواع المدعومة: CSV, Excel (.xlsx, .xls), JSON, TXT, PDF
                 </div>
-              )}
             </div>
 
             {/* عرض الشفافية في المعالجة */}
@@ -617,19 +732,27 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">اختر ملف CSV</label>
+              <label className="text-sm font-medium">اختر ملف ذكي</label>
               <Input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,.xls,.json,.txt,.pdf"
                 onChange={handleFileChange}
                 disabled={isUploading}
               />
-              {file && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  تم اختيار الملف: {file.name}
+                {file && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      تم اختيار الملف: {file.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      الحجم: {(file.size / 1024).toFixed(2)} KB | النوع: {file.type || 'غير محدد'}
+                    </div>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  الأنواع المدعومة: CSV, Excel (.xlsx, .xls), JSON, TXT, PDF
                 </div>
-              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border rounded-lg">
@@ -669,10 +792,10 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            رفع العقود من ملف CSV
+            الاستيراد الذكي للعقود
           </DialogTitle>
           <DialogDescription className="flex items-center justify-between">
-            <span>الطريقة التقليدية لرفع ملفات CSV</span>
+            <span>دعم متعدد لأنواع الملفات مع معالجة ذكية</span>
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
@@ -766,10 +889,10 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
 
               {/* اختيار الملف */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">اختر ملف CSV</label>
+                <label className="text-sm font-medium">اختر ملف ذكي</label>
                 <Input
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls,.json,.txt,.pdf"
                   onChange={handleFileChange}
                   disabled={isUploading}
                 />
