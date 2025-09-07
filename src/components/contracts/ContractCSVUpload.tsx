@@ -33,7 +33,7 @@ interface ContractCSVUploadProps {
 }
 
 export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: ContractCSVUploadProps) {
-  const [uploadMode, setUploadMode] = React.useState<'classic' | 'smart' | 'bulk'>('smart');
+  const [uploadMode, setUploadMode] = React.useState<'classic' | 'smart' | 'bulk' | 'enhanced'>('enhanced');
   const [file, setFile] = React.useState<File | null>(null);
   const [selectedTemplate, setSelectedTemplate] = React.useState<CSVTemplate | null>(null);
   const [saveAsTemplate, setSaveAsTemplate] = React.useState(false);
@@ -41,6 +41,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   const [archiveFile, setArchiveFile] = React.useState(true);
   const [useIntelligentProcessing, setUseIntelligentProcessing] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState<'upload' | 'preview' | 'processing'>('upload');
+  const [autoCreateCustomers, setAutoCreateCustomers] = React.useState(true);
+  const [replaceDuplicates, setReplaceDuplicates] = React.useState(false);
   const { 
     uploadContracts, 
     smartUploadContracts,
@@ -282,6 +284,23 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     }
   }
 
+  const handleEnhancedUpload = async () => {
+    if (!file) {
+      toast.error('يرجى اختيار ملف أولاً')
+      return
+    }
+    try {
+      await enhancedUpload.processContracts(file, {
+        autoCreateCustomers,
+        replaceDuplicates
+      })
+      onUploadComplete()
+    } catch (error: any) {
+      console.error('خطأ في الرفع المحسن:', error)
+      toast.error(error.message || 'حدث خطأ أثناء الرفع المحسن')
+    }
+  }
+
   const handleClose = () => {
     setFile(null)
     setSelectedTemplate(null)
@@ -320,6 +339,244 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
         archiveFile={archiveFile}
         onArchiveChange={setArchiveFile}
       />
+    );
+  }
+
+  // وضع الرفع المحسن
+  if (uploadMode === 'enhanced') {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              الرفع المحسن للعقود
+            </DialogTitle>
+            <DialogDescription className="flex items-center justify-between">
+              <span>رفع ذكي مع إنشاء العملاء تلقائياً ومطابقة الأسماء</span>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setUploadMode('smart')}
+                  className="flex items-center gap-1"
+                >
+                  <Zap className="h-3 w-3" />
+                  الرفع الذكي
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setUploadMode('bulk')}
+                  className="flex items-center gap-1"
+                >
+                  الرفع بالجملة
+                </Button>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between mt-2 px-1">
+            <div className="text-sm">
+              <span className="text-muted-foreground">سيتم الرفع إلى:</span>
+              <Badge variant="outline" className="ml-2">{targetCompanyName}</Badge>
+            </div>
+            {isSuperAdmin && (
+              <div className="shrink-0">
+                <CompanySelector />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {/* اختيار الملف */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">اختر ملف CSV</label>
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                disabled={enhancedUpload.isUploading}
+              />
+              {file && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  تم اختيار الملف: {file.name}
+                </div>
+              )}
+            </div>
+
+            {/* عرض الشفافية في المعالجة */}
+            {enhancedUpload.isUploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>جاري المعالجة...</span>
+                  <span>{enhancedUpload.progress}%</span>
+                </div>
+                <Progress value={enhancedUpload.progress} className="w-full" />
+              </div>
+            )}
+
+            {/* نتائج المعالجة */}
+            {enhancedUpload.results && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                <h3 className="font-medium">نتائج المعالجة</h3>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <StatCardNumber 
+                      value={enhancedUpload.results.total} 
+                      className="text-lg font-semibold text-blue-600" 
+                    />
+                    <p className="text-xs text-muted-foreground">إجمالي الصفوف</p>
+                  </div>
+                  <div className="text-center">
+                    <StatCardNumber 
+                      value={enhancedUpload.results.successful} 
+                      className="text-lg font-semibold text-green-600" 
+                    />
+                    <p className="text-xs text-muted-foreground">نجح</p>
+                  </div>
+                  <div className="text-center">
+                    <StatCardNumber 
+                      value={enhancedUpload.results.failed} 
+                      className="text-lg font-semibold text-red-600" 
+                    />
+                    <p className="text-xs text-muted-foreground">فشل</p>
+                  </div>
+                  <div className="text-center">
+                    <StatCardNumber 
+                      value={enhancedUpload.results.customersCreated || 0} 
+                      className="text-lg font-semibold text-purple-600" 
+                    />
+                    <p className="text-xs text-muted-foreground">عملاء جدد</p>
+                  </div>
+                </div>
+
+                {/* العملاء المفقودين */}
+                {enhancedUpload.results.missingCustomers && enhancedUpload.results.missingCustomers.length > 0 && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="space-y-2">
+                        <p className="font-medium">العملاء التالية غير موجودة:</p>
+                        <ScrollArea className="h-32 w-full">
+                          <div className="space-y-1">
+                            {enhancedUpload.results.missingCustomers.map((missing, idx) => (
+                              <div key={idx} className="text-sm">
+                                <span className="font-medium">{missing.customerName}</span>
+                                <span className="text-muted-foreground ml-2">
+                                  (الصفوف: {missing.rows.join('، ')})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                        <p className="text-sm text-muted-foreground">
+                          فعّل "إنشاء العملاء تلقائياً" لإنشاء هؤلاء العملاء أو تأكد من صحة الأسماء في الملف.
+                        </p>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* الأخطاء */}
+                {enhancedUpload.results.errors && enhancedUpload.results.errors.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-red-600">تفاصيل الأخطاء</h4>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleDownloadErrors}
+                        className="flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        تحميل الأخطاء
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-32 w-full border rounded p-2">
+                      <div className="space-y-1">
+                        {enhancedUpload.results.errors.slice(0, 10).map((error, idx) => (
+                          <div key={idx} className="text-sm">
+                            <span className="font-medium">الصف {error.row}:</span>
+                            <span className="ml-2">{error.message}</span>
+                            {error.customerName && (
+                              <span className="text-muted-foreground ml-2">({error.customerName})</span>
+                            )}
+                          </div>
+                        ))}
+                        {enhancedUpload.results.errors.length > 10 && (
+                          <p className="text-sm text-muted-foreground">
+                            و {enhancedUpload.results.errors.length - 10} أخطاء أخرى...
+                          </p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* الخيارات */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="autoCreate">إنشاء العملاء تلقائياً</Label>
+                <Switch 
+                  id="autoCreate" 
+                  checked={autoCreateCustomers} 
+                  onCheckedChange={setAutoCreateCustomers}
+                  disabled={enhancedUpload.isUploading}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="replace">استبدال العقود المكررة</Label>
+                <Switch 
+                  id="replace" 
+                  checked={replaceDuplicates} 
+                  onCheckedChange={setReplaceDuplicates}
+                  disabled={enhancedUpload.isUploading}
+                />
+              </div>
+            </div>
+
+            {/* الأزرار */}
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleClose} 
+                disabled={enhancedUpload.isUploading}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                onClick={handleEnhancedUpload} 
+                disabled={!file || enhancedUpload.isUploading} 
+                className="flex items-center gap-2"
+              >
+                <Brain className="h-4 w-4" />
+                {enhancedUpload.isUploading ? 'جاري المعالجة...' : 'رفع محسن'}
+              </Button>
+            </div>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p><strong>الرفع المحسن يقوم بما يلي:</strong></p>
+                  <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                    <li>البحث عن العملاء بالاسم تلقائياً (بحث دقيق وضبابي)</li>
+                    <li>إنشاء العملاء الجدد إذا لم يوجدوا (اختياري)</li>
+                    <li>تحويل أرقام اللوحات إلى معرفات المركبات</li>
+                    <li>معالجة ذكية للأخطاء مع تقارير مفصلة</li>
+                    <li>يدعم الأسماء باللغتين العربية والانجليزية</li>
+                  </ul>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -417,6 +674,15 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
           <DialogDescription className="flex items-center justify-between">
             <span>الطريقة التقليدية لرفع ملفات CSV</span>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setUploadMode('enhanced')}
+                className="flex items-center gap-1"
+              >
+                <Brain className="h-3 w-3" />
+                الرفع المحسن
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 

@@ -11,6 +11,7 @@ interface UploadResults {
   failed: number
   customersCreated?: number
   contractsCreated?: number
+  missingCustomers?: Array<{ customerName: string; rows: number[] }>
   errors: Array<{ row: number; message: string; customerName?: string }>
   warnings?: Array<{ row: number; message: string; customerName?: string }>
 }
@@ -30,6 +31,39 @@ export function useEnhancedContractUpload() {
 
   const normalize = (s?: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
+  // دالة للبحث الضبابي
+  const fuzzyMatch = (str1: string, str2: string): number => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    const editDistance = getEditDistance(longer, shorter);
+    if (longer.length === 0) return 1.0;
+    return (longer.length - editDistance) / longer.length;
+  };
+
+  const getEditDistance = (str1: string, str2: string): number => {
+    const matrix = [];
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    return matrix[str2.length][str1.length];
+  };
+
   const findCustomerByName = async (customerName: string, targetCompanyId: string) => {
     try {
       const cleanName = customerName.trim()
@@ -37,13 +71,15 @@ export function useEnhancedContractUpload() {
 
       console.log(`🔍 البحث عن العميل: "${cleanName}"`)
       
+      // البحث الأولي بـ ILIKE
       const like = `%${cleanName}%`
       const { data: customers, error } = await supabase
         .from('customers')
-        .select('id, customer_type, company_name, first_name, last_name')
+        .select('id, customer_type, company_name, company_name_ar, first_name, last_name, first_name_ar, last_name_ar')
         .eq('company_id', targetCompanyId)
-        .or(`company_name.ilike.${like},first_name.ilike.${like},last_name.ilike.${like}`)
-        .limit(10)
+        .eq('is_active', true)
+        .or(`company_name.ilike.${like},company_name_ar.ilike.${like},first_name.ilike.${like},last_name.ilike.${like},first_name_ar.ilike.${like},last_name_ar.ilike.${like}`)
+        .limit(20)
 
       if (error) {
         console.error('خطأ في البحث عن العميل:', error)
@@ -59,8 +95,14 @@ export function useEnhancedContractUpload() {
       const normalizedName = normalize(cleanName)
       const exactMatch = customers.find(c => {
         const companyName = normalize(c.company_name || '')
+        const companyNameAr = normalize(c.company_name_ar || '')
         const fullName = normalize(`${c.first_name || ''} ${c.last_name || ''}`)
-        return companyName === normalizedName || fullName === normalizedName
+        const fullNameAr = normalize(`${c.first_name_ar || ''} ${c.last_name_ar || ''}`)
+        
+        return companyName === normalizedName || 
+               companyNameAr === normalizedName ||
+               fullName === normalizedName || 
+               fullNameAr === normalizedName
       })
 
       if (exactMatch) {
@@ -68,12 +110,38 @@ export function useEnhancedContractUpload() {
         return exactMatch.id
       }
 
+      // البحث الضبابي إذا لم يوجد تطابق دقيق
+      let bestMatch = null
+      let bestScore = 0
+
+      for (const customer of customers) {
+        const names = [
+          customer.company_name,
+          customer.company_name_ar,
+          `${customer.first_name || ''} ${customer.last_name || ''}`,
+          `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`
+        ].filter(Boolean)
+
+        for (const name of names) {
+          const score = fuzzyMatch(normalizedName, normalize(name))
+          if (score > bestScore && score >= 0.8) { // عتبة التطابق 80%
+            bestScore = score
+            bestMatch = customer
+          }
+        }
+      }
+
+      if (bestMatch && bestScore >= 0.8) {
+        console.log(`✅ تطابق ضبابي: ${cleanName} -> ${bestMatch.id} (نسبة التطابق: ${Math.round(bestScore * 100)}%)`)
+        return bestMatch.id
+      }
+
       if (customers.length === 1) {
         console.log(`✅ تطابق واحد: ${cleanName} -> ${customers[0].id}`)
         return customers[0].id
       }
 
-      console.log(`⚠️ عدة نتائج للعميل: ${cleanName} (${customers.length} نتائج)`)
+      console.log(`⚠️ عدة نتائج للعميل: ${cleanName} (${customers.length} نتائج، أفضل تطابق: ${Math.round(bestScore * 100)}%)`)
       return null
 
     } catch (error) {
@@ -170,6 +238,7 @@ export function useEnhancedContractUpload() {
       // معالجة البيانات لتحويل الأسماء إلى معرفات
       const processedRows = []
       let customersCreated = 0
+      const missingCustomers = new Map<string, number[]>()
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i]
@@ -185,11 +254,19 @@ export function useEnhancedContractUpload() {
             customerId = await createCustomer(row.customer_name, companyId)
             if (customerId) {
               customersCreated++
+              console.log(`✅ تم إنشاء عميل جديد: ${row.customer_name}`)
             }
           }
           
           if (customerId) {
             row.customer_id = customerId
+          } else {
+            // تسجيل العملاء المفقودين
+            const customerName = row.customer_name
+            if (!missingCustomers.has(customerName)) {
+              missingCustomers.set(customerName, [])
+            }
+            missingCustomers.get(customerName)!.push(row.rowNumber || i + 2)
           }
         }
 
@@ -222,6 +299,10 @@ export function useEnhancedContractUpload() {
         failed: bulkResult?.failed || 0,
         customersCreated: customersCreated,
         contractsCreated: bulkResult?.successful || 0,
+        missingCustomers: Array.from(missingCustomers.entries()).map(([customerName, rows]) => ({
+          customerName,
+          rows
+        })),
         errors: (bulkResult?.errors || []).map((err: any) => ({
           row: err.row,
           message: err.message,
@@ -236,7 +317,20 @@ export function useEnhancedContractUpload() {
       }
 
       if (result.failed > 0) {
-        toast.error(`فشل في إنشاء ${result.failed} عقد`)
+        const missingCount = result.missingCustomers?.length || 0
+        if (missingCount > 0) {
+          toast.error(`فشل في إنشاء ${result.failed} عقد. ${missingCount} عميل غير موجود`)
+        } else {
+          toast.error(`فشل في إنشاء ${result.failed} عقد`)
+        }
+      }
+
+      // تحذير للعملاء المفقودين
+      if (result.missingCustomers && result.missingCustomers.length > 0) {
+        const missingNames = result.missingCustomers.map(m => m.customerName).join('، ')
+        toast.warning(`العملاء التالية غير موجودة: ${missingNames}`, {
+          duration: 8000,
+        })
       }
 
       return result
