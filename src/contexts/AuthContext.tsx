@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -23,9 +23,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Session validation helper
-  const validateSession = async (currentSession: Session | null): Promise<boolean> => {
+  // Session validation helper with improved error handling
+  const validateSession = useCallback(async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
       return false;
     }
@@ -39,7 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error || !data.session) {
           console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
-          setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
+          // Only set session error if we're not in the middle of signing out
+          if (!isSigningOut) {
+            setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
+          }
           return false;
         }
         
@@ -51,10 +55,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
-      setSessionError('خطأ في التحقق من صحة الجلسة');
+      // Only set session error if we're not in the middle of signing out
+      if (!isSigningOut) {
+        setSessionError('خطأ في التحقق من صحة الجلسة');
+      }
       return false;
     }
-  };
+  }, [isSigningOut]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -62,45 +69,73 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       async (event, session) => {
         console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
         
-        // Clear previous errors
-        setSessionError(null);
-        
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          if (event === 'SIGNED_OUT') {
-            setUser(null);
-            setSession(null);
-          } else if (event === 'TOKEN_REFRESHED' && session) {
-            setSession(session);
-          }
+        // Clear previous errors except when signing out
+        if (event !== 'SIGNED_OUT' || !isSigningOut) {
+          setSessionError(null);
         }
         
-        if (session?.user) {
+        if (event === 'SIGNED_OUT') {
+          // Only clear user/session if this is an intentional sign out
+          if (isSigningOut) {
+            setUser(null);
+            setSession(null);
+            setIsSigningOut(false);
+          } else {
+            // For unexpected sign outs, try to refresh the session first
+            console.log('📝 [AUTH_CONTEXT] Unexpected sign out, attempting to refresh session...');
+            const { data, error } = await supabase.auth.refreshSession();
+            if (error || !data.session) {
+              console.log('📝 [AUTH_CONTEXT] Session refresh failed, clearing user data');
+              setUser(null);
+              setSession(null);
+            } else {
+              console.log('📝 [AUTH_CONTEXT] Session restored successfully');
+              setSession(data.session);
+              // Re-fetch user profile
+              try {
+                const authUser = await authService.getCurrentUser();
+                setUser(authUser);
+              } catch (error) {
+                console.error('📝 [AUTH_CONTEXT] Error fetching user profile after refresh:', error);
+                setUser(data.session.user as AuthUser);
+              }
+            }
+          }
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          setSession(session);
+        }
+        
+        if (session?.user && event !== 'SIGNED_OUT') {
           // Validate session before proceeding
           const isValidSession = await validateSession(session);
-          if (!isValidSession) {
+          if (!isValidSession && !isSigningOut) {
             setUser(null);
             setSession(null);
             setLoading(false);
             return;
           }
 
-          console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
-          setSession(session);
-          
-          // Defer the profile fetch to avoid blocking the auth state change
-          setTimeout(async () => {
-            try {
-              const authUser = await authService.getCurrentUser();
-              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-              setUser(authUser);
-              setSessionError(null);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              setUser(session.user as AuthUser);
-              setSessionError('خطأ في تحميل بيانات المستخدم');
-            }
-          }, 0);
-        } else {
+          if (!isSigningOut) {
+            console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
+            setSession(session);
+            
+            // Defer the profile fetch to avoid blocking the auth state change
+            setTimeout(async () => {
+              try {
+                const authUser = await authService.getCurrentUser();
+                console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
+                setUser(authUser);
+                setSessionError(null);
+              } catch (error) {
+                console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+                setUser(session.user as AuthUser);
+                if (!isSigningOut) {
+                  setSessionError('خطأ في تحميل بيانات المستخدم');
+                }
+              }
+            }, 0);
+          }
+        } else if (event !== 'TOKEN_REFRESHED' && !isSigningOut) {
           console.log('📝 [AUTH_CONTEXT] No user session');
           setUser(null);
           setSession(null);
@@ -146,8 +181,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeSession();
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isSigningOut, validateSession]);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     return authService.signUp(email, password, userData);
@@ -173,6 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
+    setIsSigningOut(true);
     const email = user?.email;
     const result = await authService.signOut();
     
