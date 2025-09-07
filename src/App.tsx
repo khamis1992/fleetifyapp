@@ -67,6 +67,7 @@ import SuperAdminReports from "./pages/super-admin/Reports";
 import LandingManagement from "./pages/super-admin/LandingManagement";
 import Reports from "./pages/Reports";
 import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSettings";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -76,9 +77,10 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            <CompanyContextProvider>
-              <SimpleToaster />
-              {/* <Sonner /> */}
+              <CompanyContextProvider>
+                <PWAInstallPrompt />
+                <SimpleToaster />
+                {/* <Sonner /> */}
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />

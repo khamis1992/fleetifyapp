@@ -1,0 +1,42 @@
+{
+  "name": "Fleetify - إدارة الأساطيل",
+  "short_name": "Fleetify",
+  "description": "نظام إدارة الأساطيل والموارد البشرية",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "scope": "/",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "لوحة التحكم",
+      "short_name": "Dashboard",
+      "description": "انتقل إلى لوحة التحكم الرئيسية",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
