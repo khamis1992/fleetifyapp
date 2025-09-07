@@ -39,8 +39,8 @@ const { toast } = useToast();
               <div class="report-info">
                 <h2 class="report-title">${options.title}</h2>
                 <div class="report-meta">
-                  <span>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</span>
-                  <span>الوقت: ${new Date().toLocaleTimeString('ar-SA')}</span>
+                  <span>تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</span>
+                  <span>الوقت: ${new Date().toLocaleTimeString('en-GB')}</span>
                 </div>
               </div>
             </div>
@@ -266,8 +266,8 @@ const { toast } = useToast();
                 <div class="report-info">
                     <h2 class="report-title">${options.title}</h2>
                     <div class="report-meta">
-                        <span>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</span>
-                        <span>الوقت: ${new Date().toLocaleTimeString('ar-SA')}</span>
+                        <span>تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</span>
+                        <span>الوقت: ${new Date().toLocaleTimeString('en-GB')}</span>
                     </div>
                 </div>
             </div>

@@ -125,8 +125,8 @@ export function UnifiedReportViewer({
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>تاريخ التقرير: {new Date().toLocaleDateString('ar-SA')}</span>
-                <span>الوقت: {new Date().toLocaleTimeString('ar-SA')}</span>
+                <span>تاريخ التقرير: {new Date().toLocaleDateString('en-GB')}</span>
+                <span>الوقت: {new Date().toLocaleTimeString('en-GB')}</span>
               </div>
               
               {/* Report filters summary */}
