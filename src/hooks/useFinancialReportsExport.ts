@@ -335,23 +335,21 @@ export const exportToHTML = (content: string, title: string, companyName?: strin
             }
         </style>
         <script>
-            function printReport() {
-                window.print();
-            }
-            
             function closeWindow() {
                 window.close();
             }
             
-            // Auto-focus for better PDF generation
+            // Auto-print when page loads
             window.onload = function() {
-                document.body.focus();
+                // Small delay to ensure content is fully loaded
+                setTimeout(function() {
+                    window.print();
+                }, 500);
             }
         </script>
     </head>
     <body>
         <div class="action-buttons no-print">
-            <button class="btn" onclick="printReport()">🖨️ طباعة التقرير</button>
             <button class="btn btn-secondary" onclick="closeWindow()">✕ إغلاق</button>
         </div>
         

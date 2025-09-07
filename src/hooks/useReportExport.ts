@@ -34,7 +34,7 @@ const { toast } = useToast();
         
         toast({
           title: "تم فتح التقرير",
-          description: "تم فتح التقرير في نافذة جديدة للطباعة",
+          description: "سيبدأ الطباعة تلقائياً في النافذة الجديدة",
         });
       } else {
         toast({
@@ -126,13 +126,20 @@ const { toast } = useToast();
 
     <!-- Print Controls -->
     <div class="print-controls no-print">
-        <button onclick="window.print()" class="btn btn-primary">
-            🖨️ طباعة التقرير
-        </button>
         <button onclick="window.close()" class="btn btn-secondary">
             ✖️ إغلاق
         </button>
     </div>
+
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            // Small delay to ensure content is fully loaded
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
 </body>
 </html>`;
   };
