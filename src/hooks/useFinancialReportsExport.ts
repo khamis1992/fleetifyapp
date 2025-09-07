@@ -169,216 +169,147 @@ export const useReceivablesReport = () => {
 
 // HTML Export utilities
 export const exportToHTML = (content: string, title: string, companyName?: string) => {
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html dir="rtl" lang="ar">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title}</title>
-        <style>
-            @page {
-                size: A4;
-                margin: 2cm;
-            }
-            
-            @media print {
-                body { 
-                    margin: 0; 
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                .no-print { display: none; }
-                .page-break { page-break-before: always; }
-                table { 
-                    page-break-inside: avoid;
-                    font-size: 12px;
-                }
-                th, td { 
-                    padding: 8px;
-                    border: 1px solid #000 !important;
-                }
-                th {
-                    background-color: #f5f5f5 !important;
-                }
-            }
-            
-            body {
-                font-family: 'Arial', 'Tahoma', sans-serif;
-                margin: 20px;
-                direction: rtl;
-                text-align: right;
-                line-height: 1.4;
-                color: #333;
-                background: white;
-            }
-            
-            .header {
-                text-align: center;
-                margin-bottom: 30px;
-                border-bottom: 2px solid #333;
-                padding-bottom: 20px;
-            }
-            
-            .company-name {
-                font-size: 28px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                color: #1a1a1a;
-            }
-            
-            .report-title {
-                font-size: 22px;
-                color: #444;
-                margin-bottom: 10px;
-                font-weight: 600;
-            }
-            
-            .report-date {
-                color: #666;
-                font-size: 14px;
-                font-weight: normal;
-            }
-            
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-                background: white;
-                border: 1px solid #ddd;
-            }
-            
-            th, td {
-                border: 1px solid #ddd;
-                padding: 12px;
-                text-align: right;
-                vertical-align: top;
-            }
-            
-            th {
-                background-color: #f8f9fa;
-                font-weight: bold;
-                color: #2c3e50;
-                border-bottom: 2px solid #dee2e6;
-            }
-            
-            .total-row {
-                background-color: #f1f3f4;
-                font-weight: bold;
-                border-top: 2px solid #dee2e6;
-            }
-            
-            .positive {
-                color: #22c55e;
-                font-weight: 600;
-            }
-            
-            .negative {
-                color: #ef4444;
-                font-weight: 600;
-            }
-            
-            .footer {
-                margin-top: 50px;
-                text-align: center;
-                font-size: 12px;
-                color: #666;
-                border-top: 1px solid #ddd;
-                padding-top: 20px;
-            }
-            
-            .action-buttons {
-                position: fixed;
-                top: 20px;
-                left: 20px;
-                z-index: 1000;
-                display: flex;
-                gap: 10px;
-            }
-            
-            .btn {
-                background-color: #007bff;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                cursor: pointer;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: 500;
-                transition: background-color 0.2s;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .btn:hover {
-                background-color: #0056b3;
-            }
-            
-            .btn-secondary {
-                background-color: #6c757d;
-            }
-            
-            .btn-secondary:hover {
-                background-color: #545b62;
-            }
-            
-            .content {
-                min-height: 400px;
-            }
-            
-            /* RTL specific adjustments */
-            .text-left {
-                text-align: left;
-            }
-            
-            .text-center {
-                text-align: center;
-            }
-        </style>
-        <script>
-            function closeWindow() {
-                window.close();
-            }
-            
-            // Auto-print when page loads
-            window.onload = function() {
-                // Small delay to ensure content is fully loaded
-                setTimeout(function() {
-                    window.print();
-                }, 500);
-            }
-        </script>
-    </head>
-    <body>
-        <div class="action-buttons no-print">
-            <button class="btn btn-secondary" onclick="closeWindow()">✕ إغلاق</button>
-        </div>
-        
-        <div class="header">
-            <div class="company-name">${companyName || 'اسم الشركة'}</div>
-            <div class="report-title">${title}</div>
-            <div class="report-date">تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</div>
-        </div>
-        
-        <div class="content">
-            ${content}
-        </div>
-        
-        <div class="footer">
-            <p>تم إنشاء هذا التقرير بواسطة النظام المالي - ${new Date().toLocaleString('en-GB')}</p>
-        </div>
-    </body>
-    </html>
-  `
+  // Create print-friendly content container
+  const printContent = `
+    <div id="print-content" style="display: none;">
+      <div class="header">
+        <div class="company-name">${companyName || 'اسم الشركة'}</div>
+        <div class="report-title">${title}</div>
+        <div class="report-date">تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</div>
+      </div>
+      
+      <div class="content">
+        ${content}
+      </div>
+      
+      <div class="footer">
+        <p>تم إنشاء هذا التقرير بواسطة النظام المالي - ${new Date().toLocaleString('en-GB')}</p>
+      </div>
+    </div>
+  `;
 
-  // Open HTML content in new tab instead of downloading
-  const newWindow = window.open('', '_blank')
-  if (newWindow) {
-    newWindow.document.write(htmlContent)
-    newWindow.document.close()
-    // Focus the new window for better user experience
-    newWindow.focus()
-  } else {
-    // Fallback if popup is blocked - show user instruction
-    alert('يرجى السماح للنوافذ المنبثقة لعرض التقرير')
-  }
+  // Create print styles
+  const printStyles = `
+    <style id="print-styles">
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        
+        #print-content, #print-content * {
+          visibility: visible;
+        }
+        
+        #print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          display: block !important;
+          font-family: 'Arial', 'Tahoma', sans-serif;
+          direction: rtl;
+          text-align: right;
+          line-height: 1.4;
+          color: #333;
+          background: white;
+        }
+        
+        #print-content .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        
+        #print-content .company-name {
+          font-size: 28px;
+          font-weight: bold;
+          margin-bottom: 10px;
+          color: #1a1a1a;
+        }
+        
+        #print-content .report-title {
+          font-size: 22px;
+          color: #444;
+          margin-bottom: 10px;
+          font-weight: 600;
+        }
+        
+        #print-content .report-date {
+          color: #666;
+          font-size: 14px;
+          font-weight: normal;
+        }
+        
+        #print-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          background: white;
+          border: 1px solid #ddd;
+          page-break-inside: avoid;
+          font-size: 12px;
+        }
+        
+        #print-content th, #print-content td {
+          border: 1px solid #000 !important;
+          padding: 8px;
+          text-align: right;
+          vertical-align: top;
+        }
+        
+        #print-content th {
+          background-color: #f5f5f5 !important;
+          font-weight: bold;
+          color: #2c3e50;
+          border-bottom: 2px solid #dee2e6;
+        }
+        
+        #print-content .total-row {
+          background-color: #f1f3f4 !important;
+          font-weight: bold;
+          border-top: 2px solid #dee2e6;
+        }
+        
+        #print-content .positive {
+          color: #22c55e;
+          font-weight: 600;
+        }
+        
+        #print-content .negative {
+          color: #ef4444;
+          font-weight: 600;
+        }
+        
+        #print-content .footer {
+          margin-top: 50px;
+          text-align: center;
+          font-size: 12px;
+          color: #666;
+          border-top: 1px solid #ddd;
+          padding-top: 20px;
+        }
+        
+        @page {
+          size: A4;
+          margin: 2cm;
+        }
+      }
+    </style>
+  `;
+
+  // Add content and styles to current page
+  document.head.insertAdjacentHTML('beforeend', printStyles);
+  document.body.insertAdjacentHTML('beforeend', printContent);
+
+  // Print directly
+  window.print();
+
+  // Clean up after print
+  setTimeout(() => {
+    const printStylesElement = document.getElementById('print-styles');
+    const printContentElement = document.getElementById('print-content');
+    if (printStylesElement) printStylesElement.remove();
+    if (printContentElement) printContentElement.remove();
+  }, 1000);
 }

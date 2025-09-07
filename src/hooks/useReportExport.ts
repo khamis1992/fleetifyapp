@@ -24,25 +24,205 @@ const { toast } = useToast();
     setIsExporting(true);
     
     try {
-      const htmlContent = await generateReportHTML(options);
+      // Generate report data
+      const reportData = await fetchReportData(options);
+      const reportContent = generateReportContent(options, reportData);
       
-      // Open in new tab like financial reports
-      const newWindow = window.open('', '_blank');
-      if (newWindow) {
-        newWindow.document.write(htmlContent);
-        newWindow.document.close();
-        
-        toast({
-          title: "تم فتح التقرير",
-          description: "سيبدأ الطباعة تلقائياً في النافذة الجديدة",
-        });
-      } else {
-        toast({
-          title: "تعذر فتح التقرير",
-          description: "يرجى السماح بالنوافذ المنبثقة لفتح التقرير",
-          variant: "destructive",
-        });
-      }
+      // Create print-friendly content
+      const printContent = `
+        <div id="print-content" style="display: none;">
+          <header class="report-header">
+            <div class="header-content">
+              <div class="company-info">
+                <h1 class="company-name">اسم الشركة</h1>
+              </div>
+              <div class="report-info">
+                <h2 class="report-title">${options.title}</h2>
+                <div class="report-meta">
+                  <span>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</span>
+                  <span>الوقت: ${new Date().toLocaleTimeString('ar-SA')}</span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          ${options.filters && Object.keys(options.filters).length > 0 ? `
+          <section class="filters-section">
+            <h3>معايير التصفية:</h3>
+            <div class="filters-grid">
+              ${options.filters.startDate ? `<div class="filter-item">من تاريخ: ${options.filters.startDate}</div>` : ''}
+              ${options.filters.endDate ? `<div class="filter-item">إلى تاريخ: ${options.filters.endDate}</div>` : ''}
+              ${options.filters.moduleType ? `<div class="filter-item">القسم: ${getModuleTitle(options.filters.moduleType)}</div>` : ''}
+            </div>
+          </section>
+          ` : ''}
+
+          <main class="report-content">
+            ${reportContent}
+          </main>
+
+          <footer class="report-footer">
+            <div class="footer-content">
+              <div class="print-info">
+                <span>تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات</span>
+                <span>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</span>
+              </div>
+            </div>
+          </footer>
+        </div>
+      `;
+
+      // Add print styles
+      const printStyles = `
+        <style id="print-styles">
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            
+            #print-content, #print-content * {
+              visibility: visible;
+            }
+            
+            #print-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              display: block !important;
+              font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              direction: rtl;
+            }
+            
+            #print-content .report-header {
+              background: #667eea !important;
+              color: white !important;
+              padding: 2rem;
+              text-align: center;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            
+            #print-content .company-name {
+              font-size: 1.8rem;
+              font-weight: bold;
+              margin-bottom: 0.5rem;
+            }
+            
+            #print-content .report-title {
+              font-size: 2rem;
+              font-weight: bold;
+              margin-bottom: 0.5rem;
+            }
+            
+            #print-content .report-meta {
+              display: flex;
+              gap: 2rem;
+              font-size: 0.9rem;
+              opacity: 0.9;
+              justify-content: center;
+            }
+            
+            #print-content .filters-section {
+              background: #f8f9fa !important;
+              padding: 1.5rem;
+              border-bottom: 2px solid #e9ecef;
+            }
+            
+            #print-content .filters-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 1rem;
+            }
+            
+            #print-content .filter-item {
+              background: white !important;
+              padding: 0.75rem;
+              border-radius: 6px;
+              border: 1px solid #dee2e6;
+              font-weight: 500;
+            }
+            
+            #print-content .report-content {
+              padding: 2rem;
+            }
+            
+            #print-content .data-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 1rem 0;
+              background: white;
+              break-inside: avoid;
+            }
+            
+            #print-content .data-table th,
+            #print-content .data-table td {
+              padding: 1rem;
+              text-align: right;
+              border: 1px solid #000 !important;
+            }
+            
+            #print-content .data-table th {
+              background: #f8f9fa !important;
+              font-weight: bold;
+              color: #495057;
+            }
+            
+            #print-content .summary-cards {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: 1.5rem;
+              margin: 2rem 0;
+            }
+            
+            #print-content .summary-card {
+              background: white !important;
+              padding: 1.5rem;
+              border-radius: 10px;
+              border-right: 4px solid #667eea;
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            
+            #print-content .report-footer {
+              background: #f8f9fa !important;
+              padding: 1.5rem 2rem;
+              border-top: 2px solid #e9ecef;
+              margin-top: 2rem;
+              text-align: center;
+              font-size: 0.9rem;
+              color: #666;
+            }
+            
+            @page {
+              margin: 1cm;
+              size: A4;
+            }
+          }
+        </style>
+      `;
+
+      // Add content and styles to current page
+      document.head.insertAdjacentHTML('beforeend', printStyles);
+      document.body.insertAdjacentHTML('beforeend', printContent);
+
+      // Print directly
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        const printStylesElement = document.getElementById('print-styles');
+        const printContentElement = document.getElementById('print-content');
+        if (printStylesElement) printStylesElement.remove();
+        if (printContentElement) printContentElement.remove();
+      }, 1000);
+
+      toast({
+        title: "تم بدء الطباعة",
+        description: "تم فتح نافذة الطباعة مباشرة",
+      });
     } catch (error) {
       console.error('Export failed:', error);
       toast({
