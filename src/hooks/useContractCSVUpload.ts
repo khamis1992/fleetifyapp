@@ -992,7 +992,7 @@ export function useContractCSVUpload() {
   // دالة رفع ذكية للعقود
   const smartUploadContracts = async (
     fixedData: any[],
-    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; shouldArchive?: boolean; originalFile?: File }
+    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; archiveFile?: boolean; originalFile?: File }
   ) => {
     console.log('📝 [Smart Contract CSV] Starting upload with companyId:', companyId);
     console.log('📝 [Smart Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
@@ -1129,7 +1129,7 @@ export function useContractCSVUpload() {
       setResults(uploadResults);
       
       // حفظ الملف في الأرشيف إذا طُلب ذلك
-      if (options?.shouldArchive && options?.originalFile) {
+      if (options?.archiveFile && options?.originalFile) {
         try {
           const fileContent = await options.originalFile.text()
           
