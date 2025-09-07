@@ -84,9 +84,9 @@ export function ProfessionalDataTable({
   const formatCellValue = (value: any, column: string) => {
     if (typeof value === 'number') {
       if (isCurrencyColumn(column)) {
-        return formatCurrency(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `${value.toLocaleString('ar-SA')} ر.ق`;
       }
-      return value.toLocaleString('ar-KW');
+      return value.toLocaleString('ar-SA');
     }
     return String(value || '');
   };
@@ -116,103 +116,84 @@ export function ProfessionalDataTable({
   };
 
   return (
-    <Card className="mt-6 bg-gradient-card border-0 shadow-card print:bg-white print:border print:shadow-none">
-      <CardHeader className="print:pb-2">
-        <CardTitle className="flex items-center gap-2 arabic-heading-sm print:text-black">
-          <Hash className="w-5 h-5 text-primary" />
-          {title}
-          <Badge variant="secondary" className="mr-auto print:bg-gray-100 print:text-gray-800">
-            {data.length} عنصر
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="print:p-4">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b-2 border-border/30 print:border-b-2 print:border-gray-300">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6 no-break">
+      <div className="p-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              {showRowNumbers && (
+                <th className="text-right p-3 text-sm font-medium text-gray-600">
+                  #
+                </th>
+              )}
+              {columns.map((column, index) => (
+                <th 
+                  key={index} 
+                  className="text-right p-3 text-sm font-medium text-gray-600"
+                >
+                  {formatColumnName(column)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayedData.map((row, rowIndex) => (
+              <tr 
+                key={rowIndex} 
+                className={`border-b border-gray-100 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+              >
                 {showRowNumbers && (
-                  <th className="text-center p-3 font-semibold text-muted-foreground print:text-gray-700">
-                    #
-                  </th>
+                  <td className="p-3 text-sm text-gray-600">
+                    {rowIndex + 1}
+                  </td>
                 )}
-                {columns.map((column) => (
-                  <th key={column} className="text-right p-3 font-semibold text-foreground print:text-black">
-                    {formatColumnName(column)}
-                  </th>
+                {columns.map((column, colIndex) => (
+                  <td key={colIndex} className="p-3 text-sm text-gray-800">
+                    {statusColumn === column ? 
+                      String(row[column] || '') : 
+                      formatCellValue(row[column], column)
+                    }
+                  </td>
                 ))}
               </tr>
-            </thead>
-            
-            <tbody>
-              {displayedData.map((item, index) => (
-                <tr 
-                  key={index} 
-                  className={`border-b border-border/20 hover:bg-card-hover transition-colors print:hover:bg-transparent print:border-b print:border-gray-200 ${
-                    index % 2 === 0 ? 'bg-muted/20 print:bg-gray-50' : 'bg-background print:bg-white'
-                  }`}
-                >
-                  {showRowNumbers && (
-                    <td className="text-center p-3 font-medium text-muted-foreground print:text-gray-600">
-                      {index + 1}
-                    </td>
-                  )}
-                  {columns.map((column) => (
-                    <td key={column} className="p-3 text-foreground print:text-black">
-                      {column === statusColumn ? (
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(item[column])}
-                          {getStatusBadge(item[column])}
-                        </div>
-                      ) : column.toLowerCase().includes('status') || column.toLowerCase().includes('حالة') ? (
-                        getStatusBadge(item[column])
-                      ) : (
-                        formatCellValue(item[column], column)
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-            
-            {showTotals && (
-              <tfoot>
-                <tr className="border-t-2 border-primary/20 bg-accent/10 print:bg-gray-100 print:border-t-2 print:border-gray-400">
-                  {showRowNumbers && (
-                    <td className="p-3 font-semibold text-center print:text-black">
-                      <Calculator className="w-4 h-4 mx-auto text-primary" />
-                    </td>
-                  )}
-                  {columns.map((column, colIndex) => (
-                    <td key={column} className="p-3 font-semibold text-foreground print:text-black">
-                      {colIndex === 0 ? (
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-primary" />
-                          <span>الإجمالي</span>
-                        </div>
-                      ) : isNumericColumn(column) ? (
-                        formatCellValue(calculateTotal(column), column)
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              </tfoot>
-            )}
-          </table>
+            ))}
+          </tbody>
           
-          {data.length > maxRows && (
-            <div className="text-center mt-4 p-3 bg-muted/30 rounded-lg print:bg-gray-100">
-              <Badge variant="outline" className="print:bg-white print:text-gray-700">
-                <Hash className="w-3 h-3 ml-1" />
-                عرض {maxRows} من أصل {data.length} عنصر
-              </Badge>
-            </div>
+          {/* Totals Row */}
+          {showTotals && (
+            <tfoot className="border-t-2 border-gray-300">
+              <tr className="bg-gray-100">
+                {showRowNumbers && (
+                  <td className="p-3 text-sm font-semibold text-gray-800">
+                    المجموع
+                  </td>
+                )}
+                {columns.map((column, colIndex) => (
+                  <td key={colIndex} className="p-3 text-sm font-semibold text-gray-800">
+                    {colIndex === 0 && !showRowNumbers ? 'المجموع' : 
+                     isNumericColumn(column) ? formatCellValue(calculateTotal(column), column) : 
+                     isCurrencyColumn(column) ? formatCellValue(calculateTotal(column), column) : 
+                     '-'}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
           )}
+        </table>
+      </div>
+      
+      {/* Summary if data is truncated */}
+      {data.length > maxRows && (
+        <div className="m-4 p-3 bg-gray-50 rounded border border-gray-200">
+          <p className="text-sm text-gray-600">
+            يتم عرض {maxRows} من أصل {data.length} سجل. 
+            العدد المخفي: {data.length - maxRows} سجل إضافي.
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

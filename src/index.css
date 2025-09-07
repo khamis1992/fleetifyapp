@@ -375,7 +375,7 @@ All colors MUST be HSL.
     transition: var(--transition-fast);
   }
 
-  /* Professional Print Styles */
+  /* Print Styles - Simplified for template matching */
   @media print {
     * {
       -webkit-print-color-adjust: exact !important;
@@ -383,20 +383,71 @@ All colors MUST be HSL.
       print-color-adjust: exact !important;
     }
 
-    body {
-      background: white !important;
-      color: black !important;
-      font-size: 12pt !important;
-      line-height: 1.4 !important;
+    @page {
+      size: A4;
+      margin: 20mm;
     }
 
-    .print\:hidden {
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: white !important;
+      color: #333 !important;
+    }
+
+    .page {
+      page-break-after: always;
+    }
+
+    .no-break {
+      page-break-inside: avoid;
+    }
+
+    /* Hide elements that shouldn't be printed */
+    button:not(.print-friendly),
+    .no-print,
+    [data-testid="dialog-close"],
+    .toast-viewport {
       display: none !important;
     }
 
-    .print\:block {
-      display: block !important;
+    /* Simplified table styles */
+    table {
+      border-collapse: collapse !important;
+      width: 100% !important;
     }
+
+    th, td {
+      border: 1px solid #e5e5e5 !important;
+      padding: 8px !important;
+      text-align: right !important;
+    }
+
+    th {
+      background-color: #f9f9f9 !important;
+      font-weight: 600 !important;
+    }
+
+    /* Remove all shadows and gradients */
+    .shadow-sm, .shadow, .shadow-md, .shadow-lg {
+      box-shadow: none !important;
+    }
+
+    /* Simplified colors for print */
+    .text-gray-800 { color: #1f2937 !important; }
+    .text-gray-700 { color: #374151 !important; }
+    .text-gray-600 { color: #4b5563 !important; }
+    .text-gray-500 { color: #6b7280 !important; }
+    .text-green-700 { color: #15803d !important; }
+    .text-blue-800 { color: #1e40af !important; }
+    
+    .bg-white { background-color: white !important; }
+    .bg-gray-50 { background-color: #f9fafb !important; }
+    .bg-gray-100 { background-color: #f3f4f6 !important; }
+    
+    .border-gray-200 { border-color: #e5e7eb !important; }
+    .border-gray-300 { border-color: #d1d5db !important; }
+    .border-gray-700 { border-color: #374151 !important; }
+  }
 
     .print\:bg-white {
       background-color: white !important;
