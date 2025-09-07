@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
 import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
+import { ContractSmartUpload } from "@/components/contracts/ContractSmartUpload";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -129,15 +130,10 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   // عرض الرفع الذكي أو التقليدي حسب الاختيار
   if (uploadMode === 'smart') {
     return (
-      <SmartCSVUpload
+      <ContractSmartUpload
         open={open}
         onOpenChange={onOpenChange}
         onUploadComplete={onUploadComplete}
-        entityType="contract"
-        uploadFunction={smartUploadContracts}
-        downloadTemplate={downloadTemplate}
-        fieldTypes={contractFieldTypes}
-        requiredFields={contractRequiredFields}
       />
     );
   }
