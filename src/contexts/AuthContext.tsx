@@ -1,4 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+// Ensure React is available before using hooks
+if (!React || !useState) {
+  throw new Error('React or useState is not available. Please check React installation.');
+}
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';

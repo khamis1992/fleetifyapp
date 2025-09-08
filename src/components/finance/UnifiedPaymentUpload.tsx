@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { SmartCSVUpload } from '@/components/common/SmartCSVUpload';
+import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
 import { useFleetifyAI_Engine } from '@/hooks/useFleetifyAI_Engine';
 import { useAutomaticInvoiceGenerator } from '@/hooks/useAutomaticInvoiceGenerator';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -279,7 +279,7 @@ export function UnifiedPaymentUpload({
         const invoiceRequests = selectedResults
           .filter(result => result.bestMatch)
           .map(result => ({
-            payment: result.payment || { description: result.originalText },
+            payment: { description: result.originalText, paymentId: result.paymentId },
             contract: result.bestMatch!.contract,
             customer: result.bestMatch!.contract.customer,
             lateFineCalculation: null,
@@ -536,13 +536,21 @@ export function UnifiedPaymentUpload({
             </Alert>
             
             <SmartCSVUpload
-              onUpload={handleFileUpload}
-              acceptedFileTypes={['.csv', '.xlsx', '.xls']}
-              maxFileSize={50 * 1024 * 1024}
-              expectedFields={[
-                'amount', 'payment_date', 'description', 'due_date', 
-                'agreement_number', 'late_fine_amount'
-              ]}
+              open={true}
+              onOpenChange={() => {}}
+              onUploadComplete={() => setCurrentStep('results')}
+              entityType="payment"
+              uploadFunction={async (data) => await handleFileUpload(data)}
+              downloadTemplate={() => {}}
+              fieldTypes={{
+                amount: 'number',
+                payment_date: 'date',
+                description: 'text',
+                due_date: 'date',
+                agreement_number: 'text',
+                late_fine_amount: 'number'
+              }}
+              requiredFields={['amount', 'payment_date', 'description']}
             />
           </TabsContent>
 
