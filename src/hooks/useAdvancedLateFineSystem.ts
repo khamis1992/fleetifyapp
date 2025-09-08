@@ -8,8 +8,8 @@ interface AdvancedLateFineSettings {
   id?: string;
   company_id: string;
   is_active: boolean;
-  fine_per_day: 120; // ريال كويتي ثابت
-  max_fine_amount: 3000; // حد أقصى ثابت
+  fine_per_day: number; // ريال كويتي
+  max_fine_amount: number | null; // حد أقصى
   grace_period_days: number;
   auto_apply: boolean;
   escalation_rules: {
@@ -42,7 +42,7 @@ interface LateFineCalculationResult {
   fine_calculation: {
     grace_period: number;
     billable_days: number;
-    daily_rate: 120;
+    daily_rate: number;
     gross_fine: number;
     tier_multiplier: number;
     calculated_fine: number;
@@ -221,8 +221,7 @@ export function useAdvancedLateFineSystem() {
           contract_amount,
           status,
           customer:customers(
-            id,
-            full_name
+            id
           )
         `)
         .eq('company_id', companyId)
@@ -268,7 +267,7 @@ export function useAdvancedLateFineSystem() {
           results.push({
             contract_id: contract.id,
             contract_number: contract.contract_number,
-            customer_name: contract.customer?.full_name || 'غير محدد',
+            customer_name: 'عميل غير محدد',
             due_date: dueDate,
             payment_date: lastPaymentDate,
             days_overdue: daysOverdue,

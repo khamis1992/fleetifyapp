@@ -40,7 +40,7 @@ interface SmartContractMatch {
 interface AdvancedLateFine {
   isApplicable: boolean;
   daysOverdue: number;
-  finePerDay: 120; // ريال كويتي
+  finePerDay: number; // ريال كويتي
   calculatedFine: number;
   cappedFine: number; // محدود بـ 3000
   waived: boolean;
@@ -48,7 +48,7 @@ interface AdvancedLateFine {
   compoundingRules: {
     gracePeriod: number;
     escalationAfter: number;
-    maxCap: 3000;
+    maxCap: number;
   };
 }
 

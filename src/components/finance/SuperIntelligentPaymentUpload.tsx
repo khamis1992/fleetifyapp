@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { SmartCSVUpload } from '@/components/common/SmartCSVUpload';
+import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
 import { useAdvancedPaymentAnalyzer } from '@/hooks/useAdvancedPaymentAnalyzer';
 import { useAutomaticInvoiceGenerator } from '@/hooks/useAutomaticInvoiceGenerator';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -156,7 +156,7 @@ export function SuperIntelligentPaymentUpload({
           contract: result.bestMatch.contract,
           customer: result.bestMatch.contract.customer,
           lateFineCalculation: result.lateFineCalculation,
-          invoiceType: result.lateFineCalculation?.isApplicable ? 'combined' : 'payment_received'
+          invoiceType: result.lateFineCalculation?.isApplicable ? 'combined' as const : 'payment_received' as const
         }));
 
       updateStepStatus('prepare', 'completed', 100);
@@ -447,15 +447,38 @@ export function SuperIntelligentPaymentUpload({
               </AlertDescription>
             </Alert>
             
-            <SmartCSVUpload
-              onUpload={handleFileUpload}
-              acceptedFileTypes={['.csv', '.xlsx', '.xls']}
-              maxFileSize={10 * 1024 * 1024}
-              expectedFields={[
-                'amount', 'payment_date', 'description', 'due_date', 
-                'agreement_number', 'late_fine_amount'
-              ]}
-            />
+            <div>
+              <p className="text-muted-foreground mb-4">
+                قم برفع ملف CSV أو Excel يحتوي على بيانات المدفوعات
+              </p>
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const text = event.target?.result as string;
+                      // تحويل بسيط للـ CSV
+                      const lines = text.split('\n');
+                      const headers = lines[0].split(',');
+                      const data = lines.slice(1).map(line => {
+                        const values = line.split(',');
+                        const row: any = {};
+                        headers.forEach((header, index) => {
+                          row[header.trim()] = values[index]?.trim() || '';
+                        });
+                        return row;
+                      }).filter(row => Object.values(row).some(v => v));
+                      handleFileUpload(data);
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="analyzing" className="space-y-4">
