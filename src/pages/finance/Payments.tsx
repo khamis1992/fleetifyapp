@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload, Trash2, Brain, Zap } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload, Trash2, Brain, Zap, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
 import { SuperIntelligentPaymentUpload } from "@/components/finance/SuperIntelligentPaymentUpload";
+import { FleetifyAI_Dashboard } from "@/components/finance/FleetifyAI_Dashboard";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 
@@ -36,6 +37,7 @@ const Payments = () => {
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSuperUploadOpen, setIsSuperUploadOpen] = useState(false);
+  const [isFleetifyAIOpen, setIsFleetifyAIOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
@@ -135,6 +137,14 @@ const Payments = () => {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
+                onClick={() => setIsFleetifyAIOpen(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                FleetifyAI
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={() => setIsSuperUploadOpen(true)}
                 className="bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200 text-blue-700 hover:text-blue-800"
               >
@@ -169,6 +179,15 @@ const Payments = () => {
           {/* Mobile Action Buttons */}
           {isMobile && (
             <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="h-12 text-base justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0"
+                onClick={() => setIsFleetifyAIOpen(true)}
+              >
+                <Sparkles className="h-5 w-5 mr-2" />
+                FleetifyAI
+              </Button>
               <Button 
                 variant="outline" 
                 size="lg"
@@ -429,6 +448,16 @@ const Payments = () => {
           type="payment"
         />
 
+        {/* FleetifyAI Dashboard */}
+        <FleetifyAI_Dashboard 
+          open={isFleetifyAIOpen}
+          onOpenChange={setIsFleetifyAIOpen}
+          onUploadComplete={() => {
+            setIsFleetifyAIOpen(false);
+            // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
+          }}
+        />
+
         {/* النظام الذكي الفائق لربط المدفوعات */}
         <SuperIntelligentPaymentUpload 
           open={isSuperUploadOpen}
@@ -569,32 +598,6 @@ const Payments = () => {
             )}
           </DialogContent>
         </Dialog>
-
-        {/* SuperIntelligentPaymentUpload Dialog */}
-        <SuperIntelligentPaymentUpload
-          open={isSuperUploadOpen}
-          onOpenChange={setIsSuperUploadOpen}
-          onUploadComplete={() => {
-            setIsSuperUploadOpen(false);
-            // إعادة تحميل البيانات إذا لزم الأمر
-          }}
-        />
-
-        {/* CSV Upload Dialog */}
-        <PaymentsCSVUpload
-          open={isImportOpen}
-          onOpenChange={setIsImportOpen}
-          onUploadComplete={() => {
-            setIsImportOpen(false);
-          }}
-        />
-
-        {/* Bulk Delete Dialog */}
-        <BulkDeletePaymentsDialog
-          isOpen={isBulkDeleteOpen}
-          onClose={() => setIsBulkDeleteOpen(false)}
-          totalPayments={payments?.length || 0}
-        />
       </div>
     </div>
   );
