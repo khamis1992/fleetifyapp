@@ -2227,6 +2227,7 @@ export type Database = {
           cost_center_id: string | null
           created_at: string
           created_by: string | null
+          created_via: string | null
           customer_id: string
           days_overdue: number | null
           description: string | null
@@ -2262,6 +2263,7 @@ export type Database = {
           cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
+          created_via?: string | null
           customer_id: string
           days_overdue?: number | null
           description?: string | null
@@ -2297,6 +2299,7 @@ export type Database = {
           cost_center_id?: string | null
           created_at?: string
           created_by?: string | null
+          created_via?: string | null
           customer_id?: string
           days_overdue?: number | null
           description?: string | null

@@ -23,6 +23,7 @@ export interface Contract {
   last_payment_date?: string | null
   late_fine_amount?: number
   days_overdue?: number
+  created_via?: string
   created_at: string
   updated_at: string
 }
