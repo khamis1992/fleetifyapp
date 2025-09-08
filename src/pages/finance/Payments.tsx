@@ -16,15 +16,13 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload, Trash2, Brain, Zap, Sparkles } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Sparkles, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
-import { SuperIntelligentPaymentUpload } from "@/components/finance/SuperIntelligentPaymentUpload";
-import { FleetifyAI_Dashboard } from "@/components/finance/FleetifyAI_Dashboard";
+import { UnifiedPaymentUpload } from "@/components/finance/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 
@@ -35,9 +33,7 @@ const Payments = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isSuperUploadOpen, setIsSuperUploadOpen] = useState(false);
-  const [isFleetifyAIOpen, setIsFleetifyAIOpen] = useState(false);
+  const [isUnifiedUploadOpen, setIsUnifiedUploadOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
@@ -128,7 +124,7 @@ const Payments = () => {
             </div>
             <div>
               <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>المدفوعات</h1>
-              <p className="text-muted-foreground text-sm">إدارة المدفوعات والمقبوضات مع التكامل الكامل</p>
+              <p className="text-muted-foreground text-sm">إدارة المدفوعات والمقبوضات مع النظام الموحد المتطور</p>
             </div>
           </div>
           
@@ -137,29 +133,17 @@ const Payments = () => {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => setIsFleetifyAIOpen(true)}
+                onClick={() => setIsUnifiedUploadOpen(true)}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                FleetifyAI
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsSuperUploadOpen(true)}
-                className="bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200 text-blue-700 hover:text-blue-800"
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                🧠 النظام الذكي الفائق
+                رفع المدفوعات الذكي
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/finance/payment-linking">
                   <CreditCard className="h-4 w-4 mr-2" />
                   ربط المدفوعات
                 </Link>
-              </Button>
-              <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                استيراد CSV/XLSX
               </Button>
               <Button 
                 variant="destructive" 
@@ -183,19 +167,10 @@ const Payments = () => {
                 variant="outline" 
                 size="lg"
                 className="h-12 text-base justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0"
-                onClick={() => setIsFleetifyAIOpen(true)}
+                onClick={() => setIsUnifiedUploadOpen(true)}
               >
                 <Sparkles className="h-5 w-5 mr-2" />
-                FleetifyAI
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="h-12 text-base justify-start bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700"
-                onClick={() => setIsSuperUploadOpen(true)}
-              >
-                <Brain className="h-5 w-5 mr-2" />
-                🧠 النظام الذكي
+                رفع المدفوعات الذكي
               </Button>
               <Button 
                 variant="outline" 
@@ -207,15 +182,6 @@ const Payments = () => {
                   <CreditCard className="h-5 w-5 mr-2" />
                   ربط المدفوعات
                 </Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="h-12 text-base justify-start"
-                onClick={() => setIsImportOpen(true)}
-              >
-                <Upload className="h-5 w-5 mr-2" />
-                استيراد CSV/XLSX
               </Button>
               <Button 
                 variant="destructive" 
@@ -448,32 +414,12 @@ const Payments = () => {
           type="payment"
         />
 
-        {/* FleetifyAI Dashboard */}
-        <FleetifyAI_Dashboard 
-          open={isFleetifyAIOpen}
-          onOpenChange={setIsFleetifyAIOpen}
+        {/* نظام رفع المدفوعات الموحد */}
+        <UnifiedPaymentUpload 
+          open={isUnifiedUploadOpen}
+          onOpenChange={setIsUnifiedUploadOpen}
           onUploadComplete={() => {
-            setIsFleetifyAIOpen(false);
-            // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
-          }}
-        />
-
-        {/* النظام الذكي الفائق لربط المدفوعات */}
-        <SuperIntelligentPaymentUpload 
-          open={isSuperUploadOpen}
-          onOpenChange={setIsSuperUploadOpen}
-          onUploadComplete={() => {
-            setIsSuperUploadOpen(false);
-            // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
-          }}
-        />
-
-        {/* استيراد الدفعات من CSV/XLSX */}
-        <PaymentsCSVUpload 
-          open={isImportOpen}
-          onOpenChange={setIsImportOpen}
-          onUploadComplete={() => {
-            setIsImportOpen(false);
+            setIsUnifiedUploadOpen(false);
             // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
           }}
         />
