@@ -569,6 +569,32 @@ const Payments = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* SuperIntelligentPaymentUpload Dialog */}
+        <SuperIntelligentPaymentUpload
+          open={isSuperUploadOpen}
+          onOpenChange={setIsSuperUploadOpen}
+          onUploadComplete={() => {
+            setIsSuperUploadOpen(false);
+            // إعادة تحميل البيانات إذا لزم الأمر
+          }}
+        />
+
+        {/* CSV Upload Dialog */}
+        <PaymentsCSVUpload
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          onUploadComplete={() => {
+            setIsImportOpen(false);
+          }}
+        />
+
+        {/* Bulk Delete Dialog */}
+        <BulkDeletePaymentsDialog
+          isOpen={isBulkDeleteOpen}
+          onClose={() => setIsBulkDeleteOpen(false)}
+          totalPayments={payments?.length || 0}
+        />
       </div>
     </div>
   );
