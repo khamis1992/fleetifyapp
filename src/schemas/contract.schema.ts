@@ -9,7 +9,7 @@ export const baseContractSchema = z.object({
   contract_type: z.enum(['rental', 'lease', 'service', 'maintenance'], {
     required_error: 'نوع العقد مطلوب',
   }),
-  status: z.enum(['draft', 'active', 'expired', 'cancelled', 'suspended']).default('draft'),
+  status: z.enum(['draft', 'under_review', 'active', 'expired', 'cancelled', 'suspended']).default('draft'),
   total_amount: z.number().min(0, 'المبلغ الإجمالي يجب أن يكون موجباً'),
   currency: z.string().default('KWD'),
   payment_terms: z.enum(['monthly', 'quarterly', 'annually', 'one_time']).default('monthly'),

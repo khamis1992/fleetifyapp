@@ -23,6 +23,13 @@ export const ContractStatusBadge = ({ status, className }: ContractStatusBadgePr
           icon: Clock,
           label: 'مسودة'
         }
+      case 'under_review':
+        return {
+          variant: 'outline' as const,
+          className: 'bg-purple-100 text-purple-800 hover:bg-purple-100',
+          icon: AlertCircle,
+          label: 'تحت التدقيق'
+        }
       case 'expired':
         return {
           variant: 'destructive' as const,

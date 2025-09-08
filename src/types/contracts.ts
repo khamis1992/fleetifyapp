@@ -37,6 +37,7 @@ export type ContractType =
 
 export type ContractStatus = 
   | 'draft'
+  | 'under_review'
   | 'active'
   | 'expired'
   | 'suspended'
