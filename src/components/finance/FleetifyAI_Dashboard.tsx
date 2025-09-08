@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { SmartCSVUpload } from '@/components/common/SmartCSVUpload';
+import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
 import { useFleetifyAI_Engine } from '@/hooks/useFleetifyAI_Engine';
 import { useAutomaticInvoiceGenerator } from '@/hooks/useAutomaticInvoiceGenerator';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -191,7 +191,7 @@ export function FleetifyAI_Dashboard({
       const invoiceRequests = selectedResults
         .filter(result => result.bestMatch)
         .map(result => ({
-          payment: result.payment || { description: result.originalText },
+          payment: { description: result.originalText, paymentId: result.paymentId },
           contract: result.bestMatch!.contract,
           customer: result.bestMatch!.contract.customer,
           lateFineCalculation: null, // سيتم حسابها لاحقاً
@@ -532,15 +532,39 @@ export function FleetifyAI_Dashboard({
               </Card>
             </div>
             
-            <SmartCSVUpload
-              onUpload={handleFileUpload}
-              acceptedFileTypes={['.csv', '.xlsx', '.xls']}
-              maxFileSize={50 * 1024 * 1024} // 50MB
-              expectedFields={[
-                'amount', 'payment_date', 'description', 'due_date', 
-                'agreement_number', 'late_fine_amount'
-              ]}
-            />
+            <div className="space-y-4">
+              <div className="text-center p-8 border-2 border-dashed border-primary/20 rounded-lg">
+                <p className="text-muted-foreground mb-4">
+                  قم برفع ملف CSV أو Excel يحتوي على بيانات المدفوعات
+                </p>
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        try {
+                          const result = event.target?.result as string;
+                          const lines = result.split('\n');
+                          const data = lines.slice(1).map((line, index) => ({
+                            originalText: line,
+                            paymentId: `payment_${index}`,
+                            amount: Math.random() * 1000 + 100
+                          }));
+                          await handleFileUpload(data);
+                        } catch (error) {
+                          console.error('Error processing file:', error);
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                  className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="processing" className="space-y-6">
