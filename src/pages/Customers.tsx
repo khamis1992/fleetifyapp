@@ -184,6 +184,13 @@ export default function Customers() {
   
   // تحسين التحقق من السوبر أدمن
   const isSuperAdmin = user?.roles?.includes('super_admin') || isSystemLevel
+  
+  console.log('🔍 SuperAdmin check:', {
+    userRoles: user?.roles,
+    isSystemLevel,
+    isSuperAdmin,
+    hasSupperAdminRole: user?.roles?.includes('super_admin')
+  })
 
   // إذا كان التحميل جاري
   if (loading) {
