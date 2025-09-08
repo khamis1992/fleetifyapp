@@ -272,24 +272,47 @@ export function UnifiedContractUpload({ open, onOpenChange, onUploadComplete }: 
                   </div>
                 </div>
 
-                {/* Errors */}
-                {results.errors.length > 0 && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-1">
-                        <p className="font-medium">أخطاء حدثت:</p>
-                        <ul className="text-sm list-disc list-inside space-y-1">
-                          {results.errors.slice(0, 5).map((error, index) => (
-                            <li key={index}>{error}</li>
-                          ))}
-                          {results.errors.length > 5 && (
-                            <li>... و {results.errors.length - 5} خطأ آخر</li>
-                          )}
-                        </ul>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
+                {/* Errors and Warnings */}
+                {(results.errors.length > 0 || results.warnings.length > 0) && (
+                  <div className="space-y-3">
+                    {/* Errors */}
+                    {results.errors.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <div className="space-y-2">
+                            <p className="font-medium">أخطاء حدثت ({results.errors.length}):</p>
+                            <ScrollArea className="max-h-32">
+                              <ul className="text-sm space-y-1">
+                                {results.errors.map((error, index) => (
+                                  <li key={index} className="whitespace-pre-line">{error}</li>
+                                ))}
+                              </ul>
+                            </ScrollArea>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {/* Warnings */}
+                    {results.warnings.length > 0 && (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <div className="space-y-2">
+                            <p className="font-medium">تحذيرات ومعلومات ({results.warnings.length}):</p>
+                            <ScrollArea className="max-h-32">
+                              <ul className="text-sm space-y-1">
+                                {results.warnings.map((warning, index) => (
+                                  <li key={index} className="whitespace-pre-line">{warning}</li>
+                                ))}
+                              </ul>
+                            </ScrollArea>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
                 )}
 
                 <Button onClick={handleFinish} className="w-full">

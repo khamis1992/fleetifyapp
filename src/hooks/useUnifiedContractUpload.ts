@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import { findOrCreateCustomer, CustomerSearchData } from '@/utils/enhanced-customer-search';
+import { generateErrorMessage, formatErrorForUser, ContractError } from '@/utils/contract-error-handler';
+import { processExcelFile, detectFileFormat, normalizeFileData } from '@/utils/excel-processor';
 import Papa from 'papaparse';
 
 export interface ContractUploadResult {
@@ -74,19 +77,44 @@ export function useUnifiedContractUpload() {
           const enhanced = { ...contract };
           const issues: string[] = [];
           
-          // تكميل البيانات المالية
-          if (!enhanced.monthly_amount || enhanced.monthly_amount === '' || enhanced.monthly_amount === 0) {
+          // تكميل البيانات المالية بذكاء
+          const originalMonthly = Number(enhanced.monthly_amount) || 0;
+          const originalTotal = Number(enhanced.contract_amount) || 0;
+          
+          // تعيين الإيجار الشهري الافتراضي
+          if (!enhanced.monthly_amount || enhanced.monthly_amount === '' || originalMonthly === 0) {
             enhanced.monthly_amount = SMART_DEFAULTS.monthly_amount;
-            issues.push('تم تعيين الإيجار الشهري الافتراضي: 1500');
+            issues.push(`تم تعيين الإيجار الشهري الافتراضي: ${SMART_DEFAULTS.monthly_amount} ريال`);
+          }
+          
+          // حساب عدد الأشهر من التواريخ أو استخدام القيمة الافتراضية
+          let rentalMonths = Number(enhanced.rental_months) || 0;
+          if (rentalMonths === 0 && enhanced.start_date && enhanced.end_date) {
+            const startDate = new Date(enhanced.start_date);
+            const endDate = new Date(enhanced.end_date);
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+              const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+              rentalMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)); // تقريبي
+              enhanced.rental_months = rentalMonths;
+              issues.push(`تم حساب عدد الأشهر من التواريخ: ${rentalMonths} شهر`);
+            }
+          }
+          
+          if (rentalMonths === 0) {
+            rentalMonths = SMART_DEFAULTS.rental_months;
+            enhanced.rental_months = rentalMonths;
+            issues.push(`تم تعيين عدد الأشهر الافتراضي: ${rentalMonths} شهر`);
           }
           
           // حساب القيمة الإجمالية
           const monthlyAmount = Number(enhanced.monthly_amount) || SMART_DEFAULTS.monthly_amount;
-          const rentalMonths = Number(enhanced.rental_months) || SMART_DEFAULTS.rental_months;
           
-          if (!enhanced.contract_amount || enhanced.contract_amount === '' || enhanced.contract_amount === 0) {
+          if (!enhanced.contract_amount || enhanced.contract_amount === '' || originalTotal === 0) {
             enhanced.contract_amount = monthlyAmount * rentalMonths;
-            issues.push(`تم حساب القيمة الإجمالية: ${enhanced.contract_amount} (${monthlyAmount} × ${rentalMonths})`);
+            issues.push(`تم حساب القيمة الإجمالية: ${enhanced.contract_amount} ريال (${monthlyAmount} × ${rentalMonths} شهر)`);
+          } else if (originalTotal !== monthlyAmount * rentalMonths) {
+            // تحذير في حالة عدم تطابق الحسابات
+            issues.push(`تحذير: القيمة الإجمالية (${originalTotal}) لا تتطابق مع الحساب المتوقع (${monthlyAmount * rentalMonths})`);
           }
           
           // تعيين نوع العقد
@@ -163,65 +191,52 @@ export function useUnifiedContractUpload() {
     }
   };
 
-  // إنشاء عميل جديد تلقائياً
-  const createCustomerIfNeeded = async (customerData: any): Promise<string | null> => {
+  // دالة محسنة للبحث أو إنشاء العملاء
+  const findOrCreateCustomerEnhanced = async (contractData: any): Promise<{
+    customerId: string | null;
+    created: boolean;
+    errors: string[];
+    warnings: string[];
+  }> => {
     try {
-      if (!customerData.customer_name) return null;
-      
-      const cleanName = customerData.customer_name.trim();
-      
-      // البحث عن عميل موجود بالحقول الصحيحة
-      const { data: existingCustomers } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .or(`first_name.ilike.%${cleanName}%,last_name.ilike.%${cleanName}%,company_name.ilike.%${cleanName}%,company_name_ar.ilike.%${cleanName}%,phone.eq.${customerData.customer_phone || ''}`)
-        .limit(1);
-      
-      if (existingCustomers && existingCustomers.length > 0) {
-        return existingCustomers[0].id;
+      if (!contractData.customer_name && !contractData.customer_identifier) {
+        return {
+          customerId: null,
+          created: false,
+          errors: ['اسم العميل أو معرفه مطلوب'],
+          warnings: []
+        };
       }
       
-      // تحديد نوع العميل
-      const isCompany = cleanName.includes('شركة') || cleanName.includes('مؤسسة') || 
-                       cleanName.includes('Company') || cleanName.includes('Corp') ||
-                       cleanName.includes('LLC') || cleanName.includes('Ltd');
-      
-      let newCustomerData: any = {
-        company_id: companyId,
-        customer_type: isCompany ? 'corporate' : 'individual',
-        phone: customerData.customer_phone || '+965XXXXXXXX',
-        email: customerData.customer_email || null,
-        national_id: customerData.customer_id_number || null,
-        address: customerData.customer_address || null,
-        is_active: true,
-        notes: 'تم إنشاؤه تلقائياً من رفع العقود الذكي'
+      // إعداد بيانات البحث
+      const searchData: CustomerSearchData = {
+        customer_id: contractData.customer_identifier || contractData.customer_id,
+        customer_name: contractData.customer_name,
+        customer_phone: contractData.customer_phone,
+        customer_email: contractData.customer_email,
+        customer_id_number: contractData.customer_id_number,
+        national_id: contractData.national_id,
+        customer_code: contractData.customer_code
       };
       
-      if (isCompany) {
-        newCustomerData.company_name = cleanName;
-        newCustomerData.company_name_ar = cleanName;
-      } else {
-        const nameParts = cleanName.split(' ');
-        newCustomerData.first_name = nameParts[0] || cleanName;
-        newCustomerData.last_name = nameParts.slice(1).join(' ') || 'غير محدد';
-        newCustomerData.first_name_ar = nameParts[0] || cleanName;
-        newCustomerData.last_name_ar = nameParts.slice(1).join(' ') || 'غير محدد';
-      }
+      // استخدام البحث المحسن
+      const result = await findOrCreateCustomer(searchData, companyId);
       
-      // إنشاء عميل جديد
-      const { data: newCustomer, error } = await supabase
-        .from('customers')
-        .insert(newCustomerData)
-        .select('id')
-        .single();
+      return {
+        customerId: result.id || null,
+        created: result.created,
+        errors: result.errors,
+        warnings: result.warnings
+      };
       
-      if (error) throw error;
-      return newCustomer.id;
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      return null;
+    } catch (error: any) {
+      console.error('Enhanced customer search/create error:', error);
+      return {
+        customerId: null,
+        created: false,
+        errors: [`خطأ في معالجة العميل: ${error.message}`],
+        warnings: []
+      };
     }
   };
 
@@ -238,26 +253,73 @@ export function useUnifiedContractUpload() {
     try {
       console.log('🚀 Unified Upload: Starting smart contract upload');
       
-      // قراءة وتحليل الملف
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      let rawData: any[] = [];
+      // كشف تنسيق الملف ومعالجته
+      const fileFormat = detectFileFormat(file);
+      console.log('🔍 File format detected:', fileFormat);
       
-      switch (fileExtension) {
-        case '.csv':
+      let rawData: any[] = [];
+      const processingWarnings: string[] = [];
+      
+      switch (fileFormat) {
+        case 'csv':
           const csvText = await file.text();
-          const csvParsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-          rawData = csvParsed.data as any[];
+          const csvParsed = Papa.parse(csvText, { 
+            header: true, 
+            skipEmptyLines: 'greedy'
+          });
+          
+          if (csvParsed.errors && csvParsed.errors.length > 0) {
+            processingWarnings.push(...csvParsed.errors.map((err: any) => `تحذير CSV: ${err.message}`));
+          }
+          
+          rawData = (csvParsed.data as any[]) || [];
           break;
           
-        case '.json':
+        case 'excel':
+          const excelResult = await processExcelFile(file);
+          rawData = excelResult.data;
+          processingWarnings.push(...excelResult.warnings);
+          
+          if (excelResult.errors.length > 0) {
+            throw new Error(`أخطاء في معالجة Excel: ${excelResult.errors.join(', ')}`);
+          }
+          break;
+          
+        case 'json':
           const jsonText = await file.text();
-          const jsonData = JSON.parse(jsonText);
-          rawData = Array.isArray(jsonData) ? jsonData : [jsonData];
+          try {
+            const jsonData = JSON.parse(jsonText);
+            rawData = Array.isArray(jsonData) ? jsonData : [jsonData];
+          } catch (jsonError) {
+            throw new Error(`خطأ في قراءة JSON: ${jsonError.message}`);
+          }
+          break;
+          
+        case 'text':
+          const txtText = await file.text();
+          // محاولة تحليل كـ CSV أولاً
+          try {
+            const txtParsed = Papa.parse(txtText, { header: true, skipEmptyLines: 'greedy' });
+            rawData = txtParsed.data as any[];
+            processingWarnings.push('تم تحليل الملف النصي كـ CSV');
+          } catch {
+            // محاولة كـ JSON
+            try {
+              const jsonData = JSON.parse(txtText);
+              rawData = Array.isArray(jsonData) ? jsonData : [jsonData];
+              processingWarnings.push('تم تحليل الملف النصي كـ JSON');
+            } catch {
+              throw new Error('لا يمكن تحليل الملف النصي كـ CSV أو JSON');
+            }
+          }
           break;
           
         default:
-          throw new Error(`نوع الملف ${fileExtension} غير مدعوم حالياً`);
+          throw new Error(`نوع الملف غير مدعوم: ${file.name}`);
       }
+      
+      // تطبيق التطبيع على البيانات
+      rawData = normalizeFileData(rawData, fileFormat);
 
       if (rawData.length === 0) {
         throw new Error('الملف فارغ أو لا يحتوي على بيانات صالحة');
@@ -272,7 +334,7 @@ export function useUnifiedContractUpload() {
         successful: 0,
         failed: 0,
         errors: [],
-        warnings: [],
+        warnings: [...processingWarnings], // إضافة تحذيرات معالجة الملف
         created_customers: 0,
         contracts_under_review: 0
       };
@@ -282,12 +344,29 @@ export function useUnifiedContractUpload() {
         setProgress(50 + (i / enhancedData.length) * 50); // النصف الثاني للرفع
         
         try {
-          // إنشاء العميل إذا لزم الأمر
+          // البحث أو إنشاء العميل بالنظام المحسن
           let customerId = null;
-          if (contract.customer_name) {
-            customerId = await createCustomerIfNeeded(contract);
-            if (customerId && !contract.customer_id) {
+          let customerErrors: string[] = [];
+          let customerWarnings: string[] = [];
+          
+          if (contract.customer_name || contract.customer_identifier) {
+            const customerResult = await findOrCreateCustomerEnhanced(contract);
+            customerId = customerResult.customerId;
+            customerErrors = customerResult.errors;
+            customerWarnings = customerResult.warnings;
+            
+            if (customerResult.created) {
               result.created_customers++;
+            }
+            
+            // إضافة التحذيرات للملاحظات
+            if (customerWarnings.length > 0) {
+              contract.ai_notes = (contract.ai_notes || '') + ' | ' + customerWarnings.join(' | ');
+            }
+            
+            // إضافة الأخطاء للنتائج
+            if (customerErrors.length > 0) {
+              result.warnings.push(...customerErrors.map(err => `السطر ${i + 1}: ${err}`));
             }
           }
           
@@ -335,7 +414,23 @@ export function useUnifiedContractUpload() {
           
         } catch (contractError: any) {
           result.failed++;
-          result.errors.push(`السطر ${i + 1}: ${contractError.message}`);
+          
+          // معالجة الخطأ بالنظام المحسن
+          const errorDetails = generateErrorMessage(contractError, 'رفع العقد', i + 1);
+          const formattedError = formatErrorForUser(errorDetails);
+          
+          result.errors.push(formattedError);
+          
+          // إضافة اقتراحات للمستخدم
+          if (errorDetails.suggestion) {
+            result.warnings.push(`💡 اقتراح للسطر ${i + 1}: ${errorDetails.suggestion}`);
+          }
+          
+          console.error(`❌ Contract upload error for row ${i + 1}:`, {
+            originalError: contractError,
+            errorDetails,
+            contractData: contract
+          });
         }
       }
       
