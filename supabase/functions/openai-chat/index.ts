@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, model = 'gpt-4.1-2025-04-14', max_completion_tokens = 1000, temperature } = await req.json();
+    const { messages, model = 'gpt-4o-mini', max_completion_tokens = 1000, temperature } = await req.json();
 
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');

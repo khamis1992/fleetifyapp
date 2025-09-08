@@ -52,7 +52,7 @@ export function useUnifiedContractUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<ContractUploadResult | null>(null);
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, user } = useUnifiedCompanyAccess();
 
   // القيم الافتراضية الذكية
   const SMART_DEFAULTS = {
@@ -128,9 +128,9 @@ export function useUnifiedContractUpload() {
                 }
               });
               
-              if (aiResponse.data?.response) {
+              if (aiResponse.data?.choices?.[0]?.message?.content) {
                 // استخراج الاقتراحات من الرد
-                const suggestions = aiResponse.data.response;
+                const suggestions = aiResponse.data.choices[0].message.content;
                 if (!enhanced.customer_phone && suggestions.includes('05')) {
                   const phoneMatch = suggestions.match(/05\d{8}/);
                   if (phoneMatch) {
@@ -168,32 +168,52 @@ export function useUnifiedContractUpload() {
     try {
       if (!customerData.customer_name) return null;
       
-      // البحث عن عميل موجود
-      const { data: existingCustomer } = await supabase
+      const cleanName = customerData.customer_name.trim();
+      
+      // البحث عن عميل موجود بالحقول الصحيحة
+      const { data: existingCustomers } = await supabase
         .from('customers')
         .select('id')
         .eq('company_id', companyId)
-        .or(`name.eq.${customerData.customer_name},phone.eq.${customerData.customer_phone || ''}`)
-        .single();
+        .eq('is_active', true)
+        .or(`first_name.ilike.%${cleanName}%,last_name.ilike.%${cleanName}%,company_name.ilike.%${cleanName}%,company_name_ar.ilike.%${cleanName}%,phone.eq.${customerData.customer_phone || ''}`)
+        .limit(1);
       
-      if (existingCustomer) {
-        return existingCustomer.id;
+      if (existingCustomers && existingCustomers.length > 0) {
+        return existingCustomers[0].id;
+      }
+      
+      // تحديد نوع العميل
+      const isCompany = cleanName.includes('شركة') || cleanName.includes('مؤسسة') || 
+                       cleanName.includes('Company') || cleanName.includes('Corp') ||
+                       cleanName.includes('LLC') || cleanName.includes('Ltd');
+      
+      let newCustomerData: any = {
+        company_id: companyId,
+        customer_type: isCompany ? 'corporate' : 'individual',
+        phone: customerData.customer_phone || '+965XXXXXXXX',
+        email: customerData.customer_email || null,
+        national_id: customerData.customer_id_number || null,
+        address: customerData.customer_address || null,
+        is_active: true,
+        notes: 'تم إنشاؤه تلقائياً من رفع العقود الذكي'
+      };
+      
+      if (isCompany) {
+        newCustomerData.company_name = cleanName;
+        newCustomerData.company_name_ar = cleanName;
+      } else {
+        const nameParts = cleanName.split(' ');
+        newCustomerData.first_name = nameParts[0] || cleanName;
+        newCustomerData.last_name = nameParts.slice(1).join(' ') || 'غير محدد';
+        newCustomerData.first_name_ar = nameParts[0] || cleanName;
+        newCustomerData.last_name_ar = nameParts.slice(1).join(' ') || 'غير محدد';
       }
       
       // إنشاء عميل جديد
       const { data: newCustomer, error } = await supabase
         .from('customers')
-        .insert({
-          company_id: companyId,
-          name: customerData.customer_name,
-          phone: customerData.customer_phone || 'غير محدد',
-          email: customerData.customer_email || null,
-          id_number: customerData.customer_id_number || null,
-          address: customerData.customer_address || null,
-          customer_type: 'individual',
-          status: 'active',
-          notes: 'تم إنشاؤه تلقائياً من رفع العقود الذكي'
-        })
+        .insert(newCustomerData)
         .select('id')
         .single();
       
@@ -271,21 +291,32 @@ export function useUnifiedContractUpload() {
             }
           }
           
+          // التحقق من وجود customer_id
+          if (!customerId && !contract.customer_id) {
+            throw new Error('معرف العميل مطلوب');
+          }
+          
+          // التحقق من صحة التواريخ
+          if (!contract.start_date || !contract.end_date) {
+            throw new Error('تاريخ البداية والنهاية مطلوبان');
+          }
+          
           // إعداد بيانات العقد
           const contractData = {
             company_id: companyId,
             contract_number: contract.contract_number,
             contract_date: contract.contract_date,
-            contract_type: contract.contract_type,
+            contract_type: contract.contract_type === 'تحت التدقيق' ? 'rental' : contract.contract_type,
             description: contract.description || contract.ai_notes || 'تم إنشاؤه من الرفع الذكي',
             customer_id: customerId || contract.customer_id,
             monthly_amount: Number(contract.monthly_amount) || SMART_DEFAULTS.monthly_amount,
             contract_amount: Number(contract.contract_amount) || 0,
-            rental_months: Number(contract.rental_months) || SMART_DEFAULTS.rental_months,
             start_date: contract.start_date,
             end_date: contract.end_date,
             status: contract.requires_review ? 'under_review' : 'draft',
-            created_via: 'smart_upload'
+            created_by: user?.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           };
           
           // رفع العقد
