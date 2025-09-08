@@ -136,10 +136,10 @@ const Payments = () => {
               <Button 
                 variant="outline" 
                 onClick={() => setIsSuperUploadOpen(true)}
-                className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200"
+                className="bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200 text-blue-700 hover:text-blue-800"
               >
-                <Brain className="h-4 w-4 mr-2 text-purple-600" />
-                النظام الذكي الفائق
+                <Brain className="h-4 w-4 mr-2" />
+                🧠 النظام الذكي الفائق
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/finance/payment-linking">
@@ -172,11 +172,11 @@ const Payments = () => {
               <Button 
                 variant="outline" 
                 size="lg"
-                className="h-12 text-base justify-start bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200"
+                className="h-12 text-base justify-start bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700"
                 onClick={() => setIsSuperUploadOpen(true)}
               >
-                <Brain className="h-5 w-5 mr-2 text-purple-600" />
-                النظام الذكي الفائق
+                <Brain className="h-5 w-5 mr-2" />
+                🧠 النظام الذكي
               </Button>
               <Button 
                 variant="outline" 
