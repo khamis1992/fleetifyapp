@@ -15,17 +15,21 @@ export const MobileTabsNavigation: React.FC<MobileTabsNavigationProps> = ({
 }) => {
   const tabs = [
     { value: "all", label: "الكل", shortLabel: "الكل" },
+    { value: "draft", label: "المسودات", shortLabel: "مسودة" },
+    { value: "under_review", label: "قيد المراجعة", shortLabel: "مراجعة" },
     { value: "active", label: "النشطة", shortLabel: "نشطة" },
     { value: "suspended", label: "المعلقة", shortLabel: "معلقة" },
     ...(showAllTabs ? [
       { value: "expired", label: "المنتهية", shortLabel: "منتهية" },
+      { value: "cancelled", label: "الملغية", shortLabel: "ملغية" },
+      { value: "renewed", label: "المجددة", shortLabel: "مجددة" },
       { value: "alerts", label: "التنبيهات", shortLabel: "تنبيهات" }
     ] : [])
   ];
 
   return (
     <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-      <TabsList className="grid h-12 w-full min-w-max grid-cols-3 gap-1 p-1 bg-muted/50 rounded-xl">
+      <TabsList className={`grid h-12 w-full min-w-max gap-1 p-1 bg-muted/50 rounded-xl`} style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}

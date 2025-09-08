@@ -130,9 +130,10 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
               <SelectContent className="bg-white dark:bg-gray-700 z-50">
                 <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="draft">مسودة</SelectItem>
+                <SelectItem value="under_review">قيد المراجعة</SelectItem>
                 <SelectItem value="active">نشط</SelectItem>
-                <SelectItem value="suspended">معلق</SelectItem>
                 <SelectItem value="expired">منتهي</SelectItem>
+                <SelectItem value="suspended">معلق</SelectItem>
                 <SelectItem value="cancelled">ملغي</SelectItem>
                 <SelectItem value="renewed">مجدد</SelectItem>
               </SelectContent>

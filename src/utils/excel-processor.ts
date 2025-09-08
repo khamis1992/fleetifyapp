@@ -30,11 +30,10 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
       const parsed = Papa.parse(text, { 
         header: true, 
         skipEmptyLines: 'greedy',
-        delimiter: ',',
-        encoding: 'UTF-8'
+        delimiter: ','
       });
       
-      if (parsed.errors.length > 0) {
+      if (parsed.errors && parsed.errors.length > 0) {
         result.errors.push(...parsed.errors.map(err => `خطأ في قراءة Excel: ${err.message}`));
         
         // محاولة مع فاصل مختلف
@@ -44,7 +43,7 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
           delimiter: '\t'
         });
         
-        if (parsedTab.errors.length === 0) {
+        if (!parsedTab.errors || parsedTab.errors.length === 0) {
           result.data = parsedTab.data as any[];
           result.warnings.push('تم اكتشاف فاصل Tab في الملف');
         } else {
@@ -128,7 +127,7 @@ export const normalizeFileData = (data: any[], fileFormat: string): any[] => {
         
         // تحويل القيم الرقمية
         if (cleanKey.includes('amount') || cleanKey.includes('مبلغ') || cleanKey.includes('قيمة')) {
-          const numValue = parseFloat(cleanValue.replace(/[^\d.-]/g, ''));
+          const numValue = parseFloat(String(cleanValue).replace(/[^\d.-]/g, ''));
           if (!isNaN(numValue)) {
             cleanValue = numValue;
           }
@@ -136,7 +135,7 @@ export const normalizeFileData = (data: any[], fileFormat: string): any[] => {
         
         // تنظيف أرقام الهواتف
         if (cleanKey.includes('phone') || cleanKey.includes('هاتف') || cleanKey.includes('جوال')) {
-          cleanValue = cleanValue.replace(/\s|-|\(|\)/g, '');
+          cleanValue = String(cleanValue).replace(/\s|-|\(|\)/g, '');
         }
       }
       
