@@ -277,7 +277,7 @@ export function useUnifiedContractUpload() {
             contract_number: contract.contract_number,
             contract_date: contract.contract_date,
             contract_type: contract.contract_type,
-            description: contract.description || 'تم إنشاؤه من الرفع الذكي',
+            description: contract.description || contract.ai_notes || 'تم إنشاؤه من الرفع الذكي',
             customer_id: customerId || contract.customer_id,
             monthly_amount: Number(contract.monthly_amount) || SMART_DEFAULTS.monthly_amount,
             contract_amount: Number(contract.contract_amount) || 0,
@@ -285,7 +285,6 @@ export function useUnifiedContractUpload() {
             start_date: contract.start_date,
             end_date: contract.end_date,
             status: contract.requires_review ? 'under_review' : 'draft',
-            notes: contract.ai_notes || null,
             created_via: 'smart_upload'
           };
           
