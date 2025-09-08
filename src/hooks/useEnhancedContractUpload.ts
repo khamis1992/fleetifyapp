@@ -29,7 +29,23 @@ export function useEnhancedContractUpload() {
     return normalized.map((row, idx) => ({ ...row, rowNumber: idx + 2 }));
   }
 
-  const normalize = (s?: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+  // تطبيع النصوص المتقدم
+  const normalize = (s?: string) => {
+    if (!s) return ''
+    return s.toString()
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .replace(/[^\w\s\u0600-\u06FF]/g, '') // إزالة الأحرف الخاصة عدا العربية والإنجليزية
+      .replace(/ة$/g, 'ه') // توحيد التاء المربوطة
+      .replace(/ى/g, 'ي') // توحيد الألف المقصورة
+  }
+
+  // تطبيع أرقام الهواتف
+  const normalizePhone = (phone?: string) => {
+    if (!phone) return ''
+    return phone.replace(/\D/g, '').replace(/^00965|^\+965|^965/, '')
+  }
 
   // دالة للبحث الضبابي
   const fuzzyMatch = (str1: string, str2: string): number => {
@@ -64,22 +80,116 @@ export function useEnhancedContractUpload() {
     return matrix[str2.length][str1.length];
   };
 
+  // البحث متعدد المستويات عن العميل
+  const findCustomerMultiLevel = async (searchData: {
+    customerName?: string
+    nationalId?: string  
+    phone?: string
+  }, targetCompanyId: string) => {
+    try {
+      console.log(`🔍 البحث متعدد المستويات:`, searchData)
+
+      // المستوى الأول: البحث بالرقم الشخصي (الأكثر دقة)
+      if (searchData.nationalId) {
+        const { data: customerById, error } = await supabase
+          .from('customers')
+          .select('id, customer_type, company_name, company_name_ar, first_name, last_name, first_name_ar, last_name_ar, national_id')
+          .eq('company_id', targetCompanyId)
+          .eq('is_active', true)
+          .eq('national_id', searchData.nationalId.trim())
+          .limit(1)
+
+        if (!error && customerById && customerById.length > 0) {
+          console.log(`✅ تطابق بالرقم الشخصي: ${searchData.nationalId} -> ${customerById[0].id}`)
+          return customerById[0].id
+        }
+      }
+
+      // المستوى الثاني: البحث برقم الهاتف
+      if (searchData.phone) {
+        const normalizedPhone = normalizePhone(searchData.phone)
+        if (normalizedPhone.length >= 8) {
+          const { data: customerByPhone, error } = await supabase
+            .from('customers')
+            .select('id, customer_type, company_name, company_name_ar, first_name, last_name, first_name_ar, last_name_ar, phone')
+            .eq('company_id', targetCompanyId)
+            .eq('is_active', true)
+            .like('phone', `%${normalizedPhone}%`)
+            .limit(5)
+
+          if (!error && customerByPhone && customerByPhone.length > 0) {
+            // التحقق من تطابق دقيق لرقم الهاتف
+            const phoneMatch = customerByPhone.find(c => 
+              normalizePhone(c.phone) === normalizedPhone
+            )
+            if (phoneMatch) {
+              console.log(`✅ تطابق برقم الهاتف: ${searchData.phone} -> ${phoneMatch.id}`)
+              return phoneMatch.id
+            }
+          }
+        }
+      }
+
+      // المستوى الثالث: البحث بالاسم (محسن)
+      if (searchData.customerName) {
+        return await findCustomerByName(searchData.customerName, targetCompanyId)
+      }
+
+      console.log(`❌ لم يتم العثور على العميل في جميع المستويات`)
+      return null
+
+    } catch (error) {
+      console.error(`❌ خطأ في البحث متعدد المستويات:`, error)
+      return null
+    }
+  }
+
   const findCustomerByName = async (customerName: string, targetCompanyId: string) => {
     try {
       const cleanName = customerName.trim()
       if (!cleanName) return null
 
-      console.log(`🔍 البحث عن العميل: "${cleanName}"`)
+      console.log(`🔍 البحث بالاسم: "${cleanName}"`)
       
-      // البحث الأولي بـ ILIKE
-      const like = `%${cleanName}%`
-      const { data: customers, error } = await supabase
+      // تحسين البحث الأولي
+      const normalizedSearchName = normalize(cleanName)
+      const searchTerms = normalizedSearchName.split(' ').filter(term => term.length > 2)
+      
+      // إنشاء استعلام بحث متقدم
+      let query = supabase
         .from('customers')
-        .select('id, customer_type, company_name, company_name_ar, first_name, last_name, first_name_ar, last_name_ar')
+        .select('id, customer_type, company_name, company_name_ar, first_name, last_name, first_name_ar, last_name_ar, national_id, phone')
         .eq('company_id', targetCompanyId)
         .eq('is_active', true)
-        .or(`company_name.ilike.${like},company_name_ar.ilike.${like},first_name.ilike.${like},last_name.ilike.${like},first_name_ar.ilike.${like},last_name_ar.ilike.${like}`)
-        .limit(20)
+
+      // بناء استعلام البحث الديناميكي
+      const orConditions = []
+      
+      // البحث في أسماء الشركات
+      orConditions.push(`company_name.ilike.%${cleanName}%`)
+      orConditions.push(`company_name_ar.ilike.%${cleanName}%`)
+      
+      // البحث في أسماء الأفراد
+      orConditions.push(`first_name.ilike.%${cleanName}%`)
+      orConditions.push(`last_name.ilike.%${cleanName}%`)
+      orConditions.push(`first_name_ar.ilike.%${cleanName}%`)
+      orConditions.push(`last_name_ar.ilike.%${cleanName}%`)
+
+      // إضافة بحث بالكلمات المفردة للأسماء الطويلة
+      for (const term of searchTerms) {
+        if (term.length > 2) {
+          orConditions.push(`company_name.ilike.%${term}%`)
+          orConditions.push(`company_name_ar.ilike.%${term}%`)
+          orConditions.push(`first_name.ilike.%${term}%`)
+          orConditions.push(`last_name.ilike.%${term}%`)
+          orConditions.push(`first_name_ar.ilike.%${term}%`)
+          orConditions.push(`last_name_ar.ilike.%${term}%`)
+        }
+      }
+
+      const { data: customers, error } = await query
+        .or(orConditions.join(','))
+        .limit(50)
 
       if (error) {
         console.error('خطأ في البحث عن العميل:', error)
@@ -91,57 +201,76 @@ export function useEnhancedContractUpload() {
         return null
       }
 
-      // محاولة إيجاد تطابق دقيق أولاً
+      console.log(`📊 عثر على ${customers.length} نتيجة للبحث عن: ${cleanName}`)
+
+      // أولوية البحث: تطابق دقيق أولاً
       const normalizedName = normalize(cleanName)
       const exactMatch = customers.find(c => {
-        const companyName = normalize(c.company_name || '')
-        const companyNameAr = normalize(c.company_name_ar || '')
-        const fullName = normalize(`${c.first_name || ''} ${c.last_name || ''}`)
-        const fullNameAr = normalize(`${c.first_name_ar || ''} ${c.last_name_ar || ''}`)
-        
-        return companyName === normalizedName || 
-               companyNameAr === normalizedName ||
-               fullName === normalizedName || 
-               fullNameAr === normalizedName
+        const names = [
+          normalize(c.company_name || ''),
+          normalize(c.company_name_ar || ''),
+          normalize(`${c.first_name || ''} ${c.last_name || ''}`),
+          normalize(`${c.first_name_ar || ''} ${c.last_name_ar || ''}`)
+        ]
+        return names.some(name => name === normalizedName)
       })
 
       if (exactMatch) {
-        console.log(`✅ تطابق دقيق: ${cleanName} -> ${exactMatch.id}`)
+        const displayName = exactMatch.company_name || `${exactMatch.first_name} ${exactMatch.last_name}` || 'غير محدد'
+        console.log(`✅ تطابق دقيق: ${cleanName} -> ${exactMatch.id} (${displayName})`)
         return exactMatch.id
       }
 
-      // البحث الضبابي إذا لم يوجد تطابق دقيق
+      // البحث الضبابي المحسن
       let bestMatch = null
       let bestScore = 0
+      let matchDetails = ''
 
       for (const customer of customers) {
-        const names = [
+        const customerNames = [
+          { name: customer.company_name, type: 'company_name' },
+          { name: customer.company_name_ar, type: 'company_name_ar' },
+          { name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim(), type: 'full_name' },
+          { name: `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim(), type: 'full_name_ar' }
+        ].filter(item => item.name)
+
+        for (const nameObj of customerNames) {
+          const score = fuzzyMatch(normalizedName, normalize(nameObj.name))
+          if (score > bestScore && score >= 0.7) { // خفض العتبة إلى 70%
+            bestScore = score
+            bestMatch = customer
+            matchDetails = `${nameObj.name} (${nameObj.type})`
+          }
+        }
+      }
+
+      if (bestMatch && bestScore >= 0.7) {
+        console.log(`✅ تطابق ضبابي: ${cleanName} -> ${bestMatch.id} (${Math.round(bestScore * 100)}% - ${matchDetails})`)
+        return bestMatch.id
+      }
+
+      // إذا كان هناك نتيجة واحدة فقط وتحتوي على جزء من الاسم
+      if (customers.length === 1) {
+        const customer = customers[0]
+        const customerNames = [
           customer.company_name,
           customer.company_name_ar,
           `${customer.first_name || ''} ${customer.last_name || ''}`,
           `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`
         ].filter(Boolean)
 
-        for (const name of names) {
-          const score = fuzzyMatch(normalizedName, normalize(name))
-          if (score > bestScore && score >= 0.8) { // عتبة التطابق 80%
-            bestScore = score
-            bestMatch = customer
-          }
+        const hasPartialMatch = customerNames.some(name => 
+          normalize(name).includes(normalizedName) || normalizedName.includes(normalize(name))
+        )
+
+        if (hasPartialMatch) {
+          const displayName = customer.company_name || `${customer.first_name} ${customer.last_name}` || 'غير محدد'
+          console.log(`✅ تطابق جزئي وحيد: ${cleanName} -> ${customer.id} (${displayName})`)
+          return customer.id
         }
       }
 
-      if (bestMatch && bestScore >= 0.8) {
-        console.log(`✅ تطابق ضبابي: ${cleanName} -> ${bestMatch.id} (نسبة التطابق: ${Math.round(bestScore * 100)}%)`)
-        return bestMatch.id
-      }
-
-      if (customers.length === 1) {
-        console.log(`✅ تطابق واحد: ${cleanName} -> ${customers[0].id}`)
-        return customers[0].id
-      }
-
-      console.log(`⚠️ عدة نتائج للعميل: ${cleanName} (${customers.length} نتائج، أفضل تطابق: ${Math.round(bestScore * 100)}%)`)
+      console.log(`⚠️ لا يوجد تطابق مناسب للعميل: ${cleanName} (أفضل نتيجة: ${Math.round(bestScore * 100)}%)`)
       return null
 
     } catch (error) {
@@ -244,17 +373,24 @@ export function useEnhancedContractUpload() {
         const row = data[i]
         setProgress(Math.round(((i + 1) / data.length) * 50))
 
-        // إذا كان هناك اسم عميل ولا يوجد معرف عميل
-        if (row.customer_name && !row.customer_id) {
-          // محاولة العثور على العميل الموجود
-          let customerId = await findCustomerByName(row.customer_name, companyId)
+        // البحث متعدد المستويات عن العميل
+        if ((row.customer_name || row.national_id || row.phone) && !row.customer_id) {
+          // تحضير بيانات البحث
+          const searchData = {
+            customerName: row.customer_name?.trim(),
+            nationalId: row.national_id?.trim() || row.customer_national_id?.trim(),
+            phone: row.phone?.trim() || row.customer_phone?.trim()
+          }
+
+          // محاولة العثور على العميل بجميع الطرق المتاحة
+          let customerId = await findCustomerMultiLevel(searchData, companyId)
           
           // إذا لم يوجد العميل ومفعل الإنشاء التلقائي
-          if (!customerId && options.autoCreateCustomers) {
-            customerId = await createCustomer(row.customer_name, companyId)
+          if (!customerId && options.autoCreateCustomers && searchData.customerName) {
+            customerId = await createCustomer(searchData.customerName, companyId)
             if (customerId) {
               customersCreated++
-              console.log(`✅ تم إنشاء عميل جديد: ${row.customer_name}`)
+              console.log(`✅ تم إنشاء عميل جديد: ${searchData.customerName}`)
             }
           }
           
@@ -262,7 +398,7 @@ export function useEnhancedContractUpload() {
             row.customer_id = customerId
           } else {
             // تسجيل العملاء المفقودين
-            const customerName = row.customer_name
+            const customerName = searchData.customerName || searchData.nationalId || searchData.phone || 'غير محدد'
             if (!missingCustomers.has(customerName)) {
               missingCustomers.set(customerName, [])
             }

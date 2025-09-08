@@ -4,6 +4,7 @@ import { useEnhancedContractUpload } from "@/hooks/useEnhancedContractUpload";
 import { useIntelligentContractProcessor } from "@/hooks/useIntelligentContractProcessor";
 import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
 import { IntelligentContractPreview } from "@/components/contracts/IntelligentContractPreview";
+import { ContractUploadPreview } from "@/components/contracts/ContractUploadPreview";
 import { CSVArchiveSelector } from "@/components/csv-archive/CSVArchiveSelector";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,6 +44,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
   const [currentStep, setCurrentStep] = React.useState<'upload' | 'preview' | 'processing'>('upload');
   const [autoCreateCustomers, setAutoCreateCustomers] = React.useState(true);
   const [replaceDuplicates, setReplaceDuplicates] = React.useState(false);
+  const [csvData, setCsvData] = React.useState<any[]>([]);
+  const [showPreview, setShowPreview] = React.useState(false);
   const { 
     uploadContracts, 
     smartUploadContracts,
@@ -126,6 +129,8 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     try {
       if (useIntelligentProcessing) {
         await handleIntelligentProcess()
+      } else if (uploadMode === 'enhanced') {
+        await handleEnhancedPreview()
       } else {
         await uploadContracts(file, archiveFile)
         
@@ -145,6 +150,60 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     } catch (error) {
       toast.error('حدث خطأ أثناء رفع الملف')
     }
+  }
+
+  const handleEnhancedPreview = async () => {
+    if (!file) return;
+
+    try {
+      // قراءة وتحليل ملف CSV
+      const text = await file.text()
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
+      
+      if (parsed.errors.length > 0) {
+        toast.error('خطأ في قراءة ملف CSV');
+        return;
+      }
+
+      const rawData = (parsed.data as any[]).filter(Boolean);
+      const normalizedData = rawData.map((row) => normalizeCsvHeaders(row));
+      
+      if (normalizedData.length === 0) {
+        toast.error('الملف فارغ أو لا يحتوي على بيانات صالحة');
+        return;
+      }
+
+      // حفظ البيانات وإظهار المعاينة
+      setCsvData(normalizedData);
+      setShowPreview(true);
+
+    } catch (error) {
+      console.error('خطأ في تحليل الملف:', error);
+      toast.error('حدث خطأ أثناء تحليل الملف');
+    }
+  }
+
+  const handlePreviewConfirm = async (data: any[], options: { autoCreateCustomers: boolean; replaceDuplicates: boolean }) => {
+    try {
+      setShowPreview(false);
+      
+      const result = await enhancedUpload.processContracts(file!, options);
+      
+      // حفظ كقالب إذا طُلب ذلك
+      if (saveAsTemplate && templateName.trim()) {
+        await handleSaveAsTemplate()
+      }
+      
+      onUploadComplete();
+      
+    } catch (error) {
+      console.error('خطأ في رفع العقود:', error);
+    }
+  }
+
+  const handlePreviewCancel = () => {
+    setShowPreview(false);
+    setCsvData([]);
   }
 
   const handleIntelligentProcess = async () => {
@@ -1088,6 +1147,15 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
           </Tabs>
         </div>
       </DialogContent>
+
+      {/* معاينة مطابقة العملاء المحسنة */}
+      <ContractUploadPreview
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        csvData={csvData}
+        onConfirm={handlePreviewConfirm}
+        onCancel={handlePreviewCancel}
+      />
     </Dialog>
   )
 }
