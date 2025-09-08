@@ -1,7 +1,5 @@
 import * as React from "react";
-import { useContractCSVUpload } from "@/hooks/useContractCSVUpload";
-import { useEnhancedContractUpload } from "@/hooks/useEnhancedContractUpload";
-import { useIntelligentContractProcessor } from "@/hooks/useIntelligentContractProcessor";
+import { useUnifiedContractUpload } from "@/hooks/useUnifiedContractUpload";
 import { SmartCSVUpload } from "@/components/csv/SmartCSVUpload";
 import { IntelligentContractPreview } from "@/components/contracts/IntelligentContractPreview";
 import { CSVArchiveSelector } from "@/components/csv-archive/CSVArchiveSelector";
@@ -33,42 +31,17 @@ interface ContractCSVUploadProps {
 }
 
 export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: ContractCSVUploadProps) {
-  const [uploadMode, setUploadMode] = React.useState<'classic' | 'smart' | 'bulk' | 'enhanced'>('enhanced');
   const [file, setFile] = React.useState<File | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = React.useState<CSVTemplate | null>(null);
-  const [saveAsTemplate, setSaveAsTemplate] = React.useState(false);
-  const [templateName, setTemplateName] = React.useState('');
-  const [archiveFile, setArchiveFile] = React.useState(true);
-  const [useIntelligentProcessing, setUseIntelligentProcessing] = React.useState(false);
-  const [currentStep, setCurrentStep] = React.useState<'upload' | 'preview' | 'processing'>('upload');
-  const [autoCreateCustomers, setAutoCreateCustomers] = React.useState(true);
-  const [replaceDuplicates, setReplaceDuplicates] = React.useState(false);
+  const [currentStep, setCurrentStep] = React.useState<'upload' | 'processing' | 'results'>('upload');
   const { 
-    uploadContracts, 
-    smartUploadContracts,
+    uploadContracts,
     isUploading, 
     progress, 
-    results, 
-    downloadTemplate,
-    contractFieldTypes,
-    contractRequiredFields
-  } = useContractCSVUpload();
+    results,
+    SMART_DEFAULTS
+  } = useUnifiedContractUpload();
   
-  const {
-    processContractData,
-    isProcessing,
-    processingProgress,
-    preview,
-    applyCorrections,
-    getProcessedCSVData,
-    clearPreview
-  } = useIntelligentContractProcessor();
-  
-  const enhancedUpload = useEnhancedContractUpload();
-  const { createTemplate } = useCSVTemplates('contracts');
   const { user, companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
-  const [dryRun, setDryRun] = React.useState(true);
-  const [upsertDuplicates, setUpsertDuplicates] = React.useState(true);
   const isSuperAdmin = !!user?.roles?.includes('super_admin');
   const targetCompanyName = (
     isBrowsingMode && browsedCompany
@@ -124,26 +97,18 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
     }
 
     try {
-      if (useIntelligentProcessing) {
-        await handleIntelligentProcess()
-      } else {
-        await uploadContracts(file, archiveFile)
-        
-        // حفظ كقالب إذا طُلب ذلك
-        if (saveAsTemplate && templateName.trim()) {
-          await handleSaveAsTemplate()
-        }
-        
-        // رسالة النجاح المناسبة
-        if (archiveFile) {
-          toast.success('تم رفع الملف وحفظه في الأرشيف بنجاح')
-        } else {
-          toast.success('تم رفع الملف بنجاح')
-        }
-        onUploadComplete()
-      }
-    } catch (error) {
-      toast.error('حدث خطأ أثناء رفع الملف')
+      setCurrentStep('processing');
+      console.log('🚀 Starting unified smart contract upload');
+      
+      const result = await uploadContracts(file);
+      
+      setCurrentStep('results');
+      onUploadComplete();
+      
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(`خطأ في الرفع: ${error.message}`);
+      setCurrentStep('upload');
     }
   }
 
@@ -792,10 +757,19 @@ export function ContractCSVUpload({ open, onOpenChange, onUploadComplete }: Cont
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            الاستيراد الذكي للعقود
+            النظام الموحد للاستيراد الذكي
           </DialogTitle>
-          <DialogDescription className="flex items-center justify-between">
-            <span>دعم متعدد لأنواع الملفات مع معالجة ذكية</span>
+          <DialogDescription>
+            <div className="space-y-2">
+              <p>نظام متطور مدعوم بالذكاء الاصطناعي لرفع العقود</p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Badge variant="outline">تكميل تلقائي للبيانات</Badge>
+                <Badge variant="outline">إنشاء عملاء جدد</Badge>
+                <Badge variant="outline">قيم افتراضية ذكية</Badge>
+                <Badge variant="outline">مراجعة تلقائية</Badge>
+              </div>
+            </div>
+          </DialogDescription>
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 

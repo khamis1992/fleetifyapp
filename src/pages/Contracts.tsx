@@ -38,7 +38,7 @@ import { ContractExportDialog } from "@/components/contracts/ContractExportDialo
 import { ContractCreationProgress } from "@/components/contracts/ContractCreationProgress"
 import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog"
 import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog"
-import { ContractCSVUpload } from "@/components/contracts/ContractCSVUpload"
+import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpload"
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings"
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog"
 
@@ -441,8 +441,8 @@ export default function Contracts() {
           onSuccess={() => refetch()}
         />
 
-        {/* Contract CSV Upload Dialog */}
-        <ContractCSVUpload
+        {/* Unified Contract Upload Dialog */}
+        <UnifiedContractUpload
           open={showCSVUpload}
           onOpenChange={setShowCSVUpload}
           onUploadComplete={() => {
