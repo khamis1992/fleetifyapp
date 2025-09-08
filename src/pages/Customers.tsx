@@ -16,6 +16,7 @@ import { EnhancedCustomerDialog } from "@/components/customers/EnhancedCustomerF
 import { CustomerDetailsDialog } from "@/components/customers/CustomerDetailsDialog"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { CustomerCSVUpload } from "@/components/customers/CustomerCSVUpload"
+import { DeleteDuplicateCustomers } from "@/components/customers/DeleteDuplicateCustomers"
 import { CustomerDisplayName } from "@/components/customers/CustomerDisplayName"
 import { BulkDeleteCustomersDialog } from "@/components/customers/BulkDeleteCustomersDialog"
 import { MobileCustomerCard } from "@/components/customers/MobileCustomerCard"
@@ -63,6 +64,7 @@ export default function Customers() {
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [customerToDelete, setCustomerToDelete] = useState<any>(null)
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [showDeleteDuplicates, setShowDeleteDuplicates] = useState(false)
   const [filters, setFilters] = useState({
     customer_type: undefined as 'individual' | 'corporate' | undefined,
     is_blacklisted: undefined as boolean | undefined,
@@ -232,6 +234,12 @@ export default function Customers() {
             label: 'رفع من CSV',
             icon: <Plus className="h-4 w-4 mr-2" />,
             onClick: () => setShowCSVUpload(true),
+            type: 'outline' as const
+          }, {
+            id: 'delete-duplicates',
+            label: 'حذف العملاء المتكررين',
+            icon: <UserX className="h-4 w-4 mr-2" />,
+            onClick: () => setShowDeleteDuplicates(true),
             type: 'outline' as const
           }] : []),
           ...(canDeleteCustomers && allCustomers.length > 0 ? [{
@@ -623,6 +631,26 @@ export default function Customers() {
         open={showBulkDeleteDialog}
         onOpenChange={setShowBulkDeleteDialog}
       />
+
+      {/* Dialog حذف العملاء المتكررين - للسوبر أدمن فقط */}
+      {isSuperAdmin && (
+        <AlertDialog open={showDeleteDuplicates} onOpenChange={setShowDeleteDuplicates}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <UserX className="h-5 w-5" />
+                حذف العملاء المتكررين
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                <DeleteDuplicateCustomers />
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إغلاق</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </ResponsiveContainer>
     </CustomerViewProvider>
   )
