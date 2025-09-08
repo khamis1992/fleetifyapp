@@ -16,13 +16,14 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Upload, Trash2, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { PaymentsCSVUpload } from "@/components/finance/PaymentsCSVUpload";
+import { SuperIntelligentPaymentUpload } from "@/components/finance/SuperIntelligentPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 
@@ -34,6 +35,7 @@ const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isSuperUploadOpen, setIsSuperUploadOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
@@ -131,6 +133,14 @@ const Payments = () => {
           {/* Desktop Action Buttons */}
           {!isMobile && (
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsSuperUploadOpen(true)}
+                className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200"
+              >
+                <Brain className="h-4 w-4 mr-2 text-purple-600" />
+                النظام الذكي الفائق
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/finance/payment-linking">
                   <CreditCard className="h-4 w-4 mr-2" />
@@ -159,6 +169,15 @@ const Payments = () => {
           {/* Mobile Action Buttons */}
           {isMobile && (
             <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="h-12 text-base justify-start bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200"
+                onClick={() => setIsSuperUploadOpen(true)}
+              >
+                <Brain className="h-5 w-5 mr-2 text-purple-600" />
+                النظام الذكي الفائق
+              </Button>
               <Button 
                 variant="outline" 
                 size="lg"
@@ -357,9 +376,9 @@ const Payments = () => {
                                 {payment.payment_number}
                               </TableCell>
                               <TableCell>
-                                <Badge className={getTypeColor((payment as any).transaction_type)}>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor((payment as any).transaction_type)}`}>
                                   {getTypeLabel((payment as any).transaction_type)}
-                                </Badge>
+                                </span>
                               </TableCell>
                               <TableCell>
                                 {new Date(payment.payment_date).toLocaleDateString('en-GB')}
@@ -373,9 +392,9 @@ const Payments = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge className={getStatusColor(payment.payment_status)}>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.payment_status)}`}>
                                   {getStatusLabel(payment.payment_status)}
-                                </Badge>
+                                </span>
                               </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {payment.reference_number || '-'}
@@ -410,6 +429,16 @@ const Payments = () => {
           type="payment"
         />
 
+        {/* النظام الذكي الفائق لربط المدفوعات */}
+        <SuperIntelligentPaymentUpload 
+          open={isSuperUploadOpen}
+          onOpenChange={setIsSuperUploadOpen}
+          onUploadComplete={() => {
+            setIsSuperUploadOpen(false);
+            // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
+          }}
+        />
+
         {/* استيراد الدفعات من CSV/XLSX */}
         <PaymentsCSVUpload 
           open={isImportOpen}
@@ -441,9 +470,9 @@ const Payments = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">نوع الدفعة</label>
-                    <Badge className={getTypeColor((selectedPayment as any).transaction_type)}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor((selectedPayment as any).transaction_type)}`}>
                       {getTypeLabel((selectedPayment as any).transaction_type)}
-                    </Badge>
+                    </span>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">تاريخ الدفعة</label>
@@ -467,9 +496,9 @@ const Payments = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">الحالة</label>
-                    <Badge className={getStatusColor(selectedPayment.payment_status)}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedPayment.payment_status)}`}>
                       {getStatusLabel(selectedPayment.payment_status)}
-                    </Badge>
+                    </span>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">العملة</label>
