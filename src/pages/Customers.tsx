@@ -182,7 +182,8 @@ export default function Customers() {
     user?.roles?.includes('company_admin') || 
     user?.roles?.includes('manager')
   
-  const isSuperAdmin = user?.roles?.includes('super_admin')
+  // تحسين التحقق من السوبر أدمن
+  const isSuperAdmin = user?.roles?.includes('super_admin') || isSystemLevel
 
   // إذا كان التحميل جاري
   if (loading) {
