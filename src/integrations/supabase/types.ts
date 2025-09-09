@@ -278,6 +278,78 @@ export type Database = {
         }
         Relationships: []
       }
+      advanced_late_fee_calculations: {
+        Row: {
+          ai_recommendations: string[] | null
+          calculated_by: string | null
+          calculation_date: string | null
+          calculation_method: string | null
+          company_id: string | null
+          contract_id: string | null
+          created_at: string | null
+          daily_fine_rate: number | null
+          days_overdue: number
+          final_fine_amount: number | null
+          id: string
+          monthly_breakdown: Json | null
+          monthly_cap_amount: number | null
+          monthly_cap_applied: boolean | null
+          months_overdue: number
+          original_due_date: string | null
+          payment_history_summary: string | null
+          payment_id: string | null
+          raw_daily_fine: number | null
+          risk_level: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_recommendations?: string[] | null
+          calculated_by?: string | null
+          calculation_date?: string | null
+          calculation_method?: string | null
+          company_id?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          daily_fine_rate?: number | null
+          days_overdue: number
+          final_fine_amount?: number | null
+          id?: string
+          monthly_breakdown?: Json | null
+          monthly_cap_amount?: number | null
+          monthly_cap_applied?: boolean | null
+          months_overdue: number
+          original_due_date?: string | null
+          payment_history_summary?: string | null
+          payment_id?: string | null
+          raw_daily_fine?: number | null
+          risk_level?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_recommendations?: string[] | null
+          calculated_by?: string | null
+          calculation_date?: string | null
+          calculation_method?: string | null
+          company_id?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          daily_fine_rate?: number | null
+          days_overdue?: number
+          final_fine_amount?: number | null
+          id?: string
+          monthly_breakdown?: Json | null
+          monthly_cap_amount?: number | null
+          monthly_cap_applied?: boolean | null
+          months_overdue?: number
+          original_due_date?: string | null
+          payment_history_summary?: string | null
+          payment_id?: string | null
+          raw_daily_fine?: number | null
+          risk_level?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_activity_logs: {
         Row: {
           activity_type: string
@@ -5985,6 +6057,84 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_ai_analysis: {
+        Row: {
+          ai_reasoning: string | null
+          analysis_model: string | null
+          analysis_timestamp: string | null
+          base_amount: number | null
+          company_id: string | null
+          confidence_score: number | null
+          contract_reference: string | null
+          created_at: string | null
+          extracted_amounts: number[] | null
+          extracted_contract_numbers: string[] | null
+          extracted_customer_names: string[] | null
+          extracted_dates: string[] | null
+          id: string
+          is_late_fee: boolean | null
+          late_fee_amount: number | null
+          payment_id: string | null
+          payment_type: string
+          period_month: number | null
+          period_month_name: string | null
+          period_year: number | null
+          processing_time_ms: number | null
+          suggested_actions: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          analysis_model?: string | null
+          analysis_timestamp?: string | null
+          base_amount?: number | null
+          company_id?: string | null
+          confidence_score?: number | null
+          contract_reference?: string | null
+          created_at?: string | null
+          extracted_amounts?: number[] | null
+          extracted_contract_numbers?: string[] | null
+          extracted_customer_names?: string[] | null
+          extracted_dates?: string[] | null
+          id?: string
+          is_late_fee?: boolean | null
+          late_fee_amount?: number | null
+          payment_id?: string | null
+          payment_type: string
+          period_month?: number | null
+          period_month_name?: string | null
+          period_year?: number | null
+          processing_time_ms?: number | null
+          suggested_actions?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          analysis_model?: string | null
+          analysis_timestamp?: string | null
+          base_amount?: number | null
+          company_id?: string | null
+          confidence_score?: number | null
+          contract_reference?: string | null
+          created_at?: string | null
+          extracted_amounts?: number[] | null
+          extracted_contract_numbers?: string[] | null
+          extracted_customer_names?: string[] | null
+          extracted_dates?: string[] | null
+          id?: string
+          is_late_fee?: boolean | null
+          late_fee_amount?: number | null
+          payment_id?: string | null
+          payment_type?: string
+          period_month?: number | null
+          period_month_name?: string | null
+          period_year?: number | null
+          processing_time_ms?: number | null
+          suggested_actions?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payment_contract_linking_attempts: {
         Row: {
           attempted_contract_identifiers: Json | null
@@ -6045,6 +6195,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_contract_matching: {
+        Row: {
+          alternative_matches: Json | null
+          company_id: string | null
+          confidence_score: number | null
+          contract_id: string | null
+          created_at: string | null
+          id: string
+          match_method: string
+          match_reason: string | null
+          match_status: string | null
+          payment_id: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string | null
+          validation_warnings: string[] | null
+        }
+        Insert: {
+          alternative_matches?: Json | null
+          company_id?: string | null
+          confidence_score?: number | null
+          contract_id?: string | null
+          created_at?: string | null
+          id?: string
+          match_method: string
+          match_reason?: string | null
+          match_status?: string | null
+          payment_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string | null
+          validation_warnings?: string[] | null
+        }
+        Update: {
+          alternative_matches?: Json | null
+          company_id?: string | null
+          confidence_score?: number | null
+          contract_id?: string | null
+          created_at?: string | null
+          id?: string
+          match_method?: string
+          match_reason?: string | null
+          match_status?: string | null
+          payment_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string | null
+          validation_warnings?: string[] | null
+        }
+        Relationships: []
       }
       payments: {
         Row: {
@@ -10371,6 +10575,14 @@ export type Database = {
           total_fuel_liters: number
         }[]
       }
+      calculate_smart_late_fee: {
+        Args: {
+          p_daily_rate?: number
+          p_days_overdue: number
+          p_monthly_cap?: number
+        }
+        Returns: Json
+      }
       calculate_vehicle_total_costs: {
         Args: { vehicle_id_param: string }
         Returns: undefined
@@ -11036,10 +11248,12 @@ export type Database = {
         }[]
       }
       generate_customer_code: {
-        Args: {
-          p_company_id: string
-          p_customer_type: Database["public"]["Enums"]["customer_type"]
-        }
+        Args:
+          | { company_id_param: string; customer_type_param: string }
+          | {
+              p_company_id: string
+              p_customer_type: Database["public"]["Enums"]["customer_type"]
+            }
         Returns: string
       }
       generate_customer_statement_data: {
@@ -11450,6 +11664,10 @@ export type Database = {
           id: string
           parent_account_name: string
         }[]
+      }
+      get_smart_payment_stats: {
+        Args: { p_company_id: string }
+        Returns: Json
       }
       get_trial_balance: {
         Args: { as_of_date?: string; company_id_param: string }

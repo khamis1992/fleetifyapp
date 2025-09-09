@@ -288,6 +288,7 @@ export default function Contracts() {
           <ContractsStatistics
             activeCount={statistics.activeContracts.length}
             draftCount={statistics.draftContracts.length}
+            underReviewCount={statistics.underReviewContracts.length}
             cancelledCount={statistics.cancelledContracts.length}
             totalRevenue={statistics.totalRevenue}
           />
