@@ -1,5 +1,3 @@
-// Import React fix first to ensure React is properly loaded
-import './react-fix';
 import './lovable-compatibility';
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
