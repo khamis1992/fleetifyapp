@@ -10478,11 +10478,13 @@ export type Database = {
     }
     Functions: {
       add_vehicles_to_installment: {
-        Args: {
-          p_installment_id: string
-          p_vehicle_amounts?: number[]
-          p_vehicle_ids: string[]
-        }
+        Args:
+          | { installment_id_param: string; vehicle_ids_param: string[] }
+          | {
+              p_installment_id: string
+              p_vehicle_amounts?: number[]
+              p_vehicle_ids: string[]
+            }
         Returns: undefined
       }
       analyze_account_deletion_enhanced: {
@@ -10573,6 +10575,15 @@ export type Database = {
           total_distance_km: number
           total_fuel_cost: number
           total_fuel_liters: number
+        }[]
+      }
+      calculate_payment_due_dates: {
+        Args: { contract_id_param: string }
+        Returns: {
+          amount: number
+          due_date: string
+          installment_number: number
+          status: string
         }[]
       }
       calculate_smart_late_fee: {
@@ -11512,6 +11523,10 @@ export type Database = {
           transaction_type: string
         }[]
       }
+      get_customer_contract_summary: {
+        Args: { company_id_param: string; customer_id_param: string }
+        Returns: Json
+      }
       get_customer_default_account: {
         Args: { p_account_type?: string; p_customer_id: string }
         Returns: string
@@ -11519,6 +11534,19 @@ export type Database = {
       get_customer_default_cost_center: {
         Args: { customer_id_param: string }
         Returns: string
+      }
+      get_customer_payment_history: {
+        Args: { company_id_param: string; customer_id_param: string }
+        Returns: {
+          amount: number
+          contract_number: string
+          notes: string
+          payment_date: string
+          payment_id: string
+          payment_method: string
+          reference_number: string
+          status: string
+        }[]
       }
       get_effective_company_id: {
         Args: Record<PropertyKey, never>
