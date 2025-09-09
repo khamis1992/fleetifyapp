@@ -21,11 +21,8 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
   
-  // إجبار استخدام الأرقام الإنجليزية للعملة
-  const formattedRevenue = formatCurrency(totalRevenue, { 
-    minimumFractionDigits: 3, 
-    maximumFractionDigits: 3 
-  });
+  // استخدام النظام الديناميكي لتنسيق العملة
+  const formattedRevenue = formatCurrency(totalRevenue);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 w-full">

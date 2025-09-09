@@ -359,14 +359,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">قيمة العقد</span>
                         <span className="font-bold text-2xl text-primary">
-                          {formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          {formatCurrency(contract.contract_amount ?? 0)}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">المبلغ الشهري</span>
                         <span className="font-medium">
-                          {formatCurrency(contract.monthly_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          {formatCurrency(contract.monthly_amount ?? 0)}
                         </span>
                       </div>
                       

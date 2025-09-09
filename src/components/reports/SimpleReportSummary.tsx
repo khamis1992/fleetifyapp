@@ -27,7 +27,7 @@ export function SimpleReportSummary({ cards }: SimpleReportSummaryProps) {
 
   const formatValue = (value: number | string, title: string) => {
     if (typeof value === 'number' && title.includes('مبلغ')) {
-      return formatCurrency(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return formatCurrency(value);
     }
     return value.toString();
   };

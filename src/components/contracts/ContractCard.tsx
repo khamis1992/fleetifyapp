@@ -94,7 +94,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">قيمة العقد</p>
                 <p className="font-bold text-lg">
-                  {formatCurrency(contract.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                  {formatCurrency(contract.contract_amount ?? 0)}
                 </p>
               </div>
             </div>
