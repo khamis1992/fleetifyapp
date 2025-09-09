@@ -130,15 +130,13 @@ export const unifyDigits = (input: string, targetType: 'arabic' | 'english' = 'e
 };
 
 /**
- * الحصول على تفضيلات تنسيق الأرقام من إعدادات الشركة
- * (سيتم ربطه بقاعدة البيانات لاحقاً)
+ * Get default number formatting preferences for the company
+ * TODO: Integrate with database to store company-specific preferences
  */
 export const getNumberPreferences = (): NumberFormatOptions => {
-  // TODO: جلب من إعدادات الشركة في قاعدة البيانات
-  // حالياً سنستخدم القيم الافتراضية
   return {
-    useArabicDigits: false, // افتراضياً استخدام الأرقام الإنجليزية
-    locale: 'en-US',
+    useArabicDigits: true, // Company preference - can be made dynamic later
+    locale: 'ar',
     minimumFractionDigits: 0,
     maximumFractionDigits: 3,
   };
