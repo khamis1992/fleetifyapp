@@ -1,7 +1,11 @@
-import './react-fix';
-import './lovable-compatibility';
+// Critical: Import React FIRST to ensure single instance
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+
+// Then import our fixes
+import './react-fix';
+import './lovable-compatibility';
+
 import App from './App.tsx'
 import './index.css'
 

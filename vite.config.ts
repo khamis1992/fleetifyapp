@@ -68,13 +68,18 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom")
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime")
     },
+    dedupe: ['react', 'react-dom']
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react/jsx-runtime'],
     force: true,
-    exclude: []
+    exclude: [],
+    esbuildOptions: {
+      resolveExtensions: ['.tsx', '.ts', '.jsx', '.js']
+    }
   },
   build: {
     rollupOptions: {
