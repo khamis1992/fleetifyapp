@@ -5,12 +5,8 @@ import React from 'react';
 
 console.log('🔧 Safe React: Module loading...');
 console.log('🔧 Safe React: React object:', React);
-console.log('🔧 Safe React: React.useState:', React.useState);
-
 // Safe useState implementation
 export const safeUseState = <T>(initialValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
-  console.log('🔧 Safe React: safeUseState called with:', initialValue);
-  
   // Force check React availability
   if (!React || typeof React.useState !== 'function') {
     console.error('🔧 Safe React: React.useState is not available!');
@@ -22,7 +18,6 @@ export const safeUseState = <T>(initialValue: T): [T, (value: T | ((prev: T) => 
   }
   
   try {
-    console.log('🔧 Safe React: Using React.useState');
     return React.useState(initialValue);
   } catch (error) {
     console.error('🔧 Safe React: Error calling React.useState:', error);
@@ -37,7 +32,7 @@ export const safeUseEffect = (effect: () => void | (() => void), deps?: any[]): 
   }
   
   try {
-    return React.useEffect(effect, deps);
+    React.useEffect(effect, deps);
   } catch (error) {
     console.error('🔧 Safe React: Error calling React.useEffect:', error);
     throw error;

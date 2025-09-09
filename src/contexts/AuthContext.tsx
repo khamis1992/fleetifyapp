@@ -18,7 +18,41 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  // Safety check for React hooks availability
+  if (!React || typeof React.useState !== 'function') {
+    console.error('🔧 AuthProvider: React hooks are not available. This might be a React version conflict.');
+    return (
+      <div style={{ 
+        padding: '20px', 
+        textAlign: 'center', 
+        backgroundColor: '#fee', 
+        border: '1px solid #fcc',
+        borderRadius: '5px',
+        margin: '20px',
+        direction: 'rtl'
+      }}>
+        <h2>خطأ في تحميل النظام</h2>
+        <p>يرجى إعادة تحميل الصفحة أو مسح ذاكرة التخزين المؤقت</p>
+        <button 
+          onClick={() => window.location.reload()}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            margin: '5px'
+          }}
+        >
+          إعادة تحميل الصفحة
+        </button>
+      </div>
+    );
+  }
+
   console.log('🔧 AuthProvider: Starting initialization...');
+  console.log('🔧 AuthProvider: React.useState available:', typeof React.useState);
   
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
