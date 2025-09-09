@@ -39,7 +39,6 @@ if (!React || typeof React.useState !== 'function') {
 
 // Export React to ensure it's available
 export default React;
-export { default as React } from 'react';
 
 // Additional safety exports
 export const { 
