@@ -63,6 +63,7 @@ export const useContractsData = (filters: any = {}) => {
     if (!contracts) return {
       activeContracts: [],
       draftContracts: [],
+      underReviewContracts: [],
       expiredContracts: [],
       suspendedContracts: [],
       cancelledContracts: [],
@@ -78,15 +79,19 @@ export const useContractsData = (filters: any = {}) => {
     }
 
     const activeContracts = contracts.filter(c => c.status === 'active' && !isZeroAmount(c));
-    const draftContracts = contracts.filter(c => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended'].includes(c.status)));
+    const underReviewContracts = contracts.filter(c => c.status === 'under_review' && !isZeroAmount(c));
+    const draftContracts = contracts.filter(c => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review'].includes(c.status)));
     const expiredContracts = contracts.filter(c => c.status === 'expired');
     const suspendedContracts = contracts.filter(c => c.status === 'suspended');
     const cancelledContracts = contracts.filter(c => c.status === 'cancelled');
-    const totalRevenue = activeContracts.reduce((sum, contract) => sum + (contract.contract_amount || 0), 0);
+    
+    // Include both active and under_review contracts in revenue calculation
+    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract) => sum + (contract.contract_amount || 0), 0);
 
     return {
       activeContracts,
       draftContracts,
+      underReviewContracts,
       expiredContracts,
       suspendedContracts,
       cancelledContracts,
