@@ -17,6 +17,8 @@ const Dashboard: React.FC = () => {
 
   // Smart router - select dashboard based on business type
   const businessType = moduleContext?.businessType;
+  
+  console.log('🏢 [DASHBOARD] Business type detected:', businessType, 'Module context:', moduleContext);
 
   switch (businessType) {
     case 'car_rental':
@@ -26,7 +28,13 @@ const Dashboard: React.FC = () => {
     case 'retail':
       return <RetailDashboard />;
     default:
-      return <CarRentalDashboard />; // Default to car rental
+      // Show appropriate dashboard based on detected type, fallback to car rental only if no type
+      if (!businessType) {
+        console.warn('🏢 [DASHBOARD] No business type detected, falling back to car rental');
+        return <CarRentalDashboard />;
+      }
+      console.warn('🏢 [DASHBOARD] Unknown business type:', businessType, 'falling back to car rental');
+      return <CarRentalDashboard />;
   }
 };
 

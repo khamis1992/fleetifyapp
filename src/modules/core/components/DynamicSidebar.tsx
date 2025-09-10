@@ -32,6 +32,8 @@ export function DynamicSidebar() {
   const collapsed = state === "collapsed";
 
   // إذا كانت الشركة من نوع تأجير السيارات، استخدم الشريط الجانبي المخصص
+  console.log('🏢 [DYNAMIC_SIDEBAR] Company business type:', company?.business_type, 'Available modules:', moduleContext?.availableModules?.map(m => m.name));
+  
   if (company?.business_type === 'car_rental') {
     return <CarRentalSidebar />;
   }
