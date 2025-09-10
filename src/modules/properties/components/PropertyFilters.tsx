@@ -24,7 +24,7 @@ interface PropertySearchFiltersProps {
   onReset: () => void;
 }
 
-export const PropertySearchFilters: React.FC<PropertySearchFiltersProps> = ({
+export const PropertyFilters: React.FC<PropertySearchFiltersProps> = ({
   filters,
   onFiltersChange,
   onReset

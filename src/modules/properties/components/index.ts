@@ -2,4 +2,4 @@
 export * from './PropertyCard';
 export * from './PropertyStatusBadge';
 export * from './PropertyTable';
-export * from './PropertySearchFilters';
+export * from './PropertyFilters';
