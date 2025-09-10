@@ -32,7 +32,7 @@ export const useCurrencyFormatter = () => {
       const targetConfig = getCurrencyConfig(targetCurrency);
       const defaultFractionDigits = targetConfig.fractionDigits;
       
-      const custom = new Intl.NumberFormat(opts.locale || locale, {
+      const custom = new Intl.NumberFormat('en-US', { // Force English locale
         style: "currency",
         currency: targetCurrency,
         minimumFractionDigits: opts.minimumFractionDigits ?? defaultFractionDigits,
@@ -40,15 +40,18 @@ export const useCurrencyFormatter = () => {
       });
       formatted = custom.format(amount);
     } else {
-      formatted = formatter.format(amount);
+      // Use English locale with correct fraction digits for the currency
+      const config = getCurrencyConfig(currency);
+      const englishFormatter = new Intl.NumberFormat('en-US', {
+        style: "currency",
+        currency,
+        minimumFractionDigits: config.fractionDigits,
+        maximumFractionDigits: config.fractionDigits,
+      });
+      formatted = englishFormatter.format(amount);
     }
 
-    // تطبيق تفضيلات الأرقام الموحدة
-    const preferences = getNumberPreferences();
-    if (preferences.useArabicDigits) {
-      formatted = convertToArabicDigits(formatted);
-    }
-    
+    // Always use English digits - no Arabic conversion
     return formatted;
   };
   return { formatCurrency, currency, locale };
