@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+// Critical: Import React FIRST and ensure it's properly loaded
+import React from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -18,9 +20,21 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Safety check for React hooks availability
-  if (!React || typeof React.useState !== 'function') {
-    console.error('🔧 AuthProvider: React hooks are not available. This might be a React version conflict.');
+  // Enhanced React availability check
+  console.log('🔧 AuthProvider: Starting initialization...');
+  console.log('🔧 AuthProvider: React available:', !!React);
+  console.log('🔧 AuthProvider: useState available:', typeof useState);
+  console.log('🔧 AuthProvider: useEffect available:', typeof useEffect);
+  
+  // More comprehensive safety check
+  if (!React || typeof useState !== 'function' || typeof useEffect !== 'function') {
+    console.error('🔧 AuthProvider: React hooks are not available. Details:', {
+      react: !!React,
+      useState: typeof useState,
+      useEffect: typeof useEffect,
+      window_React: !!(typeof window !== 'undefined' && (window as any).React)
+    });
+    
     return (
       <div style={{ 
         padding: '20px', 
@@ -50,9 +64,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       </div>
     );
   }
-
-  console.log('🔧 AuthProvider: Starting initialization...');
-  console.log('🔧 AuthProvider: React.useState available:', typeof React.useState);
   
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);

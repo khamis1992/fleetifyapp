@@ -75,11 +75,10 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <StrictMode>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <AuthProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
               <CompanyContextProvider>
                 <PWAInstallPrompt />
                 <SimpleToaster />
@@ -392,7 +391,6 @@ const App = () => {
           </ThemeProvider>
         </QueryClientProvider>
       </ErrorBoundary>
-    </StrictMode>
   );
 };
 
