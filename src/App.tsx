@@ -29,6 +29,10 @@ import ResetPassword from "./pages/ResetPassword";
 import Search from "./pages/Search";
 import Import from "./pages/Import";
 import FinancialCalculator from "./pages/finance/Calculator";
+import Properties from "./pages/Properties";
+import AddProperty from "./pages/AddProperty";
+import PropertyDetails from "./pages/PropertyDetails";
+import PropertyOwners from "./pages/PropertyOwners";
 
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
@@ -167,6 +171,10 @@ const App = () => {
               } />
               <Route path="contracts" element={<Contracts />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="properties" element={<Properties />} />
+              <Route path="properties/add" element={<AddProperty />} />
+              <Route path="properties/:id" element={<PropertyDetails />} />
+              <Route path="property-owners" element={<PropertyOwners />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="finance/*" element={<Finance />} />
@@ -307,6 +315,10 @@ const App = () => {
               <Route path="contracts" element={<Contracts />} />
               <Route path="customers" element={<Customers />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
+              <Route path="properties" element={<Properties />} />
+              <Route path="properties/add" element={<AddProperty />} />
+              <Route path="properties/:id" element={<PropertyDetails />} />
+              <Route path="property-owners" element={<PropertyOwners />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="settings/electronic-signature" element={
                 <AdminRoute>
