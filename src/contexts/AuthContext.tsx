@@ -1,14 +1,5 @@
 // مكون AuthContext مبسط مع حماية أفضل
-import React from 'react';
-
-// تأكد من أن React متاح قبل البدء
-if (!React || typeof React.useState !== 'function') {
-  throw new Error('React hooks are not available');
-}
-
-// استيراد hooks بشكل منفصل للتأكد من توفرها
-const { createContext, useContext, useState, useEffect, useCallback } = React;
-
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -28,39 +19,11 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  console.log('🔧 AuthProvider: Initializing...');
-  
-  // التحقق النهائي من React hooks قبل الاستخدام
-  if (typeof useState !== 'function') {
-    console.error('🚨 AuthProvider: useState is not a function');
-    return (
-      <div style={{
-        padding: '20px',
-        textAlign: 'center',
-        backgroundColor: '#fee',
-        border: '1px solid #fcc',
-        borderRadius: '5px',
-        margin: '20px',
-        direction: 'rtl'
-      }}>
-        <h2>خطأ في تحميل النظام</h2>
-        <p>React hooks غير متاحة</p>
-        <button onClick={() => window.location.reload()}>
-          إعادة تحميل
-        </button>
-      </div>
-    );
-  }
-
-  console.log('🔧 AuthProvider: useState is available, proceeding...');
-  
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  
-  console.log('🔧 AuthProvider: State initialized successfully');
 
   // Session validation helper with improved error handling
   const validateSession = useCallback(async (currentSession: Session | null): Promise<boolean> => {
