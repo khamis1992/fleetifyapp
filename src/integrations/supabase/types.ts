@@ -7129,6 +7129,386 @@ export type Database = {
           },
         ]
       }
+      properties: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          area_sqm: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          documents: string[] | null
+          features: Json | null
+          floor_number: number | null
+          furnished: boolean | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          location_coordinates: Json | null
+          manager_id: string | null
+          owner_id: string | null
+          parking_spaces: number | null
+          property_code: string
+          property_name: string
+          property_name_ar: string | null
+          property_status: string
+          property_type: string
+          rental_price: number | null
+          sale_price: number | null
+          total_floors: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          area_sqm?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          documents?: string[] | null
+          features?: Json | null
+          floor_number?: number | null
+          furnished?: boolean | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          location_coordinates?: Json | null
+          manager_id?: string | null
+          owner_id?: string | null
+          parking_spaces?: number | null
+          property_code: string
+          property_name: string
+          property_name_ar?: string | null
+          property_status?: string
+          property_type?: string
+          rental_price?: number | null
+          sale_price?: number | null
+          total_floors?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          area_sqm?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          documents?: string[] | null
+          features?: Json | null
+          floor_number?: number | null
+          furnished?: boolean | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          location_coordinates?: Json | null
+          manager_id?: string | null
+          owner_id?: string | null
+          parking_spaces?: number | null
+          property_code?: string
+          property_name?: string
+          property_name_ar?: string | null
+          property_status?: string
+          property_type?: string
+          rental_price?: number | null
+          sale_price?: number | null
+          total_floors?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_properties_owner"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "property_owners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_contracts: {
+        Row: {
+          auto_renewal: boolean | null
+          commission_amount: number | null
+          company_id: string
+          contract_number: string
+          contract_type: string
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          deposit_amount: number | null
+          end_date: string | null
+          grace_period_days: number | null
+          id: string
+          insurance_required: boolean | null
+          is_active: boolean | null
+          late_fee_rate: number | null
+          maintenance_responsibility: string | null
+          notes: string | null
+          payment_day: number | null
+          payment_frequency: string | null
+          property_id: string
+          renewal_period: number | null
+          rental_amount: number | null
+          security_deposit: number | null
+          start_date: string
+          status: string | null
+          tenant_id: string | null
+          terms: string | null
+          terms_ar: string | null
+          updated_at: string | null
+          utilities_included: boolean | null
+        }
+        Insert: {
+          auto_renewal?: boolean | null
+          commission_amount?: number | null
+          company_id: string
+          contract_number: string
+          contract_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          deposit_amount?: number | null
+          end_date?: string | null
+          grace_period_days?: number | null
+          id?: string
+          insurance_required?: boolean | null
+          is_active?: boolean | null
+          late_fee_rate?: number | null
+          maintenance_responsibility?: string | null
+          notes?: string | null
+          payment_day?: number | null
+          payment_frequency?: string | null
+          property_id: string
+          renewal_period?: number | null
+          rental_amount?: number | null
+          security_deposit?: number | null
+          start_date: string
+          status?: string | null
+          tenant_id?: string | null
+          terms?: string | null
+          terms_ar?: string | null
+          updated_at?: string | null
+          utilities_included?: boolean | null
+        }
+        Update: {
+          auto_renewal?: boolean | null
+          commission_amount?: number | null
+          company_id?: string
+          contract_number?: string
+          contract_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          deposit_amount?: number | null
+          end_date?: string | null
+          grace_period_days?: number | null
+          id?: string
+          insurance_required?: boolean | null
+          is_active?: boolean | null
+          late_fee_rate?: number | null
+          maintenance_responsibility?: string | null
+          notes?: string | null
+          payment_day?: number | null
+          payment_frequency?: string | null
+          property_id?: string
+          renewal_period?: number | null
+          rental_amount?: number | null
+          security_deposit?: number | null
+          start_date?: string
+          status?: string | null
+          tenant_id?: string | null
+          terms?: string | null
+          terms_ar?: string | null
+          updated_at?: string | null
+          utilities_included?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_contracts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_contracts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_owners: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          bank_account_info: Json | null
+          civil_id: string | null
+          commission_percentage: number | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          full_name: string
+          full_name_ar: string | null
+          id: string
+          is_active: boolean | null
+          nationality: string | null
+          notes: string | null
+          owner_code: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          bank_account_info?: Json | null
+          civil_id?: string | null
+          commission_percentage?: number | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          full_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          nationality?: string | null
+          notes?: string | null
+          owner_code: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          bank_account_info?: Json | null
+          civil_id?: string | null
+          commission_percentage?: number | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          full_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          nationality?: string | null
+          notes?: string | null
+          owner_code?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_owners_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          due_date: string
+          id: string
+          late_fee: number | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_number: string
+          payment_type: string
+          property_contract_id: string
+          reference_number: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          due_date: string
+          id?: string
+          late_fee?: number | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_number: string
+          payment_type?: string
+          property_contract_id: string
+          reference_number?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          due_date?: string
+          id?: string
+          late_fee?: number | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_number?: string
+          payment_type?: string
+          property_contract_id?: string
+          reference_number?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_payments_property_contract_id_fkey"
+            columns: ["property_contract_id"]
+            isOneToOne: false
+            referencedRelation: "property_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string

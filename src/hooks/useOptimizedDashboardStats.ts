@@ -16,10 +16,18 @@ export interface OptimizedDashboardStats {
   totalEmployees: number;
   employeesChange: string;
   
+  // Properties Stats
+  totalProperties: number;
+  propertiesChange: string;
+  
+  totalPropertyOwners: number;
+  propertyOwnersChange: string;
+  
   // Financial Stats
   monthlyRevenue: number;
   revenueChange: string;
   totalRevenue: number;
+  propertyRevenue: number;
   
   // Operational Stats
   maintenanceRequests: number;
@@ -85,7 +93,10 @@ async function fetchStatsMultiQuery(companyId: string | undefined, hasGlobalAcce
     contractsCount,
     customersCount,
     employeesCount,
+    propertiesCount,
+    propertyOwnersCount,
     contractsData,
+    propertyContractsData,
     maintenanceCount,
     paymentsData,
     expiringCount
@@ -103,8 +114,20 @@ async function fetchStatsMultiQuery(companyId: string | undefined, hasGlobalAcce
     buildQuery(supabase.from('employees').select('*', { count: 'exact', head: true }))
       .eq('is_active', true),
     
+    // Properties count
+    buildQuery(supabase.from('properties').select('*', { count: 'exact', head: true }))
+      .eq('is_active', true),
+    
+    // Property owners count  
+    buildQuery(supabase.from('property_owners').select('*', { count: 'exact', head: true }))
+      .eq('is_active', true),
+    
     // Single query for all contract financial data
     buildQuery(supabase.from('contracts').select('monthly_amount, contract_amount'))
+      .eq('status', 'active'),
+    
+    // Property contracts financial data
+    buildQuery(supabase.from('property_contracts').select('rental_amount'))
       .eq('status', 'active'),
     
     buildQuery(supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true }))
@@ -123,11 +146,15 @@ async function fetchStatsMultiQuery(companyId: string | undefined, hasGlobalAcce
   const activeContracts = contractsCount.count || 0;
   const totalCustomers = customersCount.count || 0;
   const totalEmployees = employeesCount.count || 0;
+  const totalProperties = propertiesCount.count || 0;
+  const totalPropertyOwners = propertyOwnersCount.count || 0;
   const maintenanceRequests = maintenanceCount.count || 0;
   const expiringContracts = expiringCount.count || 0;
 
   const monthlyRevenue = contractsData.data?.reduce((sum, contract) => 
     sum + (contract.monthly_amount || 0), 0) || 0;
+  const propertyRevenue = propertyContractsData.data?.reduce((sum, contract) => 
+    sum + (contract.rental_amount || 0), 0) || 0;
   const totalRevenue = contractsData.data?.reduce((sum, contract) => 
     sum + (contract.contract_amount || 0), 0) || 0;
   const pendingPayments = paymentsData.data?.reduce((sum, payment) => 
@@ -153,9 +180,16 @@ async function fetchStatsMultiQuery(companyId: string | undefined, hasGlobalAcce
     totalEmployees,
     employeesChange: '+0',
     
-    monthlyRevenue,
+    totalProperties,
+    propertiesChange: '+0',
+    
+    totalPropertyOwners,
+    propertyOwnersChange: '+0',
+    
+    monthlyRevenue: monthlyRevenue + propertyRevenue,
     revenueChange: '+0%',
     totalRevenue,
+    propertyRevenue,
     
     maintenanceRequests,
     pendingPayments,
@@ -182,9 +216,16 @@ function getEmptyStats(): OptimizedDashboardStats {
     totalEmployees: 0,
     employeesChange: '+0',
     
+    totalProperties: 0,
+    propertiesChange: '+0',
+    
+    totalPropertyOwners: 0,
+    propertyOwnersChange: '+0',
+    
     monthlyRevenue: 0,
     revenueChange: '+0%',
     totalRevenue: 0,
+    propertyRevenue: 0,
     
     maintenanceRequests: 0,
     pendingPayments: 0,

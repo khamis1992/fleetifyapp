@@ -6,6 +6,7 @@ import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
+import { useModuleConfig } from '@/modules/core/hooks';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
@@ -20,7 +21,7 @@ import { AIAssistantConfig } from '@/types/ai-assistant';
 import { ResponsiveContainer } from '@/components/ui/responsive-container';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from '@/components/ui/responsive-card';
-import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, TrendingUp, AlertTriangle, Target, Zap, Home, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
@@ -32,7 +33,16 @@ const Dashboard: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
+  const { moduleContext, isLoading: moduleLoading } = useModuleConfig();
   const navigate = useNavigate();
+
+  if (moduleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Convert financial overview data to the format expected by SmartMetricsPanel
   const smartMetricsData = financialOverview ? {
@@ -69,55 +79,96 @@ const Dashboard: React.FC = () => {
     return "مساء الخير";
   };
 
-  // Enhanced stats configuration with actions
-  const statsConfig = [
-    {
-      title: 'إجمالي المركبات',
-      value: String(enhancedStats?.totalVehicles || 0),
-      change: String(enhancedStats?.vehiclesChange || '+0%'),
-      icon: Car,
-      trend: 'up' as const,
-      description: 'مركبة في الأسطول',
-      subtitle: 'الأسطول الكامل',
-      actionText: 'إدارة الأسطول',
-      onAction: () => navigate('/fleet'),
-      gradient: true
-    },
-    {
-      title: 'العملاء النشطين',
-      value: String(enhancedStats?.totalCustomers || 0),
-      change: String(enhancedStats?.customersChange || '+0%'),
-      icon: Users,
-      trend: 'up' as const,
-      description: 'عميل مسجل',
-      subtitle: 'قاعدة العملاء',
-      actionText: 'إدارة العملاء',
-      onAction: () => navigate('/customers')
-    },
-    {
-      title: 'العقود النشطة',
-      value: String(enhancedStats?.activeContracts || 0),
-      change: String(enhancedStats?.contractsChange || '+0%'),
-      icon: FileText,
-      trend: 'neutral' as const,
-      description: 'عقد ساري المفعول',
-      subtitle: 'العقود الجارية',
-      actionText: 'إدارة العقود',
-      onAction: () => navigate('/contracts')
-    },
-    {
-      title: 'الإيرادات الشهرية',
-      value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
-      change: String(enhancedStats?.revenueChange || '+0%'),
-      icon: DollarSign,
-      trend: 'up' as const,
-      description: 'هذا الشهر',
-      subtitle: 'الأداء المالي',
-      actionText: 'التقارير المالية',
-      onAction: () => navigate('/finance'),
-      gradient: true
-    }
-  ];
+  // Enhanced stats configuration with actions based on enabled modules
+  const isVehiclesEnabled = moduleContext?.activeModules.includes('vehicles') || false;
+  const isPropertiesEnabled = moduleContext?.activeModules.includes('properties') || false;
+  
+  const statsConfig = [];
+
+  // Always show customers
+  statsConfig.push({
+    title: 'العملاء النشطين',
+    value: String(enhancedStats?.totalCustomers || 0),
+    change: String(enhancedStats?.customersChange || '+0%'),
+    icon: Users,
+    trend: 'up' as const,
+    description: 'عميل مسجل',
+    subtitle: 'قاعدة العملاء',
+    actionText: 'إدارة العملاء',
+    onAction: () => navigate('/customers')
+  });
+
+  // Show vehicle stats if vehicles module is enabled
+  if (isVehiclesEnabled) {
+    statsConfig.push(
+      {
+        title: 'إجمالي المركبات',
+        value: String(enhancedStats?.totalVehicles || 0),
+        change: String(enhancedStats?.vehiclesChange || '+0%'),
+        icon: Car,
+        trend: 'up' as const,
+        description: 'مركبة في الأسطول',
+        subtitle: 'الأسطول الكامل',
+        actionText: 'إدارة الأسطول',
+        onAction: () => navigate('/fleet'),
+        gradient: true
+      },
+      {
+        title: 'العقود النشطة',
+        value: String(enhancedStats?.activeContracts || 0),
+        change: String(enhancedStats?.contractsChange || '+0%'),
+        icon: FileText,
+        trend: 'neutral' as const,
+        description: 'عقد ساري المفعول',
+        subtitle: 'العقود الجارية',
+        actionText: 'إدارة العقود',
+        onAction: () => navigate('/contracts')
+      }
+    );
+  }
+
+  // Show property stats if properties module is enabled
+  if (isPropertiesEnabled) {
+    statsConfig.push(
+      {
+        title: 'إجمالي العقارات',
+        value: String(enhancedStats?.totalProperties || 0),
+        change: String(enhancedStats?.propertiesChange || '+0%'),
+        icon: Home,
+        trend: 'up' as const,
+        description: 'عقار مسجل',
+        subtitle: 'محفظة العقارات',
+        actionText: 'إدارة العقارات',
+        onAction: () => navigate('/properties'),
+        gradient: true
+      },
+      {
+        title: 'ملاك العقارات',
+        value: String(enhancedStats?.totalPropertyOwners || 0),
+        change: '+0%',
+        icon: UserCheck,
+        trend: 'up' as const,
+        description: 'مالك مسجل',
+        subtitle: 'قاعدة الملاك',
+        actionText: 'إدارة الملاك',
+        onAction: () => navigate('/property-owners')
+      }
+    );
+  }
+
+  // Always show revenue
+  statsConfig.push({
+    title: 'الإيرادات الشهرية',
+    value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
+    change: String(enhancedStats?.revenueChange || '+0%'),
+    icon: DollarSign,
+    trend: 'up' as const,
+    description: 'هذا الشهر',
+    subtitle: 'الأداء المالي',
+    actionText: 'التقارير المالية',
+    onAction: () => navigate('/finance'),
+    gradient: true
+  });
 
   // إعداد المساعد الذكي للوحة التحكم
   const dashboardAIConfig: AIAssistantConfig = {

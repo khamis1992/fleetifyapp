@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { AppSidebar } from './AppSidebar';
+import { DynamicSidebar } from '@/modules/core/components';
 import { MobileSidebar } from './MobileSidebar';
 import { MobileNavigation } from './MobileNavigation';
 import { ResponsiveHeader } from './ResponsiveHeader';
@@ -34,7 +34,7 @@ export const ResponsiveDashboardLayout: React.FC = () => {
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen flex w-full bg-background" dir="rtl">
         {/* Desktop/Tablet Sidebar */}
-        {!isMobile && <AppSidebar />}
+        {!isMobile && <DynamicSidebar />}
         
         <div className="flex-1 flex flex-col min-w-0">
           {/* Responsive Header */}
