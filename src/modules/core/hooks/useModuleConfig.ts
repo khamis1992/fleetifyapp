@@ -60,13 +60,20 @@ export const useModuleConfig = () => {
     ? BUSINESS_TYPE_MODULES[company.business_type as BusinessType].map(moduleName => MODULE_REGISTRY[moduleName])
     : [];
 
-  // الوحدات النشطة
-  const activeModules = (company?.active_modules || []) as ModuleName[];
+  // الوحدات النشطة من جدول الشركات
+  const companyActiveModules = (company?.active_modules || []) as ModuleName[];
 
-  // الوحدات المفعلة فعلياً (النشطة + لها إعدادات مفعلة)
-  const enabledModules = activeModules.filter(moduleName => 
-    moduleSettingsMap[moduleName]?.is_enabled !== false
-  );
+  // الوحدات المفعلة فعلياً - إذا لم توجد إعدادات، نستخدم active_modules من الشركة
+  const enabledModules = moduleSettings && moduleSettings.length > 0 
+    ? companyActiveModules.filter(moduleName => 
+        moduleSettingsMap[moduleName]?.is_enabled !== false
+      )
+    : companyActiveModules; // fallback to company active_modules if no settings exist
+
+  console.log('🔧 [MODULE_CONFIG] Company:', company?.name, 'Business Type:', company?.business_type);
+  console.log('🔧 [MODULE_CONFIG] Company Active Modules:', companyActiveModules);
+  console.log('🔧 [MODULE_CONFIG] Module Settings Count:', moduleSettings?.length || 0);
+  console.log('🔧 [MODULE_CONFIG] Final Enabled Modules:', enabledModules);
 
   const moduleContext: ModuleContext = {
     businessType: company?.business_type as BusinessType,
