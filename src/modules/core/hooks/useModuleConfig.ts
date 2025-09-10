@@ -69,16 +69,19 @@ export const useModuleConfig = () => {
   );
 
   const moduleContext: ModuleContext = {
-    businessType: company?.business_type as BusinessType || 'car_rental',
+    businessType: company?.business_type as BusinessType,
     activeModules: enabledModules,
     moduleSettings: moduleSettingsMap as Record<ModuleName, ModuleSettings>,
     availableModules
   };
 
+  // تحسين منطق التحميل - نعتبر البيانات محملة فقط عندما تكون بيانات الشركة موجودة ومعرفة
+  const isDataLoaded = !!company && !!moduleSettings && !!company.business_type;
+
   return {
     company,
     moduleContext,
-    isLoading: !company || !moduleSettings,
+    isLoading: !isDataLoaded,
     // وظائف مساعدة
     isModuleEnabled: (moduleName: ModuleName) => enabledModules.includes(moduleName),
     getModuleConfig: (moduleName: ModuleName) => MODULE_REGISTRY[moduleName],
