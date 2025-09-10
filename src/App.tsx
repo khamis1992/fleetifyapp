@@ -1,7 +1,6 @@
 
 import React from "react";
-import { ReactInitializer } from "@/components/ReactInitializer";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { MiniApp } from "@/components/MiniApp";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -75,15 +74,13 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <ReactInitializer>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
+    <MiniApp>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-              <CompanyContextProvider>
-                <PWAInstallPrompt />
-                <SimpleToaster />
-                {/* <Sonner /> */}
+            <CompanyContextProvider>
+              <PWAInstallPrompt />
+              <SimpleToaster />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -391,8 +388,7 @@ const App = () => {
             </AuthProvider>
           </ThemeProvider>
         </QueryClientProvider>
-      </ErrorBoundary>
-    </ReactInitializer>
+    </MiniApp>
   );
 };
 

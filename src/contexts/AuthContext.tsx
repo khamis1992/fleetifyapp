@@ -1,6 +1,14 @@
-// Critical: Import React FIRST and ensure it's properly loaded
+// مكون AuthContext مبسط مع حماية أفضل
 import React from 'react';
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+// تأكد من أن React متاح قبل البدء
+if (!React || typeof React.useState !== 'function') {
+  throw new Error('React hooks are not available');
+}
+
+// استيراد hooks بشكل منفصل للتأكد من توفرها
+const { createContext, useContext, useState, useEffect, useCallback } = React;
+
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -20,50 +28,31 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Enhanced React availability check
-  console.log('🔧 AuthProvider: Starting initialization...');
-  console.log('🔧 AuthProvider: React available:', !!React);
-  console.log('🔧 AuthProvider: useState available:', typeof useState);
-  console.log('🔧 AuthProvider: useEffect available:', typeof useEffect);
+  console.log('🔧 AuthProvider: Initializing...');
   
-  // More comprehensive safety check
-  if (!React || typeof useState !== 'function' || typeof useEffect !== 'function') {
-    console.error('🔧 AuthProvider: React hooks are not available. Details:', {
-      react: !!React,
-      useState: typeof useState,
-      useEffect: typeof useEffect,
-      window_React: !!(typeof window !== 'undefined' && (window as any).React)
-    });
-    
+  // التحقق النهائي من React hooks قبل الاستخدام
+  if (typeof useState !== 'function') {
+    console.error('🚨 AuthProvider: useState is not a function');
     return (
-      <div style={{ 
-        padding: '20px', 
-        textAlign: 'center', 
-        backgroundColor: '#fee', 
+      <div style={{
+        padding: '20px',
+        textAlign: 'center',
+        backgroundColor: '#fee',
         border: '1px solid #fcc',
         borderRadius: '5px',
         margin: '20px',
         direction: 'rtl'
       }}>
         <h2>خطأ في تحميل النظام</h2>
-        <p>يرجى إعادة تحميل الصفحة أو مسح ذاكرة التخزين المؤقت</p>
-        <button 
-          onClick={() => window.location.reload()}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            margin: '5px'
-          }}
-        >
-          إعادة تحميل الصفحة
+        <p>React hooks غير متاحة</p>
+        <button onClick={() => window.location.reload()}>
+          إعادة تحميل
         </button>
       </div>
     );
   }
+
+  console.log('🔧 AuthProvider: useState is available, proceeding...');
   
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -88,7 +77,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error || !data.session) {
           console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
-          // Only set session error if we're not in the middle of signing out
           if (!isSigningOut) {
             setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
           }
@@ -103,7 +91,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
-      // Only set session error if we're not in the middle of signing out
       if (!isSigningOut) {
         setSessionError('خطأ في التحقق من صحة الجلسة');
       }
@@ -112,24 +99,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [isSigningOut]);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
         
-        // Clear previous errors except when signing out
         if (event !== 'SIGNED_OUT' || !isSigningOut) {
           setSessionError(null);
         }
         
         if (event === 'SIGNED_OUT') {
-          // Only clear user/session if this is an intentional sign out
           if (isSigningOut) {
             setUser(null);
             setSession(null);
             setIsSigningOut(false);
           } else {
-            // For unexpected sign outs, try to refresh the session first
             console.log('📝 [AUTH_CONTEXT] Unexpected sign out, attempting to refresh session...');
             const { data, error } = await supabase.auth.refreshSession();
             if (error || !data.session) {
@@ -139,7 +123,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } else {
               console.log('📝 [AUTH_CONTEXT] Session restored successfully');
               setSession(data.session);
-              // Re-fetch user profile
               try {
                 const authUser = await authService.getCurrentUser();
                 setUser(authUser);
@@ -154,7 +137,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         if (session?.user && event !== 'SIGNED_OUT') {
-          // Validate session before proceeding
           const isValidSession = await validateSession(session);
           if (!isValidSession && !isSigningOut) {
             setUser(null);
@@ -167,7 +149,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
             setSession(session);
             
-            // Defer the profile fetch to avoid blocking the auth state change
             setTimeout(async () => {
               try {
                 const authUser = await authService.getCurrentUser();
@@ -193,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     const initializeSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -242,7 +223,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const result = await authService.signIn(email, password);
     
     if (!result.error) {
-      // Log successful login
       setTimeout(() => {
         supabase.from('system_logs').insert({
           level: 'info',
@@ -263,7 +243,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const result = await authService.signOut();
     
     if (!result.error && email) {
-      // Log successful logout
       setTimeout(() => {
         supabase.from('system_logs').insert({
           level: 'info',
