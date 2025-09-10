@@ -1396,6 +1396,57 @@ export type Database = {
           },
         ]
       }
+      business_templates: {
+        Row: {
+          business_type: string
+          color_scheme: Json | null
+          created_at: string | null
+          default_chart_accounts: Json | null
+          default_modules: string[]
+          default_settings: Json | null
+          description: string | null
+          description_ar: string | null
+          icon_name: string | null
+          id: string
+          is_active: boolean | null
+          template_name: string
+          template_name_ar: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_type: string
+          color_scheme?: Json | null
+          created_at?: string | null
+          default_chart_accounts?: Json | null
+          default_modules?: string[]
+          default_settings?: Json | null
+          description?: string | null
+          description_ar?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_name: string
+          template_name_ar?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_type?: string
+          color_scheme?: Json | null
+          created_at?: string | null
+          default_chart_accounts?: Json | null
+          default_modules?: string[]
+          default_settings?: Json | null
+          description?: string | null
+          description_ar?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_name?: string
+          template_name_ar?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chart_of_accounts: {
         Row: {
           account_code: string
@@ -1491,19 +1542,24 @@ export type Database = {
       }
       companies: {
         Row: {
+          active_modules: string[] | null
           address: string | null
           address_ar: string | null
           allowed_radius: number | null
           auto_checkout_enabled: boolean | null
+          business_type: string | null
           city: string | null
           commercial_register: string | null
+          company_template: string | null
           country: string | null
           created_at: string
           currency: string | null
           current_plan_id: string | null
+          custom_branding: Json | null
           customer_account_settings: Json | null
           email: string | null
           id: string
+          industry_config: Json | null
           license_number: string | null
           logo_url: string | null
           name: string
@@ -1520,19 +1576,24 @@ export type Database = {
           work_start_time: string | null
         }
         Insert: {
+          active_modules?: string[] | null
           address?: string | null
           address_ar?: string | null
           allowed_radius?: number | null
           auto_checkout_enabled?: boolean | null
+          business_type?: string | null
           city?: string | null
           commercial_register?: string | null
+          company_template?: string | null
           country?: string | null
           created_at?: string
           currency?: string | null
           current_plan_id?: string | null
+          custom_branding?: Json | null
           customer_account_settings?: Json | null
           email?: string | null
           id?: string
+          industry_config?: Json | null
           license_number?: string | null
           logo_url?: string | null
           name: string
@@ -1549,19 +1610,24 @@ export type Database = {
           work_start_time?: string | null
         }
         Update: {
+          active_modules?: string[] | null
           address?: string | null
           address_ar?: string | null
           allowed_radius?: number | null
           auto_checkout_enabled?: boolean | null
+          business_type?: string | null
           city?: string | null
           commercial_register?: string | null
+          company_template?: string | null
           country?: string | null
           created_at?: string
           currency?: string | null
           current_plan_id?: string | null
+          custom_branding?: Json | null
           customer_account_settings?: Json | null
           email?: string | null
           id?: string
+          industry_config?: Json | null
           license_number?: string | null
           logo_url?: string | null
           name?: string
@@ -5982,6 +6048,39 @@ export type Database = {
           item_name?: string
           maintenance_id?: string
           notes?: string | null
+        }
+        Relationships: []
+      }
+      module_settings: {
+        Row: {
+          company_id: string
+          id: string
+          is_enabled: boolean | null
+          last_updated: string | null
+          module_config: Json | null
+          module_name: string
+          updated_by: string | null
+          version: string | null
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          is_enabled?: boolean | null
+          last_updated?: string | null
+          module_config?: Json | null
+          module_name: string
+          updated_by?: string | null
+          version?: string | null
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          is_enabled?: boolean | null
+          last_updated?: string | null
+          module_config?: Json | null
+          module_name?: string
+          updated_by?: string | null
+          version?: string | null
         }
         Relationships: []
       }
