@@ -1,13 +1,7 @@
-// مكون AuthContext مبسط مع حماية أفضل
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
-
-// Ensure React is available before proceeding
-if (!React || typeof useState !== 'function') {
-  throw new Error('React hooks are not available. Please reload the page.');
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
