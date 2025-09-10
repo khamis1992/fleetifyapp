@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
@@ -8,14 +8,18 @@ import RetailDashboard from './dashboards/RetailDashboard';
 const Dashboard: React.FC = () => {
   const { moduleContext, isLoading: moduleLoading, company, refreshData } = useModuleConfig();
   const { isBrowsingMode, browsedCompany, companyId } = useUnifiedCompanyAccess();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Refresh data when switching companies in browse mode
   useEffect(() => {
     if (isBrowsingMode && companyId) {
-      console.log('🏢 [DASHBOARD] Browse mode detected, refreshing data for company:', companyId);
+      console.log('🏢 [DASHBOARD] Browse mode detected, force refreshing data for company:', companyId);
+      setIsRefreshing(true);
       refreshData();
+      // Give extra time for data to load in browse mode
+      setTimeout(() => setIsRefreshing(false), 1000);
     }
-  }, [isBrowsingMode, companyId, refreshData]);
+  }, [isBrowsingMode, companyId]);
 
   console.log('🏢 [DASHBOARD] ===== DETAILED DEBUG =====');
   console.log('🏢 [DASHBOARD] Module Loading:', moduleLoading);
@@ -28,11 +32,12 @@ const Dashboard: React.FC = () => {
   console.log('🏢 [DASHBOARD] Browsed Company:', browsedCompany);
   console.log('🏢 [DASHBOARD] ===========================');
 
-  if (moduleLoading) {
-    console.log('🏢 [DASHBOARD] Still loading modules...');
+  if (moduleLoading || isRefreshing) {
+    console.log('🏢 [DASHBOARD] Loading modules or refreshing...', { moduleLoading, isRefreshing });
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        {isBrowsingMode && <p className="ml-2 text-sm text-muted-foreground">جاري تحميل بيانات الشركة...</p>}
       </div>
     );
   }
@@ -43,11 +48,12 @@ const Dashboard: React.FC = () => {
   console.log('🏢 [DASHBOARD] Final business type decision:', businessType);
 
   // إذا كان التحميل جارياً أو لا يوجد نوع نشاط، عرض شاشة التحميل
-  if (!businessType) {
-    console.log('🏢 [DASHBOARD] No business type available, showing loading...');
+  if (!businessType || !company?.id) {
+    console.log('🏢 [DASHBOARD] No business type or company available, showing loading...', { businessType, companyId: company?.id });
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        {isBrowsingMode && <p className="ml-2 text-sm text-muted-foreground">جاري تحميل نوع النشاط...</p>}
       </div>
     );
   }
@@ -55,16 +61,16 @@ const Dashboard: React.FC = () => {
   switch (businessType) {
     case 'car_rental':
       console.log('🏢 [DASHBOARD] Rendering Car Rental Dashboard');
-      return <CarRentalDashboard />;
+      return <CarRentalDashboard key={`car-rental-${companyId}`} />;
     case 'real_estate':
       console.log('🏢 [DASHBOARD] Rendering Real Estate Dashboard');
-      return <RealEstateDashboard />;
+      return <RealEstateDashboard key={`real-estate-${companyId}`} />;
     case 'retail':
       console.log('🏢 [DASHBOARD] Rendering Retail Dashboard');
-      return <RetailDashboard />;
+      return <RetailDashboard key={`retail-${companyId}`} />;
     default:
       console.warn('🏢 [DASHBOARD] Unknown business type:', businessType, 'falling back to car rental');
-      return <CarRentalDashboard />;
+      return <CarRentalDashboard key={`fallback-${companyId}`} />;
   }
 };
 

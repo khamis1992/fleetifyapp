@@ -1,16 +1,27 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { BusinessType, ModuleName, ModuleSettings, ModuleContext } from '@/types/modules';
 import { MODULE_REGISTRY, BUSINESS_TYPE_MODULES } from '@/modules/moduleRegistry';
+import { useEffect } from 'react';
 
 // Hook لجلب تكوين الوحدات للشركة الحالية
 export const useModuleConfig = () => {
   const { user } = useAuth();
   const { companyId } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
   
   const isBrowsingMode = companyId !== user?.company?.id;
+  
+  // Force invalidate queries when switching companies in browse mode
+  useEffect(() => {
+    if (isBrowsingMode && companyId) {
+      console.log('🔄 [MODULE_CONFIG] Browse mode detected - invalidating all queries for company:', companyId);
+      queryClient.invalidateQueries({ queryKey: ['company'] });
+      queryClient.invalidateQueries({ queryKey: ['module-settings'] });
+    }
+  }, [companyId, isBrowsingMode, queryClient]);
   console.log('🔧 [MODULE_CONFIG] Company ID:', companyId, 'User company:', user?.company?.id, 'Is Browse Mode:', isBrowsingMode);
 
   // جلب بيانات الشركة
@@ -35,7 +46,9 @@ export const useModuleConfig = () => {
     },
     enabled: !!companyId,
     staleTime: isBrowsingMode ? 0 : 5 * 60 * 1000, // No caching in browse mode
-    refetchOnWindowFocus: isBrowsingMode
+    refetchOnWindowFocus: isBrowsingMode,
+    refetchOnMount: isBrowsingMode ? 'always' : true, // Always refetch in browse mode
+    gcTime: isBrowsingMode ? 0 : 5 * 60 * 1000 // No garbage collection caching in browse mode
   });
 
   // جلب إعدادات الوحدات
@@ -60,7 +73,9 @@ export const useModuleConfig = () => {
     },
     enabled: !!companyId,
     staleTime: isBrowsingMode ? 0 : 5 * 60 * 1000, // No caching in browse mode
-    refetchOnWindowFocus: isBrowsingMode
+    refetchOnWindowFocus: isBrowsingMode,
+    refetchOnMount: isBrowsingMode ? 'always' : true, // Always refetch in browse mode
+    gcTime: isBrowsingMode ? 0 : 5 * 60 * 1000 // No garbage collection caching in browse mode
   });
 
   // تحويل إعدادات الوحدات إلى كائن
@@ -114,9 +129,15 @@ export const useModuleConfig = () => {
     getModuleSettings: (moduleName: ModuleName) => moduleSettingsMap[moduleName],
     // Refresh functions for Browse Mode
     refreshData: () => {
-      console.log('🔧 [MODULE_CONFIG] Refreshing data...');
-      refetchCompany();
-      refetchModuleSettings();
+      console.log('🔧 [MODULE_CONFIG] Force refreshing data...');
+      if (isBrowsingMode) {
+        // Force reset queries in browse mode for immediate data refresh
+        queryClient.resetQueries({ queryKey: ['company', companyId] });
+        queryClient.resetQueries({ queryKey: ['module-settings', companyId] });
+      } else {
+        refetchCompany();
+        refetchModuleSettings();
+      }
     }
   };
 };
