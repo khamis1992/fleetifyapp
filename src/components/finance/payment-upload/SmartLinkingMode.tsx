@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
 import { toast } from 'sonner';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 
 interface SmartLinkingModeProps {
   onUploadComplete: (data: any[]) => Promise<any>;
@@ -63,6 +64,23 @@ export function SmartLinkingMode({
   const [previewData, setPreviewData] = useState<PreviewItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // استخدام عمليات المدفوعات
+  const { 
+    createPayment, 
+    isCreating 
+  } = usePaymentOperations();
+
+  // دالة حفظ المدفوعة
+  const savePayment = async (paymentData: any) => {
+    return new Promise((resolve, reject) => {
+      createPayment.mutate(paymentData, {
+        onSuccess: (data) => resolve(data),
+        onError: (error) => reject(error)
+      });
+    });
+  };
 
   // معالجة رفع الملف
   const handleFileUpload = useCallback(async (data: any[]) => {
@@ -142,7 +160,7 @@ export function SmartLinkingMode({
     }
   };
 
-  // معالجة الربط النهائي
+  // معالجة الربط النهائي والحفظ
   const handleFinalLinking = useCallback(async () => {
     if (selectedItems.size === 0) {
       toast.error('يرجى اختيار دفعات للمعالجة');
@@ -150,36 +168,80 @@ export function SmartLinkingMode({
     }
 
     setCurrentStep('processing');
+    setIsProcessing(true);
     
     try {
       const selectedPreviewItems = previewData.filter(item => 
         selectedItems.has(item.rowNumber)
       );
       
-      // هنا يمكن إضافة منطق الربط الفعلي
-      // للآن سنحاكي العملية
       let successful = 0;
       let failed = 0;
+      const failedItems: { item: PreviewItem; error: string }[] = [];
       
       for (const item of selectedPreviewItems) {
-        if (item.canLink) {
-          successful++;
-        } else {
+        try {
+          if (item.canLink && item.bestMatch) {
+            // إعداد بيانات المدفوعة
+            const paymentData = {
+              payment_number: item.data.payment_number || `PAY-${Date.now()}-${item.rowNumber}`,
+              payment_date: item.data.payment_date || new Date().toISOString().split('T')[0],
+              amount: parseFloat(item.data.amount || item.data.amount_paid || 0),
+              payment_method: item.data.payment_method || 'cash',
+              reference_number: item.data.reference_number || undefined,
+              notes: item.data.notes || `مدفوعة مرفوعة تلقائياً - الصف ${item.rowNumber}`,
+              customer_id: item.bestMatch.contract.customer_id,
+              contract_id: item.bestMatch.contract.id,
+              type: 'receipt' as const,
+              currency: 'KWD'
+            };
+
+            // حفظ المدفوعة
+            await savePayment(paymentData);
+            successful++;
+          } else {
+            failed++;
+            failedItems.push({ 
+              item, 
+              error: 'لا يمكن الربط - لا يوجد عقد مناسب' 
+            });
+          }
+        } catch (error: any) {
           failed++;
+          failedItems.push({ 
+            item, 
+            error: `خطأ في الحفظ: ${error.message || error}` 
+          });
         }
       }
       
-      toast.success(`✅ تم ربط ${successful} دفعة بنجاح${failed > 0 ? ` - ${failed} فشلت` : ''}`);
+      // عرض النتائج
+      if (successful > 0) {
+        toast.success(`✅ تم حفظ ${successful} دفعة بنجاح في قاعدة البيانات`);
+      }
       
-      // العودة للخطوة الأولى أو إغلاق الحوار
-      setCurrentStep('upload');
-      setPreviewData([]);
-      setSelectedItems(new Set());
+      if (failed > 0) {
+        toast.error(`❌ فشل في حفظ ${failed} دفعة`);
+        
+        // عرض تفاصيل الأخطاء للمدفوعات الفاشلة
+        failedItems.forEach(({ item, error }) => {
+          console.error(`فشل في حفظ الصف ${item.rowNumber}:`, error);
+        });
+      }
       
-    } catch (error) {
-      toast.error(`خطأ في الربط: ${error}`);
+      // العودة للخطوة الأولى
+      setTimeout(() => {
+        setCurrentStep('upload');
+        setPreviewData([]);
+        setSelectedItems(new Set());
+        setIsProcessing(false);
+      }, 2000);
+      
+    } catch (error: any) {
+      toast.error(`خطأ عام في العملية: ${error.message || error}`);
+      setIsProcessing(false);
     }
-  }, [selectedItems, previewData]);
+  }, [selectedItems, previewData, createPayment, savePayment]);
 
   // عرض واجهة الرفع
   const renderUploadInterface = () => (
@@ -286,11 +348,20 @@ export function SmartLinkingMode({
           </Button>
           <Button
             onClick={handleFinalLinking}
-            disabled={selectedItems.size === 0}
+            disabled={selectedItems.size === 0 || isProcessing || isCreating}
             className="flex items-center gap-2"
           >
-            <Link className="h-4 w-4" />
-            تأكيد الربط ({selectedItems.size})
+            {isProcessing || isCreating ? (
+              <>
+                <Brain className="h-4 w-4 animate-spin" />
+                جاري الحفظ...
+              </>
+            ) : (
+              <>
+                <Link className="h-4 w-4" />
+                حفظ المدفوعات ({selectedItems.size})
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -382,11 +453,16 @@ export function SmartLinkingMode({
       <div className="inline-flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl">
         <Brain className="h-8 w-8 text-blue-600 animate-pulse" />
         <div>
-          <h3 className="text-xl font-bold">جاري ربط المدفوعات...</h3>
-          <p className="text-muted-foreground">معالجة {selectedItems.size} دفعة</p>
+          <h3 className="text-xl font-bold">جاري حفظ المدفوعات في قاعدة البيانات...</h3>
+          <p className="text-muted-foreground">معالجة وحفظ {selectedItems.size} دفعة</p>
         </div>
       </div>
-      <Progress value={75} className="h-2" />
+      <Progress value={isProcessing ? 75 : 100} className="h-2" />
+      {isProcessing && (
+        <p className="text-sm text-muted-foreground">
+          يتم الآن حفظ البيانات في قاعدة البيانات وربطها بالعقود المناسبة...
+        </p>
+      )}
     </div>
   );
 
