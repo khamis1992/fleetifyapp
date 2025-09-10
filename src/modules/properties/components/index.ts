@@ -1,2 +1,5 @@
-// Properties module components placeholder
-export {};
+// Properties module components
+export * from './PropertyCard';
+export * from './PropertyStatusBadge';
+export * from './PropertyTable';
+export * from './PropertySearchFilters';
