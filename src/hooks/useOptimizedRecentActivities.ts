@@ -35,7 +35,8 @@ export const useOptimizedRecentActivities = () => {
           message,
           level,
           created_at,
-          user_id
+          user_id,
+          resource_id
         `)
         .eq('company_id', companyId)
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
@@ -47,18 +48,34 @@ export const useOptimizedRecentActivities = () => {
         return [];
       }
 
-      // Transform the database results to our activity format
-      return activities?.map(activity => ({
-        id: activity.id,
-        type: getCategoryDisplayName(activity.category),
-        description: activity.message || getActivityDescription(activity),
-        time: getRelativeTime(activity.created_at),
-        icon: getCategoryIcon(activity.category),
-        color: getCategoryColor(activity.category, activity.level),
-        priority: getPriorityFromLevel(activity.level),
-        created_at: activity.created_at,
-        status: activity.action
-      })) || [];
+      // Transform the database results to our activity format with enhanced vehicle information
+      const enhancedActivities = await Promise.all(
+        activities?.map(async (activity) => {
+          let enhancedDescription = activity.message || getActivityDescription(activity);
+          
+          // If this is a fleet/vehicle activity, try to get vehicle details
+          if (activity.category === 'fleet' && activity.resource_id) {
+            const vehicleInfo = await getVehicleInfo(activity.resource_id);
+            if (vehicleInfo) {
+              enhancedDescription = enhanceVehicleMessage(enhancedDescription, vehicleInfo, activity.action);
+            }
+          }
+          
+          return {
+            id: activity.id,
+            type: getCategoryDisplayName(activity.category),
+            description: enhancedDescription,
+            time: getRelativeTime(activity.created_at),
+            icon: getCategoryIcon(activity.category),
+            color: getCategoryColor(activity.category, activity.level),
+            priority: getPriorityFromLevel(activity.level),
+            created_at: activity.created_at,
+            status: activity.action
+          };
+        }) || []
+      );
+
+      return enhancedActivities;
     },
     enabled: !!companyId,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -110,6 +127,49 @@ function getPriorityFromLevel(level: string): 'high' | 'medium' | 'low' {
   if (level === 'error') return 'high';
   if (level === 'warning') return 'medium';
   return 'low';
+}
+
+// Helper function to fetch vehicle information
+async function getVehicleInfo(vehicleId: string) {
+  try {
+    const { data: vehicle, error } = await supabase
+      .from('vehicles')
+      .select('id, plate_number, make, model, year')
+      .eq('id', vehicleId)
+      .single();
+
+    if (error || !vehicle) return null;
+    return vehicle;
+  } catch (error) {
+    console.error('Error fetching vehicle info:', error);
+    return null;
+  }
+}
+
+// Helper function to enhance vehicle messages with specific vehicle information
+function enhanceVehicleMessage(originalMessage: string, vehicleInfo: any, action: string): string {
+  const actionMap: Record<string, string> = {
+    'create': 'تم إضافة',
+    'update': 'تم تحديث',
+    'delete': 'تم حذف',
+    'view': 'تم استعلام',
+    'search': 'تم البحث عن'
+  };
+  
+  const actionText = actionMap[action] || 'تم التعامل مع';
+  const vehicleDisplay = `${vehicleInfo.make || ''} ${vehicleInfo.model || ''} - لوحة: ${vehicleInfo.plate_number || 'غير محددة'}`.trim();
+  
+  // If the original message contains the company ID, replace it with vehicle info
+  if (originalMessage.includes('44f2cd3a-5bf6-4b43-a7e5-aa3ff6422f1c') || originalMessage.includes('للشركة')) {
+    return `${actionText} المركبة ${vehicleDisplay}`;
+  }
+  
+  // If it's a generic message, enhance it
+  if (originalMessage.includes('مركبة') || originalMessage.includes('vehicle') || originalMessage.includes('fleet')) {
+    return `${actionText} المركبة ${vehicleDisplay}`;
+  }
+  
+  return originalMessage;
 }
 
 function getActivityDescription(activity: any): string {
