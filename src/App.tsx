@@ -1,8 +1,8 @@
 
-import { StrictMode } from "react";
+import React from "react";
+import { ReactInitializer } from "@/components/ReactInitializer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
-// import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -75,8 +75,9 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+    <ReactInitializer>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
               <CompanyContextProvider>
@@ -391,6 +392,7 @@ const App = () => {
           </ThemeProvider>
         </QueryClientProvider>
       </ErrorBoundary>
+    </ReactInitializer>
   );
 };
 
