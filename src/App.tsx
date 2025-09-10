@@ -18,6 +18,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/super-admin/Dashboard";
 import SuperAdminCompanies from "./pages/super-admin/Companies";
+import CreateCompany from "./pages/super-admin/CreateCompany";
 import SuperAdminUsers from "./pages/super-admin/Users";
 import SuperAdminSettings from "./pages/super-admin/Settings";
 import Finance from "./pages/Finance";
@@ -95,6 +96,7 @@ const App = () => {
             <Route path="/super-admin/*" element={<SuperAdminLayout />}>
               <Route path="dashboard" element={<SuperAdminDashboard />} />
               <Route path="companies" element={<SuperAdminCompanies />} />
+              <Route path="companies/create" element={<CreateCompany />} />
               <Route path="users" element={<SuperAdminUsers />} />
               <Route path="support" element={<SuperAdminSupport />} />
               <Route path="payments" element={<SuperAdminPayments />} />

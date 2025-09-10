@@ -14,12 +14,15 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Building2, Mail, Phone, MapPin, CreditCard, Settings, Users } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, CreditCard, Settings, Users, Briefcase } from 'lucide-react';
 import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+import { BusinessTypeSelector, businessTypes } from './BusinessTypeSelector';
+import { BusinessType } from '@/types/modules';
 
 const companySchema = z.object({
   name: z.string().min(2, 'اسم الشركة مطلوب (حد أدنى حرفين)'),
   name_ar: z.string().optional(),
+  business_type: z.enum(['car_rental', 'real_estate', 'retail', 'medical', 'manufacturing', 'restaurant', 'logistics', 'education', 'consulting', 'construction']),
   email: z.string().email('بريد إلكتروني غير صحيح').optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -70,6 +73,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     defaultValues: {
       name: '',
       name_ar: '',
+      business_type: 'car_rental' as BusinessType,
       email: '',
       phone: '',
       address: '',
@@ -96,6 +100,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       reset({
         name: company.name || '',
         name_ar: company.name_ar || '',
+        business_type: company.business_type || 'car_rental',
         email: company.email || '',
         phone: company.phone || '',
         address: company.address || '',
@@ -123,6 +128,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const onSubmit = async (data: CompanyFormData) => {
     setLoading(true);
     try {
+      // Get selected business type modules
+      const selectedBusinessType = businessTypes.find(bt => bt.type === data.business_type);
+      const activeModules = selectedBusinessType?.modules || ['core', 'finance'];
+
       const formattedData = {
         name: data.name,
         email: data.email || null,
@@ -130,6 +139,8 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         address: data.address || null,
         address_ar: data.address_ar || null,
         name_ar: data.name_ar || null,
+        business_type: data.business_type,
+        active_modules: activeModules,
         city: data.city || null,
         country: data.country || null,
         commercial_register: data.commercial_register || null,
@@ -208,13 +219,34 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="business" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="business">نوع النشاط</TabsTrigger>
               <TabsTrigger value="basic">المعلومات الأساسية</TabsTrigger>
               <TabsTrigger value="contact">معلومات الاتصال</TabsTrigger>
               <TabsTrigger value="subscription">الاشتراك</TabsTrigger>
               <TabsTrigger value="settings">الإعدادات</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="business" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    نوع النشاط التجاري
+                  </CardTitle>
+                  <CardDescription>
+                    حدد نوع النشاط التجاري لتفعيل الوحدات المناسبة
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BusinessTypeSelector
+                    selectedType={watch('business_type')}
+                    onTypeSelect={(type) => setValue('business_type', type)}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="basic" className="space-y-4">
               <Card>

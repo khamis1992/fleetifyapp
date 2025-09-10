@@ -328,10 +328,7 @@ const Companies: React.FC = () => {
             </p>
             {!searchTerm && statusFilter === 'all' && (
               <Button 
-                onClick={() => {
-                  setSelectedCompany(null);
-                  setShowCreateForm(true);
-                }}
+                onClick={() => navigate('/super-admin/companies/create')}
                 className="gap-2"
               >
                 <Plus className="h-4 w-4" />
