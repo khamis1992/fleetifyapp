@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useModuleConfig } from "../hooks/useModuleConfig";
 import { ModuleRoute } from "@/types/modules";
+import { CarRentalSidebar } from "@/components/navigation/CarRentalSidebar";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 const getIconComponent = (iconName: string) => {
   const IconComponent = (Icons as any)[iconName];
@@ -24,10 +26,15 @@ const getIconComponent = (iconName: string) => {
 export function DynamicSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { moduleContext, isLoading } = useModuleConfig();
+  const { moduleContext, isLoading, company } = useModuleConfig();
   const currentPath = location.pathname;
 
   const collapsed = state === "collapsed";
+
+  // إذا كانت الشركة من نوع تأجير السيارات، استخدم الشريط الجانبي المخصص
+  if (company?.business_type === 'car_rental') {
+    return <CarRentalSidebar />;
+  }
 
   if (isLoading) {
     return (
