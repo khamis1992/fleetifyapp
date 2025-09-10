@@ -113,7 +113,7 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                 {/* الصورة الرئيسية */}
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
                   <img
-                    src={images[currentImageIndex]?.url}
+                    src={images[currentImageIndex]}
                     alt={`صورة العقار ${currentImageIndex + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -148,16 +148,6 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                       </Badge>
                     </div>
                   )}
-
-                  {/* أيقونة الصورة الأساسية */}
-                  {images[currentImageIndex]?.is_primary && (
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="default">
-                        <Star className="h-3 w-3 mr-1 fill-current" />
-                        أساسية
-                      </Badge>
-                    </div>
-                  )}
                 </div>
 
                 {/* الصور المصغرة */}
@@ -176,7 +166,7 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                         `}
                       >
                         <img
-                          src={image.url}
+                          src={image}
                           alt={`صورة مصغرة ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
@@ -196,12 +186,12 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                   <DialogContent className="max-w-5xl">
                     <DialogHeader>
                       <DialogTitle>
-                        {images[currentImageIndex]?.caption || `صورة ${currentImageIndex + 1}`}
+                        صورة العقار {currentImageIndex + 1}
                       </DialogTitle>
                     </DialogHeader>
                     <div className="aspect-video">
                       <img
-                        src={images[currentImageIndex]?.url}
+                        src={images[currentImageIndex]}
                         alt={`صورة العقار ${currentImageIndex + 1}`}
                         className="w-full h-full object-contain"
                       />
@@ -354,26 +344,26 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                     <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">رقم المالك:</span>
                     <span className="text-sm mr-2 font-mono">
-                      {property.property_owner.owner_code}
+                      {property.property_owners?.owner_code}
                     </span>
                   </div>
 
-                  {property.property_owner.phone_number && (
+                  {property.property_owners?.phone && (
                     <div className="flex items-center">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">الهاتف:</span>
                       <span className="text-sm mr-2 font-mono">
-                        {property.property_owner.phone_number}
+                        {property.property_owners.phone}
                       </span>
                     </div>
                   )}
 
-                  {property.property_owner.email && (
+                  {property.property_owners?.email && (
                     <div className="flex items-center">
                       <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">البريد:</span>
                       <span className="text-sm mr-2">
-                        {property.property_owner.email}
+                        {property.property_owners.email}
                       </span>
                     </div>
                   )}
@@ -400,9 +390,9 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                   <p className="text-2xl font-bold text-green-600">
                     {formatCurrency(property.sale_price)}
                   </p>
-                  {property.area_size > 0 && (
+                  {property.area_sqm && property.area_sqm > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatCurrency(property.sale_price / property.area_size)} / م²
+                      {formatCurrency(property.sale_price / property.area_sqm)} / م²
                     </p>
                   )}
                 </div>
@@ -414,9 +404,9 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                   <p className="text-2xl font-bold text-blue-600">
                     {formatCurrency(property.rental_price)}
                   </p>
-                  {property.area_size > 0 && (
+                  {property.area_sqm && property.area_sqm > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatCurrency(property.rental_price / property.area_size)} / م²
+                      {formatCurrency(property.rental_price / property.area_sqm)} / م²
                     </p>
                   )}
                 </div>
@@ -434,7 +424,7 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
         </Card>
 
         {/* الوصف والملاحظات */}
-        {(property.description || property.notes) && (
+        {property.description && (
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>وصف العقار</CardTitle>
@@ -445,15 +435,6 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                   <h4 className="font-medium mb-2">الوصف</h4>
                   <p className="text-muted-foreground leading-relaxed">
                     {property.description}
-                  </p>
-                </div>
-              )}
-
-              {property.notes && (
-                <div>
-                  <h4 className="font-medium mb-2">ملاحظات</h4>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {property.notes}
                   </p>
                 </div>
               )}
