@@ -13,8 +13,6 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
-import { FloatingAIAssistant } from '@/components/ai/FloatingAIAssistant';
-import { AIAssistantConfig } from '@/types/ai-assistant';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { Package, Users, ShoppingCart, DollarSign, TrendingUp, Warehouse } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -129,37 +127,6 @@ const RetailDashboard: React.FC = () => {
     }
   ];
 
-  // AI Assistant configuration for retail
-  const dashboardAIConfig: AIAssistantConfig = {
-    module: 'dashboard',
-    primitives: ['data_analysis', 'content_creation', 'research', 'ideation_strategy'],
-    context: {
-      stats: enhancedStats,
-      activities: enhancedActivities,
-      financialData: smartMetricsData,
-      userRole: user?.role,
-      companyName: browsedCompany?.name || 'المتجر التجاري'
-    },
-    priority: 'high_value',
-    enabledFeatures: [
-      {
-        id: 'sales_insights',
-        name: 'تحليل المبيعات',
-        description: 'تحليل ذكي لأداء المبيعات والمنتجات',
-        primitive: 'data_analysis',
-        taskType: 'analyze_data',
-        enabled: true
-      },
-      {
-        id: 'inventory_report',
-        name: 'تقارير المخزون',
-        description: 'إنشاء تقارير مفصلة عن حالة المخزون',
-        primitive: 'content_creation',
-        taskType: 'create_report',
-        enabled: true
-      }
-    ]
-  };
 
   return (
     <>
@@ -236,8 +203,6 @@ const RetailDashboard: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Floating AI Assistant */}
-        <FloatingAIAssistant config={dashboardAIConfig} />
       </div>
     </>
   );

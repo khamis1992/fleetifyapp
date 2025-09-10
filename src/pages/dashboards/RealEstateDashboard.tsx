@@ -13,8 +13,6 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
-import { FloatingAIAssistant } from '@/components/ai/FloatingAIAssistant';
-import { AIAssistantConfig } from '@/types/ai-assistant';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { Home, Users, FileText, DollarSign, UserCheck, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -129,37 +127,6 @@ const RealEstateDashboard: React.FC = () => {
     }
   ];
 
-  // AI Assistant configuration for real estate
-  const dashboardAIConfig: AIAssistantConfig = {
-    module: 'dashboard',
-    primitives: ['data_analysis', 'content_creation', 'research', 'ideation_strategy'],
-    context: {
-      stats: enhancedStats,
-      activities: enhancedActivities,
-      financialData: smartMetricsData,
-      userRole: user?.role,
-      companyName: browsedCompany?.name || 'شركة إدارة العقارات'
-    },
-    priority: 'high_value',
-    enabledFeatures: [
-      {
-        id: 'property_insights',
-        name: 'تحليل العقارات',
-        description: 'تحليل ذكي لأداء العقارات ومعدلات الإشغال',
-        primitive: 'data_analysis',
-        taskType: 'analyze_data',
-        enabled: true
-      },
-      {
-        id: 'rental_report',
-        name: 'تقارير الإيجار',
-        description: 'إنشاء تقارير مفصلة عن عمليات الإيجار والإيرادات',
-        primitive: 'content_creation',
-        taskType: 'create_report',
-        enabled: true
-      }
-    ]
-  };
 
   return (
     <>
@@ -236,8 +203,6 @@ const RealEstateDashboard: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Floating AI Assistant */}
-        <FloatingAIAssistant config={dashboardAIConfig} />
       </div>
     </>
   );

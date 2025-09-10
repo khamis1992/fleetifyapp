@@ -14,8 +14,6 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
-import { FloatingAIAssistant } from '@/components/ai/FloatingAIAssistant';
-import { AIAssistantConfig } from '@/types/ai-assistant';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { Car, Users, FileText, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -121,53 +119,6 @@ const CarRentalDashboard: React.FC = () => {
     gradient: true
   });
 
-  // AI Assistant configuration for car rental
-  const dashboardAIConfig: AIAssistantConfig = {
-    module: 'dashboard',
-    primitives: ['data_analysis', 'content_creation', 'research', 'ideation_strategy'],
-    context: {
-      stats: enhancedStats,
-      activities: enhancedActivities,
-      financialData: smartMetricsData,
-      userRole: user?.role,
-      companyName: browsedCompany?.name || 'شركتك'
-    },
-    priority: 'high_value',
-    enabledFeatures: [
-      {
-        id: 'dashboard_insights',
-        name: 'تحليل لوحة التحكم',
-        description: 'تحليل ذكي للإحصائيات والبيانات المعروضة',
-        primitive: 'data_analysis',
-        taskType: 'analyze_data',
-        enabled: true
-      },
-      {
-        id: 'create_report',
-        name: 'إنشاء التقارير',
-        description: 'إنشاء تقارير مخصصة بناءً على البيانات',
-        primitive: 'content_creation',
-        taskType: 'create_report',
-        enabled: true
-      },
-      {
-        id: 'suggest_actions',
-        name: 'اقتراح الإجراءات',
-        description: 'اقتراح إجراءات لتحسين الأداء',
-        primitive: 'ideation_strategy',
-        taskType: 'suggest_action',
-        enabled: true
-      },
-      {
-        id: 'optimize_workflow',
-        name: 'تحسين سير العمل',
-        description: 'تحليل وتحسين العمليات الحالية',
-        primitive: 'automation',
-        taskType: 'optimize_workflow',
-        enabled: true
-      }
-    ]
-  };
 
   return (
     <>
@@ -244,8 +195,6 @@ const CarRentalDashboard: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Floating AI Assistant */}
-        <FloatingAIAssistant config={dashboardAIConfig} />
       </div>
     </>
   );
