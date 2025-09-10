@@ -29,6 +29,7 @@ const CarRentalDashboard: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
+  const { moduleContext } = useModuleConfig();
   const navigate = useNavigate();
 
   // Convert financial overview data
@@ -58,55 +59,67 @@ const CarRentalDashboard: React.FC = () => {
     }
   })) || [];
 
-  // Car rental specific stats configuration
-  const statsConfig = [
-    {
-      title: 'إجمالي المركبات',
-      value: String(enhancedStats?.totalVehicles || 0),
-      change: String(enhancedStats?.vehiclesChange || '+0%'),
-      icon: Car,
-      trend: 'up' as const,
-      description: 'مركبة في الأسطول',
-      subtitle: 'الأسطول الكامل',
-      actionText: 'إدارة الأسطول',
-      onAction: () => navigate('/fleet'),
-      gradient: true
-    },
-    {
-      title: 'العقود النشطة',
-      value: String(enhancedStats?.activeContracts || 0),
-      change: String(enhancedStats?.contractsChange || '+0%'),
-      icon: FileText,
-      trend: 'neutral' as const,
-      description: 'عقد ساري المفعول',
-      subtitle: 'العقود الجارية',
-      actionText: 'إدارة العقود',
-      onAction: () => navigate('/contracts')
-    },
-    {
-      title: 'العملاء النشطين',
-      value: String(enhancedStats?.totalCustomers || 0),
-      change: String(enhancedStats?.customersChange || '+0%'),
-      icon: Users,
-      trend: 'up' as const,
-      description: 'عميل مسجل',
-      subtitle: 'قاعدة العملاء',
-      actionText: 'إدارة العملاء',
-      onAction: () => navigate('/customers')
-    },
-    {
-      title: 'الإيرادات الشهرية',
-      value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
-      change: String(enhancedStats?.revenueChange || '+0%'),
-      icon: DollarSign,
-      trend: 'up' as const,
-      description: 'هذا الشهر',
-      subtitle: 'الأداء المالي',
-      actionText: 'التقارير المالية',
-      onAction: () => navigate('/finance'),
-      gradient: true
-    }
-  ];
+  // Enhanced stats configuration with actions based on enabled modules
+  const isVehiclesEnabled = moduleContext?.activeModules.includes('vehicles') || false;
+  const isPropertiesEnabled = moduleContext?.activeModules.includes('properties') || false;
+  
+  const statsConfig = [];
+
+  // Always show customers
+  statsConfig.push({
+    title: 'العملاء النشطين',
+    value: String(enhancedStats?.totalCustomers || 0),
+    change: String(enhancedStats?.customersChange || '+0%'),
+    icon: Users,
+    trend: 'up' as const,
+    description: 'عميل مسجل',
+    subtitle: 'قاعدة العملاء',
+    actionText: 'إدارة العملاء',
+    onAction: () => navigate('/customers')
+  });
+
+  // Show vehicle stats if vehicles module is enabled
+  if (isVehiclesEnabled) {
+    statsConfig.push(
+      {
+        title: 'إجمالي المركبات',
+        value: String(enhancedStats?.totalVehicles || 0),
+        change: String(enhancedStats?.vehiclesChange || '+0%'),
+        icon: Car,
+        trend: 'up' as const,
+        description: 'مركبة في الأسطول',
+        subtitle: 'الأسطول الكامل',
+        actionText: 'إدارة الأسطول',
+        onAction: () => navigate('/fleet'),
+        gradient: true
+      },
+      {
+        title: 'العقود النشطة',
+        value: String(enhancedStats?.activeContracts || 0),
+        change: String(enhancedStats?.contractsChange || '+0%'),
+        icon: FileText,
+        trend: 'neutral' as const,
+        description: 'عقد ساري المفعول',
+        subtitle: 'العقود الجارية',
+        actionText: 'إدارة العقود',
+        onAction: () => navigate('/contracts')
+      }
+    );
+  }
+
+  // Always show revenue
+  statsConfig.push({
+    title: 'الإيرادات الشهرية',
+    value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
+    change: String(enhancedStats?.revenueChange || '+0%'),
+    icon: DollarSign,
+    trend: 'up' as const,
+    description: 'هذا الشهر',
+    subtitle: 'الأداء المالي',
+    actionText: 'التقارير المالية',
+    onAction: () => navigate('/finance'),
+    gradient: true
+  });
 
   // AI Assistant configuration for car rental
   const dashboardAIConfig: AIAssistantConfig = {
@@ -117,24 +130,40 @@ const CarRentalDashboard: React.FC = () => {
       activities: enhancedActivities,
       financialData: smartMetricsData,
       userRole: user?.role,
-      companyName: browsedCompany?.name || 'شركة تأجير السيارات'
+      companyName: browsedCompany?.name || 'شركتك'
     },
     priority: 'high_value',
     enabledFeatures: [
       {
-        id: 'fleet_insights',
-        name: 'تحليل الأسطول',
-        description: 'تحليل ذكي لأداء الأسطول والاستخدام',
+        id: 'dashboard_insights',
+        name: 'تحليل لوحة التحكم',
+        description: 'تحليل ذكي للإحصائيات والبيانات المعروضة',
         primitive: 'data_analysis',
         taskType: 'analyze_data',
         enabled: true
       },
       {
-        id: 'rental_report',
-        name: 'تقارير التأجير',
-        description: 'إنشاء تقارير مفصلة عن عمليات التأجير',
+        id: 'create_report',
+        name: 'إنشاء التقارير',
+        description: 'إنشاء تقارير مخصصة بناءً على البيانات',
         primitive: 'content_creation',
         taskType: 'create_report',
+        enabled: true
+      },
+      {
+        id: 'suggest_actions',
+        name: 'اقتراح الإجراءات',
+        description: 'اقتراح إجراءات لتحسين الأداء',
+        primitive: 'ideation_strategy',
+        taskType: 'suggest_action',
+        enabled: true
+      },
+      {
+        id: 'optimize_workflow',
+        name: 'تحسين سير العمل',
+        description: 'تحليل وتحسين العمليات الحالية',
+        primitive: 'automation',
+        taskType: 'optimize_workflow',
         enabled: true
       }
     ]
