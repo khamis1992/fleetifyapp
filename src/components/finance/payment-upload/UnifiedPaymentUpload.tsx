@@ -67,7 +67,7 @@ export function UnifiedPaymentUpload({
   } = usePaymentContractLinking();
 
   // الحالات المحلية
-  const [currentStep, setCurrentStep] = useState<'mode_selection' | 'upload'>('mode_selection');
+  const [currentStep, setCurrentStep] = useState<'mode_selection' | 'upload'>('upload');
   const [selectedMode, setSelectedMode] = useState<UploadMode>('smart');
   const [uploadedData, setUploadedData] = useState<any[]>([]);
 
@@ -363,12 +363,24 @@ export function UnifiedPaymentUpload({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            نظام رفع المدفوعات الموحد
+            <Brain className="h-5 w-5 text-blue-600" />
+            رفع المدفوعات الذكي
           </DialogTitle>
         </DialogHeader>
         
-        {currentStep === 'mode_selection' ? renderModeSelection() : renderUploadInterface()}
+        <SmartLinkingMode 
+          onUploadComplete={handleFileUpload}
+          downloadTemplate={downloadTemplate}
+          fieldTypes={paymentFieldTypes}
+          requiredFields={paymentRequiredFields}
+          isUploading={isUploading}
+          progress={progress}
+          linkingFunctions={{
+            searchPotentialContracts,
+            validateLinking,
+            linkPaymentToContract
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
