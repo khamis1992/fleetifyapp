@@ -70,7 +70,7 @@ export const useModuleConfig = () => {
       )
     : companyActiveModules; // fallback to company active_modules if no settings exist
 
-  console.log('🔧 [MODULE_CONFIG] Company:', company?.name, 'Business Type:', company?.business_type);
+  console.log('🔧 [MODULE_CONFIG] Company:', company?.id, 'Business Type:', company?.business_type);
   console.log('🔧 [MODULE_CONFIG] Company Active Modules:', companyActiveModules);
   console.log('🔧 [MODULE_CONFIG] Module Settings Count:', moduleSettings?.length || 0);
   console.log('🔧 [MODULE_CONFIG] Final Enabled Modules:', enabledModules);
