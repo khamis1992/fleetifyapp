@@ -1,47 +1,52 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { BusinessType, ModuleName, ModuleSettings, ModuleContext } from '@/types/modules';
 import { MODULE_REGISTRY, BUSINESS_TYPE_MODULES } from '@/modules/moduleRegistry';
 
 // Hook لجلب تكوين الوحدات للشركة الحالية
 export const useModuleConfig = () => {
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
+  
+  console.log('🔧 [MODULE_CONFIG] Company ID:', companyId, 'User company:', user?.company?.id, 'Is Browse Mode:', companyId !== user?.company?.id);
 
   // جلب بيانات الشركة
   const { data: company } = useQuery({
-    queryKey: ['company', user?.company?.id],
+    queryKey: ['company', companyId],
     queryFn: async () => {
-      if (!user?.company?.id) return null;
+      if (!companyId) return null;
       
       const { data, error } = await supabase
         .from('companies')
         .select('id, business_type, active_modules, industry_config, custom_branding')
-        .eq('id', user.company.id)
+        .eq('id', companyId)
         .single();
 
       if (error) throw error;
+      console.log('🔧 [MODULE_CONFIG] Company data fetched:', data);
       return data;
     },
-    enabled: !!user?.company?.id
+    enabled: !!companyId
   });
 
   // جلب إعدادات الوحدات
   const { data: moduleSettings } = useQuery({
-    queryKey: ['module-settings', user?.company?.id],
+    queryKey: ['module-settings', companyId],
     queryFn: async () => {
-      if (!user?.company?.id) return [];
+      if (!companyId) return [];
       
       const { data, error } = await supabase
         .from('module_settings')
         .select('*')
-        .eq('company_id', user.company.id)
+        .eq('company_id', companyId)
         .eq('is_enabled', true);
 
       if (error) throw error;
       return data as ModuleSettings[];
     },
-    enabled: !!user?.company?.id
+    enabled: !!companyId
   });
 
   // تحويل إعدادات الوحدات إلى كائن
