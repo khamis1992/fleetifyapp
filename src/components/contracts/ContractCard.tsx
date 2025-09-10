@@ -96,6 +96,11 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                 <p className="font-bold text-lg">
                   {formatCurrency(contract.contract_amount ?? 0)}
                 </p>
+                {contract.monthly_amount && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    الإيجار الشهري: <span className="font-semibold text-foreground">{formatCurrency(contract.monthly_amount)}</span>
+                  </p>
+                )}
               </div>
             </div>
           </div>
