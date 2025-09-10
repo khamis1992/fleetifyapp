@@ -135,7 +135,7 @@ export const unifyDigits = (input: string, targetType: 'arabic' | 'english' = 'e
  */
 export const getNumberPreferences = (): NumberFormatOptions => {
   return {
-    useArabicDigits: true, // Company preference - can be made dynamic later
+    useArabicDigits: false, // استخدام الأرقام الإنجليزية
     locale: 'ar',
     minimumFractionDigits: 0,
     maximumFractionDigits: 3,
