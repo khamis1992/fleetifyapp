@@ -31,7 +31,7 @@ import {
   PieChart
 } from 'lucide-react';
 import { usePaymentContractLinking } from '@/hooks/usePaymentContractLinking';
-import { EnhancedPaymentsCSVUpload } from './EnhancedPaymentsCSVUpload';
+import { UnifiedPaymentUpload } from './payment-upload/UnifiedPaymentUpload';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -436,7 +436,7 @@ export function LinkedPaymentsDashboard({ className }: LinkedPaymentsDashboardPr
       </Tabs>
       
       {/* نافذة رفع المدفوعات */}
-      <EnhancedPaymentsCSVUpload
+      <UnifiedPaymentUpload
         open={showUploadDialog}
         onOpenChange={setShowUploadDialog}
         onUploadComplete={() => {

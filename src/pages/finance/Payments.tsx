@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { UnifiedPaymentUpload } from "@/components/finance/UnifiedPaymentUpload";
+import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 
