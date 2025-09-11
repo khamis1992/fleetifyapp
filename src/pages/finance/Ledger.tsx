@@ -72,7 +72,7 @@ const Ledger = () => {
               <FileText className="h-6 w-6" />
             </div>
             <div className="text-right">
-              <h1 className="text-3xl font-bold">القيود اليومية ودفتر الأستاذ</h1>
+              <h1 className="text-3xl font-bold">دفتر الأستاذ</h1>
               <p className="text-muted-foreground">إنشاء وإدارة القيود المحاسبية والحركات المالية</p>
             </div>
           </div>
