@@ -31,7 +31,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 import { DemoDataGenerator } from './DemoDataGenerator';
 import { AccountsTreeView } from './AccountsTreeView';
-import { FinanceSystemDiagnostics } from './FinanceSystemDiagnostics';
+
 interface AccountFormData {
   account_code: string;
   account_name: string;
@@ -62,7 +62,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('tree');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  
   
   // تفعيل الصلاحيات الافتراضية
   useDefaultPermissions();
@@ -527,23 +527,9 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                   <Skull className="h-4 w-4" />
                 </Button>
               )}
-              <Button 
-                onClick={() => setShowDiagnostics(true)} 
-                variant="outline" 
-                className="flex items-center gap-2 border-blue-200 text-blue-600 hover:bg-blue-50"
-              >
-                <span>تشخيص النظام</span>
-                <Settings className="h-4 w-4" />
-              </Button>
             </div>
           </div>
 
-          {/* System Diagnostics */}
-          {showDiagnostics && (
-            <div className="mb-6">
-              <FinanceSystemDiagnostics />
-            </div>
-          )}
 
 
           {/* Tree View */}
