@@ -4,6 +4,7 @@ import { InteractiveDashboardCard } from './InteractiveDashboardCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { 
   Calendar, 
   FileText, 
@@ -44,6 +45,8 @@ const getIconComponent = (iconName: string) => {
 
 export function ParallaxRecentActivities({ activities, loading }: ParallaxRecentActivitiesProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { companyId, isBrowsingMode } = useUnifiedCompanyAccess();
+  
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start end', 'end start'],
@@ -51,6 +54,15 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
 
   const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+
+  // إضافة معلومات الشركة الحالية للتأكد من عدم التداخل
+  const companyInfo = React.useMemo(() => {
+    return {
+      id: companyId,
+      name: 'الشركة الحالية',
+      isBrowsing: isBrowsingMode
+    };
+  }, [companyId, isBrowsingMode]);
 
   if (loading) {
     return (
@@ -110,7 +122,7 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
     <motion.div ref={ref} style={{ y, opacity }}>
       <InteractiveDashboardCard
         title="الأنشطة الأخيرة"
-        description="آخر التحديثات في نظامك"
+        description={`آخر التحديثات في ${companyInfo.name}${companyInfo.isBrowsing ? ' (وضع التصفح)' : ''}`}
         icon={Calendar}
         glowColor="hsl(var(--primary))"
         gradient

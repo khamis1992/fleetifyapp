@@ -16,16 +16,25 @@ export interface OptimizedActivity {
 }
 
 export const useOptimizedRecentActivities = () => {
-  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey, isSystemLevel, isBrowsingMode } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['optimized-recent-activities']),
     queryFn: async (): Promise<OptimizedActivity[]> => {
+      // التسجيل التشخيصي لتتبع المشكلة
+      console.log('🔍 [ACTIVITIES] Fetching activities with context:', {
+        companyId,
+        isSystemLevel,
+        isBrowsingMode,
+        timestamp: new Date().toISOString()
+      });
+
       if (!companyId) {
+        console.warn('⚠️ [ACTIVITIES] No company ID available - returning empty array');
         return [];
       }
 
-      // Use optimized query without the problematic foreign key relationship
+      // استعلام صارم مع فلترة مزدوجة
       const { data: activities, error } = await supabase
         .from('system_logs')
         .select(`
@@ -36,7 +45,8 @@ export const useOptimizedRecentActivities = () => {
           level,
           created_at,
           user_id,
-          resource_id
+          resource_id,
+          company_id
         `)
         .eq('company_id', companyId)
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
@@ -44,13 +54,40 @@ export const useOptimizedRecentActivities = () => {
         .limit(15);
 
       if (error) {
-        console.error('Error fetching optimized activities:', error);
+        console.error('❌ [ACTIVITIES] Error fetching activities:', error);
         return [];
       }
 
-      // Transform the database results to our activity format with enhanced vehicle information
+      // فلترة إضافية للتأكد من أن جميع النشاطات تنتمي للشركة الصحيحة
+      const filteredActivities = activities?.filter(activity => {
+        const belongsToCompany = activity.company_id === companyId;
+        if (!belongsToCompany) {
+          console.warn('⚠️ [ACTIVITIES] Found activity from wrong company:', {
+            activityId: activity.id,
+            activityCompanyId: activity.company_id,
+            expectedCompanyId: companyId,
+            category: activity.category,
+            message: activity.message
+          });
+        }
+        return belongsToCompany;
+      }) || [];
+
+      console.log('✅ [ACTIVITIES] Filtered activities:', {
+        totalReturned: activities?.length || 0,
+        filteredCount: filteredActivities.length,
+        companyId,
+        activities: filteredActivities.map(a => ({
+          id: a.id,
+          category: a.category,
+          company_id: a.company_id,
+          created_at: a.created_at
+        }))
+      });
+
+      // تحويل النتائج إلى التنسيق المطلوب مع معلومات محسّنة
       const enhancedActivities = await Promise.all(
-        activities?.map(async (activity) => {
+        filteredActivities.map(async (activity) => {
           let enhancedDescription = activity.message || getActivityDescription(activity);
           
           // If this is a fleet/vehicle activity, try to get vehicle details
