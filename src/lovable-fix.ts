@@ -7,11 +7,12 @@ import React from 'react';
 if (typeof window !== 'undefined') {
   (window as any).React = React;
   
-  // Explicitly ensure hooks are available
-  if (React.useState && React.useEffect && React.useContext) {
+  // Explicitly ensure hooks are available (safe checks)
+  const hasHooks = !!(React && typeof (React as any).useState === 'function' && typeof (React as any).useEffect === 'function' && typeof (React as any).useContext === 'function');
+  if (hasHooks) {
     console.log('🔧 React hooks verified and available globally');
   } else {
-    console.error('🚨 React hooks are missing!');
+    console.error('🚨 React hooks are missing or React is not initialized yet');
   }
 }
 
