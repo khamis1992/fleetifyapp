@@ -4,7 +4,7 @@ import { MiniApp } from "@/components/MiniApp";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
@@ -178,6 +178,16 @@ const App = () => {
               <Route path="owners" element={<PropertyOwners />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="quotations" element={<Quotations />} />
+              {/* Legacy route redirects for finance */}
+              <Route path="chart-of-accounts" element={<Navigate to="/finance/chart-of-accounts" replace />} />
+              <Route path="journal-entries" element={<Navigate to="/finance/journal-entries" replace />} />
+              <Route path="payments" element={<Navigate to="/finance/payments" replace />} />
+              <Route path="account-mappings" element={<Navigate to="/finance/account-mappings" replace />} />
+              <Route path="ledger" element={<Navigate to="/finance/ledger" replace />} />
+              <Route path="treasury" element={<Navigate to="/finance/treasury" replace />} />
+              <Route path="invoices" element={<Navigate to="/finance/invoices" replace />} />
+              <Route path="reports" element={<Navigate to="/finance/reports" replace />} />
+              
               <Route path="finance/*" element={<Finance />} />
               <Route path="hr/employees" element={
                 <AdminRoute>
@@ -311,6 +321,12 @@ const App = () => {
                   <ElectronicSignatureSettings />
                 </AdminRoute>
               } />
+              {/* Legacy route redirects for finance in company browser */}
+              <Route path="chart-of-accounts" element={<Navigate to="/browse-company/finance/chart-of-accounts" replace />} />
+              <Route path="journal-entries" element={<Navigate to="/browse-company/finance/journal-entries" replace />} />
+              <Route path="payments" element={<Navigate to="/browse-company/finance/payments" replace />} />
+              <Route path="account-mappings" element={<Navigate to="/browse-company/finance/account-mappings" replace />} />
+              
               <Route path="finance/*" element={<Finance />} />
               <Route path="hr/employees" element={
                 <AdminRoute>
