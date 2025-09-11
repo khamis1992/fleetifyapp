@@ -12,7 +12,7 @@ import {
   Calculator
 } from 'lucide-react';
 import { PropertyStats } from '../types';
-import { useCurrencyFormatter } from '@/modules/core/hooks/useCurrencyFormatter';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface PropertyStatsCardsProps {
   stats: PropertyStats;
