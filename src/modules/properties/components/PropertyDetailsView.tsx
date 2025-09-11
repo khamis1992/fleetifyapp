@@ -29,10 +29,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
+  DollarSign,
 } from 'lucide-react';
 import { PropertyStatusBadge } from './PropertyStatusBadge';
+import { PropertyAccountingIntegration } from '@/components/property/PropertyAccountingIntegration';
 import { useCurrencyFormatter } from '@/modules/core/hooks/useCurrencyFormatter';
 import { formatDateInGregorian } from '@/modules/core/utils/dateUtils';
+import { usePropertyContracts, usePropertyPayments } from '../hooks';
 
 interface PropertyDetailsViewProps {
   property: Property;
@@ -47,6 +50,10 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { formatCurrency } = useCurrencyFormatter();
+  
+  // Get property contracts and payments
+  const { data: contracts = [] } = usePropertyContracts(property.id);
+  const { data: payments = [] } = usePropertyPayments();
 
   const propertyTypeLabels = {
     apartment: 'شقة',
@@ -438,6 +445,45 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* قسم التكامل المحاسبي */}
+        {(contracts.length > 0 || payments.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                التكامل المحاسبي
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* عرض العقود النشطة مع قيودها المحاسبية */}
+                {contracts.filter(c => c.status === 'active').map((contract) => (
+                  <PropertyAccountingIntegration
+                    key={contract.id}
+                    contract={contract}
+                    onViewJournalEntry={(id) => {
+                      // Navigate to journal entry
+                      window.open(`/finance/journal-entries/${id}`, '_blank');
+                    }}
+                  />
+                ))}
+                
+                {/* عرض آخر الدفعات مع قيودها المحاسبية */}
+                {payments.slice(0, 3).map((payment) => (
+                  <PropertyAccountingIntegration
+                    key={payment.id}
+                    payment={payment}
+                    onViewJournalEntry={(id) => {
+                      // Navigate to journal entry
+                      window.open(`/finance/journal-entries/${id}`, '_blank');
+                    }}
+                  />
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
