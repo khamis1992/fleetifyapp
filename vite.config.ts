@@ -17,21 +17,16 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       react: path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom')
     },
     dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
   },
   optimizeDeps: {
-    include: [
+    exclude: [
       'react',
       'react-dom',
-      'react/jsx-runtime',
-      'react-router-dom',
-      '@tanstack/react-query',
-      'next-themes'
+      'react/jsx-runtime'
     ],
-    force: true,
     esbuildOptions: {
       logOverride: {
         'this-is-undefined-in-esm': 'silent',
