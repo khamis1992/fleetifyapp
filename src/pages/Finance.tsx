@@ -37,6 +37,7 @@ import Budgets from "./finance/Budgets"
 import Vendors from "./finance/Vendors"
 import FinancialAnalysis from "./finance/FinancialAnalysis"
 import AccountMappings from "./finance/AccountMappings"
+import JournalEntries from "./finance/JournalEntries"
 import JournalEntriesSettings from "./finance/settings/JournalEntriesSettings"
 import AccountsSettings from "./finance/settings/AccountsSettings"
 import CostCentersSettings from "./finance/settings/CostCentersSettings"
@@ -351,6 +352,14 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.payments.view">
             <Payments />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="journal-entries" 
+        element={
+          <ProtectedFinanceRoute permission="finance.ledger.view">
+            <JournalEntries />
           </ProtectedFinanceRoute>
         } 
       />
