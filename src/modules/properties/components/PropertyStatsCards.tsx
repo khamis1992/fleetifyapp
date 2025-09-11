@@ -134,7 +134,7 @@ export const PropertyStatsCards: React.FC<PropertyStatsCardsProps> = ({
             <div className="text-2xl font-bold">
               {formatCurrency(stats.average_rent_per_sqm)}
             </div>
-            <p className="text-xs text-muted-foreground">ريال / م²</p>
+            <p className="text-xs text-muted-foreground">{formatCurrency(1).replace(/[0-9.,\s]/g, '').trim()} / م²</p>
           </CardContent>
         </Card>
 

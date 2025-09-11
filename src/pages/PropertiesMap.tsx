@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { MapPin, Filter, Search, Building, Home, Warehouse } from 'lucide-react'
 import { cn } from '@/lib/utils';
 
 const PropertyMapView: React.FC = () => {
+  const { formatCurrency } = useCurrencyFormatter();
   // Mock data for demonstration
   const mockProperties = [
     {
@@ -267,7 +269,7 @@ const PropertyMapView: React.FC = () => {
                           </Badge>
                         </div>
                         <p className="text-sm font-medium text-primary">
-                          {property.price} د.ك / شهرياً
+                          {formatCurrency(property.price)} / شهرياً
                         </p>
                         {property.tenantName && (
                           <p className="text-xs text-muted-foreground mt-1">

@@ -477,7 +477,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 name="rental_price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>سعر الإيجار (ريال شهرياً)</FormLabel>
+                    <FormLabel>سعر الإيجار شهرياً</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
