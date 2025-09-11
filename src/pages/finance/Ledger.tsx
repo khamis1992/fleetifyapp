@@ -170,7 +170,7 @@ const Ledger = () => {
                       <div className="flex items-center gap-6 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-4 w-4" />
-                          التاريخ: {new Date(entry.date).toLocaleDateString('ar-SA')}
+                          التاريخ: {new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}
                         </span>
                         <span>المرجع: {entry.reference}</span>
                       </div>
