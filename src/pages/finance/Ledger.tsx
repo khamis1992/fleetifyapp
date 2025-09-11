@@ -285,12 +285,6 @@ const Ledger = () => {
                 </Button>
                 
                 <Button variant="outline" asChild>
-                  <Link to="/finance/payments">
-                    المدفوعات
-                  </Link>
-                </Button>
-                
-                <Button variant="outline" asChild>
                   <Link to="/finance/dashboard">
                     الوحة المالية
                   </Link>

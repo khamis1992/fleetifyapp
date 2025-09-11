@@ -351,8 +351,21 @@ export function AppSidebar() {
                      <FileText className="h-4 w-4" />
                      {(!collapsed || isMobile) && <span className="font-medium">العقود</span>}
                    </NavLink>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                {/* Payments Section */}
+                <AdminOnly hideIfNoAccess>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="h-10">
+                      <NavLink to="/finance/payments" className={getNavClassName}>
+                        <CreditCard className="h-4 w-4" />
+                        {(!collapsed || isMobile) && <span className="font-medium">المدفوعات</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </AdminOnly>
+                
                
                 {/* Finance Section with Submenu */}
                 <AdminOnly hideIfNoAccess>
