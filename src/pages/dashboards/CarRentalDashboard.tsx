@@ -6,7 +6,6 @@ import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useOptimizedDashboardStats } from '@/hooks/useOptimizedDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
-import { ActivityFilter } from '@/components/finance/ActivityFilter';
 import { useModuleConfig } from '@/modules/core/hooks';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
@@ -27,7 +26,6 @@ const CarRentalDashboard: React.FC = () => {
   const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('car_rental');
-  const [activityFilter, setActivityFilter] = React.useState<'car_rental' | 'real_estate' | 'all'>('car_rental');
   const { formatCurrency } = useCurrencyFormatter();
   const { moduleContext } = useModuleConfig();
   const navigate = useNavigate();

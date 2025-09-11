@@ -6,7 +6,6 @@ import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useRealEstateDashboardStats } from '@/hooks/useRealEstateDashboardStats';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
-import { ActivityFilter } from '@/components/finance/ActivityFilter';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
 import { PropertyStatsCards } from '@/modules/properties/components/PropertyStatsCards';
@@ -29,7 +28,6 @@ const RealEstateDashboard: React.FC = () => {
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('real_estate');
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
-  const [activityFilter, setActivityFilter] = React.useState<'car_rental' | 'real_estate' | 'all'>('real_estate');
 
   // Convert real estate data for SmartMetricsPanel
   const smartMetricsData = realEstateStats ? {
@@ -115,19 +113,6 @@ const RealEstateDashboard: React.FC = () => {
           <RealEstateQuickActions />
         </motion.div>
 
-        {/* Activity Filter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <ActivityFilter
-            value={activityFilter}
-            onValueChange={setActivityFilter}
-            showDescription={true}
-            className="mb-8"
-          />
-        </motion.div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
