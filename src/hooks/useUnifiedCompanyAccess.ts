@@ -49,7 +49,6 @@ export const useUnifiedCompanyAccess = () => {
 
     // First check authentication state
     if (loading) {
-      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Auth still loading...');
       return {
         ...defaultReturn,
         isAuthenticating: true,
@@ -59,18 +58,11 @@ export const useUnifiedCompanyAccess = () => {
     }
 
     if (!user || !session) {
-      console.log('❌ [UNIFIED_COMPANY_ACCESS] No authenticated user or session');
       return defaultReturn;
     }
 
     // Extract company_id safely - try multiple sources
     const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
-    console.log('🔧 [UNIFIED_COMPANY_ACCESS] User company extraction:', {
-      userId: user?.id,
-      userCompanyFromCompany: user?.company?.id,
-      userCompanyFromDirect: (user as any)?.company_id,
-      finalCompanyId: userCompanyId
-    });
 
     const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
     const rolesNormalized = Array.from(
@@ -78,32 +70,9 @@ export const useUnifiedCompanyAccess = () => {
         rawRoles.map((r: any) => String(r || '').trim().toLowerCase()).filter(Boolean)
       )
     ) as string[];
-    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Computing access context:', {
-      userId: user?.id,
-      userCompanyId: userCompanyId,
-      userRoles: rolesNormalized,
-      isBrowsingMode,
-      browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null
-    });
 
     // If in browsing mode, override context with browsed company
     let context = getCompanyScopeContext(user);
-    
-    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Original context:', {
-      companyId: context.companyId,
-      isSystemLevel: context.isSystemLevel,
-      isCompanyScoped: context.isCompanyScoped,
-      userRoles: context.user?.roles,
-      userCompanyId: userCompanyId
-    });
-    
-    // تسجيل معلومات البراوز مود
-    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Browse mode details:', {
-      isBrowsingMode,
-      browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-      isSuperAdmin: rolesNormalized.includes('super_admin'),
-      isBrowsingOwnCompany: browsedCompany?.id === userCompanyId
-    });
     
     // Store original user roles before modifying context
     const originalUserRoles = rolesNormalized;
@@ -112,21 +81,13 @@ export const useUnifiedCompanyAccess = () => {
     const isBrowsingOwnCompany = isBrowsingMode && browsedCompany && browsedCompany.id === userCompanyId;
     
     if (isBrowsingMode && browsedCompany && rolesNormalized.includes('super_admin') && !isBrowsingOwnCompany) {
-      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Overriding context for browse mode (different company)');
       context = {
         ...context,
         companyId: browsedCompany.id,
         isSystemLevel: false, // Act as if we're scoped to the browsed company
         isCompanyScoped: true
       };
-      
-      console.log('🔧 [UNIFIED_COMPANY_ACCESS] New context for browse mode:', {
-        companyId: context.companyId,
-        isSystemLevel: context.isSystemLevel,
-        isCompanyScoped: context.isCompanyScoped
-      });
     } else if (isBrowsingOwnCompany) {
-      console.log('🔧 [UNIFIED_COMPANY_ACCESS] Super admin browsing own company - maintaining system level access');
       // Keep original context but update company ID to ensure consistency
       context = {
         ...context,
@@ -135,8 +96,6 @@ export const useUnifiedCompanyAccess = () => {
     }
     
     const filter = getCompanyFilter(context, false, false); // Default: show own company only
-    
-    console.log('🔧 [UNIFIED_COMPANY_ACCESS] Final filter:', filter);
     
     return {
       // Core context information
@@ -178,16 +137,8 @@ export const useUnifiedCompanyAccess = () => {
       },
       
       // Filter helpers with global view control
-      getFilterForOwnCompany: () => {
-        const ownFilter = getCompanyFilter(context, true, false);
-        console.log('🔍 [getFilterForOwnCompany] Filter result:', ownFilter, 'for companyId:', context.companyId);
-        return ownFilter;
-      },
-      getFilterForGlobalView: () => {
-        const globalFilter = getCompanyFilter(context, false, true);
-        console.log('🌐 [getFilterForGlobalView] Filter result:', globalFilter);
-        return globalFilter;
-      },
+      getFilterForOwnCompany: () => getCompanyFilter(context, true, false),
+      getFilterForGlobalView: () => getCompanyFilter(context, false, true),
       
       // Query key generation for React Query
       getQueryKey: (baseKey: string[], additionalKeys: unknown[] = []) => {
@@ -204,7 +155,7 @@ export const useUnifiedCompanyAccess = () => {
       isAuthenticating: false,
       authError: null
     };
-  }, [user, session, loading, isBrowsingMode, browsedCompany]);
+  }, [user?.id, user?.company?.id, session?.access_token, loading, isBrowsingMode, browsedCompany?.id]);
 
   return result;
 };
