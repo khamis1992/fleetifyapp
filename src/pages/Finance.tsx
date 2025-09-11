@@ -38,6 +38,7 @@ import Vendors from "./finance/Vendors"
 import FinancialAnalysis from "./finance/FinancialAnalysis"
 import AccountMappings from "./finance/AccountMappings"
 import JournalEntries from "./finance/JournalEntries"
+import NewEntry from "./finance/NewEntry"
 import JournalEntriesSettings from "./finance/settings/JournalEntriesSettings"
 import AccountsSettings from "./finance/settings/AccountsSettings"
 import CostCentersSettings from "./finance/settings/CostCentersSettings"
@@ -359,7 +360,7 @@ const Finance = () => {
         path="journal-entries" 
         element={
           <ProtectedFinanceRoute permission="finance.ledger.view">
-            <JournalEntries />
+            <Ledger />
           </ProtectedFinanceRoute>
         } 
       />
@@ -424,6 +425,14 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.accounts.write">
             <AccountingWizard />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="new-entry" 
+        element={
+          <ProtectedFinanceRoute permission="finance.ledger.write">
+            <NewEntry />
           </ProtectedFinanceRoute>
         } 
       />

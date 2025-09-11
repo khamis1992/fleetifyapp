@@ -73,16 +73,22 @@ const Ledger = () => {
               <FileText className="h-6 w-6" />
             </div>
             <div className="text-right">
-              <h1 className="text-3xl font-bold">دفتر الأستاذ</h1>
-              <p className="text-muted-foreground">إدارة القيود المحاسبية والحركات المالية</p>
+              <h1 className="text-3xl font-bold">القيود اليومية ودفتر الأستاذ</h1>
+              <p className="text-muted-foreground">إنشاء وإدارة القيود المحاسبية والحركات المالية</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <Button asChild>
+            <Button size="lg" className="bg-gradient-primary hover:bg-gradient-primary/90">
+              <Link to="/finance/new-entry" className="flex items-center">
+                <Plus className="h-5 w-5 ml-2" />
+                إنشاء قيد جديد
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link to="/finance/chart-of-accounts">
-                <Plus className="h-4 w-4 ml-2" />
-                قيد جديد
+                <FileText className="h-4 w-4 ml-2" />
+                دليل الحسابات
               </Link>
             </Button>
           </div>
