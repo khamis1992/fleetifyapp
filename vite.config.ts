@@ -8,9 +8,6 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    hmr: {
-      overlay: false
-    }
   },
   plugins: [
     react(),
@@ -19,34 +16,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  css: {
-    devSourcemap: true,
-    preprocessorOptions: {
-      css: {
-        charset: false
-      }
-    }
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom'],
-    force: true
-  },
-  build: {
-    cssCodeSplit: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-        },
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return 'assets/[name].[hash].css';
-          }
-          return 'assets/[name].[hash].[ext]';
-        }
-      },
     },
   },
 }));
