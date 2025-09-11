@@ -18,9 +18,9 @@ const navigationItems = [
     icon: Home 
   },
   { 
-    name: 'العملاء', 
-    href: '/customers', 
-    icon: Users 
+    name: 'العقارات', 
+    href: '/properties', 
+    icon: Home 
   },
   { 
     name: 'العقود', 

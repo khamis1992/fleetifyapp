@@ -13,6 +13,8 @@ import RealEstateQuickActions from '@/components/dashboard/RealEstateQuickAction
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
+import { AdvancedPropertyAlerts } from '@/components/property/AdvancedPropertyAlerts';
+import { PropertyContractsCalendar } from '@/components/property/PropertyContractsCalendar';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -135,7 +137,7 @@ const RealEstateDashboard: React.FC = () => {
               financialData={smartMetricsData} 
               loading={financialLoading} 
             />
-            <DocumentExpiryAlerts />
+            <AdvancedPropertyAlerts />
           </motion.div>
         </div>
 
