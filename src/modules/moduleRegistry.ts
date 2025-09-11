@@ -60,7 +60,7 @@ export const MODULE_REGISTRY: Record<ModuleName, ModuleConfig> = {
     description_ar: 'إدارة العقارات',
     routes: [
       { path: '/properties', label: 'Properties', label_ar: 'العقارات', icon: 'Building' },
-      { path: '/property-map', label: 'Property Map', label_ar: 'خريطة العقارات', icon: 'Map' },
+      { path: '/properties/map', label: 'Property Map', label_ar: 'خريطة العقارات', icon: 'Map' },
       { path: '/owners', label: 'Property Owners', label_ar: 'ملاك العقارات', icon: 'Users' }
     ],
     permissions: ['properties.view', 'properties.manage'],

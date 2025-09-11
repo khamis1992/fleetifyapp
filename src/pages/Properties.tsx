@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ModuleLayout } from '@/modules/core/components/ModuleLayout';
@@ -27,12 +27,20 @@ export default function Properties() {
               إدارة شاملة للعقارات والملاك والعقود
             </p>
           </div>
-          <Link to="/properties/add">
-            <Button size="lg" className="gap-2">
-              <Plus className="h-4 w-4" />
-              إضافة عقار جديد
-            </Button>
-          </Link>
+          <div className="flex gap-3">
+            <Link to="/properties/map">
+              <Button size="lg" variant="outline" className="gap-2">
+                <Map className="h-4 w-4" />
+                خريطة العقارات
+              </Button>
+            </Link>
+            <Link to="/properties/add">
+              <Button size="lg" className="gap-2">
+                <Plus className="h-4 w-4" />
+                إضافة عقار جديد
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Statistics Cards */}
