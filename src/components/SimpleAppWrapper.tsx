@@ -11,7 +11,7 @@ export class SimpleAppWrapper extends React.Component<SimpleAppWrapperProps> {
     super(props);
     
     // التحقق الفوري من React
-    if (!React || typeof React.useState !== 'function') {
+    if (!React || typeof React.useState !== 'function' || typeof React.useEffect !== 'function') {
       console.error('🚨 SimpleAppWrapper: React hooks not available');
       throw new Error('React hooks are not available');
     }
@@ -30,8 +30,12 @@ export const ensureReactAvailable = (): boolean => {
   console.log('🔧 React:', !!React);
   console.log('🔧 React.useState:', typeof React?.useState);
   console.log('🔧 React.useEffect:', typeof React?.useEffect);
+  console.log('🔧 React.useContext:', typeof React?.useContext);
   
-  return !!(React && typeof React.useState === 'function');
+  return !!(React && 
+           typeof React.useState === 'function' && 
+           typeof React.useEffect === 'function' && 
+           typeof React.useContext === 'function');
 };
 
 export default SimpleAppWrapper;

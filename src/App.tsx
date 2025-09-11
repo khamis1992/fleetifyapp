@@ -78,8 +78,8 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <MiniApp>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <CompanyContextProvider>
               <PWAInstallPrompt />
@@ -369,8 +369,8 @@ const App = () => {
             </BrowserRouter>
               </CompanyContextProvider>
             </AuthProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
     </MiniApp>
   );
 };
