@@ -60,6 +60,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isSigningOut]);
 
+  const refreshUser = useCallback(async () => {
+    if (session?.user) {
+      try {
+        const authUser = await authService.getCurrentUser();
+        setUser(authUser);
+      } catch (error) {
+        console.error('📝 [AUTH_CONTEXT] Error refreshing user:', error);
+      }
+    }
+  }, [session]);
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -68,6 +79,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (event !== 'SIGNED_OUT' || !isSigningOut) {
           setSessionError(null);
+        }
+        
+        if (event === 'USER_UPDATED' && session) {
+          console.log('📝 [AUTH_CONTEXT] User updated, refreshing...');
+          setSession(session);
+          setTimeout(async () => {
+            try {
+              const authUser = await authService.getCurrentUser();
+              setUser(authUser);
+            } catch (error) {
+              console.error('📝 [AUTH_CONTEXT] Error fetching updated user:', error);
+              setUser(session.user as AuthUser);
+            }
+          }, 0);
+          return;
         }
         
         if (event === 'SIGNED_OUT') {
@@ -175,7 +201,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isSigningOut, validateSession]);
+  }, [isSigningOut, validateSession, refreshUser]);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     return authService.signUp(email, password, userData);
@@ -238,7 +264,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateProfile,
     changePassword,
     sessionError,
-    validateSession: () => validateSession(session)
+    validateSession: () => validateSession(session),
+    refreshUser
   };
 
   return (

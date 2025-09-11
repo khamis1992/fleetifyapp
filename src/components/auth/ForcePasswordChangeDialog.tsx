@@ -9,7 +9,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 const ForcePasswordChangeDialog: React.FC = () => {
   const { user } = useAuth();
-  const requiresChange = React.useMemo(() => Boolean(user?.user_metadata?.requires_password_change), [user]);
+  const requiresChange = React.useMemo(() => {
+    const meta = user?.user_metadata?.requires_password_change;
+    return meta === true || meta === 'true' || meta === 1;
+  }, [user]);
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
@@ -31,15 +34,33 @@ const ForcePasswordChangeDialog: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      
+      // Step 1: Update password
+      const passwordResult = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      if (passwordResult.error) throw passwordResult.error;
+      
+      // Step 2: Update metadata
+      const metadataResult = await supabase.auth.updateUser({
         data: { requires_password_change: false }
       });
-      if (error) throw error;
+      if (metadataResult.error) throw metadataResult.error;
+      
+      // Step 3: Refresh user to ensure metadata is updated
+      await supabase.auth.getUser();
+      
       toast({ title: 'تم التحديث', description: 'تم تغيير كلمة المرور بنجاح' });
       setCompleted(true);
-    } catch (err) {
-      toast({ title: 'خطأ', description: 'تعذر تغيير كلمة المرور', variant: 'destructive' });
+      
+      // Force refresh as fallback
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+    } catch (err: any) {
+      const errorMessage = err?.message || 'تعذر تغيير كلمة المرور';
+      toast({ title: 'خطأ', description: errorMessage, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -63,7 +84,9 @@ const ForcePasswordChangeDialog: React.FC = () => {
             <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
             <Input id="confirmPassword" type="password" dir="ltr" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           </div>
-          <Button type="submit" disabled={submitting} className="w-full">حفظ وتابع</Button>
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? 'جاري الحفظ...' : 'حفظ وتابع'}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

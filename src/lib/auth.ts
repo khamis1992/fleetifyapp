@@ -32,6 +32,7 @@ export interface AuthContextType {
   changePassword: (newPassword: string) => Promise<{ error: any }>;
   sessionError?: string | null;
   validateSession?: () => Promise<boolean>;
+  refreshUser?: () => Promise<void>;
 }
 
 export const authService = {
