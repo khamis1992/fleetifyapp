@@ -127,8 +127,8 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
         glowColor="hsl(var(--primary))"
         gradient
       >
-        <div className="space-y-4">
-          {activities.map((activity, index) => {
+        <div className="space-y-3">
+          {activities.slice(0, 4).map((activity, index) => {
             const IconComponent = getIconComponent(activity.icon);
             return (
               <motion.div
@@ -148,25 +148,25 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
                 }}
                 className="group relative"
               >
-                <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-card/50 to-muted/20 rounded-xl border border-border/50 hover:border-primary/20 transition-all duration-300 backdrop-blur-sm">
+                <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-card/50 to-muted/20 rounded-lg border border-border/50 hover:border-primary/20 transition-all duration-300 backdrop-blur-sm">
                   {/* Animated icon container */}
                   <motion.div
-                    className={`p-2.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-all duration-300 ${activity.color}`}
+                    className={`p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-all duration-300 ${activity.color}`}
                     whileHover={{ 
                       scale: 1.1, 
                       rotate: 10,
                       boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
                     }}
                   >
-                    <IconComponent className="h-4 w-4 text-primary" />
+                    <IconComponent className="h-3.5 w-3.5 text-primary" />
                   </motion.div>
 
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge variant="secondary" className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary border-primary/20">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Badge variant="secondary" className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary border-primary/20">
                         {activity.type}
                       </Badge>
-                      <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full backdrop-blur-sm">
+                      <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full backdrop-blur-sm">
                         {activity.time}
                       </span>
                       {activity.priority === 'high' && (
@@ -178,7 +178,7 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
                       )}
                     </div>
                     
-                    <p className="text-sm text-foreground/90 leading-relaxed mb-2">{activity.description}</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed mb-1.5">{activity.description}</p>
                     
                     {activity.amount && (
                       <motion.p 
@@ -203,7 +203,7 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
 
                 {/* Animated border on hover */}
                 <motion.div
-                  className="absolute inset-0 rounded-xl border-2 border-primary/0 group-hover:border-primary/30 transition-colors duration-300"
+                  className="absolute inset-0 rounded-lg border-2 border-primary/0 group-hover:border-primary/30 transition-colors duration-300"
                   style={{ transformStyle: 'preserve-3d' }}
                 />
               </motion.div>
@@ -213,12 +213,12 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
 
         {/* View all button */}
         <motion.div
-          className="mt-6 pt-4 border-t border-border/50"
+          className="mt-4 pt-3 border-t border-border/50"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Button variant="ghost" className="w-full group">
+          <Button variant="ghost" size="sm" className="w-full group">
             عرض جميع الأنشطة
             <ArrowRight className="h-4 w-4 mr-2 group-hover:translate-x-1 transition-transform" />
           </Button>
