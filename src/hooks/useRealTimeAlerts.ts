@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/hooks/use-toast';
+import { usePropertyAlerts } from '@/hooks/usePropertyAlerts';
 
 export interface RealTimeAlert {
   id: string;
-  type: 'smart' | 'budget' | 'vehicle' | 'system' | 'notification';
+  type: 'smart' | 'budget' | 'vehicle' | 'property' | 'system' | 'notification';
   severity: 'low' | 'medium' | 'high' | 'critical';
   title: string;
   message: string;
@@ -19,6 +20,9 @@ export const useRealTimeAlerts = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubscribed, setIsSubscribed] = useState(false);
+  
+  // Get property alerts
+  const { data: propertyAlerts = [] } = usePropertyAlerts();
 
   // Query for fetching all alerts
   const { data: alerts = [], isLoading } = useQuery({
@@ -104,6 +108,28 @@ export const useRealTimeAlerts = () => {
           });
         });
       }
+
+      // Add property alerts to real-time alerts
+      propertyAlerts.forEach(alert => {
+        if (!alert.acknowledged) {
+          allAlerts.push({
+            id: alert.id,
+            type: 'property',
+            severity: alert.priority === 'high' ? 'high' : 'medium',
+            title: alert.title,
+            message: alert.description,
+            created_at: alert.createdAt.toISOString(),
+            data: {
+              property_id: alert.propertyId,
+              contract_id: alert.contractId,
+              alert_type: alert.type,
+              due_date: alert.dueDate,
+              days_remaining: alert.daysRemaining,
+              amount: alert.amount
+            }
+          });
+        }
+      });
 
       // Sort by creation date (newest first)
       return allAlerts.sort((a, b) => 
@@ -226,6 +252,10 @@ export const useRealTimeAlerts = () => {
           .from('user_notifications')
           .update({ is_read: true, read_at: new Date().toISOString() })
           .eq('id', alertId);
+      } else if (alertType === 'property') {
+        // For property alerts, we'll mark them as acknowledged locally
+        // since they don't have a direct table acknowledgment field
+        console.log('Property alert dismissed:', alertId);
       }
       
       // Refresh alerts - invalidate all related query keys for synchronization
@@ -236,6 +266,7 @@ export const useRealTimeAlerts = () => {
       queryClient.invalidateQueries({ queryKey: getQueryKey(['notifications']) });
       queryClient.invalidateQueries({ queryKey: getQueryKey(['budget-alerts']) });
       queryClient.invalidateQueries({ queryKey: getQueryKey(['vehicle-alerts']) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(['property-alerts']) });
     } catch (error) {
       console.error('Error dismissing alert:', error);
       toast({

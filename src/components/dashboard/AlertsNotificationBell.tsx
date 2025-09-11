@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   DollarSign,
   Car,
+  Building,
   X
 } from 'lucide-react';
 import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
@@ -35,6 +36,7 @@ export const AlertsNotificationBell: React.FC = () => {
     if (severity === 'critical') return AlertTriangle;
     if (type === 'budget') return DollarSign;
     if (type === 'vehicle') return Car;
+    if (type === 'property') return Building;
     return Bell;
   };
 
