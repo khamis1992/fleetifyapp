@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { usePayments } from "@/hooks/useFinance";
 import { PaymentForm } from "@/components/finance/PaymentForm";
+import { ProtectedFinanceRoute } from "@/components/finance/ProtectedFinanceRoute";
+import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
 import { PaymentAnalyticsCard } from "@/components/finance/PaymentAnalyticsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,8 +105,19 @@ const Payments = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
+    <ProtectedFinanceRoute 
+      permission="finance.payments.view"
+      title="المدفوعات"
+    >
+      <FinanceErrorBoundary
+        error={error ? new Error(error.message || 'خطأ في تحميل المدفوعات') : null}
+        isLoading={isLoading}
+        onRetry={() => window.location.reload()}
+        title="خطأ في المدفوعات"
+        context="صفحة المدفوعات"
+      >
+        <div className="container mx-auto p-6">
+          <div className="space-y-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -544,8 +557,10 @@ const Payments = () => {
             )}
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+          </div>
+        </div>
+      </FinanceErrorBoundary>
+    </ProtectedFinanceRoute>
   );
 };
 

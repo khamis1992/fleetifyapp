@@ -44,6 +44,7 @@ import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSetti
 import AccountingWizard from "./finance/AccountingWizard"
 import FinancialCalculator from "./finance/Calculator"
 import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
+import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/components/finance/ProtectedFinanceRoute"
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()
@@ -288,61 +289,8 @@ const FinanceModules = () => {
   )
 }
 
-// Protected Route Component
-const ProtectedFinanceRoute = ({ children, permission }: { children: React.ReactNode, permission?: string }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const permissionCheck = usePermissionCheck(permission || 'finance.view');
-
-  useEffect(() => {
-    if (!user) {
-      // User not authenticated - will redirect
-    } else if (!user.profile?.company_id) {
-      toast({
-        title: "خطأ في البيانات",
-        description: "لا توجد بيانات شركة مرتبطة بحسابك. يرجى التواصل مع المدير.",
-        variant: "destructive",
-      });
-    }
-  }, [user, toast]);
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (!user.profile?.company_id) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <p className="text-destructive font-medium">خطأ في البيانات</p>
-        <p className="text-muted-foreground text-center">
-          لا توجد بيانات شركة مرتبطة بحسابك.<br />
-          يرجى التواصل مع المدير لحل هذه المشكلة.
-        </p>
-      </div>
-    );
-  }
-
-  if (permission && permissionCheck.isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (permission && permissionCheck.data && !permissionCheck.data.hasPermission) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <p className="text-destructive font-medium">غير مخول</p>
-        <p className="text-muted-foreground text-center">
-          {permissionCheck.data.reason || 'ليس لديك صلاحية للوصول لهذه الصفحة'}
-        </p>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-};
+// استخدام النظام الجديد للحماية
+const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
 
 const Finance = () => {
   return (
