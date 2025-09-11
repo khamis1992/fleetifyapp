@@ -7248,6 +7248,7 @@ export type Database = {
       }
       property_contracts: {
         Row: {
+          account_id: string | null
           auto_renewal: boolean | null
           commission_amount: number | null
           company_id: string
@@ -7262,6 +7263,7 @@ export type Database = {
           id: string
           insurance_required: boolean | null
           is_active: boolean | null
+          journal_entry_id: string | null
           late_fee_rate: number | null
           maintenance_responsibility: string | null
           notes: string | null
@@ -7280,6 +7282,7 @@ export type Database = {
           utilities_included: boolean | null
         }
         Insert: {
+          account_id?: string | null
           auto_renewal?: boolean | null
           commission_amount?: number | null
           company_id: string
@@ -7294,6 +7297,7 @@ export type Database = {
           id?: string
           insurance_required?: boolean | null
           is_active?: boolean | null
+          journal_entry_id?: string | null
           late_fee_rate?: number | null
           maintenance_responsibility?: string | null
           notes?: string | null
@@ -7312,6 +7316,7 @@ export type Database = {
           utilities_included?: boolean | null
         }
         Update: {
+          account_id?: string | null
           auto_renewal?: boolean | null
           commission_amount?: number | null
           company_id?: string
@@ -7326,6 +7331,7 @@ export type Database = {
           id?: string
           insurance_required?: boolean | null
           is_active?: boolean | null
+          journal_entry_id?: string | null
           late_fee_rate?: number | null
           maintenance_responsibility?: string | null
           notes?: string | null
@@ -7345,10 +7351,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "property_contracts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_contracts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_linkable_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "property_contracts_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_contracts_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
             referencedColumns: ["id"]
           },
           {
@@ -7440,6 +7467,7 @@ export type Database = {
           currency: string | null
           due_date: string
           id: string
+          journal_entry_id: string | null
           late_fee: number | null
           notes: string | null
           payment_date: string | null
@@ -7460,6 +7488,7 @@ export type Database = {
           currency?: string | null
           due_date: string
           id?: string
+          journal_entry_id?: string | null
           late_fee?: number | null
           notes?: string | null
           payment_date?: string | null
@@ -7480,6 +7509,7 @@ export type Database = {
           currency?: string | null
           due_date?: string
           id?: string
+          journal_entry_id?: string | null
           late_fee?: number | null
           notes?: string | null
           payment_date?: string | null
@@ -7498,6 +7528,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_payments_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
             referencedColumns: ["id"]
           },
           {
@@ -11522,6 +11559,14 @@ export type Database = {
       }
       create_periodic_invoice_safely: {
         Args: { contract_id_param: string }
+        Returns: string
+      }
+      create_property_contract_journal_entry: {
+        Args: { contract_id_param: string }
+        Returns: string
+      }
+      create_property_payment_journal_entry: {
+        Args: { payment_id_param: string }
         Returns: string
       }
       create_smart_account: {

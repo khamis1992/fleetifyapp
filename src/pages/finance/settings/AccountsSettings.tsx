@@ -87,6 +87,19 @@ export default function AccountsSettings() {
             </CardDescription>
           </CardHeader>
         </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" 
+              onClick={() => navigate("/settings/customer-account-settings")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              إعدادات حسابات العملاء
+            </CardTitle>
+            <CardDescription>
+              إعدادات إنشاء وربط الحسابات المحاسبية للعملاء والمستأجرين
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
 
       <Card>
@@ -98,10 +111,10 @@ export default function AccountsSettings() {
             <div>
               <h4 className="font-semibold mb-2">أنواع الحسابات</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• الأصول (Assets): النقد، البنوك، المخزون</li>
-                <li>• الخصوم (Liabilities): الذمم الدائنة، القروض</li>
-                <li>• الإيرادات (Revenue): مبيعات، خدمات</li>
-                <li>• المصروفات (Expenses): رواتب، إيجار</li>
+                <li>• الأصول (Assets): النقد، البنوك، المخزون، المدينين</li>
+                <li>• الخصوم (Liabilities): الذمم الدائنة، القروض، الودائع</li>
+                <li>• الإيرادات (Revenue): إيجار السيارات، إيجار العقارات، خدمات</li>
+                <li>• المصروفات (Expenses): رواتب، إيجار، صيانة، مصاريف عامة</li>
               </ul>
             </div>
             <div>

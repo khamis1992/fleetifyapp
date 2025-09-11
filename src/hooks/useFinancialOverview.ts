@@ -43,11 +43,11 @@ export interface FinancialOverview {
   projectedAnnualRevenue: number;
 }
 
-export const useFinancialOverview = () => {
+export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estate' | 'all') => {
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: getQueryKey(['financial-overview']),
+    queryKey: getQueryKey(['financial-overview', activityFilter]),
     queryFn: async (): Promise<FinancialOverview> => {
       if (!companyId) {
         return getEmptyFinancialOverview();
@@ -55,13 +55,21 @@ export const useFinancialOverview = () => {
       const currentDate = new Date();
       const sixMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, 1);
 
-      // Get revenue data from contracts and payments
-      const { data: revenueData } = await supabase
+      // Get revenue data from car rental payments
+      const { data: carRentalRevenue } = await supabase
         .from('payments')
         .select('amount, payment_date, payment_method')
         .eq('company_id', companyId)
         .eq('payment_method', 'received')
         .eq('payment_status', 'completed')
+        .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
+
+      // Get revenue data from property payments
+      const { data: propertyRevenue } = await supabase
+        .from('property_payments')
+        .select('amount, payment_date, status')
+        .eq('company_id', companyId)
+        .eq('status', 'paid')
         .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
 
       // Get expense data from payments and maintenance
@@ -90,8 +98,23 @@ export const useFinancialOverview = () => {
         .eq('status', 'paid')
         .gte('payroll_date', sixMonthsAgo.toISOString().split('T')[0]);
 
-      // Calculate totals
-      const totalRevenue = revenueData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      // Calculate totals based on activity filter
+      const carRentalRevenueTotal = carRentalRevenue?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      const propertyRevenueTotal = propertyRevenue?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      
+      let totalRevenue = 0;
+      let revenueData: any[] = [];
+      
+      if (!activityFilter || activityFilter === 'all') {
+        totalRevenue = carRentalRevenueTotal + propertyRevenueTotal;
+        revenueData = [...(carRentalRevenue || []), ...(propertyRevenue || [])];
+      } else if (activityFilter === 'car_rental') {
+        totalRevenue = carRentalRevenueTotal;
+        revenueData = carRentalRevenue || [];
+      } else if (activityFilter === 'real_estate') {
+        totalRevenue = propertyRevenueTotal;
+        revenueData = propertyRevenue || [];
+      }
       const totalPaymentExpenses = expenseData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
       const totalMaintenanceExpenses = maintenanceCosts?.reduce((sum, maintenance) => sum + (maintenance.estimated_cost || 0), 0) || 0;
       const totalPayrollExpenses = payrollData?.reduce((sum, payroll) => sum + (payroll.net_amount || 0), 0) || 0;
@@ -104,7 +127,7 @@ export const useFinancialOverview = () => {
       const monthlyTrend = calculateMonthlyTrend(revenueData, expenseData, maintenanceCosts, payrollData);
 
       // Calculate revenue by source
-      const revenueBySource = calculateRevenueBySource(totalRevenue);
+      const revenueBySource = calculateRevenueBySource(carRentalRevenueTotal, propertyRevenueTotal, activityFilter);
 
       // Calculate expense categories
       const topExpenseCategories = calculateExpenseCategories(
@@ -215,25 +238,47 @@ function calculateMonthlyTrend(
   });
 }
 
-function calculateRevenueBySource(totalRevenue: number) {
-  // Simplified - would need more detailed categorization
-  return [
-    {
-      source: 'إيجار المركبات',
-      amount: totalRevenue * 0.8,
-      percentage: 80
-    },
-    {
-      source: 'رسوم إضافية',
-      amount: totalRevenue * 0.15,
-      percentage: 15
-    },
-    {
-      source: 'أخرى',
-      amount: totalRevenue * 0.05,
-      percentage: 5
-    }
-  ];
+function calculateRevenueBySource(
+  carRentalRevenue: number, 
+  propertyRevenue: number, 
+  activityFilter?: 'car_rental' | 'real_estate' | 'all'
+) {
+  const totalRevenue = carRentalRevenue + propertyRevenue;
+  
+  if (totalRevenue === 0) return [];
+  
+  if (!activityFilter || activityFilter === 'all') {
+    return [
+      {
+        source: 'إيجار المركبات',
+        amount: carRentalRevenue,
+        percentage: (carRentalRevenue / totalRevenue) * 100
+      },
+      {
+        source: 'إيجار العقارات',
+        amount: propertyRevenue,
+        percentage: (propertyRevenue / totalRevenue) * 100
+      }
+    ].filter(source => source.amount > 0);
+  } else if (activityFilter === 'car_rental') {
+    return [
+      {
+        source: 'إيجار المركبات',
+        amount: carRentalRevenue,
+        percentage: 100
+      }
+    ];
+  } else if (activityFilter === 'real_estate') {
+    return [
+      {
+        source: 'إيجار العقارات',
+        amount: propertyRevenue,
+        percentage: 100
+      }
+    ];
+  }
+  
+  return [];
 }
 
 function calculateExpenseCategories(

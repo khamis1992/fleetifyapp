@@ -57,9 +57,15 @@ export function useCreatePropertyContract() {
 
   return useMutation({
     mutationFn: async (contractData: any) => {
+      // Set status to active to trigger accounting integration
+      const contractWithStatus = {
+        ...contractData,
+        status: contractData.status || 'active'
+      };
+
       const { data, error } = await supabase
         .from('property_contracts')
-        .insert(contractData)
+        .insert(contractWithStatus)
         .select()
         .single();
 
@@ -70,10 +76,18 @@ export function useCreatePropertyContract() {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['property-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['properties'] });
-      toast.success('تم إنشاء عقد الإيجار بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      
+      // Show success message with accounting integration info
+      if (data.journal_entry_id) {
+        toast.success('تم إنشاء عقد الإيجار والقيد المحاسبي بنجاح');
+      } else {
+        toast.success('تم إنشاء عقد الإيجار بنجاح');
+      }
     },
     onError: (error: any) => {
       console.error('Error creating property contract:', error);
