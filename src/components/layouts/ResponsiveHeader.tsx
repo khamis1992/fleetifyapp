@@ -13,17 +13,14 @@ import {
   User, 
   Settings, 
   LogOut, 
-  Bell, 
-  BellRing,
   Search,
   MoreVertical
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
-import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
-import { useUnifiedNotificationCount } from '@/hooks/useUnifiedNotificationCount';
+import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 
 interface ResponsiveHeaderProps {
   onMenuToggle?: () => void;
@@ -37,9 +34,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useSimpleBreakpoint();
-  const [alertsOpen, setAlertsOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();
 
   const handleSignOut = async () => {
     try {
@@ -102,64 +97,8 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
           </Sheet>
         )}
 
-        {/* Alerts Bell */}
-        <Sheet open={alertsOpen} onOpenChange={setAlertsOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative hover:bg-accent/50 transition-colors"
-            >
-              <motion.div
-                animate={totalAlerts > 0 ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ repeat: Infinity, duration: 2 }}
-              >
-                {totalAlerts > 0 ? (
-                  <BellRing className="h-5 w-5" />
-                ) : (
-                  <Bell className="h-5 w-5" />
-                )}
-              </motion.div>
-              
-              <AnimatePresence>
-                {totalAlerts > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="absolute -top-1 -right-1"
-                  >
-                    <Badge 
-                      variant={criticalAlerts > 0 ? "destructive" : "secondary"}
-                      className={`min-w-[20px] h-5 text-xs px-1 ${
-                        criticalAlerts > 0 ? 'animate-pulse' : ''
-                      }`}
-                    >
-                      {totalAlerts > 99 ? '99+' : totalAlerts}
-                    </Badge>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Button>
-          </SheetTrigger>
-          <SheetContent 
-            side={isMobile ? "bottom" : "left"} 
-            className={`w-full ${isMobile ? 'h-[80vh]' : 'sm:w-[600px]'} p-0`}
-          >
-            <SheetHeader className="p-4 md:p-6 pb-4 border-b">
-              <SheetTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                نظام التنبيهات المتقدم
-                {totalAlerts > 0 && (
-                  <Badge variant="secondary">{totalAlerts}</Badge>
-                )}
-              </SheetTitle>
-            </SheetHeader>
-            <div className="p-4 md:p-6">
-              <EnhancedAlertsSystem />
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* Unified Notification Bell */}
+        <UnifiedNotificationBell />
 
         {/* Attendance Button (Non-mobile) */}
         {!isMobile && <HeaderAttendanceButton />}

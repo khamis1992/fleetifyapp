@@ -7,25 +7,20 @@ import { AppSidebar } from './AppSidebar';
 import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { User, Settings, LogOut, Bell, BellRing } from 'lucide-react';
+import { User, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
-import { EnhancedAlertsSystem } from '@/components/dashboard/EnhancedAlertsSystem';
-import { useUnifiedNotificationCount } from '@/hooks/useUnifiedNotificationCount';
-import { motion, AnimatePresence } from 'framer-motion';
+import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
+
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 
 
 export const DashboardLayout: React.FC = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [alertsOpen, setAlertsOpen] = useState(false);
-  const { totalAlerts, criticalAlerts } = useUnifiedNotificationCount();
 
   const handleSignOut = async () => {
     try {
@@ -68,61 +63,8 @@ export const DashboardLayout: React.FC = () => {
               <CompanySelector />
               <QuickSearch />
               
-              {/* Combined Alerts Bell */}
-              <Sheet open={alertsOpen} onOpenChange={setAlertsOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative hover:bg-accent/50 transition-colors"
-                  >
-                    <motion.div
-                      animate={totalAlerts > 0 ? { scale: [1, 1.1, 1] } : {}}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      {totalAlerts > 0 ? (
-                        <BellRing className="h-5 w-5" />
-                      ) : (
-                        <Bell className="h-5 w-5" />
-                      )}
-                    </motion.div>
-                    
-                    <AnimatePresence>
-                      {totalAlerts > 0 && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          exit={{ scale: 0 }}
-                          className="absolute -top-1 -right-1"
-                        >
-                          <Badge 
-                            variant={criticalAlerts > 0 ? "destructive" : "secondary"}
-                            className={`min-w-[20px] h-5 text-xs px-1 ${
-                              criticalAlerts > 0 ? 'animate-pulse' : ''
-                            }`}
-                          >
-                            {totalAlerts > 99 ? '99+' : totalAlerts}
-                          </Badge>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-full sm:w-[600px] p-0">
-                  <SheetHeader className="p-6 pb-4 border-b">
-                    <SheetTitle className="flex items-center gap-2">
-                      <Bell className="h-5 w-5" />
-                      نظام التنبيهات المتقدم
-                      {totalAlerts > 0 && (
-                        <Badge variant="secondary">{totalAlerts}</Badge>
-                      )}
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="p-6">
-                    <EnhancedAlertsSystem />
-                  </div>
-                </SheetContent>
-              </Sheet>
+              {/* Unified Notification Bell */}
+              <UnifiedNotificationBell />
               
               {/* Attendance Button */}
               <HeaderAttendanceButton />
