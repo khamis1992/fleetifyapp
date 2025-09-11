@@ -34,7 +34,7 @@ export const useOptimizedRecentActivities = () => {
         return [];
       }
 
-      // استعلام صارم مع فلترة مزدوجة
+      // استعلام صارم مع فلترة مزدوجة والتحقق من الشركة النشطة فقط
       const { data: activities, error } = await supabase
         .from('system_logs')
         .select(`
@@ -48,7 +48,7 @@ export const useOptimizedRecentActivities = () => {
           resource_id,
           company_id
         `)
-        .eq('company_id', companyId)
+        .eq('company_id', companyId) // فلترة صارمة بالشركة النشطة فقط
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
         .limit(15);
@@ -58,20 +58,32 @@ export const useOptimizedRecentActivities = () => {
         return [];
       }
 
-      // فلترة إضافية للتأكد من أن جميع النشاطات تنتمي للشركة الصحيحة
+      // فلترة إضافية صارمة للتأكد من أن جميع النشاطات تنتمي للشركة الصحيحة
       const filteredActivities = activities?.filter(activity => {
         const belongsToCompany = activity.company_id === companyId;
         if (!belongsToCompany) {
-          console.warn('⚠️ [ACTIVITIES] Found activity from wrong company:', {
+          console.error('🚨 [ACTIVITIES] SECURITY ALERT - Found activity from wrong company:', {
             activityId: activity.id,
             activityCompanyId: activity.company_id,
             expectedCompanyId: companyId,
             category: activity.category,
-            message: activity.message
+            message: activity.message,
+            timestamp: new Date().toISOString()
           });
+          // يجب تسجيل هذا كحدث أمني مهم
         }
         return belongsToCompany;
       }) || [];
+
+      // إضافة تحقق إضافي للتأكد من عدم وجود أي تسرب للبيانات
+      if (filteredActivities.length !== activities?.length) {
+        console.error('🚨 [ACTIVITIES] Data leak detected - some activities filtered out:', {
+          totalActivities: activities?.length || 0,
+          filteredActivities: filteredActivities.length,
+          companyId,
+          leakedCount: (activities?.length || 0) - filteredActivities.length
+        });
+      }
 
       console.log('✅ [ACTIVITIES] Filtered activities:', {
         totalReturned: activities?.length || 0,
@@ -196,17 +208,19 @@ function enhanceVehicleMessage(originalMessage: string, vehicleInfo: any, action
   const actionText = actionMap[action] || 'تم التعامل مع';
   const vehicleDisplay = `${vehicleInfo.make || ''} ${vehicleInfo.model || ''} - لوحة: ${vehicleInfo.plate_number || 'غير محددة'}`.trim();
   
-  // If the original message contains the company ID, replace it with vehicle info
-  if (originalMessage.includes('44f2cd3a-5bf6-4b43-a7e5-aa3ff6422f1c') || originalMessage.includes('للشركة')) {
+  // إزالة أي company IDs من الرسالة وتنظيفها
+  let cleanMessage = originalMessage
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '') // إزالة UUIDs
+    .replace(/للشركة\s*/g, '') // إزالة كلمة "للشركة"
+    .replace(/\s+/g, ' ') // تنظيف المسافات الزائدة
+    .trim();
+  
+  // إذا كانت الرسالة تحتوي على معرفات شركة أو كانت عامة، استبدلها بمعلومات المركبة
+  if (cleanMessage.length < 5 || cleanMessage.includes('مركبة') || cleanMessage.includes('vehicle') || cleanMessage.includes('fleet')) {
     return `${actionText} المركبة ${vehicleDisplay}`;
   }
   
-  // If it's a generic message, enhance it
-  if (originalMessage.includes('مركبة') || originalMessage.includes('vehicle') || originalMessage.includes('fleet')) {
-    return `${actionText} المركبة ${vehicleDisplay}`;
-  }
-  
-  return originalMessage;
+  return cleanMessage;
 }
 
 function getActivityDescription(activity: any): string {

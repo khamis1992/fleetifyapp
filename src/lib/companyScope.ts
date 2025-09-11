@@ -102,22 +102,23 @@ export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: 
     isSystemLevel: context.isSystemLevel
   });
 
+  // تطبيق فلترة صارمة: افتراضياً جميع المستخدمين (بما في ذلك super_admin) محدودون بشركتهم
+  // Super admin يحتاج إلى طلب صريح للوصول العالمي
   if (context.isSystemLevel && !forceOwnCompany && allowGlobalView) {
-    // Super admin can see all companies only when explicitly requested with allowGlobalView
-    console.log('🌐 [getCompanyFilter] Returning global view (empty filter)');
+    console.log('🌐 [getCompanyFilter] Super admin requesting global view (explicitly allowed)');
     return {};
   }
   
   if (context.companyId) {
-    // Default behavior: all users (including super_admin) are limited to their company
+    // السلوك الافتراضي: جميع المستخدمين محدودون بشركتهم النشطة
     const result = { company_id: context.companyId };
-    console.log('🏢 [getCompanyFilter] Returning company filter:', result);
+    console.log('🏢 [getCompanyFilter] Returning strict company filter:', result);
     return result;
   }
   
-  // Fallback: no access if no company association
-  console.warn('⚠️ [getCompanyFilter] No company access - returning no-access filter');
-  return { company_id: 'no-access' };
+  // احتياطي أمني: عدم الوصول إذا لم توجد شركة مرتبطة
+  console.error('🚨 [getCompanyFilter] SECURITY: No company association - blocking access');
+  return { company_id: 'no-access-security-block' };
 };
 
 /**
