@@ -17,8 +17,12 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { UnifiedReportViewer } from '@/components/reports/UnifiedReportViewer';
+import { PropertyReportViewer } from '@/components/reports/PropertyReportViewer';
+import { PropertyReportFilters, type PropertyReportFilters as PropertyReportFiltersType } from '@/components/reports/PropertyReportFilters';
+import { PropertyExportManager, type ExportOptions } from '@/components/reports/PropertyExportManager';
 import { useReportExport } from '@/hooks/useReportExport';
 import { ReportFilters } from '@/components/reports/ReportFilters';
+import { usePropertyReports } from '@/hooks/usePropertyReports';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
@@ -46,9 +50,25 @@ export default function Reports() {
     companyId: '',
     moduleType: ''
   });
+  const [propertyFilters, setPropertyFilters] = useState<PropertyReportFiltersType>({
+    dateRange: {},
+    propertyType: '',
+    location: '',
+    status: '',
+    ownerId: '',
+    priceRange: {},
+    reportType: ''
+  });
 
   const { data: reportsData, isLoading } = useUnifiedReports();
+  const { data: propertyReportsData } = usePropertyReports();
   const { exportToHTML, isExporting } = useReportExport();
+
+  const handlePropertyExport = async (options: ExportOptions) => {
+    // Implementation for property report export
+    console.log('Exporting property report with options:', options);
+    // This would integrate with actual export functionality
+  };
 
   const reportModules = [
     {
@@ -96,10 +116,29 @@ export default function Reports() {
       ]
     },
     {
+      id: 'properties',
+      title: 'تقارير العقارات',
+      description: 'تقارير العقارات والإشغال والأداء المالي',
+      icon: Building,
+      color: 'bg-cyan-100 text-cyan-600',
+      count: 15,
+      reports: [
+        { id: 'property_financial', name: 'التقرير المالي للعقارات', type: 'properties' },
+        { id: 'property_occupancy', name: 'تقرير الإشغال والشغور', type: 'properties' },
+        { id: 'property_performance', name: 'تقرير أداء العقارات', type: 'properties' },
+        { id: 'property_portfolio', name: 'تقرير المحفظة العقارية', type: 'properties' },
+        { id: 'property_owners', name: 'تقارير الملاك', type: 'properties' },
+        { id: 'property_tenants', name: 'تقارير المستأجرين', type: 'properties' },
+        { id: 'property_maintenance', name: 'تقارير الصيانة', type: 'properties' },
+        { id: 'property_roi', name: 'تقرير عائد الاستثمار', type: 'properties' },
+        { id: 'property_market', name: 'تحليل السوق العقاري', type: 'properties' }
+      ]
+    },
+    {
       id: 'customers',
       title: 'تقارير العملاء',
       description: 'تقارير العملاء والعقود والفواتير',
-      icon: Building,
+      icon: Users,
       color: 'bg-orange-100 text-orange-600',
       count: 6,
       reports: [
@@ -140,7 +179,7 @@ export default function Reports() {
         {/* Enhanced Tabs Navigation */}
         {isMobile ? (
           <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-            <TabsList className="grid h-12 w-full min-w-max grid-cols-5 gap-1 p-1 bg-muted/50 rounded-xl">
+            <TabsList className="grid h-12 w-full min-w-max grid-cols-6 gap-1 p-1 bg-muted/50 rounded-xl">
               <TabsTrigger value="finance" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
                 المالية
               </TabsTrigger>
@@ -149,6 +188,9 @@ export default function Reports() {
               </TabsTrigger>
               <TabsTrigger value="fleet" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
                 الأسطول
+              </TabsTrigger>
+              <TabsTrigger value="properties" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
+                العقارات
               </TabsTrigger>
               <TabsTrigger value="customers" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
                 العملاء
@@ -160,10 +202,11 @@ export default function Reports() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex h-12">
+            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex h-12">
               <TabsTrigger value="finance" className="h-10 rounded-lg">المالية</TabsTrigger>
               <TabsTrigger value="hr" className="h-10 rounded-lg">الموارد البشرية</TabsTrigger>
               <TabsTrigger value="fleet" className="h-10 rounded-lg">الأسطول</TabsTrigger>
+              <TabsTrigger value="properties" className="h-10 rounded-lg">العقارات</TabsTrigger>
               <TabsTrigger value="customers" className="h-10 rounded-lg">العملاء</TabsTrigger>
               <TabsTrigger value="legal" className="h-10 rounded-lg">القانونية</TabsTrigger>
             </TabsList>
@@ -178,11 +221,27 @@ export default function Reports() {
               <div className={isMobile ? "w-full" : "lg:w-80"}>
                 <Card>
                   <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
-                    <ReportFilters
-                      moduleType={module.id}
-                      filters={filters}
-                      onFiltersChange={setFilters}
-                    />
+                    {module.id === 'properties' ? (
+                      <PropertyReportFilters
+                        filters={propertyFilters}
+                        onFiltersChange={setPropertyFilters}
+                        onClearFilters={() => setPropertyFilters({
+                          dateRange: {},
+                          propertyType: '',
+                          location: '',
+                          status: '',
+                          ownerId: '',
+                          priceRange: {},
+                          reportType: ''
+                        })}
+                      />
+                    ) : (
+                      <ReportFilters
+                        moduleType={module.id}
+                        filters={filters}
+                        onFiltersChange={setFilters}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -215,20 +274,28 @@ export default function Reports() {
                                 >
                                   عرض
                                 </Button>
-                                <Button 
-                                  size={isMobile ? "sm" : "sm"} 
-                                  variant="outline"
-                                  onClick={() => exportToHTML({
-                                    reportId: report.id,
-                                    moduleType: module.id,
-                                    filters,
-                                    title: report.name
-                                  })}
-                                  disabled={isExporting}
-                                  className={cn(isMobile && "h-10 w-10 p-0 rounded-lg shadow-sm")}
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
+                                {module.id === 'properties' ? (
+                                  <PropertyExportManager
+                                    reportData={propertyReportsData}
+                                    reportType={report.id}
+                                    onExport={handlePropertyExport}
+                                  />
+                                ) : (
+                                  <Button 
+                                    size={isMobile ? "sm" : "sm"} 
+                                    variant="outline"
+                                    onClick={() => exportToHTML({
+                                      reportId: report.id,
+                                      moduleType: module.id,
+                                      filters,
+                                      title: report.name
+                                    })}
+                                    disabled={isExporting}
+                                    className={cn(isMobile && "h-10 w-10 p-0 rounded-lg shadow-sm")}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </CardContent>
@@ -245,12 +312,21 @@ export default function Reports() {
 
       {/* Report Viewer */}
       {selectedReport && (
-        <UnifiedReportViewer
-          reportId={selectedReport}
-          moduleType={selectedModule}
-          filters={filters}
-          onClose={() => setSelectedReport('')}
-        />
+        selectedModule === 'properties' ? (
+          <PropertyReportViewer
+            reportId={selectedReport}
+            filters={propertyFilters}
+            onClose={() => setSelectedReport('')}
+            onExport={handlePropertyExport}
+          />
+        ) : (
+          <UnifiedReportViewer
+            reportId={selectedReport}
+            moduleType={selectedModule}
+            filters={filters}
+            onClose={() => setSelectedReport('')}
+          />
+        )
       )}
     </div>
   );
