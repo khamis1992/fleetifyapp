@@ -55,7 +55,7 @@ const RealEstateQuickActions: React.FC = () => {
       description: 'إضافة مالك عقار جديد',
       icon: UserCheck,
       color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
-      route: '/property-owners/add',
+      route: '/owners',
       badge: 'سريع',
       requiresAdmin: true
     },

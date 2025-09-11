@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Map } from 'lucide-react';
+import { Plus, Map, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ModuleLayout } from '@/modules/core/components/ModuleLayout';
@@ -32,6 +32,12 @@ export default function Properties() {
               <Button size="lg" variant="outline" className="gap-2">
                 <Map className="h-4 w-4" />
                 خريطة العقارات
+              </Button>
+            </Link>
+            <Link to="/owners">
+              <Button size="lg" variant="outline" className="gap-2">
+                <Users className="h-4 w-4" />
+                ملاك العقارات
               </Button>
             </Link>
             <Link to="/properties/add">

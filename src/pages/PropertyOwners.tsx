@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ModuleLayout } from '@/modules/core/components/ModuleLayout';
 import { PropertyOwnerForm } from '@/modules/properties/components';
-import { usePropertyOwners } from '@/modules/properties/hooks';
+import { usePropertyOwners, useDeletePropertyOwner, useCreatePropertyOwner } from '@/modules/properties/hooks';
 import { 
   Table, 
   TableBody, 
@@ -23,11 +23,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export default function PropertyOwners() {
   const [search, setSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedOwner, setSelectedOwner] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [ownerToDelete, setOwnerToDelete] = useState<any>(null);
+  
   const { data: owners = [], isLoading } = usePropertyOwners(search);
+  const createOwnerMutation = useCreatePropertyOwner();
+  const deleteOwnerMutation = useDeletePropertyOwner();
 
   return (
     <ModuleLayout moduleName="properties">
@@ -48,11 +65,31 @@ export default function PropertyOwners() {
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>إضافة مالك جديد</DialogTitle>
+                <DialogTitle>
+                  {selectedOwner ? 'تحديث بيانات المالك' : 'إضافة مالك جديد'}
+                </DialogTitle>
               </DialogHeader>
               <PropertyOwnerForm 
-                onSubmit={() => setShowAddForm(false)}
-                onCancel={() => setShowAddForm(false)}
+                owner={selectedOwner}
+                onSubmit={async (data) => {
+                  try {
+                    if (selectedOwner) {
+                      // تحديث المالك - سيتم إضافة هذه الوظيفة لاحقاً
+                      toast.success('سيتم إضافة وظيفة التحديث قريباً');
+                    } else {
+                      await createOwnerMutation.mutateAsync(data);
+                    }
+                    setShowAddForm(false);
+                    setSelectedOwner(null);
+                  } catch (error) {
+                    console.error('Error saving owner:', error);
+                  }
+                }}
+                onCancel={() => {
+                  setShowAddForm(false);
+                  setSelectedOwner(null);
+                }}
+                isLoading={createOwnerMutation.isPending}
               />
             </DialogContent>
           </Dialog>
@@ -99,6 +136,7 @@ export default function PropertyOwners() {
                     <TableHead>البريد الإلكتروني</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead>عدد العقارات</TableHead>
+                    <TableHead>الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -125,9 +163,32 @@ export default function PropertyOwners() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {/* This would need to be calculated or fetched */}
-                            0 عقار
+                            {owner.properties_count || 0} عقار
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedOwner(owner);
+                                setShowAddForm(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setOwnerToDelete(owner);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -137,6 +198,38 @@ export default function PropertyOwners() {
             )}
           </CardContent>
         </Card>
+
+        {/* مربع حوار تأكيد الحذف */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد حذف المالك</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حذف المالك "{ownerToDelete?.full_name}"؟ 
+                هذا الإجراء لا يمكن التراجع عنه.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (ownerToDelete) {
+                    try {
+                      await deleteOwnerMutation.mutateAsync(ownerToDelete.id);
+                      setShowDeleteDialog(false);
+                      setOwnerToDelete(null);
+                    } catch (error) {
+                      console.error('Error deleting owner:', error);
+                    }
+                  }
+                }}
+                disabled={deleteOwnerMutation.isPending}
+              >
+                حذف
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ModuleLayout>
   );

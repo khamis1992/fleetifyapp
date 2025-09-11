@@ -175,7 +175,7 @@ const App = () => {
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />
               <Route path="properties/map" element={<PropertiesMap />} />
-              <Route path="property-owners" element={<PropertyOwners />} />
+              <Route path="owners" element={<PropertyOwners />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="finance/*" element={<Finance />} />
@@ -304,7 +304,7 @@ const App = () => {
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />
-              <Route path="property-owners" element={<PropertyOwners />} />
+              <Route path="owners" element={<PropertyOwners />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="settings/electronic-signature" element={
                 <AdminRoute>

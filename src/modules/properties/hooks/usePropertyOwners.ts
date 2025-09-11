@@ -9,7 +9,10 @@ export function usePropertyOwners(search?: string) {
     queryFn: async () => {
       let query = supabase
         .from('property_owners')
-        .select('*')
+        .select(`
+          *,
+          properties_count:properties(count)
+        `)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -24,7 +27,23 @@ export function usePropertyOwners(search?: string) {
         throw error;
       }
 
-      return data as any[];
+      // حساب عدد العقارات لكل مالك
+      const ownersWithPropertiesCount = await Promise.all(
+        (data || []).map(async (owner) => {
+          const { count } = await supabase
+            .from('properties')
+            .select('*', { count: 'exact', head: true })
+            .eq('owner_id', owner.id)
+            .eq('is_active', true);
+
+          return {
+            ...owner,
+            properties_count: count || 0
+          };
+        })
+      );
+
+      return ownersWithPropertiesCount;
     },
     enabled: true,
   });
