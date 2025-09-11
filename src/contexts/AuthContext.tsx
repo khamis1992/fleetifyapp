@@ -1,13 +1,12 @@
-import type React from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
-import { safeUseState, safeUseEffect, safeUseCallback, safeUseContext, safeCreateContext } from '@/utils/safe-react';
 
-const AuthContext = safeCreateContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = safeUseContext(AuthContext);
+  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -19,14 +18,14 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = safeUseState<AuthUser | null>(null);
-  const [session, setSession] = safeUseState<Session | null>(null);
-  const [loading, setLoading] = safeUseState(true);
-  const [sessionError, setSessionError] = safeUseState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = safeUseState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Session validation helper with improved error handling
-  const validateSession = safeUseCallback(async (currentSession: Session | null): Promise<boolean> => {
+  const validateSession = useCallback(async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
       return false;
     }
@@ -61,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isSigningOut]);
 
-  const refreshUser = safeUseCallback(async () => {
+  const refreshUser = useCallback(async () => {
     if (session?.user) {
       try {
         const authUser = await authService.getCurrentUser();
@@ -72,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [session]);
 
-  safeUseEffect(() => {
+  useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
