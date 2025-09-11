@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3, Database } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Search, Eye, Edit, Trash2, FileText, Layers, CheckCircle, Folder, Skull, Upload, BarChart3, Database, Settings } from 'lucide-react';
 import { useChartOfAccounts, useCreateAccount, useUpdateAccount } from '@/hooks/useChartOfAccounts';
 import { AccountLevelBadge } from './AccountLevelBadge';
 import { AccountBalanceHistory } from './AccountBalanceHistory';
@@ -26,10 +26,12 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useDefaultPermissions } from '@/hooks/useDefaultPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 import { DemoDataGenerator } from './DemoDataGenerator';
 import { AccountsTreeView } from './AccountsTreeView';
+import { FinanceSystemDiagnostics } from './FinanceSystemDiagnostics';
 interface AccountFormData {
   account_code: string;
   account_name: string;
@@ -60,6 +62,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('tree');
   const [showSmartWizard, setShowSmartWizard] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  
+  // تفعيل الصلاحيات الافتراضية
+  useDefaultPermissions();
   
   // Check if user is in System Company
   const { user: authUser } = useAuth();
@@ -521,8 +527,23 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                   <Skull className="h-4 w-4" />
                 </Button>
               )}
+              <Button 
+                onClick={() => setShowDiagnostics(true)} 
+                variant="outline" 
+                className="flex items-center gap-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+              >
+                <span>تشخيص النظام</span>
+                <Settings className="h-4 w-4" />
+              </Button>
             </div>
           </div>
+
+          {/* System Diagnostics */}
+          {showDiagnostics && (
+            <div className="mb-6">
+              <FinanceSystemDiagnostics />
+            </div>
+          )}
 
 
           {/* Tree View */}
