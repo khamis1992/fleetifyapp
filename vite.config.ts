@@ -16,6 +16,35 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
+    },
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'next-themes'
+    ],
+    force: true,
+    esbuildOptions: {
+      logOverride: {
+        'this-is-undefined-in-esm': 'silent',
+      },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom']
+        }
+      }
+    }
+  }
 }));
