@@ -1,7 +1,7 @@
 // Lovable.dev Compatibility Layer
 // This ensures optimal compatibility with Lovable.dev platform
 
-import React from 'react';
+import * as React from 'react';
 
 // Ensure React is available globally for Lovable.dev
 if (typeof window !== 'undefined') {
