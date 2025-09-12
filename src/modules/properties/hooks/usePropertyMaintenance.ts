@@ -84,7 +84,7 @@ export function usePropertyMaintenanceStats() {
     queryFn: async () => {
       const { data: maintenance, error } = await supabase
         .from('property_maintenance')
-        .select('status, maintenance_type, priority, estimated_cost, actual_cost, property_id')
+        .select('status, maintenance_type, priority, estimated_cost, actual_cost, property_id, created_at')
         .eq('is_active', true);
 
       if (error) {
@@ -153,12 +153,31 @@ export function useCreatePropertyMaintenance() {
       // إنشاء رقم الصيانة
       const maintenanceNumber = `MAIN-${Date.now()}`;
       
+      // تحضير البيانات للإدراج
+      const insertData = {
+        company_id: maintenanceData.company_id || '',
+        property_id: maintenanceData.property_id || '',
+        maintenance_number: maintenanceNumber,
+        maintenance_type: maintenanceData.maintenance_type || 'routine',
+        status: maintenanceData.status || 'pending',
+        priority: maintenanceData.priority || 'medium',
+        title: maintenanceData.title || '',
+        title_ar: maintenanceData.title_ar,
+        description: maintenanceData.description,
+        description_ar: maintenanceData.description_ar,
+        requested_date: maintenanceData.requested_date || new Date().toISOString(),
+        scheduled_date: maintenanceData.scheduled_date,
+        estimated_cost: maintenanceData.estimated_cost,
+        contractor_name: maintenanceData.contractor_name,
+        contractor_phone: maintenanceData.contractor_phone,
+        location_details: maintenanceData.location_details,
+        notes: maintenanceData.notes,
+        created_by: maintenanceData.created_by,
+      };
+      
       const { data, error } = await supabase
         .from('property_maintenance')
-        .insert({
-          ...maintenanceData,
-          maintenance_number: maintenanceNumber,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -182,9 +201,12 @@ export function useUpdatePropertyMaintenance() {
 
   return useMutation({
     mutationFn: async ({ id, ...updateData }: { id: string } & Partial<PropertyMaintenance>) => {
+      // تحضير البيانات للتحديث - إزالة الحقول غير المطلوبة
+      const { property, ...cleanUpdateData } = updateData;
+      
       const { data, error } = await supabase
         .from('property_maintenance')
-        .update(updateData)
+        .update(cleanUpdateData)
         .eq('id', id)
         .select()
         .single();

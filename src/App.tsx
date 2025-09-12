@@ -35,6 +35,7 @@ import AddProperty from "./pages/AddProperty";
 import PropertyDetails from "./pages/PropertyDetails";
 import PropertyOwners from "./pages/PropertyOwners";
 import PropertiesMap from "./pages/PropertiesMap";
+import PropertyMaintenance from "./pages/properties/PropertyMaintenance";
 
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
@@ -175,6 +176,11 @@ const App = () => {
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />
               <Route path="properties/map" element={<PropertiesMap />} />
+              <Route path="properties/maintenance" element={
+                <AdminRoute>
+                  <PropertyMaintenance />
+                </AdminRoute>
+              } />
               <Route path="owners" element={<PropertyOwners />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="quotations" element={<Quotations />} />

@@ -7387,6 +7387,119 @@ export type Database = {
           },
         ]
       }
+      property_maintenance: {
+        Row: {
+          actual_cost: number | null
+          assigned_to: string | null
+          company_id: string
+          completion_date: string | null
+          completion_notes: string | null
+          contractor_name: string | null
+          contractor_phone: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          documents: string[] | null
+          estimated_cost: number | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          location_details: string | null
+          maintenance_number: string
+          maintenance_type: string
+          notes: string | null
+          priority: string
+          property_id: string
+          quality_rating: number | null
+          requested_date: string
+          required_materials: string[] | null
+          scheduled_date: string | null
+          start_date: string | null
+          status: string
+          title: string
+          title_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          assigned_to?: string | null
+          company_id: string
+          completion_date?: string | null
+          completion_notes?: string | null
+          contractor_name?: string | null
+          contractor_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          documents?: string[] | null
+          estimated_cost?: number | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          location_details?: string | null
+          maintenance_number: string
+          maintenance_type: string
+          notes?: string | null
+          priority?: string
+          property_id: string
+          quality_rating?: number | null
+          requested_date?: string
+          required_materials?: string[] | null
+          scheduled_date?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_cost?: number | null
+          assigned_to?: string | null
+          company_id?: string
+          completion_date?: string | null
+          completion_notes?: string | null
+          contractor_name?: string | null
+          contractor_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          documents?: string[] | null
+          estimated_cost?: number | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          location_details?: string | null
+          maintenance_number?: string
+          maintenance_type?: string
+          notes?: string | null
+          priority?: string
+          property_id?: string
+          quality_rating?: number | null
+          requested_date?: string
+          required_materials?: string[] | null
+          scheduled_date?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_property_maintenance_property"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_owners: {
         Row: {
           address: string | null

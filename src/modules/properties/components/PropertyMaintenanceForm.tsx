@@ -110,9 +110,19 @@ export const PropertyMaintenanceForm: React.FC<PropertyMaintenanceFormProps> = (
   const onSubmit = async (data: MaintenanceFormData) => {
     try {
       const submitData = {
-        ...data,
+        property_id: data.property_id,
+        maintenance_type: data.maintenance_type as PropertyMaintenanceType,
+        priority: data.priority as PropertyMaintenancePriority,
+        title: data.title,
+        title_ar: data.title_ar,
+        description: data.description,
+        description_ar: data.description_ar,
         estimated_cost: data.estimated_cost ? parseFloat(data.estimated_cost) : undefined,
         scheduled_date: data.scheduled_date || undefined,
+        contractor_name: data.contractor_name,
+        contractor_phone: data.contractor_phone,
+        location_details: data.location_details,
+        notes: data.notes,
         status: 'pending' as const,
         requested_date: new Date().toISOString(),
       };
