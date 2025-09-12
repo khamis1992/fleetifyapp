@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { usePermissionCheck } from '@/hooks/usePermissionCheck';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';

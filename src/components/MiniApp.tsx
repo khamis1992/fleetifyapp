@@ -1,5 +1,5 @@
 // مكون تهيئة مصغر للتطبيق
-import React from 'react';
+import * as React from 'react';
 import { SimpleAppWrapper, ensureReactAvailable } from '@/components/SimpleAppWrapper';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 

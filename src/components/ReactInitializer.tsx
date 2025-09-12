@@ -1,4 +1,5 @@
-import React, { Component, ReactNode } from 'react';
+import * as React from 'react';
+import { Component, ReactNode } from 'react';
 
 // مكون تهيئة React للتأكد من أن React متاح بشكل صحيح
 interface ReactInitializerProps {
