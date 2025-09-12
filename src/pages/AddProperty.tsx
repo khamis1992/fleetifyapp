@@ -7,11 +7,14 @@ import { useCreateProperty } from '@/modules/properties/hooks';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { Link, useNavigate } from 'react-router-dom';
 import { Property } from '@/modules/properties/types';
+import { SampleDataOptions, SamplePropertyData } from '@/components/properties/SampleDataOptions';
+import { useState } from 'react';
 
 export default function AddProperty() {
   const navigate = useNavigate();
   const companyAccess = useUnifiedCompanyAccess();
   const createProperty = useCreateProperty();
+  const [sampleData, setSampleData] = useState<SamplePropertyData | null>(null);
 
   const handleSubmit = async (formData: any) => {
     if (!companyAccess?.user?.id || !companyAccess?.companyId) {
@@ -57,6 +60,14 @@ export default function AddProperty() {
     }
   };
 
+  const handleSelectSample = (data: SamplePropertyData) => {
+    setSampleData(data);
+  };
+
+  const handleClearForm = () => {
+    setSampleData(null);
+  };
+
   return (
     <ModuleLayout moduleName="properties">
       <div className="container mx-auto p-6">
@@ -75,6 +86,11 @@ export default function AddProperty() {
           </div>
         </div>
 
+        <SampleDataOptions 
+          onSelectSample={handleSelectSample}
+          onClearForm={handleClearForm}
+        />
+
         <Card>
           <CardHeader>
             <CardTitle>معلومات العقار</CardTitle>
@@ -84,6 +100,7 @@ export default function AddProperty() {
               onSubmit={handleSubmit}
               onCancel={() => navigate('/properties')}
               isLoading={createProperty.isPending}
+              initialData={sampleData || undefined}
             />
           </CardContent>
         </Card>

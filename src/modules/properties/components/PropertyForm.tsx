@@ -59,6 +59,7 @@ interface PropertyFormProps {
   onSubmit: (data: PropertyFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  initialData?: Partial<PropertyFormData>;
 }
 
 const propertyTypeOptions = [
@@ -91,36 +92,49 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   onSubmit,
   onCancel,
   isLoading = false,
+  initialData,
 }) => {
   const { data: ownerOptions, isLoading: ownersLoading } = usePropertyOwnersOptions();
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
-      property_name: property?.property_name || '',
-      property_code: property?.property_code || '',
-      address: property?.address || '',
-      area: '',
-      property_type: (property?.property_type as any) || 'apartment',
-      status: (property?.property_status as any) || 'available',
-      condition_status: 'good',
-      owner_id: property?.owner_id || '',
-      area_size: property?.area_sqm || 0,
-      bedrooms: property?.bedrooms || 0,
-      bathrooms: property?.bathrooms || 0,
-      parking_spaces: property?.parking_spaces || 0,
-      is_furnished: property?.furnished || false,
-      has_elevator: false,
-      has_garden: false,
-      has_swimming_pool: false,
-      sale_price: property?.sale_price || undefined,
-      rental_price: property?.rental_price || undefined,
-      description: property?.description || '',
+      property_name: initialData?.property_name || property?.property_name || '',
+      property_code: initialData?.property_code || property?.property_code || '',
+      address: initialData?.address || property?.address || '',
+      area: initialData?.area || '',
+      property_type: initialData?.property_type || (property?.property_type as any) || 'apartment',
+      status: initialData?.status || (property?.property_status as any) || 'available',
+      condition_status: initialData?.condition_status || 'good',
+      owner_id: initialData?.owner_id || property?.owner_id || '',
+      area_size: initialData?.area_size || property?.area_sqm || 0,
+      bedrooms: initialData?.bedrooms || property?.bedrooms || 0,
+      bathrooms: initialData?.bathrooms || property?.bathrooms || 0,
+      parking_spaces: initialData?.parking_spaces || property?.parking_spaces || 0,
+      is_furnished: initialData?.is_furnished ?? property?.furnished ?? false,
+      has_elevator: initialData?.has_elevator ?? false,
+      has_garden: initialData?.has_garden ?? false,
+      has_swimming_pool: initialData?.has_swimming_pool ?? false,
+      sale_price: initialData?.sale_price || property?.sale_price || undefined,
+      rental_price: initialData?.rental_price || property?.rental_price || undefined,
+      description: initialData?.description || property?.description || '',
       notes: '',
-      latitude: property?.location_coordinates?.latitude || undefined,
-      longitude: property?.location_coordinates?.longitude || undefined,
+      latitude: initialData?.latitude || property?.location_coordinates?.latitude || undefined,
+      longitude: initialData?.longitude || property?.location_coordinates?.longitude || undefined,
     },
   });
+
+  // تحديث القيم عند تغيير البيانات الأولية
+  React.useEffect(() => {
+    if (initialData) {
+      Object.keys(initialData).forEach((key) => {
+        const value = initialData[key as keyof PropertyFormData];
+        if (value !== undefined) {
+          form.setValue(key as keyof PropertyFormData, value);
+        }
+      });
+    }
+  }, [initialData, form]);
 
   const handleSubmit = (data: PropertyFormData) => {
     onSubmit(data);
