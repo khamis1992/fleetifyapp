@@ -62,11 +62,6 @@ const navigationItems = [
     name: 'لوحة التحكم', 
     href: '/dashboard', 
     icon: Home 
-  },
-  { 
-    name: 'المستأجرين', 
-    href: '/tenants', 
-    icon: Users 
   }
 ];
 

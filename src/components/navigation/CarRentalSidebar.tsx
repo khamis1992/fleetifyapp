@@ -56,11 +56,6 @@ const navigationItems = [
     href: '/dashboard', 
     icon: Home 
   },
-  { 
-    name: 'المستأجرين', 
-    href: '/tenants', 
-    icon: Users 
-  }
 ];
 
 const financeSubItems = [

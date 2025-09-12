@@ -67,12 +67,6 @@ const navigationItems = [
     href: '/dashboard', 
     icon: Home 
   },
-  { 
-    name: 'المستأجرين', 
-    name_en: 'Tenants',
-    href: '/tenants', 
-    icon: Users 
-  }
 ];
 
 const adminItems = [
