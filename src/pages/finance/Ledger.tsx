@@ -272,38 +272,6 @@ const Ledger = () => {
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="flex justify-center gap-3">
-                <Button asChild>
-                  <Link to="/finance/chart-of-accounts">
-                    <FileText className="h-4 w-4 ml-2" />
-                    دليل الحسابات
-                  </Link>
-                </Button>
-                
-                <Button variant="outline" asChild>
-                  <Link to="/finance/dashboard">
-                    الوحة المالية
-                  </Link>
-                </Button>
-              </div>
-              
-              <div className="flex justify-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 ml-2" />
-                  تصدير إلى Excel
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 ml-2" />
-                  استيراد قيود
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </FinanceErrorBoundary>
   );
