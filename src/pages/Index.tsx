@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { AnimatedBackground } from '@/components/landing/AnimatedBackground';
 import { HeroSection } from '@/components/landing/HeroSection';
-import { TrustedCompanies } from '@/components/landing/TrustedCompanies';
+
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { BusinessTypesSection } from '@/components/landing/BusinessTypesSection';
 import { DashboardPreview } from '@/components/landing/DashboardPreview';
@@ -35,9 +35,6 @@ const Index = () => {
       
       <HeroSection />
       
-      <ParallaxSection offset={30}>
-        <TrustedCompanies />
-      </ParallaxSection>
       
       <ParallaxSection offset={50}>
         <FeatureShowcase />
