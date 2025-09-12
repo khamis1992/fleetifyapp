@@ -35,9 +35,18 @@ const Dashboard: React.FC = () => {
   if (moduleLoading || isRefreshing) {
     console.log('🏢 [DASHBOARD] Loading modules or refreshing...', { moduleLoading, isRefreshing });
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        {isBrowsingMode && <p className="ml-2 text-sm text-muted-foreground">جاري تحميل بيانات الشركة...</p>}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {isBrowsingMode ? 'جاري تحميل بيانات الشركة...' : 'جاري تحميل لوحة التحكم...'}
+          </p>
+          {isBrowsingMode && browsedCompany?.name && (
+            <p className="text-xs text-muted-foreground">
+              {browsedCompany.name}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -47,13 +56,28 @@ const Dashboard: React.FC = () => {
   
   console.log('🏢 [DASHBOARD] Final business type decision:', businessType);
 
-  // إذا كان التحميل جارياً أو لا يوجد نوع نشاط، عرض شاشة التحميل
+  // التأكد من وجود نوع النشاط قبل عرض أي dashboard
+  // عدم عرض fallback dashboard إذا لم يتم تحديد نوع النشاط بعد
   if (!businessType || !company?.id) {
-    console.log('🏢 [DASHBOARD] No business type or company available, showing loading...', { businessType, companyId: company?.id });
+    console.log('🏢 [DASHBOARD] Missing critical data - preventing incorrect dashboard display', { 
+      businessType, 
+      companyId: company?.id,
+      companyData: !!company,
+      moduleLoading 
+    });
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        {isBrowsingMode && <p className="ml-2 text-sm text-muted-foreground">جاري تحميل نوع النشاط...</p>}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {!businessType ? 'جاري تحديد نوع النشاط...' : 'جاري تحميل بيانات الشركة...'}
+          </p>
+          {isBrowsingMode && browsedCompany?.name && (
+            <p className="text-xs text-muted-foreground">
+              شركة {browsedCompany.name}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -69,8 +93,19 @@ const Dashboard: React.FC = () => {
       console.log('🏢 [DASHBOARD] Rendering Retail Dashboard');
       return <RetailDashboard key={`retail-${companyId}`} />;
     default:
-      console.warn('🏢 [DASHBOARD] Unknown business type:', businessType, 'falling back to car rental');
-      return <CarRentalDashboard key={`fallback-${companyId}`} />;
+      console.error('🏢 [DASHBOARD] Unknown business type:', businessType, 'for company ID:', company?.id);
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+          <div className="text-center space-y-2">
+            <p className="text-sm text-destructive">
+              نوع النشاط غير مدعوم: {businessType}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              يرجى التواصل مع الدعم التقني
+            </p>
+          </div>
+        </div>
+      );
   }
 };
 

@@ -33,7 +33,7 @@ export const useModuleConfig = () => {
       console.log('🔧 [MODULE_CONFIG] Fetching company data for:', companyId);
       const { data, error } = await supabase
         .from('companies')
-        .select('id, business_type, active_modules, industry_config, custom_branding')
+        .select('id, name, business_type, active_modules, industry_config, custom_branding')
         .eq('id', companyId)
         .single();
 
@@ -117,7 +117,16 @@ export const useModuleConfig = () => {
   };
 
   // تحسين منطق التحميل - نعتبر البيانات محملة فقط عندما تكون بيانات الشركة موجودة ومعرفة
-  const isDataLoaded = !!company && !!moduleSettings && !!company.business_type;
+  // وجود business_type أمر ضروري لاتخاذ قرار عرض الـ dashboard الصحيح
+  const isDataLoaded = !!company && !!company.business_type && moduleSettings !== undefined;
+  
+  console.log('🔧 [MODULE_CONFIG] Loading Status Check:', {
+    hasCompany: !!company,
+    hasBusinessType: !!company?.business_type,
+    hasModuleSettings: moduleSettings !== undefined,
+    isDataLoaded,
+    companyId
+  });
 
   return {
     company,
