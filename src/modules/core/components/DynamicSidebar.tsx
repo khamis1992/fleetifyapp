@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { useModuleConfig } from "../hooks/useModuleConfig";
 import { ModuleRoute, ModuleName } from "@/types/modules";
 import { CarRentalSidebar } from "@/components/navigation/CarRentalSidebar";
+import { RealEstateSidebar } from "@/components/navigation/RealEstateSidebar";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 const getIconComponent = (iconName: string) => {
@@ -70,11 +71,15 @@ export function DynamicSidebar() {
 
   const collapsed = state === "collapsed";
 
-  // إذا كانت الشركة من نوع تأجير السيارات، استخدم الشريط الجانبي المخصص
+  // إذا كانت الشركة من نوع تأجير السيارات أو العقارات، استخدم الشريط الجانبي المخصص
   console.log('🏢 [DYNAMIC_SIDEBAR] Company business type:', company?.business_type, 'Available modules:', moduleContext?.availableModules?.map(m => m.name));
   
   if (company?.business_type === 'car_rental') {
     return <CarRentalSidebar />;
+  }
+  
+  if (company?.business_type === 'real_estate') {
+    return <RealEstateSidebar />;
   }
 
   const handleSignOut = async () => {
