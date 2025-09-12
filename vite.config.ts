@@ -23,9 +23,10 @@ export default defineConfig(({ mode }) => ({
     include: [
       'react',
       'react-dom',
-      'react/jsx-runtime'
+      'react/jsx-runtime',
+      'lucide-react'
     ],
-    exclude: ['lucide-react'],
+    exclude: [],
     force: true,
     esbuildOptions: {
       logOverride: {
