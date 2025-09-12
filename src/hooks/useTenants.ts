@@ -70,30 +70,64 @@ export const useCreateTenant = () => {
 
   return useMutation({
     mutationFn: async (tenantData: CreateTenantRequest) => {
+      // Get user and company info
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
+
+      // Validate required fields
+      if (!tenantData.full_name) {
+        throw new Error('الاسم الكامل مطلوب');
+      }
+
+      if (!filter.company_id) {
+        throw new Error('معرف الشركة مطلوب');
+      }
+
       // Generate tenant code
       const { data: codeData, error: codeError } = await supabase
         .rpc('generate_tenant_code', {
           company_id_param: filter.company_id,
-          tenant_type_param: tenantData.tenant_type
+          tenant_type_param: tenantData.tenant_type || 'individual'
         });
 
-      if (codeError) throw codeError;
+      if (codeError) {
+        console.error('Error generating tenant code:', codeError);
+        throw new Error('فشل في إنشاء رقم المستأجر');
+      }
+
+      // Clean and prepare data
+      const cleanedData = Object.fromEntries(
+        Object.entries(tenantData).filter(([_, value]) => 
+          value !== '' && value !== null && value !== undefined
+        )
+      );
 
       const insertData = {
-        ...tenantData,
+        ...cleanedData,
         company_id: filter.company_id,
         tenant_code: codeData,
-        created_by: (await supabase.auth.getUser()).data.user?.id,
+        created_by: user.id,
+        is_active: true,
+        status: 'active',
+        tenant_type: tenantData.tenant_type || 'individual',
       };
 
-      const { data, error } = await (supabase as any)
+      console.log('Creating tenant with data:', insertData);
+
+      const { data, error } = await supabase
         .from('tenants')
         .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
-      return data as Tenant;
+      if (error) {
+        console.error('Error creating tenant:', error);
+        throw error;
+      }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });

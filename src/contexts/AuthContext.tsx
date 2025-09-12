@@ -1,5 +1,4 @@
 import * as React from 'react';
-
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -18,197 +17,130 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [sessionError, setSessionError] = React.useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = React.useState(false);
+interface AuthProviderState {
+  user: AuthUser | null;
+  session: Session | null;
+  loading: boolean;
+  sessionError: string | null;
+  isSigningOut: boolean;
+}
 
-  // Session validation helper with improved error handling
-  const validateSession = React.useCallback(async (currentSession: Session | null): Promise<boolean> => {
-    if (!currentSession) {
-      return false;
+export class AuthProvider extends React.Component<AuthProviderProps, AuthProviderState> {
+  private authListener: any;
+
+  constructor(props: AuthProviderProps) {
+    super(props);
+    
+    this.state = {
+      user: null,
+      session: null,
+      loading: true,
+      sessionError: null,
+      isSigningOut: false
+    };
+  }
+
+  componentDidMount() {
+    this.initializeAuth();
+  }
+
+  componentWillUnmount() {
+    if (this.authListener) {
+      this.authListener.subscription.unsubscribe();
     }
+  }
 
+  initializeAuth = async () => {
     try {
-      // Check if session is expired
-      const now = Date.now() / 1000;
-      if (currentSession.expires_at && currentSession.expires_at < now) {
-        console.log('📝 [AUTH_CONTEXT] Session expired, attempting refresh...');
-        const { data, error } = await supabase.auth.refreshSession();
-        
-        if (error || !data.session) {
-          console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
-          if (!isSigningOut) {
-            setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
+      // Set up auth state listener
+      this.authListener = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
+          
+          if (event !== 'SIGNED_OUT' || !this.state.isSigningOut) {
+            this.setState({ sessionError: null });
           }
-          return false;
-        }
-        
-        console.log('📝 [AUTH_CONTEXT] Session refreshed successfully');
-        setSession(data.session);
-        return true;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
-      if (!isSigningOut) {
-        setSessionError('خطأ في التحقق من صحة الجلسة');
-      }
-      return false;
-    }
-  }, [isSigningOut]);
-
-  const refreshUser = React.useCallback(async () => {
-    if (session?.user) {
-      try {
-        const authUser = await authService.getCurrentUser();
-        setUser(authUser);
-      } catch (error) {
-        console.error('📝 [AUTH_CONTEXT] Error refreshing user:', error);
-      }
-    }
-  }, [session]);
-
-  React.useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
-        
-        if (event !== 'SIGNED_OUT' || !isSigningOut) {
-          setSessionError(null);
-        }
-        
-        if (event === 'USER_UPDATED' && session) {
-          console.log('📝 [AUTH_CONTEXT] User updated, refreshing...');
-          setSession(session);
-          setTimeout(async () => {
-            try {
-              const authUser = await authService.getCurrentUser();
-              setUser(authUser);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching updated user:', error);
-              setUser(session.user as AuthUser);
-            }
-          }, 0);
-          return;
-        }
-        
-        if (event === 'SIGNED_OUT') {
-          if (isSigningOut) {
-            setUser(null);
-            setSession(null);
-            setIsSigningOut(false);
-          } else {
-            console.log('📝 [AUTH_CONTEXT] Unexpected sign out, attempting to refresh session...');
-            const { data, error } = await supabase.auth.refreshSession();
-            if (error || !data.session) {
-              console.log('📝 [AUTH_CONTEXT] Session refresh failed, clearing user data');
-              setUser(null);
-              setSession(null);
-            } else {
-              console.log('📝 [AUTH_CONTEXT] Session restored successfully');
-              setSession(data.session);
-              try {
-                const authUser = await authService.getCurrentUser();
-                setUser(authUser);
-              } catch (error) {
-                console.error('📝 [AUTH_CONTEXT] Error fetching user profile after refresh:', error);
-                setUser(data.session.user as AuthUser);
-              }
+          
+          if (event === 'SIGNED_OUT') {
+            if (this.state.isSigningOut) {
+              this.setState({
+                user: null,
+                session: null,
+                isSigningOut: false
+              });
             }
           }
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          setSession(session);
-        }
-        
-        if (session?.user && event !== 'SIGNED_OUT') {
-          const isValidSession = await validateSession(session);
-          if (!isValidSession && !isSigningOut) {
-            setUser(null);
-            setSession(null);
-            setLoading(false);
-            return;
-          }
-
-          if (!isSigningOut) {
+          
+          if (session?.user && event !== 'SIGNED_OUT') {
             console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
-            setSession(session);
+            this.setState({ session });
             
-            setTimeout(async () => {
-              try {
-                const authUser = await authService.getCurrentUser();
-                console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-                setUser(authUser);
-                setSessionError(null);
-              } catch (error) {
-                console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-                setUser(session.user as AuthUser);
-                if (!isSigningOut) {
-                  setSessionError('خطأ في تحميل بيانات المستخدم');
-                }
-              }
-            }, 0);
-          }
-        } else if (event !== 'TOKEN_REFRESHED' && !isSigningOut) {
-          console.log('📝 [AUTH_CONTEXT] No user session');
-          setUser(null);
-          setSession(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    const initializeSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
-          setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
-          setLoading(false);
-          return;
-        }
-
-        if (session?.user) {
-          const isValidSession = await validateSession(session);
-          if (isValidSession) {
-            setSession(session);
             try {
               const authUser = await authService.getCurrentUser();
-              setUser(authUser);
+              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
+              this.setState({
+                user: authUser,
+                sessionError: null
+              });
             } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
-              setUser(session.user as AuthUser);
-              setSessionError('خطأ في تحميل بيانات المستخدم');
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+              this.setState({
+                user: session.user as AuthUser,
+                sessionError: 'خطأ في تحميل بيانات المستخدم'
+              });
             }
+          } else if (event !== 'TOKEN_REFRESHED' && !this.state.isSigningOut) {
+            console.log('📝 [AUTH_CONTEXT] No user session');
+            this.setState({
+              user: null,
+              session: null
+            });
           }
+          
+          this.setState({ loading: false });
         }
-      } catch (error) {
-        console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
-        setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
-      } finally {
-        setLoading(false);
+      );
+
+      // Check for existing session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
+        this.setState({
+          sessionError: 'خطأ في التحقق من جلسة تسجيل الدخول',
+          loading: false
+        });
+        return;
       }
-    };
 
-    initializeSession();
+      if (session?.user) {
+        this.setState({ session });
+        try {
+          const authUser = await authService.getCurrentUser();
+          this.setState({ user: authUser });
+        } catch (error) {
+          console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
+          this.setState({
+            user: session.user as AuthUser,
+            sessionError: 'خطأ في تحميل بيانات المستخدم'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
+      this.setState({
+        sessionError: 'خطأ في تهيئة جلسة تسجيل الدخول'
+      });
+    } finally {
+      this.setState({ loading: false });
+    }
+  };
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [isSigningOut, validateSession, refreshUser]);
-
-  const signUp = async (email: string, password: string, userData?: any) => {
+  signUp = async (email: string, password: string, userData?: any) => {
     return authService.signUp(email, password, userData);
   };
 
-  const signIn = async (email: string, password: string) => {
+  signIn = async (email: string, password: string) => {
     const result = await authService.signIn(email, password);
     
     if (!result.error) {
@@ -226,9 +158,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return result;
   };
 
-  const signOut = async () => {
-    setIsSigningOut(true);
-    const email = user?.email;
+  signOut = async () => {
+    this.setState({ isSigningOut: true });
+    const email = this.state.user?.email;
     const result = await authService.signOut();
     
     if (!result.error && email) {
@@ -246,32 +178,75 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return result;
   };
 
-  const updateProfile = async (updates: any) => {
-    if (!user) return { error: new Error('No user logged in') };
-    return authService.updateProfile(user.id, updates);
+  updateProfile = async (updates: any) => {
+    if (!this.state.user) return { error: new Error('No user logged in') };
+    return authService.updateProfile(this.state.user.id, updates);
   };
 
-  const changePassword = async (newPassword: string) => {
+  changePassword = async (newPassword: string) => {
     return authService.changePassword(newPassword);
   };
 
-  const value: AuthContextType = {
-    user,
-    session,
-    loading,
-    signUp,
-    signIn,
-    signOut,
-    updateProfile,
-    changePassword,
-    sessionError,
-    validateSession: () => validateSession(session),
-    refreshUser
+  validateSession = async () => {
+    if (!this.state.session) return false;
+    
+    try {
+      const now = Date.now() / 1000;
+      if (this.state.session.expires_at && this.state.session.expires_at < now) {
+        const { data, error } = await supabase.auth.refreshSession();
+        
+        if (error || !data.session) {
+          console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
+          if (!this.state.isSigningOut) {
+            this.setState({ sessionError: 'انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.' });
+          }
+          return false;
+        }
+        
+        this.setState({ session: data.session });
+        return true;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
+      if (!this.state.isSigningOut) {
+        this.setState({ sessionError: 'خطأ في التحقق من صحة الجلسة' });
+      }
+      return false;
+    }
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  refreshUser = async () => {
+    if (this.state.session?.user) {
+      try {
+        const authUser = await authService.getCurrentUser();
+        this.setState({ user: authUser });
+      } catch (error) {
+        console.error('📝 [AUTH_CONTEXT] Error refreshing user:', error);
+      }
+    }
+  };
+
+  render() {
+    const value: AuthContextType = {
+      user: this.state.user,
+      session: this.state.session,
+      loading: this.state.loading,
+      signUp: this.signUp,
+      signIn: this.signIn,
+      signOut: this.signOut,
+      updateProfile: this.updateProfile,
+      changePassword: this.changePassword,
+      sessionError: this.state.sessionError,
+      validateSession: this.validateSession,
+      refreshUser: this.refreshUser
+    };
+
+    return (
+      <AuthContext.Provider value={value}>
+        {this.props.children}
+      </AuthContext.Provider>
+    );
+  }
+}
