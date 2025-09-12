@@ -118,7 +118,7 @@ export const useCreateTenant = () => {
 
       const { data, error } = await supabase
         .from('tenants')
-        .insert(insertData)
+        .insert(insertData as any)
         .select()
         .single();
 
