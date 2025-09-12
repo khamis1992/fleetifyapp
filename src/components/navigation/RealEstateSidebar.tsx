@@ -82,11 +82,6 @@ const propertiesSubItems = [
     icon: Map
   },
   {
-    name: 'أنواع العقارات',
-    href: '/properties/types',
-    icon: Building
-  },
-  {
     name: 'حالة العقارات',
     href: '/properties/status',
     icon: Key
