@@ -88,8 +88,8 @@ const RetailDashboard: React.FC = () => {
       trend: 'up' as const,
       description: 'عميل مسجل',
       subtitle: 'قاعدة العملاء',
-      actionText: 'إدارة العملاء',
-      onAction: () => navigate('/customers')
+      actionText: 'إدارة المستأجرين',
+      onAction: () => navigate('/tenants')
     },
     {
       title: 'قيمة المخزون',

@@ -64,9 +64,9 @@ const navigationItems = [
     icon: Home 
   },
   { 
-    name: 'العملاء المحتملين', 
-    href: '/customers', 
-    icon: UserPlus 
+    name: 'المستأجرين', 
+    href: '/tenants', 
+    icon: Users 
   }
 ];
 

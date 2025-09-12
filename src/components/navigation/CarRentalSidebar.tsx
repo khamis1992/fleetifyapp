@@ -57,8 +57,8 @@ const navigationItems = [
     icon: Home 
   },
   { 
-    name: 'العملاء', 
-    href: '/customers', 
+    name: 'المستأجرين', 
+    href: '/tenants', 
     icon: Users 
   }
 ];

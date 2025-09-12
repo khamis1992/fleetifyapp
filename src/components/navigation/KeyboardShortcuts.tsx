@@ -77,9 +77,9 @@ export const KeyboardShortcuts: React.FC = () => {
       title: 'العملاء والعقود',
       shortcuts: [
         {
-          keys: ['Alt', 'C'],
-          description: 'العملاء',
-          action: () => navigate('/customers')
+          keys: ['Alt', 'T'],
+          description: 'المستأجرين',
+          action: () => navigate('/tenants')
         },
         {
           keys: ['Alt', 'O'],
@@ -198,9 +198,9 @@ export const KeyboardShortcuts: React.FC = () => {
             navigate('/fleet/traffic-violations');
             toast.success('انتقل إلى المخالفات المرورية');
             break;
-          case 'c':
-            navigate('/customers');
-            toast.success('انتقل إلى العملاء');
+          case 't':
+            navigate('/tenants');
+            toast.success('انتقل إلى المستأجرين');
             break;
           case 'o':
             navigate('/contracts');

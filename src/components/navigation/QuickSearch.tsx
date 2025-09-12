@@ -90,13 +90,13 @@ const searchItems: SearchItem[] = [
     keywords: ['contracts', 'عقود', 'إيجار', 'اتفاقيات', 'rental']
   },
   {
-    id: 'customers',
-    title: 'العملاء',
-    description: 'إدارة بيانات العملاء',
-    path: '/customers',
-    category: 'العملاء',
+    id: 'tenants',
+    title: 'المستأجرين',
+    description: 'إدارة بيانات المستأجرين',
+    path: '/tenants',
+    category: 'المستأجرين',
     icon: Users,
-    keywords: ['customers', 'عملاء', 'زبائن', 'clients']
+    keywords: ['tenants', 'مستأجرين', 'إيجار', 'rental']
   },
   {
     id: 'quotations',

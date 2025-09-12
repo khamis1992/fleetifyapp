@@ -30,7 +30,7 @@ const routeLabels: Record<string, string> = {
   '/fleet/traffic-violation-payments': 'مدفوعات المخالفات',
   '/fleet/reports': 'تقارير الأسطول',
   '/contracts': 'العقود',
-  '/customers': 'العملاء',
+  '/tenants': 'المستأجرين',
   '/quotations': 'عروض الأسعار',
   '/finance': 'المالية',
   '/finance/accounts': 'الحسابات',

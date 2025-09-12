@@ -42,8 +42,6 @@ import AuditPage from "./pages/AuditPage";
 import Fleet from "./pages/Fleet";
 import NotFound from "./pages/NotFound";
 import Contracts from "./pages/Contracts";
-import Customers from "./pages/Customers";
-import EditCustomer from "./pages/EditCustomer";
 import Quotations from "./pages/Quotations";
 import QuotationApproval from "./pages/QuotationApproval";
 import Maintenance from "./pages/fleet/Maintenance";
@@ -172,7 +170,6 @@ const App = () => {
                 </AdminRoute>
               } />
               <Route path="contracts" element={<Contracts />} />
-              <Route path="customers" element={<Customers />} />
               <Route path="tenants" element={<Tenants />} />
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />
@@ -184,7 +181,6 @@ const App = () => {
                 </AdminRoute>
               } />
               <Route path="owners" element={<PropertyOwners />} />
-              <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="quotations" element={<Quotations />} />
               {/* Legacy route redirects for finance */}
               <Route path="chart-of-accounts" element={<Navigate to="/finance/chart-of-accounts" replace />} />
@@ -317,9 +313,7 @@ const App = () => {
                 </AdminRoute>
               } />
               <Route path="contracts" element={<Contracts />} />
-              <Route path="customers" element={<Customers />} />
               <Route path="tenants" element={<Tenants />} />
-              <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />

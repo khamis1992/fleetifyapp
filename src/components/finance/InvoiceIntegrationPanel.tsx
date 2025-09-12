@@ -112,10 +112,10 @@ export function InvoiceIntegrationPanel({
               variant="outline" 
               size="sm" 
               className="justify-start"
-              onClick={() => navigate('/customers')}
+              onClick={() => navigate('/tenants')}
             >
               <Users className="h-4 w-4 mr-2" />
-              إدارة العملاء
+              إدارة المستأجرين
               <ExternalLink className="h-3 w-3 ml-auto" />
             </Button>
           </div>

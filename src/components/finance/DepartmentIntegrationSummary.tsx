@@ -177,9 +177,9 @@ export function DepartmentIntegrationSummary({ className }: DepartmentIntegratio
                 variant="outline" 
                 size="sm" 
                 className="w-full mt-3"
-                onClick={() => navigate('/customers')}
+                onClick={() => navigate('/tenants')}
               >
-                عرض العملاء
+                عرض المستأجرين
               </Button>
             </div>
 
