@@ -96,7 +96,7 @@ const tenantsSubItems = [
   },
   {
     name: 'الملاك',
-    href: '/tenants/owners',
+    href: '/owners',
     icon: UserCog
   },
   {
