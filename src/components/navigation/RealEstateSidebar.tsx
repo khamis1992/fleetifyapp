@@ -106,16 +106,6 @@ const contractsSubItems = [
     name: 'عقود الإيجار',
     href: '/contracts',
     icon: FileText
-  },
-  {
-    name: 'تجديد العقود',
-    href: '/contracts/renewals',
-    icon: Calendar
-  },
-  {
-    name: 'قوالب العقود',
-    href: '/contracts/templates',
-    icon: BookOpen
   }
 ];
 
