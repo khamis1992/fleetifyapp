@@ -32,3 +32,10 @@ export function safeParseNumber(value: string | number): number {
 export function normalizeDigits(input: string): string {
   return normalizeArabicDigits(input)
 }
+
+/**
+ * تنسيق العملة
+ */
+export function formatCurrency(amount: number): string {
+  return amount.toFixed(3) + ' د.ك'
+}

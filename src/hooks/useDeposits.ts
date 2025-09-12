@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useCompanyFilter } from '@/hooks/useCompanyFilter';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface Deposit {
   id: string;
@@ -36,7 +36,8 @@ export interface CreateDepositData {
 }
 
 export const useDeposits = () => {
-  const { companyId } = useCompanyFilter();
+  const { filter } = useUnifiedCompanyAccess();
+  const companyId = filter?.company_id;
   
   return useQuery({
     queryKey: ['deposits', companyId],
@@ -45,12 +46,7 @@ export const useDeposits = () => {
 
       const { data, error } = await supabase
         .from('customer_deposits')
-        .select(`
-          *,
-          customers!inner(name),
-          deposit_types!inner(name, name_ar),
-          chart_of_accounts(account_name, account_name_ar)
-        `)
+        .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
@@ -58,9 +54,9 @@ export const useDeposits = () => {
 
       return data?.map(deposit => ({
         ...deposit,
-        customer_name: deposit.customers?.name,
-        deposit_type_name: deposit.deposit_types?.name_ar || deposit.deposit_types?.name,
-        account_name: deposit.chart_of_accounts?.account_name_ar || deposit.chart_of_accounts?.account_name
+        customer_name: `Customer ${deposit.customer_id}`,
+        deposit_type_name: deposit.deposit_type,
+        account_name: 'Account'
       })) || [];
     },
     enabled: !!companyId,
@@ -70,7 +66,8 @@ export const useDeposits = () => {
 export const useCreateDeposit = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { companyId } = useCompanyFilter();
+  const { filter } = useUnifiedCompanyAccess();
+  const companyId = filter?.company_id;
 
   return useMutation({
     mutationFn: async (depositData: CreateDepositData) => {
@@ -195,7 +192,7 @@ export const useReturnDeposit = () => {
     mutationFn: async ({ id, returnAmount, notes }: { id: string; returnAmount: number; notes?: string }) => {
       const { data: deposit } = await supabase
         .from('customer_deposits')
-        .select('amount, returned_amount')
+        .select('amount, returned_amount, notes')
         .eq('id', id)
         .single();
 

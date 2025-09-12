@@ -62,10 +62,24 @@ export function DepositForm({ deposit, onSuccess }: DepositFormProps) {
       if (deposit) {
         await updateDeposit.mutateAsync({
           id: deposit.id,
-          updates: data,
+          updates: {
+            customer_id: data.customer_id,
+            deposit_type: data.deposit_type,
+            amount: data.amount,
+            received_date: data.received_date,
+            due_date: data.due_date,
+            notes: data.notes,
+          },
         });
       } else {
-        await createDeposit.mutateAsync(data);
+        await createDeposit.mutateAsync({
+          customer_id: data.customer_id,
+          deposit_type: data.deposit_type,
+          amount: data.amount,
+          received_date: data.received_date,
+          due_date: data.due_date,
+          notes: data.notes,
+        });
       }
       onSuccess();
     } catch (error) {
@@ -109,7 +123,7 @@ export function DepositForm({ deposit, onSuccess }: DepositFormProps) {
                   <SelectContent>
                     {customers?.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
+                        {customer.company_name || customer.company_name_ar || `Customer ${customer.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>

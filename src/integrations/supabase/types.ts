@@ -2918,6 +2918,63 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_deposits: {
+        Row: {
+          account_id: string | null
+          amount: number
+          company_id: string
+          contract_id: string | null
+          created_at: string
+          customer_id: string
+          deposit_number: string
+          deposit_type: string
+          due_date: string | null
+          id: string
+          journal_entry_id: string | null
+          notes: string | null
+          received_date: string
+          returned_amount: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          company_id: string
+          contract_id?: string | null
+          created_at?: string
+          customer_id: string
+          deposit_number: string
+          deposit_type?: string
+          due_date?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          received_date: string
+          returned_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string
+          customer_id?: string
+          deposit_number?: string
+          deposit_type?: string
+          due_date?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          received_date?: string
+          returned_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_financial_summary: {
         Row: {
           average_days_to_pay: number | null
