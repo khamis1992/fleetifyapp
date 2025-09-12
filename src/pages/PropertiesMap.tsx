@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useProperties } from '@/modules/properties/hooks';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,25 @@ const PropertyMapView: React.FC = () => {
   const markersRef = useRef<L.Marker[]>([]);
   const propertyMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   
-  // Mock data for demonstration
-  const mockProperties = [
+  const [filters, setFilters] = useState({
+    type: 'all',
+    status: 'all',
+    search: ''
+  });
+  
+  const { data: propertiesData = [] } = useProperties(filters.search ? { search: filters.search } : undefined);
+  
+  // Transform real data to map format
+  const properties = propertiesData.filter(p => p.location_coordinates?.latitude && p.location_coordinates?.longitude).map(p => ({
+    id: p.id,
+    name: p.property_name,
+    type: p.property_type,
+    status: p.property_status,
+    location: { lat: p.location_coordinates.latitude, lng: p.location_coordinates.longitude },
+    address: p.address || '',
+    price: p.rental_price || 0,
+    tenantName: null
+  }));
     {
       id: '1',
       name: 'فيلا العارضية',
@@ -60,7 +78,7 @@ const PropertyMapView: React.FC = () => {
     }
   ];
 
-  const [filteredProperties, setFilteredProperties] = useState(mockProperties);
+  const [filteredProperties, setFilteredProperties] = useState(properties);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [filters, setFilters] = useState({
     type: 'all',
@@ -235,7 +253,7 @@ const PropertyMapView: React.FC = () => {
 
   // Apply filters
   useEffect(() => {
-    let filtered = mockProperties;
+    let filtered = properties;
 
     if (filters.type !== 'all') {
       filtered = filtered.filter(property => property.type === filters.type);

@@ -24,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePropertyOwnersOptions } from '../hooks/usePropertyOwners';
 import { Property, PropertyType, PropertyStatus, PropertyCondition } from '../types';
+import { MapPicker } from './MapPicker';
 import { Loader2 } from 'lucide-react';
 
 const propertySchema = z.object({
@@ -47,6 +48,8 @@ const propertySchema = z.object({
   rental_price: z.number().min(0, 'سعر الإيجار يجب أن يكون موجباً').optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 type PropertyFormData = z.infer<typeof propertySchema>;
@@ -114,6 +117,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
       rental_price: property?.rental_price || undefined,
       description: property?.description || '',
       notes: '',
+      latitude: property?.location_coordinates?.latitude || undefined,
+      longitude: property?.location_coordinates?.longitude || undefined,
     },
   });
 
@@ -536,6 +541,16 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
               />
             </CardContent>
           </Card>
+
+          {/* موقع العقار على الخريطة */}
+          <MapPicker
+            latitude={form.watch('latitude')}
+            longitude={form.watch('longitude')}
+            onLocationChange={(lat, lng) => {
+              form.setValue('latitude', lat);
+              form.setValue('longitude', lng);
+            }}
+          />
 
           {/* أزرار الإجراءات */}
           <div className="flex justify-end space-x-2 space-x-reverse">

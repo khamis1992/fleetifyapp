@@ -3,14 +3,58 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ModuleLayout } from '@/modules/core/components/ModuleLayout';
 import { PropertyForm } from '@/modules/properties/components';
+import { useCreateProperty } from '@/modules/properties/hooks';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { Link, useNavigate } from 'react-router-dom';
 import { Property } from '@/modules/properties/types';
 
 export default function AddProperty() {
   const navigate = useNavigate();
+  const companyAccess = useUnifiedCompanyAccess();
+  const createProperty = useCreateProperty();
 
-  const handleSuccess = () => {
-    navigate('/properties');
+  const handleSubmit = async (formData: any) => {
+    if (!companyAccess?.user?.id || !companyAccess?.companyId) {
+      console.error('Missing user or company information');
+      return;
+    }
+
+    const propertyData = {
+      company_id: companyAccess.companyId,
+      created_by: companyAccess.user.id,
+      property_code: formData.property_code,
+      property_name: formData.property_name,
+      property_type: formData.property_type,
+      property_status: formData.status,
+      address: formData.address,
+      area_sqm: formData.area_size,
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      parking_spaces: formData.parking_spaces,
+      furnished: formData.is_furnished,
+      rental_price: formData.rental_price,
+      sale_price: formData.sale_price,
+      description: formData.description,
+      owner_id: formData.owner_id,
+      location_coordinates: formData.latitude && formData.longitude ? {
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      } : null,
+      features: {
+        has_elevator: formData.has_elevator,
+        has_garden: formData.has_garden,
+        has_swimming_pool: formData.has_swimming_pool,
+        condition_status: formData.condition_status,
+        area: formData.area
+      }
+    };
+
+    try {
+      await createProperty.mutateAsync(propertyData);
+      navigate('/properties');
+    } catch (error) {
+      console.error('Error creating property:', error);
+    }
   };
 
   return (
@@ -37,8 +81,9 @@ export default function AddProperty() {
           </CardHeader>
           <CardContent>
             <PropertyForm 
-              onSubmit={handleSuccess}
+              onSubmit={handleSubmit}
               onCancel={() => navigate('/properties')}
+              isLoading={createProperty.isPending}
             />
           </CardContent>
         </Card>
