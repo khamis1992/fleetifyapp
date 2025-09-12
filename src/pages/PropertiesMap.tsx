@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +8,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { MapPin, Filter, Search, Building, Home, Warehouse } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix leaflet default markers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 const PropertyMapView: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  
   // Mock data for demonstration
   const mockProperties = [
     {
@@ -92,6 +106,123 @@ const PropertyMapView: React.FC = () => {
     }
   };
 
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    // Initialize the map
+    mapRef.current = L.map(mapContainerRef.current).setView([29.3759, 47.9774], 11);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mapRef.current);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update markers when properties change
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => {
+      mapRef.current?.removeLayer(marker);
+    });
+    markersRef.current = [];
+
+    // Add new markers
+    filteredProperties.forEach((property) => {
+      if (!mapRef.current) return;
+
+      // Create custom icon based on property status
+      const getMarkerColor = (status: string) => {
+        switch (status) {
+          case 'rented': return '#22c55e'; // green
+          case 'available': return '#3b82f6'; // blue
+          case 'maintenance': return '#f97316'; // orange
+          case 'for_sale': return '#a855f7'; // purple
+          default: return '#6b7280'; // gray
+        }
+      };
+
+      const customIcon = L.divIcon({
+        html: `
+          <div style="
+            width: 24px;
+            height: 24px;
+            background-color: ${getMarkerColor(property.status)};
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+          ">
+            ${property.type === 'residential' ? '🏠' : property.type === 'commercial' ? '🏢' : '🏬'}
+          </div>
+        `,
+        className: 'custom-marker',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([property.location.lat, property.location.lng], {
+        icon: customIcon
+      }).addTo(mapRef.current);
+
+      // Add popup
+      const popupContent = `
+        <div style="direction: rtl; text-align: right; font-family: system-ui;">
+          <h3 style="margin: 0 0 8px 0; font-weight: bold;">${property.name}</h3>
+          <p style="margin: 0 0 4px 0; color: #666; font-size: 14px;">${property.address}</p>
+          <p style="margin: 0 0 4px 0;"><strong>النوع:</strong> ${getTypeLabel(property.type)}</p>
+          <p style="margin: 0 0 4px 0;"><strong>الحالة:</strong> ${getStatusLabel(property.status)}</p>
+          <p style="margin: 0 0 8px 0;"><strong>الإيجار:</strong> ${formatCurrency(property.price)} / شهرياً</p>
+          ${property.tenantName ? `<p style="margin: 0; color: #666;"><strong>المستأجر:</strong> ${property.tenantName}</p>` : ''}
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+
+      // Add click event
+      marker.on('click', () => {
+        setSelectedProperty(property);
+      });
+
+      markersRef.current.push(marker);
+    });
+  }, [filteredProperties, formatCurrency]);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = mockProperties;
+
+    if (filters.type !== 'all') {
+      filtered = filtered.filter(property => property.type === filters.type);
+    }
+
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(property => property.status === filters.status);
+    }
+
+    if (filters.search) {
+      filtered = filtered.filter(property => 
+        property.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        property.address.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    setFilteredProperties(filtered);
+  }, [filters]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -163,66 +294,32 @@ const PropertyMapView: React.FC = () => {
         <div className="lg:col-span-2">
           <Card className="h-[600px]">
             <CardContent className="p-0 h-full">
-              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-green-50 rounded-lg flex items-center justify-center relative overflow-hidden">
-                {/* Mock Map Interface */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-green-100/50" />
-                
-                {/* Property Markers */}
-                {filteredProperties.map((property, index) => (
-                  <motion.div
-                    key={property.id}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={cn(
-                      "absolute w-10 h-10 rounded-full border-4 border-white shadow-lg cursor-pointer transition-all hover:scale-110",
-                      getStatusColor(property.status)
-                    )}
-                    style={{
-                      left: `${20 + index * 25}%`,
-                      top: `${30 + index * 15}%`
-                    }}
-                    onClick={() => setSelectedProperty(property)}
-                  >
-                    <div className="w-full h-full rounded-full flex items-center justify-center">
-                      {getTypeIcon(property.type)}
-                    </div>
-                  </motion.div>
-                ))}
-
-                {/* Map Controls */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  <Button size="sm" variant="secondary">+</Button>
-                  <Button size="sm" variant="secondary">-</Button>
-                </div>
-
-                {/* Legend */}
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 space-y-2">
-                  <h4 className="font-medium text-sm">وسائل الإيضاح</h4>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <span>مؤجر</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      <span>متاح</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-500" />
-                      <span>صيانة</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      <span>للبيع</span>
-                    </div>
+              <div 
+                ref={mapContainerRef}
+                className="w-full h-full rounded-lg"
+                style={{ minHeight: '600px' }}
+              />
+              
+              {/* Legend */}
+              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 space-y-2 z-[1000]">
+                <h4 className="font-medium text-sm">وسائل الإيضاح</h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span>مؤجر</span>
                   </div>
-                </div>
-
-                <div className="text-center text-muted-foreground">
-                  <MapPin className="h-16 w-16 mx-auto mb-4 text-primary/30" />
-                  <p className="text-lg font-medium">خريطة العقارات التفاعلية</p>
-                  <p className="text-sm">سيتم دمج خريطة حقيقية هنا (Google Maps أو Mapbox)</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    <span>متاح</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-orange-500" />
+                    <span>صيانة</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-500" />
+                    <span>للبيع</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
