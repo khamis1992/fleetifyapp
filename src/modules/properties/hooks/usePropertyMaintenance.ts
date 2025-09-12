@@ -7,7 +7,7 @@ export function usePropertyMaintenance(filters?: PropertyMaintenanceFilters) {
   return useQuery({
     queryKey: ['property-maintenance', filters],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('property_maintenance')
         .select(`
           *,
@@ -82,7 +82,7 @@ export function usePropertyMaintenanceStats() {
   return useQuery({
     queryKey: ['property-maintenance-stats'],
     queryFn: async () => {
-      const { data: maintenance, error } = await supabase
+      const { data: maintenance, error } = await (supabase as any)
         .from('property_maintenance')
         .select('status, maintenance_type, priority, estimated_cost, actual_cost, property_id, created_at')
         .eq('is_active', true);
@@ -175,7 +175,7 @@ export function useCreatePropertyMaintenance() {
         created_by: maintenanceData.created_by,
       };
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('property_maintenance')
         .insert(insertData)
         .select()
@@ -204,7 +204,7 @@ export function useUpdatePropertyMaintenance() {
       // تحضير البيانات للتحديث - إزالة الحقول غير المطلوبة
       const { property, ...cleanUpdateData } = updateData;
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('property_maintenance')
         .update(cleanUpdateData)
         .eq('id', id)
