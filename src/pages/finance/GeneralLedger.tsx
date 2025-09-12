@@ -24,7 +24,8 @@ import {
   useExportLedgerData,
   type LedgerFilters 
 } from "@/hooks/useGeneralLedger";
-import { useChartOfAccounts, useCostCenters } from "@/hooks/useFinance";
+import { useChartOfAccounts } from "@/hooks/useFinance";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
 import { JournalVoucherDisplay } from "@/components/finance/JournalVoucherDisplay";

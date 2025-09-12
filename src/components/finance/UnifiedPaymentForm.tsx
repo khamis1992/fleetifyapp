@@ -14,7 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TestTube, AlertTriangle, Info, FileText, Eye, EyeOff, Calendar, DollarSign } from "lucide-react";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
-import { useCostCenters, useBanks } from "@/hooks/useTreasury";
+import { useBanks } from "@/hooks/useTreasury";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { useActiveContracts } from "@/hooks/useContracts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";

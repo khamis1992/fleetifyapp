@@ -213,24 +213,8 @@ export const useDeleteBankTransaction = () => {
   });
 };
 
-// Cost Centers hooks
-export const useCostCenters = () => {
-  return useQuery({
-    queryKey: ['cost-centers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cost_centers')
-        .select('*')
-        .eq('is_active', true)
-        .order('center_name');
-
-      if (error) throw error;
-      
-      // Filter out any records with empty or null IDs
-      return (data as CostCenter[]).filter(center => center.id && center.id.trim() !== '');
-    },
-  });
-};
+// Cost Centers hooks - Use the centralized hook from useCostCenters.ts
+// export const useCostCenters is removed to avoid conflicts - import from @/hooks/useCostCenters instead
 
 export const useCreateCostCenter = () => {
   const queryClient = useQueryClient();

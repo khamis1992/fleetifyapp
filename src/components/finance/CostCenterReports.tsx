@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useCostCenters } from '@/hooks/useFinance'
+import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCostCenterFinancialData } from '@/hooks/useCostCenterReports'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, TrendingDown, Target, DollarSign, AlertTriangle, Download } from 'lucide-react'

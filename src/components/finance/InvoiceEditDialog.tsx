@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, TestTube } from "lucide-react";
-import { useCostCenters, useFixedAssets, useUpdateInvoice } from "@/hooks/useFinance";
+import { useFixedAssets, useUpdateInvoice } from "@/hooks/useFinance";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { ChartOfAccount } from "@/hooks/useChartOfAccounts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { useAuth } from "@/contexts/AuthContext";

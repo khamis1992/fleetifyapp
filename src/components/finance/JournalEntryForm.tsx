@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Calculator } from 'lucide-react'
 import { UnifiedAccountSelector } from '@/components/ui/unified-account-selector'
 import { useCreateJournalEntry } from '@/hooks/useFinance'
-import { useCostCenters } from '@/hooks/useFinance'
+import { useCostCenters } from '@/hooks/useCostCenters'
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useInvoiceCostCenterAnalysis, useInvoiceBudgetComparison, useFixedAssetInvoiceAnalysis } from "@/hooks/useInvoiceAnalysis";
-import { useCostCenters } from "@/hooks/useFinance";
+import { useCostCenters } from "@/hooks/useCostCenters";
 
 const InvoiceReports = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

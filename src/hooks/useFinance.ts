@@ -1124,47 +1124,8 @@ export const useCleanupInactiveAccounts = () => {
   });
 };
 
-// Cost Centers Hooks
-export const useCostCenters = () => {
-  const { user } = useAuth()
-  
-  console.log('📝 [COST_CENTERS] Hook called with user:', {
-    userId: user?.id,
-    companyId: user?.profile?.company_id,
-    hasProfile: !!user?.profile
-  });
-  
-  return useQuery({
-    queryKey: ["costCenters", user?.profile?.company_id],
-    queryFn: async () => {
-      const companyId = user?.profile?.company_id;
-      console.log('📝 [COST_CENTERS] Fetching cost centers for company:', companyId);
-      
-      if (!companyId) {
-        console.error('📝 [COST_CENTERS] No company ID found');
-        throw new Error('No company ID found');
-      }
-      
-      const { data, error } = await supabase
-        .from("cost_centers")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("is_active", true)
-        .order("center_code")
-      
-      console.log('📝 [COST_CENTERS] Query result:', { data, error, count: data?.length });
-      
-      if (error) {
-        console.error('📝 [COST_CENTERS] Query error:', error);
-        throw error;
-      }
-      
-      return data as CostCenter[]
-    },
-    enabled: !!user?.profile?.company_id,
-    retry: 1
-  })
-}
+// Cost Centers Hooks - Use the centralized hook from useCostCenters.ts
+// export const useCostCenters is removed to avoid conflicts - import from @/hooks/useCostCenters instead
 
 export const useCreateCostCenter = () => {
   const queryClient = useQueryClient()
