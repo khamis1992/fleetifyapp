@@ -45,6 +45,7 @@ import CostCentersSettings from "./finance/settings/CostCentersSettings"
 import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSettings"
 import AccountingWizard from "./finance/AccountingWizard"
 import FinancialCalculator from "./finance/Calculator"
+import Deposits from "./finance/Deposits"
 import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/components/finance/ProtectedFinanceRoute"
 
@@ -443,6 +444,16 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.view">
             <FinancialCalculator />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* إدارة الودائع */}
+      <Route 
+        path="deposits" 
+        element={
+          <ProtectedFinanceRoute permission="finance.deposits.view">
+            <Deposits />
           </ProtectedFinanceRoute>
         } 
       />
