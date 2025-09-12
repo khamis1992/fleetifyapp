@@ -4,10 +4,10 @@ import { InteractiveCard } from './InteractiveCard';
 
 export function DashboardPreview() {
   const mockData = [
-    { label: 'الإيرادات', value: '€124,500', icon: DollarSign, change: '+12%' },
-    { label: 'المستخدمون النشطون', value: '2,847', icon: Users, change: '+8%' },
-    { label: 'الكفاءة', value: '94.2%', icon: TrendingUp, change: '+3%' },
-    { label: 'المشاريع', value: '156', icon: Calendar, change: '+15%' },
+    { label: 'إجمالي الإيرادات', value: '€524,300', icon: DollarSign, change: '+18%' },
+    { label: 'الشركات النشطة', value: '2,847', icon: Users, change: '+12%' },
+    { label: 'معدل النمو', value: '94.2%', icon: TrendingUp, change: '+8%' },
+    { label: 'المعاملات اليومية', value: '1,256', icon: Calendar, change: '+24%' },
   ];
 
   return (
@@ -21,10 +21,10 @@ export function DashboardPreview() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent text-center">
-            لوحة تحليلات في الوقت الفعلي
+            لوحة تحكم ERP متقدمة
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-center">
-            راقب أداء عملك مع منصة التحليلات المتقدمة لدينا
+            راقب جميع جوانب عملك من مكان واحد مع تحليلات شاملة ومؤشرات أداء متقدمة
           </p>
         </motion.div>
 
@@ -67,10 +67,10 @@ export function DashboardPreview() {
           <InteractiveCard className="max-w-4xl mx-auto">
             <div className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold">Fleet Performance</h3>
+                <h3 className="text-xl font-semibold">أداء النظام الشامل</h3>
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Live Tracking</span>
+                  <span className="text-sm text-muted-foreground">مراقبة مباشرة</span>
                 </div>
               </div>
               
@@ -82,16 +82,16 @@ export function DashboardPreview() {
               
               <div className="grid grid-cols-3 gap-4 mt-6">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">247</p>
-                  <p className="text-sm text-muted-foreground">المركبات النشطة</p>
+                  <p className="text-2xl font-bold text-primary">847</p>
+                  <p className="text-sm text-muted-foreground">الشركات المسجلة</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-accent">98.5%</p>
+                  <p className="text-2xl font-bold text-accent">99.9%</p>
                   <p className="text-sm text-muted-foreground">وقت التشغيل</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-success">€52K</p>
-                  <p className="text-sm text-muted-foreground">الإيرادات الشهرية</p>
+                  <p className="text-2xl font-bold text-success">€1.2M</p>
+                  <p className="text-sm text-muted-foreground">المعاملات الشهرية</p>
                 </div>
               </div>
             </div>

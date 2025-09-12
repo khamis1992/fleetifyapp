@@ -6,6 +6,7 @@ import { AnimatedBackground } from '@/components/landing/AnimatedBackground';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { TrustedCompanies } from '@/components/landing/TrustedCompanies';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+import { BusinessTypesSection } from '@/components/landing/BusinessTypesSection';
 import { DashboardPreview } from '@/components/landing/DashboardPreview';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { CallToActionSection } from '@/components/landing/CallToActionSection';
@@ -42,6 +43,10 @@ const Index = () => {
         <FeatureShowcase />
       </ParallaxSection>
       
+      <ParallaxSection offset={-20}>
+        <BusinessTypesSection />
+      </ParallaxSection>
+      
       <ParallaxSection offset={-30}>
         <DashboardPreview />
       </ParallaxSection>
@@ -58,19 +63,19 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">
-                فليتيفاي
+                ERP سيستم
               </h3>
               <p className="text-sm text-muted-foreground">
-                منصة إدارة أعمال الجيل القادم للمؤسسات الحديثة.
+                نظام إدارة موارد المؤسسات الشامل للأعمال الحديثة.
               </p>
             </div>
             
             <div className="space-y-4">
-              <h4 className="font-medium">المنتج</h4>
+              <h4 className="font-medium">الحلول</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">إدارة الأسطول</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">حلول الموارد البشرية</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">التحكم المالي</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">النظام المحاسبي</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">إدارة العملاء</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">إدارة المخزون</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">التحليلات</a></li>
               </ul>
             </div>
@@ -98,7 +103,7 @@ const Index = () => {
           
           <div className="border-t border-border/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              © 2025 فليتيفاي. جميع الحقوق محفوظة.
+              © 2025 ERP سيستم. جميع الحقوق محفوظة.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">

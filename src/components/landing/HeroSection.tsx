@@ -46,7 +46,7 @@ export function HeroSection() {
               className="inline-flex items-center space-x-2 bg-gradient-primary/10 px-4 py-2 rounded-full border border-primary/20"
             >
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="arabic-body-sm font-medium text-primary">منصة احترافية على مستوى المؤسسات</span>
+              <span className="arabic-body-sm font-medium text-primary">نظام ERP متكامل لجميع القطاعات</span>
             </motion.div>
 
             <motion.h1
@@ -55,9 +55,9 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="arabic-heading-xl text-right text-container"
             >
-              <span className="block">حوّل عمليات</span>
+              <span className="block">نظام إدارة شامل</span>
               <span className="block bg-gradient-primary bg-clip-text text-transparent">
-                شركتك التجارية
+                لجميع أنواع الأعمال
               </span>
             </motion.h1>
 
@@ -67,8 +67,8 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="arabic-body-lg text-muted-foreground max-w-2xl text-right text-container"
             >
-              أقوى منصة لإدارة الأساطيل وأتمتة الأعمال. 
-              تبسيط العمليات، تعزيز الكفاءة، والنمو بثقة.
+              منصة ERP متطورة تدعم 10 قطاعات مختلفة مع حلول مخصصة
+              لتأجير السيارات، العقارات، التجزئة، الطب، التصنيع، والمزيد.
             </motion.p>
 
             <motion.div
@@ -120,7 +120,7 @@ export function HeroSection() {
                 <div className="space-y-6">
                   {/* Header */}
                   <div className="flex items-center justify-between">
-                    <h3 className="arabic-heading-sm text-container">لوحة تحكم الأسطول</h3>
+                    <h3 className="arabic-heading-sm text-container">لوحة تحكم ERP</h3>
                     <div className="flex space-x-1">
                       <div className="w-3 h-3 bg-destructive rounded-full" />
                       <div className="w-3 h-3 bg-warning rounded-full" />
@@ -131,10 +131,10 @@ export function HeroSection() {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { label: 'المركبات النشطة', value: '247', color: 'bg-primary' },
-                      { label: 'الإيرادات', value: '€52K', color: 'bg-success' },
-                      { label: 'الكفاءة', value: '94%', color: 'bg-accent' },
-                      { label: 'الحوادث', value: '3', color: 'bg-warning' },
+                      { label: 'الشركات النشطة', value: '156', color: 'bg-primary' },
+                      { label: 'الإيرادات الشهرية', value: '€124K', color: 'bg-success' },
+                      { label: 'المعاملات', value: '2,847', color: 'bg-accent' },
+                      { label: 'النمو', value: '+12%', color: 'bg-warning' },
                     ].map((stat, i) => (
                       <motion.div
                         key={stat.label}

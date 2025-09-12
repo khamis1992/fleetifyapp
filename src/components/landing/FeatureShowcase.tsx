@@ -1,49 +1,49 @@
 import { motion } from 'framer-motion';
-import { Truck, Users, DollarSign, BarChart3, Shield, Zap } from 'lucide-react';
+import { Building2, Calculator, Users, BarChart3, Shield, Zap } from 'lucide-react';
 import { InteractiveCard } from './InteractiveCard';
 
 const features = [
   {
-    icon: Truck,
-    title: 'إدارة الأسطول',
-    description: 'تتبع شامل للمركبات، جدولة الصيانة، وتحسين المسارات',
+    icon: Calculator,
+    title: 'النظام المحاسبي',
+    description: 'نظام محاسبي متكامل مع إدارة الميزانية والتقارير المالية المتقدمة',
     color: 'hsl(var(--primary))',
-    benefits: ['تتبع GPS مباشر', 'صيانة تنبؤية', 'تحسين الوقود']
+    benefits: ['محاسبة مزدوجة', 'تقارير مالية', 'إدارة الضرائب']
   },
   {
     icon: Users,
-    title: 'إدارة الموارد البشرية',
-    description: 'إدارة الموظفين المبسطة مع تتبع الحضور وكشوف المرتبات',
+    title: 'إدارة العملاء والموردين',
+    description: 'إدارة شاملة لقاعدة العملاء والموردين مع تتبع المعاملات',
     color: 'hsl(var(--accent))',
-    benefits: ['حضور رقمي', 'كشوف مرتبات آلية', 'تحليلات الأداء']
+    benefits: ['ملفات العملاء', 'تتبع المدفوعات', 'تحليل العلاقات']
   },
   {
-    icon: DollarSign,
-    title: 'التحكم المالي',
-    description: 'ميزات محاسبية متقدمة مع تقارير مالية في الوقت الفعلي',
+    icon: Building2,
+    title: 'إدارة المخزون',
+    description: 'تتبع المخزون المتقدم مع الإنذارات والتنبؤ بالطلب',
     color: 'hsl(var(--success))',
-    benefits: ['تقارير فورية', 'تتبع الميزانية', 'أتمتة الفواتير']
+    benefits: ['تتبع المخزون', 'إدارة المستودعات', 'تحسين المشتريات']
   },
   {
     icon: BarChart3,
-    title: 'التحليلات والرؤى',
-    description: 'ذكاء أعمال قوي مع تحليلات تنبؤية',
+    title: 'التحليلات والتقارير',
+    description: 'ذكاء أعمال متطور مع تحليلات تنبؤية ولوحات تحكم تفاعلية',
     color: 'hsl(var(--warning))',
-    benefits: ['رؤى تنبؤية', 'لوحات مخصصة', 'مراقبة مؤشرات الأداء']
+    benefits: ['رؤى تنبؤية', 'لوحات مخصصة', 'مؤشرات الأداء']
   },
   {
     icon: Shield,
-    title: 'أمان على مستوى المؤسسات',
-    description: 'أمان بمستوى البنوك مع تشفير متقدم والامتثال',
+    title: 'الأمان والامتثال',
+    description: 'أمان على مستوى المؤسسات مع التشفير المتقدم والامتثال للمعايير',
     color: 'hsl(var(--destructive))',
-    benefits: ['تشفير شامل', 'امتثال GDPR', 'وصول قائم على الأدوار']
+    benefits: ['تشفير متقدم', 'امتثال المعايير', 'صلاحيات متقدمة']
   },
   {
     icon: Zap,
-    title: 'الأتمتة',
-    description: 'أتمتة ذكية لتبسيط عمليات عملك',
+    title: 'الأتمتة الذكية',
+    description: 'أتمتة العمليات التجارية مع سير العمل الذكي والإشعارات التلقائية',
     color: 'hsl(var(--primary))',
-    benefits: ['أتمتة سير العمل', 'إشعارات ذكية', 'تحسين العمليات']
+    benefits: ['سير عمل ذكي', 'إشعارات تلقائية', 'تحسين الأداء']
   }
 ];
 
@@ -80,10 +80,10 @@ export function FeatureShowcase() {
           className="text-center mb-16"
         >
           <h2 className="arabic-heading-lg mb-6 bg-gradient-primary bg-clip-text text-transparent text-center text-container">
-            كل ما تحتاجه للنمو
+            حلول ERP متكاملة
           </h2>
           <p className="arabic-body-lg text-muted-foreground max-w-3xl mx-auto text-center text-container">
-            أدوات إدارة أعمال شاملة مصممة للمؤسسات الحديثة
+            نظام إدارة أعمال شامل يغطي جميع احتياجات مؤسستك مع وحدات مخصصة لكل قطاع
           </p>
         </motion.div>
 
