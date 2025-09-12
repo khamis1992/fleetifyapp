@@ -248,3 +248,110 @@ export interface PropertyStats {
   properties_by_type: Record<PropertyType, number>;
   properties_by_area: Record<string, number>;
 }
+
+// أنواع بيانات صيانة العقارات
+export type PropertyMaintenanceType = 
+  | 'routine' 
+  | 'emergency' 
+  | 'repair' 
+  | 'improvement' 
+  | 'renovation' 
+  | 'inspection'
+  | 'cleaning'
+  | 'electrical'
+  | 'plumbing'
+  | 'hvac'
+  | 'painting'
+  | 'flooring';
+
+export type PropertyMaintenanceStatus = 
+  | 'pending' 
+  | 'scheduled' 
+  | 'in_progress' 
+  | 'completed' 
+  | 'cancelled'
+  | 'on_hold';
+
+export type PropertyMaintenancePriority = 
+  | 'low' 
+  | 'medium' 
+  | 'high' 
+  | 'urgent';
+
+export interface PropertyMaintenance {
+  id: string;
+  company_id: string;
+  property_id: string;
+  maintenance_number: string;
+  maintenance_type: PropertyMaintenanceType;
+  status: PropertyMaintenanceStatus;
+  priority: PropertyMaintenancePriority;
+  
+  // وصف العمل
+  title: string;
+  title_ar?: string;
+  description?: string;
+  description_ar?: string;
+  
+  // التواريخ
+  requested_date: string;
+  scheduled_date?: string;
+  start_date?: string;
+  completion_date?: string;
+  
+  // التكاليف
+  estimated_cost?: number;
+  actual_cost?: number;
+  currency?: string;
+  
+  // الموظفين المسؤولين
+  assigned_to?: string;
+  contractor_name?: string;
+  contractor_phone?: string;
+  
+  // معلومات إضافية
+  location_details?: string;
+  required_materials?: string[];
+  notes?: string;
+  images?: string[];
+  documents?: string[];
+  
+  // تقييم العمل
+  quality_rating?: number;
+  completion_notes?: string;
+  
+  // تواريخ النظام
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  is_active?: boolean;
+  
+  // العلاقات
+  property?: Property;
+}
+
+export interface PropertyMaintenanceFilters {
+  search?: string;
+  property_id?: string;
+  maintenance_type?: PropertyMaintenanceType | PropertyMaintenanceType[];
+  status?: PropertyMaintenanceStatus | PropertyMaintenanceStatus[];
+  priority?: PropertyMaintenancePriority;
+  assigned_to?: string;
+  date_from?: string;
+  date_to?: string;
+  cost_min?: number;
+  cost_max?: number;
+}
+
+export interface PropertyMaintenanceStats {
+  total_maintenance: number;
+  pending_maintenance: number;
+  in_progress_maintenance: number;
+  completed_maintenance: number;
+  cancelled_maintenance: number;
+  properties_under_maintenance: number;
+  total_monthly_cost: number;
+  average_cost_per_maintenance: number;
+  maintenance_by_type: Record<PropertyMaintenanceType, number>;
+  maintenance_by_priority: Record<PropertyMaintenancePriority, number>;
+}
