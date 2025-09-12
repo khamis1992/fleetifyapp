@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => ({
       'react',
       'react-dom',
       'react/jsx-runtime',
+      'react/jsx-dev-runtime',
       'lucide-react'
     ],
     exclude: [],
@@ -35,6 +36,10 @@ export default defineConfig(({ mode }) => ({
       logOverride: {
         'this-is-undefined-in-esm': 'silent',
       },
+      define: {
+        // ضمان تعريف React بشكل صحيح
+        'process.env.NODE_ENV': '"development"'
+      }
     },
   },
   build: {
