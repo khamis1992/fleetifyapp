@@ -17,15 +17,15 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom']
   },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
-      'react/jsx-runtime',
-      'lucide-react'
+      'react/jsx-runtime'
     ],
-    // Ensure fresh pre-bundle of CJS/ESM
+    exclude: ['lucide-react'],
     force: true,
     esbuildOptions: {
       logOverride: {
