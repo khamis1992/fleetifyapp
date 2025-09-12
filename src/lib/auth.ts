@@ -17,6 +17,8 @@ export interface AuthUser extends User {
     id: string;
     name: string;
     name_ar?: string;
+    business_type?: string;
+    active_modules?: string[];
   };
   roles?: string[];
 }
@@ -99,7 +101,9 @@ export const authService = {
           companies:company_id (
             id,
             name,
-            name_ar
+            name_ar,
+            business_type,
+            active_modules
           )
         `)
         .eq('user_id', user.id)
@@ -117,7 +121,9 @@ export const authService = {
             companies (
               id,
               name,
-              name_ar
+              name_ar,
+              business_type,
+              active_modules
             )
           `)
           .eq('user_id', user.id)
@@ -146,7 +152,9 @@ export const authService = {
                   companies:company_id (
                     id,
                     name,
-                    name_ar
+                    name_ar,
+                    business_type,
+                    active_modules
                   )
                 `)
                 .eq('user_id', user.id)
@@ -201,6 +209,8 @@ export const authService = {
         profileCompanyId: profile?.company_id,
         companyId,
         hasCompanyInfo: !!companyInfo,
+        businessType: companyInfo?.business_type,
+        activeModules: companyInfo?.active_modules,
         roles: authUser.roles
       });
 
@@ -209,6 +219,7 @@ export const authService = {
         email: authUser.email,
         company_id: companyId,
         company: authUser.company,
+        business_type: authUser.company?.business_type,
         roles: authUser.roles
       });
 

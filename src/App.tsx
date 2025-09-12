@@ -16,6 +16,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
 import Dashboard from "./pages/Dashboard";
+import OptimizedDashboard from "./pages/OptimizedDashboard";
 import SuperAdminDashboard from "./pages/super-admin/Dashboard";
 import SuperAdminCompanies from "./pages/super-admin/Companies";
 import CreateCompany from "./pages/super-admin/CreateCompany";
@@ -104,7 +105,7 @@ const App = () => {
                   <Route path="settings" element={<SuperAdminSettings />} />
                 </Route>
                 <Route path="/*" element={<ResponsiveDashboardLayout />}>
-                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="dashboard" element={<OptimizedDashboard />} />
                   <Route path="subscription" element={<SubscriptionPage />} />
                   
                   <Route path="backup" element={
@@ -266,7 +267,7 @@ const App = () => {
                     <CompanyBrowserLayout />
                   </SuperAdminRoute>
                 }>
-                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="dashboard" element={<OptimizedDashboard />} />
                   <Route path="subscription" element={<SubscriptionPage />} />
                   
                   <Route path="fleet" element={
