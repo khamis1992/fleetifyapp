@@ -37,7 +37,18 @@ export interface TemplateStats {
   entryLevelAccounts: number;
 }
 
-export const useTemplateSystem = () => {
+const TEMPLATE_FILES: Record<string, string> = {
+  car_rental: '/car_rental_complete_template.json',
+  real_estate: '/real_estate_template.json',
+  retail_trade: '/retail_template.json',
+  construction: '/construction_template.json',
+  professional_services: '/professional_services_template.json',
+  manufacturing: '/car_rental_complete_template.json', // Fallback
+  medical: '/car_rental_complete_template.json', // Fallback  
+  education: '/car_rental_complete_template.json', // Fallback
+};
+
+export const useTemplateSystem = (businessType?: string) => {
   const [template, setTemplate] = useState<CompleteTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +59,15 @@ export const useTemplateSystem = () => {
         setLoading(true);
         setError(null);
         
-        console.log('🔄 Loading car rental template from JSON...');
+        // Determine which template file to load
+        const templateFile = businessType && TEMPLATE_FILES[businessType] 
+          ? TEMPLATE_FILES[businessType]
+          : '/car_rental_complete_template.json'; // Default fallback
+        
+        console.log(`🔄 Loading template for business type: ${businessType || 'default'} from ${templateFile}`);
         // Add cache-busting parameter to ensure fresh load
         const timestamp = new Date().getTime();
-        const response = await fetch(`/car_rental_complete_template.json?v=${timestamp}`);
+        const response = await fetch(`${templateFile}?v=${timestamp}`);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -106,7 +122,7 @@ export const useTemplateSystem = () => {
     };
 
     loadTemplate();
-  }, []);
+  }, [businessType]);
 
   const getTemplateStats = (): TemplateStats => {
     if (!template) {

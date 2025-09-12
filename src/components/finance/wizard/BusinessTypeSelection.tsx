@@ -14,6 +14,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { WizardData } from '../AccountingSystemWizard';
+import { useTemplateSystem } from '@/hooks/useTemplateSystem';
 
 interface BusinessType {
   id: string;
@@ -136,11 +137,14 @@ interface Props {
 }
 
 export const BusinessTypeSelection: React.FC<Props> = ({ data, onUpdate, onNext }) => {
+  const { getAccountsByType, loading } = useTemplateSystem(data.businessType);
+  
   const handleSelectBusinessType = (businessType: string) => {
     onUpdate({ businessType });
   };
 
   const selectedType = BUSINESS_TYPES.find(type => type.id === data.businessType);
+  const realAccounts = getAccountsByType();
 
   return (
     <div className="space-y-6">
@@ -195,8 +199,17 @@ export const BusinessTypeSelection: React.FC<Props> = ({ data, onUpdate, onNext 
                     أمثلة على الحسابات:
                   </div>
                   <div className="text-xs space-y-1">
-                    <div>• {type.accounts.revenue.slice(0, 2).join('، ')}</div>
-                    <div>• {type.accounts.expenses.slice(0, 2).join('، ')}</div>
+                    {isSelected && realAccounts.revenue.length > 0 ? (
+                      <>
+                        <div>• {realAccounts.revenue.slice(0, 2).map(acc => acc.name_ar).join('، ')}</div>
+                        <div>• {realAccounts.expenses.slice(0, 2).map(acc => acc.name_ar).join('، ')}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div>• {type.accounts.revenue.slice(0, 2).join('، ')}</div>
+                        <div>• {type.accounts.expenses.slice(0, 2).join('، ')}</div>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -212,24 +225,49 @@ export const BusinessTypeSelection: React.FC<Props> = ({ data, onUpdate, onNext 
               <h4 className="font-semibold text-primary">
                 الحسابات المقترحة لـ {selectedType.name}:
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="font-medium text-green-700 mb-2">الإيرادات:</div>
-                  <ul className="space-y-1">
-                    {selectedType.accounts.revenue.map((account, index) => (
-                      <li key={index} className="text-muted-foreground">• {account}</li>
-                    ))}
-                  </ul>
+              {loading ? (
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground">جاري تحميل الحسابات...</div>
                 </div>
-                <div>
-                  <div className="font-medium text-red-700 mb-2">المصروفات:</div>
-                  <ul className="space-y-1">
-                    {selectedType.accounts.expenses.map((account, index) => (
-                      <li key={index} className="text-muted-foreground">• {account}</li>
-                    ))}
-                  </ul>
+              ) : realAccounts.revenue.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="font-medium text-green-700 mb-2">الإيرادات:</div>
+                    <ul className="space-y-1">
+                      {realAccounts.revenue.slice(0, 5).map((account) => (
+                        <li key={account.code} className="text-muted-foreground">• {account.name_ar}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-medium text-red-700 mb-2">المصروفات:</div>
+                    <ul className="space-y-1">
+                      {realAccounts.expenses.slice(0, 5).map((account) => (
+                        <li key={account.code} className="text-muted-foreground">• {account.name_ar}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="font-medium text-green-700 mb-2">الإيرادات:</div>
+                    <ul className="space-y-1">
+                      {selectedType.accounts.revenue.map((account, index) => (
+                        <li key={index} className="text-muted-foreground">• {account}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-medium text-red-700 mb-2">المصروفات:</div>
+                    <ul className="space-y-1">
+                      {selectedType.accounts.expenses.map((account, index) => (
+                        <li key={index} className="text-muted-foreground">• {account}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

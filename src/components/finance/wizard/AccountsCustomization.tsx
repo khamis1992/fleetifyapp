@@ -32,7 +32,7 @@ export const AccountsCustomization: React.FC<Props> = ({
   onNext, 
   onBack 
 }) => {
-  const { getAccountsByType } = useTemplateSystem();
+  const { getAccountsByType } = useTemplateSystem(data.businessType);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(data.selectedAccounts || []);
   
   const businessAccounts = getAccountsByType();
