@@ -46,45 +46,9 @@ const PropertyMapView: React.FC = () => {
     price: p.rental_price || 0,
     tenantName: null
   }));
-    {
-      id: '1',
-      name: 'فيلا العارضية',
-      type: 'residential',
-      status: 'rented',
-      location: { lat: 29.3759, lng: 47.9774 },
-      address: 'العارضية، الكويت',
-      price: 1200,
-      tenantName: 'أحمد محمد'
-    },
-    {
-      id: '2',
-      name: 'شقة الجابرية',
-      type: 'apartment',
-      status: 'available',
-      location: { lat: 29.3117, lng: 48.0370 },
-      address: 'الجابرية، الكويت',
-      price: 800,
-      tenantName: null
-    },
-    {
-      id: '3',
-      name: 'مكتب السالمية',
-      type: 'commercial',
-      status: 'rented',
-      location: { lat: 29.3375, lng: 48.0564 },
-      address: 'السالمية، الكويت',
-      price: 1500,
-      tenantName: 'شركة النور'
-    }
-  ];
 
   const [filteredProperties, setFilteredProperties] = useState(properties);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
-  const [filters, setFilters] = useState({
-    type: 'all',
-    status: 'all',
-    search: ''
-  });
 
   const getStatusColor = (status: string) => {
     switch (status) {

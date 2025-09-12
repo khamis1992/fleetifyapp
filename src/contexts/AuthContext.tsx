@@ -1,12 +1,12 @@
-import * as React from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
 
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = React.useContext(AuthContext);
+  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -14,90 +14,57 @@ export const useAuth = () => {
 };
 
 interface AuthProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-interface AuthProviderState {
-  user: AuthUser | null;
-  session: Session | null;
-  loading: boolean;
-  sessionError: string | null;
-  isSigningOut: boolean;
-}
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const authListenerRef = useRef<any>(null);
 
-export class AuthProvider extends React.Component<AuthProviderProps, AuthProviderState> {
-  private authListener: any;
-
-  constructor(props: AuthProviderProps) {
-    super(props);
-    
-    this.state = {
-      user: null,
-      session: null,
-      loading: true,
-      sessionError: null,
-      isSigningOut: false
-    };
-  }
-
-  componentDidMount() {
-    this.initializeAuth();
-  }
-
-  componentWillUnmount() {
-    if (this.authListener) {
-      this.authListener.subscription.unsubscribe();
-    }
-  }
-
-  initializeAuth = async () => {
+  const initializeAuth = async () => {
     try {
       // Set up auth state listener
-      this.authListener = supabase.auth.onAuthStateChange(
+      authListenerRef.current = supabase.auth.onAuthStateChange(
         async (event, session) => {
           console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
           
-          if (event !== 'SIGNED_OUT' || !this.state.isSigningOut) {
-            this.setState({ sessionError: null });
+          if (event !== 'SIGNED_OUT' || !isSigningOut) {
+            setSessionError(null);
           }
           
           if (event === 'SIGNED_OUT') {
-            if (this.state.isSigningOut) {
-              this.setState({
-                user: null,
-                session: null,
-                isSigningOut: false
-              });
+            if (isSigningOut) {
+              setUser(null);
+              setSession(null);
+              setIsSigningOut(false);
             }
           }
           
           if (session?.user && event !== 'SIGNED_OUT') {
             console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
-            this.setState({ session });
+            setSession(session);
             
             try {
               const authUser = await authService.getCurrentUser();
               console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-              this.setState({
-                user: authUser,
-                sessionError: null
-              });
+              setUser(authUser);
+              setSessionError(null);
             } catch (error) {
               console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              this.setState({
-                user: session.user as AuthUser,
-                sessionError: 'خطأ في تحميل بيانات المستخدم'
-              });
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
             }
-          } else if (event !== 'TOKEN_REFRESHED' && !this.state.isSigningOut) {
+          } else if (event !== 'TOKEN_REFRESHED' && !isSigningOut) {
             console.log('📝 [AUTH_CONTEXT] No user session');
-            this.setState({
-              user: null,
-              session: null
-            });
+            setUser(null);
+            setSession(null);
           }
           
-          this.setState({ loading: false });
+          setLoading(false);
         }
       );
 
@@ -106,41 +73,45 @@ export class AuthProvider extends React.Component<AuthProviderProps, AuthProvide
       
       if (error) {
         console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
-        this.setState({
-          sessionError: 'خطأ في التحقق من جلسة تسجيل الدخول',
-          loading: false
-        });
+        setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
+        setLoading(false);
         return;
       }
 
       if (session?.user) {
-        this.setState({ session });
+        setSession(session);
         try {
           const authUser = await authService.getCurrentUser();
-          this.setState({ user: authUser });
+          setUser(authUser);
         } catch (error) {
           console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
-          this.setState({
-            user: session.user as AuthUser,
-            sessionError: 'خطأ في تحميل بيانات المستخدم'
-          });
+          setUser(session.user as AuthUser);
+          setSessionError('خطأ في تحميل بيانات المستخدم');
         }
       }
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
-      this.setState({
-        sessionError: 'خطأ في تهيئة جلسة تسجيل الدخول'
-      });
+      setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
     } finally {
-      this.setState({ loading: false });
+      setLoading(false);
     }
   };
 
-  signUp = async (email: string, password: string, userData?: any) => {
+  useEffect(() => {
+    initializeAuth();
+
+    return () => {
+      if (authListenerRef.current) {
+        authListenerRef.current.subscription.unsubscribe();
+      }
+    };
+  }, []);
+
+  const signUp = async (email: string, password: string, userData?: any) => {
     return authService.signUp(email, password, userData);
   };
 
-  signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     const result = await authService.signIn(email, password);
     
     if (!result.error) {
@@ -158,9 +129,9 @@ export class AuthProvider extends React.Component<AuthProviderProps, AuthProvide
     return result;
   };
 
-  signOut = async () => {
-    this.setState({ isSigningOut: true });
-    const email = this.state.user?.email;
+  const signOut = async () => {
+    setIsSigningOut(true);
+    const email = user?.email;
     const result = await authService.signOut();
     
     if (!result.error && email) {
@@ -178,75 +149,73 @@ export class AuthProvider extends React.Component<AuthProviderProps, AuthProvide
     return result;
   };
 
-  updateProfile = async (updates: any) => {
-    if (!this.state.user) return { error: new Error('No user logged in') };
-    return authService.updateProfile(this.state.user.id, updates);
+  const updateProfile = async (updates: any) => {
+    if (!user) return { error: new Error('No user logged in') };
+    return authService.updateProfile(user.id, updates);
   };
 
-  changePassword = async (newPassword: string) => {
+  const changePassword = async (newPassword: string) => {
     return authService.changePassword(newPassword);
   };
 
-  validateSession = async () => {
-    if (!this.state.session) return false;
+  const validateSession = async () => {
+    if (!session) return false;
     
     try {
       const now = Date.now() / 1000;
-      if (this.state.session.expires_at && this.state.session.expires_at < now) {
+      if (session.expires_at && session.expires_at < now) {
         const { data, error } = await supabase.auth.refreshSession();
         
         if (error || !data.session) {
           console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
-          if (!this.state.isSigningOut) {
-            this.setState({ sessionError: 'انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.' });
+          if (!isSigningOut) {
+            setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
           }
           return false;
         }
         
-        this.setState({ session: data.session });
+        setSession(data.session);
         return true;
       }
       
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
-      if (!this.state.isSigningOut) {
-        this.setState({ sessionError: 'خطأ في التحقق من صحة الجلسة' });
+      if (!isSigningOut) {
+        setSessionError('خطأ في التحقق من صحة الجلسة');
       }
       return false;
     }
   };
 
-  refreshUser = async () => {
-    if (this.state.session?.user) {
+  const refreshUser = async () => {
+    if (session?.user) {
       try {
         const authUser = await authService.getCurrentUser();
-        this.setState({ user: authUser });
+        setUser(authUser);
       } catch (error) {
         console.error('📝 [AUTH_CONTEXT] Error refreshing user:', error);
       }
     }
   };
 
-  render() {
-    const value: AuthContextType = {
-      user: this.state.user,
-      session: this.state.session,
-      loading: this.state.loading,
-      signUp: this.signUp,
-      signIn: this.signIn,
-      signOut: this.signOut,
-      updateProfile: this.updateProfile,
-      changePassword: this.changePassword,
-      sessionError: this.state.sessionError,
-      validateSession: this.validateSession,
-      refreshUser: this.refreshUser
-    };
+  const value: AuthContextType = {
+    user,
+    session,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+    changePassword,
+    sessionError,
+    validateSession,
+    refreshUser
+  };
 
-    return (
-      <AuthContext.Provider value={value}>
-        {this.props.children}
-      </AuthContext.Provider>
-    );
-  }
-}
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
