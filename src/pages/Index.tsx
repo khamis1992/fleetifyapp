@@ -8,7 +8,7 @@ import { HeroSection } from '@/components/landing/HeroSection';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { BusinessTypesSection } from '@/components/landing/BusinessTypesSection';
 import { DashboardPreview } from '@/components/landing/DashboardPreview';
-import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
+
 import { CallToActionSection } from '@/components/landing/CallToActionSection';
 import { ParallaxSection } from '@/components/landing/ParallaxSection';
 import { useDynamicLandingContent } from '@/hooks/useDynamicLandingContent';
@@ -48,9 +48,6 @@ const Index = () => {
         <DashboardPreview />
       </ParallaxSection>
       
-      <ParallaxSection offset={40}>
-        <TestimonialsSection />
-      </ParallaxSection>
       
       <CallToActionSection />
 
