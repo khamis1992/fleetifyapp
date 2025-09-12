@@ -73,6 +73,7 @@ import Reports from "./pages/Reports";
 import ReportView from "./pages/ReportView";
 import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSettings";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
+import { Tenants } from "./modules/tenants";
 
 const queryClient = new QueryClient();
 
@@ -172,6 +173,7 @@ const App = () => {
               } />
               <Route path="contracts" element={<Contracts />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="tenants" element={<Tenants />} />
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />
@@ -316,6 +318,7 @@ const App = () => {
               } />
               <Route path="contracts" element={<Contracts />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="tenants" element={<Tenants />} />
               <Route path="edit-customer/:id" element={<EditCustomer />} />
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />

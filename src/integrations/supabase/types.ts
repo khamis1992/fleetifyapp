@@ -8630,6 +8630,104 @@ export type Database = {
         }
         Relationships: []
       }
+      tenants: {
+        Row: {
+          civil_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          current_address: string | null
+          current_address_ar: string | null
+          date_of_birth: string | null
+          documents: Json | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employer_name: string | null
+          full_name: string
+          full_name_ar: string | null
+          id: string
+          is_active: boolean | null
+          monthly_income: number | null
+          nationality: string | null
+          notes: string | null
+          occupation: string | null
+          passport_number: string | null
+          phone: string | null
+          status: string
+          tenant_code: string
+          tenant_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          civil_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          current_address?: string | null
+          current_address_ar?: string | null
+          date_of_birth?: string | null
+          documents?: Json | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employer_name?: string | null
+          full_name: string
+          full_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_income?: number | null
+          nationality?: string | null
+          notes?: string | null
+          occupation?: string | null
+          passport_number?: string | null
+          phone?: string | null
+          status?: string
+          tenant_code: string
+          tenant_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          civil_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_address?: string | null
+          current_address_ar?: string | null
+          date_of_birth?: string | null
+          documents?: Json | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employer_name?: string | null
+          full_name?: string
+          full_name_ar?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_income?: number | null
+          nationality?: string | null
+          notes?: string | null
+          occupation?: string | null
+          passport_number?: string | null
+          phone?: string | null
+          status?: string
+          tenant_code?: string
+          tenant_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       traffic_violation_payments: {
         Row: {
           amount: number
@@ -11969,6 +12067,10 @@ export type Database = {
       }
       generate_secure_password: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_tenant_code: {
+        Args: { company_id_param: string; tenant_type_param: string }
         Returns: string
       }
       generate_ticket_number: {
