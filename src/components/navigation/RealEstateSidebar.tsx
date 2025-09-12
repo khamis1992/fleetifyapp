@@ -82,11 +82,6 @@ const propertiesSubItems = [
     icon: Map
   },
   {
-    name: 'تقييم العقارات',
-    href: '/properties/valuations',
-    icon: Calculator
-  },
-  {
     name: 'صيانة العقارات',
     href: '/properties/maintenance',
     icon: Wrench
