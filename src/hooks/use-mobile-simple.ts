@@ -1,4 +1,5 @@
 import React from 'react'
+import { logger } from '@/lib/logger'
 
 export interface SimpleBreakpoint {
   isMobile: boolean
@@ -7,45 +8,65 @@ export interface SimpleBreakpoint {
 }
 
 export function useSimpleBreakpoint(): SimpleBreakpoint {
-  console.log('🔍 [DEBUG] useSimpleBreakpoint called')
-  
-  // Add debug logging to see if React hooks are accessible
-  try {
-    console.log('🔍 [DEBUG] useState available:', typeof React.useState)
-    
-    const [breakpoint, setBreakpoint] = React.useState<SimpleBreakpoint>({
-      isMobile: true,
-      isTablet: false,
-      isDesktop: false
-    })
+  // Default breakpoint (SSR-safe)
+  const [breakpoint, setBreakpoint] = React.useState<SimpleBreakpoint>({
+    isMobile: true,
+    isTablet: false,
+    isDesktop: false
+  })
 
-    console.log('🔍 [DEBUG] useState successful, current breakpoint:', breakpoint)
+  const lastCategoryRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null)
 
-    React.useEffect(() => {
-      console.log('🔍 [DEBUG] useEffect called')
-      const updateBreakpoint = () => {
-        const width = window.innerWidth
-        console.log('🔍 [DEBUG] Window width:', width)
-        
-        setBreakpoint({
-          isMobile: width < 768,
-          isTablet: width >= 768 && width < 1024,
-          isDesktop: width >= 1024
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const compute = (): SimpleBreakpoint => {
+      const width = window.innerWidth
+      return {
+        isMobile: width < 768,
+        isTablet: width >= 768 && width < 1024,
+        isDesktop: width >= 1024
+      }
+    }
+
+    const update = () => {
+      const next = compute()
+      setBreakpoint(prev => {
+        const category = next.isMobile ? 'mobile' : next.isTablet ? 'tablet' : 'desktop'
+        if (lastCategoryRef.current !== category) {
+          lastCategoryRef.current = category
+          logger.debug('[breakpoint] changed', { category, width: window.innerWidth })
+        }
+        // Avoid unnecessary state updates
+        if (
+          prev.isMobile === next.isMobile &&
+          prev.isTablet === next.isTablet &&
+          prev.isDesktop === next.isDesktop
+        ) {
+          return prev
+        }
+        return next
+      })
+    }
+
+    logger.debugOnce('useSimpleBreakpoint:init', 'useSimpleBreakpoint initialized')
+    update()
+
+    // rAF throttle for resize events
+    let ticking = false
+    const onResize = () => {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(() => {
+          update()
+          ticking = false
         })
       }
-
-      updateBreakpoint()
-      window.addEventListener('resize', updateBreakpoint)
-      return () => window.removeEventListener('resize', updateBreakpoint)
-    }, [])
-
-    return breakpoint
-  } catch (error) {
-    console.error('🚨 [DEBUG] Error in useSimpleBreakpoint:', error)
-    return {
-      isMobile: true,
-      isTablet: false,
-      isDesktop: false
     }
-  }
+
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  return breakpoint
 }
