@@ -90,11 +90,6 @@ const tenantsSubItems = [
     icon: Users
   },
   {
-    name: 'طلبات الإيجار',
-    href: '/tenants/applications',
-    icon: FileText
-  },
-  {
     name: 'الملاك',
     href: '/owners',
     icon: UserCog
