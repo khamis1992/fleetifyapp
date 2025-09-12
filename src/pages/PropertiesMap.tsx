@@ -24,6 +24,7 @@ const PropertyMapView: React.FC = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const propertyMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   
   // Mock data for demonstration
   const mockProperties = [
@@ -126,6 +127,28 @@ const PropertyMapView: React.FC = () => {
     };
   }, []);
 
+  // Function to focus on a property in the map
+  const focusOnProperty = (property: any) => {
+    if (!mapRef.current) return;
+    
+    // Pan to property location with smooth animation
+    mapRef.current.setView([property.location.lat, property.location.lng], 15, {
+      animate: true,
+      duration: 1
+    });
+    
+    // Find and open the marker popup for this property
+    const marker = propertyMarkersRef.current.get(property.id);
+    if (marker) {
+      // Close any open popups first
+      mapRef.current.closePopup();
+      // Open this property's popup
+      setTimeout(() => {
+        marker.openPopup();
+      }, 500); // Delay to allow pan animation to complete
+    }
+  };
+
   // Update markers when properties change
   useEffect(() => {
     if (!mapRef.current) return;
@@ -135,6 +158,7 @@ const PropertyMapView: React.FC = () => {
       mapRef.current?.removeLayer(marker);
     });
     markersRef.current = [];
+    propertyMarkersRef.current.clear();
 
     // Add new markers
     filteredProperties.forEach((property) => {
@@ -151,11 +175,16 @@ const PropertyMapView: React.FC = () => {
         }
       };
 
+      // Check if this property is selected to make it stand out
+      const isSelected = selectedProperty?.id === property.id;
+      const iconSize: [number, number] = isSelected ? [32, 32] : [24, 24];
+      const iconAnchor: [number, number] = isSelected ? [16, 16] : [12, 12];
+
       const customIcon = L.divIcon({
         html: `
           <div style="
-            width: 24px;
-            height: 24px;
+            width: ${iconSize[0]}px;
+            height: ${iconSize[1]}px;
             background-color: ${getMarkerColor(property.status)};
             border: 3px solid white;
             border-radius: 50%;
@@ -164,14 +193,16 @@ const PropertyMapView: React.FC = () => {
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 12px;
+            font-size: ${isSelected ? '16px' : '12px'};
+            transition: all 0.3s ease;
+            ${isSelected ? 'transform: scale(1.1); z-index: 1000;' : ''}
           ">
             ${property.type === 'residential' ? '🏠' : property.type === 'commercial' ? '🏢' : '🏬'}
           </div>
         `,
-        className: 'custom-marker',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        className: `custom-marker ${isSelected ? 'selected' : ''}`,
+        iconSize: iconSize,
+        iconAnchor: iconAnchor
       });
 
       const marker = L.marker([property.location.lat, property.location.lng], {
@@ -198,8 +229,9 @@ const PropertyMapView: React.FC = () => {
       });
 
       markersRef.current.push(marker);
+      propertyMarkersRef.current.set(property.id, marker);
     });
-  }, [filteredProperties, formatCurrency]);
+  }, [filteredProperties, formatCurrency, selectedProperty]);
 
   // Apply filters
   useEffect(() => {
@@ -340,10 +372,13 @@ const PropertyMapView: React.FC = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     className={cn(
-                      "p-4 border-b cursor-pointer transition-colors hover:bg-accent/50",
-                      selectedProperty?.id === property.id && "bg-accent"
+                      "p-4 border-b cursor-pointer transition-all duration-200 hover:bg-accent/50 hover:shadow-sm",
+                      selectedProperty?.id === property.id && "bg-accent border-primary/20 shadow-sm"
                     )}
-                    onClick={() => setSelectedProperty(property)}
+                    onClick={() => {
+                      setSelectedProperty(property);
+                      focusOnProperty(property);
+                    }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
