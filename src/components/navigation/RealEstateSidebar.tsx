@@ -98,11 +98,6 @@ const tenantsSubItems = [
     name: 'الملاك',
     href: '/owners',
     icon: UserCog
-  },
-  {
-    name: 'معلومات الاتصال',
-    href: '/tenants/contacts',
-    icon: Phone
   }
 ];
 
