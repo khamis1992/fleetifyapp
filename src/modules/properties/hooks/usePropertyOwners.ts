@@ -102,17 +102,30 @@ export function useCreatePropertyOwner() {
 
       // Clean the data and remove empty values
       const cleanedData = Object.fromEntries(
-        Object.entries(ownerData).filter(([_, value]) => 
-          value !== '' && value !== null && value !== undefined
-        )
+        Object.entries(ownerData).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
       );
+
+      // Normalize fields to match DB schema
+      const normalized: any = { ...cleanedData };
+      // Map legacy bank_account -> bank_account_info JSON
+      if (normalized.bank_account) {
+        normalized.bank_account_info = { account_number: String(normalized.bank_account) };
+        delete normalized.bank_account;
+      }
+
+      // Whitelist allowed columns for property_owners
+      const allowed = new Set<string>([
+        'full_name','full_name_ar','owner_code','civil_id','phone','email','address','address_ar','nationality','commission_percentage','notes','is_active','bank_account_info'
+      ]);
+      const whitelisted = Object.fromEntries(Object.entries(normalized).filter(([k]) => allowed.has(k)));
 
       // Add required fields
       const dataToInsert = {
-        ...cleanedData,
         company_id: profile.company_id,
+        created_by: user.id,
         is_active: true,
-      };
+        ...whitelisted,
+      } as any;
 
       console.log('Creating property owner with data:', dataToInsert);
 
@@ -146,9 +159,19 @@ export function useUpdatePropertyOwner() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      // Sanitize and normalize updates
+      const cleaned = Object.fromEntries(Object.entries(updates || {}).filter(([_, v]) => v !== '' && v !== null && v !== undefined));
+      const normalizedUpdates: any = { ...cleaned };
+      if (normalizedUpdates.bank_account) {
+        normalizedUpdates.bank_account_info = { account_number: String(normalizedUpdates.bank_account) };
+        delete normalizedUpdates.bank_account;
+      }
+      const allowedUpdate = new Set<string>(['full_name','full_name_ar','owner_code','civil_id','phone','email','address','address_ar','nationality','commission_percentage','notes','is_active','bank_account_info']);
+      const safeUpdates = Object.fromEntries(Object.entries(normalizedUpdates).filter(([k]) => allowedUpdate.has(k)));
+
       const { data, error } = await supabase
         .from('property_owners')
-        .update(updates)
+        .update(safeUpdates)
         .eq('id', id)
         .select()
         .single();
