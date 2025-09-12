@@ -78,9 +78,47 @@ export function useCreatePropertyOwner() {
 
   return useMutation({
     mutationFn: async (ownerData: any) => {
+      // Get user company ID from auth context
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
+
+      // Get user profile to get company_id
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile?.company_id) {
+        throw new Error('لم يتم العثور على بيانات الشركة');
+      }
+
+      // Validate required fields
+      if (!ownerData.full_name || !ownerData.owner_code) {
+        throw new Error('الاسم الكامل ورقم المالك مطلوبان');
+      }
+
+      // Clean the data and remove empty values
+      const cleanedData = Object.fromEntries(
+        Object.entries(ownerData).filter(([_, value]) => 
+          value !== '' && value !== null && value !== undefined
+        )
+      );
+
+      // Add required fields
+      const dataToInsert = {
+        ...cleanedData,
+        company_id: profile.company_id,
+        is_active: true,
+      };
+
+      console.log('Creating property owner with data:', dataToInsert);
+
       const { data, error } = await supabase
         .from('property_owners')
-        .insert(ownerData)
+        .insert(dataToInsert as any)
         .select()
         .single();
 
@@ -97,7 +135,8 @@ export function useCreatePropertyOwner() {
     },
     onError: (error: any) => {
       console.error('Error creating property owner:', error);
-      toast.error('فشل في إنشاء مالك العقار');
+      const errorMessage = error.message || 'فشل في إنشاء مالك العقار';
+      toast.error(errorMessage);
     },
   });
 }

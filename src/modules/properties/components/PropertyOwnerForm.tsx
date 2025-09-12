@@ -21,8 +21,8 @@ const ownerSchema = z.object({
   full_name: z.string().min(1, 'الاسم الكامل مطلوب'),
   full_name_ar: z.string().min(1, 'الاسم باللغة العربية مطلوب'),
   owner_code: z.string().min(1, 'رقم المالك مطلوب'),
-  national_id: z.string().min(1, 'رقم الهوية مطلوب'),
-  phone_number: z.string().min(1, 'رقم الهاتف مطلوب'),
+  civil_id: z.string().min(1, 'رقم الهوية مطلوب'),
+  phone: z.string().min(1, 'رقم الهاتف مطلوب'),
   email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -55,8 +55,8 @@ export const PropertyOwnerForm: React.FC<PropertyOwnerFormProps> = ({
       full_name: owner?.full_name || '',
       full_name_ar: owner?.full_name_ar || '',
       owner_code: owner?.owner_code || '',
-      national_id: owner?.civil_id || '',
-      phone_number: owner?.phone || '',
+      civil_id: owner?.civil_id || '',
+      phone: owner?.phone || '',
       email: owner?.email || '',
       address: owner?.address || '',
       city: '',
@@ -127,7 +127,7 @@ export const PropertyOwnerForm: React.FC<PropertyOwnerFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="national_id"
+                name="civil_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>رقم الهوية</FormLabel>
@@ -141,7 +141,7 @@ export const PropertyOwnerForm: React.FC<PropertyOwnerFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="phone_number"
+                name="phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>رقم الهاتف</FormLabel>
