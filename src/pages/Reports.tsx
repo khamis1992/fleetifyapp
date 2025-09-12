@@ -26,6 +26,8 @@ import { usePropertyReports } from '@/hooks/usePropertyReports';
 import { useUnifiedReports } from '@/hooks/useUnifiedReports';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { useCurrentCompany } from '@/hooks/useCurrentCompany';
+import { getReportModulesForBusinessType } from '@/utils/businessTypeReports';
 import { cn } from '@/lib/utils';
 
 export default function Reports() {
@@ -62,7 +64,13 @@ export default function Reports() {
 
   const { data: reportsData, isLoading } = useUnifiedReports();
   const { data: propertyReportsData } = usePropertyReports();
+  const { data: currentCompany } = useCurrentCompany();
   const { exportToHTML, isExporting } = useReportExport();
+
+  // Get business-specific report modules
+  const reportModules = currentCompany?.business_type 
+    ? getReportModulesForBusinessType(currentCompany.business_type)
+    : getReportModulesForBusinessType('default');
 
   const handlePropertyExport = async (options: ExportOptions) => {
     // Implementation for property report export
@@ -70,96 +78,17 @@ export default function Reports() {
     // This would integrate with actual export functionality
   };
 
-  const reportModules = [
-    {
-      id: 'finance',
-      title: 'التقارير المالية',
-      description: 'تقارير الحسابات والميزانيات والمدفوعات',
-      icon: DollarSign,
-      color: 'bg-green-100 text-green-600',
-      count: 12,
-      reports: [
-        { id: 'invoices_summary', name: 'ملخص الفواتير', type: 'financial' },
-        { id: 'payments_summary', name: 'ملخص المدفوعات', type: 'financial' },
-        { id: 'income_statement', name: 'قائمة الدخل', type: 'financial' },
-        { id: 'balance_sheet', name: 'الميزانية العمومية', type: 'financial' },
-        { id: 'cash_flow', name: 'التدفق النقدي', type: 'financial' },
-        { id: 'trial_balance', name: 'ميزان المراجعة', type: 'financial' }
-      ]
-    },
-    {
-      id: 'hr',
-      title: 'تقارير الموارد البشرية',
-      description: 'تقارير الموظفين والحضور والرواتب',
-      icon: Users,
-      color: 'bg-blue-100 text-blue-600',
-      count: 8,
-      reports: [
-        { id: 'employees_summary', name: 'ملخص الموظفين', type: 'hr' },
-        { id: 'payroll_summary', name: 'ملخص الرواتب', type: 'hr' },
-        { id: 'attendance_summary', name: 'ملخص الحضور', type: 'hr' },
-        { id: 'leave_requests', name: 'تقرير الإجازات', type: 'hr' }
-      ]
-    },
-    {
-      id: 'fleet',
-      title: 'تقارير الأسطول',
-      description: 'تقارير المركبات والصيانة والمخالفات',
-      icon: Car,
-      color: 'bg-purple-100 text-purple-600',
-      count: 10,
-      reports: [
-        { id: 'vehicles_summary', name: 'ملخص المركبات', type: 'fleet' },
-        { id: 'maintenance_summary', name: 'ملخص الصيانة', type: 'fleet' },
-        { id: 'traffic_violations', name: 'تقرير المخالفات المرورية', type: 'fleet' },
-        { id: 'fuel_consumption', name: 'تقرير استهلاك الوقود', type: 'fleet' }
-      ]
-    },
-    {
-      id: 'properties',
-      title: 'تقارير العقارات',
-      description: 'تقارير العقارات والإشغال والأداء المالي',
-      icon: Building,
-      color: 'bg-cyan-100 text-cyan-600',
-      count: 15,
-      reports: [
-        { id: 'property_financial', name: 'التقرير المالي للعقارات', type: 'properties' },
-        { id: 'property_occupancy', name: 'تقرير الإشغال والشغور', type: 'properties' },
-        { id: 'property_performance', name: 'تقرير أداء العقارات', type: 'properties' },
-        { id: 'property_portfolio', name: 'تقرير المحفظة العقارية', type: 'properties' },
-        { id: 'property_owners', name: 'تقارير الملاك', type: 'properties' },
-        { id: 'property_tenants', name: 'تقارير المستأجرين', type: 'properties' },
-        { id: 'property_maintenance', name: 'تقارير الصيانة', type: 'properties' },
-        { id: 'property_roi', name: 'تقرير عائد الاستثمار', type: 'properties' },
-        { id: 'property_market', name: 'تحليل السوق العقاري', type: 'properties' }
-      ]
-    },
-    {
-      id: 'customers',
-      title: 'تقارير العملاء',
-      description: 'تقارير العملاء والعقود والفواتير',
-      icon: Users,
-      color: 'bg-orange-100 text-orange-600',
-      count: 6,
-      reports: [
-        { id: 'customers_summary', name: 'ملخص العملاء', type: 'customers' },
-        { id: 'customer_contracts', name: 'عقود العملاء', type: 'customers' },
-        { id: 'customer_invoices', name: 'فواتير العملاء', type: 'customers' }
-      ]
-    },
-    {
-      id: 'legal',
-      title: 'التقارير القانونية',
-      description: 'تقارير القضايا والمراسلات القانونية',
-      icon: Scale,
-      color: 'bg-red-100 text-red-600',
-      count: 4,
-      reports: [
-        { id: 'cases_summary', name: 'ملخص القضايا', type: 'legal' },
-        { id: 'legal_correspondence', name: 'المراسلات القانونية', type: 'legal' }
-      ]
-    }
-  ];
+  // Show loading state while fetching company data
+  if (!currentCompany && !reportModules.length) {
+    return (
+      <div className={cn(layout.containerPadding, "flex items-center justify-center min-h-[400px]")} dir="rtl">
+        <div className="text-center space-y-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">جاري تحميل التقارير...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(layout.containerPadding, layout.itemSpacing)} dir="rtl">
@@ -170,7 +99,14 @@ export default function Reports() {
         </div>
         <div>
           <h1 className={cn("font-bold text-foreground", isMobile ? "text-xl" : "text-2xl")}>مركز التقارير الموحد</h1>
-          <p className={cn("text-muted-foreground", isMobile ? "text-sm" : "")}>تقارير شاملة لجميع أقسام النظام</p>
+          <p className={cn("text-muted-foreground", isMobile ? "text-sm" : "")}>
+            تقارير شاملة خاصة بـ{currentCompany?.name || 'شركتك'}
+            {currentCompany?.business_type && (
+              <span className="text-primary mr-2">
+                ({getBusinessTypeLabel(currentCompany.business_type)})
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -179,36 +115,30 @@ export default function Reports() {
         {/* Enhanced Tabs Navigation */}
         {isMobile ? (
           <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-            <TabsList className="grid h-12 w-full min-w-max grid-cols-6 gap-1 p-1 bg-muted/50 rounded-xl">
-              <TabsTrigger value="finance" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                المالية
-              </TabsTrigger>
-              <TabsTrigger value="hr" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                الموارد البشرية
-              </TabsTrigger>
-              <TabsTrigger value="fleet" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                الأسطول
-              </TabsTrigger>
-              <TabsTrigger value="properties" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                العقارات
-              </TabsTrigger>
-              <TabsTrigger value="customers" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                العملاء
-              </TabsTrigger>
-              <TabsTrigger value="legal" className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
-                القانونية
-              </TabsTrigger>
+            <TabsList className={`grid h-12 w-full min-w-max grid-cols-${reportModules.length} gap-1 p-1 bg-muted/50 rounded-xl`}>
+              {reportModules.map((module) => (
+                <TabsTrigger 
+                  key={module.id}
+                  value={module.id} 
+                  className="h-10 px-4 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap"
+                >
+                  {getModuleShortTitle(module.title)}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex h-12">
-              <TabsTrigger value="finance" className="h-10 rounded-lg">المالية</TabsTrigger>
-              <TabsTrigger value="hr" className="h-10 rounded-lg">الموارد البشرية</TabsTrigger>
-              <TabsTrigger value="fleet" className="h-10 rounded-lg">الأسطول</TabsTrigger>
-              <TabsTrigger value="properties" className="h-10 rounded-lg">العقارات</TabsTrigger>
-              <TabsTrigger value="customers" className="h-10 rounded-lg">العملاء</TabsTrigger>
-              <TabsTrigger value="legal" className="h-10 rounded-lg">القانونية</TabsTrigger>
+            <TabsList className={`grid w-full grid-cols-${reportModules.length} lg:w-auto lg:inline-flex h-12`}>
+              {reportModules.map((module) => (
+                <TabsTrigger 
+                  key={module.id}
+                  value={module.id} 
+                  className="h-10 rounded-lg"
+                >
+                  {getModuleShortTitle(module.title)}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </div>
         )}
@@ -330,4 +260,39 @@ export default function Reports() {
       )}
     </div>
   );
+}
+
+// Helper functions
+function getBusinessTypeLabel(businessType: string): string {
+  const labels: Record<string, string> = {
+    'real_estate': 'العقارات',
+    'car_rental': 'تأجير المركبات',
+    'retail': 'التجارة',
+    'construction': 'المقاولات',
+    'manufacturing': 'التصنيع',
+    'healthcare': 'الخدمات الطبية',
+    'education': 'التعليم',
+    'professional_services': 'الخدمات المهنية'
+  };
+  return labels[businessType] || businessType;
+}
+
+function getModuleShortTitle(title: string): string {
+  // Return shorter versions for mobile display
+  const shortTitles: Record<string, string> = {
+    'التقارير المالية': 'المالية',
+    'تقارير الموارد البشرية': 'الموارد البشرية',
+    'تقارير الأسطول': 'الأسطول',
+    'تقارير العقارات': 'العقارات',
+    'تقارير العملاء': 'العملاء',
+    'التقارير القانونية': 'القانونية',
+    'تقارير المخزون': 'المخزون',
+    'تقارير المشاريع': 'المشاريع',
+    'تقارير الإنتاج': 'الإنتاج',
+    'تقارير المرضى': 'المرضى',
+    'التقارير الطبية': 'الطبية',
+    'تقارير الطلاب': 'الطلاب',
+    'التقارير الأكاديمية': 'الأكاديمية'
+  };
+  return shortTitles[title] || title;
 }
