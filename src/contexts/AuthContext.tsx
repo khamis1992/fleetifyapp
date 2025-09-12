@@ -1,13 +1,13 @@
 import * as React from 'react';
-import { createContext, useState, useEffect, useCallback, useContext } from 'react';
+
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -19,14 +19,14 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionError, setSessionError] = useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [user, setUser] = React.useState<AuthUser | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [sessionError, setSessionError] = React.useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
 
   // Session validation helper with improved error handling
-  const validateSession = useCallback(async (currentSession: Session | null): Promise<boolean> => {
+  const validateSession = React.useCallback(async (currentSession: Session | null): Promise<boolean> => {
     if (!currentSession) {
       return false;
     }
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isSigningOut]);
 
-  const refreshUser = useCallback(async () => {
+  const refreshUser = React.useCallback(async () => {
     if (session?.user) {
       try {
         const authUser = await authService.getCurrentUser();
@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [session]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
