@@ -1,5 +1,5 @@
 // مكون تهيئة React بسيط بدون استخدام hooks
-import React from 'react';
+import * as React from 'react';
 
 interface SimpleAppWrapperProps {
   children: React.ReactNode;
