@@ -104,7 +104,7 @@ const tenantsSubItems = [
 const contractsSubItems = [
   {
     name: 'عقود الإيجار',
-    href: '/contracts',
+    href: '/properties/contracts',
     icon: FileText
   }
 ];

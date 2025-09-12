@@ -36,6 +36,7 @@ import PropertyDetails from "./pages/PropertyDetails";
 import PropertyOwners from "./pages/PropertyOwners";
 import PropertiesMap from "./pages/PropertiesMap";
 import PropertyMaintenance from "./pages/properties/PropertyMaintenance";
+import PropertyContracts from "./pages/properties/PropertyContracts";
 
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
@@ -174,6 +175,7 @@ const App = () => {
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />
+              <Route path="properties/contracts" element={<PropertyContracts />} />
               <Route path="properties/map" element={<PropertiesMap />} />
               <Route path="properties/maintenance" element={
                 <AdminRoute>
@@ -317,6 +319,7 @@ const App = () => {
               <Route path="properties" element={<Properties />} />
               <Route path="properties/add" element={<AddProperty />} />
               <Route path="properties/:id" element={<PropertyDetails />} />
+              <Route path="properties/contracts" element={<PropertyContracts />} />
               <Route path="owners" element={<PropertyOwners />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="settings/electronic-signature" element={
