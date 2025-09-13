@@ -1,4 +1,3 @@
-import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,59 +38,32 @@ interface TenantFormProps {
   onSubmit: (data: CreateTenantRequest | { status?: TenantStatus; [key: string]: any }) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<CreateTenantRequest>;
 }
 
-export function TenantForm({ tenant, onSubmit, onCancel, isLoading, initialData }: TenantFormProps) {
+export function TenantForm({ tenant, onSubmit, onCancel, isLoading }: TenantFormProps) {
   const form = useForm<TenantFormData>({
     resolver: zodResolver(tenantSchema),
     defaultValues: {
-      full_name: initialData?.full_name || tenant?.full_name || "",
-      full_name_ar: initialData?.full_name_ar || tenant?.full_name_ar || "",
-      phone: initialData?.phone || tenant?.phone || "",
-      email: initialData?.email || tenant?.email || "",
-      civil_id: initialData?.civil_id || tenant?.civil_id || "",
-      passport_number: initialData?.passport_number || tenant?.passport_number || "",
-      nationality: initialData?.nationality || tenant?.nationality || "Kuwaiti",
-      date_of_birth: initialData?.date_of_birth || tenant?.date_of_birth || "",
-      occupation: initialData?.occupation || tenant?.occupation || "",
-      employer_name: initialData?.employer_name || tenant?.employer_name || "",
-      monthly_income: initialData?.monthly_income || tenant?.monthly_income || undefined,
-      emergency_contact_name: initialData?.emergency_contact_name || tenant?.emergency_contact_name || "",
-      emergency_contact_phone: initialData?.emergency_contact_phone || tenant?.emergency_contact_phone || "",
-      current_address: initialData?.current_address || tenant?.current_address || "",
-      current_address_ar: initialData?.current_address_ar || tenant?.current_address_ar || "",
-      tenant_type: (initialData?.tenant_type as TenantType) || (tenant?.tenant_type as TenantType) || "individual",
+      full_name: tenant?.full_name || "",
+      full_name_ar: tenant?.full_name_ar || "",
+      phone: tenant?.phone || "",
+      email: tenant?.email || "",
+      civil_id: tenant?.civil_id || "",
+      passport_number: tenant?.passport_number || "",
+      nationality: tenant?.nationality || "Kuwaiti",
+      date_of_birth: tenant?.date_of_birth || "",
+      occupation: tenant?.occupation || "",
+      employer_name: tenant?.employer_name || "",
+      monthly_income: tenant?.monthly_income || undefined,
+      emergency_contact_name: tenant?.emergency_contact_name || "",
+      emergency_contact_phone: tenant?.emergency_contact_phone || "",
+      current_address: tenant?.current_address || "",
+      current_address_ar: tenant?.current_address_ar || "",
+      tenant_type: (tenant?.tenant_type as TenantType) || "individual",
       status: tenant?.status as TenantStatus,
-      notes: initialData?.notes || tenant?.notes || "",
+      notes: tenant?.notes || "",
     },
   });
-
-  // Update form when initialData changes
-  React.useEffect(() => {
-    if (initialData) {
-      form.reset({
-        full_name: initialData.full_name || "",
-        full_name_ar: initialData.full_name_ar || "",
-        phone: initialData.phone || "",
-        email: initialData.email || "",
-        civil_id: initialData.civil_id || "",
-        passport_number: initialData.passport_number || "",
-        nationality: initialData.nationality || "Kuwaiti",
-        date_of_birth: initialData.date_of_birth || "",
-        occupation: initialData.occupation || "",
-        employer_name: initialData.employer_name || "",
-        monthly_income: initialData.monthly_income || undefined,
-        emergency_contact_name: initialData.emergency_contact_name || "",
-        emergency_contact_phone: initialData.emergency_contact_phone || "",
-        current_address: initialData.current_address || "",
-        current_address_ar: initialData.current_address_ar || "",
-        tenant_type: (initialData.tenant_type as TenantType) || "individual",
-        status: tenant?.status as TenantStatus,
-        notes: initialData.notes || "",
-      });
-    }
-  }, [initialData, form, tenant?.status]);
 
   const handleSubmit = (data: TenantFormData) => {
     const submitData = {

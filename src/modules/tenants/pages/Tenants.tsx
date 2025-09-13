@@ -4,9 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, UserX, Clock, Building2 } from "lucide-react";
 import { TenantTable } from "../components/TenantTable";
 import { TenantForm } from "../components/TenantForm";
-import { TenantSampleDataOptions } from "@/components/tenants/TenantSampleDataOptions";
 import { useTenants, useTenantsStats, useCreateTenant, useUpdateTenant, useDeleteTenant } from "@/hooks/useTenants";
-import type { Tenant, TenantFilters, CreateTenantRequest } from "@/types/tenant";
+import type { Tenant, TenantFilters } from "@/types/tenant";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +29,6 @@ export default function Tenants() {
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [tenantToDelete, setTenantToDelete] = useState<Tenant | null>(null);
-  const [sampleData, setSampleData] = useState<Partial<CreateTenantRequest> | null>(null);
 
   const { data: tenants = [], isLoading } = useTenants(filters);
   const { data: stats } = useTenantsStats();
@@ -40,18 +38,7 @@ export default function Tenants() {
 
   const handleAddTenant = () => {
     setSelectedTenant(null);
-    setSampleData(null);
     setShowForm(true);
-  };
-
-  const handleSelectSampleData = (data: CreateTenantRequest) => {
-    setSampleData(data);
-    setSelectedTenant(null);
-    setShowForm(true);
-  };
-
-  const handleClearForm = () => {
-    setSampleData(null);
   };
 
   const handleEditTenant = (tenant: Tenant) => {
@@ -157,12 +144,6 @@ export default function Tenants() {
         </div>
       )}
 
-      {/* Sample Data Options */}
-      <TenantSampleDataOptions
-        onSelectSample={handleSelectSampleData}
-        onClearForm={handleClearForm}
-      />
-
       {/* Main Table */}
       <TenantTable
         tenants={tenants}
@@ -186,12 +167,8 @@ export default function Tenants() {
           <TenantForm
             tenant={selectedTenant || undefined}
             onSubmit={handleFormSubmit}
-            onCancel={() => {
-              setShowForm(false);
-              setSampleData(null);
-            }}
+            onCancel={() => setShowForm(false)}
             isLoading={createTenant.isPending || updateTenant.isPending}
-            initialData={sampleData || undefined}
           />
         </DialogContent>
       </Dialog>
