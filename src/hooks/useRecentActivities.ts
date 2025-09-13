@@ -49,7 +49,7 @@ export const useRecentActivities = () => {
         activities.push({
           id: `contract-${contract.id}`,
           type: 'عقد جديد',
-          description: `تم إنشاء عقد جديد للسيد ${customerName}`,
+          description: `تم إنشاء عقد جديد للعميل ${customerName} - رقم العقد: ${contract.contract_number}`,
           time: getRelativeTime(contract.created_at),
           icon: 'FileText',
           color: 'text-green-600',
@@ -100,8 +100,8 @@ export const useRecentActivities = () => {
         const vehicle = maintenance.vehicles as any;
         activities.push({
           id: `maintenance-${maintenance.id}`,
-          type: 'صيانة مطلوبة',
-          description: `السيارة ${vehicle?.plate_number || 'غير محددة'} تحتاج صيانة دورية`,
+          type: 'طلب صيانة',
+          description: `تم طلب صيانة للمركبة ذات اللوحة ${vehicle?.plate_number || 'غير محددة'}`,
           time: getRelativeTime(maintenance.created_at),
           icon: 'AlertTriangle',
           color: 'text-amber-600',

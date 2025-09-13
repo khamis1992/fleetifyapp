@@ -59,6 +59,7 @@ export const useOptimizedRecentActivities = () => {
       }
 
       // فلترة إضافية صارمة للتأكد من أن جميع النشاطات تنتمي للشركة الصحيحة
+      // وإزالة النشاطات التقنية غير المهمة
       const filteredActivities = activities?.filter(activity => {
         const belongsToCompany = activity.company_id === companyId;
         if (!belongsToCompany) {
@@ -72,6 +73,12 @@ export const useOptimizedRecentActivities = () => {
           });
           // يجب تسجيل هذا كحدث أمني مهم
         }
+        
+        // فلترة النشاطات التقنية غير المهمة
+        if (isUnimportantActivity(activity)) {
+          return false;
+        }
+        
         return belongsToCompany;
       }) || [];
 
@@ -102,13 +109,8 @@ export const useOptimizedRecentActivities = () => {
         filteredActivities.map(async (activity) => {
           let enhancedDescription = activity.message || getActivityDescription(activity);
           
-          // If this is a fleet/vehicle activity, try to get vehicle details
-          if (activity.category === 'fleet' && activity.resource_id) {
-            const vehicleInfo = await getVehicleInfo(activity.resource_id);
-            if (vehicleInfo) {
-              enhancedDescription = enhanceVehicleMessage(enhancedDescription, vehicleInfo, activity.action);
-            }
-          }
+          // تحسين الرسالة لجميع أنواع النشاطات
+          enhancedDescription = await enhanceActivityMessage(enhancedDescription, activity);
           
           return {
             id: activity.id,
@@ -131,7 +133,164 @@ export const useOptimizedRecentActivities = () => {
   });
 };
 
-// Remove unused function
+// Helper function to check if an activity is unimportant (technical queries, etc.)
+function isUnimportantActivity(activity: any): boolean {
+  const unimportantActions = [
+    'fetch_available_for_contracts',
+    'query',
+    'search',
+    'view',
+    'list',
+    'get'
+  ];
+  
+  // تصفية الاستعلامات التقنية
+  if (unimportantActions.includes(activity.action)) {
+    return true;
+  }
+  
+  // تصفية الرسائل التي تحتوي على معرفات شركة فقط
+  if (activity.message && activity.message.match(/^[^a-zA-Z\u0600-\u06FF]*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[^a-zA-Z\u0600-\u06FF]*$/)) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Comprehensive activity message enhancement function
+async function enhanceActivityMessage(originalMessage: string, activity: any): Promise<string> {
+  // تنظيف الرسالة من معرفات الشركة والمعلومات التقنية
+  let cleanMessage = cleanTechnicalMessage(originalMessage);
+  
+  // إذا كانت الرسالة قصيرة جداً أو تقنية، أنشئ رسالة جديدة
+  if (cleanMessage.length < 3 || isTechnicalMessage(cleanMessage)) {
+    cleanMessage = await generateMeaningfulMessage(activity);
+  }
+  
+  // ترجمة الرسائل الإنجليزية إلى العربية
+  cleanMessage = translateToArabic(cleanMessage);
+  
+  return cleanMessage;
+}
+
+// Clean technical jargon from messages
+function cleanTechnicalMessage(message: string): string {
+  return message
+    // إزالة معرفات الشركة (UUIDs)
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+    // إزالة عبارات تقنية
+    .replace(/للشركة\s*/g, '')
+    .replace(/company\s*/gi, '')
+    .replace(/\bfor\s+company\b/gi, '')
+    .replace(/\bid:\s*/gi, '')
+    // تنظيف المسافات الزائدة
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Check if message is still technical after cleaning
+function isTechnicalMessage(message: string): boolean {
+  const technicalPatterns = [
+    /^استعلام/,
+    /^query/i,
+    /^fetch/i,
+    /^get/i,
+    /record/i,
+    /database/i,
+    /table/i
+  ];
+  
+  return technicalPatterns.some(pattern => pattern.test(message)) || message.length < 3;
+}
+
+// Generate meaningful messages based on activity context
+async function generateMeaningfulMessage(activity: any): Promise<string> {
+  const actionMessages: Record<string, Record<string, string>> = {
+    'contracts': {
+      'create': 'تم إنشاء عقد جديد',
+      'update': 'تم تحديث عقد',
+      'delete': 'تم حذف عقد',
+      'default': 'نشاط في العقود'
+    },
+    'customers': {
+      'create': 'تم تسجيل عميل جديد',
+      'update': 'تم تحديث بيانات عميل',
+      'delete': 'تم حذف عميل',
+      'default': 'نشاط في العملاء'
+    },
+    'fleet': {
+      'create': 'تم إضافة مركبة جديدة',
+      'update': 'تم تحديث بيانات مركبة',
+      'delete': 'تم حذف مركبة',
+      'search': 'تم البحث في أسطول المركبات',
+      'fetch_available_for_contracts': 'تم البحث عن المركبات المتاحة',
+      'default': 'نشاط في أسطول المركبات'
+    },
+    'hr': {
+      'create': 'تم إضافة موظف جديد',
+      'update': 'تم تحديث بيانات موظف',
+      'delete': 'تم حذف موظف',
+      'default': 'نشاط في الموارد البشرية'
+    },
+    'finance': {
+      'create': 'تم تسجيل عملية مالية جديدة',
+      'update': 'تم تحديث عملية مالية',
+      'delete': 'تم حذف عملية مالية',
+      'default': 'نشاط مالي'
+    }
+  };
+  
+  const categoryMessages = actionMessages[activity.category] || {};
+  const message = categoryMessages[activity.action] || categoryMessages['default'] || 'نشاط جديد في النظام';
+  
+  // إضافة تفاصيل إضافية إذا كان متاحاً معرف المورد
+  if (activity.resource_id && activity.category === 'fleet') {
+    const vehicleInfo = await getVehicleInfo(activity.resource_id);
+    if (vehicleInfo) {
+      return `${message} - ${vehicleInfo.make || ''} ${vehicleInfo.model || ''} (${vehicleInfo.plate_number || 'غير محددة'})`.trim();
+    }
+  }
+  
+  return message;
+}
+
+// Translate common English phrases to Arabic
+function translateToArabic(message: string): string {
+  const translations: Record<string, string> = {
+    'New contracts record created': 'تم إنشاء عقد جديد',
+    'New customers record created': 'تم إنشاء عميل جديد',
+    'New vehicles record created': 'تم إنشاء مركبة جديدة',
+    'New employees record created': 'تم إنشاء موظف جديد',
+    'New payments record created': 'تم تسجيل دفعة مالية جديدة',
+    'contracts record updated': 'تم تحديث عقد',
+    'customers record updated': 'تم تحديث بيانات عميل',
+    'vehicles record updated': 'تم تحديث بيانات مركبة',
+    'employees record updated': 'تم تحديث بيانات موظف',
+    'record created': 'تم إنشاء سجل جديد',
+    'record updated': 'تم تحديث سجل',
+    'record deleted': 'تم حذف سجل'
+  };
+  
+  // البحث عن الترجمات الكاملة أولاً
+  for (const [english, arabic] of Object.entries(translations)) {
+    if (message.toLowerCase().includes(english.toLowerCase())) {
+      return arabic;
+    }
+  }
+  
+  // استبدال كلمات فردية
+  return message
+    .replace(/\bcreated\b/gi, 'تم إنشاء')
+    .replace(/\bupdated\b/gi, 'تم تحديث')
+    .replace(/\bdeleted\b/gi, 'تم حذف')
+    .replace(/\bcontract\b/gi, 'عقد')
+    .replace(/\bcustomer\b/gi, 'عميل')
+    .replace(/\bvehicle\b/gi, 'مركبة')
+    .replace(/\bemployee\b/gi, 'موظف')
+    .replace(/\bpayment\b/gi, 'دفعة')
+    .replace(/\brecord\b/gi, 'سجل')
+    .replace(/\bnew\b/gi, 'جديد');
+}
 
 function getCategoryDisplayName(category: string): string {
   const categoryMap: Record<string, string> = {
