@@ -502,7 +502,20 @@ export function usePaymentsCSVUpload() {
     const companyIdToUse = targetCompanyId || companyId;
     const items: PaymentPreviewItem[] = [];
     
+    // إضافة timeout للعملية الكاملة (20 ثانية للتحليل)
+    const analysisTimeoutMs = 20000;
+    const startTime = Date.now();
+    
+    console.log(`📊 بدء تحليل ${rows.length} صف - مهلة زمنية: ${analysisTimeoutMs / 1000} ثانية`);
+    
     for (let index = 0; index < rows.length; index++) {
+      // فحص الوقت المنقضي
+      if (Date.now() - startTime > analysisTimeoutMs) {
+        console.warn(`⏰ انتهت مهلة التحليل عند الصف ${index + 1} من ${rows.length}`);
+        toast.warning(`تم التوقف عند الصف ${index + 1} بسبب انتهاء المهلة الزمنية`);
+        break;
+      }
+      
       const row = rows[index];
       const normalizedRow = normalizeCsvHeaders(row);
       
@@ -535,7 +548,7 @@ export function usePaymentsCSVUpload() {
       
       const warnings: string[] = [];
       
-      // Look up contract info using enhanced search
+      // Look up contract info using enhanced search with timeout
       let contractInfo: any = undefined;
       
       // محاولة استخراج رقم العقد من البيانات
@@ -545,11 +558,21 @@ export function usePaymentsCSVUpload() {
       
       if ((agreementNumber || contractNumber) && companyIdToUse) {
         try {
-          const { contract_info, confidence } = await findContractByMultipleIdentifiers(
+          // تطبيق timeout على البحث عن العقد (2 ثانية لكل بحث)
+          const contractSearchPromise = findContractByMultipleIdentifiers(
             agreementNumber, 
             contractNumber, 
             companyIdToUse
           );
+          
+          const timeoutPromise = new Promise<{ contract_info?: any; confidence?: number }>((_, reject) => {
+            setTimeout(() => reject(new Error('Contract search timeout')), 2000);
+          });
+          
+          const { contract_info, confidence } = await Promise.race([
+            contractSearchPromise,
+            timeoutPromise
+          ]);
           
           if (contract_info) {
             contractInfo = { ...contract_info, confidence };
@@ -583,7 +606,13 @@ export function usePaymentsCSVUpload() {
           }
         } catch (error) {
           const searchTerm = agreementNumber || contractNumber;
-          warnings.push(`خطأ في البحث عن العقد: ${searchTerm}`);
+          if (error instanceof Error && error.message.includes('timeout')) {
+            warnings.push(`انتهت مهلة البحث عن العقد: ${searchTerm}`);
+            console.warn(`⏰ انتهت مهلة البحث عن العقد للصف ${index + 1}:`, searchTerm);
+          } else {
+            warnings.push(`خطأ في البحث عن العقد: ${searchTerm}`);
+            console.error(`❌ خطأ في البحث عن العقد للصف ${index + 1}:`, error);
+          }
         }
       }
       
@@ -684,36 +713,51 @@ export function usePaymentsCSVUpload() {
     const dataAnalysis = analyzeDataStructure(enhancedRows);
     console.log('🔍 تحليل هيكل البيانات:', dataAnalysis);
     
-    // If in preview mode, just return analyzed data
+    // If in preview mode, just return analyzed data with enhanced error handling
     if (options?.previewMode) {
-      const previewData = await analyzePaymentData(enhancedRows, targetCompanyId);
-      
-      // إضافة تشخيص مفصل للبيانات المرفوضة
-      const rejectedRows = enhancedRows.filter((row, index) => {
-        const normalizedRow = normalizeCsvHeaders(row);
-        return !hasRequiredPaymentFields(normalizedRow);
-      });
-      
-      console.log('❌ الصفوف المرفوضة:', rejectedRows.length, 'من أصل', enhancedRows.length);
-      
-      if (rejectedRows.length > 0) {
-        console.log('🔍 أسباب رفض الصفوف:', rejectedRows.map(row => ({
-          rowNumber: row.rowNumber || 'غير محدد',
-          missingFields: findMissingRequiredFields(normalizeCsvHeaders(row))
-        })));
+      try {
+        console.log('🔍 بدء وضع المعاينة والتحليل الذكي...');
+        const previewData = await analyzePaymentData(enhancedRows, targetCompanyId);
+        console.log(`✅ تم تحليل ${previewData.length} عنصر بنجاح`);
+        
+        return {
+          total: enhancedRows.length,
+          successful: previewData.length,
+          failed: 0,
+          skipped: enhancedRows.length - previewData.length,
+          errors: [],
+          previewData
+        };
+      } catch (error) {
+        console.error('❌ خطأ في وضع المعاينة:', error);
+        toast.error('فشل في تحليل البيانات - سيتم المتابعة بدون تحليل ذكي');
+        
+        // إرجاع بيانات أساسية بدون تحليل ذكي
+        const basicPreviewData = enhancedRows.map((row, index) => {
+          const normalizedRow = normalizeCsvHeaders(row);
+          const amount = parseNumber(normalizedRow.amount || normalizedRow.amount_paid || 0);
+          
+          return {
+            rowNumber: row.rowNumber || index + 2,
+            data: normalizedRow,
+            paidAmount: amount,
+            hasBalance: false,
+            isZeroPayment: amount <= 0,
+            warnings: ['تم تخطي التحليل الذكي بسبب خطأ تقني'],
+            lateFineStatus: 'none' as const,
+            lateFineType: 'none' as const
+          };
+        });
+        
+        return {
+          total: enhancedRows.length,
+          successful: basicPreviewData.length,
+          failed: 0,
+          skipped: 0,
+          errors: [{ row: 0, message: `خطأ في التحليل: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}` }],
+          previewData: basicPreviewData
+        };
       }
-      
-      return {
-        total: enhancedRows.length,
-        successful: 0,
-        failed: rejectedRows.length,
-        skipped: 0,
-        errors: rejectedRows.map((row, index) => ({
-          row: row.rowNumber || index + 2,
-          message: `صف مرفوض: ${findMissingRequiredFields(normalizeCsvHeaders(row)).join(', ')}`
-        })),
-        previewData
-      };
     }
     if (!user?.id || !targetCompanyId) {
       toast.error('لا يمكن الرفع بدون مستخدم وشركة');

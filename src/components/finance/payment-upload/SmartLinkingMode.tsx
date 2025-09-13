@@ -23,6 +23,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
+import { PaymentUploadDiagnostics } from './PaymentUploadDiagnostics';
 import { toast } from 'sonner';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 
@@ -65,6 +66,9 @@ export function SmartLinkingMode({
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [analysisStartTime, setAnalysisStartTime] = useState(0);
+  const [rowsProcessed, setRowsProcessed] = useState(0);
 
   // استخدام عمليات المدفوعات
   const { 
@@ -82,10 +86,27 @@ export function SmartLinkingMode({
     });
   };
 
-  // معالجة رفع الملف
+  // معالجة رفع الملف مع آلية timeout وتحسين الأداء
   const handleFileUpload = useCallback(async (data: any[]) => {
     setIsAnalyzing(true);
     setCurrentStep('preview');
+    setAnalysisStartTime(Date.now());
+    setRowsProcessed(0);
+    
+    // إظهار التشخيص بعد 10 ثوان
+    const diagnosticsTimeoutId = setTimeout(() => {
+      if (isAnalyzing) {
+        setShowDiagnostics(true);
+      }
+    }, 10000);
+    
+    // إضافة timeout للعملية الكاملة (30 ثانية)
+    const timeoutId = setTimeout(() => {
+      setIsAnalyzing(false);
+      setShowDiagnostics(false);
+      toast.error('انتهت مهلة تحليل البيانات - سيتم المتابعة بدون ربط ذكي');
+      setCurrentStep('upload');
+    }, 30000);
     
     try {
       // تحليل البيانات أولاً
@@ -94,30 +115,80 @@ export function SmartLinkingMode({
       if (result.requiresPreview && result.previewData) {
         // إنشاء عناصر المعاينة مع البحث عن العقود
         const preview: PreviewItem[] = [];
+        const batchSize = 5; // معالجة 5 عناصر في كل دفعة
         
-        for (let i = 0; i < result.previewData.length; i++) {
-          const item = result.previewData[i];
+        for (let i = 0; i < result.previewData.length; i += batchSize) {
+          const batch = result.previewData.slice(i, i + batchSize);
           
-          // البحث عن العقود المحتملة
-          const potentialContracts = await linkingFunctions.searchPotentialContracts(item.data);
-          const bestMatch = potentialContracts[0];
+          // معالجة الدفعة مع timeout منفصل لكل عنصر
+          const batchResults = await Promise.allSettled(
+            batch.map(async (item, batchIndex) => {
+              const globalIndex = i + batchIndex;
+              setRowsProcessed(globalIndex + 1);
+              try {
+                // timeout منفصل لكل بحث (3 ثوان)
+                const searchPromise = Promise.race([
+                  linkingFunctions.searchPotentialContracts(item.data),
+                  new Promise<never>((_, reject) => 
+                    setTimeout(() => reject(new Error('Search timeout')), 3000)
+                  )
+                ]);
+                
+                const potentialContracts = await searchPromise;
+                const bestMatch = potentialContracts[0];
+                
+                // التحقق من صحة الربط مع timeout
+                let validation = null;
+                if (bestMatch) {
+                  try {
+                    const validationPromise = Promise.race([
+                      Promise.resolve(linkingFunctions.validateLinking(item.data, bestMatch.contract, 'auto')),
+                      new Promise<never>((_, reject) => 
+                        setTimeout(() => reject(new Error('Validation timeout')), 1000)
+                      )
+                    ]);
+                    validation = await validationPromise;
+                  } catch (validationError) {
+                    console.warn(`تعذر التحقق من صحة الربط للصف ${item.rowNumber}:`, validationError);
+                  }
+                }
+                
+                return {
+                  rowNumber: item.rowNumber,
+                  data: item.data,
+                  potentialContracts: potentialContracts || [],
+                  bestMatch,
+                  confidence: bestMatch?.confidence,
+                  warnings: item.warnings || [],
+                  errors: validation?.overallAssessment?.canProceed === false ? ['لا يمكن الربط'] : [],
+                  canLink: bestMatch && validation?.overallAssessment?.canProceed !== false
+                };
+              } catch (error) {
+                console.warn(`فشل في تحليل الصف ${item.rowNumber}:`, error);
+                return {
+                  rowNumber: item.rowNumber,
+                  data: item.data,
+                  potentialContracts: [],
+                  bestMatch: null,
+                  confidence: 0,
+                  warnings: item.warnings || [],
+                  errors: ['فشل في التحليل الذكي'],
+                  canLink: false
+                };
+              }
+            })
+          );
           
-          // التحقق من صحة الربط
-          let validation = null;
-          if (bestMatch) {
-            validation = linkingFunctions.validateLinking(item.data, bestMatch.contract, 'auto');
-          }
-          
-          preview.push({
-            rowNumber: item.rowNumber,
-            data: item.data,
-            potentialContracts,
-            bestMatch,
-            confidence: bestMatch?.confidence,
-            warnings: item.warnings || [],
-            errors: validation?.overallAssessment?.canProceed === false ? ['لا يمكن الربط'] : [],
-            canLink: bestMatch && validation?.overallAssessment?.canProceed !== false
+          // إضافة النتائج الناجحة
+          batchResults.forEach((result) => {
+            if (result.status === 'fulfilled') {
+              preview.push(result.value);
+            }
           });
+          
+          // تحديث التقدم
+          const progress = Math.min(100, ((i + batchSize) / result.previewData.length) * 100);
+          console.log(`📊 تقدم التحليل: ${Math.round(progress)}%`);
         }
         
         setPreviewData(preview);
@@ -133,12 +204,39 @@ export function SmartLinkingMode({
         toast.success(`🧠 تم تحليل ${preview.length} دفعة - ${autoLinkable.size} جاهزة للربط التلقائي`);
       }
     } catch (error) {
-      toast.error(`خطأ في التحليل: ${error}`);
+      console.error('خطأ في التحليل:', error);
+      toast.error(`خطأ في التحليل: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`);
       setCurrentStep('upload');
     } finally {
+      clearTimeout(timeoutId);
+      clearTimeout(diagnosticsTimeoutId);
       setIsAnalyzing(false);
+      setShowDiagnostics(false);
+      setRowsProcessed(0);
     }
-  }, [onUploadComplete, linkingFunctions]);
+  }, [onUploadComplete, linkingFunctions, isAnalyzing]);
+
+  // معالجات التشخيص
+  const handleDiagnosticsRetry = useCallback(() => {
+    setShowDiagnostics(false);
+    setIsAnalyzing(false);
+    setCurrentStep('upload');
+    toast.info('تم إلغاء التحليل - يمكنك المحاولة مرة أخرى');
+  }, []);
+
+  const handleSkipAnalysis = useCallback(() => {
+    setShowDiagnostics(false);
+    setIsAnalyzing(false);
+    setCurrentStep('upload');
+    toast.info('تم تخطي التحليل الذكي');
+  }, []);
+
+  const handleCancelAnalysis = useCallback(() => {
+    setShowDiagnostics(false);
+    setIsAnalyzing(false);
+    setCurrentStep('upload');
+    toast.info('تم إلغاء العملية');
+  }, []);
 
   // تبديل تحديد العنصر
   const toggleItemSelection = (rowNumber: number) => {
@@ -471,11 +569,37 @@ export function SmartLinkingMode({
       {isAnalyzing && (
         <Alert>
           <Brain className="h-4 w-4 animate-spin" />
-          <AlertDescription>
-            جاري تحليل البيانات والبحث عن العقود المناسبة...
+          <AlertDescription className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span>جاري تحليل البيانات والبحث عن العقود المناسبة...</span>
+              {rowsProcessed > 0 && (
+                <span className="text-xs text-muted-foreground mt-1">
+                  معالجة الصف {rowsProcessed}...
+                </span>
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSkipAnalysis}
+            >
+              تخطي التحليل الذكي
+            </Button>
           </AlertDescription>
         </Alert>
       )}
+
+      {/* مكون التشخيص */}
+      <PaymentUploadDiagnostics
+        isVisible={showDiagnostics}
+        onRetry={handleDiagnosticsRetry}
+        onSkipAnalysis={handleSkipAnalysis}
+        onCancel={handleCancelAnalysis}
+        currentStep="تحليل المدفوعات والبحث عن العقود"
+        rowsProcessed={rowsProcessed}
+        totalRows={previewData.length}
+        timeElapsed={Date.now() - analysisStartTime}
+      />
 
       {currentStep === 'upload' && renderUploadInterface()}
       {currentStep === 'preview' && renderPreview()}
