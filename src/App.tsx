@@ -4,6 +4,8 @@ import { SimpleToaster } from "@/components/ui/simple-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "@/lib/errorBoundary";
+import { performanceMonitor } from "@/lib/performanceMonitor";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
@@ -78,15 +80,21 @@ import { Tenants } from "./modules/tenants";
 const queryClient = new QueryClient();
 
 const App = () => {
+  React.useEffect(() => {
+    // تهيئة مراقب الأداء
+    performanceMonitor.logReport();
+  }, []);
+
   return (
-    <BrowserRouter>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <AuthProvider>
-                <CompanyContextProvider>
-                  <PWAInstallPrompt />
-                  <SimpleToaster />
+    <ErrorBoundary>
+      <BrowserRouter>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <QueryClientProvider client={queryClient}>
+              <TooltipProvider>
+                <AuthProvider>
+                  <CompanyContextProvider>
+                    <PWAInstallPrompt />
+                    <SimpleToaster />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
@@ -395,6 +403,7 @@ const App = () => {
           </QueryClientProvider>
         </ThemeProvider>
       </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 
