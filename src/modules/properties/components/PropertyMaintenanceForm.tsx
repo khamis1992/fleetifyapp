@@ -53,6 +53,7 @@ interface PropertyMaintenanceFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   maintenance?: PropertyMaintenance;
+  propertyId?: string; // يمكن تمرير معرف العقار مسبقاً
   onSuccess?: () => void;
 }
 
@@ -82,6 +83,7 @@ export const PropertyMaintenanceForm: React.FC<PropertyMaintenanceFormProps> = (
   open,
   onOpenChange,
   maintenance,
+  propertyId,
   onSuccess,
 }) => {
   const { data: properties } = useProperties();
@@ -91,7 +93,7 @@ export const PropertyMaintenanceForm: React.FC<PropertyMaintenanceFormProps> = (
   const form = useForm<MaintenanceFormData>({
     resolver: zodResolver(maintenanceSchema),
     defaultValues: {
-      property_id: maintenance?.property_id || '',
+      property_id: maintenance?.property_id || propertyId || '',
       maintenance_type: maintenance?.maintenance_type || '',
       priority: maintenance?.priority || '',
       title: maintenance?.title || '',
@@ -156,31 +158,52 @@ export const PropertyMaintenanceForm: React.FC<PropertyMaintenanceFormProps> = (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="property_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>العقار *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر العقار" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {properties?.map((property) => (
-                          <SelectItem key={property.id} value={property.id}>
-                            {property.property_name || `عقار ${property.property_code}`}
-                            {property.address && ` - ${property.address}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* إظهار حقل اختيار العقار فقط إذا لم يتم تحديده مسبقاً */}
+              {!propertyId && !maintenance && (
+                <FormField
+                  control={form.control}
+                  name="property_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>العقار *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر العقار" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {properties?.map((property) => (
+                            <SelectItem key={property.id} value={property.id}>
+                              {property.property_name || `عقار ${property.property_code}`}
+                              {property.address && ` - ${property.address}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* إظهار معلومات العقار المحدد مسبقاً */}
+              {(propertyId || maintenance) && (
+                <div className="space-y-2">
+                  <FormLabel>العقار المحدد</FormLabel>
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="font-medium">
+                      {properties?.find(p => p.id === (propertyId || maintenance?.property_id))?.property_name || 
+                       `عقار ${properties?.find(p => p.id === (propertyId || maintenance?.property_id))?.property_code}`}
+                    </p>
+                    {properties?.find(p => p.id === (propertyId || maintenance?.property_id))?.address && (
+                      <p className="text-sm text-muted-foreground">
+                        {properties.find(p => p.id === (propertyId || maintenance?.property_id))?.address}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <FormField
                 control={form.control}
