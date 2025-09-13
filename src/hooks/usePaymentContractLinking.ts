@@ -139,6 +139,10 @@ export const usePaymentContractLinking = () => {
     if (!companyId) return [];
     
     try {
+      // استخراج رقم العقد من النصوص أولاً
+      const { extractContractFromPaymentData, compareContractNumbers } = await import('@/utils/contractNumberExtraction');
+      const extractedContract = extractContractFromPaymentData(payment);
+      
       // بناء استعلام ديناميكي مع التحقق من صحة البيانات
       let query = supabase
         .from('contracts')
@@ -158,32 +162,31 @@ export const usePaymentContractLinking = () => {
       const searchConditions: string[] = [];
       
       // البحث برقم الاتفاقية/العقد
-      if (payment.agreement_number?.trim()) {
-        searchConditions.push(`contract_number.eq.${payment.agreement_number.trim()}`);
-      }
+      const contractToSearch = extractedContract?.contractNumber || payment.agreement_number || payment.contract_number;
       
-      if (payment.contract_number?.trim()) {
-        searchConditions.push(`contract_number.eq.${payment.contract_number.trim()}`);
+      if (contractToSearch?.trim()) {
+        searchConditions.push(`contract_number.eq.${contractToSearch.trim()}`);
+        searchConditions.push(`description.ilike.%${contractToSearch.trim()}%`);
       }
 
       // البحث بمعرف العميل (مع التحقق من صحة UUID)
       if (payment.customer_id && isValidUUID(payment.customer_id)) {
         searchConditions.push(`customer_id.eq.${payment.customer_id}`);
       }
-
-      // إذا لم نجد أي شروط بحث صالحة، نبحث في الوصف
-      if (searchConditions.length === 0) {
-        if (payment.agreement_number?.trim()) {
-          searchConditions.push(`description.ilike.%${payment.agreement_number.trim()}%`);
-        }
+      
+      // البحث بالمبلغ المتقارب (في حالة عدم وجود معرفات أخرى)
+      if (searchConditions.length === 0 && payment.amount) {
+        const minAmount = payment.amount * 0.8;
+        const maxAmount = payment.amount * 1.2;
+        searchConditions.push(`monthly_amount.gte.${minAmount},monthly_amount.lte.${maxAmount}`);
       }
 
       // تطبيق شروط البحث إذا وجدت
       if (searchConditions.length > 0) {
         query = query.or(searchConditions.join(','));
       } else {
-        // إذا لم نجد أي شروط، نعيد مصفوفة فارغة
-        return [];
+        // كحل أخير، جلب العقود النشطة لنفس الشركة
+        query = query.eq('status', 'active').limit(10);
       }
 
       const { data: contractResults, error } = await query;
@@ -197,29 +200,64 @@ export const usePaymentContractLinking = () => {
       const results: ContractSearchResult[] = [];
       
       for (const contract of (contractResults || [])) {
-        let confidence = 0.5; // مستوى ثقة افتراضي
+        let confidence = 0.3; // مستوى ثقة افتراضي منخفض
         let matchReason = 'تطابق عام';
         
-        // حساب مستوى الثقة بناءً على نوع التطابق
-        if (payment.agreement_number === contract.contract_number) {
-          confidence = 0.95;
-          matchReason = 'تطابق تام برقم الاتفاقية';
-        } else if (payment.contract_number === contract.contract_number) {
-          confidence = 0.9;
-          matchReason = 'تطابق برقم العقد';
-        } else if (payment.customer_id === contract.customer_id) {
-          confidence = 0.8;
-          matchReason = 'تطابق بالعميل';
-        } else if (contract.description?.includes(payment.agreement_number || '')) {
-          confidence = 0.6;
-          matchReason = 'تطابق جزئي في الوصف';
+        // استخدام المقارنة الذكية لأرقام العقود
+        const contractToCompare = extractedContract?.contractNumber || payment.agreement_number || payment.contract_number;
+        
+        if (contractToCompare) {
+          const numberMatch = compareContractNumbers(contractToCompare, contract.contract_number);
+          if (numberMatch >= 0.95) {
+            confidence = 0.95;
+            matchReason = 'تطابق تام برقم العقد';
+          } else if (numberMatch >= 0.8) {
+            confidence = 0.85;
+            matchReason = 'تطابق قوي برقم العقد';
+          } else if (contract.description?.includes(contractToCompare)) {
+            confidence = 0.6;
+            matchReason = 'موجود في وصف العقد';
+          }
         }
         
-        results.push({
-          contract: contract as ContractData,
-          confidence,
-          matchReason
-        });
+        // تحسين الثقة بناءً على معايير إضافية
+        if (payment.customer_id === contract.customer_id) {
+          confidence = Math.max(confidence, 0.8);
+          matchReason += ' + تطابق العميل';
+        }
+        
+        // مطابقة المبلغ
+        if (payment.amount && contract.monthly_amount) {
+          const amountDiff = Math.abs(payment.amount - contract.monthly_amount) / contract.monthly_amount;
+          if (amountDiff <= 0.05) { // 5% tolerance
+            confidence += 0.1;
+            matchReason += ' + تطابق المبلغ';
+          }
+        }
+        
+        // مطابقة التاريخ
+        if (payment.payment_date && contract.start_date) {
+          const paymentDate = new Date(payment.payment_date);
+          const startDate = new Date(contract.start_date);
+          const endDate = contract.end_date ? new Date(contract.end_date) : new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+          
+          if (paymentDate >= startDate && paymentDate <= endDate) {
+            confidence += 0.05;
+            matchReason += ' + ضمن فترة العقد';
+          }
+        }
+        
+        // التأكد من أن الثقة لا تتجاوز 1.0
+        confidence = Math.min(confidence, 1.0);
+        
+        // إضافة النتيجة فقط إذا كان مستوى الثقة معقول
+        if (confidence >= 0.3) {
+          results.push({
+            contract: contract as ContractData,
+            confidence,
+            matchReason
+          });
+        }
       }
       
       return results.sort((a, b) => b.confidence - a.confidence);

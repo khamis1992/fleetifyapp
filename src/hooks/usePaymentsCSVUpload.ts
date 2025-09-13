@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
-import { normalizeCsvHeaders } from "@/utils/csv";
+import { normalizeCsvHeaders } from "@/utils/csvHeaderMapping";
 import { parseNumber } from "@/utils/numberFormatter";
+import { extractContractFromPaymentData } from "@/utils/contractNumberExtraction";
 import { toast } from "sonner";
 import { detectDateColumns, isDateColumn, suggestBestFormat, fixDatesInData } from "@/utils/dateDetection";
 
@@ -536,8 +537,11 @@ export function usePaymentsCSVUpload() {
       
       // Look up contract info using enhanced search
       let contractInfo: any = undefined;
-      const agreementNumber = normalizedRow.agreement_number;
-      const contractNumber = normalizedRow.contract_number;
+      
+      // محاولة استخراج رقم العقد من البيانات
+      const extractedContract = extractContractFromPaymentData(normalizedRow);
+      const agreementNumber = normalizedRow.agreement_number || (extractedContract?.source === 'extracted' ? extractedContract.contractNumber : null);
+      const contractNumber = normalizedRow.contract_number || (extractedContract?.source === 'direct' ? extractedContract.contractNumber : null);
       
       if ((agreementNumber || contractNumber) && companyIdToUse) {
         try {

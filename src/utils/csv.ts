@@ -25,6 +25,8 @@ export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'cust
     'vehicle_number': 'vehicle_number',
     'vehicle_id': 'vehicle_id',
     'رقم العقد': 'contract_number',
+    'رقم الاتفاقية': 'agreement_number', // إضافة مهمة
+    'agreement_number': 'agreement_number', // إضافة مهمة
     'نوع العقد': 'contract_type',
     'تاريخ العقد': 'contract_date',
     'تاريخ البداية': 'start_date',
@@ -74,6 +76,7 @@ export const normalizeCsvHeaders = (row: Record<string, any>, entityType?: 'cust
     'vehicle plate': 'vehicle_number',
     'vehicle id': 'vehicle_id',
     'contract number': 'contract_number',
+    'agreement number': 'agreement_number', // إضافة مهمة
     'contract type': 'contract_type',
     'contract date': 'contract_date',
     'start date': 'start_date',
