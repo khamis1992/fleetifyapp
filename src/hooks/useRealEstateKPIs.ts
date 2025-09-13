@@ -89,7 +89,7 @@ export const useRealEstateKPIs = () => {
         const renewalRate = 78; // Would be calculated from contract renewals
         const collectionRate = 95; // Would be calculated from payment success rate
         const profitMargin = 65; // Would be calculated from revenue vs expenses
-        const propertyValue = properties?.reduce((sum, prop) => sum + (prop.rent_amount || 0), 0) || 0;
+        const propertyValue = properties?.length ? properties.length * 250000 : 0; // Average property value estimate
         const vacancyDuration = 25; // Average days vacant
         const maintenanceCosts = 12000; // Monthly maintenance costs
 
