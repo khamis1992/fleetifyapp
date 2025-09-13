@@ -4,6 +4,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { normalizeCsvHeaders } from "@/utils/csvHeaderMapping";
 import { parseNumber } from "@/utils/numberFormatter";
 import { extractContractFromPaymentData } from "@/utils/contractNumberExtraction";
+import { useBulkPaymentOperations } from "./useBulkPaymentOperations";
 import { toast } from "sonner";
 import { detectDateColumns, isDateColumn, suggestBestFormat, fixDatesInData } from "@/utils/dateDetection";
 
@@ -45,6 +46,9 @@ export function usePaymentsCSVUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<CSVUploadResults | null>(null);
+  
+  // استخدام العمليات المجمعة المحسنة
+  const { bulkUploadPayments } = useBulkPaymentOperations();
 
   // Field types and required fields for SmartCSVUpload
   const paymentFieldTypes = {

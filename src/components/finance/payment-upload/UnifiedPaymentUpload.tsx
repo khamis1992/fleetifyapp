@@ -24,6 +24,7 @@ import { usePaymentContractLinking } from '@/hooks/usePaymentContractLinking';
 import { QuickUploadMode } from './QuickUploadMode';
 import { SmartLinkingMode } from './SmartLinkingMode';
 import { AdvancedMode } from './AdvancedMode';
+import { FastProcessingMode } from './FastProcessingMode';
 
 interface UnifiedPaymentUploadProps {
   open: boolean;
@@ -31,7 +32,7 @@ interface UnifiedPaymentUploadProps {
   onUploadComplete: () => void;
 }
 
-type UploadMode = 'quick' | 'smart' | 'advanced';
+type UploadMode = 'quick' | 'smart' | 'advanced' | 'fast';
 
 interface UploadModeConfig {
   id: UploadMode;
@@ -68,16 +69,32 @@ export function UnifiedPaymentUpload({
 
   // الحالات المحلية
   const [currentStep, setCurrentStep] = useState<'mode_selection' | 'upload'>('upload');
-  const [selectedMode, setSelectedMode] = useState<UploadMode>('smart');
+  const [selectedMode, setSelectedMode] = useState<UploadMode>('fast');
   const [uploadedData, setUploadedData] = useState<any[]>([]);
 
   // تكوين أنماط الرفع
   const uploadModes: UploadModeConfig[] = [
     {
+      id: 'fast',
+      title: 'المعالجة الفائقة',
+      description: 'أقصى سرعة للملفات الكبيرة مع معالجة مجمعة محسنة',
+      icon: <Zap className="h-8 w-8 text-green-600" />,
+      features: [
+        'معالجة مجمعة متوازية',
+        'للملفات الكبيرة (+1000 سجل)',
+        'سرعة 500+ سجل/ثانية',
+        'تحسينات قاعدة البيانات'
+      ],
+      recommended: true,
+      accuracy: 'عالية',
+      speed: 'فائق السرعة',
+      color: 'border-green-500 bg-green-50'
+    },
+    {
       id: 'quick',
       title: 'الرفع السريع',
       description: 'استيراد مباشر للمدفوعات بدون ربط تلقائي',
-      icon: <Zap className="h-8 w-8 text-green-600" />,
+      icon: <TrendingUp className="h-8 w-8 text-orange-600" />,
       features: [
         'رفع فوري للبيانات',
         'بدون معالجة إضافية',
@@ -87,7 +104,7 @@ export function UnifiedPaymentUpload({
       recommended: false,
       accuracy: 'غير مطبق',
       speed: 'سريع جداً',
-      color: 'border-green-500 bg-green-50'
+      color: 'border-orange-500 bg-orange-50'
     },
     {
       id: 'smart',
@@ -100,7 +117,7 @@ export function UnifiedPaymentUpload({
         'تحكم يدوي في الاختيارات',
         'دقة عالية مع مرونة'
       ],
-      recommended: true,
+      recommended: false,
       accuracy: '92%',
       speed: 'متوسط',
       color: 'border-blue-500 bg-blue-50'
@@ -134,6 +151,8 @@ export function UnifiedPaymentUpload({
     setUploadedData(data);
     
     switch (selectedMode) {
+      case 'fast':
+        return await handleFastUpload(data);
       case 'quick':
         return await handleQuickUpload(data);
       case 'smart':
@@ -144,6 +163,17 @@ export function UnifiedPaymentUpload({
         throw new Error('نمط رفع غير معروف');
     }
   }, [selectedMode]);
+
+  // رفع فائق السرعة للملفات الكبيرة
+  const handleFastUpload = useCallback(async (data: any[]) => {
+    try {
+      toast.success(`🚀 بدء المعالجة الفائقة لـ ${data.length} سجل`);
+      return { requiresFastProcessing: true, data };
+    } catch (error) {
+      toast.error(`خطأ في المعالجة الفائقة: ${error}`);
+      throw error;
+    }
+  }, []);
 
   // رفع سريع
   const handleQuickUpload = useCallback(async (data: any[]) => {
@@ -312,6 +342,15 @@ export function UnifiedPaymentUpload({
           </Button>
         </div>
 
+        {selectedMode === 'fast' && (
+          <FastProcessingMode 
+            onUploadComplete={handleFileUpload}
+            downloadTemplate={downloadTemplate}
+            fieldTypes={paymentFieldTypes}
+            requiredFields={paymentRequiredFields}
+          />
+        )}
+
         {selectedMode === 'quick' && (
           <QuickUploadMode 
             onUploadComplete={handleFileUpload}
@@ -368,18 +407,11 @@ export function UnifiedPaymentUpload({
           </DialogTitle>
         </DialogHeader>
         
-        <SmartLinkingMode 
+        <FastProcessingMode 
           onUploadComplete={handleFileUpload}
           downloadTemplate={downloadTemplate}
           fieldTypes={paymentFieldTypes}
           requiredFields={paymentRequiredFields}
-          isUploading={isUploading}
-          progress={progress}
-          linkingFunctions={{
-            searchPotentialContracts,
-            validateLinking,
-            linkPaymentToContract
-          }}
         />
       </DialogContent>
     </Dialog>

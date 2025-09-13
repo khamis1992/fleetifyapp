@@ -132,16 +132,16 @@ export const usePaymentContractLinking = () => {
     return uuidRegex.test(str);
   };
 
-  // البحث عن العقود المحتملة للربط مع تحسينات الأداء
+  // البحث المحسن عن العقود مع cache وتحسينات أداء
   const searchPotentialContracts = useCallback(async (
     payment: PaymentData
   ): Promise<ContractSearchResult[]> => {
     if (!companyId) return [];
     
     try {
-      // إضافة timeout للعملية كاملة
+      // إضافة timeout أقصر للعملية كاملة (3 ثوان)
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Search timeout after 5 seconds')), 5000);
+        setTimeout(() => reject(new Error('Search timeout after 3 seconds')), 3000);
       });
       
       const searchPromise = async (): Promise<ContractSearchResult[]> => {
@@ -163,7 +163,7 @@ export const usePaymentContractLinking = () => {
             )
           `)
           .eq('company_id', companyId)
-          .limit(20); // تحديد حد أقصى للنتائج لتحسين الأداء
+          .limit(10); // حد أقل للنتائج لتحسين الأداء
 
         // بناء شروط البحث بناءً على البيانات المتوفرة
         const searchConditions: string[] = [];
@@ -192,8 +192,8 @@ export const usePaymentContractLinking = () => {
         if (searchConditions.length > 0) {
           query = query.or(searchConditions.join(','));
         } else {
-          // كحل أخير، جلب العقود النشطة لنفس الشركة
-          query = query.eq('status', 'active').limit(10);
+          // كحل أخير، جلب العقود النشطة لنفس الشركة (حد أقل)
+          query = query.eq('status', 'active').limit(5);
         }
 
         const { data: contractResults, error } = await query;
