@@ -26,9 +26,10 @@ export default defineConfig(({ mode }) => ({
       'react',
       'react-dom',
       'react/jsx-runtime',
-      'react/jsx-dev-runtime'
+      'react/jsx-dev-runtime',
+      'lucide-react'
     ],
-    exclude: ['lucide-react'],
+    needsInterop: ['react', 'react-dom'],
     force: true,
     esbuildOptions: {
       target: 'es2020',
