@@ -2,6 +2,7 @@
 import * as React from "react";
 import { MiniApp } from "@/components/MiniApp";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -83,10 +84,11 @@ const App = () => {
       <BrowserRouter>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <CompanyContextProvider>
-                <PWAInstallPrompt />
-                <SimpleToaster />
+            <TooltipProvider>
+              <AuthProvider>
+                <CompanyContextProvider>
+                  <PWAInstallPrompt />
+                  <SimpleToaster />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
@@ -391,6 +393,7 @@ const App = () => {
               </Routes>
               </CompanyContextProvider>
             </AuthProvider>
+            </TooltipProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </BrowserRouter>
