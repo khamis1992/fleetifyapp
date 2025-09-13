@@ -9,6 +9,7 @@ import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import { normalizeCsvHeaders } from '@/utils/csvHeaderMapping';
 import { parseNumber } from '@/utils/numberFormatter';
+import { Constants } from '@/integrations/supabase/types';
 
 interface BulkOperationResult {
   total: number;
@@ -161,18 +162,27 @@ export function useBulkPaymentOperations() {
         }
 
         // إعداد بيانات المدفوعة
+        // توحيد مدخل طريقة الدفع مع معالجة القيم البديلة
+        const methodInput = normalized.payment_method ?? normalized.payment_type ?? normalized.method ?? normalized.mode;
+        let method = normalizePaymentMethod(methodInput);
+        if (!(Constants.public.Enums.payment_method as readonly string[]).includes(method as any)) {
+          console.warn(`⚠️ طريقة دفع غير معروفة في السطر ${i + 1}:`, methodInput, '— سيتم استخدام cash');
+          method = 'cash';
+        }
+        const txType = normalizeTxType(normalized.transaction_type ?? normalized.type ?? normalized.description_type) || 'receipt';
+
         const paymentData = {
           company_id: companyId,
           payment_number: normalized.payment_number || formatPaymentNumber(++lastPaymentNumber),
           payment_date: normalized.payment_date || new Date().toISOString().split('T')[0],
           amount: parseNumber(normalized.amount || normalized.amount_paid || 0),
-          payment_method: normalizePaymentMethod(normalized.payment_method),
-          payment_type: normalizePaymentMethod(normalized.payment_method),
+          payment_method: method,
+          payment_type: method, // الحفاظ على الاتساق مع CSV template
           reference_number: normalized.reference_number,
           notes: normalized.notes || normalized.description,
           customer_id: customerId,
           contract_id: contractId,
-          transaction_type: normalizeTxType(normalized.transaction_type) || 'receipt',
+          transaction_type: txType,
           currency: normalized.currency || 'KWD',
           payment_status: 'completed',
           created_at: new Date().toISOString(),
@@ -251,25 +261,42 @@ export function useBulkPaymentOperations() {
   };
 
   const formatPaymentNumber = (n: number) => `PAY-${String(n).padStart(4, '0')}`;
+ 
+  const normalizePaymentMethod = (method?: string): (typeof Constants.public.Enums.payment_method)[number] => {
+    const s = (method ?? '').toString().toLowerCase().trim();
+    const simplified = s
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ى/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/-/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-  const normalizePaymentMethod = (method?: string): string => {
-    const normalized = method?.toLowerCase().trim();
-    const mapping: Record<string, string> = {
-      'نقد': 'cash', 'cash': 'cash', 'نقدي': 'cash',
-      'شيك': 'check', 'check': 'check', 'cheque': 'check',
-      'حوالة': 'bank_transfer', 'transfer': 'bank_transfer', 'bank_transfer': 'bank_transfer',
-      'بطاقة': 'credit_card', 'card': 'credit_card', 'credit_card': 'credit_card'
+    const map: Record<string, (typeof Constants.public.Enums.payment_method)[number]> = {
+      // نقد
+      'cash': 'cash', 'كاش': 'cash', 'نقد': 'cash', 'نقدي': 'cash', 'نقداً': 'cash', 'نقدى': 'cash',
+      // شيك
+      'check': 'check', 'cheque': 'check', 'شيك': 'check',
+      // تحويل بنكي
+      'bank transfer': 'bank_transfer', 'bank_transfer': 'bank_transfer', 'transfer': 'bank_transfer', 'wire': 'bank_transfer',
+      'حواله': 'bank_transfer', 'حوالة': 'bank_transfer', 'حوالة بنكية': 'bank_transfer', 'تحويل': 'bank_transfer', 'تحويل بنكي': 'bank_transfer', 'بنكي': 'bank_transfer',
+      // بطاقات ائتمان
+      'credit card': 'credit_card', 'credit': 'credit_card', 'credit_card': 'credit_card', 'visa': 'credit_card', 'mastercard': 'credit_card', 'بطاقه': 'credit_card', 'بطاقة': 'credit_card', 'بطاقة ائتمان': 'credit_card', 'ائتمان': 'credit_card',
+      // بطاقات خصم/مدى
+      'debit card': 'debit_card', 'debit': 'debit_card', 'mada': 'debit_card', 'مدى': 'debit_card', 'بطاقة خصم': 'debit_card'
     };
-    return mapping[normalized || ''] || 'cash';
-  };
 
+    const candidate = map[simplified] || (Constants.public.Enums.payment_method as readonly string[]).find((m) => m === simplified);
+    return (candidate as any) || 'cash';
+  };
+ 
   const normalizeTxType = (type?: string): 'receipt' | 'payment' => {
-    const normalized = type?.toLowerCase().trim();
-    if (['قبض', 'receipt', 'in', 'income'].includes(normalized || '')) return 'receipt';
-    if (['صرف', 'payment', 'out', 'expense'].includes(normalized || '')) return 'payment';
+    const s = (type ?? '').toString().toLowerCase().trim();
+    if (['قبض', 'استلام', 'receipt', 'in', 'income', 'دخل', 'incoming'].includes(s)) return 'receipt';
+    if (['صرف', 'دفع', 'payment', 'out', 'expense', 'مصروف', 'outgoing'].includes(s)) return 'payment';
     return 'receipt';
   };
-
+ 
   return {
     bulkUploadPayments,
     isProcessing,
