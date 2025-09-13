@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ModuleLayout } from '@/modules/core/components/ModuleLayout';
 import { PropertyOwnerForm } from '@/modules/properties/components';
+import { PropertyOwnerSampleDataOptions } from '@/components/tenants/PropertyOwnerSampleDataOptions';
 import { usePropertyOwners, useDeletePropertyOwner, useCreatePropertyOwner } from '@/modules/properties/hooks';
 import { 
   Table, 
@@ -41,10 +42,21 @@ export default function PropertyOwners() {
   const [selectedOwner, setSelectedOwner] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [ownerToDelete, setOwnerToDelete] = useState<any>(null);
+  const [sampleData, setSampleData] = useState<any>(null);
   
   const { data: owners = [], isLoading } = usePropertyOwners(search);
   const createOwnerMutation = useCreatePropertyOwner();
   const deleteOwnerMutation = useDeletePropertyOwner();
+
+  const handleSelectSampleData = (data: any) => {
+    setSampleData(data);
+    setSelectedOwner(null);
+    setShowAddForm(true);
+  };
+
+  const handleClearForm = () => {
+    setSampleData(null);
+  };
 
   return (
     <ModuleLayout moduleName="properties">
@@ -81,6 +93,7 @@ export default function PropertyOwners() {
                     }
                     setShowAddForm(false);
                     setSelectedOwner(null);
+                    setSampleData(null);
                   } catch (error) {
                     console.error('Error saving owner:', error);
                   }
@@ -88,12 +101,20 @@ export default function PropertyOwners() {
                 onCancel={() => {
                   setShowAddForm(false);
                   setSelectedOwner(null);
+                  setSampleData(null);
                 }}
                 isLoading={createOwnerMutation.isPending}
+                initialData={sampleData || undefined}
               />
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Sample Data Options */}
+        <PropertyOwnerSampleDataOptions
+          onSelectSample={handleSelectSampleData}
+          onClearForm={handleClearForm}
+        />
 
         <Card>
           <CardHeader>
