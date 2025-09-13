@@ -411,9 +411,9 @@ const Payments = () => {
                                  {formatCurrency(payment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                                </TableCell>
                               <TableCell>
-                                <Badge variant="outline">
-                                  {getMethodLabel(payment.payment_method)}
-                                </Badge>
+                                 <Badge variant="outline">
+                                   {getMethodLabel(payment.payment_type || payment.payment_method)}
+                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.payment_status)}`}>
@@ -506,7 +506,7 @@ const Payments = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">طريقة الدفع</label>
-                    <p className="font-medium">{getMethodLabel(selectedPayment.payment_method)}</p>
+                    <p className="font-medium">{getMethodLabel(selectedPayment.payment_type || selectedPayment.payment_method)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">الحالة</label>

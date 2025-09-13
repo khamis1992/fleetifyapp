@@ -6,20 +6,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { UnifiedPaymentUpload } from '../payment-upload/UnifiedPaymentUpload';
 
 interface PaymentImportDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export const PaymentImportDialog: React.FC<PaymentImportDialogProps> = ({
   isOpen,
-  onClose
+  onClose,
+  onSuccess
 }) => {
+  const handleSuccess = () => {
+    onSuccess?.();
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -27,15 +34,11 @@ export const PaymentImportDialog: React.FC<PaymentImportDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <p className="text-muted-foreground">
-            يمكنك استيراد المدفوعات من ملف CSV أو Excel
-          </p>
-          
-          <Button variant="outline" onClick={onClose} className="w-full">
-            إغلاق
-          </Button>
-        </div>
+        <UnifiedPaymentUpload 
+          open={isOpen}
+          onOpenChange={onClose}
+          onUploadComplete={handleSuccess}
+        />
       </DialogContent>
     </Dialog>
   );

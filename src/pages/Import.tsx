@@ -230,9 +230,39 @@ const Import: React.FC = () => {
                 .insert([row]);
               break;
             case 'payments':
+              // معالجة خاصة للمدفوعات
+              const normalizePaymentType = (type: string) => {
+                const arabicToEnglish: Record<string, string> = {
+                  'نقدي': 'cash',
+                  'شيك': 'check', 
+                  'تحويل بنكي': 'bank_transfer',
+                  'بطاقة ائتمان': 'credit_card',
+                  'بطاقة خصم': 'debit_card'
+                };
+                return arabicToEnglish[type] || type;
+              };
+
+              const processedPayment = {
+                ...row,
+                company_id: companyId,
+                payment_number: row.payment_number || `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                payment_type: normalizePaymentType(row.payment_type || row.payment_method || 'cash'),
+                payment_method: normalizePaymentType(row.payment_method || row.payment_type || 'cash'),
+                amount: typeof row.amount === 'string' 
+                  ? parseFloat(row.amount.replace(/[^\d.-]/g, '')) 
+                  : parseFloat(row.amount) || 0,
+                payment_status: row.payment_status || 'completed',
+                transaction_type: row.transaction_type || (row.customer_id ? 'customer_payment' : 'vendor_payment'),
+                currency: row.currency || 'KWD'
+              };
+
+              if (processedPayment.amount <= 0) {
+                throw new Error(`مبلغ غير صحيح: ${row.amount}`);
+              }
+
               result = await supabase
                 .from('payments')
-                .insert([row]);
+                .insert([processedPayment]);
               break;
             default:
               throw new Error('نوع غير مدعوم');
