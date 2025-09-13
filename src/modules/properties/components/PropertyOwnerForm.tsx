@@ -41,6 +41,7 @@ interface PropertyOwnerFormProps {
   onSubmit: (data: OwnerFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  initialData?: Partial<OwnerFormData>;
 }
 
 export const PropertyOwnerForm: React.FC<PropertyOwnerFormProps> = ({
@@ -48,26 +49,49 @@ export const PropertyOwnerForm: React.FC<PropertyOwnerFormProps> = ({
   onSubmit,
   onCancel,
   isLoading = false,
+  initialData,
 }) => {
   const form = useForm<OwnerFormData>({
     resolver: zodResolver(ownerSchema),
     defaultValues: {
-      full_name: owner?.full_name || '',
-      full_name_ar: owner?.full_name_ar || '',
-      owner_code: owner?.owner_code || '',
-      civil_id: owner?.civil_id || '',
-      phone: owner?.phone || '',
-      email: owner?.email || '',
-      address: owner?.address || '',
-      city: '',
-      emergency_contact: '',
-      emergency_phone: '',
-      bank_name: '',
-      bank_account: '',
-      iban_number: '',
-      notes: '',
+      full_name: initialData?.full_name || owner?.full_name || '',
+      full_name_ar: initialData?.full_name_ar || owner?.full_name_ar || '',
+      owner_code: initialData?.owner_code || owner?.owner_code || '',
+      civil_id: initialData?.civil_id || owner?.civil_id || '',
+      phone: initialData?.phone || owner?.phone || '',
+      email: initialData?.email || owner?.email || '',
+      address: initialData?.address || owner?.address || '',
+      city: initialData?.city || '',
+      emergency_contact: initialData?.emergency_contact || '',
+      emergency_phone: initialData?.emergency_phone || '',
+      bank_name: initialData?.bank_name || '',
+      bank_account: initialData?.bank_account || '',
+      iban_number: initialData?.iban_number || '',
+      notes: initialData?.notes || '',
     },
   });
+
+  // Update form when initialData changes
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        full_name: initialData.full_name || '',
+        full_name_ar: initialData.full_name_ar || '',
+        owner_code: initialData.owner_code || '',
+        civil_id: initialData.civil_id || '',
+        phone: initialData.phone || '',
+        email: initialData.email || '',
+        address: initialData.address || '',
+        city: initialData.city || '',
+        emergency_contact: initialData.emergency_contact || '',
+        emergency_phone: initialData.emergency_phone || '',
+        bank_name: initialData.bank_name || '',
+        bank_account: initialData.bank_account || '',
+        iban_number: initialData.iban_number || '',
+        notes: initialData.notes || '',
+      });
+    }
+  }, [initialData, form]);
 
   const handleSubmit = (data: OwnerFormData) => {
     onSubmit(data);
