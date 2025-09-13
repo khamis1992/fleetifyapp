@@ -167,6 +167,7 @@ export function useBulkPaymentOperations() {
           payment_date: normalized.payment_date || new Date().toISOString().split('T')[0],
           amount: parseNumber(normalized.amount || normalized.amount_paid || 0),
           payment_method: normalizePaymentMethod(normalized.payment_method),
+          payment_type: normalizePaymentMethod(normalized.payment_method),
           reference_number: normalized.reference_number,
           notes: normalized.notes || normalized.description,
           customer_id: customerId,
