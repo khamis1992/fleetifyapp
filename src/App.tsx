@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/lib/errorBoundary";
 import { performanceMonitor } from "@/lib/performanceMonitor";
+import { compatibilityManager } from "@/lib/compatibilityManager";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
@@ -83,6 +84,12 @@ const App = () => {
   React.useEffect(() => {
     // تهيئة مراقب الأداء
     performanceMonitor.logReport();
+    
+    // فحص التوافق
+    compatibilityManager.checkLibraryCompatibility('framer-motion', '12.23.12');
+    compatibilityManager.checkLibraryCompatibility('react-hook-form', '7.61.1');
+    compatibilityManager.checkLibraryCompatibility('@radix-ui/react-dialog', '1.1.15');
+    compatibilityManager.logCompatibilityReport();
   }, []);
 
   return (
