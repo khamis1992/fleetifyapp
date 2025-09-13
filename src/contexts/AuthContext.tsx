@@ -1,17 +1,7 @@
-// ضمان تحميل React أولاً قبل أي شيء آخر
-import * as React from 'react';
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
-
-// التحقق الفوري من React قبل تعريف أي شيء
-if (!React || typeof React.useState !== 'function') {
-  console.error('🚨 [AUTH_CONTEXT] React not properly initialized!');
-  console.error('🚨 [AUTH_CONTEXT] React:', React);
-  console.error('🚨 [AUTH_CONTEXT] useState type:', typeof React?.useState);
-  throw new Error('React hooks not available in AuthContext - Lovable.dev compatibility issue');
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -28,21 +18,12 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // تحقق إضافي من React hooks قبل الاستخدام (خاص بـ Lovable.dev)
-  if (!React.useState || typeof React.useState !== 'function') {
-    console.error('🚨 [AUTH_PROVIDER] useState not available - Lovable.dev issue');
-    throw new Error('React useState not available in AuthProvider');
-  }
-
-  console.log('✅ [AUTH_PROVIDER] React hooks verified for Lovable.dev');
-
-  // استخدام React hooks مع التحقق الآمن
-  const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [sessionError, setSessionError] = React.useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = React.useState(false);
-  const authListenerRef = React.useRef<any>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const authListenerRef = useRef<any>(null);
 
   const initializeAuth = async () => {
     try {
@@ -116,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     initializeAuth();
 
     return () => {
