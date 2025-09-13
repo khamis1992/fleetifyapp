@@ -16,14 +16,28 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom')
     },
+    dedupe: ['react', 'react-dom']
   },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
       'react/jsx-runtime',
+      'react/jsx-dev-runtime',
       'lucide-react'
     ],
+    force: true,
+    esbuildOptions: {
+      target: 'es2020'
+    }
   },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode)
+  }
 }));
