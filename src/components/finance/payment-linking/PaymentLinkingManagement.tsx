@@ -12,6 +12,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { useUnlinkedPayments } from '@/hooks/usePaymentLinking';
+import { useSmartPaymentLinking, useAutoLinkPayments } from '@/hooks/useSmartPaymentLinking';
 import { PaymentLinkingDialog } from './PaymentLinkingDialog';
 import { BulkPaymentLinkingDialog } from './BulkPaymentLinkingDialog';
 import { 
@@ -22,7 +23,9 @@ import {
   Receipt, 
   AlertCircle,
   ChevronLeft,
-  ChevronRight 
+  ChevronRight,
+  Brain,
+  Zap 
 } from 'lucide-react';
 // Helper function to format currency
 const formatCurrency = (amount: number) => {
@@ -43,6 +46,8 @@ export const PaymentLinkingManagement: React.FC = () => {
   const pageSize = 20;
 
   const { data: unlinkedPayments, isLoading } = useUnlinkedPayments();
+  const { data: smartSuggestions, isLoading: suggestionsLoading } = useSmartPaymentLinking();
+  const autoLinkMutation = useAutoLinkPayments();
 
   const filteredPayments = unlinkedPayments?.filter(payment => 
     payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,6 +83,20 @@ export const PaymentLinkingManagement: React.FC = () => {
       setSelectedPayments([]);
     }
   };
+
+  const handleSmartAutoLink = () => {
+    if (!smartSuggestions) return;
+    
+    const autoLinkSuggestions = smartSuggestions.filter(s => 
+      s.suggestedAction === 'auto_link' && s.confidence >= 0.8
+    );
+    
+    autoLinkMutation.mutate(autoLinkSuggestions);
+  };
+
+  const smartAutoLinkCount = smartSuggestions?.filter(s => 
+    s.suggestedAction === 'auto_link' && s.confidence >= 0.8
+  ).length || 0;
 
   if (isLoading) {
     return (
@@ -160,6 +179,17 @@ export const PaymentLinkingManagement: React.FC = () => {
             </div>
             
             <div className="flex gap-2">
+              {smartAutoLinkCount > 0 && (
+                <Button
+                  onClick={handleSmartAutoLink}
+                  disabled={autoLinkMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Zap className="mr-2 h-4 w-4" />
+                  ربط ذكي تلقائي ({smartAutoLinkCount})
+                </Button>
+              )}
+              
               <Button
                 onClick={() => setBulkDialogOpen(true)}
                 disabled={selectedPayments.length === 0}

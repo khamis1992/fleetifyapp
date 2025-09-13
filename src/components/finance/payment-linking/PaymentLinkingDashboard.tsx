@@ -9,6 +9,8 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { PaymentLinkingManagement } from './PaymentLinkingManagement';
+import { SmartLinkingSuggestions } from './SmartLinkingSuggestions';
+import { SmartLinkingStats } from './SmartLinkingStats';
 import { PaymentLinkingSuggestions } from './PaymentLinkingSuggestions';
 import { PaymentLinkingReports } from './PaymentLinkingReports';
 import { 
@@ -251,11 +253,11 @@ export const PaymentLinkingDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="suggestions">
-          <PaymentLinkingSuggestions />
+          <SmartLinkingSuggestions />
         </TabsContent>
 
         <TabsContent value="reports">
-          <PaymentLinkingReports />
+          <SmartLinkingStats />
         </TabsContent>
       </Tabs>
     </div>
