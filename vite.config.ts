@@ -18,20 +18,22 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    dedupe: ['react', 'react-dom']
+    dedupe: ['react', 'react-dom'],
+    conditions: ['browser', 'development', 'module']
   },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
       'react/jsx-runtime',
-      'react/jsx-dev-runtime',
-      'lucide-react'
+      'react/jsx-dev-runtime'
     ],
-    needsInterop: ['react', 'react-dom'],
+    exclude: ['lucide-react'],
     force: true,
     esbuildOptions: {
-      target: 'es2020'
+      target: 'es2020',
+      mainFields: ['module', 'browser', 'main'],
+      conditions: ['browser', 'development', 'module']
     }
   },
   esbuild: {
