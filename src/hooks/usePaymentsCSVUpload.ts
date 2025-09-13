@@ -727,14 +727,18 @@ export function usePaymentsCSVUpload() {
     let successful = 0;
     let failed = 0;
     let skipped = 0;
+    
+    try {
+      console.log('🚀 [UPLOAD] Starting payment upload process...');
 
     // Prepare payment number sequencing
     let lastNumber = await getLastPaymentNumber(targetCompanyId);
 
     // Pre-resolve any invoice/customer/vendor ids when provided
     for (let i = 0; i < enhancedRows.length; i++) {
-      const raw = enhancedRows[i] || {};
-      const rowNumber = raw.rowNumber || i + 2;
+      try {
+        const raw = enhancedRows[i] || {};
+        const rowNumber = raw.rowNumber || i + 2;
 
       // Normalize fields
       const tx = normalizeTxType(raw.transaction_type) || (options?.autoCompleteType ? 'receipt' : undefined);
@@ -984,14 +988,89 @@ export function usePaymentsCSVUpload() {
       }
 
       successful++;
-      setProgress(Math.round(((i + 1) / enhancedRows.length) * 100));
+      
+      // Final progress update
+      const finalProgress = Math.round(((i + 1) / enhancedRows.length) * 100);
+      setProgress(finalProgress);
+      
+      if (finalProgress === 100 || i === enhancedRows.length - 1) {
+        console.log(`✅ [UPLOAD] Completed processing all rows. Final progress: ${finalProgress}%`);
+      }
+      
+    } catch (rowError) {
+      console.error(`❌ [UPLOAD] Error processing row ${i + 1}:`, rowError);
+      failed++;
+      errors.push({ 
+        row: enhancedRows[i]?.rowNumber || i + 2, 
+        message: `خطأ في معالجة الصف: ${rowError.message || 'خطأ غير محدد'}` 
+      });
+    }
     }
 
+    console.log(`📊 [UPLOAD] Final summary: ${successful} successful, ${failed} failed, ${skipped} skipped, ${errors.length} errors`);
+    
     const summary = { total: enhancedRows.length, successful, failed, skipped, errors };
     setResults(summary);
+    
+    // Ensure we complete the upload process
+    setProgress(100);
+    setIsUploading(false);
+    
+    // Reset progress after a short delay
+    setTimeout(() => {
+      setProgress(0);
+    }, 1000);
+    
+    return summary;
+    
+  } catch (error) {
+    console.error('❌ [UPLOAD] Critical error during upload process:', error);
+    
+    // إضافة معلومات تشخيصية أكثر تفصيلاً
+    let errorMessage = 'خطأ غير محدد في رفع البيانات';
+    
+    if (error.message) {
+      errorMessage = `خطأ في رفع البيانات: ${error.message}`;
+    }
+    
+    if (error.code) {
+      errorMessage += ` (كود الخطأ: ${error.code})`;
+    }
+    
+    // إضافة اقتراحات للحلول
+    if (error.message?.includes('permission') || error.message?.includes('RLS')) {
+      errorMessage += '\n💡 تلميح: تحقق من صلاحيات الوصول للشركة المحددة';
+    } else if (error.message?.includes('network') || error.message?.includes('timeout')) {
+      errorMessage += '\n💡 تلميح: تحقق من الاتصال بالإنترنت وأعد المحاولة';
+    } else if (error.message?.includes('validation')) {
+      errorMessage += '\n💡 تلميح: تحقق من صحة البيانات المدخلة';
+    }
+    
+    toast.error(errorMessage);
+    
+    // إضافة خيار إعادة المحاولة
+    toast.message('هل تريد إعادة المحاولة؟', {
+      description: 'انقر على زر الرفع مرة أخرى لإعادة المحاولة',
+      duration: 5000
+    });
+    
+    // Return error summary
+    const errorSummary = {
+      total: enhancedRows.length,
+      successful,
+      failed: enhancedRows.length - successful,
+      skipped: 0,
+      errors: [{ row: 0, message: `خطأ عام: ${error.message || 'خطأ غير محدد'}` }]
+    };
+    
+    setResults(errorSummary);
+    return errorSummary;
+    
+  } finally {
+    console.log('🏁 [UPLOAD] Upload process finished, cleaning up...');
     setIsUploading(false);
     setProgress(0);
-    return summary;
+  }
   };
 
   return {

@@ -284,23 +284,41 @@ export function SmartCSVUpload({
         });
       }, 200);
 
-      console.log('Calling upload function with companyId:', companyId);
-      const result = await uploadFunction(dataToUpload, { 
-        upsert: enableUpsert, 
-        targetCompanyId: companyId, 
-        autoCreateCustomers: createMissingCustomers,
-        autoCompleteDates,
-        autoCompleteType, 
-        autoCompleteAmounts,
-        dryRun: enableDryRun,
-        archiveFile: archiveFile,
-        originalFile: file
-      });
-      console.log('Upload function result:', result);
-      setLastResult(result);
+      // إضافة timeout للعملية لمنع التعليق
+      const uploadTimeout = setTimeout(() => {
+        clearInterval(progressInterval);
+        if (setUploadProgress) {
+          console.warn('⚠️ Upload timeout - forcing completion');
+          toast.warning('العملية تستغرق وقتاً أطول من المتوقع، يرجى التحقق من النتائج');
+        }
+      }, 30000); // 30 seconds timeout
+
+      console.log('🚀 [UPLOAD] Starting upload with companyId:', companyId);
       
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      let result;
+      try {
+        result = await uploadFunction(dataToUpload, { 
+          upsert: enableUpsert, 
+          targetCompanyId: companyId, 
+          autoCreateCustomers: createMissingCustomers,
+          autoCompleteDates,
+          autoCompleteType, 
+          autoCompleteAmounts,
+          dryRun: enableDryRun,
+          archiveFile: archiveFile,
+          originalFile: file
+        });
+        console.log('✅ [UPLOAD] Upload function completed:', result);
+      } catch (error) {
+        console.error('❌ [UPLOAD] Upload function failed:', error);
+        throw error;
+      } finally {
+        clearTimeout(uploadTimeout);
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+      }
+      
+      setLastResult(result);
 
       const successful = Number(result?.successful ?? 0);
       const failed = Number(result?.failed ?? 0);
@@ -401,21 +419,37 @@ export function SmartCSVUpload({
         });
       }, 200);
 
-      const result = await uploadFunction(dataToUpload, { 
-        upsert: enableUpsert, 
-        targetCompanyId: companyId, 
-        autoCreateCustomers: createMissingCustomers,
-        autoCompleteDates,
-        autoCompleteType,
-        autoCompleteAmounts,
-        dryRun: enableDryRun,
-        archiveFile: archiveFile,
-        originalFile: file
-      });
-      setLastResult(result);
+      // إضافة timeout للعملية لمنع التعليق
+      const uploadTimeout = setTimeout(() => {
+        clearInterval(progressInterval);
+        console.warn('⚠️ Table upload timeout - forcing completion');
+        toast.warning('العملية تستغرق وقتاً أطول من المتوقع، يرجى التحقق من النتائج');
+      }, 30000); // 30 seconds timeout
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      let result;
+      try {
+        result = await uploadFunction(dataToUpload, { 
+          upsert: enableUpsert, 
+          targetCompanyId: companyId, 
+          autoCreateCustomers: createMissingCustomers,
+          autoCompleteDates,
+          autoCompleteType,
+          autoCompleteAmounts,
+          dryRun: enableDryRun,
+          archiveFile: archiveFile,
+          originalFile: file
+        });
+        console.log('✅ [TABLE] Upload completed:', result);
+      } catch (error) {
+        console.error('❌ [TABLE] Upload failed:', error);
+        throw error;
+      } finally {
+        clearTimeout(uploadTimeout);
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+      }
+      
+      setLastResult(result);
 
       const successful = Number(result?.successful ?? 0);
       const failed = Number(result?.failed ?? 0);
