@@ -932,7 +932,7 @@ export function usePaymentsCSVUpload() {
           original_due_date: raw.original_due_date || null,
           late_fine_days_overdue: parseNumber(raw.late_fine_days_overdue || 0) || null,
           reconciliation_status: raw.reconciliation_status || 'pending',
-          description_type: raw.description_type || raw.type || null,
+          description_type: raw.description_type || raw.transaction_type || null,
         });
         if (error) {
           failed++;
