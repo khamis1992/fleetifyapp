@@ -10,7 +10,11 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    react({
+      // إعدادات محددة لـ Lovable.dev
+      fastRefresh: true,
+      jsxRuntime: 'automatic'
+    }),
     mode === 'development' && componentTagger()
   ].filter(Boolean),
   resolve: {
@@ -28,17 +32,20 @@ export default defineConfig(({ mode }) => ({
       'react-dom',
       'react/jsx-runtime',
       'react/jsx-dev-runtime',
-      'lucide-react'
+      'lucide-react',
+      'lovable-tagger'
     ],
-    exclude: [],
+    exclude: ['@vite/client', '@vite/env'],
     force: true,
     esbuildOptions: {
       logOverride: {
         'this-is-undefined-in-esm': 'silent',
       },
       define: {
-        // ضمان تعريف React بشكل صحيح
-        'process.env.NODE_ENV': '"development"'
+        // ضمان تعريف React بشكل صحيح لـ Lovable.dev
+        'process.env.NODE_ENV': '"development"',
+        'global': 'globalThis',
+        '__DEV__': 'true'
       }
     },
   },
