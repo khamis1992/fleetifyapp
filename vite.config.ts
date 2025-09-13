@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  cacheDir: 'node_modules/.vite-lovable',
   server: {
     host: "::",
     port: 8080,
@@ -24,9 +25,9 @@ export default defineConfig(({ mode }) => ({
       'react',
       'react-dom',
       'react/jsx-runtime',
-      'react/jsx-dev-runtime'
+      'react/jsx-dev-runtime',
+      'lucide-react'
     ],
-    exclude: ['lucide-react'],
     needsInterop: ['react', 'react-dom'],
     force: true,
     esbuildOptions: {
